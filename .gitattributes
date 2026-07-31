@@ -1,0 +1,30 @@
+# Fins de ligne — pourquoi ce fichier existe
+#
+# Git normalise en LF dans le dépôt et restaure les fins de ligne locales à
+# l'extraction. Sans consigne explicite, il prévient à chaque fichier
+# (« LF will be replaced by CRLF ») et, surtout, il pourrait rendre un `.bat`
+# en LF sur une autre machine.
+#
+# Un `.bat` en LF est un vrai risque sur ce projet : cmd.exe relit le fichier
+# par décalage d'octets, et certaines constructions (blocs entre parenthèses,
+# `choice` suivi de `if errorlevel`) se comportent mal sans CRLF. On force donc
+# CRLF pour les scripts Windows, LF pour tout le reste.
+
+* text=auto
+
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+*.py   text eol=lf
+*.md   text eol=lf
+*.html text eol=lf
+*.css  text eol=lf
+*.js   text eol=lf
+*.json text eol=lf
+*.txt  text eol=lf
+
+# Binaires : jamais de conversion
+*.jpg binary
+*.png binary
+*.db  binary
+*.pt  binary

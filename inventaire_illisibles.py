@@ -23,9 +23,15 @@ GARANTIE
     Ce script NE MODIFIE JAMAIS un original. Les images reconstruites sont
     ecrites dans un dossier separe, et l'inventaire est en lecture seule.
 
+REPRISE
+    Le script se souvient de ce qu'il a deja recupere (eval/recuperees.json) et
+    ne le retente pas. Le journal est ecrit au fil de l'eau : une interruption
+    ne fait perdre que le lot en cours.
+
 USAGE
     python inventaire_illisibles.py                # inventaire, lecture seule
-    python inventaire_illisibles.py --reparer      # tente la recuperation
+    python inventaire_illisibles.py --reparer      # tente ce qui reste
+    python inventaire_illisibles.py --reparer --refaire   # retente TOUT
     python inventaire_illisibles.py --exporter 12  # echantillon a relire
 """
 
@@ -239,9 +245,27 @@ def charger_illisibles():
     return cles
 
 
+def _ecrire_journal(reussites, deja_faits):
+    """Journal cumulatif : on n'ecrase jamais les passages precedents."""
+    chemin = RAPPORT.parent / "recuperees.json"
+    anciennes = []
+    try:
+        anciennes = json.loads(chemin.read_text(encoding='utf-8'))["recuperees"]
+    except (OSError, ValueError, KeyError):
+        pass
+    vues = {r.get("cle") for r in reussites}
+    fusion = [r for r in anciennes if r.get("cle") not in vues] + reussites
+    try:
+        chemin.write_text(json.dumps({"recuperees": fusion}, ensure_ascii=False,
+                                     indent=1), encoding='utf-8')
+    except OSError as e:
+        print(f"  ! journal non ecrit : {e}")
+
+
 def main():
     args = sys.argv[1:]
     reparer = '--reparer' in args
+    refaire = '--refaire' in args      # retenter meme ce qui a deja reussi
 
     print("=" * 74)
     print("  INVENTAIRE DES IMAGES ILLISIBLES")
@@ -276,18 +300,38 @@ def main():
 
     # Tout fichier NON VIDE merite une tentative : un en-tete detruit ne veut
     # pas dire que les donnees le sont. Seuls les 0 octet sont sans espoir.
-    recuperables = [f for f in fiches if f["existe"] and f["taille"] > 0]
+    tous = [f for f in fiches if f["existe"] and f["taille"] > 0]
     perdus = [f for f in fiches if not f["existe"] or f["taille"] == 0]
+
+    # Ce qui a DEJA ete recupere lors d'un passage precedent. Sans cette
+    # memoire, relancer le script retraite les memes fichiers et cree des
+    # doublons « __recup_1.jpg » — c'est ce qui s'est produit.
+    deja = set()
+    if not refaire:
+        try:
+            for r in json.loads(
+                    (RAPPORT.parent / "recuperees.json").read_text(
+                        encoding='utf-8')).get("recuperees", []):
+                deja.add(r.get("cle"))
+        except (OSError, ValueError):
+            pass
+    recuperables = [f for f in tous if f["cle"] not in deja]
     entete_sain = [f for f in recuperables
                    if f["etat"] and ('tronque' in f["etat"]
                                      or 'complet' in f["etat"]
                                      or 'decodeur' in f["etat"]
                                      or 'non decode' in f["etat"])]
-    print(f"  A tenter                    : {len(recuperables)}")
-    print(f"    dont en-tete encore lisible : {len(entete_sain)}")
-    print(f"    dont en-tete detruit        : {len(recuperables)-len(entete_sain)}"
-          "  (recherche de flux JPEG dans le fichier)")
-    print(f"  Sans espoir (0 octet)       : {len(perdus)}")
+    print("  " + "-" * 60)
+    print(f"  DEJA RECUPERES (passages precedents) : {len(deja)}")
+    print(f"  RESTE A TENTER                       : {len(recuperables)}")
+    print(f"    dont en-tete encore lisible          : {len(entete_sain)}")
+    print(f"    dont en-tete detruit                 : "
+          f"{len(recuperables)-len(entete_sain)}")
+    print("      -> recherche d'un flux JPEG n'importe ou dans le fichier :")
+    print("         c'est la SEULE chance de ces fichiers, et elle n'a jamais")
+    print("         ete tentee avant la correction du 31/07.")
+    print(f"  Sans espoir (0 octet)                : {len(perdus)}")
+    print("  " + "-" * 60)
     print()
 
     RAPPORT.parent.mkdir(parents=True, exist_ok=True)
@@ -351,8 +395,11 @@ def main():
             if cible.exists():
                 cible.unlink()
         if i % 50 == 0:
-            print(f"    {i}/{len(recuperables)}…", flush=True)
+            print(f"    {i}/{len(recuperables)} — {len(reussites)} recuperee(s)",
+                  flush=True)
+            _ecrire_journal(reussites, deja)   # une interruption ne perd rien
 
+    _ecrire_journal(reussites, deja)
     print()
     for m, n in methodes.most_common():
         print(f"    {n:>5}  {m}")
@@ -364,10 +411,11 @@ def main():
     print("  Regarde-les avant d'en faire quoi que ce soit : une image")
     print("  reconstruite peut etre partielle (bas de l'image gris ou raye).")
     print("  Rien n'a ete remplace : tes originaux sont intacts.")
-    (RAPPORT.parent / "recuperees.json").write_text(
-        json.dumps({"recuperees": reussites}, ensure_ascii=False, indent=1),
-        encoding='utf-8')
     print(f"  + journal : {RAPPORT.parent / 'recuperees.json'}")
+    if len(recuperables) > total:
+        print(f"\n  {len(recuperables)-total} fichier(s) resistent encore.")
+        print("  Relancer n'y changera rien : leurs octets ne contiennent")
+        print("  aucune image exploitable.")
     print()
     return 0
 

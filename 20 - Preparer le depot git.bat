@@ -2,6 +2,20 @@
 chcp 65001 >nul
 cd /d "%~dp0"
 REM Contenu en ASCII pur : cmd.exe relit le fichier par decalage d'octets.
+
+where git >nul 2>&1
+if errorlevel 1 (
+    echo   git est introuvable. Installe-le depuis https://git-scm.com
+    echo   puis relance ce script.
+    pause
+    exit /b 1
+)
+
+if exist ".git" goto :enregistrer
+
+REM ==============================================================
+REM  Premier passage : creation du depot
+REM ==============================================================
 echo ==============================================================
 echo   PREPARATION DU DEPOT GIT
 echo ==============================================================
@@ -10,8 +24,7 @@ echo   server.py fait plus de 8 500 lignes et n'a AUCUN historique.
 echo   Apres une session de modifications, rien ne permet de revenir
 echo   sur un changement precis.
 echo.
-echo   Ce script cree un depot local. Il n'envoie RIEN en ligne :
-echo   la publication sur GitHub reste une decision separee.
+echo   Ce script cree un depot LOCAL. Il n'envoie rien en ligne.
 echo.
 echo   NE SERONT PAS VERSIONNES (voir .gitignore) :
 echo     - photos.db          chemins, tags et empreintes de tes photos
@@ -25,24 +38,6 @@ echo   Seuls le CODE et la DOCUMENTATION partent dans le depot.
 echo.
 pause
 
-where git >nul 2>&1
-if errorlevel 1 (
-    echo   git est introuvable. Installe-le depuis https://git-scm.com
-    echo   puis relance ce script.
-    pause
-    exit /b 1
-)
-
-if exist ".git" (
-    echo.
-    echo   Un depot existe deja. Etat actuel :
-    echo --------------------------------------------------------------
-    git status --short
-    echo.
-    pause
-    exit /b 0
-)
-
 echo.
 echo   Etape 1 sur 3 : initialisation
 echo --------------------------------------------------------------
@@ -53,18 +48,21 @@ echo.
 echo   Etape 2 sur 3 : verification de ce qui serait versionne
 echo --------------------------------------------------------------
 git add -A
+git --no-pager diff --cached --name-only > "%TEMP%\gitlist.txt"
+echo   Nombre de fichiers retenus :
+find /c /v "" < "%TEMP%\gitlist.txt"
+call :controle_fuite "%TEMP%\gitlist.txt"
+if errorlevel 1 (
+    git reset
+    pause
+    exit /b 1
+)
 echo.
-echo   Fichiers retenus :
-git diff --cached --name-only
-echo.
-echo   Taille totale :
-git count-objects -vH | findstr size-pack
+echo   Liste complete : %TEMP%\gitlist.txt
+git --no-pager count-objects -vH | findstr size-pack
 
 echo.
-echo   Verifie cette liste. Aucune photo, aucune base, aucun chemin
-echo   prive ne doit y figurer.
-echo.
-choice /c ON /n /m "   Creer le premier commit ? [O]ui / [N]on : "
+choice /c ON /n /m "   Creer le premier enregistrement ? [O]ui / [N]on : "
 if errorlevel 2 (
     git reset
     echo.
@@ -74,7 +72,7 @@ if errorlevel 2 (
 )
 
 echo.
-echo   Etape 3 sur 3 : premier commit
+echo   Etape 3 sur 3 : premier enregistrement
 echo --------------------------------------------------------------
 git commit -m "Phototheque locale : serveur, pipelines IA, evaluations"
 echo.
@@ -82,14 +80,103 @@ echo ==============================================================
 echo   DEPOT LOCAL PRET
 echo ==============================================================
 echo.
-echo   Pour publier sur GitHub, en depot PRIVE :
+echo   Relance ce script quand tu veux enregistrer tes prochaines
+echo   modifications : chaque enregistrement est un point de retour.
 echo.
+echo   Pour publier sur GitHub, en depot PRIVE :
 echo     1. Cree un depot vide sur github.com (sans README)
 echo     2. git remote add origin https://github.com/TON-COMPTE/NOM.git
 echo     3. git push -u origin main
 echo.
-echo   Ensuite seulement, active le connecteur GitHub dans les
-echo   reglages de claude.ai : Claude pourra alors proposer des
-echo   modifications sous forme de pull requests relisibles.
+echo   Active ensuite le connecteur GitHub dans les reglages de
+echo   claude.ai : Claude pourra proposer des modifications sous
+echo   forme de pull requests relisibles.
 echo.
 pause
+exit /b 0
+
+REM ==============================================================
+REM  Passages suivants : enregistrer les modifications
+REM ==============================================================
+:enregistrer
+echo ==============================================================
+echo   ENREGISTRER LES MODIFICATIONS
+echo ==============================================================
+echo.
+echo   Chaque enregistrement est un point de retour possible.
+echo.
+echo   Derniers enregistrements :
+echo --------------------------------------------------------------
+git --no-pager log --oneline -8
+echo.
+echo   Modifications depuis le dernier :
+echo --------------------------------------------------------------
+git --no-pager status --short
+echo.
+
+git --no-pager status --porcelain > "%TEMP%\gitchg.txt"
+for /f %%A in ('find /c /v "" ^< "%TEMP%\gitchg.txt"') do set NCHG=%%A
+if "%NCHG%"=="0" (
+    echo   Rien a enregistrer : tout est deja sauvegarde.
+    echo.
+    pause
+    exit /b 0
+)
+
+call :controle_fuite "%TEMP%\gitchg.txt"
+if errorlevel 1 (
+    pause
+    exit /b 1
+)
+
+echo.
+choice /c ON /n /m "   Enregistrer ces modifications ? [O]ui / [N]on : "
+if errorlevel 2 (
+    echo.
+    echo   Annule. Rien n'a ete enregistre.
+    pause
+    exit /b 0
+)
+
+set "MSG="
+set /p MSG=  Decris le changement en une ligne (Entree = date du jour) :
+if "%MSG%"=="" set "MSG=Modifications du %DATE%"
+
+git add -A
+git commit -m "%MSG%"
+
+echo.
+echo   Enregistre. Pour revenir en arriere plus tard :
+echo     git --no-pager log --oneline     voir l'historique
+echo     git checkout -- FICHIER          annuler un fichier modifie
+echo     git revert IDENTIFIANT           defaire un enregistrement
+echo.
+git --no-pager remote -v | findstr origin >nul
+if errorlevel 1 (
+    echo   Aucun depot distant. Pour publier sur GitHub :
+    echo     git remote add origin https://github.com/TON-COMPTE/NOM.git
+    echo     git push -u origin main
+) else (
+    echo   Pour envoyer sur GitHub : git push
+)
+echo.
+pause
+exit /b 0
+
+REM ==============================================================
+REM  Controle de fuite : aucune donnee privee ne doit etre versionnee
+REM ==============================================================
+:controle_fuite
+findstr /i /c:"photos.db" /c:"thumbs" /c:"recuperees" /c:"data_dir" ^
+    /c:"dossier_uploads" /c:"hf_token" /c:".venv" %1 >nul
+if errorlevel 1 (
+    echo     [OK] aucune donnee privee dans la liste.
+    exit /b 0
+)
+echo.
+echo     [ALERTE] des fichiers sensibles sont retenus :
+findstr /i /c:"photos.db" /c:"thumbs" /c:"recuperees" /c:"data_dir" ^
+    /c:"dossier_uploads" /c:"hf_token" /c:".venv" %1
+echo.
+echo     Corrige .gitignore AVANT de continuer.
+exit /b 1
