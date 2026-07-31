@@ -1,6 +1,7 @@
-# Photothèque locale
+# MediaLibrary
 
-Serveur photo domestique en **Python stdlib pure** (`http.server`), servi au
+Photothèque familiale locale à IA — serveur photo domestique en
+**Python stdlib pure** (`http.server`), servi au
 téléphone sur le réseau local. Il indexe un fonds familial d'environ
 30 000 photos stocké sur un NAS SMB, et y applique cinq pipelines d'IA locale.
 

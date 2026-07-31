@@ -370,6 +370,303 @@ CLUSTER_CACHE = {"at": 0.0, "building": False, "clusters": [], "byid": {}}
 CLUSTER_LOCK = threading.Lock()
 
 
+# ─── Magasin de sujets commun (point 7 du ROADMAP) ───────────────────────────
+# PEOPLE_STORE et PETS_STORE ont la MÊME forme d'entrée (name, refs, faces,
+# exclude, confirmed ; species pour les animaux). Les gestes de gestion —
+# nommer un groupe, proposer d'autres photos, confirmer, réviser, détacher,
+# renommer, supprimer — n'y différaient que par SIX branchements :
+#
+#   préfixe de tag · store de fiches · store de détection (+ champ) ·
+#   vignette (crop) · seuil de similarité · cache/verrou de regroupement.
+#
+# SubjectStore les injecte à la construction ; chaque geste devient une méthode
+# unique valable des deux côtés. Conséquence voulue (harmonisation) : une
+# amélioration d'un côté profite automatiquement à l'autre. Deux trous sont
+# ainsi comblés : `find_more` applique désormais `exclude` AUSSI aux animaux
+# (une photo corrigée ne revient plus dans les propositions), et `photos`
+# partage la même sélection du meilleur visage/animal.
+#
+# Les fonctions historiques (name_cluster, find_more, confirm_person, …) sont
+# conservées comme wrappers d'une ligne : aucune route ni appelant à changer.
+# Les helpers référencés (crop, centroïde, _kw_has, _index_*, …) sont définis
+# plus bas dans le fichier ; comme ils ne sont résolus qu'à l'APPEL, l'ordre de
+# définition n'a pas d'importance.
+class SubjectStore:
+    def __init__(self, kind, prefix, store, det_store, det_field,
+                 cache, lock, species=False, has_avatar=False,
+                 filter_nommable=False):
+        self.kind = kind                # 'personne' | 'animal'
+        self.prefix = prefix            # préfixe de tag
+        self.store = store              # PEOPLE_STORE | PETS_STORE
+        self.det_store = det_store      # FACE_STORE | ANIMAL_STORE
+        self.det_field = det_field      # 'faces' | 'animals'
+        self.cache = cache              # CLUSTER_CACHE | PET_CLUSTER_CACHE
+        self.lock = lock                # CLUSTER_LOCK | PET_CLUSTER_LOCK
+        self.species = species          # les animaux portent une espèce déduite
+        self.has_avatar = has_avatar    # avatar calculé par le curateur (personnes)
+        self.filter_nommable = filter_nommable  # animaux : ignorer les non-nommables
+
+    # --- helpers à liaison tardive (définis plus bas dans le module) ---
+    def _crop(self, k, i):
+        return _animal_crop_url(k, i) if self.kind == 'animal' else _crop_url(k, i)
+
+    def _centroid(self, pe):
+        return cat_centroid(pe) if self.kind == 'animal' else person_centroid(pe)
+
+    def _sim(self):
+        # résolu à l'appel : honore les surcharges de seuils.txt
+        return PET_MATCH_SIM if self.kind == 'animal' else FACE_MATCH_SIM
+
+    def _new_entry(self, name, espece=None):
+        e = {"name": name, "refs": [], "at": time.time()}
+        if self.species:
+            e["species"] = espece or "cat"
+        return e
+
+    # --- gestes unifiés ---
+    def name_cluster(self, cid, name):
+        """Nomme un groupe : enregistre la fiche + tague ses photos."""
+        name = (name or "").strip()[:60]
+        if not name:
+            return 0
+        with self.lock:
+            members = list(self.cache["byid"].get(cid, []))
+        if not members:
+            return 0
+        tag = f"{self.prefix}:{name}"
+        refs = []
+        especes = {}
+        for (k, i) in members:
+            de = self.det_store.data.get(k)
+            if isinstance(de, dict):
+                items = de.get(self.det_field) or []
+                if i < len(items):
+                    if self.species:
+                        sp = items[i].get('species')
+                        if sp:
+                            especes[sp] = especes.get(sp, 0) + 1
+                    if items[i].get('emb') and len(refs) < 40:
+                        refs.append(items[i]['emb'])
+        pk = name.lower()
+        if self.species:
+            # L'espèce est DÉDUITE du groupe, plus jamais supposée « cat ».
+            espece = max(especes, key=especes.get) if especes else 'cat'
+            pe = self.store.data.get(pk) or self._new_entry(name, espece)
+            pe.setdefault("species", espece)
+        else:
+            pe = self.store.data.get(pk) or self._new_entry(name)
+        pe["name"] = name
+        # Les NOUVELLES références passent en tête : une fiche plafonnée à 80
+        # refs n'en acceptait plus jamais, donc nommer à la main n'améliorait
+        # plus rien. Les plus anciennes sortent — la signature suit le sujet.
+        pe["refs"] = (refs + (pe.get("refs") or []))[:80]
+        pe["faces"] = _merge_assigned(pe.get("faces"), members)
+        self.store.set(pk, pe)
+        photos = list(dict.fromkeys(k for (k, i) in members))
+        for k in photos:
+            _index_add_person(k, tag)
+            _enqueue_person_write(k, tag)
+        STORE.save()
+        # Retire le groupe nommé du cache : sinon il réapparaît indéfiniment
+        # dans « Groupes à nommer » (le cache n'est pas reconstruit à chaque fois).
+        with self.lock:
+            self.cache["byid"].pop(cid, None)
+            self.cache["clusters"] = [c for c in self.cache["clusters"]
+                                      if c.get("cid") != cid]
+        return len(photos)
+
+    def find_more(self, name, limit=300):
+        """Propose d'autres photos du sujet (proches de ses références, pas
+        encore taguées). Pour validation manuelle."""
+        import numpy as np
+        pk = (name or "").lower()
+        pe = self.store.data.get(pk)
+        if not pe or not pe.get("refs"):
+            return []
+        try:
+            R = np.stack([_emb_from_b64(s) for s in pe["refs"]])
+        except Exception:
+            return []
+        tag = f"{self.prefix}:{pe.get('name', name)}"
+        exclude = set(pe.get("exclude") or [])   # photos corrigées : ne plus proposer
+        sim_thr = self._sim()
+        props = []
+        for k, e in list(self.det_store.data.items()):
+            if not isinstance(e, dict) or e.get('failed'):
+                continue
+            if k in exclude:
+                continue
+            se = STORE.data.get(k)
+            if _kw_has(se, tag):
+                continue  # déjà attribué
+            for i, f in enumerate(e.get(self.det_field) or []):
+                if self.filter_nommable and not _nommable(f):
+                    continue
+                emb = f.get('emb')
+                if not emb:
+                    continue
+                try:
+                    sim = float(np.max(R @ _emb_from_b64(emb)))
+                except Exception:
+                    continue
+                if sim >= sim_thr:
+                    props.append((sim, k, i))
+                    break
+        props.sort(reverse=True)
+        return [{"key": k, "i": i, "sim": round(s, 3), "crop_url": self._crop(k, i)}
+                for (s, k, i) in props[:limit]]
+
+    def confirm(self, name, keys):
+        """Valide l'attribution de photos au sujet (écrit le tag)."""
+        name = (name or "").strip()[:60]
+        if not name:
+            return 0
+        tag = f"{self.prefix}:{name}"
+        n = 0
+        for k in keys:
+            _index_add_person(k, tag)
+            _enqueue_person_write(k, tag)
+            n += 1
+        STORE.save()
+        return n
+
+    def photos(self, name, limit=2000):
+        """Photos taguées <prefix>:Nom, pour révision. On retient le
+        visage/animal qui ressemble LE MIEUX à la signature et on trie du moins
+        au plus ressemblant → les faux positifs remontent en tête."""
+        import numpy as np
+        tag = f"{self.prefix}:{name}"
+        pk = name.lower()
+        pe = self.store.data.get(pk)
+        cen = self._centroid(pe) if isinstance(pe, dict) else None
+        roots = media_roots()
+        out = []
+        for k, e in STORE.data.items():
+            if not _kw_has(e, tag):
+                continue
+            de = self.det_store.data.get(k)
+            items = (de.get(self.det_field) if isinstance(de, dict) else None) or []
+            if self.filter_nommable:
+                cand = [(idx, a) for idx, a in enumerate(items) if _nommable(a)]
+            else:
+                cand = list(enumerate(items))
+            bi = (cand[0][0] if cand else 0)
+            bsim = None
+            if cen is not None and cand:
+                best = -2.0
+                for idx, a in cand:
+                    emb = a.get('emb')
+                    if not emb:
+                        continue
+                    try:
+                        s = float(np.dot(cen, _emb_from_b64(emb)))
+                    except Exception:
+                        continue
+                    if s > best:
+                        best, bi = s, idx
+                if best > -2.0:
+                    bsim = round(best, 3)
+            crop = self._crop(k, bi) if cand else None
+            kw = list(dict.fromkeys((e.get('kw_fr') or []) + (e.get('kw_en') or [])))
+            folder, gurl = _folder_link_for_key(k, roots)
+            out.append({"key": k, "crop_url": crop, "url": _url_for_key(k),
+                        "name": Path(k).name, "sim": bsim, "i": bi,
+                        "taken": _best_time(k, e), "kw": kw,
+                        "folder": folder, "gurl": gurl})
+            if len(out) >= limit:
+                break
+        out.sort(key=lambda x: (x["sim"] if x["sim"] is not None else 2.0))
+        return out
+
+    def untag(self, name, keys):
+        """Retire le tag de photos mal attribuées et mémorise l'exclusion."""
+        name = (name or "").strip()[:60]
+        if not name:
+            return 0
+        tag = f"{self.prefix}:{name}"
+        pk = name.lower()
+        pe = self.store.data.get(pk)
+        exclude = set(pe.get("exclude") or []) if isinstance(pe, dict) else set()
+        n = 0
+        for k in keys:
+            _index_remove_person(k, tag)
+            _enqueue_person_write(k, tag, 'del')
+            exclude.add(k)
+            n += 1
+        if isinstance(pe, dict):
+            pe["exclude"] = list(exclude)
+            self.store.set(pk, pe)
+        STORE.save()
+        return n
+
+    def rename(self, old, new):
+        """Renomme un sujet : remplace <prefix>:Ancien par <prefix>:Nouveau
+        partout (index + fichiers) et fusionne les fiches."""
+        old = (old or "").strip()
+        new = (new or "").strip()[:60]
+        if not old or not new or old.lower() == new.lower():
+            return 0
+        oldtag, newtag = f"{self.prefix}:{old}", f"{self.prefix}:{new}"
+        n = 0
+        for k, e in list(STORE.data.items()):
+            if _kw_has(e, oldtag):
+                _index_remove_person(k, oldtag)
+                _index_add_person(k, newtag)
+                _enqueue_person_write(k, oldtag, 'del')
+                _enqueue_person_write(k, newtag, 'add')
+                n += 1
+        op = self.store.data.pop(old.lower(), None)
+        if op:
+            npp = self.store.data.get(new.lower())
+            if npp is None:
+                npp = self._new_entry(new, op.get("species") if self.species else None)
+            npp["name"] = new
+            npp["refs"] = ((npp.get("refs") or []) + (op.get("refs") or []))[:80]
+            npp["exclude"] = list(set((npp.get("exclude") or [])
+                                      + (op.get("exclude") or [])))
+            npp["faces"] = _merge_assigned(
+                npp.get("faces"),
+                [(x[0], x[1]) for x in (op.get("faces") or [])
+                 if isinstance(x, (list, tuple)) and len(x) == 2])
+            self.store.set(new.lower(), npp)
+        STORE.save()
+        return n
+
+    def delete(self, name):
+        """Supprime entièrement un sujet : retire son tag partout et efface
+        sa fiche. Les tags dans les FICHIERS sont retirés via la file."""
+        name = (name or "").strip()[:60]
+        if not name:
+            return 0
+        tag = f"{self.prefix}:{name}"
+        n = 0
+        for k, e in list(STORE.data.items()):
+            if _kw_has(e, tag):
+                _index_remove_person(k, tag)
+                _enqueue_person_write(k, tag, 'del')
+                n += 1
+        self.store.data.pop(name.lower(), None)
+        self.store.save()
+        STORE.save()
+        return n
+
+
+# Le registre est construit ici (tous les stores/caches existent) ; les fiches
+# et fichiers sur disque sont INCHANGÉS (mêmes PEOPLE_FILE / PETS_FILE).
+SUBJECTS = {
+    'personne': SubjectStore('personne', 'personne', PEOPLE_STORE,
+                             FACE_STORE, 'faces', CLUSTER_CACHE, CLUSTER_LOCK,
+                             species=False, has_avatar=True,
+                             filter_nommable=False),
+    'animal': SubjectStore('animal', 'animal', PETS_STORE,
+                           ANIMAL_STORE, 'animals', PET_CLUSTER_CACHE,
+                           PET_CLUSTER_LOCK, species=True, has_avatar=False,
+                           filter_nommable=True),
+}
+PEOPLE = SUBJECTS['personne']
+PETS = SUBJECTS['animal']
+
+
 def enqueue(name):
     with PENDING_LOCK:
         if name in PENDING:
@@ -4511,105 +4808,19 @@ def build_pet_clusters():
 
 
 def name_pet_cluster(cid, name):
-    """Nomme un groupe de chats : enregistre le chat + tague ses photos."""
-    name = (name or "").strip()[:60]
-    if not name:
-        return 0
-    with PET_CLUSTER_LOCK:
-        members = list(PET_CLUSTER_CACHE["byid"].get(cid, []))
-    if not members:
-        return 0
-    tag = f"animal:{name}"
-    refs = []
-    especes = {}
-    for (k, i) in members:
-        ae = ANIMAL_STORE.data.get(k)
-        if isinstance(ae, dict):
-            animals = ae.get('animals') or []
-            if i < len(animals):
-                sp = animals[i].get('species')
-                if sp:
-                    especes[sp] = especes.get(sp, 0) + 1
-                if animals[i].get('emb') and len(refs) < 40:
-                    refs.append(animals[i]['emb'])
-    # L'espèce est DÉDUITE du groupe, plus jamais supposée « cat ».
-    espece = max(especes, key=especes.get) if especes else 'cat'
-    pk = name.lower()
-    pe = PETS_STORE.data.get(pk) or {"name": name, "species": espece,
-                                     "refs": [], "at": time.time()}
-    pe.setdefault("species", espece)
-    pe["name"] = name
-    # Les NOUVELLES références passent en tête : avec l'ancien ordre,
-    # une fiche ayant atteint 80 références n'en acceptait plus jamais,
-    # donc nommer à la main n'améliorait plus rien. Les plus anciennes
-    # sortent à la place — la signature suit l'animal qui vieillit.
-    pe["refs"] = (refs + (pe.get("refs") or []))[:80]
-    pe["faces"] = _merge_assigned(pe.get("faces"), members)   # exclusion définitive du regroupement
-    PETS_STORE.set(pk, pe)
-    photos = list(dict.fromkeys(k for (k, i) in members))
-    for k in photos:
-        _index_add_person(k, tag)
-        _enqueue_person_write(k, tag)
-    STORE.save()
-    # Retire le groupe nommé du cache (même raison que pour les personnes).
-    with PET_CLUSTER_LOCK:
-        PET_CLUSTER_CACHE["byid"].pop(cid, None)
-        PET_CLUSTER_CACHE["clusters"] = [c for c in PET_CLUSTER_CACHE["clusters"]
-                                         if c.get("cid") != cid]
-    return len(photos)
+    """Nomme un groupe d'animaux : voir SubjectStore.name_cluster."""
+    return PETS.name_cluster(cid, name)
 
 
 def find_more_cats(name, limit=300):
-    """Propose d'autres photos d'un chat nommé (chats proches de ses références,
-    pas encore tagués). Pour validation manuelle."""
-    import numpy as np
-    pk = (name or "").lower()
-    pe = PETS_STORE.data.get(pk)
-    if not pe or not pe.get("refs"):
-        return []
-    try:
-        R = np.stack([_emb_from_b64(s) for s in pe["refs"]])
-    except Exception:
-        return []
-    tag = f"animal:{pe.get('name', name)}"
-    props = []
-    for k, e in list(ANIMAL_STORE.data.items()):
-        if not isinstance(e, dict) or e.get('failed'):
-            continue
-        se = STORE.data.get(k)
-        if _kw_has(se, tag):
-            continue
-        for i, a in enumerate(e.get('animals') or []):
-            if not _nommable(a):
-                continue
-            emb = a.get('emb')
-            if not emb:
-                continue
-            try:
-                sim = float(np.max(R @ _emb_from_b64(emb)))
-            except Exception:
-                continue
-            if sim >= PET_MATCH_SIM:
-                props.append((sim, k, i))
-                break
-    props.sort(reverse=True)
-    return [{"key": k, "i": i, "sim": round(s, 3), "crop_url": _animal_crop_url(k, i)}
-            for (s, k, i) in props[:limit]]
+    """Propose d'autres photos d'un animal nommé : voir SubjectStore.find_more.
+    Applique désormais AUSSI `exclude` (une photo corrigée ne revient plus)."""
+    return PETS.find_more(name, limit)
 
 
 def confirm_cat(name, keys):
-    """Valide l'attribution de photos à un chat (écrit le tag animal:Nom)."""
-    name = (name or "").strip()[:60]
-    if not name:
-        return 0
-    tag = f"animal:{name}"
-    n = 0
-    for k in keys:
-        _index_add_person(k, tag)
-        _enqueue_person_write(k, tag)
-        n += 1
-    STORE.save()
-    return n
+    """Valide l'attribution de photos à un animal : voir SubjectStore.confirm."""
+    return PETS.confirm(name, keys)
 
 
 def pets_list():
@@ -4812,117 +5023,22 @@ def cat_photos(name, limit=2000):
     retient le chat qui ressemble LE MIEUX à la signature, et on trie du moins au
     plus ressemblant → les faux positifs remontent en tête (comme pour les
     personnes)."""
-    import numpy as np
-    tag = f"animal:{name}"
-    pk = name.lower()
-    pe = PETS_STORE.data.get(pk)
-    cen = cat_centroid(pe) if isinstance(pe, dict) else None
-    roots = media_roots()
-    out = []
-    for k, e in STORE.data.items():
-        if not _kw_has(e, tag):
-            continue
-        ae = ANIMAL_STORE.data.get(k)
-        animals = (ae.get('animals') if isinstance(ae, dict) else None) or []
-        cats = [(idx, a) for idx, a in enumerate(animals) if _nommable(a)]
-        bi, bsim = (cats[0][0] if cats else 0), None
-        if cen is not None and cats:
-            best = -2.0
-            for idx, a in cats:
-                emb = a.get('emb')
-                if not emb:
-                    continue
-                try:
-                    s = float(np.dot(cen, _emb_from_b64(emb)))
-                except Exception:
-                    continue
-                if s > best:
-                    best, bi = s, idx
-            if best > -2.0:
-                bsim = round(best, 3)
-        crop = _animal_crop_url(k, bi) if cats else None
-        kw = list(dict.fromkeys((e.get('kw_fr') or []) + (e.get('kw_en') or [])))
-        folder, gurl = _folder_link_for_key(k, roots)
-        out.append({"key": k, "crop_url": crop, "url": _url_for_key(k),
-                    "name": Path(k).name, "sim": bsim, "i": bi,
-                    "taken": _best_time(k, e), "kw": kw,
-                    "folder": folder, "gurl": gurl})
-        if len(out) >= limit:
-            break
-    out.sort(key=lambda x: (x["sim"] if x["sim"] is not None else 2.0))
-    return out
+    return PETS.photos(name, limit)
 
 
 def untag_cat(name, keys):
-    """Retire le tag animal:Nom de photos mal attribuées (index + fichier) et
-    mémorise l'exclusion pour ne plus les reproposer."""
-    name = (name or "").strip()[:60]
-    if not name:
-        return 0
-    tag = f"animal:{name}"
-    pk = name.lower()
-    pe = PETS_STORE.data.get(pk)
-    exclude = set(pe.get("exclude") or []) if isinstance(pe, dict) else set()
-    n = 0
-    for k in keys:
-        _index_remove_person(k, tag)
-        _enqueue_person_write(k, tag, 'del')
-        exclude.add(k)
-        n += 1
-    if isinstance(pe, dict):
-        pe["exclude"] = list(exclude)
-        PETS_STORE.set(pk, pe)
-    STORE.save()
-    return n
+    """Retire animal:Nom de photos mal attribuées : voir SubjectStore.untag."""
+    return PETS.untag(name, keys)
 
 
 def rename_cat(old, new):
-    """Renomme un chat : remplace animal:Ancien par animal:Nouveau partout."""
-    old = (old or "").strip()
-    new = (new or "").strip()[:60]
-    if not old or not new or old.lower() == new.lower():
-        return 0
-    oldtag, newtag = f"animal:{old}", f"animal:{new}"
-    n = 0
-    for k, e in list(STORE.data.items()):
-        if _kw_has(e, oldtag):
-            _index_remove_person(k, oldtag)
-            _index_add_person(k, newtag)
-            _enqueue_person_write(k, oldtag, 'del')
-            _enqueue_person_write(k, newtag, 'add')
-            n += 1
-    op = PETS_STORE.data.pop(old.lower(), None)
-    if op:
-        npp = (PETS_STORE.data.get(new.lower())
-               or {"name": new, "species": op.get("species", "cat"),
-                   "refs": [], "at": time.time()})
-        npp["name"] = new
-        npp["refs"] = ((npp.get("refs") or []) + (op.get("refs") or []))[:80]
-        npp["exclude"] = list(set((npp.get("exclude") or []) + (op.get("exclude") or [])))
-        npp["faces"] = _merge_assigned(npp.get("faces"),
-                                       [(x[0], x[1]) for x in (op.get("faces") or [])
-                                        if isinstance(x, (list, tuple)) and len(x) == 2])
-        PETS_STORE.set(new.lower(), npp)
-    STORE.save()
-    return n
+    """Renomme un animal : voir SubjectStore.rename."""
+    return PETS.rename(old, new)
 
 
 def delete_cat(name):
-    """Supprime entièrement un chat : retire son tag partout et efface sa fiche."""
-    name = (name or "").strip()[:60]
-    if not name:
-        return 0
-    tag = f"animal:{name}"
-    n = 0
-    for k, e in list(STORE.data.items()):
-        if _kw_has(e, tag):
-            _index_remove_person(k, tag)
-            _enqueue_person_write(k, tag, 'del')
-            n += 1
-    PETS_STORE.data.pop(name.lower(), None)
-    PETS_STORE.save()
-    STORE.save()
-    return n
+    """Supprime entièrement un animal : voir SubjectStore.delete."""
+    return PETS.delete(name)
 
 
 def note_heavy_activity():
@@ -5412,100 +5528,18 @@ def reimport_name_tags():
 
 
 def name_cluster(cid, name):
-    """Nomme un groupe : enregistre la personne + tague toutes ses photos
-    (index immédiat + écriture fichier en fond). Retourne le nb de photos."""
-    name = (name or "").strip()[:60]
-    if not name:
-        return 0
-    with CLUSTER_LOCK:
-        members = list(CLUSTER_CACHE["byid"].get(cid, []))
-    if not members:
-        return 0
-    tag = f"personne:{name}"
-    refs = []
-    for (k, i) in members:
-        fe = FACE_STORE.data.get(k)
-        if isinstance(fe, dict):
-            faces = fe.get('faces') or []
-            if i < len(faces) and faces[i].get('emb') and len(refs) < 40:
-                refs.append(faces[i]['emb'])
-    pk = name.lower()
-    pe = PEOPLE_STORE.data.get(pk) or {"name": name, "refs": [], "at": time.time()}
-    pe["name"] = name
-    # Les NOUVELLES références passent en tête : avec l'ancien ordre,
-    # une fiche ayant atteint 80 références n'en acceptait plus jamais,
-    # donc nommer à la main n'améliorait plus rien. Les plus anciennes
-    # sortent à la place — la signature suit l'animal qui vieillit.
-    pe["refs"] = (refs + (pe.get("refs") or []))[:80]
-    pe["faces"] = _merge_assigned(pe.get("faces"), members)   # exclusion définitive du regroupement
-    PEOPLE_STORE.set(pk, pe)
-    photos = list(dict.fromkeys(k for (k, i) in members))
-    for k in photos:
-        _index_add_person(k, tag)
-        _enqueue_person_write(k, tag)
-    STORE.save()
-    # Retire le groupe nommé du cache : sinon il réapparaît indéfiniment dans
-    # « Groupes à nommer » (le cache n'est pas reconstruit à chaque nommage).
-    # Le rebuild complet ultérieur le filtrera de toute façon via les refs.
-    with CLUSTER_LOCK:
-        CLUSTER_CACHE["byid"].pop(cid, None)
-        CLUSTER_CACHE["clusters"] = [c for c in CLUSTER_CACHE["clusters"]
-                                     if c.get("cid") != cid]
-    return len(photos)
+    """Nomme un groupe de visages : voir SubjectStore.name_cluster."""
+    return PEOPLE.name_cluster(cid, name)
 
 
 def find_more(name, limit=300):
-    """Propose d'autres photos d'une personne nommée (visages proches de ses
-    références, pas encore tagués). Pour validation manuelle."""
-    import numpy as np
-    pk = (name or "").lower()
-    pe = PEOPLE_STORE.data.get(pk)
-    if not pe or not pe.get("refs"):
-        return []
-    try:
-        R = np.stack([_emb_from_b64(s) for s in pe["refs"]])
-    except Exception:
-        return []
-    tag = f"personne:{pe.get('name', name)}"
-    exclude = set(pe.get("exclude") or [])   # photos corrigées : ne plus proposer
-    props = []
-    for k, e in list(FACE_STORE.data.items()):
-        if not isinstance(e, dict) or e.get('failed'):
-            continue
-        if k in exclude:
-            continue
-        se = STORE.data.get(k)
-        if _kw_has(se, tag):
-            continue  # déjà attribué
-        for i, f in enumerate(e.get('faces') or []):
-            emb = f.get('emb')
-            if not emb:
-                continue
-            try:
-                sim = float(np.max(R @ _emb_from_b64(emb)))
-            except Exception:
-                continue
-            if sim >= FACE_MATCH_SIM:
-                props.append((sim, k, i))
-                break
-    props.sort(reverse=True)
-    return [{"key": k, "i": i, "sim": round(s, 3), "crop_url": _crop_url(k, i)}
-            for (s, k, i) in props[:limit]]
+    """Propose d'autres photos d'une personne nommée : voir SubjectStore.find_more."""
+    return PEOPLE.find_more(name, limit)
 
 
 def confirm_person(name, keys):
-    """Valide l'attribution de photos à une personne (écrit le tag)."""
-    name = (name or "").strip()[:60]
-    if not name:
-        return 0
-    tag = f"personne:{name}"
-    n = 0
-    for k in keys:
-        _index_add_person(k, tag)
-        _enqueue_person_write(k, tag)
-        n += 1
-    STORE.save()
-    return n
+    """Valide l'attribution de photos à une personne : voir SubjectStore.confirm."""
+    return PEOPLE.confirm(name, keys)
 
 
 def people_list():
@@ -5553,44 +5587,7 @@ def person_photos(name, limit=2000):
     on identifie le visage qui correspond LE MIEUX à la signature de la personne
     (pas forcément le visage n°0) et on affiche CE visage. Trié du moins au plus
     ressemblant → les faux positifs remontent en tête."""
-    import numpy as np
-    tag = f"personne:{name}"
-    pk = name.lower()
-    pe = PEOPLE_STORE.data.get(pk)
-    cen = person_centroid(pe) if isinstance(pe, dict) else None
-    roots = media_roots()
-    out = []
-    for k, e in STORE.data.items():
-        if not _kw_has(e, tag):
-            continue
-        fe = FACE_STORE.data.get(k)
-        faces = (fe.get('faces') if isinstance(fe, dict) else None) or []
-        bi, bsim = 0, None
-        if cen is not None and faces:
-            best = -2.0
-            for idx, f in enumerate(faces):
-                emb = f.get('emb')
-                if not emb:
-                    continue
-                try:
-                    s = float(np.dot(cen, _emb_from_b64(emb)))
-                except Exception:
-                    continue
-                if s > best:
-                    best, bi = s, idx
-            if best > -2.0:
-                bsim = round(best, 3)
-        crop = _crop_url(k, bi) if faces else None
-        kw = list(dict.fromkeys((e.get('kw_fr') or []) + (e.get('kw_en') or [])))
-        folder, gurl = _folder_link_for_key(k, roots)
-        out.append({"key": k, "crop_url": crop, "url": _url_for_key(k),
-                    "name": Path(k).name, "sim": bsim, "i": bi,
-                    "taken": _best_time(k, e), "kw": kw,
-                    "folder": folder, "gurl": gurl})
-        if len(out) >= limit:
-            break
-    out.sort(key=lambda x: (x["sim"] if x["sim"] is not None else 2.0))
-    return out
+    return PEOPLE.photos(name, limit)
 
 
 def person_slideshow_list(name, limit=8000):
@@ -5688,76 +5685,18 @@ def set_reference(name, ref_keys):
 
 
 def untag_person(name, keys):
-    """Retire le tag personne:Nom de photos (erreur d'attribution) : index +
-    fichier, et mémorise l'exclusion pour ne plus les reproposer."""
-    name = (name or "").strip()[:60]
-    if not name:
-        return 0
-    tag = f"personne:{name}"
-    pk = name.lower()
-    pe = PEOPLE_STORE.data.get(pk)
-    exclude = set(pe.get("exclude") or []) if isinstance(pe, dict) else set()
-    n = 0
-    for k in keys:
-        _index_remove_person(k, tag)
-        _enqueue_person_write(k, tag, 'del')
-        exclude.add(k)
-        n += 1
-    if isinstance(pe, dict):
-        pe["exclude"] = list(exclude)
-        PEOPLE_STORE.set(pk, pe)
-    STORE.save()
-    return n
+    """Retire personne:Nom de photos mal attribuées : voir SubjectStore.untag."""
+    return PEOPLE.untag(name, keys)
 
 
 def delete_person(name):
-    """Supprime entièrement une personne : retire son tag de toutes les photos
-    (index + fichiers) et efface sa fiche."""
-    name = (name or "").strip()[:60]
-    if not name:
-        return 0
-    tag = f"personne:{name}"
-    n = 0
-    for k, e in list(STORE.data.items()):
-        if _kw_has(e, tag):
-            _index_remove_person(k, tag)
-            _enqueue_person_write(k, tag, 'del')
-            n += 1
-    PEOPLE_STORE.data.pop(name.lower(), None)
-    PEOPLE_STORE.save()
-    STORE.save()
-    return n
+    """Supprime entièrement une personne : voir SubjectStore.delete."""
+    return PEOPLE.delete(name)
 
 
 def rename_person(old, new):
-    """Renomme une personne : remplace personne:Ancien par personne:Nouveau
-    sur toutes ses photos (index + fichiers) et fusionne les fiches."""
-    old = (old or "").strip()
-    new = (new or "").strip()[:60]
-    if not old or not new or old.lower() == new.lower():
-        return 0
-    oldtag, newtag = f"personne:{old}", f"personne:{new}"
-    n = 0
-    for k, e in list(STORE.data.items()):
-        if _kw_has(e, oldtag):
-            _index_remove_person(k, oldtag)
-            _index_add_person(k, newtag)
-            _enqueue_person_write(k, oldtag, 'del')
-            _enqueue_person_write(k, newtag, 'add')
-            n += 1
-    op = PEOPLE_STORE.data.pop(old.lower(), None)
-    if op:
-        npp = (PEOPLE_STORE.data.get(new.lower())
-               or {"name": new, "refs": [], "at": time.time()})
-        npp["name"] = new
-        npp["refs"] = ((npp.get("refs") or []) + (op.get("refs") or []))[:80]
-        npp["exclude"] = list(set((npp.get("exclude") or []) + (op.get("exclude") or [])))
-        npp["faces"] = _merge_assigned(npp.get("faces"),
-                                       [(x[0], x[1]) for x in (op.get("faces") or [])
-                                        if isinstance(x, (list, tuple)) and len(x) == 2])
-        PEOPLE_STORE.set(new.lower(), npp)
-    STORE.save()
-    return n
+    """Renomme une personne : voir SubjectStore.rename."""
+    return PEOPLE.rename(old, new)
 
 
 # ────────────── Curateur : suggestions d'amélioration (Phase A) ──────────────

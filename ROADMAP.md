@@ -131,6 +131,23 @@ divergé que par accident d'écriture.
     probablement mal constituée : c'est elle qui rend Florine ambiguë.
 16. **Doublons de fiches** entre personnes et animaux.
 
+### Ingestion et organisation des fichiers
+
+17. **Upload de répertoires entiers depuis le téléphone.** Le formulaire WiFi
+    actuel envoie une sélection de fichiers, pas une arborescence. Ajouter
+    `webkitdirectory` à l'input pour choisir un dossier complet (ex. un album de
+    vacances Android), préserver la structure relative des sous-dossiers à la
+    réception, afficher une progression, et sauter les fichiers déjà présents.
+    Respecter l'invariant UI > NAS (`note_heavy_activity`).
+18. **Réorganiser le système de fichiers depuis la vue « Dossiers ».** `/browse`
+    (`BROWSE_PAGE`) est aujourd'hui en lecture seule. Ajouter des opérations sur
+    photos **et vidéos** directement sur le NAS : déplacer, renommer, créer des
+    dossiers, déplacements par lot depuis la sélection. Contraintes : chaque
+    déplacement re-clé l'index (`TagStore.rekey`) pour ne perdre ni tags ni
+    embeddings, opérations annulables, jamais de perte de nom humain. Les vidéos
+    entrent ici dans le périmètre (le pipeline ne traite aujourd'hui que les
+    photos).
+
 ---
 
 ## Décisions documentées
