@@ -30,11 +30,17 @@ Dernière mise à jour : 31 juillet 2026.
 
 ## Prochaine étape décidée
 
-**Le magasin de sujets commun** (point 7). C'est du code invisible, mais c'est
-lui qui rend l'harmonisation possible sans tout dupliquer : `PEOPLE_STORE` et
-`PETS_STORE` ont déjà la même forme, et chaque amélioration portée sur cette
-abstraction vaudra automatiquement des deux côtés. Ensuite seulement la page
-« Sujets » unifiée, puis le plancher d'accessibilité.
+**Mesurer d'abord : assertions vs pixels pour le tagging.** Un audit externe
+(voir `docs/AUDIT_EXTERNE_2026.md`) propose de réduire le rôle du LLM — lui
+donner les *assertions* des modèles spécialisés plutôt que les pixels. Avant de
+rien bâtir, on mesure : protocole dans `eval/PLAN_assertions_vs_pixels.md`,
+banc dans `eval_tagging.py` (lancer `22 - Evaluer assertions vs pixels.bat`).
+La décision ira dans `eval/DECISIONS.md`. Selon le verdict : une couche
+d'assertions **à provenance** (qui débloque aussi la priorité n°1 des
+confirmations humaines), puis cache de raisonnement et mémoire globale.
+
+Le point 7 (magasin de sujets commun) est **fait et vérifié**. La page
+« Sujets » unifiée (point 8) et le plancher d'accessibilité restent en attente.
 
 ## Outillage
 
@@ -99,10 +105,11 @@ divergé que par accident d'écriture.
 | Prototypes multiples | non (mesuré défavorable) | oui | rien à faire, décidé sur mesure |
 | Fiche avec avatar, exclusions, confirmations | partiel | oui | même structure des deux côtés |
 
-7. **Un magasin de sujets commun** — `PEOPLE_STORE` et `PETS_STORE` ont la
-   même forme (nom, refs, faces, exclude, confirmed). Les unifier derrière une
-   seule abstraction supprime la duplication et rend chaque amélioration
-   automatiquement valable des deux côtés.
+7. ✓ **FAIT (31/07)** — **Un magasin de sujets commun** (`SubjectStore`).
+   `PEOPLE_STORE` et `PETS_STORE` unifiés derrière une seule abstraction ;
+   14 fonctions devenues des wrappers. Vérifié contre la base réelle : aucune
+   régression, aucun nom perdu. `find_more` applique désormais `exclude` aussi
+   aux animaux.
 8. **Une seule page « Sujets »** au lieu de Personnes et Animaux séparées :
    même gestes, filtre par type. Le lieu devient une troisième facette.
 

@@ -36,7 +36,15 @@ eval/illisibles.json
 eval/recuperees.json
 eval/animaux.json
 eval/verite.json
+# Banc assertions-vs-pixels : echantillon (chemins reels), resultats, et la page
+# de notation (vignettes inline de photos de famille). Le PLAN .md, lui, reste.
+eval/tagging_v1.json
+eval/tagging_results.json
+eval/rating.html
+eval/rating_map.json
+eval/notes.json
 !eval/DECISIONS.md
+!eval/PLAN_assertions_vs_pixels.md
 
 # ─── Modèles et outils téléchargés ───────────────────────────────────────────
 *.pt

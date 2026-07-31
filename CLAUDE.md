@@ -1,4 +1,8 @@
-# Photothèque locale — brief projet
+# MediaLibrary — brief projet
+
+> Projet renommé « MediaLibrary » (ex-« MobileFileTransfer »). Dépôt GitHub
+> privé : `TheMikeHoogly/MediaLibrary`. Le nom du dossier local peut différer,
+> sans effet : tous les chemins du code sont relatifs à `SCRIPT_DIR`.
 
 Ce fichier est lu automatiquement au début de chaque session. Il contient le
 strict nécessaire ; les règles détaillées vivent dans les skills, listées plus bas.
@@ -102,7 +106,11 @@ de lecture :
 2. **`eval/DECISIONS.md`** — les idées déjà **rejetées sur mesure**. Le relire
    évite de reproposer MegaDescriptor, les contre-exemples ou `sqlite-vec`,
    tous écartés chiffres à l'appui.
-3. Les trois skills de `.claude/skills/` selon la tâche.
+3. **`docs/AUDIT_EXTERNE_2026.md`** — la direction en cours (le LLM comme
+   moteur de raisonnement sur des assertions, pas sur les pixels) et le
+   séquencement décidé. Le banc associé : `eval/PLAN_assertions_vs_pixels.md`
+   + `eval_tagging.py`.
+4. Les trois skills de `.claude/skills/` selon la tâche.
 
 Une phrase suffit pour démarrer : « Lis ROADMAP.md et DECISIONS.md, puis
 attaque le point N. »
