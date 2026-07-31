@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Photothèque — prototype « chambre noire »</title>
+<style>
+/* ══════════════════════════════════════════════════════════════════
+   TOKENS — source unique de vérité. Voir .claude/skills/photo-ui/
+   ══════════════════════════════════════════════════════════════════ */
+:root {
+  --salle: #0C0B0A; --salle-2: #14120F; --salle-3: #1C1916;
+  --papier: #EDE7DC; --papier-2: #DDD5C6;
+  --veilleuse: #FF7A1A; --veilleuse-d: #7A3908;
+  --encre: #C8321E; --fixateur: #4A8C7B;
+  --texte: #F2EDE6; --graphite: #A39C93;
+  --texte-papier: #1A1714; --graphite-p: #5C554C;
+
+  --f-affichage: "Archivo Narrow", "Roboto Condensed", "Arial Narrow", ui-sans-serif, sans-serif;
+  --f-texte: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  --f-donnees: ui-monospace, "SF Mono", "Cascadia Mono", Consolas, monospace;
+
+  --t-xs: 0.75rem; --t-sm: 0.85rem; --t-md: 0.95rem; --t-lg: 1.2rem; --t-xl: 1.75rem;
+  --e-1: 4px; --e-2: 8px; --e-3: 12px; --e-4: 16px; --e-6: 24px; --e-8: 32px;
+  --r-sm: 3px; --r-md: 6px; --r-pill: 999px;
+  --trait: 1px solid #26221E;
+  --touch: 44px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--salle); color: var(--texte); font: var(--t-md)/1.5 var(--f-texte);
+       -webkit-font-smoothing: antialiased; }
+
+/* Plancher d'accessibilité — non négociable */
+:focus-visible { outline: 2px solid var(--veilleuse); outline-offset: 2px; border-radius: 2px; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+}
+
+/* ─── Barre d'en-tête ─── */
+.entete { display: flex; align-items: center; gap: var(--e-3); flex-wrap: wrap;
+          padding: var(--e-3) var(--e-4); background: var(--salle-2);
+          border-bottom: var(--trait); position: sticky; top: 0; z-index: 20; }
+.marque { font: 600 var(--t-lg)/1 var(--f-affichage); letter-spacing: -.01em; }
+.marque span { color: var(--veilleuse); }
+.nav { display: flex; gap: var(--e-1); }
+.nav a { min-height: 36px; display: inline-flex; align-items: center; padding: 0 var(--e-3);
+         color: var(--graphite); text-decoration: none; font-size: var(--t-sm);
+         border-radius: var(--r-md); }
+.nav a[aria-current="page"] { color: var(--texte); background: var(--salle-3); }
+.nav a:hover { color: var(--texte); }
+
+/* Recherche sémantique — la nouveauté fonctionnelle */
+.recherche { flex: 1; min-width: 240px; position: relative; }
+.recherche input { width: 100%; min-height: var(--touch); padding: 0 var(--e-4) 0 38px;
+  background: var(--salle); color: var(--texte); border: var(--trait);
+  border-radius: var(--r-pill); font: var(--t-md) var(--f-texte); }
+.recherche input::placeholder { color: var(--graphite-p); }
+.recherche input:focus { border-color: var(--veilleuse-d); outline: none; }
+.recherche input:focus-visible { outline: 2px solid var(--veilleuse); outline-offset: 2px; }
+.recherche .loupe { position: absolute; left: var(--e-4); top: 50%; transform: translateY(-50%);
+  color: var(--graphite); font-size: var(--t-md); pointer-events: none; }
+.recherche .indice { position: absolute; right: var(--e-4); top: 50%; transform: translateY(-50%);
+  font: var(--t-xs) var(--f-donnees); color: var(--graphite-p); }
+
+/* ─── Centre de tâches ─── */
+.taches { display: flex; align-items: center; gap: var(--e-4); flex-wrap: wrap;
+  padding: var(--e-2) var(--e-4); background: var(--salle-2); border-bottom: var(--trait);
+  font-size: var(--t-sm); }
+.taches .titre { font-family: var(--f-affichage); font-weight: 600; color: var(--graphite); }
+.tache { display: flex; align-items: center; gap: var(--e-2); }
+.tache .nom { color: var(--graphite); }
+.tache .val { font-family: var(--f-donnees); font-size: var(--t-sm); }
+.tache .dev { font: var(--t-xs) var(--f-donnees); padding: 1px 5px; border-radius: 3px;
+  border: 1px solid var(--veilleuse-d); color: var(--veilleuse); }
+.tache .dev.cpu { border-color: #3A3530; color: var(--graphite); }
+.jauge { width: 84px; height: 3px; background: #26221E; border-radius: 2px; overflow: hidden; }
+.jauge i { display: block; height: 100%; background: var(--veilleuse); }
+
+/* ─── Boutons ─── */
+.btn { min-height: var(--touch); display: inline-flex; align-items: center; gap: 6px;
+  padding: 0 var(--e-4); font: 500 var(--t-sm)/1 var(--f-texte); cursor: pointer;
+  border: var(--trait); border-radius: var(--r-md); background: var(--salle-3); color: var(--texte); }
+.btn:hover { border-color: #3A3530; }
+.btn--principal { background: var(--papier); color: var(--texte-papier); border-color: var(--papier); }
+.btn--confirmer { background: var(--fixateur); border-color: var(--fixateur); color: #fff; }
+.btn--destructif { background: transparent; border-color: var(--encre); color: var(--encre); }
+.btn--compact { min-height: 34px; padding: 0 var(--e-3); }
+.kbd { font: var(--t-xs) var(--f-donnees); padding: 1px 5px; border-radius: 3px;
+  background: #00000033; border: 1px solid #ffffff26; }
+.btn--principal .kbd { background: #0000000f; border-color: #00000026; }
+
+/* ─── Filtres ─── */
+.filtres { display: flex; align-items: center; gap: var(--e-2); flex-wrap: wrap;
+  padding: var(--e-3) var(--e-4); border-bottom: var(--trait); }
+.filtres .lbl { font: var(--t-xs) var(--f-texte); color: var(--graphite-p);
+  text-transform: uppercase; letter-spacing: .08em; }
+.chip { min-height: 32px; display: inline-flex; align-items: center; gap: 5px;
+  padding: 0 var(--e-3); border: var(--trait); border-radius: var(--r-pill);
+  background: var(--salle-3); color: var(--graphite); font-size: var(--t-sm); cursor: pointer; }
+.chip[aria-pressed="true"] { background: var(--fixateur); border-color: var(--fixateur); color: #fff; }
+.chip .n { font-family: var(--f-donnees); font-size: var(--t-xs); opacity: .75; }
+
+/* ─── Planche contact ─── */
+.section-titre { display: flex; align-items: baseline; gap: var(--e-3);
+  padding: var(--e-6) var(--e-4) var(--e-2); }
+.section-titre h2 { font: 600 var(--t-xl)/1 var(--f-affichage); letter-spacing: -.015em; }
+.section-titre .c { font: var(--t-sm) var(--f-donnees); color: var(--graphite); }
+.section-titre .note { margin-left: auto; font-size: var(--t-xs); color: var(--graphite-p); }
+
+.planche { display: grid; gap: var(--e-1); padding: var(--e-2) var(--e-4) var(--e-4);
+  grid-template-columns: repeat(auto-fill, minmax(clamp(96px, 18vw, 168px), 1fr)); }
+.vue { position: relative; aspect-ratio: 1; background: var(--salle-3);
+  border-radius: var(--r-sm); overflow: hidden; cursor: pointer;
+  content-visibility: auto; contain-intrinsic-size: 160px 160px; }
+.vue img { width: 100%; height: 100%; object-fit: cover; display: block;
+  transition: transform .25s ease; }
+.vue:hover img { transform: scale(1.03); }
+.vue--attente::after { content: ""; position: absolute; inset: 0; border-radius: var(--r-sm);
+  box-shadow: inset 0 0 0 2px var(--veilleuse); pointer-events: none; }
+.vue__num { position: absolute; bottom: 2px; left: 5px; font: var(--t-xs)/1 var(--f-donnees);
+  color: #E8E2D8; text-shadow: 0 1px 3px #000, 0 0 2px #000; }
+.vue__nom { position: absolute; bottom: 0; left: 0; right: 0; padding: 14px 6px 4px;
+  font: 600 var(--t-xs)/1.2 var(--f-affichage); color: #fff;
+  background: linear-gradient(to top, #000000cc, transparent); }
+.vue__etat { position: absolute; top: 4px; right: 5px; font: var(--t-xs)/1 var(--f-donnees);
+  color: var(--veilleuse); background: #000000a6; padding: 2px 5px; border-radius: 3px; }
+
+/* ─── Feuille (surface de travail papier) ─── */
+.feuille { background: var(--papier); color: var(--texte-papier); border-radius: var(--r-md);
+  padding: var(--e-4); margin: var(--e-3) var(--e-4) var(--e-8);
+  box-shadow: 0 1px 0 var(--papier-2), 0 10px 30px #00000099;
+  container-type: inline-size; }
+.feuille header { display: flex; align-items: baseline; gap: var(--e-3); flex-wrap: wrap; }
+.feuille h3 { font: 600 var(--t-lg)/1.1 var(--f-affichage); }
+.feuille .meta { font: var(--t-xs) var(--f-donnees); color: var(--graphite-p); }
+.feuille .aide { color: var(--graphite-p); font-size: var(--t-sm); margin-top: 2px; }
+.feuille hr { border: 0; border-top: 1px solid var(--papier-2); margin: var(--e-3) 0; }
+
+.tri { display: grid; gap: var(--e-2);
+  grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); }
+@container (min-width: 720px) { .tri { grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); } }
+.prop { position: relative; border: 0; padding: 0; background: none; cursor: pointer;
+  border-radius: var(--r-sm); }
+.prop img { width: 100%; aspect-ratio: 1; object-fit: cover; display: block;
+  border-radius: var(--r-sm); background: var(--papier-2); }
+/* La vignette ENTIÈRE est la cible tactile — pas une case de 18 px */
+.prop::after { content: ""; position: absolute; inset: 0; border-radius: var(--r-sm);
+  box-shadow: inset 0 0 0 3px transparent; transition: box-shadow .15s; }
+.prop[aria-pressed="true"]::after { box-shadow: inset 0 0 0 3px var(--fixateur); }
+.prop[aria-pressed="true"] img { opacity: .82; }
+.prop .coche { position: absolute; top: 5px; left: 5px; width: 20px; height: 20px;
+  border-radius: 50%; background: #ffffffd9; border: 1px solid var(--graphite-p);
+  display: grid; place-items: center; font-size: 12px; color: transparent; }
+.prop[aria-pressed="true"] .coche { background: var(--fixateur); border-color: var(--fixateur);
+  color: #fff; }
+.prop .sim { position: absolute; bottom: 3px; right: 4px; font: var(--t-xs)/1 var(--f-donnees);
+  background: #ffffffd9; color: var(--texte-papier); padding: 1px 4px; border-radius: 3px; }
+.prop .sim.bas { color: var(--encre); }
+
+.barre-actions { display: flex; align-items: center; gap: var(--e-2); flex-wrap: wrap;
+  margin-top: var(--e-3); }
+.barre-actions .compte { margin-right: auto; font: var(--t-sm) var(--f-donnees);
+  color: var(--graphite-p); }
+.feuille .btn { border-color: var(--papier-2); background: #fff; color: var(--texte-papier); }
+.feuille .btn--confirmer { background: var(--fixateur); border-color: var(--fixateur); color: #fff; }
+.feuille .btn--destructif { background: #fff; border-color: var(--encre); color: var(--encre); }
+.feuille input[type=text] { min-height: var(--touch); padding: 0 var(--e-3); background: #fff;
+  border: 1px solid var(--papier-2); border-radius: var(--r-md); color: var(--texte-papier);
+  font: var(--t-md) var(--f-texte); min-width: 180px; }
+
+.raccourcis { margin-top: var(--e-3); font-size: var(--t-xs); color: var(--graphite-p);
+  display: flex; gap: var(--e-3); flex-wrap: wrap; }
+.raccourcis .kbd { background: #fff; border-color: var(--papier-2); color: var(--texte-papier); }
+
+/* ─── Fiches personnes ─── */
+.fiches { display: grid; gap: var(--e-3); padding: 0 var(--e-4) var(--e-4);
+  grid-template-columns: repeat(auto-fill, minmax(132px, 1fr)); }
+.fiche { background: var(--salle-3); border: var(--trait); border-radius: var(--r-md);
+  padding: var(--e-3); text-align: center; cursor: pointer; }
+.fiche:hover { border-color: #3A3530; }
+.fiche img { width: 76px; height: 76px; border-radius: 50%; object-fit: cover;
+  background: var(--salle-2); }
+.fiche .nm { font: 600 var(--t-md)/1.2 var(--f-affichage); margin-top: var(--e-2); }
+.fiche .ct { font: var(--t-xs) var(--f-donnees); color: var(--graphite); }
+
+/* ─── Toast d'annulation ─── */
+.toast { position: fixed; left: 50%; bottom: var(--e-4); transform: translateX(-50%);
+  display: none; align-items: center; gap: var(--e-3); z-index: 60;
+  background: var(--papier); color: var(--texte-papier); padding: var(--e-2) var(--e-2) var(--e-2) var(--e-4);
+  border-radius: var(--r-pill); box-shadow: 0 8px 30px #000000b3; font-size: var(--t-sm); }
+.toast.ouvert { display: flex; }
+.toast .btn { min-height: 34px; }
+
+footer { border-top: var(--trait); padding: var(--e-4); color: var(--graphite-p);
+  font-size: var(--t-xs); }
+footer code { font-family: var(--f-donnees); color: var(--graphite); }
+</style>
+</head>
+<body>
+
+<header class="entete">
+  <div class="marque">Photo<span>thèque</span></div>
+  <nav class="nav" aria-label="Sections">
+    <a href="#" aria-current="page">Planche</a>
+    <a href="#">Personnes</a>
+    <a href="#">Chats</a>
+    <a href="#">Carte</a>
+    <a href="#">Dossiers</a>
+  </nav>
+  <div class="recherche">
+    <span class="loupe" aria-hidden="true">⌕</span>
+    <input type="search" id="q" aria-label="Rechercher des photos"
+           placeholder="Luna endormie sur le canapé en hiver">
+    <span class="indice" id="qi">SigLIP 2</span>
+  </div>
+</header>
+
+<div class="taches" aria-label="Travaux en cours">
+  <span class="titre">En cours</span>
+  <div class="tache">
+    <span class="nom">Analyse des photos</span>
+    <span class="val" id="t1">412</span>
+    <span class="jauge"><i style="width:38%"></i></span>
+    <span class="dev">GPU</span>
+  </div>
+  <div class="tache">
+    <span class="nom">Empreintes de chats</span>
+    <span class="val">1 670 / 1 812</span>
+    <span class="dev cpu">CPU</span>
+  </div>
+  <div class="tache">
+    <span class="nom">Visages faibles à reprendre</span>
+    <span class="val">86</span>
+  </div>
+  <button class="btn btn--compact" type="button">Pause</button>
+</div>
+
+<div class="filtres">
+  <span class="lbl">Filtres</span>
+  <button class="chip" aria-pressed="true" type="button">Chats <span class="n">1 812</span></button>
+  <button class="chip" aria-pressed="false" type="button">Caline <span class="n">431</span></button>
+  <button class="chip" aria-pressed="false" type="button">Inti <span class="n">388</span></button>
+  <button class="chip" aria-pressed="false" type="button">Luna <span class="n">502</span></button>
+  <button class="chip" aria-pressed="false" type="button">Extérieur <span class="n">744</span></button>
+  <button class="chip" aria-pressed="false" type="button">Nuit <span class="n">190</span></button>
+</div>
+
+<div class="section-titre">
+  <h2>Planche contact</h2>
+  <span class="c">1 812 vues</span>
+  <span class="note">Le liseré ambré signale une photo pas encore analysée.</span>
+</div>
+
+<div class="planche" id="planche"></div>
+
+<div class="section-titre">
+  <h2>Trier un groupe</h2>
+  <span class="c">groupe 7 · 18 visages</span>
+</div>
+
+<section class="feuille" aria-labelledby="ft">
+  <header>
+    <h3 id="ft">Qui est-ce&nbsp;?</h3>
+    <span class="meta">groupe 7 · centroïde sim 0.71 · seuil 0.42</span>
+  </header>
+  <p class="aide">Décochez les visages qui ne sont pas la même personne, puis nommez le groupe.
+     Tout est annulable pendant dix secondes.</p>
+  <hr>
+  <div class="tri" id="tri" role="group" aria-label="Visages proposés"></div>
+  <div class="barre-actions">
+    <span class="compte" id="compte">18 / 18 retenus</span>
+    <input type="text" id="nom" placeholder="Nom de la personne" aria-label="Nom de la personne">
+    <button class="btn btn--confirmer" type="button" id="confirmer">Confirmer <span class="kbd">Espace</span></button>
+    <button class="btn" type="button" id="inverser">Inverser</button>
+    <button class="btn btn--destructif" type="button" id="rejeter">Rejeter le groupe <span class="kbd">X</span></button>
+  </div>
+  <div class="raccourcis">
+    <span><span class="kbd">Maj</span> + clic — sélectionner une plage</span>
+    <span><span class="kbd">1</span>–<span class="kbd">9</span> — assigner à une personne connue</span>
+    <span><span class="kbd">Espace</span> — confirmer</span>
+    <span><span class="kbd">X</span> — rejeter</span>
+    <span><span class="kbd">Z</span> — annuler</span>
+  </div>
+</section>
+
+<div class="section-titre">
+  <h2>Personnes</h2>
+  <span class="c">9 nommées</span>
+</div>
+<div class="fiches" id="fiches"></div>
+
+<div class="toast" id="toast" role="status" aria-live="polite">
+  <span id="toast-txt"></span>
+  <button class="btn" type="button" id="annuler">Annuler <span class="kbd">Z</span></button>
+</div>
+
+<footer>
+  Prototype de direction visuelle. Tokens et règles : <code>.claude/skills/photo-ui/SKILL.md</code>.
+  Les vignettes proviennent de <code>animal_thumbs/</code> et <code>face_thumbs/</code> du projet.
+</footer>
+
+<script>
+const CHATS = ["183bb603d673a814421ab798f60f6aed","05cf4b6aa214732a39f50b9dc84c96fe","426753915fd77a363ec2903d3b451955","35679be801e9a7dc73fe80facbc24340","7f3685b4ebcac02ddb484bdb97c8a1e7","2a47eb8ec72310d6b57948eb189caec8","e45643691a980d8b819d429bb2da1e45","bb722cf4dd150f139681bed9d9913964","21a831d164c2ea019b891aeb79a33870","1248fe7ce2cea2125e93fceb1707f3f8","a47ede461756fea0d757dfc0e03a196c","a24228f647823aac3645330677eab424","b9335c9bbef0073fbe635ff94be0adc7","6a09774821f2985304960ddf6ba9a005","e12d9bbebaf3245e8da31917b82d8618","5e11886d992930119731e7088174eac7","f012550050f566e6547b8044e225d8b4","e8c406e56b7e6ae85155703ebb63ecce","013d6f72db4a298c792069125dd5525d","bc8577b84ca3160f8453da1e009ce2e2","2a3a8b0c0a37f6a4f2b83061121b4d85","28d72c62398601d2624e888c74dcdd8a","d4c6550f0e78867a8245182ca8bfacc8","5a9733f99b14d09648be224cbbd27618"];
+const VISAGES = ["873aa99e7789ffc646fce48ded737f97","96564f555cf1fb9435beba33807a5dd1","8176b7302f0b7b6efd4a4e50ace41186","41fa878bd9fead66d9be2a9179a877b4","931cbc317a0618fa71c62514edb404a9","d950f5add3a088964bc2d75b7adf162f","6c729e20ce226496778a6dc09212d9e1","d6af96655b41124be1f098822186709b","9b941aedc96fa91d95530782bc92b54d","342c3e77bc059f841b0aaf2fcfc9d68c","305703bb3f9293da1022ccd62e64fdb0","bd93a4d080802564e6ec678f3b255869","9ad3dcbe9bdb9de56c8b3d81dc2078e3","4dc09dd7cfe482c120d2db71d5803caf","46d0fa9600b345e04d01e33c53cf7e2e","74fe29e7909be3c2bb5df436edf0417a","2f9feff3cbbc607db896cc218a2246d4","e29e25a09a700e548befaa0c130c9908"];
+const NOMS = ["Caline","Inti","Luna"];
+
+/* ─── Planche contact ─── */
+const planche = document.getElementById('planche');
+CHATS.forEach((h, i) => {
+  const attente = i % 7 === 3;              // photo pas encore analysée
+  const nomme = !attente && i % 3 === 0;
+  const el = document.createElement('button');
+  el.type = 'button';
+  el.className = 'vue' + (attente ? ' vue--attente' : '');
+  el.setAttribute('aria-label', attente ? 'Photo en attente d\'analyse' : 'Photo');
+  el.innerHTML =
+    `<img src="../animal_thumbs/${h}.jpg" alt="" loading="lazy" decoding="async">
+     <span class="vue__num">${String(i + 1).padStart(4, '0')}</span>` +
+    (attente ? `<span class="vue__etat">analyse</span>` : '') +
+    (nomme ? `<span class="vue__nom">${NOMS[(i / 3) % 3 | 0]}</span>` : '');
+  planche.appendChild(el);
+});
+
+/* ─── Tri d'un groupe : sélection par plage + annulation ─── */
+const tri = document.getElementById('tri');
+const compte = document.getElementById('compte');
+let dernier = null;
+
+VISAGES.forEach((h, i) => {
+  const sim = (0.82 - i * 0.021).toFixed(2);
+  const b = document.createElement('button');
+  b.type = 'button';
+  b.className = 'prop';
+  b.setAttribute('aria-pressed', 'true');
+  b.dataset.i = i;
+  b.setAttribute('aria-label', `Visage ${i + 1}, similarité ${sim}`);
+  b.innerHTML =
+    `<img src="../face_thumbs/${h}.jpg" alt="" loading="lazy" decoding="async">
+     <span class="coche" aria-hidden="true">✓</span>
+     <span class="sim${sim < 0.55 ? ' bas' : ''}">${sim}</span>`;
+  tri.appendChild(b);
+});
+
+function majCompte() {
+  const n = tri.querySelectorAll('.prop[aria-pressed="true"]').length;
+  compte.textContent = `${n} / ${VISAGES.length} retenus`;
+}
+
+tri.addEventListener('click', e => {
+  const b = e.target.closest('.prop');
+  if (!b) return;
+  const i = +b.dataset.i;
+  const etat = b.getAttribute('aria-pressed') !== 'true';
+  if (e.shiftKey && dernier !== null) {           // sélection par plage
+    const [a, z] = [Math.min(dernier, i), Math.max(dernier, i)];
+    tri.querySelectorAll('.prop').forEach(p => {
+      const j = +p.dataset.i;
+      if (j >= a && j <= z) p.setAttribute('aria-pressed', String(etat));
+    });
+  } else {
+    b.setAttribute('aria-pressed', String(etat));
+  }
+  dernier = i;
+  majCompte();
+});
+
+document.getElementById('inverser').addEventListener('click', () => {
+  tri.querySelectorAll('.prop').forEach(p =>
+    p.setAttribute('aria-pressed', p.getAttribute('aria-pressed') === 'true' ? 'false' : 'true'));
+  majCompte();
+});
+
+/* ─── Toast d'annulation : toute action destructive est différée ─── */
+const toast = document.getElementById('toast');
+const toastTxt = document.getElementById('toast-txt');
+let minuteur = null;
+
+function agir(message) {
+  clearTimeout(minuteur);
+  toastTxt.textContent = message;
+  toast.classList.add('ouvert');
+  minuteur = setTimeout(() => toast.classList.remove('ouvert'), 10000);
+}
+document.getElementById('annuler').addEventListener('click', () => {
+  clearTimeout(minuteur);
+  toast.classList.remove('ouvert');
+  agir('Action annulée.');
+});
+document.getElementById('confirmer').addEventListener('click', () => {
+  const n = document.getElementById('nom').value.trim() || 'ce groupe';
+  const k = tri.querySelectorAll('.prop[aria-pressed="true"]').length;
+  agir(`${n} confirmé sur ${k} photos.`);
+});
+document.getElementById('rejeter').addEventListener('click', () => agir('Groupe 7 rejeté.'));
+
+/* ─── Raccourcis clavier ─── */
+addEventListener('keydown', e => {
+  if (/^(INPUT|TEXTAREA)$/.test(e.target.tagName)) return;
+  if (e.key === ' ') { e.preventDefault(); document.getElementById('confirmer').click(); }
+  else if (e.key.toLowerCase() === 'x') document.getElementById('rejeter').click();
+  else if (e.key.toLowerCase() === 'z') document.getElementById('annuler').click();
+  else if (/^[1-9]$/.test(e.key)) {
+    const nom = NOMS[+e.key - 1];
+    if (nom) agir(`Groupe assigné à ${nom}.`);
+  }
+});
+
+/* ─── Fiches personnes ─── */
+const fiches = document.getElementById('fiches');
+[['Mike', 1284], ['Sophie', 967], ['Elsa', 612], ['Jean', 430], ['Marie', 388],
+ ['Théo', 271], ['Anna', 204], ['Paul', 158], ['Léa', 96]].forEach(([nom, n], i) => {
+  const el = document.createElement('button');
+  el.type = 'button';
+  el.className = 'fiche';
+  el.innerHTML = `<img src="../face_thumbs/${VISAGES[i]}.jpg" alt="">
+    <div class="nm">${nom}</div><div class="ct">${n.toLocaleString('fr-FR')} photos</div>`;
+  fiches.appendChild(el);
+});
+
+/* ─── Recherche sémantique (démo : filtre la planche) ─── */
+const q = document.getElementById('q');
+q.addEventListener('input', () => {
+  const t = q.value.trim();
+  document.getElementById('qi').textContent = t ? 'encodage…' : 'SigLIP 2';
+  if (!t) { document.querySelectorAll('.vue').forEach(v => v.style.display = ''); return; }
+  clearTimeout(q._t);
+  q._t = setTimeout(() => {
+    document.getElementById('qi').textContent = `${t.length * 3 % 40 + 6} résultats`;
+    document.querySelectorAll('.vue').forEach((v, i) =>
+      v.style.display = (i * 7 + t.length) % 3 ? 'none' : '');
+  }, 260);
+});
+
+majCompte();
+</script>
+</body>
+</html>

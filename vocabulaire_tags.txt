@@ -1,0 +1,56 @@
+# Vocabulaire controle du tagging semantique.
+# Un tag par ligne. Les lignes vides et celles commencant par # sont ignorees.
+# Ajouter un tag ici NE DEMANDE PAS de reanalyser les photos : seule
+# l'etiquette est encodee, puis comparee aux vecteurs deja calcules.
+#
+# --- lieux ---
+plage
+montagne
+neige
+foret
+lac
+ville
+interieur
+jardin
+restaurant
+piscine
+# --- moments ---
+nuit
+coucher de soleil
+hiver
+ete
+# --- scenes ---
+repas de famille
+anniversaire
+mariage
+concert
+voyage
+randonnee
+sport
+# --- sujets ---
+portrait
+photo de groupe
+enfant
+bebe
+chat
+chien
+oiseau
+insecte
+animal sauvage
+cheval
+fleur
+paysage
+monument
+voiture
+bateau
+velo
+nourriture
+gateau
+# --- divers ---
+document scanne
+capture d ecran
+selfie
+objet
+affiche
+oeuvre d art
+photo ratee

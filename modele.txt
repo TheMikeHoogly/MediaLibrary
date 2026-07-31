@@ -1,0 +1,6 @@
+# Modèle Ollama utilisé pour le tagging (première ligne non commentée).
+# Changer puis redémarrer le serveur. N'oublie pas : ollama pull <modele>
+#
+# qwen3-vl:2b  → rapide, tient 100% dans les 4 Go de VRAM (recommandé pour le gros volume)
+# qwen3-vl:4b  → tags un peu plus fins, mais ~3x plus lent (déborde en RAM)
+qwen3-vl:2b

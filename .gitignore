@@ -1,0 +1,62 @@
+# ─── Environnement Python ────────────────────────────────────────────────────
+.venv/
+__pycache__/
+*.pyc
+~*/                      # dossiers orphelins laissés par une désinstallation pip
+
+# ─── Données : jamais sur GitHub ─────────────────────────────────────────────
+# La base contient les chemins, les tags et les embeddings de 30 000 photos de
+# famille. Elle se reconstruit depuis le NAS ; elle n'a rien à faire dans un
+# dépôt, même privé.
+photos.db
+photos.db-wal
+photos.db-shm
+*.db.bak
+*.db.avant-*
+*.snapshot.tmp
+
+# Vignettes et découpes : dérivées, volumineuses (22 000 fichiers)
+animal_thumbs/
+face_thumbs/
+uploads/
+
+# Images récupérées après le crash disque : ce sont des photos personnelles
+recuperees/
+
+# ─── Évaluation ──────────────────────────────────────────────────────────────
+# Les DÉCISIONS sont versionnées, les données brutes non : elles contiennent
+# des visages et des chemins réels.
+eval/echantillon/
+eval/especes/
+eval/illisibles/
+eval/crops_res/
+eval/echantillon.json
+eval/especes.json
+eval/illisibles.json
+eval/recuperees.json
+eval/animaux.json
+eval/verite.json
+!eval/DECISIONS.md
+
+# ─── Modèles et outils téléchargés ───────────────────────────────────────────
+*.pt
+exiftool-*/
+
+# ─── Configuration locale : chemins privés et jetons ─────────────────────────
+data_dir.txt
+dossier_uploads.txt
+dossiers_a_taguer.txt
+dossiers_a_explorer.txt
+hf_token.txt
+hf_cache.txt
+lieux.txt
+.claude/settings.local.json
+
+# ─── Rapports générés ────────────────────────────────────────────────────────
+*.bak
+.fuse_hidden*
+*_report.txt
+ollama_report.txt
+compare_report.txt
+tagging_report.txt
+animal_pipeline.ver
