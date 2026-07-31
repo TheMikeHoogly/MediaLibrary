@@ -210,10 +210,25 @@ def prompt_v1(a):
 
 
 def prompt_v2(a):
+    # v2 : le premier essai ignorait les noms injectes (3 % d ancrage) car le
+    # prompt ne les reclamait jamais. On EXIGE desormais que chaque nom/espece
+    # asserte apparaisse dans la sortie -- sinon on ne teste pas l hypothese.
+    noms = list(a.get('persons') or []) + list(a.get('animals') or [])
+    exig = ''
+    if noms:
+        exig = ('IMPERATIF sur l identite : les personnes et animaux nommes '
+                'ci-dessus sont identifies de facon certaine par reconnaissance. '
+                'Tu DOIS employer chaque nom exact (' + ', '.join(noms) + ') '
+                'dans description_fr a la place de "un homme", "une femme", '
+                '"un chat" etc., ET ajouter chaque nom tel quel dans '
+                'keywords_fr. N emploie ces noms que pour les sujets asserted.\n')
+    elif a.get('species'):
+        exig = ('IMPERATIF : ajoute l espece asserted ('
+                + ', '.join(a['species']) + ') dans keywords_fr.\n')
     return ('Analyse cette photo. Des modeles specialises ont deja etabli les '
             'faits ci-dessous : traite-les comme la verite (noms, especes, '
             'lieu, date) et complete avec ce que tu VOIS en plus.\n\n'
-            + bloc_assertions(a) + '\n\n' + REGLES_JSON)
+            + bloc_assertions(a) + '\n\n' + exig + REGLES_JSON)
 
 
 # ─────────────────────────────── Ollama ───────────────────────────────
@@ -247,6 +262,18 @@ def _malforme(resp):
         return False
     except Exception:
         return True
+
+
+def _tags_dict(resp):
+    """parse_tags() renvoie un tuple (kw_fr, kw_en, desc) et lève TagError si
+    rien n'est exploitable. Le banc veut toujours un dict au schéma commun
+    (keywords_fr/keywords_en/description_fr), consommé par proxies() et
+    generer_rating()."""
+    try:
+        kw_fr, kw_en, desc = s.parse_tags(resp)
+    except Exception:
+        return {}
+    return {'keywords_fr': kw_fr, 'keywords_en': kw_en, 'description_fr': desc}
 
 
 def _thumb_b64(path, side):
@@ -329,15 +356,24 @@ def proxies(results):
 
 # ─────────────────────────── Page de notation ───────────────────────────
 
-def generer_rating(results):
+def generer_rating(results, rating_html=RATING_HTML, rating_map=RATING_MAP):
     sub = [r for r in results if r['cat'] in ('riche', 'piege', 'incertain')]
     random.Random(42).shuffle(sub)
     sub = sub[:RATING_SUBSET]
+    # Variantes présentes dans TOUTES les cartes notées. Une notation à l'aveugle
+    # A/B/C n'a de sens qu'à partir de 2 variantes — un comparatif de modèles en
+    # V0 seul ne génère pas de page (on compare alors entre fichiers de modèles).
+    present = [v for v in ('V0', 'V1', 'V2') if sub and all(r.get(v) for r in sub)]
+    if len(present) < 2:
+        print(f"  (notation ignoree : {len(present)} variante(s) — comparer entre "
+              f"fichiers de modeles)")
+        return
+    lettres_all = ['A', 'B', 'C', 'D']
     rows, mapping = [], {}
     for idx, r in enumerate(sub):
-        variantes = [('V0', r['V0']), ('V1', r['V1']), ('V2', r['V2'])]
+        variantes = [(v, r[v]) for v in present]
         random.Random(1000 + idx).shuffle(variantes)
-        lettres = ['A', 'B', 'C']
+        lettres = lettres_all[:len(variantes)]
         mapping[str(idx)] = {L: v for L, (v, _d) in zip(lettres, variantes)}
         try:
             img = _thumb_b64(s._resolve_key(r['key']), 520)
@@ -357,8 +393,8 @@ def generer_rating(results):
         rows.append(f'<div class=card><div class=n>#{idx+1} '
                     f'<span class=cat>{r["cat"]}</span></div>{imgtag}{blocs}</div>')
     html = RATING_TMPL.replace('__CARDS__', '\n'.join(rows))
-    RATING_HTML.write_text(html, encoding='utf-8')
-    RATING_MAP.write_text(json.dumps(mapping, ensure_ascii=False, indent=1),
+    rating_html.write_text(html, encoding='utf-8')
+    rating_map.write_text(json.dumps(mapping, ensure_ascii=False, indent=1),
                           encoding='utf-8')
 
 
@@ -402,13 +438,143 @@ function dl(){
 
 # ─────────────────────────────── Main ───────────────────────────────
 
+def _slug(modele):
+    return ''.join(c if c.isalnum() else '_' for c in modele).strip('_')
+
+
+def _paths(modele):
+    """Chemins de sortie propres au modèle : le modèle par défaut garde les noms
+    historiques ; tout autre modèle est suffixé pour ne pas écraser un run
+    (comparatif de modèles → un jeu de fichiers par modèle)."""
+    if modele == MODEL_FIXE:
+        return RESULTS_FILE, RATING_HTML, RATING_MAP
+    suf = '__' + _slug(modele)
+    return (EVAL_DIR / f'tagging_results{suf}.json',
+            EVAL_DIR / f'rating{suf}.html',
+            EVAL_DIR / f'rating_map{suf}.json')
+
+
+def finaliser(results, vram_peak, modele=MODEL_FIXE, paths=None):
+    """Écrit les résultats bruts, puis proxies et page de notation (sous garde).
+    Le brut est sauvé AVANT tout post-traitement : la passe Ollama est le coût
+    majeur, on ne la reperd jamais sur un bug de proxies/notation."""
+    results_file, rating_html, rating_map = paths or (RESULTS_FILE, RATING_HTML, RATING_MAP)
+    report = {'n': len(results), 'model': modele,
+              'vram_peak_mb': vram_peak, 'proxies': None, 'results': results}
+    results_file.write_text(json.dumps(report, ensure_ascii=False, indent=1),
+                            encoding='utf-8')
+    print(f"Résultats bruts sauvés : {results_file.name}")
+
+    pr = None
+    try:
+        pr = proxies(results)
+        report['proxies'] = pr
+        results_file.write_text(json.dumps(report, ensure_ascii=False, indent=1),
+                                encoding='utf-8')
+    except Exception as e:
+        print(f"  ! proxies() a échoué ({e}) — résultats bruts conservés")
+    try:
+        generer_rating(results, rating_html, rating_map)
+    except Exception as e:
+        print(f"  ! génération de rating.html a échoué ({e})")
+
+    if pr:
+        print(f"\n===== PROXIES (auto) — modele {modele} =====")
+        for v in ('V0', 'V1', 'V2'):
+            p = pr[v]
+            if p.get('s_par_photo') is None:
+                continue
+            print(f"  {v} : {p['s_par_photo']} s/photo | JSON malforme "
+                  f"{p['malforme_pct']}% | coherence {p['coherence']}")
+    print(f"  VRAM pic : {vram_peak} Mo")
+    print(f"\nÉcrit : {results_file.name}")
+    if rating_html.exists():
+        print(f"Ouvre {rating_html.name}, note a l aveugle, renvoie notes.json.")
+
+
+def _img_b64_retry(key, tries=3, pause=0.6):
+    """Lit et encode l'image, en réessayant sur erreur de lecture. Un partage
+    SMB lève parfois un [Errno 22] transitoire ; une brève pause suffit. On ne
+    veut pas qu'un hoquet réseau laisse une photo sur son ancien prompt."""
+    last = None
+    for i in range(tries):
+        try:
+            return s.image_to_b64(s._resolve_key(key))
+        except Exception as e:
+            last = e
+            if i < tries - 1:
+                time.sleep(pause)
+    raise last
+
+
+def rerun_v2():
+    """Rejoue UNIQUEMENT la variante V2 (nouveau prompt) sur les résultats déjà
+    calculés, en réutilisant V0/V1 tels quels — on ne redépense pas le GPU sur
+    les deux autres variantes. Sauvegarde d'abord l'ancien fichier."""
+    if not RESULTS_FILE.exists():
+        print("Aucun tagging_results.json : lance d'abord la passe complète.")
+        return
+    old = json.loads(RESULTS_FILE.read_text(encoding='utf-8'))
+    results = old['results']
+    backup = RESULTS_FILE.with_suffix('.v2avant.json')
+    backup.write_text(json.dumps(old, ensure_ascii=False, indent=1),
+                      encoding='utf-8')
+    print(f"Sauvegarde de l'ancien : {backup.name}")
+    print(f"Rejoue V2 (prompt exigeant les noms) sur {len(results)} photos…")
+    echecs = []
+    with VramSampler() as vram:
+        for n, row in enumerate(results, 1):
+            a = row.get('assert') or assertions(row['key'])
+            try:
+                b64 = _img_b64_retry(row['key'])
+                resp, dt = ollama_call(prompt_v2(a), b64)
+                row['V2'] = {'resp': resp, 'dt': round(dt, 2),
+                             'malforme': _malforme(resp),
+                             'tags': _tags_dict(resp)}
+                row.pop('V2_stale', None)
+            except Exception as e:
+                echecs.append(row['key'])
+                row['V2_stale'] = True   # V2 reste sur l'ancien prompt : à exclure
+                print(f"  [{n}/{len(results)}] {row['key']} : V2 échoué ({e}) — "
+                      f"ancienne V2 conservée (marquée V2_stale)")
+            if n % 10 == 0:
+                print(f"  [{n}/{len(results)}] fait")
+    if echecs:
+        print(f"\n! {len(echecs)} photo(s) toujours illisibles apres reessais — "
+              f"leur V2 reste sur l'ancien prompt (V2_stale=true, a exclure de "
+              f"l'analyse V2) :")
+        for k in echecs:
+            print(f"    {k}")
+    else:
+        print("\nToutes les photos rejouees en V2 (aucun echec de lecture).")
+    finaliser(results, vram.peak)
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--dry', action='store_true',
                     help="bâtit l'échantillon + montre des assertions, sans Ollama")
     ap.add_argument('--limit', type=int, default=0,
                     help="limiter le nombre de photos (test rapide)")
+    ap.add_argument('--rerun-v2', action='store_true',
+                    help="rejoue SEULEMENT V2 (nouveau prompt) sur les résultats existants")
+    ap.add_argument('--modele', default=MODEL_FIXE,
+                    help="modèle Ollama à tester (défaut qwen3-vl:2b). Ex : gemma4:e2b")
+    ap.add_argument('--variantes', default='V0,V1,V2',
+                    help="variantes à produire. Ex : V0 pour un comparatif de modèles économe")
     args = ap.parse_args()
+
+    if args.rerun_v2:
+        rerun_v2()
+        return
+
+    modele = args.modele
+    vs = [v.strip().upper() for v in args.variantes.split(',') if v.strip()]
+    inconnu = [v for v in vs if v not in ('V0', 'V1', 'V2')]
+    if inconnu:
+        print(f"Variante(s) inconnue(s) : {inconnu}. Attendu : V0, V1, V2.")
+        return
+    paths = _paths(modele)
 
     ech = construire_echantillon()
     cles = list(ech.keys())
@@ -416,6 +582,7 @@ def main():
         cles = cles[:args.limit]
     from collections import Counter
     print(f"Échantillon : {len(ech)} photos  {dict(Counter(ech.values()))}")
+    print(f"Modèle : {modele} | variantes : {','.join(vs)}")
 
     if args.dry:
         for k in cles[:3]:
@@ -435,14 +602,15 @@ def main():
                 print(f"  [{n}/{len(cles)}] {k} : image illisible ({e}) — sautée")
                 continue
             row = {'key': k, 'cat': ech[k], 'assert': a}
+            src = {'V0': (s.PROMPT, b64), 'V1': (prompt_v1(a), None),
+                   'V2': (prompt_v2(a), b64)}
             try:
-                for v, prompt, img in (('V0', s.PROMPT, b64),
-                                       ('V1', prompt_v1(a), None),
-                                       ('V2', prompt_v2(a), b64)):
-                    resp, dt = ollama_call(prompt, img)
+                for v in vs:
+                    prompt, img = src[v]
+                    resp, dt = ollama_call(prompt, img, model=modele)
                     row[v] = {'resp': resp, 'dt': round(dt, 2),
                               'malforme': _malforme(resp),
-                              'tags': s.parse_tags(resp) or {}}
+                              'tags': _tags_dict(resp)}
             except Exception as e:
                 print(f"  [{n}/{len(cles)}] {k} : erreur Ollama ({e}) — sautée")
                 continue
@@ -450,21 +618,7 @@ def main():
             if n % 10 == 0:
                 print(f"  [{n}/{len(cles)}] fait")
 
-    pr = proxies(results)
-    report = {'n': len(results), 'model': MODEL_FIXE,
-              'vram_peak_mb': vram.peak, 'proxies': pr, 'results': results}
-    RESULTS_FILE.write_text(json.dumps(report, ensure_ascii=False, indent=1),
-                            encoding='utf-8')
-    generer_rating(results)
-
-    print("\n===== PROXIES (auto) =====")
-    for v in ('V0', 'V1', 'V2'):
-        p = pr[v]
-        print(f"  {v} : {p['s_par_photo']} s/photo | JSON malforme "
-              f"{p['malforme_pct']}% | coherence {p['coherence']}")
-    print(f"  VRAM pic : {vram.peak} Mo")
-    print(f"\nÉcrit : {RESULTS_FILE.name}, {RATING_HTML.name}, {RATING_MAP.name}")
-    print("Ouvre eval/rating.html, note a l aveugle, renvoie notes.json.")
+    finaliser(results, vram.peak, modele, paths)
 
 
 if __name__ == '__main__':

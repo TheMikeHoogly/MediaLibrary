@@ -11,6 +11,7 @@ Run: python server.py [dossier_uploads]
 """
 
 import base64
+import hashlib
 import html
 import io
 import json
@@ -1308,6 +1309,96 @@ def _resolve_key(name):
     return p if p.is_absolute() else UPLOAD_DIR / name
 
 
+def _safe_upload_rel(raw):
+    """Chemin relatif d'upload assaini et confiné : chaque composant est nettoyé
+    comme un nom de fichier, sans « .. » ni racine absolue, mais les sous-dossiers
+    sont préservés (upload d'un dossier complet depuis le téléphone). Renvoie une
+    chaîne posix (« Album/Sous/photo.jpg ») ou None si rien d'exploitable."""
+    if not raw:
+        return None
+    clean = []
+    for p in re.split(r'[\\/]+', raw):
+        p = p.strip()
+        if p in ('', '.', '..'):
+            continue
+        clean.append(re.sub(r'[^\w\-.]', '_', p))
+    return '/'.join(clean) or None
+
+
+# ── Doublons à l'upload : détection par CONTENU, indépendante du nom ──────────
+# Deux images identiques peuvent porter des noms différents ; leur seul point
+# commun garanti est la taille en octets (mêmes dimensions → mêmes octets). On
+# filtre donc d'abord par taille, puis on confirme par sha256. Portée : l'arbre
+# UPLOAD_DIR — garde-fou de première ligne pour que la page web ne fabrique pas
+# les doublons que le démon de rangement devra ensuite nettoyer. Le
+# dédoublonnage complet du NAS reste le travail de ce démon (voir
+# docs/RANGEMENT_2026.md).
+_UP_SIZE_IDX = {"at": 0.0, "map": None}
+_UP_SIZE_LOCK = threading.Lock()
+UP_IDX_TTL = 120.0        # s : le map taille→chemins est recalculé au plus une fois par 2 min
+
+
+def _sha256_bytes(b):
+    return hashlib.sha256(b).hexdigest()
+
+
+def _sha256_file(p, buf=1 << 20):
+    h = hashlib.sha256()
+    with open(p, 'rb') as f:
+        for chunk in iter(lambda: f.read(buf), b''):
+            h.update(chunk)
+    return h.hexdigest()
+
+
+def _upload_size_map():
+    """{taille: [chemins]} des fichiers sous UPLOAD_DIR, mis en cache (TTL). Ne
+    hashe rien : sert seulement à restreindre la comparaison aux même-tailles."""
+    with _UP_SIZE_LOCK:
+        now = time.time()
+        if _UP_SIZE_IDX["map"] is None or now - _UP_SIZE_IDX["at"] > UP_IDX_TTL:
+            m = {}
+            try:
+                for p in UPLOAD_DIR.rglob('*'):
+                    try:
+                        if p.is_file():
+                            m.setdefault(p.stat().st_size, []).append(p)
+                    except OSError:
+                        pass
+            except OSError:
+                pass
+            _UP_SIZE_IDX["map"], _UP_SIZE_IDX["at"] = m, now
+        return _UP_SIZE_IDX["map"]
+
+
+def _upload_size_map_add(p):
+    """Ajoute un fichier fraîchement écrit au cache, pour que les fichiers
+    suivants d'un même album se dédoublonnent contre lui sans recalcul."""
+    with _UP_SIZE_LOCK:
+        m = _UP_SIZE_IDX["map"]
+        if m is not None:
+            try:
+                m.setdefault(p.stat().st_size, []).append(p)
+            except OSError:
+                pass
+
+
+def _upload_content_dup(data):
+    """Chemin d'un fichier Uploads au contenu identique (même taille ET même
+    sha256), quel que soit son nom — ou None. La taille filtre d'abord ; on ne
+    hashe que les rares fichiers de même taille."""
+    cands = _upload_size_map().get(len(data))
+    if not cands:
+        return None
+    cible = _sha256_bytes(data)
+    for p in list(cands):
+        try:
+            if p.is_file() and _sha256_file(p) == cible:
+                return p
+        except OSError:
+            continue
+    return None
+
+
 def _pkey(p):
     """Clé de correspondance insensible aux séparateurs / à la casse."""
     return Path(p).as_posix().lower()
@@ -2519,9 +2610,25 @@ HTML_PAGE = """<!DOCTYPE html>
     font-size: 1rem;
   }
   .pick-btn:active { background: #222; }
+  .pick-btn--dossier { margin-top: 12px; padding: 22px 20px; }
   .pick-icon { font-size: 3rem; margin-bottom: 12px; }
+  .pick-btn--dossier .pick-icon { font-size: 2rem; margin-bottom: 8px; }
   .pick-label { font-size: 1.1rem; font-weight: 600; margin-bottom: 6px; }
   .pick-hint { color: #777; font-size: 0.85rem; }
+
+  .summary { width: 100%; max-width: 480px; margin-top: 14px; font-size: 0.9rem;
+             color: #ccc; font-variant-numeric: tabular-nums; }
+  .summary b { color: #f0f0f0; }
+
+  /* Plancher d'accessibilite : focus visible + mouvement reduit. */
+  .pick-btn:focus-visible, .btn:focus-visible, .gallery-link:focus-visible,
+  .search-row input:focus-visible, .search-row button:focus-visible {
+    outline: 2px solid #ff7a1a; outline-offset: 2px;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { transition-duration: 0.01ms !important;
+                             animation-duration: 0.01ms !important; }
+  }
 
   .btn {
     display: block;
@@ -2572,16 +2679,25 @@ HTML_PAGE = """<!DOCTYPE html>
 <p class="subtitle">Meme reseau WiFi &middot; Aucune inscription requise</p>
 
 <input type="file" id="fileInput" multiple accept="image/*,video/*" style="display:none">
+<input type="file" id="dirInput" webkitdirectory multiple style="display:none">
 
 <label for="fileInput" class="pick-btn" id="pickBtn">
   <div class="pick-icon">&#128247;</div>
-  <div class="pick-label">Appuyer pour choisir</div>
-  <div class="pick-hint">Photos &middot; Videos</div>
+  <div class="pick-label">Choisir des photos</div>
+  <div class="pick-hint">Une ou plusieurs images &middot; videos</div>
+</label>
+
+<label for="dirInput" class="pick-btn pick-btn--dossier" id="pickDirBtn">
+  <div class="pick-icon">&#128193;</div>
+  <div class="pick-label">Choisir un dossier</div>
+  <div class="pick-hint">Tout un album, sous-dossiers compris</div>
 </label>
 
 <div class="progress-bar-wrap" id="progressWrap">
   <div class="progress-bar" id="progressBar"></div>
 </div>
+
+<div id="summary" class="summary" style="display:none"></div>
 
 <button class="btn" id="uploadBtn" disabled>Envoyer</button>
 
@@ -2601,22 +2717,37 @@ HTML_PAGE = """<!DOCTYPE html>
 <script>
 (function() {
   var input = document.getElementById('fileInput');
+  var dirInput = document.getElementById('dirInput');
   var btn = document.getElementById('uploadBtn');
   var list = document.getElementById('status');
+  var summary = document.getElementById('summary');
   var progressWrap = document.getElementById('progressWrap');
   var progressBar = document.getElementById('progressBar');
   var files = [];
-
-  input.onchange = function() {
-    files = Array.prototype.slice.call(input.files);
-    list.innerHTML = files.map(function(f, i) {
-      return '<div class="file-item"><span class="name">' + esc(f.name) + '</span>'
-           + '<span class="state pending" id="s' + i + '">En attente</span></div>';
-    }).join('');
-    btn.disabled = files.length === 0;
-  };
+  var MAX_ROWS = 60;    // au-dela, on n'affiche qu'un resume (un album peut etre gros)
 
   function esc(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  function relOf(f) { return f.webkitRelativePath || f.name; }
+
+  function onPick(picked) {
+    files = Array.prototype.slice.call(picked);
+    if (files.length <= MAX_ROWS) {
+      list.innerHTML = files.map(function(f, i) {
+        return '<div class="file-item"><span class="name">' + esc(relOf(f)) + '</span>'
+             + '<span class="state pending" id="s' + i + '">En attente</span></div>';
+      }).join('');
+    } else {
+      list.innerHTML = '';
+    }
+    summary.style.display = files.length ? 'block' : 'none';
+    summary.innerHTML = '<b>' + files.length + '</b> fichier(s) prets a envoyer.';
+    btn.disabled = files.length === 0;
+    btn.textContent = 'Envoyer';
+  }
+
+  input.onchange = function() { onPick(input.files); };
+  dirInput.onchange = function() { onPick(dirInput.files); };
+
   function setState(i, txt, cls) {
     var el = document.getElementById('s' + i);
     if (el) { el.textContent = txt; el.className = 'state ' + cls; }
@@ -2626,7 +2757,15 @@ HTML_PAGE = """<!DOCTYPE html>
     if (!files.length) return;
     btn.disabled = true;
     progressWrap.style.display = 'block';
-    var done = 0;
+    var done = 0, ok = 0, skip = 0, err = 0;
+
+    function tick(i, txt, cls) {
+      done++;
+      progressBar.style.width = (done / files.length * 100) + '%';
+      setState(i, txt, cls);
+      summary.innerHTML = 'Envoyees <b>' + ok + '</b> &middot; ignorees <b>' + skip
+        + '</b> &middot; erreurs <b>' + err + '</b> &middot; ' + done + '/' + files.length;
+    }
 
     function next(i) {
       if (i >= files.length) {
@@ -2638,19 +2777,17 @@ HTML_PAGE = """<!DOCTYPE html>
       setState(i, 'Envoi...', 'pending');
       var fd = new FormData();
       fd.append('file', files[i], files[i].name);
+      fd.append('relpath', relOf(files[i]));
       fetch('/upload', { method: 'POST', body: fd })
-        .then(function(r) {
-          done++;
-          progressBar.style.width = (done / files.length * 100) + '%';
-          setState(i, r.ok ? 'OK' : 'Erreur ' + r.status, r.ok ? 'ok' : 'err');
+        .then(function(r) { return r.text().then(function(t) {
+          return { ok: r.ok, status: r.status, body: t }; }); })
+        .then(function(res) {
+          if (res.ok && res.body === 'SKIP') { skip++; tick(i, 'Deja present', 'ok'); }
+          else if (res.ok) { ok++; tick(i, 'OK', 'ok'); }
+          else { err++; tick(i, 'Erreur ' + res.status, 'err'); }
           next(i + 1);
         })
-        .catch(function(e) {
-          done++;
-          progressBar.style.width = (done / files.length * 100) + '%';
-          setState(i, 'Echec reseau', 'err');
-          next(i + 1);
-        });
+        .catch(function(e) { err++; tick(i, 'Echec reseau', 'err'); next(i + 1); });
     }
     next(0);
   };
@@ -7406,6 +7543,7 @@ class Handler(BaseHTTPRequestHandler):
 
         data = None
         original_name = None
+        relpath = None
 
         for part in body.split(b'--' + boundary):
             if b'\r\n\r\n' not in part:
@@ -7413,34 +7551,70 @@ class Handler(BaseHTTPRequestHandler):
             head, _, payload = part.partition(b'\r\n\r\n')
             head_str = head.decode('utf-8', errors='replace')
             name_m = re.search(r'name="([^"]*)"', head_str, re.IGNORECASE)
-            if not name_m or name_m.group(1) != 'file':
+            if not name_m:
                 continue
-            file_m = re.search(r'filename="([^"]*)"', head_str, re.IGNORECASE)
-            if file_m:
-                original_name = Path(file_m.group(1)).name
-            data = payload.rstrip(b'\r\n')
-            break
+            field = name_m.group(1)
+            if field == 'file':
+                file_m = re.search(r'filename="([^"]*)"', head_str, re.IGNORECASE)
+                if file_m:
+                    original_name = Path(file_m.group(1)).name
+                data = payload.rstrip(b'\r\n')
+            elif field == 'relpath':
+                relpath = payload.rstrip(b'\r\n').decode('utf-8', 'replace').strip()
 
         if not data:
             self._send(400, b'No file', 'text/plain')
             return
 
-        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S_%f')[:20]
-        if original_name:
-            stem = Path(original_name).stem
-            suffix = Path(original_name).suffix or '.jpg'
-            safe_stem = re.sub(r'[^\w\-.]', '_', stem)
-            filename = f"{safe_stem}_{timestamp}{suffix}"
-        else:
-            filename = f"photo_{timestamp}.jpg"
+        # Doublon de CONTENU (nom indifférent) : même taille PUIS même sha256.
+        # Empêche la page web de fabriquer des doublons, y compris quand la même
+        # image revient sous un autre nom ou dans un autre album.
+        if _upload_content_dup(data) is not None:
+            self._send(200, b'SKIP', 'text/plain')
+            return
 
-        dest = UPLOAD_DIR / filename
-        counter = 1
-        while dest.exists():
-            dest = UPLOAD_DIR / f"{Path(filename).stem}_{counter}{Path(filename).suffix}"
-            counter += 1
+        # ── Deux modes d'écriture ──────────────────────────────────────────
+        # DOSSIER : le client envoie un chemin relatif avec sous-dossier
+        # (webkitdirectory). On préserve l'arborescence sous UPLOAD_DIR et on
+        # garde le nom d'origine. PLAT (historique) : nom simple → horodaté.
+        # Le saut des déjà-présents est géré par le contrôle de contenu ci-dessus.
+        rel = _safe_upload_rel(relpath)
+        if rel and '/' in rel:
+            base = UPLOAD_DIR / rel
+            # Confinement dur : jamais hors de UPLOAD_DIR, quoi qu'envoie le client.
+            try:
+                if UPLOAD_DIR.resolve() not in base.resolve().parents:
+                    self._send(400, b'Bad path', 'text/plain')
+                    return
+            except OSError:
+                self._send(400, b'Bad path', 'text/plain')
+                return
+            # Contenu nouveau : si le chemin est déjà pris par un AUTRE contenu,
+            # on décale le nom pour ne rien écraser.
+            dest = base
+            counter = 1
+            while dest.exists():
+                dest = base.with_name(f"{base.stem}_{counter}{base.suffix}")
+                counter += 1
+            key = dest.relative_to(UPLOAD_DIR).as_posix()
+        else:
+            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S_%f')[:20]
+            if original_name:
+                stem = Path(original_name).stem
+                suffix = Path(original_name).suffix or '.jpg'
+                safe_stem = re.sub(r'[^\w\-.]', '_', stem)
+                filename = f"{safe_stem}_{timestamp}{suffix}"
+            else:
+                filename = f"photo_{timestamp}.jpg"
+            dest = UPLOAD_DIR / filename
+            counter = 1
+            while dest.exists():
+                dest = UPLOAD_DIR / f"{Path(filename).stem}_{counter}{Path(filename).suffix}"
+                counter += 1
+            key = dest.name
 
         try:
+            dest.parent.mkdir(parents=True, exist_ok=True)
             dest.write_bytes(data)
         except OSError as e:
             print(f"  ✗ Write error: {e}")
@@ -7448,10 +7622,11 @@ class Handler(BaseHTTPRequestHandler):
             return
 
         print(f"  ✓ Saved {dest} ({human_size(len(data))})")
+        _upload_size_map_add(dest)   # dédoublonnage des fichiers suivants du même album
 
-        # → file d'attente du tagging IA
+        # → file d'attente du tagging IA (clé relative si sous-dossier)
         if dest.suffix.lower() in IMAGE_EXT:
-            enqueue(dest.name)
+            enqueue(key)
 
         self._send(200, b'OK', 'text/plain')
 

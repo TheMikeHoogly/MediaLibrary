@@ -153,6 +153,52 @@ class VectorStore:
             [(kind, p, p + '￿') for p in prefixes])
         self._cache.pop(kind, None)
 
+    def rekey_prefix(self, kind, old, new):
+        """Re-clé les vecteurs d'une entrée quand sa CLÉ PHOTO passe de `old` à
+        `new` (déplacement / renommage). Les clés vecteurs valent
+        « {clé_photo}\\x1f{champ}\\x1f{index} » : on ne réécrit QUE le préfixe
+        « {clé_photo} », le suffixe (champ, index) est préservé à l'octet près —
+        donc AUCUNE empreinte n'est perdue ni recalculée.
+
+        Sans cette méthode, un déplacement de masse orienterait les empreintes
+        vers le vide : c'est le prérequis bloquant de la Phase 1 du rangement
+        (voir docs/RANGEMENT_2026.md).
+
+        La borne est prise sur « old + '\\x1f' » — le séparateur EXACT que
+        `_ecrire` utilise déjà pour purger (`f"{k}\\x1f"`). Contrairement à
+        `delete_prefix` (préfixe lâche), on exige donc le séparateur : on ne
+        touche jamais les vecteurs d'une AUTRE photo dont la clé aurait `old`
+        pour simple préfixe (« a/b.jpg » ne doit pas emporter « a/b.jpg2 »).
+
+        Renvoie le nombre de lignes re-clées. Idempotent : rejoué, il ne trouve
+        plus l'ancien préfixe et renvoie 0. En cas de collision avec des clés
+        déjà présentes sous `new` (index UNIQUE (kind,k)), SQLite lève et
+        annule l'UPDATE en entier — échec bruyant, pas de corruption partielle.
+        """
+        lo = old + '\x1f'
+        hi = old + '\x1f' + '￿'
+        n = self.cx.execute(
+            "UPDATE vectors SET k = ? || substr(k, ?) "
+            "WHERE kind=? AND k>=? AND k<?",
+            (new, len(old) + 1, kind, lo, hi)).rowcount
+        if n:
+            self._cache.pop(kind, None)
+        return n
+
+    def rekey_prefix_all(self, old, new):
+        """`rekey_prefix` sur TOUS les `kind` de ce magasin, en une requête.
+        Utile quand plusieurs types de vecteurs partagent la même table (le
+        magasin sémantique) et qu'une photo déplacée doit tous les emporter.
+        Renvoie le nombre total de lignes re-clées."""
+        lo = old + '\x1f'
+        hi = old + '\x1f' + '￿'
+        n = self.cx.execute(
+            "UPDATE vectors SET k = ? || substr(k, ?) WHERE k>=? AND k<?",
+            (new, len(old) + 1, lo, hi)).rowcount
+        if n:
+            self._cache.clear()
+        return n
+
     def count(self, kind=None):
         if kind:
             return self.cx.execute("SELECT count(*) FROM vectors WHERE kind=?",

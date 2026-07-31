@@ -320,6 +320,124 @@ en dessous.
 
 ---
 
+## 2026-07-31 — Assertions vs pixels pour le tagging (V0 / V1 / V2)
+
+**Hypothèse.** L'audit externe (`docs/AUDIT_EXTERNE_2026.md`) proposait de cesser
+de donner les pixels au LLM et de lui fournir les *assertions* des modèles
+spécialisés (noms, espèce, lieu, date, tags), en pariant que cela réduit les
+hallucinations, améliore la cohérence, sans appauvrir la description. Banc :
+`eval_tagging.py`, protocole `eval/PLAN_assertions_vs_pixels.md`.
+
+**Jeu.** `eval/tagging_v1.json` — 150 photos figées par empreinte de clé,
+réparties 50 riches / 50 pauvres / 30 pièges / 20 incertaines. Modèle figé
+`qwen3-vl:2b`. Le banc ne fait que lire la base.
+
+**Variantes.** V0 = image seule + prompt en place (référence). V1 = assertions
+seules, sans image. V2 = hybride (assertions + image). V2 a été mesurée en deux
+versions du prompt : sans exigence de noms, puis **avec** un impératif « emploie
+les noms assertés ».
+
+**Résultats (proxies automatiques ; 1 photo `V2_stale` exclue de V2, fichier
+disparu entre deux passes).**
+
+| Mesure | V0 | V1 | V2 (sans exig.) | V2 (avec exig.) |
+|---|---|---|---|---|
+| Secondes / photo | 5,4 | 3,9 | 4,3 | **11,1** |
+| VRAM pic (Mo) | — | — | 2 959 | **3 950** (plafond 4 096) |
+| JSON malformé | 0 % | 0 % | 0,7 % | 0,7 % |
+| Ancrage des noms* | 4 % | 21 % | 3 % | **16 %** |
+| Desc. moyenne (car.) | 100 | 90 | 119 | 137 |
+| Descriptions « méta »** | 2/150 | **50/150** | 5/150 | 2/149 |
+
+\* part des photos avec un nom asserté où ce nom apparaît dans la sortie.
+\** description qui parle de la *liste de faits* au lieu de la scène.
+
+**Ce que la mesure établit.**
+
+1. **L'argument « fiabilité » de l'hypothèse tombe.** `qwen3-vl:2b` produit déjà
+   du JSON propre (0 % de malformé). Les assertions ne réparent pas un problème
+   qui n'existait quasiment pas.
+2. **V1 (jeter les pixels, LLM texte) est disqualifié.** Privé d'image, il décrit
+   la liste de faits — *« Un document avec une image de Luna, chat, herbe… »* —
+   dans **33 %** des cas.
+3. **Injecter les noms dans le prompt de tagging ne marche pas.** Même en
+   IMPOSANT le nom, le modèle l'ignore 84 % du temps quand il voit l'image :
+   « Mike, reconnaissance faciale » → « un homme ». L'ancrage monte de 3 % à
+   16 %, sans plus — et V1 (sans image) reste devant à 21 %, ce qui confirme que
+   ce sont les **pixels** qui tirent le modèle vers le générique.
+4. **Le coût est prohibitif.** Le prompt impératif fait passer V2 de 4,3 à
+   11,1 s/photo et pousse la VRAM à 3 950 Mo, au ras des 4 096 — le débordement
+   que l'invariant n°4 signale (vitesse ÷ ~2). Le ralentissement ne vient pas
+   d'une sortie plus longue (365 vs 335 car.) mais du prompt lui-même.
+5. **Circularité bornée.** Recouvrement sortie ↔ tags fournis : 0,29 pour V0 (qui
+   ne les voit pas) contre 0,41 pour V1/V2 — +0,11, pas de la régurgitation.
+6. **Cohérence non mesurable sur ce jeu.** 8 groupes (dossier, jour) seulement
+   ont ≥ 2 photos (39 paires) : l'échantillonnage dispersé défait la métrique.
+   `0,0` partout est du bruit — le proxy de cohérence est à retirer ou à mesurer
+   sur un sous-échantillon de rafales dédié.
+
+**Décision.**
+
+- **V1 (assertions seules) : REJETÉ.** Descriptions « méta » dans un tiers des
+  cas. La piste « LLM texte, pixels jetés » de l'audit n'est pas tenable telle
+  quelle sur ce modèle.
+- **Injecter les noms dans le prompt de tagging : REJETÉ.** Inefficace (16 %) et
+  coûteux (× 2,6, VRAM au plafond). Le LLM décrit ce qu'il voit, pas l'identité
+  qu'on lui affirme.
+- **Direction retenue : ne pas quémander au LLM des faits qu'il possède déjà
+  ailleurs.** Les noms sont des faits structurés (`personne:` / `animal:`), la
+  date et le lieu aussi. Le bon niveau pour les faire figurer dans la sortie
+  n'est pas le prompt mais une **fusion programmatique** (Knowledge Builder) :
+  le LLM garde son rôle sur les pixels (V0 inchangé, le moins cher), et la couche
+  d'assertions attache ce qu'elle sait — nom en préfixe de description, tags
+  d'identité — en post-traitement déterministe. Cela débloque aussi la provenance
+  visée par l'audit sans faire porter au LLM une tâche qu'il exécute mal.
+
+**Mise à jour — notation à l'aveugle (40 cartes, `notes.json`).** J'avais écrit
+que la notation « ne rouvrirait pas le verdict ». **C'était faux, et il faut le
+corriger.** Résultats, désanonymisés via `rating_map.json` :
+
+| | V0 | V1 | V2 |
+|---|---|---|---|
+| Meilleure description (vote) | 12/40 (30 %) | 4/40 (10 %) | **24/40 (60 %)** |
+| Cartes taxées d'hallucination | 2 (5 %) | 6 (15 %) | 3 (8 %) |
+
+V2 gagne dans les **trois catégories** (riche 11-7, piège 7-3, incertain 6-2).
+**L'humain préfère nettement la description hybride** (assertions + image) à
+l'image seule, pour une hallucination à peine plus haute. Autrement dit : les
+assertions **améliorent la qualité de description** — la partie de l'hypothèse de
+l'audit qui portait sur la richesse/justesse est **validée**. Ce que la mesure
+automatique seule (« V2 ≈ V0 en richesse ») avait manqué.
+
+**Décision révisée.**
+
+- **V1 : REJETÉ** (confirmé : 10 % de préférence, 15 % d'hallucination, 33 % de
+  descriptions « méta »).
+- **Hybride assertions + image : ADOPTÉ sur le principe.** L'apport des
+  assertions à la description est réel et confirmé par l'humain, surtout sur les
+  photos riches en faits.
+- **L'impératif de noms reste REJETÉ** : c'est lui qui coûte × 2,6 et pousse la
+  VRAM au plafond, pour un ancrage de seulement 16 %. Le gain de qualité vient
+  des **assertions comme contexte**, pas de l'ordre d'employer les noms — les
+  deux versions de V2 partageaient les assertions, seule la coûteuse a été notée.
+- **Les noms restent attachés par fusion programmatique**, pas quémandés au LLM
+  (16 % d'obéissance). Le LLM reçoit les faits *en contexte* pour écrire une
+  meilleure description ; la couche d'assertions garantit le nom exact.
+
+**Prochain pas ciblé (à mesurer, ne rien bâtir avant) :** re-noter/mesurer un V2
+« assertions en contexte, **sans** impératif de noms » (la version à 4,3 s /
+2 959 Mo, jamais notée car écrasée). Hypothèse : il garde l'avantage de qualité
+sans le surcoût. Si confirmé, c'est le nouveau prompt de production, doublé de la
+fusion programmatique des noms/date/lieu.
+
+**Leçon de méthode.** Double. (1) Prolonge MegaDescriptor : on a demandé le nom
+explicitement, le modèle a refusé — le bon niveau pour injecter un fait connu
+n'est pas le prompt, c'est la fusion après coup. (2) **Un proxy automatique n'est
+pas le juge final** : les proxies disaient « V2 ≈ V0 », l'œil humain dit « V2
+gagne 2 contre 1 ». Sans la notation, on aurait figé la mauvaise conclusion.
+
+---
+
 ## Annexe — bugs trouvés par les bancs d'essai eux-mêmes
 
 **2026-07-30, banc de classification :**

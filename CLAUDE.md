@@ -97,6 +97,32 @@ doute, les lire explicitement :
 - **`monolith-surgery`** — avant toute modification de `server.py`. Invariants,
   repères de navigation dans les 7 500 lignes, règle ASCII des `.bat`.
 
+## Protocole de session (« Go ») et tenue de la roadmap
+
+Pour réduire le contexte et les tokens, **l'état vit dans les fichiers, pas dans
+l'historique** : on privilégie des sessions courtes et fraîches, et on repart des
+fichiers de suivi. C'est le vrai levier « tokens » côté sessions Claude (pas un
+outil de compression de prompt — voir la note dédiée dans `ROADMAP.md`).
+
+**Quand Mike écrit « Go » (ou « go ») :**
+
+1. Lire `ROADMAP.md`, puis `eval/DECISIONS.md`, puis le doc de chantier pertinent
+   (`docs/RANGEMENT_2026.md`, `docs/AUDIT_EXTERNE_2026.md`) selon le sujet en cours.
+2. Rendre un **débrief bref** : où on en est (2–3 lignes) + la ou les prochaines
+   étapes concrètes, par ordre de valeur.
+3. Attaquer la plus utile (ou faire choisir si plusieurs se valent), en proposant
+   un plan court avant d'écrire du code.
+
+**À la fin de chaque échange qui fait avancer le projet, mettre à jour :**
+
+- `ROADMAP.md` — statut des chantiers, ce qui est fait/vérifié, prochain pas.
+- `PROMPT_NOUVELLE_SESSION.md` — pour qu'une session neuve reprenne exactement où
+  l'on s'est arrêté (état, prochain pas, garde-fous).
+- `eval/DECISIONS.md` — si une évaluation a tranché quelque chose.
+
+Ces mises à jour sont le mécanisme qui rend les sessions courtes sûres : rien
+d'important ne doit dépendre de l'historique de conversation.
+
 ## Reprendre le projet dans une nouvelle conversation
 
 Tout ce qu'il faut savoir est dans les fichiers, pas dans l'historique. L'ordre
