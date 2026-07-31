@@ -4309,16 +4309,60 @@ def get_face_app():
     return FACE_APP
 
 
+class ImageReadError(OSError):
+    """Lecture des octets d'une image impossible (I/O disque/SMB), à distinguer
+    d'un échec de décodage (fichier réellement corrompu). Transitoire par nature
+    — ex. « [Errno 22] Invalid argument » renvoyé par un partage SMB sous charge
+    concurrente (recensement + workers). Mérite un retry et ne doit PAS poisonner
+    l'index de façon permanente."""
+
+
+def _read_bytes_retry(path, tries=3, pause=0.4):
+    """Lit tout le fichier en mémoire, en réessayant sur erreur d'I/O. Le partage
+    SMB renvoie par intermittence EINVAL sous charge (recensement + workers) ; un
+    simple retour arrière suffit presque toujours. Une fois les octets en RAM, le
+    décodage PIL est fiable — vérifié : la copie locale d'un fichier qui échoue
+    via SMB se décode sans faute."""
+    last = None
+    for i in range(tries):
+        try:
+            with open(path, "rb") as f:
+                return f.read()
+        except OSError as e:
+            last = e
+            if i + 1 < tries:
+                time.sleep(pause * (i + 1))
+    raise ImageReadError(str(last)) from last
+
+
+def _is_transient_io_fail(entry):
+    """Une entrée `failed` due à une lecture SMB transitoire (Errno 22) mérite une
+    nouvelle passe, contrairement à un vrai fichier corrompu — qui, lui, reste
+    `failed` (le décodage se fait désormais en mémoire, il ne peut plus échouer
+    pour une raison d'I/O)."""
+    if not isinstance(entry, dict) or not entry.get('failed'):
+        return False
+    err = entry.get('error') or ''
+    return 'Invalid argument' in err or 'Errno 22' in err
+
+
 def _load_bgr(path, max_side=None):
     """Charge une image en tableau numpy BGR (format attendu par InsightFace).
     max_side : côté max de redimensionnement (0/None = pleine résolution).
-    Renvoie (array, scale) pour repasser les coordonnées à l'échelle d'origine."""
+    Renvoie (array, scale) pour repasser les coordonnées à l'échelle d'origine.
+
+    Les octets sont lus via `_read_bytes_retry` (résilient au hoquet SMB) puis
+    décodés depuis la mémoire : une lecture SMB fautive lève `ImageReadError`
+    (transitoire, à retenter), un vrai fichier corrompu lève une erreur PIL
+    (permanente)."""
+    import io
     import numpy as np
     if not PIL_OK:
         raise RuntimeError("Pillow requis")
     if max_side is None:
         max_side = FACE_MAX_SIDE
-    with Image.open(path) as im:
+    data = _read_bytes_retry(path)
+    with Image.open(io.BytesIO(data)) as im:
         im = ImageOps.exif_transpose(im).convert("RGB")
         w0, h0 = im.size
         if max_side and max_side > 0:
@@ -4434,9 +4478,16 @@ def enqueue_face(name):
 
 def face_worker():
     """Thread unique (évite la contention GPU) : détecte les visages des
-    photos en file et écrit le résultat dans faces_index.json."""
+    photos en file et écrit le résultat dans faces_index.json.
+
+    Une lecture SMB transitoire (`ImageReadError`) n'est PAS écrite comme un
+    échec permanent : elle est remise en file un nombre borné de fois, puis, si
+    elle persiste, laissée pour un prochain balayage. Seul un vrai échec de
+    décodage écrit `failed`."""
+    io_retries = {}
     while True:
         name = FACE_QUEUE.get()
+        requeue = False
         try:
             path = _resolve_key(name)
             if (not path.exists() or _is_hidden_path(path)
@@ -4445,8 +4496,21 @@ def face_worker():
             faces = detect_faces(path)
             FACE_STORE.set(name, {"faces": faces, "n": len(faces),
                                   "at": time.time()})
+            io_retries.pop(name, None)
             if faces:
                 print(f"  🙂 {len(faces)} visage(s) : {name}")
+        except ImageReadError as e:
+            n = io_retries.get(name, 0) + 1
+            if n <= 3:
+                io_retries[name] = n
+                requeue = True
+                print(f"  ~ Visages {name} : lecture SMB KO ({e}) — "
+                      f"nouvel essai {n}/3")
+                time.sleep(1.0 * n)
+            else:
+                io_retries.pop(name, None)
+                print(f"  ⚠ Visages {name} : lecture SMB toujours KO après "
+                      f"3 essais — laissé pour un prochain balayage")
         except Exception as e:
             FACE_STORE.set(name, {"failed": True, "error": str(e)[:200],
                                   "at": time.time()})
@@ -4455,6 +4519,8 @@ def face_worker():
             with FACE_PENDING_LOCK:
                 FACE_PENDING.discard(name)
             FACE_QUEUE.task_done()
+            if requeue:
+                enqueue_face(name)
 
 
 def face_scan_loop():
@@ -4470,7 +4536,8 @@ def face_scan_loop():
             for k, e in list(STORE.data.items()):
                 if not isinstance(e, dict) or e.get('failed'):
                     continue
-                if FACE_STORE.get(k) is not None:
+                fe = FACE_STORE.get(k)
+                if fe is not None and not _is_transient_io_fail(fe):
                     continue
                 p = _resolve_key(k)
                 if p.suffix.lower() in IMAGE_EXT:
@@ -4583,9 +4650,15 @@ def enqueue_animal(name):
 
 def animal_worker():
     """Thread unique : détecte les animaux des photos en file et écrit le
-    résultat dans animals_index.json."""
+    résultat dans animals_index.json.
+
+    Même politique que `face_worker` : une lecture SMB transitoire
+    (`ImageReadError`) est retentée un nombre borné de fois sans écrire `failed`,
+    pour ne pas exclure définitivement une photo saine d'un simple hoquet réseau."""
+    io_retries = {}
     while True:
         name = ANIMAL_QUEUE.get()
+        requeue = False
         try:
             path = _resolve_key(name)
             if (not path.exists() or _is_hidden_path(path)
@@ -4594,9 +4667,22 @@ def animal_worker():
             animals = detect_animals(path)
             ANIMAL_STORE.set(name, {"animals": animals, "n": len(animals),
                                     "at": time.time()})
+            io_retries.pop(name, None)
             if animals:
                 sp = ", ".join(sorted({a["species"] for a in animals}))
                 print(f"  🐾 {len(animals)} animal(aux) [{sp}] : {name}")
+        except ImageReadError as e:
+            n = io_retries.get(name, 0) + 1
+            if n <= 3:
+                io_retries[name] = n
+                requeue = True
+                print(f"  ~ Animaux {name} : lecture SMB KO ({e}) — "
+                      f"nouvel essai {n}/3")
+                time.sleep(1.0 * n)
+            else:
+                io_retries.pop(name, None)
+                print(f"  ⚠ Animaux {name} : lecture SMB toujours KO après "
+                      f"3 essais — laissé pour un prochain balayage")
         except Exception as e:
             ANIMAL_STORE.set(name, {"failed": True, "error": str(e)[:200],
                                     "at": time.time()})
@@ -4605,6 +4691,8 @@ def animal_worker():
             with ANIMAL_PENDING_LOCK:
                 ANIMAL_PENDING.discard(name)
             ANIMAL_QUEUE.task_done()
+            if requeue:
+                enqueue_animal(name)
 
 
 def animal_scan_loop():
@@ -4619,7 +4707,8 @@ def animal_scan_loop():
             for k, e in list(STORE.data.items()):
                 if not isinstance(e, dict) or e.get('failed'):
                     continue
-                if ANIMAL_STORE.get(k) is not None:
+                ae = ANIMAL_STORE.get(k)
+                if ae is not None and not _is_transient_io_fail(ae):
                     continue
                 p = _resolve_key(k)
                 if p.suffix.lower() in IMAGE_EXT:
