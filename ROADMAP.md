@@ -33,32 +33,36 @@ Dernière mise à jour : 1er août 2026.
 
 ## Prochaine étape décidée
 
-**CAP ACTUEL = redesign UI/UX « chambre noire » (décidé avec Mike, 01/08).** Le
-socle est posé et validé (tokens + plancher d'accessibilité injectés sur les 7
-pages, `bundle.py`, tests). **Prochain pas concret : tokeniser les pages une par
-une**, dans l'ordre `monolith-surgery` (extraction à l'identique d'abord, redesign
-ensuite, jamais mélangés) :
+**CAP ACTUEL = redesign UI/UX « chambre noire » (décidé avec Mike, 01/08).**
 
-1. **`BROWSE_PAGE`** — ◐ **Étape A tokenisation FAITE (01/08, à valider en réel).**
-   Bloc `<style>` : toutes les couleurs/police en dur remplacées par `var(--…)`
-   (`--salle`/`--salle-2`/`--salle-3`, `--texte`/`--graphite`, `--trait`,
-   `--f-texte`). Interdits retirés : bleu iOS `#0a84ff` (3 sélecteurs) et gris
-   neutre `#555` sous-AA sur `.empty`. Structure/espacements/rayons **inchangés**
-   → layout identique, seule la palette bascule. `py_compile` OK, 0 interdit
-   résiduel. **RESTE** : (a) valider au navigateur (`/browse` racine + sous-dossier
-   + page Santé) ; (b) étape B éventuelle (police `--f-donnees` sur les tailles,
-   différenciation barre/cellule, `.btn` pour le lien galerie, View Transitions) ;
-   (c) puis passer à `APP_NAV_CSS` puis les pages suivantes.
-   NB : `_serve_health` (l. ~9059) ne remplace pas `__EXTRA__` → littéral affiché
-   sur la page Santé (bug préexistant, à corriger au passage).
-2. **Réconcilier `APP_NAV_CSS`** — son `:root` définit encore le bleu iOS
-   `#5b9dff` et des gris neutres ; migrer sur les tokens (touche les 7 pages, donc
-   après avoir validé le procédé sur BROWSE).
-3. Corriger les divergences connues (`.pchip` vs `.chip`), puis enchaîner
-   `GALLERY_PAGE`, `MAP_PAGE`, `HTML_PAGE` (upload), `PETS_PAGE`, `FACES_PAGE`,
-   `PEOPLE_PAGE`. Charger `photo-ui` + `monolith-surgery` à chaque page.
-4. Bibliothèque Figma (`figma-generate-library`) comme source des composants
-   quand le procédé est rodé.
+**◐ ÉTAPE A (TOKENISATION) FAITE SUR LES 7 PAGES + LA BARRE (01/08) — à valider
+en réel.** Toutes les couleurs/polices en dur des pages ont été remplacées par
+les tokens `ui/tokens.css` (`--salle`/`-2`/`-3`, `--texte`/`--graphite`,
+`--papier`/`--texte-papier`, `--trait`, `--f-texte`/`--f-donnees`, accents
+`--veilleuse`/`--fixateur`/`--encre`). Sémantique appliquée partout : **fixateur**
+= filtre/onglet actif, zone géo, sélection de vignettes ; **veilleuse** = bandeau
+IA `#pending`, barres de progression, focus ; **encre** = destructif (« Tout
+effacer », retrait d'intrus) ; **papier** = bouton principal + onglet nav actif.
+Bleu iOS (`#0a84ff`/`#5b9dff`/`#2a6df0`/`#7db4ff`) et violets éliminés ; gris
+neutres froids → noir chaud. Ordre traité : `BROWSE`, `APP_NAV_CSS`, `HTML_PAGE`
+(upload), `MAP`, `FACES`, `PETS`, `PEOPLE`, `GALLERY`. Structure/espacements/rayons
+**inchangés** (redesign structurel = étape B). Chaque page : `py_compile` OK.
+
+**Garde-fou de méthode ajouté : `verifier_ui_tokens.py`** (scanne les constantes
+de page, signale les interdits `photo-ui`, code sortie 1 si interdit dur). État
+final : **0 interdit dur sur les 9 constantes** (aperçus nav + galerie rendus et
+vérifiés visuellement).
+
+**RESTE :**
+1. **Valider en réel au navigateur** les 7 pages (Mike). Points d'attention :
+   contraste des `--graphite` hérités, lisibilité des popups papier (carte),
+   états actifs teal. `_serve_health` (l. ~9059) ne remplace pas `__EXTRA__`
+   (littéral affiché sur la page Santé — bug préexistant, à corriger).
+2. **Étape B — redesign structurel** (jamais mélangé à A) : planche contact
+   `auto-fill`+`clamp()` (la `.grid` de `GALLERY` est encore en `repeat(5,1fr)`,
+   interdit `photo-ui` — point 11) ; panneaux de nommage sur **papier** (`.feuille`)
+   côté `PEOPLE`/`PETS` ; centre de tâches remplaçant `#pending` ; View Transitions.
+3. Bibliothèque Figma (`figma-generate-library`) comme source des composants.
 
 Voir la section « Interface » plus bas (points 9-12 + composants signature) pour
 le détail. **Une phrase pour démarrer** : « Lis ROADMAP.md, charge `photo-ui` et
