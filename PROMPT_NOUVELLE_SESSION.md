@@ -45,7 +45,8 @@ l'état vit dans les fichiers, pas dans l'historique.
 - Les autres connecteurs (Slack, Notion…) exigent un OAuth via les réglages
   claude.ai ; sans effet sur les chantiers en cours.
 
-**Correctif en attente de vérification :** branche `fix/smb-errno22-retry` —
+**Correctif en attente de vérification :** branche `fix/smb-errno22-retry`
+(commit `2d7ad19`, revue de code passée) —
 l'Errno 22 SMB (Visages/Animaux sur `_Uploads/ARZOPA`) est un défaut de lecture
 **transitoire** (pas une corruption : sonde `diag_errno22.py`) qui était écrit
 comme échec **permanent**. `_load_bgr` lit maintenant avec retry + décodage
@@ -53,7 +54,13 @@ mémoire, les workers ne poisonnent plus sur `ImageReadError`, et les scans
 repassent les `failed` transitoires. Testé en isolation (`test_errno22_fix.py`).
 **Reste : relancer le serveur, observer que ces fichiers repassent, puis merger.**
 
-**Où on en est — trois chantiers ouverts, au choix :**
+**➡ DÉMARRER PAR LE POINT 3 (Rangement & dédoublonnage)** — décidé avec Mike le
+01/08. Premier geste concret : **relancer le recensement Phase 0** (voir point 3
+ci-dessous : run précédent non capturé, rapports absents), puis enchaîner sur le
+reste du chantier une fois les vrais chiffres en main. Les points 1 et 2 restent
+ouverts mais ne sont pas la priorité.
+
+**Où on en est — trois chantiers ouverts (commencer par le 3) :**
 1. **Éval tagging (tranché, deux pas ciblés restants).** Hybride assertions+image
    adopté ; impératif de noms rejeté (coûteux, VRAM au plafond). (a) Noter/mesurer
    un V2 « assertions en contexte, **sans** impératif » (~4,3 s), puis brancher la
@@ -68,18 +75,35 @@ repassent les `failed` transitoires. Testé en isolation (`test_errno22_fix.py`)
    Figma. Commencer par la page d'upload ou « Sujets ».
 3. **Rangement & dédoublonnage** (`docs/RANGEMENT_2026.md`) — **le plus avancé.**
    - Phase 0 : `recensement_doublons.py` + `23 - Recenser les doublons.bat`
-     **écrits et validés** (lecture seule). **À lancer par Mike sur le NAS** pour
-     les vrais chiffres (doublons par contenu, Go récupérables, `_A TRIER`,
-     sans-date), qui trancheront les 4 décisions ouvertes.
+     écrits et validés (lecture seule). **Lancé une fois (01/08) mais résultat
+     NON capturé — À RELANCER** : les rapports `docs/recensement.{md,json}`
+     n'existent pas (run interrompu avant l'écriture finale, fenêtre fermée).
+     Relancer depuis une fenêtre déjà ouverte, en capturant le log :
+     `python recensement_doublons.py 2>&1 | Tee-Object docs\recensement_console.log`.
+     Donnera les vrais chiffres (doublons par contenu, Go récupérables, `_A TRIER`,
+     sans-date) qui trancheront les 4 décisions ouvertes. Option en attente :
+     écriture incrémentale (checkpoint) pour survivre à une coupure.
    - Prérequis Phase 1 : `vectors.rekey_prefix`/`rekey_prefix_all` **faits et
      testés** (`test_rekey_vectors.py` 12/12, `test_vectors` 29/29).
    - **Renommage intelligent** : spec convergée avec Mike (voir RANGEMENT, section
      « Renommage intelligent ») — format `YYYYMMDD_<lieu-ou-type>_<sujet>.ext`,
      tirets + ASCII, **automatique** sur `_Uploads`, entièrement réversible.
-   - **Prochain pas serveur (session relue, sur COPIE de la base)** : le point de
-     re-clé unique appelé à chaque déplacement/renommage — `STORE.rekey` +
-     stores faces/people/animals/pets + `get_photo_vec().rekey_prefix_all` — puis
-     brancher renommage et application de plan dessus. Charge `monolith-surgery`.
+   - **Point de re-clé unique : ✓ FAIT ET TESTÉ (01/08).**
+     `rekey_everywhere(old, new, save=True)` dans `server.py` (après
+     `photo_vectors()` — le vrai nom de la globale, PAS `get_photo_vec`) :
+     `STORE.rekey` + stores faces/people/animals/pets (`rekey`+`save`, transport
+     auto des vecteurs) + `photo_vectors().rekey_prefix_all`. Branché au scan
+     (~l. 1715, `save=False` + batch-save). Bug corrigé dans `vectors.py` :
+     `rekey_prefix_all` ratait la clé **nue** du sémantique (`kind='photo'`) —
+     déplacée maintenant aussi, en transaction. Validé sur COPIE de la base
+     (`test_rekey_everywhere.py`, tout vert ; `test_rekey_vectors` 12/12,
+     `test_vectors` 29/29).
+   - **Prochain pas serveur** : brancher dessus (a) le **renommage intelligent**
+     de `_Uploads` (spec convergée, section « Renommage intelligent » de
+     RANGEMENT) et (b) le futur **worker « appliquer un plan »** — les deux
+     appellent `rekey_everywhere` pour ne rien perdre. Migrer aussi la détection
+     de déplacement du scan (~l. 1705) de « nom + taille » vers la signature de
+     contenu (Phase 2). Charge `monolith-surgery`.
 
 Cap long terme (voir ROADMAP) : **multimodalité** (images → vidéo → audio) et
 **recherche AI** en langage naturel dans le serveur. À garder en tête dans les

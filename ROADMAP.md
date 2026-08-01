@@ -132,8 +132,9 @@ objectif à part entière, pas un accessoire.
 
 ## En cours
 
-- **Correctif Errno 22 SMB (branche `fix/smb-errno22-retry`, à vérifier chez
-  Mike puis merger).** Symptôme : `⚠ Visages/Animaux … : [Errno 22] Invalid
+- **Correctif Errno 22 SMB (branche `fix/smb-errno22-retry`, commit `2d7ad19`,
+  revue de code passée — à vérifier en réel puis merger).** Symptôme :
+  `⚠ Visages/Animaux … : [Errno 22] Invalid
   argument` sur des fichiers `_Uploads/ARZOPA`. Diagnostic (sonde
   `diag_errno22.py`) : **le fichier n'est pas corrompu** — il se décode
   parfaitement, en local comme via SMB en isolation ; l'Errno 22 est un défaut
@@ -326,12 +327,19 @@ traversent le chantier) :
 
     Séquencement, ordre non négociable (garantie « aucune info perdue ») :
 
-    - **Phase 0 — recensement lecture seule** — ✓ **ÉCRIT (31/07), à lancer par
-      Mike** (`recensement_doublons.py` + `23 - Recenser les doublons.bat`,
-      ASCII, `verifier_bat` vert) : vrai nombre de doublons **par contenu**, Go
-      récupérables, carte `_A TRIER`/années, fichiers sans date. Aucune écriture
-      hors `docs/recensement.{md,json}`. Logique validée sur arbre fabriqué.
-      Reste : le lancer sur le NAS pour les vrais chiffres.
+    - **Phase 0 — recensement lecture seule** — écrit et validé, **lancé une fois
+      (01/08) mais SANS RÉSULTAT CAPTURÉ : à relancer.** (`recensement_doublons.py`
+      + `23 - Recenser les doublons.bat`, ASCII, `verifier_bat` vert). Le run a été
+      interrompu avant l'écriture finale (`build_reports` n'écrit `docs/recensement.
+      {md,json}` qu'à la toute fin) : les deux rapports **n'existent pas** sur le
+      disque, la fenêtre du terminal s'est fermée avant. **Relancer depuis une
+      fenêtre déjà ouverte, en capturant le log**, pour ne pas reperdre la sortie :
+      `python recensement_doublons.py 2>&1 | Tee-Object docs\recensement_console.log`.
+      Idée en attente (au choix de Mike) : ajouter une **écriture incrémentale**
+      (checkpoint) au script pour qu'un run long survive à une coupure. Ce qu'il
+      produira : vrai nombre de doublons **par contenu**, Go récupérables, carte
+      `_A TRIER`/années, fichiers sans date — les chiffres qui trancheront les
+      4 décisions ouvertes.
     - **Phase 1 — prérequis serveur, bloquant** : `vectors.rekey_prefix(old, new)`
       — ✓ **FAIT ET TESTÉ (31/07)** (`test_rekey_vectors.py` 12/12, `test_vectors`
       29/29). Octets préservés, borne `\x1f`, idempotent, collision bruyante.
@@ -339,12 +347,20 @@ traversent le chantier) :
       « Avancement 31/07 ») : les stores faces/animaux transportent déjà leurs
       vecteurs via `rekey`+`save` ; les vrais trous sont le sémantique `PHOTO_VEC`
       (couvert par `rekey_prefix`) et le fait que le scan (~l. 1715) ne re-clé
-      **que** le store `tags`. **Reste** (session relue, sur copie de la base) :
-      le point de re-clé unique appelé au scan et par le worker « appliquer un
-      plan » (tags + FACE/PEOPLE/ANIMAL/PETS + `PHOTO_VEC.rekey_prefix_all`),
-      idempotent et annulable. À migrer aussi : la détection de déplacement du
-      scan (~l. 1715) matche par **nom + taille** et rate les fichiers renommés →
-      passer à la signature de contenu.
+      **que** le store `tags`. **Point de re-clé unique : ✓ FAIT ET TESTÉ
+      (01/08).** `rekey_everywhere(old, new, save=True)` dans `server.py`
+      (tags + FACE/PEOPLE/ANIMAL/PETS + `photo_vectors().rekey_prefix_all`),
+      idempotent, branché au scan (batch-save). Bug corrigé au passage :
+      `rekey_prefix_all` ratait la clé **nue** du sémantique (`kind='photo'`,
+      0/30 826 avec séparateur) — désormais déplacée aussi, en transaction.
+      Validé sur **copie** de la base réelle (`test_rekey_everywhere.py` : nom
+      humain + visage + sémantique déplacés octet pour octet, idempotent ;
+      `test_rekey_vectors` 12/12, `test_vectors` 29/29 inchangés). **Reste
+      (non bloquant)** : la détection de déplacement du scan (~l. 1705) matche
+      par **nom + taille** et rate les fichiers renommés ET déplacés → passer à
+      la signature de contenu quand le démon écrira un hash par fichier (Phase 2).
+      Le point de re-clé est prêt pour le renommage intelligent et le worker
+      « appliquer un plan ».
     - **Phase 2 — démon d'analyse** produisant le plan JSON à provenance, relu
       par un humain avant application.
     - **Phase 3 — automatisation planifiée** (nightly), toujours quarantaine +

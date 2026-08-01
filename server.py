@@ -1712,16 +1712,24 @@ def _sync_dir(label, cur, own_keys, first=False, deep=False):
                 old = cands.pop(0) if cands else None
             if old is not None and old in orphans:
                 _sz, mt = _stat_of(cur[k])
-                if STORE.rekey(old, k, mtime=mt):
+                # Point de re-clé UNIQUE (save différé) : transporte tags +
+                # visages/animaux + empreintes sémantiques, pas seulement les
+                # tags. Sans ça, un fichier déplacé perdait ses détections et
+                # son vecteur sémantique (orphelins purgés au scan suivant).
+                if rekey_everywhere(old, k, mtime=mt, save=False):
                     orphans.remove(old)
                     moved += 1
                     continue
             still.append(k)
         unknown = still
         if moved:
+            # Batch : STORE.save() commite aussi le sémantique (connexion cx
+            # partagée) ; les stores de sujets ont leur propre connexion.
             STORE.save()
+            for _st in (FACE_STORE, PEOPLE_STORE, ANIMAL_STORE, PETS_STORE):
+                _st.save()
             print(f"  🔀 {label} : {moved} déplacement(s)/renommage(s) détecté(s)"
-                  f" — index mis à jour sans re-tagging")
+                  f" — index + détections + empreintes re-clés sans re-tagging")
 
     # 2) nouveaux fichiers : import des tags in-file, sinon file d'attente IA
     if unknown:
@@ -1879,6 +1887,59 @@ def photo_vectors():
         from vectors import VectorStore
         PHOTO_VEC = VectorStore(STORE.cx)
     return PHOTO_VEC
+
+
+def rekey_everywhere(old, new, mtime=None, save=True):
+    """Point de re-clé UNIQUE pour un déplacement/renommage `old` → `new`.
+
+    L'état d'une photo est réparti sur SIX magasins keyés par le chemin : le
+    store `tags` (STORE), les quatre stores de sujets (FACE/PEOPLE/ANIMAL/PETS)
+    et le magasin de vecteurs sémantique (`photo_vectors()`). Re-clé le seul
+    store `tags` — ce que faisait le scan jusqu'ici — laisse les détections
+    visages/animaux et l'embedding sémantique sous l'ANCIENNE clé : orphelins,
+    purgés au scan suivant. Le nom humain (`personne:`/`animal:`) vit dans les
+    tags et dans le XMP du fichier, donc il n'est pas *perdu* ; mais visages,
+    empreintes chat et vecteur sémantique le seraient. Cette fonction les
+    transporte tous en un seul geste (invariant du chantier rangement : aucune
+    info perdue — voir docs/RANGEMENT_2026.md, « Prochain pas serveur »).
+
+    Mécanique par magasin :
+      - `tags` : `STORE.rekey` déplace l'entrée en mémoire ; c'est lui qui
+        décide si le déplacement « compte » (renvoi de la fonction).
+      - sujets : `rekey` + `save`. Le `save` (`_reconcilier`) supprime l'ancienne
+        clé — donc son préfixe vecteur — puis ré-extrait la nouvelle depuis
+        l'entrée en mémoire, où l'embedding est toujours présent : les vecteurs
+        de sujets sont ainsi transportés SANS recalcul.
+      - sémantique : `rekey_prefix_all` réécrit le seul préfixe des clés
+        vecteurs (octets préservés), commité avec la connexion partagée `cx`.
+
+    Idempotent (rejoué → l'ancienne clé a disparu, chaque étape renvoie
+    faux/0). `save=False` diffère TOUTES les sauvegardes au batch appelant :
+    dans ce cas, l'appelant DOIT ensuite sauver STORE et les quatre stores de
+    sujets (le sémantique, sur la connexion de STORE, est commité par
+    `STORE.save()`).
+
+    Renvoie True si l'entrée `tags` a été re-clée, False sinon.
+    """
+    moved = STORE.rekey(old, new, mtime=mtime)
+    if not moved:
+        return False
+    subject_stores = (FACE_STORE, PEOPLE_STORE, ANIMAL_STORE, PETS_STORE)
+    for st in subject_stores:
+        try:
+            st.rekey(old, new, mtime=mtime)
+        except Exception as e:
+            print(f"  ⚠ re-clé {getattr(st, 'path', st)} {old!r}→{new!r} : {e}")
+    if hasattr(STORE, 'cx'):
+        try:
+            photo_vectors().rekey_prefix_all(old, new)
+        except Exception as e:
+            print(f"  ⚠ re-clé sémantique {old!r}→{new!r} : {e}")
+    if save:
+        STORE.save()
+        for st in subject_stores:
+            st.save()
+    return moved
 
 
 def _sans_accents(s):

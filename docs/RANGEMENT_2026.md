@@ -339,6 +339,60 @@ déplacement de masse (invariant du chantier).
 
 ---
 
+## Avancement — 1 août 2026 (session) : le point de re-clé unique est FAIT et TESTÉ
+
+**`rekey_everywhere(old, new, mtime=None, save=True)`** est écrit dans
+`server.py` (juste après `photo_vectors()`) et **branché au scan** (~l. 1715,
+`save=False` + batch-save des cinq stores). Il compose, en un geste idempotent :
+`STORE.rekey` (tags, décide du déplacement) + `rekey`+`save` sur
+`FACE_STORE`/`PEOPLE_STORE`/`ANIMAL_STORE`/`PETS_STORE` (le `save` transporte
+leurs vecteurs via `delete_prefix` + ré-`extraire`) + `photo_vectors().rekey_prefix_all`
+(sémantique). `save=False` diffère toutes les sauvegardes au batch appelant.
+
+**Deux corrections de fond découvertes en câblant :**
+
+1. **Le nom réel de la globale est `photo_vectors()`, pas `get_photo_vec()`**
+   (ce doc et la ROADMAP l'appelaient à tort ainsi). Vérifié par grep, comme
+   l'exige `monolith-surgery` (« repérer les noms exacts des globales »).
+
+2. **BUG dans `vectors.rekey_prefix_all`, attrapé par le test sur données
+   réelles.** Les vecteurs sémantiques (`kind='photo'`) sont keyés par le
+   **chemin NU** (`k == chemin`, un vecteur par photo), **sans** le suffixe
+   `\x1f{champ}\x1f{i}` des visages/animaux. Or `rekey_prefix_all` ne bornait
+   que sur `old + '\x1f'` : il **excluait** la clé nue et laissait le vecteur
+   sémantique orphelin sous l'ancienne clé. Sur la base réelle : **0/30 826
+   vecteurs `photo` portent un séparateur** — le cas nu était donc la totalité,
+   pas un cas rare. Corrigé : `rekey_prefix_all` déplace maintenant **aussi** la
+   clé nue (`UPDATE … WHERE k = old`), dans la **même transaction** que la forme
+   à préfixe (collision → rollback, échec bruyant, pas de corruption partielle).
+   La clé nue est appariée à l'identique, donc un voisin `{old}2` reste intact.
+
+   > Rappel de méthode du projet vérifié une fois de plus : *un test qui passe
+   > n'est pas un test qui prouve*. La première version « verte » du test ne
+   > capturait le vecteur sémantique que par préfixe (0 ligne) — la vérification
+   > d'octets tournait à vide. Corrigé pour apparier la clé nue : c'est alors
+   > qu'il a exposé le bug de `rekey_prefix_all`.
+
+**Preuve.** `test_rekey_everywhere.py` — **lecture d'une COPIE `/tmp` de la base
+réelle, jamais la vraie** — tire une photo réelle portant un nom humain + un
+vecteur visage + un vecteur sémantique, applique la séquence exacte de
+`rekey_everywhere`, et vérifie : nom(s) `personne:`/`animal:` préservé(s),
+détections et empreintes (visage + sémantique) déplacées **octet pour octet**,
+plus rien sous l'ancienne clé, totaux de vecteurs inchangés, idempotence
+(rejeu = no-op). Tout vert (ex. run : `_Uploads/ARZOPA/…` avec
+`personne:Flo`+`personne:Mike`, 2 visages + 1 sémantique). Régressions
+inchangées : `test_rekey_vectors.py` 12/12, `test_vectors.py` 29/29.
+
+**Reste sur ce prérequis (non bloquant pour le principe, déjà couvert) :** la
+détection de déplacement du scan matche encore par **nom + taille**
+(`server.py` ~l. 1705-1712) et rate un fichier **renommé** ET déplacé (vu comme
+suppression + nouveauté). À migrer vers la signature de **contenu** quand le
+démon d'analyse écrira un hash par fichier dans l'index (Phase 2). Le point de
+re-clé, lui, est prêt à être appelé par le renommage intelligent et le worker
+« appliquer un plan ».
+
+---
+
 ## Renommage intelligent — spec convergée (31/07, avec Mike)
 
 Nouveau volet du chantier, décidé avec Mike : au-delà de ranger par année,

@@ -186,15 +186,40 @@ class VectorStore:
         return n
 
     def rekey_prefix_all(self, old, new):
-        """`rekey_prefix` sur TOUS les `kind` de ce magasin, en une requête.
-        Utile quand plusieurs types de vecteurs partagent la même table (le
-        magasin sémantique) et qu'une photo déplacée doit tous les emporter.
-        Renvoie le nombre total de lignes re-clées."""
+        """Re-clé TOUS les vecteurs appartenant à la photo `old`, quel que soit
+        le `kind`, quand son chemin passe à `new`. Deux formes de clé coexistent
+        dans la table et doivent TOUTES DEUX suivre :
+
+          - clés à suffixe « {chemin}\\x1f{champ}\\x1f{i} » (visages, animaux,
+            refs personnes/animaux) — on réécrit le seul préfixe, suffixe
+            préservé à l'octet près ;
+          - clé NUE « {chemin} » sans séparateur — c'est la forme du magasin
+            SÉMANTIQUE (`kind='photo'`), un unique vecteur par photo keyé par
+            son seul chemin. La borne `old + '\\x1f'` de la première forme
+            l'EXCLUT ; sans le second UPDATE ci-dessous, le vecteur sémantique
+            resterait orphelin sous l'ancienne clé (bug attrapé par
+            test_rekey_everywhere.py sur données réelles).
+
+        Les deux réécritures sont faites dans une même transaction : une
+        collision sur l'index UNIQUE(kind,k) annule l'ensemble — échec bruyant,
+        jamais de corruption partielle. La clé nue est appariée à l'identique
+        (`k = old`), donc un voisin « {old}2 » n'est jamais touché.
+
+        Renvoie le nombre total de lignes re-clées. Idempotent (rejoué → 0)."""
         lo = old + '\x1f'
         hi = old + '\x1f' + '￿'
-        n = self.cx.execute(
-            "UPDATE vectors SET k = ? || substr(k, ?) WHERE k>=? AND k<?",
-            (new, len(old) + 1, lo, hi)).rowcount
+        cx = self.cx
+        cx.execute("BEGIN IMMEDIATE")
+        try:
+            n = cx.execute(
+                "UPDATE vectors SET k = ? || substr(k, ?) WHERE k>=? AND k<?",
+                (new, len(old) + 1, lo, hi)).rowcount
+            n += cx.execute(
+                "UPDATE vectors SET k = ? WHERE k = ?", (new, old)).rowcount
+            cx.execute("COMMIT")
+        except Exception:
+            cx.execute("ROLLBACK")
+            raise
         if n:
             self._cache.clear()
         return n
