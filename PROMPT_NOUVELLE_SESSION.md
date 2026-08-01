@@ -91,7 +91,18 @@ fois).
   pic VRAM) AVANT activation. Ne pas l'imposer sans preuve : le marquage humain
   réversible tient l'usage en attendant.
 
-**Fondations redesign — ◐ socle posé (01/08).** `ui/tokens.css` + `ui/base.css`
+**Régression /people corrigée et VALIDÉE EN RÉEL (01/08, commit `04f5a14`).**
+`carteGroupeP` (12b) appelait `/api/names` au chargement de CHAQUE groupe (scan
+lourd des 64k entrées) → serveur saturé → `facecrop`/`names`/`assign` en 503 /
+Failed to fetch, attribution muette. Fix : autocomplétion différée au focus/frappe,
+`nomsPersonnes` avec cache+déduplication, `.catch`+erreurs visibles sur `assigner`
+et l'envoi de groupe. Vérifié via le navigateur : `/api/names` 1 seul appel 200 à
+la frappe, tous les `facecrop` en 200, anneau de focus orange (a11y) présent.
+Leçon : ne jamais déclencher un endpoint lourd en boucle au rendu (peupler à la
+demande + dédup). À porter aussi sur la page Animaux (`carteGroupe` a le même
+`listeProps()` eager — non urgent car peu de groupes).
+
+**Fondations redesign — ◐ socle posé (01/08), a11y confirmé en réel.** `ui/tokens.css` + `ui/base.css`
 (plancher a11y global : `:focus-visible`, `prefers-reduced-motion`, injectés sur
 les 7 pages) + `ui/components.css` (opt-in). Chargeur `ui_shared_css()` dans
 `server.py` (dégradation propre si `ui/` absent), injecté via `_send_html`.
