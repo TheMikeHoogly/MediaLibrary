@@ -34,12 +34,20 @@ l'état vit dans les fichiers, pas dans l'historique.
 - **Zéro dépendance au démarrage** (imports lourds paresseux) ; côté client,
   **zéro build, zéro npm**.
 
-**Outillage (état 31/07) :**
-- **Git : accès local en session** — le dossier est un vrai dépôt
-  (`origin = TheMikeHoogly/MediaLibrary`), `git` marche dans le shell (diff, log,
-  branches, commit). La revue de diff avant de toucher `server.py` ne dépend PAS
-  du connecteur GitHub MCP (OAuth non activable depuis la session). Le connecteur
-  distant ne sert qu'aux issues/PR en ligne.
+**Outillage :**
+- **Git : commits AUTONOMES depuis la session (résolu le 01/08).** `git` marche
+  dans le shell (`origin = TheMikeHoogly/MediaLibrary`). L'identité locale est
+  posée (`git config user.name/email`), branche de travail `phase1/rekey-everywhere`.
+  - **Cause des blocages passés** : le montage refuse TOUTE suppression depuis le
+    sandbox (`rm` → EPERM), donc un verrou git périmé (`index.lock`, `HEAD.lock`,
+    `*.lock`) laissé par une op interrompue ne pouvait pas être effacé et bloquait
+    les commits suivants.
+  - **Solution** : l'outil `mcp__cowork__allow_cowork_file_delete` (une approbation
+    pour le dossier) débloque `rm` PARTOUT, y compris `.git/`. Commit normal =
+    aucune approbation nécessaire (mise à jour de ref par rename, qui passe sur le
+    montage) ; si un verrou périmé traîne, demander la permission une fois puis
+    `rm -f .git/*.lock`. **Plus de fichiers MESSAGE_COMMIT ni de commit côté hôte.**
+  - Réflexe : commiter au fil de l'eau après chaque lot vérifié, message clair.
 - **Figma** — connecteur actif et fonctionnel (testé via `whoami`), prêt pour le
   redesign UI « chambre noire ».
 - Les autres connecteurs (Slack, Notion…) exigent un OAuth via les réglages
