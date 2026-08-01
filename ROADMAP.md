@@ -56,13 +56,25 @@ vérifiés visuellement).
 **RESTE :**
 1. **Valider en réel au navigateur** les 7 pages (Mike). Points d'attention :
    contraste des `--graphite` hérités, lisibilité des popups papier (carte),
-   états actifs teal. `_serve_health` (l. ~9059) ne remplace pas `__EXTRA__`
-   (littéral affiché sur la page Santé — bug préexistant, à corriger).
-2. **Étape B — redesign structurel** (jamais mélangé à A) : planche contact
-   `auto-fill`+`clamp()` (la `.grid` de `GALLERY` est encore en `repeat(5,1fr)`,
-   interdit `photo-ui` — point 11) ; panneaux de nommage sur **papier** (`.feuille`)
-   côté `PEOPLE`/`PETS` ; centre de tâches remplaçant `#pending` ; View Transitions.
-3. Bibliothèque Figma (`figma-generate-library`) comme source des composants.
+   états actifs teal.
+
+**◐ ÉTAPE B (redesign structurel) — EN COURS (01/08), jamais mélangée à A :**
+- ✓ **Planche contact** — `GALLERY .grid` en `repeat(auto-fill, minmax(clamp(96px,
+  18vw,168px),1fr))`, gouttière `--e-1`, `content-visibility:auto` sur les cellules.
+  Retire le dernier interdit structurel `photo-ui` (colonnes en dur) + la media
+  query. Aperçu vérifié.
+- ✓ **View Transitions** — `@view-transition{navigation:auto}` dans `base.css` :
+  transition native multi-document, progressive, respecte reduced-motion.
+- ✓ **Fix `__EXTRA__`** de `_serve_health` (bug préexistant, littéral affiché).
+- ✓ **Deux registres — 1re surface** : la modale « nommer rapidement » (`.qn-card`)
+  passe sur **papier** (posée sur scrim sombre), champ clair, boutons adaptés,
+  primaire = `fixateur`. Aperçu vérifié. **RESTE** : propager le registre papier aux
+  cartes de clusters toujours visibles (`.cl` sur `PEOPLE`, `.group` sur `PETS`) —
+  plus gros changement du flux principal, **à valider en réel d'abord**.
+- **RESTE** : **centre de tâches** remplaçant `#pending` (tâche/restant/CPU-GPU/
+  Pause, données via `hw_state()`/`system_busy()`/tailles de files) ; **numéro de
+  vue** en marge des cellules (`.vue__num`), signature planche contact.
+2. Bibliothèque Figma (`figma-generate-library`) comme source des composants.
 
 Voir la section « Interface » plus bas (points 9-12 + composants signature) pour
 le détail. **Une phrase pour démarrer** : « Lis ROADMAP.md, charge `photo-ui` et

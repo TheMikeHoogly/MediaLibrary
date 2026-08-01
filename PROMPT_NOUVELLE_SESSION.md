@@ -84,12 +84,20 @@ verifier_ui_tokens.py`, code 1 si un bleu iOS/gris neutre revient). Structure
 inchangée (redesign structurel = étape B). Tous `py_compile` OK, aperçus visuels
 nav+galerie vérifiés. Commits : `675ec05`→`ddb0f44` (branche `main`, **à pousser**).
 
-**RESTE redesign :** (1) **valider en réel les 7 pages au navigateur** (Mike) ;
-(2) **étape B** : planche contact `auto-fill`+`clamp()` (`.grid` de GALLERY encore
-`repeat(5,1fr)`, interdit photo-ui, point 11), panneaux de nommage sur **papier**
-(`.feuille`) côté PEOPLE/PETS, centre de tâches remplaçant `#pending`, View
-Transitions ; (3) bibliothèque Figma. NB : `_serve_health` (~l. 9059) ne remplace
-pas `__EXTRA__` (bug préexistant à corriger).
+**◐ ÉTAPE B (redesign structurel) — EN COURS (01/08).** Faits et commités
+(`86b6b8d`, `d897536`) : **planche contact** (`GALLERY .grid` en `auto-fill`+
+`clamp()` + `content-visibility`, dernier interdit structurel retiré) ; **View
+Transitions** (`@view-transition{navigation:auto}` dans `base.css`, progressive) ;
+**fix `__EXTRA__`** de `_serve_health` ; **1re surface papier** — la modale
+« nommer rapidement » (`.qn-card`) passe en registre papier (fond clair, boutons
+adaptés, primaire = fixateur). Aperçus vérifiés, scanner 0 interdit, bundle 4/4.
+
+**RESTE redesign :** (1) **valider en réel les 7 pages + planche contact + modale
+papier** (Mike) ; (2) **propager le registre papier** aux cartes de clusters
+toujours visibles (`.cl` sur PEOPLE, `.group` sur PETS) — gros changement du flux
+de nommage, à valider en réel d'abord ; (3) **centre de tâches** remplaçant
+`#pending` (données `hw_state()`/`system_busy()`/tailles de files) ; **numéro de
+vue** sur les cellules ; (4) bibliothèque Figma.
 
 **Bugs `/people` (01/08) — état :**
 - **12a — ✓ FAIT et validé en réel par Mike (01/08).** Débordement horizontal des contrôles
