@@ -494,10 +494,60 @@ plus un **dry-run sur copie de la base réelle** : 161 vrais noms humains accent
 (`Ordoñez`, `Aurélie de Lalande`, `Béa`…) → slugs ASCII sûrs, zéro caractère
 interdit.
 
+**Résolveur de faits + dry-run — FAITS (01/08, lecture seule).**
+`renommage_facts.py` (pur, aucune mutation) reflète `_best_time` / `_fname_time`
+/ `_path_year` / `lieux_connus` : `resolve_facts(key, entry, lieux)` assemble le
+dict `facts` (date+précision, lieu-chemin, noms, description, ext, graine) depuis
+une entrée d'index. `dry_run_renommage.py` l'applique sur une **copie** de la
+base et montre les noms proposés pour `_Uploads` — c'est ce qui se relit avant
+d'activer l'application.
+
+Le dry-run (1 025 photos `_Uploads` indexées) a **exposé trois défauts, tous
+corrigés avant toute mutation** — l'intérêt même du dry-run :
+
+1. **Sujet-description monstrueux** : sans nom, je slugais la description LLM
+   entière. Ajout de `_distill()` (retire les articles de tête, garde les
+   connecteurs internes, plafonne à 5 mots) → `vue-panoramique-d-une-montagne`,
+   `deux-cocktails-sur-une-table` au lieu d'un pavé de 110 caractères.
+2. **`-et-al` doublé** (`Alba-et-Flo-et-Flora-et-et-al`) → corrigé en
+   `…-et-Flora-et-al`.
+3. **Faux lieu** : d'abord « Bremblens » venait du **hostname** `\\NAS-Bremblens`
+   (corrigé : on retire `\\hôte\partage`), puis « Upload » venait du dossier de
+   transit `_Uploads` matchant une entrée parasite de `lieux.txt` (corrigé : on
+   exclut les composants préfixés `_`, convention des dossiers système du
+   projet). Résultat honnête : **0 lieu-chemin** sur `_Uploads` (photos du
+   téléphone, sans dossier-lieu) — le lieu viendra du **GPS EXIF** (géocodage) et
+   le type du **SigLIP**, tous deux branchés à l'application côté serveur.
+
+Chiffres du dry-run : 795/1 025 avec nom humain, dates toutes `exact` (noms de
+fichier horodatés), **475 collisions** de nom (rafales même date+mêmes noms)
+résolues par le suffixe `-<4hex>`. Tests : `test_renommage.py` reste vert après
+les correctifs.
+
+**Deux décisions tranchées (01/08, avec Mike) et appliquées :**
+
+- **Heure injectée dans le nom.** Le champ date devient `YYYYMMDD-HHMMSS` quand
+  l'heure est connue (EXIF `taken` ou nom horodaté), `YYYYMMDD` sinon. Réduit les
+  collisions de rafale (dry-run : 475 → 353) et préserve l'ordre intra-journée.
+  `field_date` et l'idempotence acceptent les deux formes ; résiduel géré par le
+  suffixe `-<4hex>` stable. Ex. `20260608-083049_lac-bleu-entoure-de-montagnes.jpg`.
+- **`lieux.txt` nettoyé sémantiquement.** `nettoyer_lieux.py` valide par **liste
+  blanche géographique** (le savoir « lieu vs non-lieu ») : 97 entrées → **28
+  vrais lieux**, 59 rejetées (événements, activités, marques, patronymes). Les
+  entrées multi-mots sont décomposées (`Appart Bremblens` → `Bremblens` ;
+  `CoRo Manifestation Birmanie Genève` → `Birmanie`, `Genève` ;
+  `SanBorjaTriniSRZ` → `San Borja`, `Trinidad`, `Santa Cruz` via camelCase +
+  alias). Réversible (`lieux.txt.bak` + rejetés en commentaires). Option
+  `--ollama` pour valider les inconnus au LLM local (futurs dossiers). Vérifié
+  sur photos réelles : `20070000_birmanie_Virginie-Thurre.jpg`, plus aucun faux
+  « Upload ». **À noter (dette) :** `server.lieux_connus()` REGÉNÈRE la liste
+  heuristique brute si le fichier est supprimé — brancher `nettoyer_lieux` dans
+  cette génération, ou ne pas supprimer le fichier.
+
 **Reste (application, mutant — différé sciemment).** Le renommage RÉEL touche le
 NAS : renommage du fichier + `rekey_everywhere` (fait) + journal de provenance
 (nom d'origine en JSON **et** XMP) + undo par lot, appelé à l'upload sur
 `_Uploads`. Il attend (a) la fin du recensement (ne pas muter le NAS pendant
-qu'il le parcourt) et (b) une session relue testée sur copie. La résolution des
-faits (`facts`) se branchera sur `_best_time`, `lieux.txt`, le GPS et le type
-SigLIP côté serveur. Le cœur, lui, est prêt et prouvé.
+qu'il le parcourt) et (b) une session relue testée sur copie. Il branchera
+`resolve_facts` sur le GPS inversé et le type SigLIP (les deux faits laissés à
+None aujourd'hui). Le cœur et le résolveur, eux, sont prêts et prouvés.

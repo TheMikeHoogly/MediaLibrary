@@ -60,7 +60,7 @@ _RESERVED = {
     *(f'LPT{i}' for i in range(1, 10)),
 }
 
-_DATE8_RE = re.compile(r'^\d{8}_')      # deja au format => idempotence
+_DATE8_RE = re.compile(r'^\d{8}(?:-\d{6})?_')   # « YYYYMMDD_ » ou « YYYYMMDD-HHMMSS_ »
 
 
 def to_ascii(s):
@@ -104,9 +104,10 @@ def _avoid_reserved(stem):
 # ── Champs ───────────────────────────────────────────────────────────────────
 
 def field_date(date8):
-    """Champ 1. Attend 8 chiffres deja calcules par l'appelant (_best_time cote
-    serveur). Tout ce qui n'est pas exactement 8 chiffres -> « 00000000 »."""
-    if isinstance(date8, str) and re.fullmatch(r'\d{8}', date8):
+    """Champ 1, calcule par l'appelant (_best_time / resolve_datestamp cote
+    serveur). Accepte « YYYYMMDD » ou « YYYYMMDD-HHMMSS » (heure = ordre
+    intra-journee des rafales). Tout le reste -> « 00000000 »."""
+    if isinstance(date8, str) and re.fullmatch(r'\d{8}(?:-\d{6})?', date8):
         return date8
     return '00000000'
 
@@ -123,12 +124,36 @@ def field_place_or_type(gps_place=None, path_place=None, human_place=None,
     return ''
 
 
+# Articles en tete a retirer d'un sujet tire de description (« un lac… » -> « lac… »)
+# et connecteurs a ne pas laisser EN FIN de slug (« …-de » est laid). Les
+# connecteurs INTERNES sont conserves pour la lisibilite (« lac-au-couchant »).
+_ART_FR = {'un', 'une', 'le', 'la', 'les', 'des', 'de', 'du', 'd', 'l'}
+_STOP_TAIL = _ART_FR | {'au', 'aux', 'en', 'et', 'a', 'avec', 'sur', 'dans',
+                        'pour', 'par', 'sous', 'sans', 'chez', 'vers', 'entre',
+                        'the', 'of', 'and', 'with', 'in', 'on', 'at', 'to',
+                        'from', 'for', 'by'}
+
+
+def _distill(text, max_words=5):
+    """Slug COURT tire d'une description : minuscule, sans articles en tete ni
+    connecteur en fin, plafonne a `max_words` mots. « Un lac au couchant » ->
+    « lac-au-couchant » ; une phrase entiere -> ses premiers mots porteurs."""
+    mots = [m for m in slug_field(text, lower=True).split('-') if m]
+    while mots and mots[0] in _ART_FR:
+        mots.pop(0)
+    mots = mots[:max_words]
+    while mots and mots[-1] in _STOP_TAIL:
+        mots.pop()
+    return '-'.join(mots)
+
+
 def field_subject(names=None, description=None, max_names=3):
     """Champ 3 : noms humains d'abord (fait le plus fiable, casse conservee),
-    sinon un slug court tire de la description (minuscules).
+    sinon un slug court DISTILLE de la description (minuscules).
 
     `names` : liste de noms deja DEPOUILLES du prefixe (« Luna », pas
-    « animal:Luna »). Tries, uniques, joints par « -et- », plafonnes."""
+    « animal:Luna »). Tries, uniques, joints par « -et- », plafonnes a
+    `max_names` puis suffixe « -et-al »."""
     slugs = []
     seen = set()
     for n in (names or []):
@@ -139,9 +164,9 @@ def field_subject(names=None, description=None, max_names=3):
     if slugs:
         slugs.sort(key=str.lower)
         if len(slugs) > max_names:
-            slugs = slugs[:max_names] + ['et-al']
+            return '-et-'.join(slugs[:max_names]) + '-et-al'
         return '-et-'.join(slugs)
-    return slug_field(description, lower=True)
+    return _distill(description)
 
 
 # ── Assemblage ───────────────────────────────────────────────────────────────

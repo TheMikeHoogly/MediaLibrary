@@ -51,9 +51,11 @@ def main():
 
     print("3) field_date")
     eq(R.field_date("20190704"), "20190704", "8 chiffres")
+    eq(R.field_date("20190704-123045"), "20190704-123045", "date-heure acceptee")
     eq(R.field_date("2019"), "00000000", "trop court -> zeros")
     eq(R.field_date(None), "00000000", "None -> zeros")
     eq(R.field_date("2019-07-04"), "00000000", "non purement numerique -> zeros")
+    eq(R.field_date("20190704-1230"), "00000000", "heure incomplete -> zeros")
 
     print("4) field_place_or_type (ordre de confiance, minuscule)")
     eq(R.field_place_or_type(gps_place="Bremblens", path_place="Lausanne"),
@@ -68,10 +70,14 @@ def main():
     eq(R.field_subject(names=["Mike", "Flo"]), "Flo-et-Mike",
        "deux noms : tries + -et- (determinisme ; spec illustrait Mike-et-Flo)")
     eq(R.field_subject(names=["Luna", "luna", "LUNA"]), "Luna", "doublons casse-insensibles")
-    eq(R.field_subject(names=["A", "B", "C", "D"]), "A-et-B-et-C-et-et-al",
-       "plus de 3 noms -> et-al")
-    eq(R.field_subject(description="Un lac au couchant"), "un-lac-au-couchant",
-       "repli description en minuscule")
+    eq(R.field_subject(names=["A", "B", "C", "D"]), "A-et-B-et-C-et-al",
+       "plus de 3 noms -> et-al (sans double « et »)")
+    eq(R.field_subject(description="Un lac au couchant"), "lac-au-couchant",
+       "description distillee : article de tete retire, connecteur interne garde")
+    eq(R.field_subject(description="Un homme marche sur une plage de sable au "
+                       "coucher du soleil pres de la mer"),
+       "homme-marche-sur-une-plage",
+       "phrase entiere -> 5 premiers mots porteurs (article de tete retire)")
     eq(R.field_subject(names=["Luna"], description="ignore"), "Luna",
        "les noms priment sur la description")
 
@@ -111,6 +117,8 @@ def main():
     print("10) idempotence")
     check(R.is_already_renamed("20190704_bremblens_Luna.jpg", provenance_seen=True),
           "deja au format + provenance -> True")
+    check(R.is_already_renamed("20190704-123045_bremblens_Luna.jpg", provenance_seen=True),
+          "format avec heure + provenance -> True")
     check(not R.is_already_renamed("20190704_bremblens_Luna.jpg", provenance_seen=False),
           "format seul sans provenance -> False (photo appareil 20190704_...)")
     check(not R.is_already_renamed("IMG_1234.jpg", provenance_seen=True),

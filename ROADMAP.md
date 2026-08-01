@@ -327,19 +327,18 @@ traversent le chantier) :
 
     Séquencement, ordre non négociable (garantie « aucune info perdue ») :
 
-    - **Phase 0 — recensement lecture seule** — écrit et validé, **lancé une fois
-      (01/08) mais SANS RÉSULTAT CAPTURÉ : à relancer.** (`recensement_doublons.py`
-      + `23 - Recenser les doublons.bat`, ASCII, `verifier_bat` vert). Le run a été
-      interrompu avant l'écriture finale (`build_reports` n'écrit `docs/recensement.
-      {md,json}` qu'à la toute fin) : les deux rapports **n'existent pas** sur le
-      disque, la fenêtre du terminal s'est fermée avant. **Relancer depuis une
-      fenêtre déjà ouverte, en capturant le log**, pour ne pas reperdre la sortie :
-      `python recensement_doublons.py 2>&1 | Tee-Object docs\recensement_console.log`.
-      Idée en attente (au choix de Mike) : ajouter une **écriture incrémentale**
-      (checkpoint) au script pour qu'un run long survive à une coupure. Ce qu'il
-      produira : vrai nombre de doublons **par contenu**, Go récupérables, carte
-      `_A TRIER`/années, fichiers sans date — les chiffres qui trancheront les
-      4 décisions ouvertes.
+    - **Phase 0 — recensement lecture seule — ✓ FAIT, RÉSULTATS CAPTURÉS
+      (01/08).** `recensement_doublons.py` a tourné complet (16 658 s ≈ 4 h 37) et
+      écrit `docs/recensement.{md,json}` + `docs/recensement_console.log`.
+      **Chiffres réels (34 305 fichiers) :** 261 groupes de doublons par
+      **contenu**, 291 copies retirables, **8,4 Go récupérables**, **12 714 sous
+      `_A TRIER`** (37 %), 991 sans date fiable. Ces chiffres tranchent les
+      décisions ouvertes : le dédoublonnage vaut l'effort (8,4 Go), et le gros du
+      travail est le rangement de `_A TRIER`. **Prochain pas Phase 2/3** : relire
+      `docs/recensement.md`, puis bâtir le démon d'analyse (plan JSON à provenance)
+      et le worker serveur d'application (déplacement/quarantaine via
+      `rekey_everywhere`, déjà prêt). NB : le NAS n'est plus parcouru, la
+      contrainte « ne pas muter pendant le recensement » est levée.
     - **Phase 1 — prérequis serveur, bloquant** : `vectors.rekey_prefix(old, new)`
       — ✓ **FAIT ET TESTÉ (31/07)** (`test_rekey_vectors.py` 12/12, `test_vectors`
       29/29). Octets préservés, borne `\x1f`, idempotent, collision bruyante.

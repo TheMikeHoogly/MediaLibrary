@@ -55,10 +55,12 @@ repassent les `failed` transitoires. Testé en isolation (`test_errno22_fix.py`)
 **Reste : relancer le serveur, observer que ces fichiers repassent, puis merger.**
 
 **➡ DÉMARRER PAR LE POINT 3 (Rangement & dédoublonnage)** — décidé avec Mike le
-01/08. Premier geste concret : **relancer le recensement Phase 0** (voir point 3
-ci-dessous : run précédent non capturé, rapports absents), puis enchaîner sur le
-reste du chantier une fois les vrais chiffres en main. Les points 1 et 2 restent
-ouverts mais ne sont pas la priorité.
+01/08. **Recensement Phase 0 TERMINÉ** (résultats capturés : 261 groupes de
+doublons, 291 copies retirables, 8,4 Go récupérables, 12 714 sous `_A TRIER`,
+991 sans date — voir `docs/recensement.md`). Prochain geste : relire ce rapport
+puis attaquer **Phase 2/3** (démon d'analyse → plan JSON → worker d'application
+via `rekey_everywhere`, déjà prêt). Le NAS n'est plus parcouru. Les points 1 et 2
+restent ouverts mais ne sont pas la priorité.
 
 **Où on en est — trois chantiers ouverts (commencer par le 3) :**
 1. **Éval tagging (tranché, deux pas ciblés restants).** Hybride assertions+image
@@ -74,15 +76,11 @@ ouverts mais ne sont pas la priorité.
    + composants signature). Une page à la fois, extraite puis redessinée, via
    Figma. Commencer par la page d'upload ou « Sujets ».
 3. **Rangement & dédoublonnage** (`docs/RANGEMENT_2026.md`) — **le plus avancé.**
-   - Phase 0 : `recensement_doublons.py` + `23 - Recenser les doublons.bat`
-     écrits et validés (lecture seule). **Lancé une fois (01/08) mais résultat
-     NON capturé — À RELANCER** : les rapports `docs/recensement.{md,json}`
-     n'existent pas (run interrompu avant l'écriture finale, fenêtre fermée).
-     Relancer depuis une fenêtre déjà ouverte, en capturant le log :
-     `python recensement_doublons.py 2>&1 | Tee-Object docs\recensement_console.log`.
-     Donnera les vrais chiffres (doublons par contenu, Go récupérables, `_A TRIER`,
-     sans-date) qui trancheront les 4 décisions ouvertes. Option en attente :
-     écriture incrémentale (checkpoint) pour survivre à une coupure.
+   - Phase 0 : **✓ TERMINÉE (01/08, ~4 h 37).** `docs/recensement.{md,json}` +
+     `recensement_console.log` écrits. Chiffres : 34 305 fichiers, 261 groupes de
+     doublons par contenu, 291 retirables, **8,4 Go**, 12 714 sous `_A TRIER`,
+     991 sans date. Décisions ouvertes tranchées : le dédoublonnage vaut l'effort,
+     le rangement `_A TRIER` est le gros du volume.
    - Prérequis Phase 1 : `vectors.rekey_prefix`/`rekey_prefix_all` **faits et
      testés** (`test_rekey_vectors.py` 12/12, `test_vectors` 29/29).
    - **Renommage intelligent** : spec convergée avec Mike (voir RANGEMENT, section
@@ -106,13 +104,24 @@ ouverts mais ne sont pas la priorité.
      dry-run sur 161 vrais noms accentués. Défauts appliqués (à valider par
      Mike) : sujet casse conservée, lieu/type minuscule, noms multiples **triés**
      `-et-` (spec montrait `Mike-et-Flo`, choisi le tri pour déterminisme).
+   - **Résolveur de faits + dry-run : ✓ FAITS (01/08, lecture seule).**
+     `renommage_facts.resolve_facts(key, entry, lieux)` (reflète `_best_time`/
+     `lieux_connus`) + `dry_run_renommage.py` (sur copie). Le dry-run a corrigé 3
+     défauts : description non distillée, `-et-al` doublé, faux lieu (hostname
+     `NAS-Bremblens` puis dossier `_Uploads`) → on retire `\\hôte\partage` et les
+     composants préfixés `_`. Voir RANGEMENT « Résolveur de faits + dry-run ».
+   - **Tranché + appliqué (01/08)** : (a) **heure dans le nom** —
+     `YYYYMMDD-HHMMSS` quand connue (collisions 475→353) ; (b) **`lieux.txt`
+     nettoyé** par `nettoyer_lieux.py` (liste blanche géo : 97→28 vrais lieux,
+     réversible via `lieux.txt.bak`, option `--ollama`). Dette : `lieux_connus()`
+     régénère la liste brute si le fichier est supprimé — à rebrancher plus tard.
    - **Prochain pas serveur** : brancher (a) l'**application** du renommage sur
      `_Uploads` — renommage réel + `rekey_everywhere` + provenance (JSON+XMP) +
-     undo, en résolvant `facts` via `_best_time`/`lieux.txt`/GPS/type SigLIP
-     (MUTE le NAS : après le recensement, sur copie, revue) ; et (b) le futur
-     **worker « appliquer un plan »**. Migrer aussi la détection de déplacement
-     du scan (~l. 1705) de « nom + taille » vers la signature de contenu
-     (Phase 2). Charge `monolith-surgery`.
+     undo, `resolve_facts` complété par GPS inversé + type SigLIP (les 2 faits à
+     None aujourd'hui) — MUTE le NAS : après le recensement, sur copie, revue ; et
+     (b) le futur **worker « appliquer un plan »**. Migrer aussi la détection de
+     déplacement du scan (~l. 1705) de « nom + taille » vers la signature de
+     contenu (Phase 2). Charge `monolith-surgery`.
 
 Cap long terme (voir ROADMAP) : **multimodalité** (images → vidéo → audio) et
 **recherche AI** en langage naturel dans le serveur. À garder en tête dans les
