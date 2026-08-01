@@ -98,12 +98,21 @@ ouverts mais ne sont pas la priorité.
      déplacée maintenant aussi, en transaction. Validé sur COPIE de la base
      (`test_rekey_everywhere.py`, tout vert ; `test_rekey_vectors` 12/12,
      `test_vectors` 29/29).
-   - **Prochain pas serveur** : brancher dessus (a) le **renommage intelligent**
-     de `_Uploads` (spec convergée, section « Renommage intelligent » de
-     RANGEMENT) et (b) le futur **worker « appliquer un plan »** — les deux
-     appellent `rekey_everywhere` pour ne rien perdre. Migrer aussi la détection
-     de déplacement du scan (~l. 1705) de « nom + taille » vers la signature de
-     contenu (Phase 2). Charge `monolith-surgery`.
+   - **Renommage intelligent — cœur déterministe : ✓ FAIT ET TESTÉ (01/08).**
+     `renommage.py` (stdlib pure, AUCUNE mutation) : `propose_basename(facts)`
+     assemble `YYYYMMDD_<lieu-ou-type>_<sujet>.ext` + assainit (ASCII `œ/æ/ø/ß`,
+     tirets, chars Windows, réservés, plafond 120 + troncature mot, collision
+     `-<4hex>`, idempotence). `test_renommage.py` ~40 assertions vertes +
+     dry-run sur 161 vrais noms accentués. Défauts appliqués (à valider par
+     Mike) : sujet casse conservée, lieu/type minuscule, noms multiples **triés**
+     `-et-` (spec montrait `Mike-et-Flo`, choisi le tri pour déterminisme).
+   - **Prochain pas serveur** : brancher (a) l'**application** du renommage sur
+     `_Uploads` — renommage réel + `rekey_everywhere` + provenance (JSON+XMP) +
+     undo, en résolvant `facts` via `_best_time`/`lieux.txt`/GPS/type SigLIP
+     (MUTE le NAS : après le recensement, sur copie, revue) ; et (b) le futur
+     **worker « appliquer un plan »**. Migrer aussi la détection de déplacement
+     du scan (~l. 1705) de « nom + taille » vers la signature de contenu
+     (Phase 2). Charge `monolith-surgery`.
 
 Cap long terme (voir ROADMAP) : **multimodalité** (images → vidéo → audio) et
 **recherche AI** en langage naturel dans le serveur. À garder en tête dans les

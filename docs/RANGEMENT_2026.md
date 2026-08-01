@@ -468,6 +468,36 @@ rend le garde-fou de réversibilité d'autant plus critique :
 casse exacte du champ sujet, plafond précis de longueur, et présence ou non d'un
 `SANSDATE` explicite en plus du `00000000`.
 
-**Statut : spec, pas de code.** L'implémentation touchera le serveur (renommage +
-re-clé + provenance) : elle attend le point de re-clé unique de la Phase 1 et une
-session relue, testée sur copie de la base.
+**Avancement — 1 août 2026 : le CŒUR DÉTERMINISTE est codé et testé.**
+`renommage.py` (stdlib pure, **aucune mutation NAS/index**) fait l'assemblage
+`YYYYMMDD_<lieu-ou-type>_<sujet>.<ext>` et tout l'assainissement : repli ASCII
+(NFKD + table `œ/æ/ø/ß/ł/đ/þ`…), tirets, retrait des caractères Windows
+interdits, neutralisation des noms réservés (`CON`, `COM1`…), plafond 120 avec
+troncature du sujet **sur frontière de mot**, suffixe de collision
+`-<4 hex sha256(graine)>`, idempotence (`^\d{8}_` **plus** trace de provenance,
+pour ne pas re-préfixer une photo d'appareil `20190704_…`). API : `propose_basename(facts)`
+où `facts` porte les faits déjà résolus par l'appelant (date `_best_time`,
+GPS/`lieux.txt`/tag lieu, type SigLIP, noms, description).
+
+Défauts implémentés (les micro-décisions ci-dessus, à valider par Mike) : sujet
+en **casse conservée** (noms propres), lieu/type et sujet-issu-de-description en
+**minuscules** ; plafond **120** ; **`00000000`** sans `SANSDATE` séparé ; noms
+multiples **triés** (déterminisme) joints par `-et-`, plafonnés à 3 puis
+`-et-al` — la spec illustrait `Mike-et-Flo` (ordre d'entrée) ; j'ai préféré le
+tri pour qu'un même cliché produise **toujours** le même nom quel que soit
+l'ordre des tags. À trancher.
+
+Preuve : `test_renommage.py` (≈40 assertions vertes) — repli ASCII, slug, champs,
+assemblage, plafond/troncature, réservés, collision, idempotence, les deux
+exemples de la spec (`…_bremblens_Luna.jpg`, `…_paysage_lac-au-couchant.jpg`),
+plus un **dry-run sur copie de la base réelle** : 161 vrais noms humains accentués
+(`Ordoñez`, `Aurélie de Lalande`, `Béa`…) → slugs ASCII sûrs, zéro caractère
+interdit.
+
+**Reste (application, mutant — différé sciemment).** Le renommage RÉEL touche le
+NAS : renommage du fichier + `rekey_everywhere` (fait) + journal de provenance
+(nom d'origine en JSON **et** XMP) + undo par lot, appelé à l'upload sur
+`_Uploads`. Il attend (a) la fin du recensement (ne pas muter le NAS pendant
+qu'il le parcourt) et (b) une session relue testée sur copie. La résolution des
+faits (`facts`) se branchera sur `_best_time`, `lieux.txt`, le GPS et le type
+SigLIP côté serveur. Le cœur, lui, est prêt et prouvé.
