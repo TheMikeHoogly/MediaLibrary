@@ -2897,11 +2897,15 @@ HTML_PAGE = """<!DOCTYPE html>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 <title>Envoyer des photos v10</title>
 <style>
+  /* Etape A tokenisation « chambre noire » : couleurs/police en dur -> tokens.
+     Bouton d'envoi = papier (principal neutre) ; barre de progression =
+     veilleuse (travail en cours) ; etats ok/err = fixateur/encre. Structure
+     et espacements inchanges. */
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-    background: #0f0f0f;
-    color: #f0f0f0;
+    font-family: var(--f-texte);
+    background: var(--salle);
+    color: var(--texte);
     min-height: 100vh;
     display: flex;
     flex-direction: column;
@@ -2909,36 +2913,36 @@ HTML_PAGE = """<!DOCTYPE html>
     padding: 24px 16px 40px;
   }
   h1 { font-size: 1.6rem; margin-bottom: 6px; text-align: center; }
-  .subtitle { color: #888; font-size: 0.9rem; margin-bottom: 32px; text-align: center; }
+  .subtitle { color: var(--graphite); font-size: 0.9rem; margin-bottom: 32px; text-align: center; }
 
   .pick-btn {
     display: block;
     width: 100%;
     max-width: 480px;
     padding: 40px 20px;
-    background: #1a1a1a;
-    border: 2px dashed #444;
+    background: var(--salle-3);
+    border: 2px dashed var(--graphite);
     border-radius: 20px;
     text-align: center;
     cursor: pointer;
-    color: #f0f0f0;
+    color: var(--texte);
     font-size: 1rem;
   }
-  .pick-btn:active { background: #222; }
+  .pick-btn:active { background: var(--salle-2); }
   .pick-btn--dossier { margin-top: 12px; padding: 22px 20px; }
   .pick-icon { font-size: 3rem; margin-bottom: 12px; }
   .pick-btn--dossier .pick-icon { font-size: 2rem; margin-bottom: 8px; }
   .pick-label { font-size: 1.1rem; font-weight: 600; margin-bottom: 6px; }
-  .pick-hint { color: #777; font-size: 0.85rem; }
+  .pick-hint { color: var(--graphite); font-size: 0.85rem; }
 
   .summary { width: 100%; max-width: 480px; margin-top: 14px; font-size: 0.9rem;
-             color: #ccc; font-variant-numeric: tabular-nums; }
-  .summary b { color: #f0f0f0; }
+             color: var(--graphite); font-variant-numeric: tabular-nums; }
+  .summary b { color: var(--texte); }
 
   /* Plancher d'accessibilite : focus visible + mouvement reduit. */
   .pick-btn:focus-visible, .btn:focus-visible, .gallery-link:focus-visible,
   .search-row input:focus-visible, .search-row button:focus-visible {
-    outline: 2px solid #ff7a1a; outline-offset: 2px;
+    outline: 2px solid var(--veilleuse); outline-offset: 2px;
   }
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after { transition-duration: 0.01ms !important;
@@ -2951,8 +2955,8 @@ HTML_PAGE = """<!DOCTYPE html>
     max-width: 480px;
     margin-top: 16px;
     padding: 16px;
-    background: #0a84ff;
-    color: white;
+    background: var(--papier);
+    color: var(--texte-papier);
     border: none;
     border-radius: 14px;
     font-size: 1.1rem;
@@ -2960,37 +2964,37 @@ HTML_PAGE = """<!DOCTYPE html>
     cursor: pointer;
   }
   .btn:active { opacity: 0.85; }
-  .btn:disabled { background: #333; color: #555; cursor: default; }
+  .btn:disabled { background: var(--salle-3); color: var(--graphite); cursor: default; }
 
   #status { width: 100%; max-width: 480px; margin-top: 20px; font-size: 0.9rem; }
   .file-item {
     display: flex; align-items: center; gap: 10px;
-    padding: 10px 14px; background: #1a1a1a; border-radius: 10px; margin-bottom: 8px;
+    padding: 10px 14px; background: var(--salle-3); border-radius: 10px; margin-bottom: 8px;
   }
   .file-item .name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.9rem; }
   .file-item .state { flex-shrink: 0; font-size: 0.85rem; }
-  .state.ok { color: #30d158; }
-  .state.err { color: #ff453a; }
-  .state.pending { color: #888; }
+  .state.ok { color: var(--fixateur); }
+  .state.err { color: var(--encre); }
+  .state.pending { color: var(--graphite); }
 
-  .progress-bar-wrap { width: 100%; max-width: 480px; margin-top: 16px; background: #1a1a1a; border-radius: 8px; height: 8px; display: none; }
-  .progress-bar { height: 100%; border-radius: 8px; background: #0a84ff; width: 0%; transition: width 0.2s; }
+  .progress-bar-wrap { width: 100%; max-width: 480px; margin-top: 16px; background: var(--salle-3); border-radius: 8px; height: 8px; display: none; }
+  .progress-bar { height: 100%; border-radius: 8px; background: var(--veilleuse); width: 0%; transition: width 0.2s; }
 
-  .gallery-link { margin-top: 20px; color: #0a84ff; text-decoration: none; font-size: 0.9rem; }
+  .gallery-link { margin-top: 20px; color: var(--texte); text-decoration: none; font-size: 0.9rem; }
 
   .search-row { display: flex; gap: 8px; width: 100%; max-width: 480px; margin-top: 28px; }
-  .search-row input { flex: 1; padding: 12px 14px; border-radius: 12px; border: 1px solid #333;
-                      background: #1a1a1a; color: #f0f0f0; font-size: 1rem; outline: none; }
-  .search-row input:focus { border-color: #0a84ff; }
+  .search-row input { flex: 1; padding: 12px 14px; border-radius: 12px; border: var(--trait);
+                      background: var(--salle-3); color: var(--texte); font-size: 1rem; outline: none; }
+  .search-row input:focus { border-color: var(--veilleuse); }
   .search-row button { padding: 12px 18px; border-radius: 12px; border: none;
-                       background: #222; color: #fff; font-size: 1rem; cursor: pointer; }
+                       background: var(--salle-3); color: var(--texte); font-size: 1rem; cursor: pointer; }
 </style>
 </head>
 <body>
 <!--APPNAV-->
 
 <h1>Envoyer des photos</h1>
-<p style="color:#555;font-size:0.75rem;margin-bottom:4px">v10 &middot; tagging IA</p>
+<p style="color:var(--graphite);font-size:0.75rem;margin-bottom:4px">v10 &middot; tagging IA</p>
 <p class="subtitle">Meme reseau WiFi &middot; Aucune inscription requise</p>
 
 <input type="file" id="fileInput" multiple accept="image/*,video/*" style="display:none">
@@ -4206,40 +4210,44 @@ MAP_PAGE = """<!DOCTYPE html>
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css">
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css">
 <style>
+/* Etape A tokenisation « chambre noire ». Zone definie par l'utilisateur
+   (cercle, slider, halo, bouton actif) = fixateur (selection). Popups Leaflet
+   sur fond blanc par defaut : texte en tokens papier. Visionneuse plein ecran =
+   vrai noir (salle de projection). Structure/espacements inchanges. */
 * { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-       background: #0f0f0f; color: #f0f0f0;
+body { font-family: var(--f-texte);
+       background: var(--salle); color: var(--texte);
        height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
 .bar { display: flex; align-items: center; gap: 10px; padding: 12px 16px;
-       background: #161616; border-bottom: 1px solid #222; flex-wrap: wrap; flex: 0 0 auto; }
-.bar a { color: #0a84ff; text-decoration: none; font-size: 0.9rem; }
+       background: var(--salle-2); border-bottom: var(--trait); flex-wrap: wrap; flex: 0 0 auto; }
+.bar a { color: var(--texte); text-decoration: none; font-size: 0.9rem; }
 .bar .sp { margin-left: auto; }
-.count { color: #888; font-size: 0.8rem; }
-.tb { padding: 6px 12px; border: 1px solid #333; border-radius: 8px;
-      background: #1e1e1e; color: #ccc; font-size: 0.85rem; cursor: pointer; }
-#map { flex: 1 1 auto; min-height: 0; background: #202020; }
+.count { color: var(--graphite); font-size: 0.8rem; }
+.tb { padding: 6px 12px; border: var(--trait); border-radius: 8px;
+      background: var(--salle-3); color: var(--texte); font-size: 0.85rem; cursor: pointer; }
+#map { flex: 1 1 auto; min-height: 0; background: var(--salle-3); }
 #empty { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-         max-width: 420px; padding: 20px; text-align: center; color: #888; display: none; }
+         max-width: 420px; padding: 20px; text-align: center; color: var(--graphite); display: none; }
 .leaflet-popup-content { margin: 8px 10px; }
 .pop img { width: 220px; max-width: 60vw; height: auto; border-radius: 6px;
-           display: block; background: #222; }
-.pop .fn { font-size: 0.82rem; color: #333; margin-top: 6px; word-break: break-word; }
+           display: block; background: var(--salle-3); }
+.pop .fn { font-size: 0.82rem; color: var(--texte-papier); margin-top: 6px; word-break: break-word; }
 .pop .fo { font-size: 0.78rem; margin-top: 3px; }
-.pop .fo a { color: #0a84ff; text-decoration: none; }
-.pop .de { font-size: 0.75rem; color: #555; margin-top: 3px; font-style: italic; }
-.pop .op { display: inline-block; margin-top: 6px; font-size: 0.78rem; color: #0a84ff;
+.pop .fo a { color: var(--texte-papier); text-decoration: none; }
+.pop .de { font-size: 0.75rem; color: var(--graphite-p); margin-top: 3px; font-style: italic; }
+.pop .op { display: inline-block; margin-top: 6px; font-size: 0.78rem; color: var(--texte-papier);
            text-decoration: none; }
-/* ── zone + diaporama ── */
-.tb.active { background: #2a6df0; color: #fff; border-color: transparent; }
+/* -- zone + diaporama -- */
+.tb.active { background: var(--fixateur); color: #fff; border-color: transparent; }
 #zctrls { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 #zctrls.hidden { display: none; }
-#zrad { width: 130px; accent-color: #5b9dff; }
-#zinfo { font-size: 0.8rem; color: #9ab; min-width: 118px; }
-#zcount { font-size: 0.8rem; color: #eaeaec; font-weight: 600; }
+#zrad { width: 130px; accent-color: var(--fixateur); }
+#zinfo { font-size: 0.8rem; color: var(--graphite); min-width: 118px; }
+#zcount { font-size: 0.8rem; color: var(--texte); font-weight: 600; }
 #zhint { position: fixed; bottom: 26px; left: 50%; transform: translateX(-50%); z-index: 500;
-  background: #161616e6; border: 1px solid #333; color: #cfe; padding: 7px 14px;
+  background: rgba(20,18,15,.9); border: var(--trait); color: var(--texte); padding: 7px 14px;
   border-radius: 999px; font-size: 0.82rem; display: none; }
-.zcircle-mk { filter: drop-shadow(0 0 4px #5b9dff); }
+.zcircle-mk { filter: drop-shadow(0 0 4px var(--fixateur)); }
 #show { position: fixed; inset: 0; background: #000; display: none; z-index: 1000; }
 #show.on { display: block; }
 #show img { position: absolute; inset: 0; margin: auto; max-width: 100%; max-height: 100%; object-fit: contain; }
@@ -4248,13 +4256,13 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 #show .nav { position: absolute; top: 0; bottom: 0; width: 34%; z-index: 1; cursor: pointer; }
 #show .nav.l { left: 0; } #show .nav.r { right: 0; }
 #show .meta { position: absolute; left: 0; right: 0; bottom: 0; z-index: 2; padding: 14px 18px;
-  background: linear-gradient(transparent, #000d); color: #eee; font-size: 0.85rem;
+  background: linear-gradient(transparent, #000d); color: var(--texte); font-size: 0.85rem;
   display: flex; gap: 10px; align-items: center; }
 #show .meta .sp { flex: 1; }
 #show .cbtn { background: #ffffff1a; border: 1px solid #ffffff40; color: #fff; border-radius: 8px;
   padding: 6px 12px; cursor: pointer; font-size: 1rem; }
 #show .cbtn:hover { background: #ffffff30; }
-#show #show-name { color: #bbb; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 40vw; }
+#show #show-name { color: var(--graphite); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 40vw; }
 </style>
 </head>
 <body>
@@ -4385,7 +4393,7 @@ function placeCircle(ll){
   center = [ll.lat, ll.lng];
   document.getElementById('zhint').style.display = 'none';
   if (!circle){
-    circle = L.circle(ll, { radius: radiusM(), color: '#5b9dff', weight: 2, fillColor: '#5b9dff', fillOpacity: 0.12 }).addTo(map);
+    circle = L.circle(ll, { radius: radiusM(), color: '#4A8C7B', weight: 2, fillColor: '#4A8C7B', fillOpacity: 0.12 }).addTo(map);  /* --fixateur (zone selectionnee) */
     cmark = L.marker(ll, { draggable: true }).addTo(map);
     cmark.on('drag', function(ev){ center = [ev.latlng.lat, ev.latlng.lng]; circle.setLatLng(ev.latlng); recompute(); });
   } else { circle.setLatLng(ll); cmark.setLatLng(ll); }
