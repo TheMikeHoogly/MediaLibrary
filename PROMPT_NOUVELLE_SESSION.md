@@ -37,7 +37,8 @@ l'état vit dans les fichiers, pas dans l'historique.
 **Outillage :**
 - **Git : commits AUTONOMES depuis la session (résolu le 01/08).** `git` marche
   dans le shell (`origin = TheMikeHoogly/MediaLibrary`). L'identité locale est
-  posée (`git config user.name/email`), branche de travail `phase1/rekey-everywhere`.
+  posée (`git config user.name/email`). Branche **`main`**, à jour et **poussée
+  sur GitHub** (tout le travail du 01/08 est publié).
   - **Cause des blocages passés** : le montage refuse TOUTE suppression depuis le
     sandbox (`rm` → EPERM), donc un verrou git périmé (`index.lock`, `HEAD.lock`,
     `*.lock`) laissé par une op interrompue ne pouvait pas être effacé et bloquait
@@ -56,14 +57,13 @@ l'état vit dans les fichiers, pas dans l'historique.
 - Les autres connecteurs (Slack, Notion…) exigent un OAuth via les réglages
   claude.ai ; sans effet sur les chantiers en cours.
 
-**Correctif en attente de vérification :** branche `fix/smb-errno22-retry`
-(commit `2d7ad19`, revue de code passée) —
-l'Errno 22 SMB (Visages/Animaux sur `_Uploads/ARZOPA`) est un défaut de lecture
-**transitoire** (pas une corruption : sonde `diag_errno22.py`) qui était écrit
-comme échec **permanent**. `_load_bgr` lit maintenant avec retry + décodage
-mémoire, les workers ne poisonnent plus sur `ImageReadError`, et les scans
-repassent les `failed` transitoires. Testé en isolation (`test_errno22_fix.py`).
-**Reste : relancer le serveur, observer que ces fichiers repassent, puis merger.**
+**Correctif Errno 22 SMB — mergé dans `main`.** Le défaut de lecture SMB
+**transitoire** (Visages/Animaux sur `_Uploads/ARZOPA`, sonde `diag_errno22.py`)
+était écrit comme échec permanent ; `_load_bgr` lit désormais avec retry +
+décodage mémoire, les workers ne poisonnent plus, les scans repassent les
+`failed` transitoires (`test_errno22_fix.py`). Le serveur a tourné le 01/08
+(page `/people` OK) ; vérifier au besoin que ces fichiers `_Uploads/ARZOPA`
+repassent bien.
 
 **➡ PROCHAINE SESSION = DESIGN UI/UX** — décidé avec Mike le 01/08. Le chantier
 **Rangement & dédoublonnage est bouclé de bout en bout** (recensement → plan →
@@ -87,7 +87,8 @@ fois). **Deux bugs concrets à traiter en priorité** (page `/people`,
 Le rangement par année des `_A TRIER` et l'installateur nouveau PC restent
 ouverts (voir plus bas) mais ne sont pas la priorité immédiate.
 
-**Où on en est — trois chantiers ouverts (commencer par le 3) :**
+**État des chantiers — la PRIORITÉ est le n°2 (design, voir le cap ci-dessus) ;
+le n°3 (rangement) est bouclé, le n°1 reste en réserve :**
 1. **Éval tagging (tranché, deux pas ciblés restants).** Hybride assertions+image
    adopté ; impératif de noms rejeté (coûteux, VRAM au plafond). (a) Noter/mesurer
    un V2 « assertions en contexte, **sans** impératif » (~4,3 s), puis brancher la
