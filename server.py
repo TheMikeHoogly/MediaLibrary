@@ -2800,24 +2800,28 @@ def backup_db():
 # par _send_html là où le gabarit contient <!--APPNAV--> (et le thème avant
 # </head>). Une seule source → cohérence garantie sur toutes les pages.
 APP_NAV_CSS = """<style id="appnav-css">
+/* Barre de nav partagee (7 pages) tokenisee « chambre noire ».
+   Noms herites (--txt/--mut/--line) repointes sur les tokens de ui/tokens.css
+   pour compat ; les regles .appnav utilisent directement les tokens.
+   Choix design : onglet actif = pastille PAPIER (principal neutre = « vous etes
+   ici »), jamais un accent ; la pastille de marque = veilleuse (la lampe
+   inactinique, embleme de la chambre noire). */
 :root{
-  --bg:#0e0e10; --bg2:#151517; --card:#1a1a1e; --line:#26262b;
-  --txt:#eaeaec; --mut:#9a9aa2; --accent:#5b9dff; --accent2:#2a6df0;
-  --radius:12px;
+  --line:#26221E; --txt:var(--texte); --mut:var(--graphite); --radius:12px;
 }
 .appnav{position:sticky;top:0;z-index:50;display:flex;align-items:center;gap:6px;
-  padding:10px 14px;background:rgba(16,16,19,.86);backdrop-filter:blur(10px);
-  border-bottom:1px solid var(--line);flex-wrap:wrap;font-family:system-ui,-apple-system,sans-serif;}
-.appnav .brand{font-weight:700;font-size:15px;color:var(--txt);margin-right:10px;
+  padding:10px 14px;background:rgba(12,11,10,.86);backdrop-filter:blur(10px);
+  border-bottom:var(--trait);flex-wrap:wrap;font-family:var(--f-texte);}
+.appnav .brand{font-weight:700;font-size:15px;color:var(--texte);margin-right:10px;
   display:flex;align-items:center;gap:7px;text-decoration:none;letter-spacing:.2px;}
 .appnav .brand .dot{width:9px;height:9px;border-radius:50%;
-  background:linear-gradient(135deg,var(--accent),var(--accent2));box-shadow:0 0 8px var(--accent);}
+  background:var(--veilleuse);box-shadow:0 0 8px var(--veilleuse-d);}
 .appnav a.tab{display:inline-flex;align-items:center;gap:6px;padding:7px 13px;
-  border-radius:999px;color:var(--mut);text-decoration:none;font-size:14px;
+  border-radius:999px;color:var(--graphite);text-decoration:none;font-size:14px;
   font-weight:500;transition:background .15s,color .15s;white-space:nowrap;}
-.appnav a.tab:hover{color:var(--txt);background:#ffffff10;}
-.appnav a.tab.active{color:#fff;background:linear-gradient(135deg,var(--accent2),var(--accent));
-  box-shadow:0 2px 10px #2a6df055;}
+.appnav a.tab:hover{color:var(--texte);background:#ffffff10;}
+.appnav a.tab.active{color:var(--texte-papier);background:var(--papier);
+  box-shadow:0 2px 10px #0007;}
 .appnav .sp{flex:1;}
 @media(max-width:560px){
   .appnav{gap:2px;padding:8px 8px;}
