@@ -48,6 +48,9 @@ l'état vit dans les fichiers, pas dans l'historique.
     montage) ; si un verrou périmé traîne, demander la permission une fois puis
     `rm -f .git/*.lock`. **Plus de fichiers MESSAGE_COMMIT ni de commit côté hôte.**
   - Réflexe : commiter au fil de l'eau après chaque lot vérifié, message clair.
+  - **`git push` est IMPOSSIBLE depuis le sandbox** (le proxy réseau bloque
+    github.com : « 403 from proxy after CONNECT »). Les commits restent LOCAUX ;
+    c'est Mike qui publie depuis sa machine (`git push -u origin <branche>`).
 - **Figma** — connecteur actif et fonctionnel (testé via `whoami`), prêt pour le
   redesign UI « chambre noire ».
 - Les autres connecteurs (Slack, Notion…) exigent un OAuth via les réglages
