@@ -65,24 +65,36 @@ décodage mémoire, les workers ne poisonnent plus, les scans repassent les
 (page `/people` OK) ; vérifier au besoin que ces fichiers `_Uploads/ARZOPA`
 repassent bien.
 
-**➡ PROCHAINE SESSION = DESIGN UI/UX** — décidé avec Mike le 01/08. Le chantier
+**➡ SESSION EN COURS = DESIGN UI/UX** — décidé avec Mike le 01/08. Le chantier
 **Rangement & dédoublonnage est bouclé de bout en bout** (recensement → plan →
 application : **8,4 Go récupérés** → purge planifiée → orchestrateur de
-maintenance auto dans le serveur). On passe à l'**interface** (voir ROADMAP,
+maintenance auto dans le serveur). On travaille l'**interface** (voir ROADMAP,
 section « Interface — redesign chambre noire », points 9-12 + **bugs observés
 12a/12b**). Charge la skill `photo-ui` et suis `monolith-surgery` (une page à la
-fois). **Deux bugs concrets à traiter en priorité** (page `/people`,
-`PEOPLE_PAGE`) :
-- **12a** — les contrôles « À vérifier » (Oui/Nom/Aucun) débordent à droite,
-  scroll horizontal même en plein écran → rangée non responsive (`flex-wrap`,
-  `min-width:0`, repli des actions sous ~900 px).
-- **12b** — un groupe de personnes mélangeait des nuques + **2 découpes de chat**
-  (Caline), sans moyen de le rejeter ni d'en retirer des vignettes. Correction
-  intelligente (détail dans ROADMAP 12b) : **UI** — sélection par vignette +
-  « Rejeter ce groupe » + « Pas un visage » (port depuis les animaux) ; **amont**
-  — garde de validité de visage (SigLIP « humain vs animal/objet » + plancher
-  `det_score`) pour que chats/non-visages n'entrent pas dans les clusters, et
-  plancher de reconnaissabilité pour ne pas proposer de groupe ingérable.
+fois).
+
+**Bugs `/people` (01/08) — état :**
+- **12a — ✓ FAIT (à valider en réel).** Débordement horizontal des contrôles
+  « À vérifier » corrigé dans `PEOPLE_PAGE` : rangée `.cl .row` responsive
+  (`min-width:0`, libellé/champs élastiques, repli pleine largeur sous 900 px,
+  cibles 44 px), largeur fixe inline du champ retirée.
+- **12b — ✓ FAIT côté UI + backend réversible (à valider en réel).** Attribution
+  unifiée par sous-ensemble portée sur les visages (miroir animaux) :
+  `attribuer_visages`/`_nommer_membres_visages`/`_marquer_visages`,
+  `/api/assign` `genre:'visage'`+`membres`, cibles `__pas_visage__` /
+  `__non_group__`, `_gather_faces` saute ces flags, UI `carteGroupeP` (vignettes
+  sélectionnables, Attribuer N, Rejeter le groupe, « Ce n'est pas un visage »,
+  toast d'annulation 10 s). `py_compile` OK.
+  **RESTE : la garde AMONT (vraie cause), à MESURER avant de câbler (`vision-eval`)**
+  — `verifier_visages.py` en passe séparée (SigLIP « humain vs animal/objet ») +
+  plancher `det_score`, avec entrée `eval/DECISIONS.md` (précision, faux rejets,
+  pic VRAM) AVANT activation. Ne pas l'imposer sans preuve : le marquage humain
+  réversible tient l'usage en attendant.
+
+**Prochain pas concret** : (1) valider 12a/12b en réel (démarrer le serveur,
+page `/people` : rejeter un groupe, marquer une découpe « pas un visage »,
+annuler) ; puis (2) attaquer soit la garde amont mesurée (12b), soit les
+fondations du redesign chambre noire (points 9-11, extraction `ui/` d'abord).
 
 Le rangement par année des `_A TRIER` et l'installateur nouveau PC restent
 ouverts (voir plus bas) mais ne sont pas la priorité immédiate.

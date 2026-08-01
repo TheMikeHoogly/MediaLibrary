@@ -190,8 +190,8 @@ divergé que par accident d'écriture.
 
 | Capacité | Animaux | Personnes | À faire |
 |---|---|---|---|
-| Attribution unifiée (sous-ensemble, noms multiples, annulation) | oui | partiel | porter la sélection par vignette et les noms multiples côté visages |
-| Vérification par SigLIP (« ce n'est pas un chat ») | oui | non | équivalent visages : rejeter un non-visage (statue, affiche, reflet) |
+| Attribution unifiée (sous-ensemble, noms multiples, annulation) | oui | ✓ oui (01/08) | `attribuer_visages` + `carteGroupeP` : sélection par vignette, noms multiples, annulation — porté depuis les animaux |
+| Vérification par SigLIP (« ce n'est pas un chat ») | oui | partiel | rejet **manuel** d'un non-visage fait (`__pas_visage__`/`__non_group__`) ; reste la vérification **automatique** SigLIP amont, à mesurer (`vision-eval`) |
 | Curateur avec suggestions et auto-attribution | non | oui | porter côté animaux : proposer des rattachements au lieu d'attendre un regroupement |
 | « Trouver d'autres photos de X » | oui | oui | unifier le code, aujourd'hui dupliqué |
 | Prototypes multiples | non (mesuré défavorable) | oui | rien à faire, décidé sur mesure |
@@ -244,39 +244,49 @@ valider les composants Figma sur du réel avant de propager aux pages historique
 **Bugs et manques observés le 01/08 (page `/people`, `PEOPLE_PAGE`) — à traiter
 en priorité au redesign :**
 
-12a. **Débordement horizontal des contrôles « À vérifier ».** Les outils de
-     droite (`Oui, <Nom>`, champ « ou : c'est… », `Aucun`) sortent du cadre : il
-     faut scroller à droite même en plein écran. La rangée de suggestion n'est pas
-     responsive. Fix : `display:flex` avec `flex-wrap`, `min-width:0` sur la
-     colonne de gauche, largeur bornée (`clamp`/`max-width`) et repli vertical des
-     actions sous ~900 px. Fait partie du plancher d'accessibilité (cibles 44 px,
-     pas de scroll horizontal).
+12a. ✓ **FAIT (01/08)** — **Débordement horizontal des contrôles « À vérifier ».**
+     La rangée `.cl .row` (partagée par « À vérifier » et « Groupes à nommer »)
+     avait `flex-wrap` mais ses enfants ne pouvaient pas rétrécir (`min-width:auto`)
+     et le champ « ou : c'est… » avait une largeur fixe inline de 150 px. Fix
+     (`PEOPLE_PAGE`, `<style>`) : `.cl .row > * { min-width:0 }`, libellé
+     `flex:1 1 12rem` + `overflow-wrap:anywhere`, champ `.qui`/inputs élastiques,
+     **repli vertical pleine largeur sous 900 px**, cibles **44 px** sur boutons et
+     champs ; largeur inline retirée. Plus de scroll horizontal. À valider en réel
+     (édition monolithe non testable hors machine ; `py_compile` OK).
 
 12b. **Groupes de personnes non supprimables + pollués par des non-visages.** Un
      groupe proposé mélangeait des visages peu reconnaissables (nuques, profils
      détournés) et **2 découpes de chat** (Caline), sans aucun moyen de le rejeter
-     ni d'en retirer des vignettes. Correction intelligente, en deux temps :
+     ni d'en retirer des vignettes. Correction en deux temps :
 
-     - **UI (port depuis les animaux, déjà fait côté chats)** : sur un groupe
-       proposé, (i) **sélection par vignette** pour exclure certaines têtes avant
-       de nommer (attribution par sous-ensemble) ; (ii) bouton **« Rejeter ce
-       groupe »** qui dissout le cluster et marque ses visages comme non
-       regroupables (réversible, toast 10 s) ; (iii) sur une vignette,
-       **« Pas un visage »** qui l'exclut définitivement du pipeline visages.
-       C'est exactement les deux lignes en attente du tableau d'harmonisation
-       (« porter la sélection par vignette côté visages » + « rejeter un
-       non-visage »).
-     - **En amont (la vraie cause)** : empêcher qu'un tel groupe se forme. (1)
-       **Garde de validité de visage** : les découpes de chat ne devraient jamais
-       entrer dans le pipeline *visages* — ajouter une vérification type SigLIP
-       « visage humain vs animal/objet » sur les découpes (miroir de la
-       vérification d'espèce déjà en place côté animaux, qui rejette les
-       non-chats), plus un plancher de `det_score` InsightFace. (2) **Plancher de
-       reconnaissabilité** : une nuque/profil détourné a une empreinte de faible
-       qualité ; ne pas en faire un groupe *nommable* (le signaler « faible
-       qualité » ou l'écarter via `det_score`/pose). Sert aussi la priorité n°1
-       (vérité terrain humaine) : on ne demande à l'humain de trancher que sur des
-       propositions plausibles.
+     - ✓ **FAIT (01/08) — UI + backend réversible (port depuis les animaux).**
+       Le pipeline visages a désormais l'**attribution unifiée par sous-ensemble**
+       déjà éprouvée côté chats : `attribuer_visages(membres, cible)` (miroir de
+       `attribuer_animaux`) + `_nommer_membres_visages` + `_marquer_visages`, route
+       `/api/assign` `genre:'visage'` avec `membres`. Cibles spéciales
+       `__pas_visage__` (découpe de chat/objet → flag `pas_visage`, sortie du
+       pipeline) et `__non_group__` (« Rejeter le groupe » → flag `non_group`).
+       `_gather_faces` **saute** ces deux flags (jamais de re-formation), le
+       curateur ne suggère plus une `pas_visage` à une personne. UI `PEOPLE_PAGE`
+       (`carteGroupeP`) : **vignettes sélectionnables** (`<button aria-pressed>`,
+       vignette entière cliquable), **Attribuer N** (sous-ensemble), **Rejeter le
+       groupe**, proposition **« Ce n'est pas un visage »**, **toast d'annulation
+       10 s** (`role=status`, rappel de rafraîchissement). Tout réversible via la
+       pile d'annulation existante. Les groupes exposent `membres`. `py_compile` OK,
+       **à valider en réel**. Ferme deux lignes du tableau d'harmonisation
+       (sélection par vignette côté visages + rejet d'un non-visage).
+     - **RESTE — en amont (la vraie cause), à MESURER avant de câbler
+       (`vision-eval`).** Empêcher qu'un tel groupe se forme est un changement de
+       modèle/seuil : il ne s'adopte pas sans jeu de validation issu du corpus réel,
+       mesure de VRAM (4 Go partagés) et décision écrite. Plan : (1) **Garde de
+       validité de visage** — vérification type SigLIP « visage humain vs
+       animal/objet » sur les découpes (miroir de `verifier_especes.py`, en **passe
+       séparée** hors serveur, pas inline dans le worker) + plancher `det_score`
+       InsightFace ; (2) **Plancher de reconnaissabilité** — écarter les empreintes
+       de faible qualité (nuque/profil) du statut *nommable* via `det_score`/pose.
+       Livrable attendu : `verifier_visages.py` + entrée `eval/DECISIONS.md`
+       (précision, faux rejets, pic VRAM) avant toute activation. Le marquage humain
+       réversible ci-dessus tient déjà l'usage en attendant.
 
 Composants et gestes signature à intégrer au fil des pages (non numérotés, ils
 traversent le chantier) :

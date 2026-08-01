@@ -2261,8 +2261,10 @@ def _semantique_un_lot(sem, vs):
 # attribution à une cible spéciale — d'où l'absence de bouton dédié.
 CIBLE_PAS_ANIMAL = "__pas_animal__"    # peluche, statue, reflet, macaque…
 CIBLE_INCONNU = "__inconnu__"          # vrai animal, mais pas un des nôtres
-CIBLE_PAS_VISAGE = "__pas_visage__"
-CIBLES_SPECIALES = {CIBLE_PAS_ANIMAL, CIBLE_INCONNU, CIBLE_PAS_VISAGE}
+CIBLE_PAS_VISAGE = "__pas_visage__"    # decoupe de chat/objet : PAS un visage humain
+CIBLE_NON_GROUP = "__non_group__"      # vrai visage, mais pas un groupe nommable (nuque, profil)
+CIBLES_SPECIALES = {CIBLE_PAS_ANIMAL, CIBLE_INCONNU, CIBLE_PAS_VISAGE,
+                    CIBLE_NON_GROUP}
 
 ANNULATIONS = []                       # pile d'opérations réversibles
 ANNUL_MAX = 40
@@ -2550,6 +2552,135 @@ def attribuer_visage(cle, i, cible, personne_proposee=""):
     return {"ok": True, "n": 1, "jeton": jeton, "corrige": bool(corrige),
             "libelle": f"→ {nom}" + (f" (corrigé depuis {personne_proposee})"
                                      if corrige else "")}
+
+
+def _invalider_groupes_visages():
+    """Vide le cache des groupes de visages. Au prochain accès il est reconstruit
+    par _gather_faces, qui honore les marquages pas_visage / non_group."""
+    with CLUSTER_LOCK:
+        CLUSTER_CACHE["clusters"] = []
+        CLUSTER_CACHE["byid"] = {}
+        CLUSTER_CACHE["at"] = 0.0
+
+
+def _marquer_visages(membres, champ):
+    """Pose un marquage humain (pas_visage | non_group) sur un sous-ensemble de
+    visages, de façon réversible. Miroir du chemin « cible spéciale » de
+    attribuer_animaux : la certitude humaine n'est jamais réévaluée."""
+    touches = []
+    for k, i in membres:
+        e = FACE_STORE.data.get(k)
+        faces = (e.get('faces') if isinstance(e, dict) else None) or []
+        if i < len(faces) and not faces[i].get(champ):
+            faces[i][champ] = True
+            faces[i]['par_humain'] = True     # jugement humain, jamais réévalué
+            touches.append((k, i))
+    FACE_STORE.save()
+
+    def defaire():
+        for k, i in touches:
+            e = FACE_STORE.data.get(k)
+            faces = (e.get('faces') if isinstance(e, dict) else None) or []
+            if i < len(faces):
+                faces[i].pop(champ, None)
+                faces[i].pop('par_humain', None)
+        FACE_STORE.save()
+        _invalider_groupes_visages()
+
+    libelle = ("écartée(s) (pas un visage)" if champ == 'pas_visage'
+               else "marquée(s) non regroupable(s)")
+    jeton = _empiler_annulation(f"{len(touches)} vignette(s) {libelle}", defaire)
+    _invalider_groupes_visages()
+    return {"ok": True, "n": len(touches), "jeton": jeton,
+            "libelle": f"{len(touches)} {libelle}"}
+
+
+def _nommer_membres_visages(membres, nom):
+    """Nomme un sous-ensemble de visages : tag personne:Nom + fiche + refs.
+    Réversible. Miroir de _nommer_membres_animaux (harmonisation des pipelines)."""
+    tag = f"personne:{nom}"
+    refs = []
+    for (k, i) in membres:
+        fe = FACE_STORE.data.get(k)
+        faces = (fe.get('faces') if isinstance(fe, dict) else None) or []
+        if i < len(faces):
+            emb = faces[i].get('emb')
+            if emb and len(refs) < 40:
+                refs.append(emb)
+
+    pk = nom.lower()
+    existait = pk in PEOPLE_STORE.data
+    avant = dict(PEOPLE_STORE.data.get(pk) or {})
+    pe = PEOPLE_STORE.data.get(pk) or {"name": nom, "refs": [], "at": time.time()}
+    pe["name"] = nom
+    # Nouvelles refs en tête (une fiche à 80 refs n'en acceptait plus) :
+    # la signature suit la personne qui vieillit.
+    pe["refs"] = (refs + (pe.get("refs") or []))[:80]
+    pe["faces"] = _merge_assigned(pe.get("faces"), membres)
+    PEOPLE_STORE.set(pk, pe)
+
+    ajoutees = []
+    for k in dict.fromkeys(k for (k, _i) in membres):
+        se = STORE.data.get(k)
+        if se is not None and not _kw_has(se, tag):
+            if _index_add_person(k, tag):
+                _enqueue_person_write(k, tag, 'add')
+                ajoutees.append(k)
+    STORE.save()
+
+    def defaire():
+        for k in ajoutees:
+            _index_remove_person(k, tag)
+            _enqueue_person_write(k, tag, 'del')
+        if existait:
+            PEOPLE_STORE.set(pk, avant)
+        else:
+            PEOPLE_STORE.data.pop(pk, None)
+            PEOPLE_STORE.save()
+        STORE.save()
+        _invalider_groupes_visages()
+
+    jeton = _empiler_annulation(
+        f"{len(ajoutees)} photo(s) attribuée(s) à {nom}", defaire)
+    _invalider_groupes_visages()
+    return {"ok": True, "n": len(ajoutees), "jeton": jeton,
+            "libelle": f"{len(ajoutees)} photo(s) → {nom}"}
+
+
+def attribuer_visages(membres, cible):
+    """Attribue un SOUS-ENSEMBLE de visages à un nom, ou l'écarte.
+
+    `membres` : [(clé, index)]. Miroir de attribuer_animaux : sous-ensemble,
+    noms multiples, cibles spéciales. C'est ce qui permet de traiter un groupe
+    mixte (nuques + découpes de chat) sans fonction « scinder » — et de rejeter
+    un groupe entier (tous membres → non_group) ou une vignette (pas_visage).
+    """
+    membres = [(str(k), int(i)) for k, i in membres if str(k)]
+    if not membres:
+        return {"ok": False, "n": 0}
+
+    if isinstance(cible, str) and cible in CIBLES_SPECIALES:
+        champ = 'pas_visage' if cible == CIBLE_PAS_VISAGE else 'non_group'
+        return _marquer_visages(membres, champ)
+
+    noms = cible if isinstance(cible, list) else [cible]
+    noms = [str(n).strip()[:60] for n in noms if str(n).strip()]
+    if not noms:
+        return {"ok": False, "n": 0}
+    resultats = [_nommer_membres_visages(membres, n) for n in noms]
+    if len(resultats) == 1:
+        return resultats[0]
+    jetons = [r["jeton"] for r in resultats if r.get("jeton")]
+
+    def defaire_tout():
+        for j in reversed(jetons):
+            annuler(j)
+
+    total = sum(r["n"] for r in resultats)
+    jeton = _empiler_annulation(f"{total} attribution(s) sur {len(noms)} noms",
+                                defaire_tout)
+    return {"ok": True, "n": total, "jeton": jeton,
+            "libelle": " ; ".join(r["libelle"] for r in resultats)}
 
 
 def maintenance_loop():
@@ -5565,6 +5696,11 @@ def _gather_faces():
         for i, f in enumerate(e.get('faces') or []):
             if (k, i) in assigned:
                 continue
+            # Marquages humains (12b) : une decoupe jugee « pas un visage »
+            # (chat, objet) ou un visage juge « non regroupable » (nuque,
+            # profil detourne) ne doit plus jamais reformer un groupe.
+            if f.get('pas_visage') or f.get('non_group'):
+                continue
             emb = f.get('emb')
             if not emb:
                 continue
@@ -5692,7 +5828,10 @@ def build_clusters():
         for n, c in enumerate(clusters):
             cid = str(n)
             members = c["members"]
+            # « membres » accompagne les vignettes : c'est ce qui permet a
+            # l'interface d'attribuer (ou d'ecarter) un SOUS-ENSEMBLE du groupe.
             light.append({"cid": cid, "size": c["size"],
+                          "membres": [[k, i] for (k, i) in members[:18]],
                           "crops": [_crop_url(k, i) for (k, i) in members[:18]]})
             byid[cid] = members
         with CLUSTER_LOCK:
@@ -6252,6 +6391,10 @@ def build_suggestions():
                         if kw.startswith('personne:'):
                             ptags.add(kw[9:])
                 for i, f in enumerate(e.get('faces') or []):
+                    # 12b : une decoupe marquee « pas un visage » (chat, objet)
+                    # ne doit jamais etre proposee au rattachement a une personne.
+                    if f.get('pas_visage'):
+                        continue
                     emb = f.get('emb')
                     if not emb:
                         continue
@@ -6985,7 +7128,20 @@ button { font-family: inherit; }
 .cl .faces img { width: 66px; height: 66px; object-fit: cover; border-radius: 6px;
                  background: #222; }
 .cl .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-.cl .row .sz { color: #888; font-size: 0.8rem; margin-right: auto; }
+/* 12a — la rangee d'actions ne doit jamais deborder : enfants qui retrecissent,
+   champ elastique, et repli vertical (actions pleine largeur) sous 900px. */
+.cl .row > * { min-width: 0; }
+.cl .row .sz { color: #888; font-size: 0.8rem; flex: 1 1 12rem; margin-right: auto;
+               overflow-wrap: anywhere; }
+.cl .row .qui { flex: 1 1 150px; min-width: 120px; }
+.cl .row input[type=text] { flex: 1 1 12rem; }
+.cl .row .btn, .cl .row .qui, .cl .row input[type=text] { min-height: 44px; }
+@media (max-width: 900px) {
+  .cl .row { align-items: stretch; }
+  .cl .row .sz { flex-basis: 100%; }
+  .cl .row .btn, .cl .row .qui, .cl .row input[type=text] { flex-basis: 100%; width: 100%; }
+  .cl .row > img { align-self: flex-start; }
+}
 input[type=text] { padding: 7px 10px; border-radius: 8px; border: 1px solid #333;
                    background: #1c1c1c; color: #eee; font-size: 0.85rem; outline: none; }
 input[type=text]:focus { border-color: #0a84ff; }
@@ -7261,6 +7417,78 @@ function findMore(name,box){
   });
 }
 
+/* ---- Attribution unifiée des groupes (miroir de la page Animaux) --------
+   Vignettes sélectionnables : on traite un groupe mixte (nuques + découpes de
+   chat) sans « scinder ». Un rejet est une attribution à une cible spéciale :
+   « Ce n'est pas un visage » (découpe de chat/objet → hors pipeline visages),
+   « Rejeter le groupe » (vrais visages non regroupables). Tout est réversible. */
+var SPECIAL_PAS_VISAGE={v:'__pas_visage__', t:'Ce n’est pas un visage',
+  d:'découpe de chat, objet, reflet — écarté du pipeline visages'};
+function carteGroupeP(c){
+  var el=document.createElement('div'); el.className='cl';
+  var membres=c.membres||[];
+  var sel=membres.map(function(){return true;});
+  el.innerHTML='<div class="sz" style="color:#888;font-size:.8rem;margin-bottom:6px">'+c.size+
+      ' visage(s) <span style="color:#9a9aa2">— clique une vignette pour la désélectionner</span></div>'+
+    '<div class="faces"></div>'+
+    '<div class="row"><input type="text" class="qui" placeholder="C’est… (nom de la personne)" autocomplete="off">'+
+    '<button class="btn prim nommer">Attribuer</button>'+
+    '<button class="btn warn rejeter">Rejeter le groupe</button></div>'+
+    '<div class="props2" style="margin-top:6px"></div>';
+  var zone=el.querySelector('.faces');
+  (c.crops||[]).forEach(function(u,i){
+    var b=document.createElement('button'); b.type='button';
+    b.style.cssText='padding:0;border:none;background:none;cursor:pointer;position:relative;line-height:0';
+    b.innerHTML='<img loading="lazy" src="'+esc(u)+'" alt="">';
+    function paint(){ b.setAttribute('aria-pressed',sel[i]?'true':'false');
+      b.style.opacity=sel[i]?'1':'.35';
+      b.style.outline=sel[i]?'2px solid #4a8c7b':'none'; b.style.outlineOffset='-2px'; }
+    b.onclick=function(){ sel[i]=!sel[i]; paint(); maj(); };
+    paint(); zone.appendChild(b);
+  });
+  var inp=el.querySelector('input'), btn=el.querySelector('.nommer'),
+      rej=el.querySelector('.rejeter'), props=el.querySelector('.props2');
+  function choisis(){ return membres.filter(function(_m,i){return sel[i];}); }
+  function maj(){ btn.textContent='Attribuer '+choisis().length; }
+  function envoyer(cible, tous){
+    var m=tous?membres:choisis();
+    if(!m.length){ inp.focus(); return; }
+    // Deux personnes sur la même vignette : plusieurs noms séparés par « , » ou « + ».
+    if(typeof cible==='string' && /[,+]/.test(cible))
+      cible=cible.split(/\\s*[,+]\\s*/).filter(Boolean);
+    btn.disabled=true; rej.disabled=true;
+    post('/api/assign',{genre:'visage',membres:m,cible:cible}).then(function(r){
+      btn.disabled=false; rej.disabled=false;
+      if(!r.ok){ props.textContent=r.erreur||'échec'; return; }
+      toastP(r.libelle||'fait', r.jeton, function(){ loadClusters(true); loadPeople(); });
+      if(m.length>=membres.length){ el.remove(); } else { loadClusters(true); }
+      loadPeople();
+    });
+  }
+  function listeProps(){
+    var t=inp.value.trim().toLowerCase();
+    nomsPersonnes().then(function(noms){
+      props.innerHTML='';
+      noms.filter(function(p){return !t||p.nom.toLowerCase().indexOf(t)===0;})
+        .slice(0,4).forEach(function(p){ props.appendChild(prop(p.nom+' · '+p.n, p.nom)); });
+      if(t && !noms.some(function(p){return p.nom.toLowerCase()===t;}))
+        props.appendChild(prop('Nouveau : '+inp.value.trim(), inp.value.trim()));
+      if(!t) props.appendChild(prop(SPECIAL_PAS_VISAGE.t+' — '+SPECIAL_PAS_VISAGE.d,
+                                    SPECIAL_PAS_VISAGE.v));
+    });
+  }
+  function prop(txt,val){
+    var b=document.createElement('button'); b.className='btn';
+    b.style.cssText='display:block;width:100%;text-align:left;margin:2px 0;font-size:12.5px';
+    b.textContent=txt; b.onclick=function(){ envoyer(val,false); }; return b;
+  }
+  inp.addEventListener('input',listeProps);
+  inp.addEventListener('keydown',function(e){ if(e.key==='Enter'&&inp.value.trim()) envoyer(inp.value.trim(),false); });
+  btn.onclick=function(){ if(inp.value.trim()) envoyer(inp.value.trim(),false); else inp.focus(); };
+  rej.onclick=function(){ envoyer('__non_group__', true); };
+  maj(); listeProps();
+  return el;
+}
 function loadClusters(rebuild){
   fetch('/api/people/clusters'+(rebuild?'?rebuild=1':'')).then(function(r){return r.json();}).then(function(d){
     var msg=document.getElementById('clmsg'), box=document.getElementById('clusters');
@@ -7270,25 +7498,7 @@ function loadClusters(rebuild){
     if(!d.clusters.length){ msg.textContent='Aucun groupe. Clique « Regrouper » (le scan des visages doit être avancé).'; box.innerHTML=''; return; }
     msg.textContent='';
     box.innerHTML='';
-    d.clusters.forEach(function(c){
-      var el=document.createElement('div'); el.className='cl';
-      var imgs=c.crops.map(function(u){return '<img loading="lazy" src="'+esc(u)+'">';}).join('');
-      el.innerHTML='<div class="faces">'+imgs+'</div>'+
-        '<div class="row"><span class="sz">'+c.size+' visages</span>'+
-        '<input type="text" placeholder="Nom de la personne">'+
-        '<button class="btn prim">Nommer</button></div>';
-      var inp=el.querySelector('input'), btn=el.querySelector('button');
-      function go(){
-        var nm=inp.value.trim(); if(!nm) return;
-        btn.textContent='…'; btn.disabled=true;
-        post('/api/people/name',{cid:c.cid,name:nm}).then(function(r){
-          el.outerHTML='<div class="cl"><div class="msg">✓ '+esc(nm)+' — '+r.tagged+' photo(s) taguée(s).</div></div>';
-          loadPeople();
-        });
-      }
-      btn.onclick=go; inp.addEventListener('keydown',function(e){if(e.key==='Enter')go();});
-      box.appendChild(el);
-    });
+    d.clusters.forEach(function(c){ box.appendChild(carteGroupeP(c)); });
   });
 }
 
@@ -7305,9 +7515,10 @@ function nomsPersonnes(){
   return fetch('/api/names?genre=personne').then(function(r){return r.json();})
     .then(function(d){ NOMS_P=d.noms||[]; return NOMS_P; });
 }
-function toastP(msg, jeton){
+function toastP(msg, jeton, apres){
   var t=document.getElementById('toastp');
   if(!t){ t=document.createElement('div'); t.id='toastp';
+    t.setAttribute('role','status'); t.setAttribute('aria-live','polite');
     t.style.cssText='position:sticky;bottom:12px;margin:12px auto 0;max-width:520px;display:flex;'+
       'align-items:center;gap:12px;background:#161616;border:1px solid #2a2a2a;border-radius:999px;'+
       'padding:10px 10px 10px 18px;font-size:13px;z-index:60';
@@ -7315,7 +7526,8 @@ function toastP(msg, jeton){
   t.innerHTML='<span style="flex:1"></span>'; t.firstChild.textContent=msg;
   if(jeton){ var b=document.createElement('button'); b.className='btn'; b.textContent='Annuler';
     b.onclick=function(){ fetch('/api/undo',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({jeton:jeton})}).then(function(){ t.remove(); loadCurator(true); }); };
+      body:JSON.stringify({jeton:jeton})}).then(function(){ t.remove();
+        if(apres){ apres(); } else { loadCurator(true); } }); };
     t.appendChild(b); }
   clearTimeout(t._m); t._m=setTimeout(function(){ t.remove(); },10000);
 }
@@ -7406,7 +7618,7 @@ function loadCurator(rebuild){
         html='<div class="row" style="align-items:center">'+crop+
           '<a href="'+esc(s.url)+'" target="_blank" rel="noopener" class="sz" style="text-decoration:none;color:#9db8d8">'+label+'</a>'+
           '<button class="btn prim">'+yes+'</button>'+
-          '<input class="qui" placeholder="ou : c’est…" autocomplete="off" style="width:150px">'+
+          '<input class="qui" placeholder="ou : c’est…" autocomplete="off">'+
           '<button class="btn">✗ Aucun</button></div>'+
           '<div class="props2" style="margin-top:6px"></div>';
       }
@@ -8315,8 +8527,13 @@ class Handler(BaseHTTPRequestHandler):
             if genre == 'animal':
                 res = attribuer_animaux(d.get('membres') or [], cible)
             elif genre == 'visage':
-                res = attribuer_visage(d.get('cle', ''), int(d.get('i', 0) or 0),
-                                       cible, d.get('propose', ''))
+                # Deux formes : attribution par SOUS-ENSEMBLE (groupes, avec
+                # « membres ») ou suggestion unitaire du curateur (cle + i).
+                if d.get('membres'):
+                    res = attribuer_visages(d.get('membres') or [], cible)
+                else:
+                    res = attribuer_visage(d.get('cle', ''), int(d.get('i', 0) or 0),
+                                           cible, d.get('propose', ''))
             else:
                 res = {"ok": False, "erreur": "genre inconnu"}
         except Exception as e:                                # noqa: BLE001
