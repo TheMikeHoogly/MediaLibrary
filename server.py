@@ -126,6 +126,14 @@ REEMBED_UI_QUIET = 12           # s : le ré-embedding cède le NAS après une r
 FACE_THUMB_DIR = SCRIPT_DIR / "face_thumbs"   # cache disque local des vignettes de visages
 LAST_HEAVY_AT = 0.0             # dernier accès NAS via l'UI (crop/média/upload)
 
+# ─── Orchestrateur de maintenance (nettoyage/dédoublonnage/purge/renommage) ───
+# Un thread de fond appelle maintenance.run_cycle : chaque étape a sa cadence et
+# son autonomie (auto pour le sûr et réversible, propose pour le gros). Il vit
+# DANS le serveur pour partager l'index en mémoire (écrivain unique, pas de cache
+# périmé) et céder à l'UI. Voir maintenance.py. Mettre à False pour le désactiver.
+MAINTENANCE_AUTO = True
+MAINTENANCE_EVERY = 3600        # s : fréquence d'évaluation du cycle (les étapes gardent leur propre cadence)
+
 # ─── Reconnaissance des animaux — Phase 1 : détection (YOLO / Ultralytics) ───
 # Chaîne SÉPARÉE des visages : YOLO trouve les animaux (chat/chien/oiseau…),
 # résultats écrits dans animals_index.json. Le nommage individuel (Caline, Inti,
@@ -2569,6 +2577,73 @@ def maintenance_loop():
         if cycle % DB_BACKUP_EVERY == 0:
             backup_db()
         time.sleep(SCAN_INTERVAL)
+
+
+class _MaintSv:
+    """Pont serveur → maintenance.run_cycle. Injecte l'index EN MÉMOIRE du
+    serveur (écrivain unique, donc pas de cache périmé) et rekey_everywhere pour
+    les étapes mutantes ; les étapes lecture seule (recensement, plan) partent en
+    sous-processus. is_busy() reflète l'activité UI + la charge machine, pour
+    céder la priorité. Voir maintenance.py."""
+
+    def __init__(self):
+        import maintenance as _m
+        self.dry = False
+        self.autonomy = dict(_m.AUTONOMY)
+        self.intervals = dict(_m.INTERVALS)
+        docs = SCRIPT_DIR / 'docs'
+        corb = None
+        try:
+            corb = json.loads((docs / 'plan_rangement.json')
+                              .read_text(encoding='utf-8')).get('corbeille')
+        except Exception:
+            pass
+        self.paths = {'corbeille': corb,
+                      'plan': str(docs / 'plan_rangement.json'),
+                      'recensement': str(docs / 'recensement.json'),
+                      'state': str(docs / 'maintenance_state.json'),
+                      'report': str(docs / 'maintenance_report.json'),
+                      'racine': str(SCRIPT_DIR)}
+
+    def rekey(self, old, new):
+        return rekey_everywhere(old, new)
+
+    def tags_get(self, k):
+        return STORE.data.get(k)
+
+    def tags_set(self, k, e):
+        STORE.set(k, e, save=False)
+
+    def tags_save(self):
+        STORE.save()
+
+    def is_busy(self):
+        return system_busy() or ui_recent()
+
+    def log(self, m):
+        print(f"  🧹 maintenance : {m}")
+
+    def run_readonly(self, args):
+        import subprocess
+        return subprocess.run([sys.executable] + list(args),
+                              cwd=str(SCRIPT_DIR)).returncode
+
+
+def maintenance_orchestrator():
+    """Thread de fond : évalue le cycle de maintenance à intervalle régulier.
+    Chaque étape décide elle-même si elle est due (voir maintenance.py). Ne
+    démarre rien tant que MAINTENANCE_AUTO est False."""
+    if not MAINTENANCE_AUTO:
+        return
+    import maintenance as _m
+    time.sleep(120)                      # laisse le scan initial se poser
+    sv = _MaintSv()
+    while True:
+        try:
+            _m.run_cycle(sv)
+        except Exception as e:
+            print(f"  ⚠ maintenance : {e}")
+        time.sleep(MAINTENANCE_EVERY)
 
 
 def backup_db():
@@ -8910,6 +8985,7 @@ if __name__ == '__main__':
     threading.Thread(target=curator_loop, daemon=True).start()
     threading.Thread(target=reembed_loop, daemon=True).start()
     threading.Thread(target=semantic_loop, daemon=True).start()
+    threading.Thread(target=maintenance_orchestrator, daemon=True).start()
 
     with QuietServer(('', PORT), Handler) as httpd:
         httpd.allow_reuse_address = True

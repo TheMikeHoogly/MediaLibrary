@@ -153,7 +153,7 @@ def purge(corbeille, jours, appliquer, verifier_canon):
           f"| sans manifeste : {stats['sans_manifeste']}")
     if not appliquer:
         print("(dry-run — rien supprime. Ajoute --appliquer pour purger.)")
-    return 0
+    return stats
 
 
 def main():
@@ -171,7 +171,8 @@ def main():
         print("Corbeille inconnue : passe --corbeille <chemin> "
               "(ou garde docs/plan_rangement.json qui la contient).")
         return 2
-    return purge(corbeille, args.jours, args.appliquer, args.verifier_canon)
+    purge(corbeille, args.jours, args.appliquer, args.verifier_canon)
+    return 0
 
 
 if __name__ == '__main__':

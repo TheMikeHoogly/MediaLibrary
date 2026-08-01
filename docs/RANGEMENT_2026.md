@@ -264,6 +264,36 @@ vert) : aperçu → confirmation → purge. Pour l'automatiser : planifier
 **Reste du chantier rangement :** le **rangement par année** des `_A TRIER`
 (Phase 2 restante ci-dessus, besoin de l'inventaire complet).
 
+### Orchestrateur de maintenance intégré au serveur (01/08)
+
+Plus de tâche Windows manuelle : `maintenance.py` fournit `run_cycle(sv)` que le
+serveur appelle dans un **thread de fond** (`maintenance_orchestrator`, démarré
+avec les autres, config `MAINTENANCE_AUTO`/`MAINTENANCE_EVERY` en tête de
+`server.py`). Il « tourne tout seul quand le serveur tourne » et se migre avec lui.
+
+Chaque étape a sa **cadence** (`INTERVALS`) et son **autonomie** (`AUTONOMY`) :
+`auto` pour le sûr et réversible, `propose` pour le gros, `off` pour couper.
+Réglage livré : **purge** (auto, 1 j), **dédoublonnage** (auto, applique les
+quarantaines encore en attente du plan — 1 j), **recensement+plan** (`propose` :
+lecture seule mais ~4 h, à passer `auto` si on veut l'hebdo automatique),
+**renommage `_Uploads`** et **rangement par année** (`propose`).
+
+Découpage gouverné par la **concurrence** : les étapes lecture seule
+(recensement, plan) partent en **sous-processus** (aucun conflit d'index) ; les
+étapes qui **mutent** l'index (dédoublonnage) tournent **dans le serveur** via
+`rekey_everywhere` et `STORE` (écrivain unique, pas de cache périmé — le piège
+qui obligeait à arrêter le serveur pour `appliquer_plan`) ; la purge est FS-only.
+Tout ce qui est lourd cède à l'UI (`system_busy() or ui_recent()`), y compris en
+cours de lot (le dédoublonnage s'interrompt et reprend au tour suivant).
+
+État/rapport dans `docs/maintenance_state.json` + `maintenance_report.json` +
+`maintenance.log`. Testé (`test_maintenance.py`, FauxServeur) : cadence,
+autonomie, priorité UI, cycle réel (dédoublonnage in-process + fusion de nom +
+purge). Lanceur manuel `25 - Maintenance.bat` (ASCII pur) pour forcer une passe
+serveur arrêté. **À vérifier en réel (édition de `server.py`, non testable hors
+machine) :** démarrage du serveur, thread actif, premier cycle (no-op attendu :
+plan déjà appliqué, rien de vieux à purger, recensement en `propose`).
+
 ## Décisions tranchées (avec Mike, 31/07)
 
 1. **Suppression des doublons : quarantaine réversible 30 jours.** Jamais de `rm`
