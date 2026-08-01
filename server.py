@@ -3132,124 +3132,129 @@ GALLERY_PAGE = """<!DOCTYPE html>
 <title>Galerie photos</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <style>
+/* Etape A tokenisation « chambre noire ». Filtres actifs (personne, tag, tri,
+   geo) = fixateur (selection humaine) ; bandeau IA + barre de progression =
+   veilleuse (en cours) ; « Tout effacer » = encre ; boutons primaires = papier ;
+   focus = veilleuse. Grille repeat(5) laissee telle quelle (planche contact
+   auto-fill = redesign etape B, point 11). Structure/espacements inchanges. */
 * { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-        background: #0f0f0f; color: #f0f0f0; min-height: 100vh; }
-/* ── filtres personnes + géo ── */
+body { font-family: var(--f-texte);
+        background: var(--salle); color: var(--texte); min-height: 100vh; }
+/* -- filtres personnes + geo -- */
 .selbar { display: flex; align-items: center; gap: 6px; padding: 8px 16px;
-          background: #121212; border-bottom: 1px solid #1e1e1e; flex-wrap: wrap; }
-.selbar .lbl { color: #888; font-size: 0.75rem; margin-right: 2px; }
-.pchip { padding: 5px 12px; border-radius: 999px; border: 1px solid #333;
-         background: #1c1c1c; color: #cbd; font-size: 0.8rem; cursor: pointer; }
-.pchip.on { background: #128a5b; border-color: #128a5b; color: #fff; }
-.geobtn { padding: 5px 12px; border-radius: 8px; border: 1px solid #2a3350;
-          background: #1c2233; color: #7db4ff; font-size: 0.8rem; cursor: pointer; }
-.geobtn.on { background: #0a84ff; border-color: #0a84ff; color: #fff; }
-#geopanel { display: none; padding: 10px 16px; background: #101010;
-            border-bottom: 1px solid #1e1e1e; }
+          background: var(--salle-2); border-bottom: var(--trait); flex-wrap: wrap; }
+.selbar .lbl { color: var(--graphite); font-size: 0.75rem; margin-right: 2px; }
+.pchip { padding: 5px 12px; border-radius: 999px; border: var(--trait);
+         background: var(--salle-3); color: var(--graphite); font-size: 0.8rem; cursor: pointer; }
+.pchip.on { background: var(--fixateur); border-color: var(--fixateur); color: #fff; }
+.geobtn { padding: 5px 12px; border-radius: 8px; border: var(--trait);
+          background: var(--salle-3); color: var(--texte); font-size: 0.8rem; cursor: pointer; }
+.geobtn.on { background: var(--fixateur); border-color: var(--fixateur); color: #fff; }
+#geopanel { display: none; padding: 10px 16px; background: var(--salle);
+            border-bottom: var(--trait); }
 #geopanel.open { display: block; }
-#geomap { height: 300px; border-radius: 10px; overflow: hidden; background: #202020; }
+#geomap { height: 300px; border-radius: 10px; overflow: hidden; background: var(--salle-3); }
 .georow { display: flex; align-items: center; gap: 10px; margin-top: 8px; flex-wrap: wrap; }
-.georow input[type=range] { flex: 1; min-width: 140px; }
-.georow .cnt { color: #7db4ff; font-size: 0.85rem; }
-.georow button { padding: 6px 12px; border-radius: 8px; border: 1px solid #333;
-                 background: #1e1e1e; color: #ddd; font-size: 0.82rem; cursor: pointer; }
-.georow button.prim { background: #0a84ff; border-color: #0a84ff; color: #fff; }
+.georow input[type=range] { flex: 1; min-width: 140px; accent-color: var(--fixateur); }
+.georow .cnt { color: var(--graphite); font-size: 0.85rem; font-family: var(--f-donnees); }
+.georow button { padding: 6px 12px; border-radius: 8px; border: var(--trait);
+                 background: var(--salle-3); color: var(--texte); font-size: 0.82rem; cursor: pointer; }
+.georow button.prim { background: var(--papier); border-color: var(--papier); color: var(--texte-papier); }
 
-/* ── toolbar ── */
+/* -- toolbar -- */
 .bar { display: flex; align-items: center; gap: 10px; padding: 14px 16px;
-        background: #161616; border-bottom: 1px solid #222; flex-wrap: wrap; }
-.back { color: #0a84ff; text-decoration: none; font-size: 0.9rem; margin-right: auto; }
+        background: var(--salle-2); border-bottom: var(--trait); flex-wrap: wrap; }
+.back { color: var(--texte); text-decoration: none; font-size: 0.9rem; margin-right: auto; }
 .btn-group { display: flex; gap: 6px; }
-.tb { padding: 7px 14px; border: 1px solid #333; border-radius: 8px;
-       background: #1e1e1e; color: #ccc; font-size: 0.85rem; cursor: pointer; }
-.tb.active { background: #0a84ff; border-color: #0a84ff; color: #fff; }
-.tb.demo { background: #1a1a2e; border-color: #3a3a6e; }
-.tb.demo.on { background: #5856d6; border-color: #5856d6; color: #fff; }
-.count { color: #555; font-size: 0.8rem; }
-#q { padding: 7px 12px; border-radius: 8px; border: 1px solid #333;
-     background: #1c1c1c; color: #eee; font-size: 0.85rem; width: 180px; outline: none; }
-#q:focus { border-color: #0a84ff; }
+.tb { padding: 7px 14px; border: var(--trait); border-radius: 8px;
+       background: var(--salle-3); color: var(--texte); font-size: 0.85rem; cursor: pointer; }
+.tb.active { background: var(--fixateur); border-color: var(--fixateur); color: #fff; }
+.tb.demo { background: var(--salle-3); border-color: var(--graphite); }
+.tb.demo.on { background: var(--fixateur); border-color: var(--fixateur); color: #fff; }
+.count { color: var(--graphite); font-size: 0.8rem; font-family: var(--f-donnees); }
+#q { padding: 7px 12px; border-radius: 8px; border: var(--trait);
+     background: var(--salle-3); color: var(--texte); font-size: 0.85rem; width: 180px; outline: none; }
+#q:focus { border-color: var(--veilleuse); }
 
 /* ── bandeau IA ── */
-#pending { display: none; padding: 8px 16px; background: #14203a; color: #7db4ff;
-           font-size: 0.85rem; border-bottom: 1px solid #1d2c4f; }
-#pending a { color: #0a84ff; }
+#pending { display: none; padding: 8px 16px; background: var(--salle-2); color: var(--veilleuse);
+           font-size: 0.85rem; border-bottom: 1px solid var(--veilleuse-d); }
+#pending a { color: var(--veilleuse); }
 
-/* ── barre de tags ── */
+/* -- barre de tags -- */
 .tagbar { display: flex; align-items: center; gap: 6px; padding: 10px 16px;
-          background: #121212; border-bottom: 1px solid #1e1e1e; flex-wrap: wrap; }
-.chip { padding: 5px 12px; border-radius: 999px; border: 1px solid #333;
-        background: #1c1c1c; color: #bbb; font-size: 0.8rem; cursor: pointer;
+          background: var(--salle-2); border-bottom: var(--trait); flex-wrap: wrap; }
+.chip { padding: 5px 12px; border-radius: 999px; border: var(--trait);
+        background: var(--salle-3); color: var(--graphite); font-size: 0.8rem; cursor: pointer;
         user-select: none; }
-.chip .n { color: #666; font-size: 0.7rem; margin-left: 4px; }
-.chip.on { background: #0a84ff; border-color: #0a84ff; color: #fff; }
-.chip.on .n { color: #cfe4ff; }
-.chip.mode { background: #2a1a2e; border-color: #6e3a6e; color: #d8b0e0; }
-.chip.clear { background: #2e1a1a; border-color: #6e3a3a; color: #e0b0b0; display: none; }
-.tagbar-label { color: #555; font-size: 0.75rem; margin-right: 4px; }
+.chip .n { color: var(--graphite); font-size: 0.7rem; margin-left: 4px; font-family: var(--f-donnees); }
+.chip.on { background: var(--fixateur); border-color: var(--fixateur); color: #fff; }
+.chip.on .n { color: #fff; }
+.chip.mode { background: var(--salle-3); border-color: var(--graphite); color: var(--texte); }
+.chip.clear { background: transparent; border-color: var(--encre); color: var(--encre); display: none; }
+.tagbar-label { color: var(--graphite); font-size: 0.75rem; margin-right: 4px; }
 .tagchips { display: flex; flex-wrap: wrap; gap: 6px; width: 100%; margin-top: 8px; }
 .tagchips.hidden { display: none; }
 
-/* ── barre de dossiers ── */
+/* -- barre de dossiers -- */
 .folders { display: flex; flex-wrap: wrap; gap: 6px; padding: 10px 16px;
-           background: #121212; border-bottom: 1px solid #1e1e1e; }
-.fchip { padding: 6px 12px; border-radius: 8px; background: #1c2233; color: #7db4ff;
-         text-decoration: none; font-size: 0.85rem; border: 1px solid #2a3350; }
-.fchip.up { background: #221c33; border-color: #3a2a50; color: #c0a0e0; }
+           background: var(--salle-2); border-bottom: var(--trait); }
+.fchip { padding: 6px 12px; border-radius: 8px; background: var(--salle-3); color: var(--texte);
+         text-decoration: none; font-size: 0.85rem; border: var(--trait); }
+.fchip.up { background: var(--salle-3); border-color: var(--graphite); color: var(--graphite); }
 
 /* ── grid ── */
 .grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; padding: 6px; }
 @media (max-width: 700px) { .grid { grid-template-columns: repeat(3, 1fr); } }
 
-.cell { background: #161616; border-radius: 8px; overflow: hidden; cursor: pointer; }
-.cell .ph { position: relative; aspect-ratio: 1; overflow: hidden; background: #1a1a1a; }
+.cell { background: var(--salle-3); border-radius: 8px; overflow: hidden; cursor: pointer; }
+.cell .ph { position: relative; aspect-ratio: 1; overflow: hidden; background: var(--salle-3); }
 .cell img { width: 100%; height: 100%; object-fit: cover; display: block;
              opacity: 0; transition: opacity 0.3s, transform 0.2s; }
 .cell img.loaded { opacity: 1; }
 .cell:hover img { transform: scale(1.05); }
-.caption { padding: 5px 7px 6px; font-size: 0.65rem; line-height: 1.25; color: #9db8d8;
+.caption { padding: 5px 7px 6px; font-size: 0.65rem; line-height: 1.25; color: var(--graphite);
            min-height: 2.3em; display: -webkit-box; -webkit-line-clamp: 2;
            -webkit-box-orient: vertical; overflow: hidden; }
-.caption.empty { color: #555; font-style: italic; }
+.caption.empty { color: var(--graphite); font-style: italic; }
 
-/* ── lightbox ── */
+/* -- lightbox -- */
 #lb { display: none; position: fixed; inset: 0; background: #000;
        z-index: 100; flex-direction: column; }
 #lb.open { display: flex; }
 #lb-img { flex: 1; object-fit: contain; width: 100%; min-height: 0; }
-#lb-meta { background: #111; padding: 10px 16px 0; }
-#lb-tags { font-size: 0.9rem; color: #7db4ff; line-height: 1.4; }
-#lb-tags.none { color: #666; font-style: italic; }
-#lb-desc { font-size: 0.8rem; color: #999; margin-top: 3px; font-style: italic; }
-#lb-bar { background: #111; padding: 10px 16px; display: flex;
+#lb-meta { background: var(--salle-2); padding: 10px 16px 0; }
+#lb-tags { font-size: 0.9rem; color: var(--texte); line-height: 1.4; }
+#lb-tags.none { color: var(--graphite); font-style: italic; }
+#lb-desc { font-size: 0.8rem; color: var(--graphite); margin-top: 3px; font-style: italic; }
+#lb-bar { background: var(--salle-2); padding: 10px 16px; display: flex;
            align-items: center; gap: 12px; flex-shrink: 0; }
-#lb-name { flex: 1; font-size: 0.85rem; color: #aaa;
+#lb-name { flex: 1; font-size: 0.85rem; color: var(--graphite);
             overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-#lb-close { color: #fff; background: #333; border: none; border-radius: 8px;
+#lb-close { color: #fff; background: var(--salle-3); border: none; border-radius: 8px;
              padding: 6px 14px; cursor: pointer; font-size: 0.9rem; }
-#lb-prev, #lb-next { color: #fff; background: #222; border: none;
+#lb-prev, #lb-next { color: #fff; background: var(--salle-3); border: none;
                       border-radius: 8px; padding: 6px 12px; cursor: pointer; font-size: 1.1rem; }
 
-/* ── slideshow ── */
+/* -- slideshow -- */
 #ss { display: none; position: fixed; inset: 0; background: #000;
        z-index: 200; flex-direction: column; }
 #ss.open { display: flex; }
 #ss-img { flex: 1; object-fit: contain; width: 100%; min-height: 0; }
-#ss-footer { background: #0a0a0a; padding: 10px 16px; flex-shrink: 0; }
-#ss-name { font-size: 0.85rem; color: #888; text-align: center; margin-bottom: 6px;
+#ss-footer { background: var(--salle); padding: 10px 16px; flex-shrink: 0; }
+#ss-name { font-size: 0.85rem; color: var(--graphite); text-align: center; margin-bottom: 6px;
             white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 #ss-folderwrap { text-align: center; margin-bottom: 8px; }
-#ss-folder { display: inline-block; color: #cfe1ff; background: #1c2a44;
-            border: 1px solid #33517f; border-radius: 8px; padding: 5px 12px;
+#ss-folder { display: inline-block; color: var(--texte); background: var(--salle-3);
+            border: var(--trait); border-radius: 8px; padding: 5px 12px;
             font-size: 0.82rem; text-decoration: none; max-width: 80vw;
             overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-#ss-folder:hover { background: #26406b; }
+#ss-folder:hover { background: var(--salle-2); }
 #ss-folder.hidden { display: none; }
-#ss-track { height: 4px; background: #222; border-radius: 2px; overflow: hidden; }
-#ss-fill { height: 100%; background: #0a84ff; width: 0%; transition: width linear; }
+#ss-track { height: 4px; background: var(--salle-3); border-radius: 2px; overflow: hidden; }
+#ss-fill { height: 100%; background: var(--veilleuse); width: 0%; transition: width linear; }
 #ss-stop { position: absolute; top: 14px; right: 14px; background: rgba(0,0,0,0.6);
-            color: #fff; border: 1px solid #444; border-radius: 8px;
+            color: #fff; border: var(--trait); border-radius: 8px;
             padding: 6px 14px; cursor: pointer; font-size: 0.85rem; z-index: 201; }
 </style>
 </head>
@@ -4075,7 +4080,7 @@ __FOLDERS__
     var pts = [];
     FILES.forEach(function(f) {
       if (f.gps) {
-        L.circleMarker([f.gps[0], f.gps[1]], { radius: 3, color: '#0a84ff', weight: 1, fillOpacity: 0.6 }).addTo(geoMap);
+        L.circleMarker([f.gps[0], f.gps[1]], { radius: 3, color: '#4A8C7B', weight: 1, fillOpacity: 0.6 }).addTo(geoMap);  /* --fixateur */
         pts.push([f.gps[0], f.gps[1]]);
       }
     });
@@ -4093,7 +4098,7 @@ __FOLDERS__
     if (!geoCenter) return;
     var km = parseInt(document.getElementById('georadius').value, 10);
     if (geoCircle) geoMap.removeLayer(geoCircle);
-    geoCircle = L.circle(geoCenter, { radius: km * 1000, color: '#0a84ff', fillOpacity: 0.08 }).addTo(geoMap);
+    geoCircle = L.circle(geoCenter, { radius: km * 1000, color: '#4A8C7B', fillOpacity: 0.08 }).addTo(geoMap);  /* --fixateur (zone) */
     var n = 0;
     FILES.forEach(function(f) {
       if (f.gps && haversine(geoCenter[0], geoCenter[1], f.gps[0], f.gps[1]) <= km) n++;
