@@ -7268,16 +7268,24 @@ input[type=text]:focus { border-color: var(--veilleuse); }
 #quickname { display: none; position: fixed; inset: 0; z-index: 600;
              background: rgba(0,0,0,.85); padding: 20px; overflow: auto; }
 #quickname.open { display: block; }
-.qn-card { max-width: 900px; margin: 20px auto; background: var(--salle-3);
-           border: var(--trait); border-radius: 12px; padding: 16px; }
-.qn-h { font-size: 1rem; color: var(--texte); margin-bottom: 10px; }
+/* Etape B — deux registres : la modale « nommer rapidement » est une SURFACE
+   DE TRAVAIL (papier), posee sur un scrim sombre. Champ clair, boutons adaptes
+   au fond clair ; « Nommer » = fixateur (confirmation humaine). */
+.qn-card { max-width: 900px; margin: 20px auto; background: var(--papier);
+           color: var(--texte-papier); border: 1px solid var(--papier-2);
+           border-radius: var(--r-md); padding: 16px;
+           box-shadow: 0 1px 0 var(--papier-2), 0 12px 40px #000a; }
+.qn-h { font-size: 1rem; color: var(--texte-papier); margin-bottom: 10px; }
 .qn-faces { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px,1fr));
             gap: 6px; margin-bottom: 12px; }
-.qn-faces img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 8px; background: var(--salle-3); }
+.qn-faces img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 8px; background: var(--papier-2); }
 #qn-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 #qn-input { flex: 1; min-width: 200px; padding: 9px 12px; border-radius: 8px;
-            border: var(--trait); background: var(--salle-3); color: var(--texte); font-size: 0.95rem; outline: none; }
+            border: 1px solid var(--papier-2); background: #fff; color: var(--texte-papier); font-size: 0.95rem; outline: none; }
 #qn-input:focus { border-color: var(--veilleuse); }
+/* Controles sur papier : boutons a contour, primaire = fixateur (confirmer). */
+.qn-card .btn { background: transparent; border-color: var(--graphite-p); color: var(--texte-papier); }
+.qn-card .btn.prim { background: var(--fixateur); border-color: var(--fixateur); color: #fff; }
 </style>
 </head>
 <body>
