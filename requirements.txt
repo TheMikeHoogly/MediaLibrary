@@ -1,0 +1,37 @@
+# Dependances des PIPELINES IA (visages, animaux, chats, tagging, semantique).
+# ──────────────────────────────────────────────────────────────────────────────
+# Le SERVEUR est en stdlib PURE : il demarre sans aucun de ces paquets (imports
+# paresseux, invariant « zero dependance au demarrage »). Ces paquets ne servent
+# qu'aux traitements de fond.
+#
+# torch N'EST PAS ici : installer.py le pose A PART (build CUDA ou CPU) AVANT ce
+# fichier. Le mettre ici laisserait pip installer une build CPU par transitivite
+# (via ultralytics / open_clip / timm) et casser le GPU. Installer torch d'abord,
+# puis `pip install -r requirements.txt` : pip voit torch deja satisfait et n'y
+# touche pas.
+#
+# onnxruntime(-gpu) est aussi pose par installer.py (choix GPU/CPU + repli).
+
+# Images
+Pillow
+pillow-heif
+piexif
+
+# Calcul / sonde materielle
+numpy
+psutil
+opencv-python
+
+# Reconnaissance de visages (InsightFace / ArcFace)
+insightface
+
+# Detection d'animaux (YOLO) + empreintes chats (DINOv2 via timm)
+ultralytics
+timm
+
+# Recherche semantique (SigLIP 2)
+open_clip_torch
+ftfy
+regex
+huggingface_hub
+transformers

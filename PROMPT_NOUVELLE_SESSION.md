@@ -124,9 +124,16 @@ ouverts (voir plus bas) mais ne sont pas la priorité immédiate.
      (`test_maintenance.py`). `25 - Maintenance.bat` = passe manuelle (serveur
      arrêté). **À VALIDER EN RÉEL** : démarrage serveur + 1er cycle (édition
      monolithe non testable hors machine ; 1er cycle = no-op attendu).
-   - **Prochain gros bloc : installateur / migration nouveau PC** (venv, deps,
-     modèles Ollama/InsightFace/YOLO/DINOv2, config chemins, auto-démarrage,
-     migration photos.db + lieux.txt + XMP). Décidé après l'orchestrateur.
+   - **Installateur / migration nouveau PC : ✓ FAIT (01/08).** `installer.py`
+     (venv, torch CUDA/CPU auto, deps via `requirements.txt`, `ollama pull`,
+     gabarits config, `--check` doctor, `--prewarm`, `--autostart` raccourci
+     démarrage) ; `migrer.py` export/import de l'état (photos.db+wal/shm + configs
+     .txt) en zip, **testé** (`test_migrer.py`) ; lanceurs `1 - Installer (nouveau
+     PC).bat`, `Migrer - Exporter/Importer …bat` (ASCII pur) ; runbook
+     `INSTALLATION.md`. Rappel : les daemons vivent dans le serveur → « démarrer
+     le serveur » relance tout ; noms humains dans les XMP (voyagent avec le NAS).
+     **À valider sur le vrai nouveau PC** (installer.py non testable hors Windows ;
+     `--check` pour diagnostiquer).
    - Prérequis Phase 1 : `vectors.rekey_prefix`/`rekey_prefix_all` **faits et
      testés** (`test_rekey_vectors.py` 12/12, `test_vectors` 29/29).
    - **Renommage intelligent** : spec convergée avec Mike (voir RANGEMENT, section

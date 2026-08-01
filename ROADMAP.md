@@ -455,6 +455,20 @@ UI), **puis** la vidéo, **puis** l'audio. Toute nouvelle abstraction (magasin d
 vecteurs, magasin de sujets, schéma d'index) se conçoit en gardant ces deux
 modalités futures à l'esprit, pour ne pas avoir à tout refaire.
 
+## Déploiement & migration (nouveau PC) — ✓ FAIT (01/08)
+
+Remonter le projet sur une machine neuve est automatisé et documenté
+(`INSTALLATION.md`). Trois choses vivent séparément : le **code** (git clone),
+l'**état** (`migrer.py` — archive de `photos.db`+wal/shm + configs `.txt`,
+**testé**), l'**environnement** (`installer.py` — `.venv`, torch CUDA/CPU auto,
+deps `requirements.txt`, `ollama pull`, gabarits config, `--check` doctor,
+`--prewarm`, `--autostart`). Lanceurs `1 - Installer (nouveau PC).bat`,
+`Migrer - Exporter/Importer …bat` (ASCII pur). Les **daemons de maintenance**
+vivant dans le serveur, « démarrer le serveur » relance tout — pas de tâche
+Windows à recréer. Les **noms humains** sont dans les XMP (voyagent avec le NAS).
+Reste à **valider sur le vrai nouveau PC** (`installer.py` non testable hors
+Windows ; `--check` diagnostique).
+
 ## Décisions documentées
 
 Toute évaluation aboutit à une entrée dans `eval/DECISIONS.md`. Quatre idées y
