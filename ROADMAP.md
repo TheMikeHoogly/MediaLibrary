@@ -365,9 +365,19 @@ traversent le chantier) :
       `plan_rangement.py` → `docs/plan_rangement.{json,md}`, **291 quarantaines /
       8,4 Go**, 0 fusion de nom requise (sécurité vérifiée sur l'index). Reste le
       rangement par année des `_A TRIER` (besoin de l'inventaire complet).
-    - **Phase 3 — automatisation planifiée** (nightly), toujours quarantaine +
-      undo. Worker serveur qui applique le plan (fusion + déplacement + manifeste
-      + `rekey_everywhere` + undo 30 j), sur copie d'abord.
+    - **Phase 3 — application : ✓ FAIT et testé pour le dédoublonnage (01/08)**
+      (`appliquer_plan.py`, `test_appliquer_plan.py`). Applique les 291
+      quarantaines, réversible : re-vérifie sha256, fusionne les noms avant
+      retrait, déplace vers `.corbeille-rangement/` + manifeste, re-clé l'index
+      (mêmes primitives que `rekey_everywhere`), journal undo. Dry-run par défaut,
+      `--limite N`, `--undo`. **Appliqué en vrai (01/08) : 290 quarantaines,
+      ~8,4 Go récupérés.**
+    - **Phase 3b — purge de la corbeille : ✓ FAIT et testé (01/08)**
+      (`purger_corbeille.py`, `test_purger_corbeille.py`, `24 - Purger la
+      corbeille.bat`). Supprime définitivement les groupes > 30 j, mais seulement
+      si la canonique existe encore (filet anti-perte). Dry-run par défaut,
+      `--verifier-canon`. Planifiable (Task Scheduler). **Reste :** rangement par
+      année des `_A TRIER`.
 
     Note : le garde-fou anti-doublon **à l'upload** (point 17, `_upload_content_dup`)
     est déjà en place — il empêche d'*ajouter* des doublons ; ce chantier-ci

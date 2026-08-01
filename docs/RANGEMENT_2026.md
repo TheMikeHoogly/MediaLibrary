@@ -212,9 +212,57 @@ les sans-date, pas l'inventaire complet (chemin + date + zone) des 34 305
 fichiers. Deux voies : (a) enrichir `recensement_doublons.py` pour dumper cet
 inventaire au prochain run ; (b) le dériver de l'index (`resolve_datestamp` de
 `renommage_facts`), avec une lacune de couverture (~2 600 fichiers non indexés).
-**Phase 3 (application)** : worker serveur qui applique le plan par lots —
-fusion des noms, déplacement + manifeste, `rekey_everywhere`, undo (quarantaine
-30 j). MUTE le NAS : sur copie d'abord, en revue.
+
+### Avancement Phase 3 — applicateur du plan (01/08)
+
+`appliquer_plan.py` applique les quarantaines du plan, **réversible**, à lancer
+**serveur arrêté** (écrivain unique de `photos.db`, comme les scripts `migrate_*`).
+Par opération : (1) **re-vérifie** `sha256(src)` ET `sha256(canonique)` contre le
+plan (jamais de retrait sur preuve périmée) — lecture **résiliente au SMB**
+(blocs de 64 Ko + retry, comme `_read_bytes_retry` ; un fichier illisible fait
+SAUTER l'op, pas planter). Le **dry-run ne lit jamais le contenu** (existence
+seule), donc pas de hash SMB pour un simple aperçu ; (2) **fusionne d'abord** les
+`fusion_noms` dans la canonique (index + XMP via exiftool) ; (3) **déplace**
+`src → .corbeille-rangement/<sha8>/` avec `manifeste.json` (jamais de `rm`) ;
+(4) **re-clé** l'index avec les mêmes primitives que `rekey_everywhere` (tags +
+faces/people/animals/pets + sémantique) ; (5) **journalise** pour l'undo.
+
+Modes : dry-run par défaut, `--appliquer`, `--limite N` (petit lot d'abord),
+`--undo <journal>`. **Testé end-to-end** (`test_appliquer_plan.py`, sur base +
+faux FS temporaires) : dry-run inerte ; application qui fusionne le nom avant
+retrait, déplace, re-clé (tags + vecteur visage + vecteur sémantique transportés
+octet pour octet), écrit le manifeste ; **undo** qui restaure fichier + index.
+Tout vert.
+
+**Procédure d'exécution (chez Mike, serveur arrêté) :**
+`python appliquer_plan.py` (dry-run, relire) → `--appliquer --limite 5` (petit
+lot, vérifier à l'œil + relancer le serveur pour contrôler l'index) → `--appliquer`
+(les 291) → `--undo docs/undo_rangement_*.json` si besoin. Le déplacement réel se
+fait sur le NAS depuis sa machine (le bac à sable n'y accède pas).
+
+**Appliqué en vrai (01/08) :** 290 quarantaines exécutées par Mike (serveur
+arrêté), **~8,4 Go récupérés**, index re-clé, 2 journaux undo conservés (le petit
+lot `--limite 5` + le run complet). Les 291 copies vivent dans
+`.corbeille-rangement/`.
+
+### Avancement Phase 3b — purge de la corbeille (01/08)
+
+`purger_corbeille.py` supprime **définitivement** les groupes de
+`.corbeille-rangement/` dont le `manifeste.json` date de plus de N jours
+(défaut 30) — le **seul** geste destructif du chantier, donc le plus prudent :
+dry-run par défaut, et surtout un **filet anti-perte** — un groupe n'est purgé
+que si sa **canonique existe toujours** (option `--verifier-canon` : re-hash la
+canonique contre le sha256 du manifeste). Un groupe sans manifeste, ou dont la
+canonique manque, est **conservé** (jamais de suppression à l'aveugle).
+Idempotent, planifiable. Testé (`test_purger_corbeille.py`) : purge le vieux à
+canonique présente, garde le récent / canonique absente / sans manifeste /
+sha divergent. Lanceur `24 - Purger la corbeille.bat` (ASCII pur, `verifier_bat`
+vert) : aperçu → confirmation → purge. Pour l'automatiser : planifier
+`python purger_corbeille.py --appliquer` (Task Scheduler). N'efface rien avant
+30 j, donc sans risque à programmer dès maintenant.
+
+**Reste du chantier rangement :** le **rangement par année** des `_A TRIER`
+(Phase 2 restante ci-dessus, besoin de l'inventaire complet).
 
 ## Décisions tranchées (avec Mike, 31/07)
 

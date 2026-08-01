@@ -32,6 +32,7 @@ Usage :
     python plan_rangement.py --stdout  # affiche seulement la synthese
 """
 
+import hashlib
 import json
 import shutil
 import sqlite3
@@ -143,11 +144,15 @@ def build_plan(rec, names_by_path):
             noms_src = names_by_path.get(c, [])
             # noms de CETTE copie absents du canon (a preserver imperativement)
             manquants = sorted(set(noms_src) - canon_names)
+            # Prefixe court derive du CHEMIN source : deux copies d'un meme groupe
+            # au meme nom de fichier (ex. « poissons.mp4 » en 2026 ET en _A TRIER)
+            # ne collisionnent plus dans le dossier du groupe.
+            src_tag = hashlib.sha256(c.encode('utf-8')).hexdigest()[:4]
             op = {
                 'id': f'q{qn:04d}',
                 'type': 'quarantine',
                 'src': c,
-                'dst': f'{corbeille}\\{g["sha256"][:8]}\\{basename(c)}',
+                'dst': f'{corbeille}\\{g["sha256"][:8]}\\{src_tag}_{basename(c)}',
                 'raison': ("doublon exact (sha256) d'une copie canonique retenue "
                            f"(zone canon = {zone_of(canon)}, zone copie = {zone_of(c)})"),
                 'preuve': {

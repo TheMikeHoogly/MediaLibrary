@@ -86,9 +86,21 @@ restent ouverts mais ne sont pas la priorité.
      8,4 Go** vers `.corbeille-rangement/`, provenance par op, **0 fusion de nom
      requise** (les 16 copies nommées ont des noms déjà sur la canonique). Reste
      Phase 2 : rangement par année des 12 714 `_A TRIER` (besoin de l'inventaire
-     complet — enrichir `recensement_doublons.py` ou dériver de l'index). Phase 3 :
-     worker serveur qui APPLIQUE le plan (fusion noms + déplacement + manifeste +
-     `rekey_everywhere` + undo 30 j), sur copie d'abord.
+     complet — enrichir `recensement_doublons.py` ou dériver de l'index).
+   - **Phase 3 — applicateur : ✓ FAIT et testé (01/08).** `appliquer_plan.py`
+     (+ `test_appliquer_plan.py`, end-to-end vert) applique les 291 quarantaines,
+     réversible : re-vérifie sha256, fusionne noms avant retrait, déplace vers
+     `.corbeille-rangement/` + manifeste, re-clé l'index (primitives de
+     `rekey_everywhere`), journal undo. Dry-run défaut, `--limite N`, `--undo`.
+     **Appliqué en vrai (01/08) : 290 quarantaines, ~8,4 Go récupérés** (serveur
+     arrêté, 2 journaux undo gardés).
+   - **Phase 3b — purge corbeille : ✓ FAIT et testé (01/08).**
+     `purger_corbeille.py` (+ test, + `24 - Purger la corbeille.bat` ASCII pur)
+     supprime définitivement les groupes > 30 j **seulement si la canonique
+     existe encore** (filet anti-perte ; `--verifier-canon` re-hash). Dry-run par
+     défaut. Planifiable (Task Scheduler : `python purger_corbeille.py
+     --appliquer`). N'efface rien avant 30 j. **Reste rangement : par année des
+     `_A TRIER`** (inventaire complet à produire).
    - Prérequis Phase 1 : `vectors.rekey_prefix`/`rekey_prefix_all` **faits et
      testés** (`test_rekey_vectors.py` 12/12, `test_vectors` 29/29).
    - **Renommage intelligent** : spec convergée avec Mike (voir RANGEMENT, section
