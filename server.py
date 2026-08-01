@@ -3204,10 +3204,14 @@ body { font-family: var(--f-texte);
 .fchip.up { background: var(--salle-3); border-color: var(--graphite); color: var(--graphite); }
 
 /* ── grid ── */
-.grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; padding: 6px; }
-@media (max-width: 700px) { .grid { grid-template-columns: repeat(3, 1fr); } }
+/* Etape B : planche contact. Densite par auto-fill + clamp (jamais un nombre
+   de colonnes en dur), gouttiere serree facon film. content-visibility sur les
+   cellules pour tenir les grandes planches sans virtual scroll. */
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(clamp(96px, 18vw, 168px), 1fr));
+        gap: var(--e-1); padding: var(--e-2); background: var(--salle); }
 
-.cell { background: var(--salle-3); border-radius: 8px; overflow: hidden; cursor: pointer; }
+.cell { background: var(--salle-3); border-radius: var(--r-sm); overflow: hidden; cursor: pointer;
+        content-visibility: auto; contain-intrinsic-size: auto 210px; }
 .cell .ph { position: relative; aspect-ratio: 1; overflow: hidden; background: var(--salle-3); }
 .cell img { width: 100%; height: 100%; object-fit: cover; display: block;
              opacity: 0; transition: opacity 0.3s, transform 0.2s; }
@@ -9089,6 +9093,7 @@ class Handler(BaseHTTPRequestHandler):
         else:
             body = '<p class="empty">Aucun fichier à problème détecté &#127881;</p>'
         page = (BROWSE_PAGE
+                .replace('__EXTRA__', '')
                 .replace('__CRUMBS__', f'Santé — {len(problems)} fichier(s) à problème')
                 .replace('__ROWS__', body))
         self._send_html(page)

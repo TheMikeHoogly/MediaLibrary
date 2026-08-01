@@ -31,3 +31,10 @@ textarea:focus-visible,
     scroll-behavior: auto !important;
   }
 }
+
+/* 3. View Transitions multi-document (etape B). Transition native entre pages
+   completes (galerie -> photo -> personne) SANS SPA : le serveur rend toujours
+   des documents complets. Progressive : les navigateurs sans support l'ignorent,
+   et le bloc prefers-reduced-motion ci-dessus (comme la spec VT) neutralise
+   l'animation si l'utilisateur la refuse. Cout par element : nul. */
+@view-transition { navigation: auto; }
