@@ -3,7 +3,7 @@
 Ce fichier survit aux sessions, contrairement à une liste de tâches en mémoire.
 Il est référencé par `CLAUDE.md`, donc relu au début de chaque session.
 
-Dernière mise à jour : 31 juillet 2026.
+Dernière mise à jour : 1er août 2026.
 
 ---
 
@@ -27,8 +27,67 @@ Dernière mise à jour : 31 juillet 2026.
 | 14 | **Circularité du banc détectée et corrigée** | 100 % de justesse = alarme, pas succès : la vérité terrain était auto-générée |
 | 15 | **Récupération d'images corrompues** | 987 fichiers inventoriés, orientation et analyse profonde corrigées |
 | 16 | **Recherche à trois dimensions** — qui / où / quoi | `Luna à Bremblens en hiver` : tag humain + dossier + sens. `lieux.txt` déduit des chemins, 120 lieux |
+| 17 | **`/people` : rangée responsive (12a) + gestion des groupes (12b)** | Attribution par sous-ensemble portée sur les visages (`attribuer_visages`), rejet de groupe / « pas un visage » réversibles, cibles 44 px, plus de scroll horizontal. Validé en réel |
+| 18 | **Fondations design system « chambre noire »** | `ui/tokens.css`+`base.css`+`components.css`, injection partagée via `_send_html`, `bundle.py` mono-fichier, `test_ui_bundle.py` 4/4. Plancher a11y (focus-visible, reduced-motion) actif sur les 7 pages — anneau orange confirmé en réel |
+| 19 | **Régression `/people` corrigée** — tempête de `/api/names` | Autocomplétion à la demande + cache/déduplication + erreurs visibles. Vérifié navigateur : 1 appel `/api/names` 200 à la frappe, tous `facecrop` 200 |
 
 ## Prochaine étape décidée
+
+**CAP ACTUEL = redesign UI/UX « chambre noire » (décidé avec Mike, 01/08).** Le
+socle est posé et validé (tokens + plancher d'accessibilité injectés sur les 7
+pages, `bundle.py`, tests). **Prochain pas concret : tokeniser les pages une par
+une**, dans l'ordre `monolith-surgery` (extraction à l'identique d'abord, redesign
+ensuite, jamais mélangés) :
+
+1. **`BROWSE_PAGE`** (la plus simple, ~35 lignes de style) — remplacer les valeurs
+   en dur par `var(--…)`, adopter `ui/components.css`, vérifier « visuellement
+   identique » puis appliquer la direction chambre noire.
+2. **Réconcilier `APP_NAV_CSS`** — son `:root` définit encore le bleu iOS
+   `#5b9dff` et des gris neutres ; migrer sur les tokens (touche les 7 pages, donc
+   après avoir validé le procédé sur BROWSE).
+3. Corriger les divergences connues (`.pchip` vs `.chip`), puis enchaîner
+   `GALLERY_PAGE`, `MAP_PAGE`, `HTML_PAGE` (upload), `PETS_PAGE`, `FACES_PAGE`,
+   `PEOPLE_PAGE`. Charger `photo-ui` + `monolith-surgery` à chaque page.
+4. Bibliothèque Figma (`figma-generate-library`) comme source des composants
+   quand le procédé est rodé.
+
+Voir la section « Interface » plus bas (points 9-12 + composants signature) pour
+le détail. **Une phrase pour démarrer** : « Lis ROADMAP.md, charge `photo-ui` et
+`monolith-surgery`, et tokenise `BROWSE_PAGE`. »
+
+### En réserve (parké, non prioritaire)
+
+- **Garde amont de 12b (`vision-eval`)** — `verifier_visages.py` (SigLIP humain vs
+  animal/objet) + plancher `det_score`, décision écrite avant activation. Voir
+  point 12b. Le marquage humain réversible tient l'usage en attendant.
+- **Page Animaux** — `carteGroupe` a le même `listeProps()` eager que la
+  régression corrigée sur `/people` ; à porter par cohérence (sans urgence, peu
+  de groupes).
+- **Éval tagging — assertions vs pixels (parké).** Ci-dessous, conservé pour ne
+  pas reperdre le fil :
+
+**Assertions vs pixels : mesuré, noté à l'aveugle et tranché (31/07, voir
+`eval/DECISIONS.md`).** Verdict en deux temps. Proxies automatiques : V1 (pixels
+jetés) disqualifié (33 % de descriptions « méta ») ; l'impératif de noms au prompt
+est inefficace (16 % d'ancrage) et coûteux (× 2,6, VRAM 3 950 Mo au ras du
+plafond). **Notation humaine (40 cartes) : l'hybride V2 gagne — meilleure
+description dans 60 % des cas contre 30 % pour l'image seule**, hallucination à
+peine plus haute (8 % vs 5 %), et il gagne dans les trois catégories. Les
+assertions **améliorent** donc la description ; c'est la mesure automatique seule
+(« V2 ≈ V0 ») qui l'avait manqué.
+
+**Cap retenu :** garder **l'hybride assertions + image** (apport confirmé par
+l'humain), mais **sans l'impératif de noms** (c'est lui le surcoût, pas les
+assertions), et **attacher les noms/date/lieu par fusion programmatique** plutôt
+que de les quémander au LLM (16 % d'obéissance). Le LLM reçoit les faits *en
+contexte* pour mieux décrire ; la couche d'assertions à provenance garantit le
+fait exact — ce qui débloque aussi la priorité n°1 (protéger les confirmations
+humaines), puis cache de raisonnement et mémoire globale.
+
+**Prochain pas éval, ciblé (mesurer avant de bâtir) :** noter/mesurer un V2
+« assertions en contexte, **sans** impératif » (version à 4,3 s, jamais notée car
+écrasée). Si elle garde l'avantage de qualité sans le surcoût, c'est le prompt de
+production, doublé de la fusion programmatique.
 
 **Assertions vs pixels : mesuré, noté à l'aveugle et tranché (31/07, voir
 `eval/DECISIONS.md`).** Verdict en deux temps. Proxies automatiques : V1 (pixels
