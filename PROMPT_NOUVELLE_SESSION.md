@@ -73,6 +73,15 @@ section « Interface — redesign chambre noire », points 9-12 + **bugs observ�
 12a/12b**). Charge la skill `photo-ui` et suis `monolith-surgery` (une page à la
 fois).
 
+**Redesign — avancement (01/08) :** socle posé (tokens + a11y injectés sur les 7
+pages). **`BROWSE_PAGE` étape A tokenisation FAITE** — bloc `<style>` : couleurs/
+police en dur → `var(--…)`, bleu iOS `#0a84ff` et `#555` sous-AA retirés,
+structure inchangée (`py_compile` OK). **À valider au navigateur** (`/browse`
+racine + sous-dossier + Santé). Ensuite : étape B éventuelle de `BROWSE_PAGE`,
+puis `APP_NAV_CSS` (son `:root` définit encore le bleu iOS `#5b9dff`), puis les
+pages suivantes. NB : `_serve_health` (~l. 9059) ne remplace pas `__EXTRA__`
+(bug préexistant à corriger).
+
 **Bugs `/people` (01/08) — état :**
 - **12a — ✓ FAIT et validé en réel par Mike (01/08).** Débordement horizontal des contrôles
   « À vérifier » corrigé dans `PEOPLE_PAGE` : rangée `.cl .row` responsive

@@ -4133,24 +4133,27 @@ BROWSE_PAGE = """<!DOCTYPE html>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Explorateur</title>
 <style>
+/* Etape A tokenisation (chambre noire) : couleurs + police remplacees par les
+   tokens de ui/tokens.css. Structure, espacements et rayons inchanges (layout
+   identique). Interdits retires : bleu iOS #0a84ff, gris neutre #555 sous-AA. */
 * { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-       background: #0f0f0f; color: #f0f0f0; min-height: 100vh; }
+body { font-family: var(--f-texte);
+       background: var(--salle); color: var(--texte); min-height: 100vh; }
 .bar { display: flex; gap: 14px; align-items: center; padding: 14px 16px;
-       background: #161616; border-bottom: 1px solid #222; flex-wrap: wrap; }
-.back { color: #0a84ff; text-decoration: none; font-size: 0.9rem; }
-.crumbs { color: #888; font-size: 0.9rem; }
-.crumbs a { color: #0a84ff; text-decoration: none; }
+       background: var(--salle-2); border-bottom: var(--trait); flex-wrap: wrap; }
+.back { color: var(--texte); text-decoration: none; font-size: 0.9rem; }
+.crumbs { color: var(--graphite); font-size: 0.9rem; }
+.crumbs a { color: var(--texte); text-decoration: none; }
 .list { max-width: 720px; margin: 0 auto; padding: 12px; }
 .row { display: flex; align-items: center; gap: 12px; padding: 11px 14px;
-       background: #161616; border-radius: 10px; margin-bottom: 6px;
-       text-decoration: none; color: #ddd; font-size: 0.9rem; }
-.row:active { background: #222; }
+       background: var(--salle-2); border-radius: 10px; margin-bottom: 6px;
+       text-decoration: none; color: var(--texte); font-size: 0.9rem; }
+.row:active { background: var(--salle-3); }
 .row .ic { flex-shrink: 0; }
 .row .nm { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.row .sz { color: #666; font-size: 0.75rem; flex-shrink: 0; }
-.row.dir .nm { color: #7db4ff; }
-.empty { color: #555; text-align: center; padding: 30px; }
+.row .sz { color: var(--graphite); font-size: 0.75rem; flex-shrink: 0; }
+.row.dir .nm { color: var(--texte); }
+.empty { color: var(--graphite); text-align: center; padding: 30px; }
 </style>
 </head>
 <body>

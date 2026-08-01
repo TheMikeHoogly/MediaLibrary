@@ -39,9 +39,18 @@ pages, `bundle.py`, tests). **Prochain pas concret : tokeniser les pages une par
 une**, dans l'ordre `monolith-surgery` (extraction à l'identique d'abord, redesign
 ensuite, jamais mélangés) :
 
-1. **`BROWSE_PAGE`** (la plus simple, ~35 lignes de style) — remplacer les valeurs
-   en dur par `var(--…)`, adopter `ui/components.css`, vérifier « visuellement
-   identique » puis appliquer la direction chambre noire.
+1. **`BROWSE_PAGE`** — ◐ **Étape A tokenisation FAITE (01/08, à valider en réel).**
+   Bloc `<style>` : toutes les couleurs/police en dur remplacées par `var(--…)`
+   (`--salle`/`--salle-2`/`--salle-3`, `--texte`/`--graphite`, `--trait`,
+   `--f-texte`). Interdits retirés : bleu iOS `#0a84ff` (3 sélecteurs) et gris
+   neutre `#555` sous-AA sur `.empty`. Structure/espacements/rayons **inchangés**
+   → layout identique, seule la palette bascule. `py_compile` OK, 0 interdit
+   résiduel. **RESTE** : (a) valider au navigateur (`/browse` racine + sous-dossier
+   + page Santé) ; (b) étape B éventuelle (police `--f-donnees` sur les tailles,
+   différenciation barre/cellule, `.btn` pour le lien galerie, View Transitions) ;
+   (c) puis passer à `APP_NAV_CSS` puis les pages suivantes.
+   NB : `_serve_health` (l. ~9059) ne remplace pas `__EXTRA__` → littéral affiché
+   sur la page Santé (bug préexistant, à corriger au passage).
 2. **Réconcilier `APP_NAV_CSS`** — son `:root` définit encore le bleu iOS
    `#5b9dff` et des gris neutres ; migrer sur les tokens (touche les 7 pages, donc
    après avoir validé le procédé sur BROWSE).
