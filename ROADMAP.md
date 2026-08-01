@@ -251,8 +251,8 @@ en priorité au redesign :**
      (`PEOPLE_PAGE`, `<style>`) : `.cl .row > * { min-width:0 }`, libellé
      `flex:1 1 12rem` + `overflow-wrap:anywhere`, champ `.qui`/inputs élastiques,
      **repli vertical pleine largeur sous 900 px**, cibles **44 px** sur boutons et
-     champs ; largeur inline retirée. Plus de scroll horizontal. À valider en réel
-     (édition monolithe non testable hors machine ; `py_compile` OK).
+     champs ; largeur inline retirée. Plus de scroll horizontal. **Validé en réel par
+     Mike (01/08)** ; `py_compile` OK.
 
 12b. **Groupes de personnes non supprimables + pollués par des non-visages.** Un
      groupe proposé mélangeait des visages peu reconnaissables (nuques, profils
@@ -273,7 +273,7 @@ en priorité au redesign :**
        groupe**, proposition **« Ce n'est pas un visage »**, **toast d'annulation
        10 s** (`role=status`, rappel de rafraîchissement). Tout réversible via la
        pile d'annulation existante. Les groupes exposent `membres`. `py_compile` OK,
-       **à valider en réel**. Ferme deux lignes du tableau d'harmonisation
+       **validé en réel par Mike (01/08)**. Ferme deux lignes du tableau d'harmonisation
        (sélection par vignette côté visages + rejet d'un non-visage).
      - **RESTE — en amont (la vraie cause), à MESURER avant de câbler
        (`vision-eval`).** Empêcher qu'un tel groupe se forme est un changement de

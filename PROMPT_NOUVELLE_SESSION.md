@@ -74,11 +74,11 @@ section « Interface — redesign chambre noire », points 9-12 + **bugs observ�
 fois).
 
 **Bugs `/people` (01/08) — état :**
-- **12a — ✓ FAIT (à valider en réel).** Débordement horizontal des contrôles
+- **12a — ✓ FAIT et validé en réel par Mike (01/08).** Débordement horizontal des contrôles
   « À vérifier » corrigé dans `PEOPLE_PAGE` : rangée `.cl .row` responsive
   (`min-width:0`, libellé/champs élastiques, repli pleine largeur sous 900 px,
   cibles 44 px), largeur fixe inline du champ retirée.
-- **12b — ✓ FAIT côté UI + backend réversible (à valider en réel).** Attribution
+- **12b — ✓ FAIT côté UI + backend réversible, validé en réel par Mike (01/08).** Attribution
   unifiée par sous-ensemble portée sur les visages (miroir animaux) :
   `attribuer_visages`/`_nommer_membres_visages`/`_marquer_visages`,
   `/api/assign` `genre:'visage'`+`membres`, cibles `__pas_visage__` /
@@ -91,10 +91,10 @@ fois).
   pic VRAM) AVANT activation. Ne pas l'imposer sans preuve : le marquage humain
   réversible tient l'usage en attendant.
 
-**Prochain pas concret** : (1) valider 12a/12b en réel (démarrer le serveur,
-page `/people` : rejeter un groupe, marquer une découpe « pas un visage »,
-annuler) ; puis (2) attaquer soit la garde amont mesurée (12b), soit les
-fondations du redesign chambre noire (points 9-11, extraction `ui/` d'abord).
+**Prochain pas concret** : 12a/12b validés en réel (01/08). Attaquer soit la
+garde amont mesurée (12b, `vision-eval` : `verifier_visages.py` + plancher
+`det_score`), soit les fondations du redesign chambre noire (points 9-11,
+extraction `ui/` d'abord).
 
 Le rangement par année des `_A TRIER` et l'installateur nouveau PC restent
 ouverts (voir plus bas) mais ne sont pas la priorité immédiate.
