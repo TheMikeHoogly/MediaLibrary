@@ -45,6 +45,14 @@ l'état vit dans les fichiers, pas dans l'historique.
 - Les autres connecteurs (Slack, Notion…) exigent un OAuth via les réglages
   claude.ai ; sans effet sur les chantiers en cours.
 
+**Correctif en attente de vérification :** branche `fix/smb-errno22-retry` —
+l'Errno 22 SMB (Visages/Animaux sur `_Uploads/ARZOPA`) est un défaut de lecture
+**transitoire** (pas une corruption : sonde `diag_errno22.py`) qui était écrit
+comme échec **permanent**. `_load_bgr` lit maintenant avec retry + décodage
+mémoire, les workers ne poisonnent plus sur `ImageReadError`, et les scans
+repassent les `failed` transitoires. Testé en isolation (`test_errno22_fix.py`).
+**Reste : relancer le serveur, observer que ces fichiers repassent, puis merger.**
+
 **Où on en est — trois chantiers ouverts, au choix :**
 1. **Éval tagging (tranché, deux pas ciblés restants).** Hybride assertions+image
    adopté ; impératif de noms rejeté (coûteux, VRAM au plafond). (a) Noter/mesurer

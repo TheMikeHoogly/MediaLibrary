@@ -132,6 +132,21 @@ objectif à part entière, pas un accessoire.
 
 ## En cours
 
+- **Correctif Errno 22 SMB (branche `fix/smb-errno22-retry`, à vérifier chez
+  Mike puis merger).** Symptôme : `⚠ Visages/Animaux … : [Errno 22] Invalid
+  argument` sur des fichiers `_Uploads/ARZOPA`. Diagnostic (sonde
+  `diag_errno22.py`) : **le fichier n'est pas corrompu** — il se décode
+  parfaitement, en local comme via SMB en isolation ; l'Errno 22 est un défaut
+  de lecture SMB **transitoire sous charge concurrente** (recensement des
+  doublons + workers). Le bug réel : un hoquet transitoire était écrit comme
+  `failed` **permanent**, et le scan saute ensuite toute clé déjà dans le store
+  → une photo saine exclue à jamais. Correctif : `_load_bgr` lit les octets avec
+  retry (`_read_bytes_retry`) puis décode en mémoire (`io.BytesIO`) ;
+  `face_worker`/`animal_worker` retentent `ImageReadError` 3× sans poisonner ;
+  les scans re-enqueuent les `failed` transitoires (`_is_transient_io_fail`), donc
+  les entrées déjà poisonnées repassent seules. Testé en isolation
+  (`test_errno22_fix.py`, tout vert). **Reste : observer l'effet réel** — relancer
+  le serveur, vérifier que ces fichiers repassent et réussissent, puis merger.
 - **Encodage sémantique du fonds** — 29 549 photos encodées sur 30 682
   (96 %). Terminé pour l'essentiel.
 - **Seconde passe de récupération** — les 945 fichiers à en-tête détruit n'ont
