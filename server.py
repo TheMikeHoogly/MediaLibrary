@@ -6635,70 +6635,74 @@ PETS_PAGE = """<!DOCTYPE html>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Animaux</title>
 <style>
-  body{font-family:system-ui,-apple-system,sans-serif;margin:0;background:var(--bg,#0e0e10);color:var(--txt,#eaeaec);}
+  /* Etape A tokenisation « chambre noire ». Anciennes vars nav (--bg/--card/
+     --accent...) remplacees par les tokens. Bouton primaire = papier ; danger
+     = encre ; intrus selectionne = encre ; focus = veilleuse. Cartes/groupes =
+     cellules --salle-3. Structure/espacements inchanges. */
+  body{font-family:var(--f-texte);margin:0;background:var(--salle);color:var(--texte);}
   main{padding:18px 20px 90px;max-width:1200px;margin:0 auto;}
   .strip{display:flex;align-items:center;gap:14px;flex-wrap:wrap;font-size:13px;
-    color:var(--mut,#9a9aa2);background:var(--card,#1a1a1e);border:1px solid var(--line,#26262b);
+    color:var(--graphite);background:var(--salle-3);border:var(--trait);
     border-radius:var(--radius,12px);padding:12px 16px;margin-bottom:22px;}
-  .strip b{color:var(--txt,#eaeaec);}
-  .strip .warn{color:#f0a35b;}
-  h2{font-size:14px;text-transform:uppercase;letter-spacing:.6px;color:var(--mut,#9a9aa2);
+  .strip b{color:var(--texte);}
+  .strip .warn{color:var(--veilleuse);}
+  h2{font-size:14px;text-transform:uppercase;letter-spacing:.6px;color:var(--graphite);
     margin:26px 0 14px;font-weight:600;}
   .row{display:flex;align-items:center;gap:10px;}
   .sp{flex:1;}
-  .btn{padding:8px 14px;border-radius:10px;border:1px solid var(--line,#26262b);
-    background:#ffffff0d;color:var(--txt,#eaeaec);cursor:pointer;font-size:13px;font-weight:500;
+  .btn{padding:8px 14px;border-radius:10px;border:var(--trait);
+    background:#ffffff0d;color:var(--texte);cursor:pointer;font-size:13px;font-weight:500;
     transition:background .15s;}
   .btn:hover{background:#ffffff1a;}
-  .btn.primary{background:linear-gradient(135deg,var(--accent2,#2a6df0),var(--accent,#5b9dff));
-    border:none;color:#fff;box-shadow:0 2px 10px #2a6df055;}
-  .btn.danger{color:#ff8a8a;border-color:#5a2b2b;}
+  .btn.primary{background:var(--papier);
+    border:none;color:var(--texte-papier);box-shadow:0 2px 10px #0006;}
+  .btn.danger{color:var(--encre);border-color:var(--encre);}
   .btn:disabled{opacity:.5;cursor:default;}
   .cats{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:14px;}
-  .cat{background:var(--card,#1a1a1e);border:1px solid var(--line,#26262b);border-radius:14px;
+  .cat{background:var(--salle-3);border:var(--trait);border-radius:14px;
     padding:12px;cursor:pointer;text-align:center;transition:transform .12s,border-color .15s;}
-  .cat:hover{transform:translateY(-3px);border-color:var(--accent,#5b9dff);}
+  .cat:hover{transform:translateY(-3px);border-color:var(--graphite);}
   .cat .av{width:96px;height:96px;border-radius:50%;object-fit:cover;background:#000;margin:2px auto 10px;
     display:block;box-shadow:0 4px 14px #0008;}
   .cat .av.ph{background:#000 url('data:image/svg+xml;utf8,<svg xmlns=\\'http://www.w3.org/2000/svg\\' width=\\'40\\' height=\\'40\\'><text y=\\'32\\' font-size=\\'32\\'>🐱</text></svg>') center/40px no-repeat;}
   .cat .nm{font-weight:600;font-size:16px;}
-  .cat .ct{color:var(--mut,#9a9aa2);font-size:12px;margin-top:2px;}
+  .cat .ct{color:var(--graphite);font-size:12px;margin-top:2px;}
   .groups{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;}
-  .group{background:var(--card,#1a1a1e);border:1px solid var(--line,#26262b);border-radius:14px;padding:14px;}
-  .group .sz{font-size:12px;color:var(--mut,#9a9aa2);margin-bottom:10px;}
+  .group{background:var(--salle-3);border:var(--trait);border-radius:14px;padding:14px;}
+  .group .sz{font-size:12px;color:var(--graphite);margin-bottom:10px;}
   .thumbs{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:12px;}
   .thumbs img{width:58px;height:58px;object-fit:cover;border-radius:8px;background:#000;}
   .group .nmrow{display:flex;gap:8px;}
-  .group input{flex:1;padding:8px 10px;background:#0000004d;color:var(--txt,#eaeaec);
-    border:1px solid var(--line,#26262b);border-radius:9px;font-size:14px;outline:none;}
-  .group input:focus{border-color:var(--accent,#5b9dff);}
-  .muted{color:var(--mut,#9a9aa2);font-size:14px;}
+  .group input{flex:1;padding:8px 10px;background:#0000004d;color:var(--texte);
+    border:var(--trait);border-radius:9px;font-size:14px;outline:none;}
+  .group input:focus{border-color:var(--veilleuse);}
+  .muted{color:var(--graphite);font-size:14px;}
   /* détail */
   #detail{display:none;}
   .dhead{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:6px;}
   .dhead .title{font-size:26px;font-weight:700;}
-  .dhead .ct{color:var(--mut,#9a9aa2);font-size:14px;}
-  .hint{color:var(--mut,#9a9aa2);font-size:13px;margin:6px 0 18px;line-height:1.5;}
+  .dhead .ct{color:var(--graphite);font-size:14px;}
+  .hint{color:var(--graphite);font-size:13px;margin:6px 0 18px;line-height:1.5;}
   .photos{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px;}
   .ph{position:relative;border-radius:11px;overflow:hidden;cursor:pointer;aspect-ratio:1;
     background:#000;border:2px solid transparent;transition:border-color .12s;}
   .ph img{width:100%;height:100%;object-fit:cover;display:block;}
   .ph .sim{position:absolute;left:6px;bottom:6px;font-size:11px;padding:2px 6px;border-radius:6px;
-    background:#000a;color:#cfe;font-weight:600;}
+    background:#000a;color:var(--texte);font-weight:600;font-family:var(--f-donnees);}
   .ph .zoom{position:absolute;top:5px;right:5px;width:26px;height:26px;border-radius:7px;
     background:#000a;color:#fff;border:none;cursor:pointer;font-size:14px;line-height:26px;padding:0;}
-  .ph.sel{border-color:#ff6b6b;}
+  .ph.sel{border-color:var(--encre);}
   .ph.sel::after{content:'\\2713';position:absolute;top:5px;left:5px;width:22px;height:22px;
-    border-radius:50%;background:#ff6b6b;color:#fff;font-weight:700;text-align:center;line-height:22px;font-size:13px;}
+    border-radius:50%;background:var(--encre);color:#fff;font-weight:700;text-align:center;line-height:22px;font-size:13px;}
   #selbar{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);display:none;
-    align-items:center;gap:14px;background:#1c1c22ee;border:1px solid var(--line,#26262b);
+    align-items:center;gap:14px;background:rgba(20,18,15,.93);border:var(--trait);
     border-radius:999px;padding:10px 18px;box-shadow:0 8px 30px #000a;z-index:60;backdrop-filter:blur(8px);}
-  #selbar b{color:#ff9b9b;}
+  #selbar b{color:var(--encre);}
   #lightbox{position:fixed;inset:0;background:#000e;display:none;align-items:center;justify-content:center;
     z-index:80;padding:20px;}
   #lightbox img{max-width:96vw;max-height:92vh;border-radius:10px;box-shadow:0 10px 50px #000;}
   #lightbox .x{position:absolute;top:16px;right:22px;font-size:34px;color:#fff;cursor:pointer;line-height:1;}
-  /* diaporama plein écran */
+  /* diaporama plein ecran */
   #pshow{position:fixed;inset:0;background:#000;display:none;z-index:90;}
   #pshow.on{display:block;}
   #pshow img{position:absolute;inset:0;margin:auto;max-width:100%;max-height:100%;object-fit:contain;}
@@ -6706,13 +6710,13 @@ PETS_PAGE = """<!DOCTYPE html>
   #pshow .pnav{position:absolute;top:0;bottom:0;width:34%;z-index:1;cursor:pointer;}
   #pshow .pnav.l{left:0;} #pshow .pnav.r{right:0;}
   #pshow .pmeta{position:absolute;left:0;right:0;bottom:0;z-index:2;padding:14px 18px;
-    background:linear-gradient(transparent,#000d);color:#eee;font-size:14px;display:flex;gap:10px;align-items:center;}
+    background:linear-gradient(transparent,#000d);color:var(--texte);font-size:14px;display:flex;gap:10px;align-items:center;}
   #pshow .pcbtn{background:#ffffff1a;border:1px solid #ffffff40;color:#fff;border-radius:8px;padding:6px 12px;cursor:pointer;font-size:16px;}
-  #pshow #pshow-name{color:#bbb;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:40vw;}
-  #pshow #pshow-folder{color:#cfe1ff;background:#1c2a44;border:1px solid #33517f;border-radius:8px;
+  #pshow #pshow-name{color:var(--graphite);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:40vw;}
+  #pshow #pshow-folder{color:var(--texte);background:var(--salle-3);border:var(--trait);border-radius:8px;
     padding:5px 12px;font-size:13px;text-decoration:none;white-space:nowrap;max-width:32vw;
     overflow:hidden;text-overflow:ellipsis;}
-  #pshow #pshow-folder:hover{background:#26406b;}
+  #pshow #pshow-folder:hover{background:var(--salle-2);}
   #pshow #pshow-folder.hidden{display:none;}
 </style>
 </head>
@@ -6839,8 +6843,8 @@ function toast(msg, jeton){
   var t=document.getElementById('toast');
   if(!t){ t=document.createElement('div'); t.id='toast';
     t.style.cssText='position:sticky;bottom:12px;margin:12px auto 0;max-width:520px;'+
-      'display:flex;align-items:center;gap:12px;background:var(--card,#1a1a1e);'+
-      'border:1px solid var(--line,#26262b);border-radius:999px;padding:10px 10px 10px 18px;'+
+      'display:flex;align-items:center;gap:12px;background:var(--salle-3);'+
+      'border:var(--trait);border-radius:999px;padding:10px 10px 10px 18px;'+
       'font-size:13px;z-index:60;box-shadow:0 8px 30px #000a';
     document.querySelector('main').appendChild(t); }
   t.innerHTML='<span style="flex:1"></span>';
@@ -6858,7 +6862,7 @@ function carteGroupe(c){
   var sel=membres.map(function(){return true;});
   var esp=c.species?(' · '+c.species):'';
   card.innerHTML='<div class="sz">'+c.size+' apparition(s)'+esp+
-      ' <span style="color:var(--mut,#9a9aa2)">— clique pour désélectionner</span></div>'+
+      ' <span style="color:var(--graphite)">— clique pour désélectionner</span></div>'+
     '<div class="thumbs"></div>'+
     '<div class="nmrow"><input placeholder="C’est… (« Inti, Luna » si les deux)" autocomplete="off">'+
     '<button class="btn primary">Attribuer</button></div>'+
@@ -6870,9 +6874,9 @@ function carteGroupe(c){
     b.innerHTML='<img loading="lazy" src="'+esc(u)+'">';
     b.setAttribute('aria-pressed','true');
     b.onclick=function(){ sel[i]=!sel[i]; b.setAttribute('aria-pressed',sel[i]?'true':'false');
-      b.style.opacity=sel[i]?'1':'.35'; b.style.outline=sel[i]?'2px solid var(--accent,#5b9dff)':'none';
+      b.style.opacity=sel[i]?'1':'.35'; b.style.outline=sel[i]?'2px solid var(--fixateur)':'none';
       b.style.outlineOffset='-2px'; maj(); };
-    b.style.outline='2px solid var(--accent,#5b9dff)'; b.style.outlineOffset='-2px';
+    b.style.outline='2px solid var(--fixateur)'; b.style.outlineOffset='-2px';
     zone.appendChild(b);
   });
   var inp=card.querySelector('input'), btn=card.querySelector('button.primary');
@@ -7044,35 +7048,38 @@ FACES_PAGE = """<!DOCTYPE html>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Visages détectés</title>
 <style>
+/* Etape A tokenisation « chambre noire ». Grille de visages = planche contact
+   (cellules --salle-3). Score de detection = donnee (texte vif). Avertissement
+   moteur = encre. Structure/espacements inchanges. */
 * { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-       background: #0f0f0f; color: #f0f0f0; }
+body { font-family: var(--f-texte);
+       background: var(--salle); color: var(--texte); }
 .bar { display: flex; align-items: center; gap: 10px; padding: 12px 16px;
-       background: #161616; border-bottom: 1px solid #222; flex-wrap: wrap; }
-.bar a { color: #0a84ff; text-decoration: none; font-size: 0.9rem; }
+       background: var(--salle-2); border-bottom: var(--trait); flex-wrap: wrap; }
+.bar a { color: var(--texte); text-decoration: none; font-size: 0.9rem; }
 .bar .sp { margin-left: auto; }
-#stat { padding: 12px 16px; background: #121212; border-bottom: 1px solid #1e1e1e;
-        color: #bbb; font-size: 0.85rem; line-height: 1.5; }
-#stat b { color: #eee; }
-.warn { color: #e0b0b0; }
+#stat { padding: 12px 16px; background: var(--salle-2); border-bottom: var(--trait);
+        color: var(--graphite); font-size: 0.85rem; line-height: 1.5; }
+#stat b { color: var(--texte); }
+.warn { color: var(--encre); }
 .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
         gap: 8px; padding: 12px; }
-.face { background: #161616; border-radius: 8px; overflow: hidden; }
+.face { background: var(--salle-3); border-radius: 8px; overflow: hidden; }
 .face a { display: block; }
 .face img { width: 100%; aspect-ratio: 1; object-fit: cover; display: block;
-            background: #222; }
-.face .m { padding: 4px 6px 6px; font-size: 0.68rem; color: #9db8d8;
+            background: var(--salle-3); }
+.face .m { padding: 4px 6px 6px; font-size: 0.68rem; color: var(--graphite);
            white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.face .sc { color: #6a9; }
-.note { padding: 0 16px 20px; color: #777; font-size: 0.8rem; line-height: 1.5; }
+.face .sc { color: var(--texte); font-family: var(--f-donnees); }
+.note { padding: 0 16px 20px; color: var(--graphite); font-size: 0.8rem; line-height: 1.5; }
 </style>
 </head>
 <body>
 <!--APPNAV-->
 <div class="bar">
   <span class="sp"></span>
-  <button onclick="location.reload()" style="padding:6px 12px;border:1px solid #333;
-    border-radius:8px;background:#1e1e1e;color:#ccc;cursor:pointer;">Actualiser</button>
+  <button onclick="location.reload()" style="padding:6px 12px;border:var(--trait);
+    border-radius:8px;background:var(--salle-3);color:var(--texte);cursor:pointer;">Actualiser</button>
 </div>
 <div id="stat">Chargement&hellip;</div>
 <div class="grid" id="grid"></div>
@@ -7109,8 +7116,8 @@ function hwLine(s){
   parts.push('Ré-embedding : <b>' + (s.reembedded || 0) + ' photos traitées</b>');
   parts.push('Moteur visages : <b>' + esc(s.face_engine_last || 'CPU') + '</b>' +
              (s.gpu_faces_ready ? ' (GPU dispo)' : ''));
-  if (!h.psutil) parts.push('<span style="color:#a88">(installe psutil pour CPU/RAM en direct)</span>');
-  return '<span style="color:#8aa">🖥 ' + parts.join(' &middot; ') + '</span>';
+  if (!h.psutil) parts.push('<span style="color:var(--graphite)">(installe psutil pour CPU/RAM en direct)</span>');
+  return '<span style="color:var(--graphite)">🖥 ' + parts.join(' &middot; ') + '</span>';
 }
 fetch('/api/faces/list?limit=400').then(function(r){return r.json();}).then(function(d){
   var g = document.getElementById('grid');
