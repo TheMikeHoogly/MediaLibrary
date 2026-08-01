@@ -7507,7 +7507,8 @@ function carteGroupeP(c){
       toastP(r.libelle||'fait', r.jeton, function(){ loadClusters(true); loadPeople(); });
       if(m.length>=membres.length){ el.remove(); } else { loadClusters(true); }
       loadPeople();
-    });
+    }).catch(function(e){ btn.disabled=false; rej.disabled=false;
+      props.textContent='Le serveur n a pas repondu. Reessaie dans un instant.'; });
   }
   function listeProps(){
     var t=inp.value.trim().toLowerCase();
@@ -7527,10 +7528,15 @@ function carteGroupeP(c){
     b.textContent=txt; b.onclick=function(){ envoyer(val,false); }; return b;
   }
   inp.addEventListener('input',listeProps);
+  // IMPORTANT : ne PAS peupler les propositions au chargement. Chaque appel a
+  // /api/names?genre=personne declenche un scan lourd cote serveur ; le faire
+  // pour chaque groupe en meme temps saturait le serveur (facecrop/assign en
+  // « Failed to fetch »). On differe au focus / a la frappe : un seul a la fois.
+  inp.addEventListener('focus',listeProps);
   inp.addEventListener('keydown',function(e){ if(e.key==='Enter'&&inp.value.trim()) envoyer(inp.value.trim(),false); });
   btn.onclick=function(){ if(inp.value.trim()) envoyer(inp.value.trim(),false); else inp.focus(); };
   rej.onclick=function(){ envoyer('__non_group__', true); };
-  maj(); listeProps();
+  maj();
   return el;
 }
 function loadClusters(rebuild){
@@ -7553,11 +7559,16 @@ document.getElementById('recluster').onclick=function(){
 
 // ── file « À vérifier » (curateur) ──
 /* Attribution unifiée côté personnes : le même geste que sur la page Animaux. */
-var NOMS_P=null;
+var NOMS_P=null, NOMS_P_INFLIGHT=null;
 function nomsPersonnes(){
   if(NOMS_P) return Promise.resolve(NOMS_P);
-  return fetch('/api/names?genre=personne').then(function(r){return r.json();})
-    .then(function(d){ NOMS_P=d.noms||[]; return NOMS_P; });
+  // Deduplication : si plusieurs appels arrivent avant la reponse (ex. plusieurs
+  // groupes), ils partagent la MEME requete au lieu d'en lancer une chacun.
+  if(NOMS_P_INFLIGHT) return NOMS_P_INFLIGHT;
+  NOMS_P_INFLIGHT=fetch('/api/names?genre=personne').then(function(r){return r.json();})
+    .then(function(d){ NOMS_P=d.noms||[]; NOMS_P_INFLIGHT=null; return NOMS_P; })
+    .catch(function(){ NOMS_P_INFLIGHT=null; return []; });   // pas de rejet non capture
+  return NOMS_P_INFLIGHT;
 }
 function toastP(msg, jeton, apres){
   var t=document.getElementById('toastp');
@@ -7579,10 +7590,10 @@ function assigner(s, el, cible){
   fetch('/api/assign',{method:'POST',headers:{'Content-Type':'application/json'},
     body:JSON.stringify({genre:'visage',cle:s.key,i:s.i,cible:cible,propose:s.person})})
     .then(function(r){return r.json();}).then(function(r){
-      if(!r.ok) return;
+      if(!r.ok){ toastP(r.erreur||'Echec de l attribution.'); return; }  // erreur visible, plus de silence
       toastP(r.libelle||'fait', r.jeton);
       el.remove();
-    });
+    }).catch(function(){ toastP('Le serveur n a pas repondu. Reessaie dans un instant.'); });
 }
 function propose2(champ, zone, s, el){
   var t=champ.value.trim().toLowerCase();
