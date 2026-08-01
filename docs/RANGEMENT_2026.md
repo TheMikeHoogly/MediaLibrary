@@ -181,9 +181,40 @@ s'appuyer dessus et couvrir tout le fonds sans surcoût.
    idempotent, annulable, testé sur **copie** de la base réelle avant tout usage
    en vrai.
 3. **Phase 2 — Démon d'analyse.** Produit le plan JSON à provenance ; l'humain
-   le relit ; le serveur l'applique par lots.
+   le relit ; le serveur l'applique par lots. **✓ FAIT pour le dédoublonnage
+   (01/08)** — voir « Avancement Phase 2 » ci-dessous.
 4. **Phase 3 — Automatisation planifiée** (nightly), toujours quarantaine +
    undo, jamais de suppression dure.
+
+### Avancement Phase 2 — plan de dédoublonnage (01/08)
+
+`plan_rangement.py` (autonome, **lecture seule**) transforme `docs/recensement.json`
+en un plan à provenance : `docs/plan_rangement.{json,md}`. Il croise l'index
+(copie /tmp) pour l'invariant de sécurité — **fusionner les noms avant de
+retirer**. Résultat réel :
+
+- **291 quarantaines** de doublons exacts (sha256), **8,4 Go** vers
+  `.corbeille-rangement/` (réversible, jamais de `rm`).
+- **0 fusion de nom requise** : les 16 copies nommées à retirer portent des noms
+  **déjà présents** sur leur canonique → aucun nom humain en jeu. (Le mécanisme
+  `fusion_noms` + `revue=true` reste là pour le cas contraire.)
+- 11 groupes dont la canonique est encore dans `_A TRIER` (pas de copie mieux
+  rangée ; la survivante sera rangée par année ensuite).
+- 991 fichiers sans date → proposition `_SANS_DATE/`, **toujours en revue**.
+
+Contrôles passés : aucune op ne retire la canonique ; toute destination est sous
+`.corbeille-rangement/`. Chaque op porte `src`, `dst`, `raison`, `preuve`
+(sha256, taille, canonique) et `manifeste` (origine, groupe, date).
+
+**Reste Phase 2 :** le **rangement par année** des 12 714 `_A TRIER` n'est pas
+encore planifiable — `recensement.json` ne liste que les groupes de doublons et
+les sans-date, pas l'inventaire complet (chemin + date + zone) des 34 305
+fichiers. Deux voies : (a) enrichir `recensement_doublons.py` pour dumper cet
+inventaire au prochain run ; (b) le dériver de l'index (`resolve_datestamp` de
+`renommage_facts`), avec une lacune de couverture (~2 600 fichiers non indexés).
+**Phase 3 (application)** : worker serveur qui applique le plan par lots —
+fusion des noms, déplacement + manifeste, `rekey_everywhere`, undo (quarantaine
+30 j). MUTE le NAS : sur copie d'abord, en revue.
 
 ## Décisions tranchées (avec Mike, 31/07)
 

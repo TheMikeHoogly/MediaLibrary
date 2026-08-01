@@ -361,9 +361,13 @@ traversent le chantier) :
       Le point de re-clé est prêt pour le renommage intelligent et le worker
       « appliquer un plan ».
     - **Phase 2 — démon d'analyse** produisant le plan JSON à provenance, relu
-      par un humain avant application.
+      par un humain avant application. **✓ FAIT pour le dédoublonnage (01/08)** :
+      `plan_rangement.py` → `docs/plan_rangement.{json,md}`, **291 quarantaines /
+      8,4 Go**, 0 fusion de nom requise (sécurité vérifiée sur l'index). Reste le
+      rangement par année des `_A TRIER` (besoin de l'inventaire complet).
     - **Phase 3 — automatisation planifiée** (nightly), toujours quarantaine +
-      undo.
+      undo. Worker serveur qui applique le plan (fusion + déplacement + manifeste
+      + `rekey_everywhere` + undo 30 j), sur copie d'abord.
 
     Note : le garde-fou anti-doublon **à l'upload** (point 17, `_upload_content_dup`)
     est déjà en place — il empêche d'*ajouter* des doublons ; ce chantier-ci

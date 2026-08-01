@@ -81,6 +81,14 @@ restent ouverts mais ne sont pas la priorité.
      doublons par contenu, 291 retirables, **8,4 Go**, 12 714 sous `_A TRIER`,
      991 sans date. Décisions ouvertes tranchées : le dédoublonnage vaut l'effort,
      le rangement `_A TRIER` est le gros du volume.
+   - **Phase 2 — plan de dédoublonnage : ✓ FAIT (01/08).** `plan_rangement.py`
+     (lecture seule) → `docs/plan_rangement.{json,md}` : **291 quarantaines,
+     8,4 Go** vers `.corbeille-rangement/`, provenance par op, **0 fusion de nom
+     requise** (les 16 copies nommées ont des noms déjà sur la canonique). Reste
+     Phase 2 : rangement par année des 12 714 `_A TRIER` (besoin de l'inventaire
+     complet — enrichir `recensement_doublons.py` ou dériver de l'index). Phase 3 :
+     worker serveur qui APPLIQUE le plan (fusion noms + déplacement + manifeste +
+     `rekey_everywhere` + undo 30 j), sur copie d'abord.
    - Prérequis Phase 1 : `vectors.rekey_prefix`/`rekey_prefix_all` **faits et
      testés** (`test_rekey_vectors.py` 12/12, `test_vectors` 29/29).
    - **Renommage intelligent** : spec convergée avec Mike (voir RANGEMENT, section
