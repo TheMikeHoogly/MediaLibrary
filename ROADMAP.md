@@ -241,6 +241,43 @@ valider les composants Figma sur du réel avant de propager aux pages historique
     `X` rejeter, `Z` annuler, `Maj+clic` pour une plage ; documentés dans l'UI.
     Sert directement la priorité n°1 (confirmer vite 100 propositions).
 
+**Bugs et manques observés le 01/08 (page `/people`, `PEOPLE_PAGE`) — à traiter
+en priorité au redesign :**
+
+12a. **Débordement horizontal des contrôles « À vérifier ».** Les outils de
+     droite (`Oui, <Nom>`, champ « ou : c'est… », `Aucun`) sortent du cadre : il
+     faut scroller à droite même en plein écran. La rangée de suggestion n'est pas
+     responsive. Fix : `display:flex` avec `flex-wrap`, `min-width:0` sur la
+     colonne de gauche, largeur bornée (`clamp`/`max-width`) et repli vertical des
+     actions sous ~900 px. Fait partie du plancher d'accessibilité (cibles 44 px,
+     pas de scroll horizontal).
+
+12b. **Groupes de personnes non supprimables + pollués par des non-visages.** Un
+     groupe proposé mélangeait des visages peu reconnaissables (nuques, profils
+     détournés) et **2 découpes de chat** (Caline), sans aucun moyen de le rejeter
+     ni d'en retirer des vignettes. Correction intelligente, en deux temps :
+
+     - **UI (port depuis les animaux, déjà fait côté chats)** : sur un groupe
+       proposé, (i) **sélection par vignette** pour exclure certaines têtes avant
+       de nommer (attribution par sous-ensemble) ; (ii) bouton **« Rejeter ce
+       groupe »** qui dissout le cluster et marque ses visages comme non
+       regroupables (réversible, toast 10 s) ; (iii) sur une vignette,
+       **« Pas un visage »** qui l'exclut définitivement du pipeline visages.
+       C'est exactement les deux lignes en attente du tableau d'harmonisation
+       (« porter la sélection par vignette côté visages » + « rejeter un
+       non-visage »).
+     - **En amont (la vraie cause)** : empêcher qu'un tel groupe se forme. (1)
+       **Garde de validité de visage** : les découpes de chat ne devraient jamais
+       entrer dans le pipeline *visages* — ajouter une vérification type SigLIP
+       « visage humain vs animal/objet » sur les découpes (miroir de la
+       vérification d'espèce déjà en place côté animaux, qui rejette les
+       non-chats), plus un plancher de `det_score` InsightFace. (2) **Plancher de
+       reconnaissabilité** : une nuque/profil détourné a une empreinte de faible
+       qualité ; ne pas en faire un groupe *nommable* (le signaler « faible
+       qualité » ou l'écarter via `det_score`/pose). Sert aussi la priorité n°1
+       (vérité terrain humaine) : on ne demande à l'humain de trancher que sur des
+       propositions plausibles.
+
 Composants et gestes signature à intégrer au fil des pages (non numérotés, ils
 traversent le chantier) :
 
@@ -376,8 +413,17 @@ traversent le chantier) :
       (`purger_corbeille.py`, `test_purger_corbeille.py`, `24 - Purger la
       corbeille.bat`). Supprime définitivement les groupes > 30 j, mais seulement
       si la canonique existe encore (filet anti-perte). Dry-run par défaut,
-      `--verifier-canon`. Planifiable (Task Scheduler). **Reste :** rangement par
-      année des `_A TRIER`.
+      `--verifier-canon`.
+    - **Orchestrateur de maintenance intégré au serveur : ✓ FAIT et testé
+      (01/08)** (`maintenance.py`, `test_maintenance.py`, thread
+      `maintenance_orchestrator` dans `server.py`, `25 - Maintenance.bat`).
+      Remplace la planification Windows : un thread de fond appelle `run_cycle`,
+      cadence + autonomie par étape (auto pour purge/dédoublonnage, propose pour
+      recensement lourd/renommage/rangement). Mutations in-process via
+      `rekey_everywhere` (pas de cache périmé), lecture seule en sous-processus,
+      priorité UI. **À valider en réel** (édition monolithe non testable hors
+      machine). **Reste :** rangement par année des `_A TRIER` ; branchement de
+      l'application du renommage `_Uploads` ; installateur nouveau PC (prochain).
 
     Note : le garde-fou anti-doublon **à l'upload** (point 17, `_upload_content_dup`)
     est déjà en place — il empêche d'*ajouter* des doublons ; ce chantier-ci

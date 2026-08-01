@@ -54,13 +54,27 @@ mémoire, les workers ne poisonnent plus sur `ImageReadError`, et les scans
 repassent les `failed` transitoires. Testé en isolation (`test_errno22_fix.py`).
 **Reste : relancer le serveur, observer que ces fichiers repassent, puis merger.**
 
-**➡ DÉMARRER PAR LE POINT 3 (Rangement & dédoublonnage)** — décidé avec Mike le
-01/08. **Recensement Phase 0 TERMINÉ** (résultats capturés : 261 groupes de
-doublons, 291 copies retirables, 8,4 Go récupérables, 12 714 sous `_A TRIER`,
-991 sans date — voir `docs/recensement.md`). Prochain geste : relire ce rapport
-puis attaquer **Phase 2/3** (démon d'analyse → plan JSON → worker d'application
-via `rekey_everywhere`, déjà prêt). Le NAS n'est plus parcouru. Les points 1 et 2
-restent ouverts mais ne sont pas la priorité.
+**➡ PROCHAINE SESSION = DESIGN UI/UX** — décidé avec Mike le 01/08. Le chantier
+**Rangement & dédoublonnage est bouclé de bout en bout** (recensement → plan →
+application : **8,4 Go récupérés** → purge planifiée → orchestrateur de
+maintenance auto dans le serveur). On passe à l'**interface** (voir ROADMAP,
+section « Interface — redesign chambre noire », points 9-12 + **bugs observés
+12a/12b**). Charge la skill `photo-ui` et suis `monolith-surgery` (une page à la
+fois). **Deux bugs concrets à traiter en priorité** (page `/people`,
+`PEOPLE_PAGE`) :
+- **12a** — les contrôles « À vérifier » (Oui/Nom/Aucun) débordent à droite,
+  scroll horizontal même en plein écran → rangée non responsive (`flex-wrap`,
+  `min-width:0`, repli des actions sous ~900 px).
+- **12b** — un groupe de personnes mélangeait des nuques + **2 découpes de chat**
+  (Caline), sans moyen de le rejeter ni d'en retirer des vignettes. Correction
+  intelligente (détail dans ROADMAP 12b) : **UI** — sélection par vignette +
+  « Rejeter ce groupe » + « Pas un visage » (port depuis les animaux) ; **amont**
+  — garde de validité de visage (SigLIP « humain vs animal/objet » + plancher
+  `det_score`) pour que chats/non-visages n'entrent pas dans les clusters, et
+  plancher de reconnaissabilité pour ne pas proposer de groupe ingérable.
+
+Le rangement par année des `_A TRIER` et l'installateur nouveau PC restent
+ouverts (voir plus bas) mais ne sont pas la priorité immédiate.
 
 **Où on en est — trois chantiers ouverts (commencer par le 3) :**
 1. **Éval tagging (tranché, deux pas ciblés restants).** Hybride assertions+image
@@ -98,9 +112,21 @@ restent ouverts mais ne sont pas la priorité.
      `purger_corbeille.py` (+ test, + `24 - Purger la corbeille.bat` ASCII pur)
      supprime définitivement les groupes > 30 j **seulement si la canonique
      existe encore** (filet anti-perte ; `--verifier-canon` re-hash). Dry-run par
-     défaut. Planifiable (Task Scheduler : `python purger_corbeille.py
-     --appliquer`). N'efface rien avant 30 j. **Reste rangement : par année des
-     `_A TRIER`** (inventaire complet à produire).
+     défaut. **Reste rangement : par année des `_A TRIER`** (inventaire complet
+     à produire).
+   - **Orchestrateur de maintenance intégré au serveur : ✓ FAIT et testé (01/08).**
+     `maintenance.py` `run_cycle(sv)` appelé par un thread `maintenance_orchestrator`
+     dans `server.py` (config `MAINTENANCE_AUTO`, défaut True). Remplace le Task
+     Scheduler. Cadence + autonomie par étape : purge/dédoublonnage **auto**,
+     recensement (lourd)/renommage/rangement **propose**. Mutations in-process via
+     `rekey_everywhere` (écrivain unique), lecture seule en sous-processus,
+     priorité UI (`system_busy() or ui_recent()`). Testé avec FauxServeur
+     (`test_maintenance.py`). `25 - Maintenance.bat` = passe manuelle (serveur
+     arrêté). **À VALIDER EN RÉEL** : démarrage serveur + 1er cycle (édition
+     monolithe non testable hors machine ; 1er cycle = no-op attendu).
+   - **Prochain gros bloc : installateur / migration nouveau PC** (venv, deps,
+     modèles Ollama/InsightFace/YOLO/DINOv2, config chemins, auto-démarrage,
+     migration photos.db + lieux.txt + XMP). Décidé après l'orchestrateur.
    - Prérequis Phase 1 : `vectors.rekey_prefix`/`rekey_prefix_all` **faits et
      testés** (`test_rekey_vectors.py` 12/12, `test_vectors` 29/29).
    - **Renommage intelligent** : spec convergée avec Mike (voir RANGEMENT, section
