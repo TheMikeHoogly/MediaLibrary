@@ -224,15 +224,33 @@ regénère le CSS/HTML natif. La page « Sujets » (point 8) et le garde-fou
 d'upload (point 17) adoptent le nouveau système en premier — deux occasions de
 valider les composants Figma sur du réel avant de propager aux pages historiques.
 
-9. **Fondations** — extraire les 7 pages vers `ui/` (`tokens.css` + `base.css`),
-   remplacer chaque valeur en dur par un token « chambre noire », corriger au
-   passage les divergences existantes (`.pchip` vs `.chip`). Construire la
-   bibliothèque Figma correspondante (`figma-generate-library`) et un `bundle.py`
-   qui préserve le livrable mono-fichier.
-10. **Plancher d'accessibilité (bloquant)** — `:focus-visible` partout, contraste
-    AA, cibles 44 px, `prefers-reduced-motion`, `<button>`/`<a>` sémantiques,
-    `alt` rédigés, navigation clavier. Aucun de ces sept points n'est satisfait
-    aujourd'hui ; ils se traitent comme des tests, pas des intentions.
+9. **Fondations — ◐ EN COURS (01/08).** Socle posé et testé ; extraction
+   page-par-page à suivre.
+   - ✓ **FAIT** : `ui/tokens.css` (tokens « chambre noire », source unique),
+     `ui/base.css` (plancher a11y global), `ui/components.css` (btn/chip/feuille/
+     planche/toast, **opt-in** — pas injecté globalement pour ne pas écraser les
+     pages historiques). Chargeur `ui_shared_css()` dans `server.py` (cache,
+     relecture `mtime`, **dégradation propre si `ui/` absent** → invariant
+     zéro-dép), injecté sur chaque page via le hook `_send_html` existant (après
+     `APP_NAV_CSS`, marqueur `ui-shared` anti-double-injection). `bundle.py` cuit
+     les assets dans `dist/server.py` (mono-fichier, marche avec **ou sans**
+     `ui/`). Tests : `test_ui_bundle.py` (4 verts, dont **accord server↔bundle**
+     sur le CSS réel). `py_compile` OK. `dist/` git-ignoré.
+   - **RESTE** : (a) tokeniser les 7 pages une par une (remplacer les valeurs en
+     dur par `var(--…)`, adopter `components.css`), en commençant par la plus
+     simple (`BROWSE_PAGE`) — **extraction identique d'abord, redesign ensuite**,
+     jamais mélangés ; (b) corriger les divergences (`.pchip` vs `.chip`,
+     `#0a84ff`, gris neutres, `:root` d'`APP_NAV_CSS` à migrer sur les tokens) ;
+     (c) bibliothèque Figma (`figma-generate-library`) comme source des composants.
+     **NB** : `APP_NAV_CSS` définit encore son propre `:root` (bleu iOS `#5b9dff`) —
+     à réconcilier avec les tokens lors de la migration des pages.
+10. **Plancher d'accessibilité (bloquant) — ◐ EN COURS.** ✓ **Global (01/08)** :
+    `:focus-visible` (anneau `--veilleuse`, rétabli même là où une page posait
+    `outline:none`) et `prefers-reduced-motion` sont désormais injectés sur les
+    **7 pages** via `ui/base.css`. **RESTE** : contraste AA (audit des couleurs
+    héritées), cibles 44 px généralisées, `<button>`/`<a>` sémantiques partout,
+    `alt` rédigés, navigation clavier de tri — à traiter page par page comme des
+    tests. (12a a déjà réglé le scroll horizontal + cibles 44 px sur `/people`.)
 11. **Planche contact justifiée** — densité par `auto-fill` + `clamp()`, liseré
     `--veilleuse` par photo pour l'état pipeline, numéro de vue en marge ;
     `content-visibility` puis **virtual scroll** au-delà de ~2 000 vignettes.

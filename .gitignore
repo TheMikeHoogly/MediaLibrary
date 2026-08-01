@@ -4,6 +4,10 @@ __pycache__/
 *.pyc
 ~*/                      # dossiers orphelins laissés par une désinstallation pip
 
+# ─── Build mono-fichier (bundle.py) ──────────────────────────────────────────
+# dist/server.py est régénérable depuis server.py + ui/ par « python bundle.py ».
+dist/
+
 # ─── Données : jamais sur GitHub ─────────────────────────────────────────────
 # La base contient les chemins, les tags et les embeddings de 30 000 photos de
 # famille. Elle se reconstruit depuis le NAS ; elle n'a rien à faire dans un

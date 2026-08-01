@@ -1,0 +1,48 @@
+/* ============================================================================
+   tokens.css — Design system « chambre noire »
+   SOURCE UNIQUE DE VERITE des couleurs, typographies, espacements et formes.
+   Injecte sur CHAQUE page par le serveur (voir _send_html / UI_SHARED_CSS).
+   Ne definit AUCUN composant : uniquement des variables. Tant qu'une page ne
+   reference pas ces tokens, son apparence ne change pas (variables inertes).
+   Ref : .claude/skills/photo-ui/SKILL.md
+   ========================================================================== */
+:root {
+  /* --- Surfaces --- */
+  --salle:        #0C0B0A;  /* fond : noir CHAUD, jamais gris neutre */
+  --salle-2:      #14120F;  /* elevation 1 : barres, en-tetes */
+  --salle-3:      #1C1916;  /* elevation 2 : cartes, cellules */
+  --papier:       #EDE7DC;  /* surfaces de travail : panneaux de nommage */
+  --papier-2:     #DDD5C6;  /* bordures et separateurs sur papier */
+
+  /* --- Accents (un sens chacun, jamais decoratifs) --- */
+  --veilleuse:    #FF7A1A;  /* lampe inactinique : « l'IA travaille », en attente */
+  --veilleuse-d:  #7A3908;  /* variante sombre : liseres, fonds de badge */
+  --encre:        #C8321E;  /* destructif, correction, erreur */
+  --fixateur:     #4A8C7B;  /* confirme, succes, assigne */
+
+  /* --- Texte --- */
+  --texte:        #F2EDE6;  /* sur --salle */
+  --graphite:     #A39C93;  /* secondaire sur --salle — 4,6:1, AA conforme */
+  --texte-papier: #1A1714;  /* sur --papier */
+  --graphite-p:   #5C554C;  /* secondaire sur --papier */
+
+  /* --- Typographie --- */
+  --f-affichage: "Archivo Narrow", "Roboto Condensed", ui-sans-serif, system-ui, sans-serif;
+  --f-texte:     -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  --f-donnees:   ui-monospace, "SF Mono", "Cascadia Mono", Consolas, monospace;
+
+  --t-xs: 0.75rem; --t-sm: 0.85rem; --t-md: 0.95rem;
+  --t-lg: 1.2rem;  --t-xl: 1.75rem;
+
+  /* --- Espacement (echelle 4px, pas de valeurs libres) --- */
+  --e-1: 4px; --e-2: 8px; --e-3: 12px; --e-4: 16px; --e-6: 24px; --e-8: 32px;
+
+  /* --- Formes --- */
+  --r-sm: 3px;   /* vignettes : coins presque nets, comme du film */
+  --r-md: 6px;
+  --r-pill: 999px;
+  --trait: 1px solid #26221E;  /* gouttiere de planche contact */
+
+  /* --- Cibles tactiles --- */
+  --touch: 44px;  /* minimum absolu pour tout element interactif */
+}

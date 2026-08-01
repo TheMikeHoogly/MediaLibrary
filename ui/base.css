@@ -1,0 +1,33 @@
+/* ============================================================================
+   base.css — PLANCHER D'ACCESSIBILITE GLOBAL
+   Injecte sur CHAQUE page. Contient uniquement des regles SURES et ADDITIVES :
+   elles ameliorent l'accessibilite sans redessiner les pages existantes.
+   Le redesign (couleurs, composants) se fait page par page, separement.
+   Ref : .claude/skills/photo-ui/SKILL.md, section « Plancher d'accessibilite ».
+   ========================================================================== */
+
+/* 1. Focus clavier TOUJOURS visible. Les pages historiques posent parfois
+   « outline:none » sur les champs ; on retablit un anneau au focus CLAVIER
+   uniquement (:focus-visible ne se declenche pas a la souris). !important pour
+   garantir le plancher meme la ou une page l'avait supprime. */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[tabindex]:focus-visible,
+[role="button"]:focus-visible {
+  outline: 2px solid var(--veilleuse) !important;
+  outline-offset: 2px;
+}
+
+/* 2. Mouvement reduit : respecte le reglage systeme. Couvre les survols
+   transform:scale() et les diaporamas a defilement automatique. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

@@ -91,10 +91,21 @@ fois).
   pic VRAM) AVANT activation. Ne pas l'imposer sans preuve : le marquage humain
   réversible tient l'usage en attendant.
 
-**Prochain pas concret** : 12a/12b validés en réel (01/08). Attaquer soit la
-garde amont mesurée (12b, `vision-eval` : `verifier_visages.py` + plancher
-`det_score`), soit les fondations du redesign chambre noire (points 9-11,
-extraction `ui/` d'abord).
+**Fondations redesign — ◐ socle posé (01/08).** `ui/tokens.css` + `ui/base.css`
+(plancher a11y global : `:focus-visible`, `prefers-reduced-motion`, injectés sur
+les 7 pages) + `ui/components.css` (opt-in). Chargeur `ui_shared_css()` dans
+`server.py` (dégradation propre si `ui/` absent), injecté via `_send_html`.
+`bundle.py` → `dist/server.py` mono-fichier (marche avec ou sans `ui/`).
+`test_ui_bundle.py` 4 verts (dont accord server↔bundle). `py_compile` OK.
+**À valider en réel** : démarrer le serveur, vérifier que les pages s'affichent
+comme avant + anneau de focus clavier orange. Aucune régression visuelle attendue
+(tokens inertes tant qu'aucune page ne les référence).
+
+**Prochain pas concret** : tokeniser les pages **une par une** (commencer par
+`BROWSE_PAGE`, la plus simple), extraction identique d'abord puis redesign ;
+réconcilier le `:root` d'`APP_NAV_CSS` (bleu iOS `#5b9dff`) avec les tokens ;
+corriger `.pchip`/`.chip`. Charge `photo-ui` + `monolith-surgery`. En parallèle
+possible : la garde amont mesurée de 12b (`vision-eval`).
 
 Le rangement par année des `_A TRIER` et l'installateur nouveau PC restent
 ouverts (voir plus bas) mais ne sont pas la priorité immédiate.

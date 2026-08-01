@@ -1,0 +1,78 @@
+/* ============================================================================
+   components.css — Composants canoniques « chambre noire » (OPT-IN)
+   N'EST PAS injecte globalement : il redefinit .btn/.chip/... et ecraserait le
+   CSS des pages non encore migrees. Une page l'adopte quand elle est redessinee
+   (voir bundle.py / le chargeur : a inclure explicitement page par page).
+   Depend de tokens.css. Ref : .claude/skills/photo-ui/SKILL.md.
+   ========================================================================== */
+
+/* --- Planche contact (galerie) : densite par auto-fill + clamp, jamais un
+   nombre de colonnes en dur. --- */
+.planche {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(clamp(96px, 18vw, 168px), 1fr));
+  gap: var(--e-1);
+  padding: var(--e-2);
+  background: var(--salle);
+}
+.vue {
+  position: relative;
+  aspect-ratio: 1;
+  background: var(--salle-3);
+  border-radius: var(--r-sm);
+  overflow: hidden;
+  content-visibility: auto;
+  contain-intrinsic-size: 160px 160px;
+}
+.vue--attente { box-shadow: inset 0 0 0 2px var(--veilleuse); }  /* IA en cours */
+.vue__num {
+  position: absolute; bottom: 2px; left: 4px;
+  font: var(--t-xs)/1 var(--f-donnees);
+  color: var(--graphite); text-shadow: 0 1px 2px #000;
+}
+
+/* --- Surface de travail (papier) : tout panneau ou l'on DECIDE. --- */
+.feuille {
+  background: var(--papier);
+  color: var(--texte-papier);
+  border-radius: var(--r-md);
+  padding: var(--e-4);
+  margin: var(--e-3) var(--e-4);
+  box-shadow: 0 1px 0 var(--papier-2), 0 8px 24px #0008;
+}
+.feuille h3 { font: 600 var(--t-lg)/1.2 var(--f-affichage); }
+.feuille .aide { color: var(--graphite-p); font-size: var(--t-sm); }
+
+/* --- Controles --- */
+.btn {
+  min-height: var(--touch); padding: 0 var(--e-4);
+  font: 500 var(--t-sm)/1 var(--f-texte);
+  border: var(--trait); border-radius: var(--r-md);
+  background: var(--salle-3); color: var(--texte); cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center; gap: var(--e-2);
+}
+.btn--principal { background: var(--papier); color: var(--texte-papier); border-color: var(--papier); }
+.btn--confirmer { background: var(--fixateur); border-color: var(--fixateur); color: #fff; }
+.btn--destructif { background: transparent; border-color: var(--encre); color: var(--encre); }
+
+.chip {
+  min-height: 32px; padding: 0 var(--e-3); border-radius: var(--r-pill);
+  border: var(--trait); background: var(--salle-3); color: var(--graphite);
+  display: inline-flex; align-items: center; gap: var(--e-2); cursor: pointer;
+}
+.chip[aria-pressed="true"] { background: var(--fixateur); border-color: var(--fixateur); color: #fff; }
+.chip .n { font-family: var(--f-donnees); font-size: var(--t-xs); opacity: 0.7; }
+
+/* --- Toast d'annulation : action destructive differee 10 s. --- */
+.toast {
+  position: sticky; bottom: var(--e-3); margin: var(--e-3) auto 0; max-width: 520px;
+  display: flex; align-items: center; gap: var(--e-3);
+  background: var(--salle-2); color: var(--texte);
+  border: var(--trait); border-radius: var(--r-pill);
+  padding: var(--e-2) var(--e-2) var(--e-2) var(--e-4);
+  font: var(--t-sm)/1.2 var(--f-texte); z-index: 60;
+  box-shadow: 0 8px 30px #000a;
+}
+
+/* --- Donnees : monospace obligatoire pour mesures et identifiants. --- */
+.donnee { font-family: var(--f-donnees); font-size: var(--t-xs); }

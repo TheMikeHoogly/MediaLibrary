@@ -2842,6 +2842,50 @@ APP_NAV_HTML = """<nav class="appnav">
   });})();</script>"""
 
 
+# ─── Assets UI partages (design system « chambre noire ») ────────────────────
+# tokens.css + base.css sont injectes sur CHAQUE page par _send_html, a la
+# maniere d'APP_NAV_CSS : une seule source dans ui/, donc coherence garantie.
+# Charges au demarrage et relus si un fichier change (confort de dev, sans
+# redemarrage). Invariant zero-dependance : si ui/ est absent, le serveur
+# demarre quand meme et sert des pages sans le design system (chaine vide).
+# components.css est OPT-IN (adopte page par page lors du redesign), donc PAS
+# injecte ici — l'injecter globalement ecraserait le CSS des pages historiques.
+UI_DIR = SCRIPT_DIR / "ui"
+_UI_GLOBAL_FILES = ("tokens.css", "base.css")   # ordre : variables puis a11y
+_UI_CACHE = {"css": None, "sig": None}
+
+
+def _ui_signature():
+    """(nom, mtime, taille) par fichier : detecte une edition sans tout relire."""
+    sig = []
+    for name in _UI_GLOBAL_FILES:
+        try:
+            st = (UI_DIR / name).stat()
+            sig.append((name, int(st.st_mtime), st.st_size))
+        except OSError:
+            sig.append((name, 0, 0))
+    return tuple(sig)
+
+
+def ui_shared_css():
+    """Bloc <style id="ui-shared"> a injecter dans chaque page. Mis en cache,
+    recharge si un fichier ui/ a change. Chaine vide si ui/ absent."""
+    sig = _ui_signature()
+    if _UI_CACHE["sig"] != sig:
+        parts = []
+        for name in _UI_GLOBAL_FILES:
+            try:
+                txt = (UI_DIR / name).read_text(encoding="utf-8")
+            except Exception:
+                txt = ""
+            if txt.strip():
+                parts.append(f"/* {name} */\n{txt}")
+        _UI_CACHE["css"] = ('<style id="ui-shared">\n' + "\n".join(parts) +
+                            "\n</style>") if parts else ""
+        _UI_CACHE["sig"] = sig
+    return _UI_CACHE["css"]
+
+
 HTML_PAGE = """<!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -9149,6 +9193,13 @@ class Handler(BaseHTTPRequestHandler):
         # contient le marqueur <!--APPNAV--> (nav) et avant </head> (thème).
         if '</head>' in html_str and 'appnav-css' not in html_str:
             html_str = html_str.replace('</head>', APP_NAV_CSS + '</head>', 1)
+        # Design system partage (tokens + plancher d'accessibilite). Apres
+        # APP_NAV_CSS, donc au plus pres de </head>. Le marqueur « ui-shared »
+        # evite la double injection quand bundle.py a deja cuit le CSS.
+        if '</head>' in html_str and 'ui-shared' not in html_str:
+            shared = ui_shared_css()
+            if shared:
+                html_str = html_str.replace('</head>', shared + '</head>', 1)
         if '<!--APPNAV-->' in html_str:
             html_str = html_str.replace('<!--APPNAV-->', APP_NAV_HTML)
         data = html_str.encode('utf-8')
