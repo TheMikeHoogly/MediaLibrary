@@ -14,13 +14,19 @@ Trois signaux (aucun modele lourd nouveau) :
 Le banc ne fait que LIRE l'index et les fichiers ; il n'ecrit aucun tag, ne
 supprime rien.
 
-Usage (sur la machine reelle, NAS monte) :
-  python eval_interet.py --echantillon 200   # tire l'echantillon FIGE sous _A TRIER
-                                              # + genere la page d'etiquetage HTML
-  #  ... Mike etiquette dans eval/interet_etiquetage.html, telecharge
-  #      interet_labels.json et le depose dans eval/ ...
-  python eval_interet.py --mesurer            # SigLIP + flou + nom, metriques + VRAM
-  python eval_interet.py --mesurer --limit 40 # passe rapide
+Usage (sur la machine reelle, NAS monte, DANS LE .venv du projet — sinon open_clip
+et torch manquent et SigLIP est saute) :
+  python eval_interet.py --echantillon 200   # tirage ALEATOIRE (mesure le cout FP :
+                                              # bonnes photos signalees a tort)
+  python eval_interet.py --candidats 200     # va CHERCHER les rebuts probables
+                                              # (noms suspects + plus floues)
+  #  ... Mike etiquette dans la page HTML, telecharge le JSON, le depose dans eval/ ...
+  python eval_interet.py --mesurer                    # jeu aleatoire
+  python eval_interet.py --mesurer --jeu candidats    # jeu enrichi (precision sur rebuts)
+
+Note : un tirage ALEATOIRE de « _A TRIER » est ~94 % de bonnes photos — bon pour le
+cout des faux positifs, pauvre en positifs. Le mode --candidats sert a mesurer la
+precision de ce qu'on PROPOSERAIT a la suppression.
 
 Sorties (dans eval/) :
   interet_v1.json            echantillon FIGE (liste de cles), reutilise tel quel
@@ -178,33 +184,115 @@ maj();
 """
 
 
-def cmd_echantillon(n):
-    print("=" * 70)
-    print(f"  ECHANTILLON DE VALIDATION — {n} photos sous « _A TRIER »")
-    print("=" * 70)
-    ech = construire_echantillon(n)
-    print(f"  {len(ech)} cles figees dans {SAMPLE_FILE.name}")
-    print("  Generation des vignettes (lecture NAS)...")
+def _fichiers_jeu(jeu):
+    """(sample, labels, html, results) selon le jeu ('aleatoire' | 'candidats')."""
+    if jeu == 'candidats':
+        return (EVAL_DIR / 'interet_candidats.json',
+                EVAL_DIR / 'interet_candidats_labels.json',
+                EVAL_DIR / 'interet_candidats_etiquetage.html',
+                EVAL_DIR / 'interet_candidats_results.json')
+    return (SAMPLE_FILE, LABELS_FILE, LABEL_HTML, RESULTS_FILE)
+
+
+def _ecrire_page(cles, html_file, indices=None):
+    """Genere la page d'etiquetage a vignettes inline pour une liste de cles.
+    `indices` : dict cle -> texte d'indice (motif de candidat), optionnel.
+    Renvoie le nombre de vignettes indisponibles."""
     items, manquants = [], 0
-    for i, k in enumerate(ech):
+    for i, k in enumerate(cles):
         p = _resoudre(k)
         thumb = _miniature_b64(p) if p.exists() else None
         if thumb is None:
             manquants += 1
-        cat, motif = I.indice_nom(k)
+        hint = indices.get(k) if indices else (I.indice_nom(k)[1] or "")
         items.append({"i": i, "key": k, "nom": Path(k).name,
-                      "thumb": thumb, "hint": motif or ""})
+                      "thumb": thumb, "hint": hint or ""})
         if (i + 1) % 25 == 0:
-            print(f"    {i+1}/{len(ech)}")
+            print(f"    {i+1}/{len(cles)}")
     html = (_HTML_TETE
             .replace("__DATA__", json.dumps(items, ensure_ascii=False))
             .replace("__CLASSES__", json.dumps(list(TOUTES_CLASSES))))
-    LABEL_HTML.write_text(html, encoding='utf-8')
+    html_file.write_text(html, encoding='utf-8')
+    return manquants
+
+
+def cmd_echantillon(n):
+    print("=" * 70)
+    print(f"  ECHANTILLON DE VALIDATION (aleatoire) — {n} photos sous « _A TRIER »")
+    print("=" * 70)
+    ech = construire_echantillon(n)
+    print(f"  {len(ech)} cles figees dans {SAMPLE_FILE.name}")
+    print("  Generation des vignettes (lecture NAS)...")
+    manquants = _ecrire_page(ech, LABEL_HTML)
     print(f"\n  Page d'etiquetage : {LABEL_HTML}")
     if manquants:
         print(f"  ! {manquants} vignettes indisponibles (fichier introuvable / NAS).")
+    print("\n  Ce tirage est REPRESENTATIF : il mesure surtout le COUT DES FAUX")
+    print("  POSITIFS (bonnes photos signalees a tort). Les rebuts y sont rares.")
+    print("  Pour mesurer la PRECISION sur des rebuts, utilise --candidats N.")
     print("\n  Ouvre la page, etiquette, telecharge interet_labels.json,")
     print(f"  depose-le dans {EVAL_DIR}, puis lance :  python eval_interet.py --mesurer")
+    return 0
+
+
+def cmd_candidats(n):
+    """Enrichit en REBUTS PROBABLES : au lieu d'un tirage aleatoire (94 % de bonnes
+    photos), on va chercher dans TOUT « _A TRIER » les noms suspects (gratuit) et
+    les photos les plus FLOUES (lecture NAS bornee). Mike etiquette ces candidats
+    -> on mesure la PRECISION de ce qu'on PROPOSERAIT a la suppression (la bonne
+    metrique quand les rebuts sont rares : un rebut manque reste, un faux positif
+    risque une bonne photo)."""
+    import random
+    sample_f, labels_f, html_f, _ = _fichiers_jeu('candidats')
+    print("=" * 70)
+    print(f"  CANDIDATS REBUT — jusqu'a {n} photos suspectes sous « _A TRIER »")
+    print("=" * 70)
+    cles = cles_a_trier()
+    print(f"  {len(cles)} photos sous _A TRIER au total.")
+    indices = {}
+    # 1) Noms suspects (signal gratuit, sur toutes les cles)
+    hits = []
+    for k in cles:
+        cat, motif = I.indice_nom(k)
+        if cat:
+            hits.append(k)
+            indices[k] = f"nom:{cat} ({motif})"
+    print(f"  {len(hits)} noms suspects (Screenshot_/-WA/Scan_/facture...).")
+    # 2) Flou : score un sous-ensemble borne des AUTRES, garde les plus flous
+    rng = random.Random(1234)
+    autres = [k for k in cles if k not in indices]
+    rng.shuffle(autres)
+    budget = min(len(autres), max(400, n * 8))
+    print(f"  Score de flou sur {budget} photos (lecture NAS)...")
+    scored = []
+    for i, k in enumerate(autres[:budget]):
+        v = I.score_flou(_resoudre(k))
+        if v is not None:
+            scored.append((v, k))
+        if (i + 1) % 100 == 0:
+            print(f"    {i+1}/{budget}")
+    scored.sort()                     # variance croissante = plus flou d'abord
+    n_flou = max(1, n // 2)
+    for v, k in scored[:n_flou]:
+        indices[k] = f"flou (var={v:.0f})"
+    # 3) Assemble : moitie noms, moitie flous, cap n, ordre deterministe
+    cand = []
+    for k in hits + [k for _, k in scored[:n_flou]]:
+        if k not in cand:
+            cand.append(k)
+        if len(cand) >= n:
+            break
+    EVAL_DIR.mkdir(exist_ok=True)
+    sample_f.write_text(json.dumps(cand, ensure_ascii=False, indent=1),
+                        encoding='utf-8')
+    print(f"\n  {len(cand)} candidats figes dans {sample_f.name}")
+    print("  Generation des vignettes...")
+    manquants = _ecrire_page(cand, html_f, indices)
+    print(f"\n  Page d'etiquetage : {html_f}")
+    if manquants:
+        print(f"  ! {manquants} vignettes indisponibles.")
+    print(f"\n  Etiquette, telecharge -> renomme en {labels_f.name}, depose dans")
+    print(f"  {EVAL_DIR}, puis :  python eval_interet.py --mesurer --jeu candidats")
     return 0
 
 
@@ -255,16 +343,18 @@ def _seuils(valeurs, k=21):
     return [lo + (hi - lo) * j / (k - 1) for j in range(k)]
 
 
-def cmd_mesurer(limit=None):
+def cmd_mesurer(limit=None, jeu='aleatoire'):
     import numpy as np
-    if not SAMPLE_FILE.exists():
-        print(f"  x {SAMPLE_FILE.name} absent — lance d'abord --echantillon N")
+    sample_f, labels_f, html_f, results_f = _fichiers_jeu(jeu)
+    if not sample_f.exists():
+        print(f"  x {sample_f.name} absent — lance d'abord"
+              f" --{'candidats' if jeu=='candidats' else 'echantillon'} N")
         return 1
-    if not LABELS_FILE.exists():
-        print(f"  x {LABELS_FILE.name} absent — etiquette via {LABEL_HTML.name}")
+    if not labels_f.exists():
+        print(f"  x {labels_f.name} absent — etiquette via {html_f.name}")
         return 1
-    ech = json.loads(SAMPLE_FILE.read_text(encoding='utf-8'))
-    labels = json.loads(LABELS_FILE.read_text(encoding='utf-8'))
+    ech = json.loads(sample_f.read_text(encoding='utf-8'))
+    labels = json.loads(labels_f.read_text(encoding='utf-8'))
     cles = [k for k in ech if k in labels]
     if limit:
         cles = cles[:limit]
@@ -296,36 +386,49 @@ def cmd_mesurer(limit=None):
     dt_flou = time.perf_counter() - t0
 
     # ── Signal SigLIP zero-shot (GPU/CPU selon VRAM) ──
-    print("\n  Zero-shot SigLIP sur les libelles rebut...")
-    import semantic
-    libs, cat_of = [], []
-    for cat, lst in I.LIBELLES_SIGLIP.items():
-        for lib in lst:
-            libs.append(semantic.GABARIT.format(lib))
-            cat_of.append(cat)
-    cat_uniques = list(dict.fromkeys(cat_of))
-    dev, libre = semantic._device_cible()
-    print(f"    VRAM libre avant : {libre:.0f} Mo -> cible {dev}")
+    # OPTIONNEL : si l'environnement n'a pas open_clip/torch (ex. mauvais Python,
+    # numpy 2.x incompatible), on N'ABANDONNE PAS la mesure — nom + flou tiennent
+    # sans GPU. On note seulement que SigLIP manque.
+    cat_uniques = list(I.LIBELLES_SIGLIP.keys())
     sig = {k: {c: None for c in cat_uniques} for k in cles}
+    siglip_ok = True
     dt_sig = 0.0
     pic = 0
-    with _PicVram() as pv:
-        M = semantic.encoder_textes(libs)            # (L, d)
-        chemins = [_resoudre(k) for k in cles]
-        # map chemin resolu -> cle (encoder_images renvoie (chemin, vecteur))
-        par_chemin = {str(_resoudre(k)): k for k in cles}
-        t0 = time.perf_counter()
-        for chemin, v in semantic.encoder_images([p for p in chemins if p.exists()]):
-            k = par_chemin.get(str(chemin))
-            if k is None:
-                continue
-            sc = M @ np.asarray(v)
-            for c in cat_uniques:
-                idx = [j for j, cc in enumerate(cat_of) if cc == c]
-                sig[k][c] = float(max(sc[j] for j in idx))
-        dt_sig = time.perf_counter() - t0
-        pic = pv.pic
-    print(f"    pic VRAM pendant l'encodage : {pic} Mo")
+    libre = 0.0
+    print("\n  Zero-shot SigLIP sur les libelles rebut...")
+    try:
+        import semantic
+        libs, cat_of = [], []
+        for cat, lst in I.LIBELLES_SIGLIP.items():
+            for lib in lst:
+                libs.append(semantic.GABARIT.format(lib))
+                cat_of.append(cat)
+        cat_uniques = list(dict.fromkeys(cat_of))
+        sig = {k: {c: None for c in cat_uniques} for k in cles}
+        dev, libre = semantic._device_cible()
+        print(f"    VRAM libre avant : {libre:.0f} Mo -> cible {dev}")
+        with _PicVram() as pv:
+            M = semantic.encoder_textes(libs)            # (L, d)
+            chemins = [_resoudre(k) for k in cles]
+            par_chemin = {str(_resoudre(k)): k for k in cles}
+            t0 = time.perf_counter()
+            for chemin, v in semantic.encoder_images([p for p in chemins if p.exists()]):
+                k = par_chemin.get(str(chemin))
+                if k is None:
+                    continue
+                sc = M @ np.asarray(v)
+                for c in cat_uniques:
+                    idx = [j for j, cc in enumerate(cat_of) if cc == c]
+                    sig[k][c] = float(max(sc[j] for j in idx))
+            dt_sig = time.perf_counter() - t0
+            pic = pv.pic
+        print(f"    pic VRAM pendant l'encodage : {pic} Mo")
+    except Exception as e:                              # noqa: BLE001
+        siglip_ok = False
+        print(f"    ! SigLIP indisponible : {type(e).__name__}: {e}")
+        print("      (lance le banc dans le .venv du projet — open_clip + torch"
+              " y sont ; le systeme Python311 n'a pas les deps). On continue"
+              " avec nom + flou.")
 
     # ── Metriques ──
     res = {"n": len(cles), "n_rebut": n_rebut, "repartition": repart,
@@ -371,36 +474,46 @@ def cmd_mesurer(limit=None):
         print("    aucun seuil ne tient la borne de faux positifs — signal a NE PAS"
               " activer seul.")
 
-    # SigLIP : balayage par categorie (rebut si score >= seuil)
+    # SigLIP : balayage par categorie (rebut si score >= seuil ; 'flou' exclu —
+    # c'est un defaut de rendu, pas un sujet, mesure par la variance du Laplacien)
+    res["siglip_ok"] = siglip_ok
     res["signaux"]["siglip"] = {}
-    print("\n  SIGNAL SigLIP zero-shot (par categorie)")
-    for c in cat_uniques:
-        ver_c = [verite[k] == c for k in cles]
-        if sum(ver_c) == 0:
-            continue
-        sc_c = [sig[k][c] for k in cles]
-        bal = I.balayage_seuil(sc_c, ver_c, _seuils(sc_c), sens='sup')
-        for l in bal:
-            preds = [(sig[k][c] is not None and sig[k][c] >= l['seuil']) for k in cles]
-            l['fp_bonnes'] = sum(1 for p, g in zip(preds, ver_garder) if p and g)
-        best = I.meilleur_seuil(bal, fp_max=max(1, len(cles) // 50))
-        res["signaux"]["siglip"][c] = {"balayage": bal, "meilleur": best,
-                                       "n_vrai": sum(ver_c)}
-        if best:
-            print(f"    {c:9s} ({sum(ver_c)} vrais) seuil {best['seuil']:.3f} : "
-                  f"prec {best['precision']:.0%} rap {best['rappel']:.0%} "
-                  f"fp_bonnes {best.get('fp_bonnes','?')}")
-        else:
-            print(f"    {c:9s} ({sum(ver_c)} vrais) : aucun seuil sous la borne FP")
+    if not siglip_ok:
+        print("\n  SIGNAL SigLIP : indisponible dans cet environnement — relance"
+              " le banc dans le .venv du projet pour l'inclure.")
+    else:
+        print("\n  SIGNAL SigLIP zero-shot (par categorie ; 'flou' exclu)")
+        for c in cat_uniques:
+            if c == "flou":
+                continue
+            ver_c = [verite[k] == c for k in cles]
+            sc_c = [sig[k][c] for k in cles]
+            bal = I.balayage_seuil(sc_c, ver_c, _seuils(sc_c), sens='sup')
+            for l in bal:
+                preds = [(sig[k][c] is not None and sig[k][c] >= l['seuil']) for k in cles]
+                l['fp_bonnes'] = sum(1 for p, g in zip(preds, ver_garder) if p and g)
+            best = I.meilleur_seuil(bal, fp_max=max(1, len(cles) // 50))
+            res["signaux"]["siglip"][c] = {"balayage": bal, "meilleur": best,
+                                           "n_vrai": sum(ver_c)}
+            if sum(ver_c) == 0:
+                fps = [l['fp_bonnes'] for l in bal] or [0]
+                print(f"    {c:9s} (0 vrai) cout FP sur {sum(ver_garder)} bonnes"
+                      f" photos : {min(fps)}..{max(fps)} selon le seuil")
+            elif best:
+                print(f"    {c:9s} ({sum(ver_c)} vrais) seuil {best['seuil']:.3f} : "
+                      f"prec {best['precision']:.0%} rap {best['rappel']:.0%} "
+                      f"fp_bonnes {best.get('fp_bonnes','?')}")
+            else:
+                print(f"    {c:9s} ({sum(ver_c)} vrais) : aucun seuil sous la borne FP")
 
     # detail brut par photo (re-analysable sans relancer)
     res["detail"] = {k: {"verite": verite[k], "nom_cat": nom_cat[k],
                          "flou": flou[k], "siglip": sig[k]} for k in cles}
     EVAL_DIR.mkdir(exist_ok=True)
-    RESULTS_FILE.write_text(json.dumps(res, ensure_ascii=False, indent=1),
-                            encoding='utf-8')
+    results_f.write_text(json.dumps(res, ensure_ascii=False, indent=1),
+                         encoding='utf-8')
     print("\n" + "=" * 70)
-    print(f"  Ecrit : {RESULTS_FILE.name}")
+    print(f"  Ecrit : {results_f.name}")
     print(f"  Temps : flou {dt_flou:.1f}s ({dt_flou/len(cles)*1000:.0f} ms/img), "
           f"SigLIP {dt_sig:.1f}s ({dt_sig/max(1,len(cles))*1000:.0f} ms/img)")
     print(f"  VRAM pic {pic} Mo (rejet si > seuil du pipeline le plus serre = 1200 Mo"
@@ -415,16 +528,23 @@ def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument('--echantillon', type=int, metavar='N',
-                    help="tire N photos sous _A TRIER + genere la page d'etiquetage")
+                    help="tirage ALEATOIRE de N photos sous _A TRIER (mesure le cout FP)")
+    ap.add_argument('--candidats', type=int, metavar='N',
+                    help="va CHERCHER jusqu'a N rebuts probables (noms suspects +"
+                         " plus floues) pour mesurer la precision sur des positifs")
     ap.add_argument('--mesurer', action='store_true',
-                    help="mesure les 3 signaux contre interet_labels.json")
+                    help="mesure les 3 signaux contre les etiquettes du jeu choisi")
+    ap.add_argument('--jeu', choices=('aleatoire', 'candidats'), default='aleatoire',
+                    help="quel jeu mesurer (defaut: aleatoire)")
     ap.add_argument('--limit', type=int, default=None,
                     help="limite le nombre de photos mesurees (passe rapide)")
     a = ap.parse_args(argv)
     if a.echantillon:
         return cmd_echantillon(a.echantillon)
+    if a.candidats:
+        return cmd_candidats(a.candidats)
     if a.mesurer:
-        return cmd_mesurer(a.limit)
+        return cmd_mesurer(a.limit, a.jeu)
     ap.print_help()
     return 0
 
