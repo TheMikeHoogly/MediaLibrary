@@ -133,6 +133,7 @@ LAST_HEAVY_AT = 0.0             # dernier accès NAS via l'UI (crop/média/uploa
 # périmé) et céder à l'UI. Voir maintenance.py. Mettre à False pour le désactiver.
 MAINTENANCE_AUTO = True
 MAINTENANCE_EVERY = 3600        # s : fréquence d'évaluation du cycle (les étapes gardent leur propre cadence)
+MAINT_PAUSED = False            # pause RUNTIME depuis /reglages (l'auto reste actif au démarrage)
 
 # ─── Reconnaissance des animaux — Phase 1 : détection (YOLO / Ultralytics) ───
 # Chaîne SÉPARÉE des visages : YOLO trouve les animaux (chat/chien/oiseau…),
@@ -2807,7 +2808,8 @@ def maintenance_orchestrator():
     sv = _MaintSv()
     while True:
         try:
-            _m.run_cycle(sv)
+            if not MAINT_PAUSED:              # pause runtime depuis /reglages
+                _m.run_cycle(sv)
         except Exception as e:
             print(f"  ⚠ maintenance : {e}")
         time.sleep(MAINTENANCE_EVERY)
@@ -2874,6 +2876,7 @@ APP_NAV_HTML = """<nav class="appnav">
   <a class="tab" data-p="/people" href="/people">&#128101; Personnes</a>
   <a class="tab" data-p="/pets" href="/pets">&#128062; Animaux</a>
   <span class="sp"></span>
+  <a class="tab" data-p="/reglages" href="/reglages">&#9881;&#65039; R&eacute;glages</a>
 </nav>
 <script>(function(){var p=location.pathname;
   document.querySelectorAll('.appnav a.tab').forEach(function(a){
@@ -4314,7 +4317,155 @@ __ROWS__
 """
 
 
+REGLAGES_PAGE = """<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Reglages &amp; maintenance</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: var(--f-texte); background: var(--salle); color: var(--texte); min-height: 100vh; }
+.wrap { max-width: 1000px; margin: 0 auto; padding: 8px 16px 60px; }
+h2 { font: 600 var(--t-lg)/1.2 var(--f-affichage); margin: 22px 0 10px; }
+.hd { display: flex; align-items: center; gap: 10px; margin: 8px 0 2px; }
+.hd .t { color: var(--graphite); font-family: var(--f-donnees); font-size: 0.75rem; }
+.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+.card { background: var(--salle-3); border: var(--trait); border-radius: 10px; padding: 12px; }
+.card .k { color: var(--graphite); font-size: 0.72rem; }
+.card .v { font: 600 var(--t-lg)/1.1 var(--f-donnees); margin-top: 4px; }
+table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+td, th { text-align: left; padding: 6px 8px; border-bottom: var(--trait); }
+td.n, th.n { text-align: right; font-family: var(--f-donnees); }
+.mut { color: var(--graphite); font-size: 0.8rem; }
+.panel { background: var(--papier); color: var(--texte-papier); border: 1px solid var(--papier-2);
+         border-radius: var(--r-md); padding: 14px; margin: 10px 0; box-shadow: 0 6px 30px #000a; }
+.panel h3 { font: 600 var(--t-md)/1.2 var(--f-affichage); margin-bottom: 8px; }
+.panel td, .panel th { border-color: var(--papier-2); }
+.rowf { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.b { min-height: var(--touch); padding: 0 14px; border-radius: 8px; border: 1px solid var(--graphite-p);
+     background: transparent; color: var(--texte-papier); font: 500 0.85rem var(--f-texte); cursor: pointer; }
+.b.prim { background: var(--fixateur); border-color: var(--fixateur); color: #fff; }
+.badge { font-family: var(--f-donnees); font-size: 0.72rem; padding: 2px 8px; border-radius: 999px;
+         border: 1px solid var(--graphite-p); color: var(--graphite-p); }
+.badge.on { color: #fff; background: var(--fixateur); border-color: var(--fixateur); }
+.badge.paused { color: #fff; background: var(--veilleuse); border-color: var(--veilleuse); }
+</style>
+</head>
+<body>
+<!--APPNAV-->
+<div class="wrap">
+  <div class="hd">
+    <h2 style="margin:0">Reglages &amp; maintenance</h2>
+    <span class="t" id="clock"></span>
+    <button class="b" id="refresh" style="margin-left:auto;border-color:var(--graphite);color:var(--texte)">Rafraichir</button>
+  </div>
+  <p class="mut">Reconnaissance des visages : <b>CPU</b> (seul Ollama utilise le GPU). Cette page se rafraichit toute seule.</p>
+
+  <h2>Etat en direct</h2>
+  <div class="cards" id="live"></div>
+
+  <h2>Bibliotheque</h2>
+  <div class="cards" id="lib"></div>
+
+  <div class="panel">
+    <h3>Maintenance <span class="badge" id="maint-badge"></span></h3>
+    <div class="rowf" style="margin-bottom:10px">
+      <button class="b prim" id="run">Lancer un cycle maintenant</button>
+      <button class="b" id="pause">Pause</button>
+      <button class="b" id="census">Recensement (lecture seule)</button>
+      <span class="mut" id="maint-msg"></span>
+    </div>
+    <table id="steps"><thead><tr><th>Etape</th><th>Autonomie</th><th class="n">Cadence</th><th>Dernier passage</th></tr></thead><tbody></tbody></table>
+    <p class="mut" style="margin-top:8px">Autonomie : <b>auto</b> = executee seule quand due (sur/reversible) ; <b>propose</b> = plan prepare, pas applique ; <b>off</b> = desactivee.</p>
+  </div>
+
+  <h2>Dedoublonnage &amp; rangement</h2>
+  <div id="dedup"></div>
+
+  <h2>Reglages (lecture seule)</h2>
+  <div id="config"></div>
+</div>
+<script>
+function j(u,o){ return fetch(u,o).then(function(r){return r.json();}); }
+function esc(s){ return (''+s).replace(/[&<>]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;'}[c];}); }
+function card(k,v){ return '<div class="card"><div class="k">'+esc(k)+'</div><div class="v">'+esc(v)+'</div></div>'; }
+function human(n){ if(n==null) return '?'; var u=['o','Ko','Mo','Go','To'],i=0; while(n>=1024&&i<4){n/=1024;i++;} return n.toFixed(i?1:0)+' '+u[i]; }
+function tstamp(t){ if(!t) return 'jamais'; return new Date(t*1000).toLocaleString('fr-FR'); }
+function kv(obj){ var r=''; Object.keys(obj||{}).forEach(function(k){ r+='<tr><td>'+esc(k)+'</td><td class="n">'+esc(obj[k])+'</td></tr>'; });
+  return r ? ('<table>'+r+'</table>') : '<span class="mut">aucune donnee (lance le recensement)</span>'; }
+function load(){
+  j('/api/maint/status').then(function(s){
+    document.getElementById('clock').textContent = new Date().toLocaleTimeString('fr-FR');
+    var hw=s.hw||{}, g=hw.gpu||null, q=s.queues||{}, c=s.counts||{}, m=s.maint||{};
+    document.getElementById('live').innerHTML=[
+      card('CPU', hw.cpu_percent!=null?Math.round(hw.cpu_percent)+' %':'?'),
+      card('RAM libre', hw.ram_avail_gb!=null?(hw.ram_avail_gb+' / '+hw.ram_total_gb+' Go'):'?'),
+      card('GPU VRAM', g?(g.vram_free_mb+' / '+g.vram_total_mb+' Mo'):'\\u2014'),
+      card('Occupe', s.busy?'oui':'non'),
+      card('File tagging', q.tag||0),
+      card('File visages', q.faces||0),
+      card('File animaux', q.animaux||0),
+      card('Ecritures noms', q.personnes||0)
+    ].join('');
+    document.getElementById('lib').innerHTML=[
+      card('Entrees', c.entrees||0), card('Taguees', c.tagues||0),
+      card('Personnes', c.personnes||0), card('Animaux', c.animaux||0),
+      card('Visages', c.visages||0)
+    ].join('');
+    var badge=document.getElementById('maint-badge');
+    if(m.paused){ badge.textContent='en pause'; badge.className='badge paused'; }
+    else if(m.auto){ badge.textContent='auto'; badge.className='badge on'; }
+    else { badge.textContent='off'; badge.className='badge'; }
+    document.getElementById('pause').textContent = m.paused?'Reprendre':'Pause';
+    var au=m.autonomy||{}, itv=m.intervals||{}, st=m.state||{};
+    var tb=document.querySelector('#steps tbody'); tb.innerHTML='';
+    Object.keys(itv).forEach(function(k){
+      var jours=Math.round((itv[k]||0)/86400*10)/10;
+      tb.innerHTML+='<tr><td>'+esc(k)+'</td><td>'+esc(au[k]||'?')+'</td><td class="n">'+jours+' j</td><td>'+esc(tstamp(st[k]))+'</td></tr>';
+    });
+    document.getElementById('dedup').innerHTML=
+      '<div class="cards"><div class="card" style="grid-column:1/-1"><div class="k">Recensement (doublons par contenu)</div>'+kv(s.recensement)+'</div>'+
+      '<div class="card" style="grid-column:1/-1"><div class="k">Plan de rangement</div>'+kv(s.plan)+'</div></div>';
+    var cf=s.config||{}, rows='';
+    rows+='<tr><td>Modele tagging</td><td>'+esc(cf.MODEL||'?')+'</td></tr>';
+    rows+='<tr><td>Pipeline animaux</td><td>'+esc(cf.ANIMAL_PIPELINE_VERSION||'?')+'</td></tr>';
+    rows+='<tr><td>Seuil match visages</td><td>'+esc(cf.FACE_MATCH_SIM)+'</td></tr>';
+    rows+='<tr><td>Seuil match animaux</td><td>'+esc(cf.PET_MATCH_SIM)+'</td></tr>';
+    rows+='<tr><td>Dossier Uploads</td><td>'+esc(cf.UPLOAD_DIR||'')+'</td></tr>';
+    (cf.racines||[]).forEach(function(r){ rows+='<tr><td>Racine \\u00ab '+esc(r[0])+' \\u00bb</td><td>'+esc(r[1])+'</td></tr>'; });
+    document.getElementById('config').innerHTML='<table>'+rows+'</table>';
+  }).catch(function(){});
+}
+function act(u, warn){
+  if(warn && !confirm(warn)) return;
+  document.getElementById('maint-msg').textContent='\\u2026';
+  j(u,{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'}).then(function(r){
+    document.getElementById('maint-msg').textContent = r.msg || (r.paused!=null?(r.paused?'Maintenance en pause.':'Maintenance reprise.'):(r.ok?'OK.':(r.error||'Echec.')));
+    setTimeout(load, 800);
+  }).catch(function(){ document.getElementById('maint-msg').textContent='Le serveur n a pas repondu.'; });
+}
+document.getElementById('refresh').onclick=load;
+document.getElementById('run').onclick=function(){ act('/api/maint/run'); };
+document.getElementById('pause').onclick=function(){ act('/api/maint/toggle'); };
+document.getElementById('census').onclick=function(){ act('/api/maint/census', 'Lancer le recensement complet ? Lecture seule mais ~4 h et sollicite le NAS.'); };
+load(); setInterval(load, 6000);
+</script>
+</body>
+</html>
+"""
+
+
 # ────────────────────────── Serveur HTTP ──────────────────────────
+
+def _run_maint_once():
+    """Un cycle de maintenance a la demande (bouton /reglages), en arriere-plan."""
+    import maintenance as _m
+    try:
+        _m.run_cycle(_MaintSv())
+    except Exception as e:                                    # noqa: BLE001
+        print(f"  ⚠ maintenance (manuel) : {e}")
+
 
 def human_size(n):
     for unit in ('o', 'Ko', 'Mo', 'Go'):
@@ -8138,6 +8289,12 @@ class Handler(BaseHTTPRequestHandler):
         elif path == '/sante':
             self._serve_health()
 
+        elif path == '/reglages':
+            self._serve_reglages()
+
+        elif path == '/api/maint/status':
+            self._serve_maint_status()
+
         elif path == '/browse' or path.startswith('/browse/'):
             self._serve_browse(path)
 
@@ -8213,6 +8370,9 @@ class Handler(BaseHTTPRequestHandler):
             return
         if path.startswith('/api/files/'):
             self._do_files_post(path)
+            return
+        if path.startswith('/api/maint/'):
+            self._do_maint_post(path)
             return
         if path.startswith('/api/people/'):
             self._do_people_post(path)
@@ -9079,6 +9239,88 @@ class Handler(BaseHTTPRequestHandler):
             'model': MODEL,
         }).encode()
         self._send(200, body, 'application/json')
+
+    # ─── Centre de controle : /reglages ───────────────────────────────────
+    def _serve_reglages(self):
+        self._send_html(REGLAGES_PAGE)
+
+    def _serve_maint_status(self):
+        """Etat consolide (lecture seule) : materiel, files, comptes, etat de la
+        maintenance, resumes recensement/plan, config. Alimente /reglages."""
+        import maintenance as _m
+        docs = SCRIPT_DIR / 'docs'
+
+        def load(name):
+            try:
+                return json.loads((docs / name).read_text(encoding='utf-8'))
+            except Exception:
+                return None
+
+        def summ(o):
+            """Resume sur : garde les scalaires, remplace listes/dicts par leur
+            taille. Robuste au schema (pas besoin de connaitre les cles)."""
+            if not isinstance(o, dict):
+                return {}
+            r = {}
+            for k, v in o.items():
+                if isinstance(v, (int, float, str, bool)) or v is None:
+                    r[k] = v
+                elif isinstance(v, list):
+                    r[f"{k} (n)"] = len(v)
+                elif isinstance(v, dict):
+                    r[f"{k} (cles)"] = len(v)
+            return r
+
+        with PENDING_LOCK:
+            tagpend = len(PENDING)
+        body = {
+            'now': time.time(),
+            'hw': hw_state(),
+            'busy': bool(system_busy() or ui_recent()),
+            'queues': {'tag': TAG_QUEUE.qsize(), 'faces': FACE_QUEUE.qsize(),
+                       'animaux': ANIMAL_QUEUE.qsize(), 'personnes': PERSON_QUEUE.qsize()},
+            'pending': {'tag': tagpend, 'faces': len(FACE_PENDING),
+                        'animaux': len(ANIMAL_PENDING)},
+            'counts': {'entrees': len(STORE.data), 'tagues': STORE.tagged_count(),
+                       'personnes': len(PEOPLE_STORE.data), 'animaux': len(PETS_STORE.data),
+                       'visages': len(FACE_STORE.data)},
+            'maint': {'auto': MAINTENANCE_AUTO, 'paused': MAINT_PAUSED,
+                      'every_s': MAINTENANCE_EVERY, 'autonomy': _m.AUTONOMY,
+                      'intervals': _m.INTERVALS, 'state': load('maintenance_state.json') or {},
+                      'report': summ(load('maintenance_report.json'))},
+            'recensement': summ(load('recensement.json')),
+            'plan': summ(load('plan_rangement.json')),
+            'config': {'MODEL': MODEL, 'ANIMAL_PIPELINE_VERSION': ANIMAL_PIPELINE_VERSION,
+                       'UPLOAD_DIR': str(UPLOAD_DIR),
+                       'racines': [[label, str(r)] for label, r in media_roots()],
+                       'FACE_MATCH_SIM': FACE_MATCH_SIM, 'PET_MATCH_SIM': PET_MATCH_SIM},
+        }
+        self._send(200, json.dumps(body, ensure_ascii=False, default=str).encode(),
+                   'application/json')
+
+    def _do_maint_post(self, path):
+        """Actions SURES : lancer un cycle (auto = sur/reversible), pause runtime,
+        recensement lecture seule. Les etapes destructives restent gouvernees par
+        l'autonomie du cycle (quarantaine reversible), jamais un rm ici."""
+        global MAINT_PAUSED
+        import subprocess
+        if path == '/api/maint/run':
+            threading.Thread(target=_run_maint_once, daemon=True).start()
+            res = {'ok': True, 'msg': 'Cycle de maintenance lance en arriere-plan.'}
+        elif path == '/api/maint/toggle':
+            MAINT_PAUSED = not MAINT_PAUSED
+            res = {'ok': True, 'paused': MAINT_PAUSED}
+        elif path == '/api/maint/census':
+            try:
+                subprocess.Popen([sys.executable, 'recensement_doublons.py'],
+                                 cwd=str(SCRIPT_DIR))
+                res = {'ok': True, 'msg': 'Recensement (lecture seule) lance en arriere-plan.'}
+            except Exception as e:                            # noqa: BLE001
+                res = {'ok': False, 'error': str(e)}
+        else:
+            self._send(404, b'Not found', 'text/plain')
+            return
+        self._send(200, json.dumps(res, ensure_ascii=False).encode(), 'application/json')
 
     def _serve_playlist(self):
         """Liste ORDONNÉE de photos pour le diaporama — sans remise, donc aucune
