@@ -4374,6 +4374,7 @@ td.n, th.n { text-align: right; font-family: var(--f-donnees); }
       <button class="b prim" id="run">Lancer un cycle maintenant</button>
       <button class="b" id="pause">Pause</button>
       <button class="b" id="census">Recensement (lecture seule)</button>
+      <button class="b" id="planyear">Plan de rangement par annee</button>
       <span class="mut" id="maint-msg"></span>
     </div>
     <table id="steps"><thead><tr><th>Etape</th><th>Autonomie</th><th class="n">Cadence</th><th>Dernier passage</th></tr></thead><tbody></tbody></table>
@@ -4424,9 +4425,17 @@ function load(){
       var jours=Math.round((itv[k]||0)/86400*10)/10;
       tb.innerHTML+='<tr><td>'+esc(k)+'</td><td>'+esc(au[k]||'?')+'</td><td class="n">'+jours+' j</td><td>'+esc(tstamp(st[k]))+'</td></tr>';
     });
+    var pa=s.plan_annee||{}, pae='';
+    if(pa.total_a_ranger!=null){
+      pae='<div class="k">A ranger : <b>'+pa.total_a_ranger+'</b> \\u00b7 sans date : <b>'+(pa.sans_date||0)+'</b> \\u00b7 conflits : <b>'+(pa.conflits||0)+'</b></div>';
+      var yr=pa.par_annee||{}, keys=Object.keys(yr);
+      if(keys.length){ pae+='<table style="margin-top:6px"><tr><th>Annee</th><th class="n">A ranger</th></tr>';
+        keys.forEach(function(k){ pae+='<tr><td>'+esc(k)+'</td><td class="n">'+esc(yr[k])+'</td></tr>'; }); pae+='</table>'; }
+    } else { pae='<span class="mut">Clique \\u00ab Plan de rangement par annee \\u00bb pour le generer (lecture seule).</span>'; }
     document.getElementById('dedup').innerHTML=
       '<div class="cards"><div class="card" style="grid-column:1/-1"><div class="k">Recensement (doublons par contenu)</div>'+kv(s.recensement)+'</div>'+
-      '<div class="card" style="grid-column:1/-1"><div class="k">Plan de rangement</div>'+kv(s.plan)+'</div></div>';
+      '<div class="card" style="grid-column:1/-1"><div class="k">Plan de rangement (dedoublonnage)</div>'+kv(s.plan)+'</div>'+
+      '<div class="card" style="grid-column:1/-1"><div class="k">Rangement par annee (_A TRIER)</div>'+pae+'</div></div>';
     var cf=s.config||{}, rows='';
     rows+='<tr><td>Modele tagging</td><td>'+esc(cf.MODEL||'?')+'</td></tr>';
     rows+='<tr><td>Pipeline animaux</td><td>'+esc(cf.ANIMAL_PIPELINE_VERSION||'?')+'</td></tr>';
@@ -4449,6 +4458,7 @@ document.getElementById('refresh').onclick=load;
 document.getElementById('run').onclick=function(){ act('/api/maint/run'); };
 document.getElementById('pause').onclick=function(){ act('/api/maint/toggle'); };
 document.getElementById('census').onclick=function(){ act('/api/maint/census', 'Lancer le recensement complet ? Lecture seule mais ~4 h et sollicite le NAS.'); };
+document.getElementById('planyear').onclick=function(){ act('/api/maint/plan-annee'); };
 load(); setInterval(load, 6000);
 </script>
 </body>
@@ -4465,6 +4475,50 @@ def _run_maint_once():
         _m.run_cycle(_MaintSv())
     except Exception as e:                                    # noqa: BLE001
         print(f"  ⚠ maintenance (manuel) : {e}")
+
+
+def generer_plan_annee():
+    """Plan de rangement par ANNEE des fichiers sous « _A TRIER », depuis l'index
+    EN MEMOIRE. LECTURE SEULE : n'ecrit AUCUN fichier media, seulement
+    docs/plan_rangement_annee.{json,md}. `_best_time` ne lit pas le NAS (date
+    stockee + nom + annee de chemin), donc c'est rapide et sans I/O disque lourde.
+    L'APPLICATION reste un geste separe (via la primitive de deplacement testee)."""
+    import rangement_annee as _ra
+    items = []
+    for key, e in list(STORE.data.items()):
+        if not isinstance(e, dict):
+            continue
+        p = _resolve_key(key)
+        if _ra._atri_index(Path(p).parts) is None:
+            continue
+        items.append((key, str(p), _best_time(key, e)))
+    plan = _ra.construire_plan(items)
+    docs = SCRIPT_DIR / 'docs'
+    try:
+        docs.mkdir(exist_ok=True)
+    except OSError:
+        pass
+    (docs / 'plan_rangement_annee.json').write_text(
+        json.dumps(plan, ensure_ascii=False, indent=1), encoding='utf-8')
+    lignes = ["# Plan de rangement par annee (lecture seule)", "",
+              f"- A ranger : **{plan['total_a_ranger']}**",
+              f"- Sans date fiable -> _SANS_DATE : **{plan['sans_date']}**",
+              f"- Conflits de plan (a trancher) : **{len(plan['conflits'])}**",
+              f"- Deja en place : {plan['deja']}", "", "## Par annee", ""]
+    for an, n in plan['par_annee'].items():
+        lignes.append(f"- {an} : {n}")
+    (docs / 'plan_rangement_annee.md').write_text("\n".join(lignes) + "\n",
+                                                  encoding='utf-8')
+    return plan
+
+
+def _run_plan_annee():
+    try:
+        p = generer_plan_annee()
+        print(f"  🗂 plan rangement annee : {p['total_a_ranger']} a ranger, "
+              f"{p['sans_date']} sans date, {len(p['conflits'])} conflits")
+    except Exception as e:                                    # noqa: BLE001
+        print(f"  ⚠ plan rangement annee : {e}")
 
 
 def human_size(n):
@@ -9326,6 +9380,11 @@ class Handler(BaseHTTPRequestHandler):
                       'report': summ(load('maintenance_report.json'))},
             'recensement': summ(load('recensement.json')),
             'plan': summ(load('plan_rangement.json')),
+            'plan_annee': (lambda pa: {
+                'total_a_ranger': pa.get('total_a_ranger'),
+                'sans_date': pa.get('sans_date'), 'deja': pa.get('deja'),
+                'conflits': len(pa.get('conflits') or []),
+                'par_annee': pa.get('par_annee') or {}})(load('plan_rangement_annee.json') or {}),
             'config': {'MODEL': MODEL, 'ANIMAL_PIPELINE_VERSION': ANIMAL_PIPELINE_VERSION,
                        'UPLOAD_DIR': str(UPLOAD_DIR),
                        'racines': [[label, str(r)] for label, r in media_roots()],
@@ -9353,6 +9412,9 @@ class Handler(BaseHTTPRequestHandler):
                 res = {'ok': True, 'msg': 'Recensement (lecture seule) lance en arriere-plan.'}
             except Exception as e:                            # noqa: BLE001
                 res = {'ok': False, 'error': str(e)}
+        elif path == '/api/maint/plan-annee':
+            threading.Thread(target=_run_plan_annee, daemon=True).start()
+            res = {'ok': True, 'msg': 'Plan de rangement par annee en cours (lecture seule)...'}
         else:
             self._send(404, b'Not found', 'text/plain')
             return
