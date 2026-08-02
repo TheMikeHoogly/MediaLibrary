@@ -3,7 +3,7 @@
 Ce fichier survit aux sessions, contrairement à une liste de tâches en mémoire.
 Il est référencé par `CLAUDE.md`, donc relu au début de chaque session.
 
-Dernière mise à jour : 1er août 2026.
+Dernière mise à jour : 2 août 2026.
 
 ---
 
@@ -32,6 +32,17 @@ Dernière mise à jour : 1er août 2026.
 | 19 | **Régression `/people` corrigée** — tempête de `/api/names` | Autocomplétion à la demande + cache/déduplication + erreurs visibles. Vérifié navigateur : 1 appel `/api/names` 200 à la frappe, tous `facecrop` 200 |
 
 ## Prochaine étape décidée
+
+> **⚑ SESSION 02/08 — tout le neuf est sur la branche `integration`** (= `main`
+> + file-ops + control-center), que Mike fait tourner. **Prochaine étape n°0 :
+> valider en réel puis `git merge integration` dans `main` + push.** Détail
+> complet et roadmap de la suite dans `PROMPT_NOUVELLE_SESSION.md` (§ « État au 2
+> août »). Livré : redesign étape A (7 pages tokenisées) + étape B (planche
+> contact, View Transitions, modale papier, **tri au clavier du curateur**),
+> correctifs tagging (Mathilde `/api/names[:40]→[:2000]`, ARZOPA scan récursif
+> d'Uploads), **gestion de fichiers `/browse`** (`fichiers.py`, 23/23),
+> **centre de contrôle `/reglages`** (hub + monitoring + maintenance),
+> **plan de rangement par année** (`rangement_annee.py`, lecture seule, 10/10).
 
 **CAP ACTUEL = redesign UI/UX « chambre noire » (décidé avec Mike, 01/08).**
 
