@@ -4207,6 +4207,29 @@ body { font-family: var(--f-texte);
 .row .sz { color: var(--graphite); font-size: 0.75rem; flex-shrink: 0; }
 .row.dir .nm { color: var(--texte); }
 .empty { color: var(--graphite); text-align: center; padding: 30px; }
+/* Etape B — gestion de fichiers : rangees selectionnables + barre d'actions sur
+   PAPIER (surface « decider »). Cibles 44px, primaire = fixateur, suppr = encre. */
+.row .lk { display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0;
+           text-decoration: none; color: inherit; }
+.row .sel { width: 22px; height: 22px; flex-shrink: 0; accent-color: var(--fixateur); cursor: pointer; }
+.row.marked { outline: 2px solid var(--veilleuse); outline-offset: -2px; }
+.actbar { position: sticky; bottom: 8px; margin: 10px auto 0; max-width: 720px;
+          display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
+          background: var(--papier); color: var(--texte-papier);
+          border: 1px solid var(--papier-2); border-radius: var(--r-md);
+          padding: 10px 12px; box-shadow: 0 6px 30px #000a; }
+.actbar .cnt { font-family: var(--f-donnees); font-size: 0.78rem; margin-right: auto; }
+.actbar .b { min-height: var(--touch); padding: 0 14px; border-radius: 8px;
+             border: 1px solid var(--graphite-p); background: transparent;
+             color: var(--texte-papier); font: 500 0.85rem var(--f-texte); cursor: pointer; }
+.actbar .b:disabled { opacity: 0.4; cursor: default; }
+.actbar .b.prim { background: var(--fixateur); border-color: var(--fixateur); color: #fff; }
+.actbar .b.del { border-color: var(--encre); color: var(--encre); }
+.fxtoast { position: sticky; bottom: 8px; margin: 8px auto 0; max-width: 560px;
+           display: flex; gap: 12px; align-items: center; background: var(--salle-3);
+           border: var(--trait); border-radius: 999px; padding: 10px 10px 10px 18px; font-size: 13px; }
+.fxtoast .b { min-height: 36px; padding: 0 12px; border-radius: 999px; border: var(--trait);
+              background: var(--salle-2); color: var(--texte); cursor: pointer; }
 </style>
 </head>
 <body>
@@ -4218,6 +4241,74 @@ body { font-family: var(--f-texte);
 <div class="list">
 __ROWS__
 </div>
+<div class="actbar" id="actbar" style="display:none">
+  <span class="cnt" id="fx-cnt">Aucune s&eacute;lection</span>
+  <button class="b" id="fx-rename" disabled>Renommer</button>
+  <button class="b" id="fx-cut" disabled>Couper</button>
+  <button class="b prim" id="fx-paste" style="display:none">Coller ici</button>
+  <button class="b del" id="fx-del" disabled>Supprimer</button>
+  <button class="b" id="fx-mkdir">Nouveau dossier</button>
+  <button class="b" id="fx-undo" title="Annuler la derni&egrave;re op&eacute;ration">Annuler</button>
+</div>
+<div class="fxtoast" id="fx-toast" style="display:none" role="status" aria-live="polite"></div>
+<script>window.__BROWSE_CTX__ = __CTX__;</script>
+<script>
+(function(){
+  var CTX = window.__BROWSE_CTX__;                 // {idx, sub} en dossier, sinon null
+  var bar = document.getElementById('actbar'), toastEl = document.getElementById('fx-toast');
+  function api(op, body){ return fetch('/api/files/'+op, {method:'POST',
+    headers:{'Content-Type':'application/json'}, body:JSON.stringify(body||{})})
+    .then(function(r){return r.json();}); }
+  function flash(m){ try{ sessionStorage.setItem('fx_flash', m); }catch(e){} }
+  function cutGet(){ try{ return JSON.parse(sessionStorage.getItem('fx_cut')||'[]'); }catch(e){ return []; } }
+  function cutSet(a){ try{ (a&&a.length) ? sessionStorage.setItem('fx_cut', JSON.stringify(a))
+                                         : sessionStorage.removeItem('fx_cut'); }catch(e){} }
+  function selected(){ return [].slice.call(document.querySelectorAll('.row .sel:checked'))
+    .map(function(c){ var r=c.closest('.row'); return {idx:+r.dataset.idx, rel:r.dataset.rel, name:r.dataset.name}; }); }
+  function toast(msg, undo){
+    if(!toastEl) return; toastEl.innerHTML='';
+    var s=document.createElement('span'); s.style.flex='1'; s.textContent=msg; toastEl.appendChild(s);
+    if(undo){ var b=document.createElement('button'); b.className='b'; b.textContent='Annuler';
+      b.onclick=function(){ api('undo',{}).then(function(r){ if(r.ok) location.reload(); else toast(r.error||'Echec.', false); }); };
+      toastEl.appendChild(b); }
+    toastEl.style.display='flex';
+    clearTimeout(toastEl._t); toastEl._t=setTimeout(function(){ toastEl.style.display='none'; }, undo?10000:4000);
+  }
+  try{ var fl=sessionStorage.getItem('fx_flash'); if(fl){ sessionStorage.removeItem('fx_flash'); toast(fl, true); } }catch(e){}
+  function refresh(){
+    var inFolder = CTX && typeof CTX.idx==='number'; if(bar) bar.style.display = inFolder?'flex':'none';
+    if(!inFolder) return; var sel=selected(), cut=cutGet();
+    document.getElementById('fx-cnt').textContent = sel.length ? (sel.length+' s\\u00e9lectionn\\u00e9(s)')
+      : (cut.length ? (cut.length+' \\u00e0 coller') : 'Aucune s\\u00e9lection');
+    document.getElementById('fx-rename').disabled = sel.length!==1;
+    document.getElementById('fx-cut').disabled = sel.length===0;
+    document.getElementById('fx-del').disabled = sel.length===0;
+    var p=document.getElementById('fx-paste'); p.style.display = cut.length?'inline-block':'none';
+    p.textContent = 'Coller ici ('+cut.length+')';
+  }
+  document.addEventListener('change', function(e){ if(e.target.classList&&e.target.classList.contains('sel')) refresh(); });
+  function bind(id, fn){ var el=document.getElementById(id); if(el) el.onclick=fn; }
+  bind('fx-rename', function(){ var s=selected(); if(s.length!==1) return;
+    var nn=prompt('Nouveau nom :', s[0].name); if(!nn||!nn.trim()||nn===s[0].name) return;
+    api('rename',{idx:s[0].idx, rel:s[0].rel, name:nn.trim()}).then(function(r){
+      if(r.ok){ flash('Renomm\\u00e9.'); location.reload(); } else toast(r.error||'Echec.', false); }); });
+  bind('fx-cut', function(){ var s=selected(); if(!s.length) return; cutSet(s);
+    toast(s.length+' coup\\u00e9(s). Ouvre le dossier cible puis \\u00ab Coller ici \\u00bb.', false); refresh(); });
+  bind('fx-paste', function(){ var cut=cutGet(); if(!cut.length||!CTX) return; var n=cut.length, i=0;
+    (function next(){ if(i>=cut.length){ cutSet([]); flash(n+' d\\u00e9plac\\u00e9(s).'); location.reload(); return; }
+      var it=cut[i++]; api('move',{idx:it.idx, rel:it.rel, dst_idx:CTX.idx, dst_rel:CTX.sub}).then(function(r){
+        if(!r.ok){ cutSet([]); toast(r.error||'Echec du d\\u00e9placement.', false); return; } next(); }); })(); });
+  bind('fx-del', function(){ var s=selected(); if(!s.length) return;
+    if(!confirm('Envoyer '+s.length+' \\u00e9l\\u00e9ment(s) \\u00e0 la corbeille ? (r\\u00e9versible)')) return;
+    var n=s.length, i=0; (function next(){ if(i>=s.length){ flash(n+' envoy\\u00e9(s) \\u00e0 la corbeille.'); location.reload(); return; }
+      var it=s[i++]; api('delete',{idx:it.idx, rel:it.rel}).then(function(r){ if(!r.ok){ toast(r.error||'Echec.', false); return; } next(); }); })(); });
+  bind('fx-mkdir', function(){ if(!CTX) return; var nm=prompt('Nom du nouveau dossier :'); if(!nm||!nm.trim()) return;
+    api('mkdir',{idx:CTX.idx, rel:CTX.sub, name:nm.trim()}).then(function(r){
+      if(r.ok){ flash('Dossier cr\\u00e9\\u00e9.'); location.reload(); } else toast(r.error||'Echec.', false); }); });
+  bind('fx-undo', function(){ api('undo',{}).then(function(r){ if(r.ok){ flash('Annul\\u00e9.'); location.reload(); } else toast(r.error||'Rien \\u00e0 annuler.', false); }); });
+  refresh();
+})();
+</script>
 </body>
 </html>
 """
@@ -9181,6 +9272,7 @@ class Handler(BaseHTTPRequestHandler):
         page = (BROWSE_PAGE
                 .replace('__EXTRA__', '')
                 .replace('__CRUMBS__', f'Santé — {len(problems)} fichier(s) à problème')
+                .replace('__CTX__', 'null')
                 .replace('__ROWS__', body))
         self._send_html(page)
 
@@ -9199,6 +9291,7 @@ class Handler(BaseHTTPRequestHandler):
             page = (BROWSE_PAGE
                     .replace('__EXTRA__', '')
                     .replace('__CRUMBS__', 'Dossiers')
+                    .replace('__CTX__', 'null')     # racine : pas de gestion de fichiers
                     .replace('__ROWS__', '\n'.join(rows)))
             self._send_html(page)
             return
@@ -9241,10 +9334,13 @@ class Handler(BaseHTTPRequestHandler):
 
         rows = []
         for e in dirs:
-            href = f'/browse/{idx}/' + urllib.parse.quote((sub + '/' if sub else '') + e.name)
-            rows.append(f'<a class="row dir" href="{href}">'
-                        f'<span class="ic">&#128193;</span>'
-                        f'<span class="nm">{html.escape(e.name)}</span></a>')
+            relf = (sub + '/' if sub else '') + e.name
+            href = f'/browse/{idx}/' + urllib.parse.quote(relf)
+            nm_a = html.escape(e.name, quote=True)
+            rows.append(f'<div class="row dir" data-idx="{idx}" data-rel="{html.escape(relf, quote=True)}" data-name="{nm_a}">'
+                        f'<input type="checkbox" class="sel" aria-label="Selectionner {nm_a}">'
+                        f'<a class="lk" href="{href}"><span class="ic">&#128193;</span>'
+                        f'<span class="nm">{html.escape(e.name)}</span></a></div>')
         for e in files:
             relf = (sub + '/' if sub else '') + e.name
             href = f'/media/{idx}/' + urllib.parse.quote(relf)
@@ -9259,10 +9355,12 @@ class Handler(BaseHTTPRequestHandler):
                 icon = '&#127909;'
             else:
                 icon = '&#128196;'
-            rows.append(f'<a class="row" href="{href}" target="_blank">'
-                        f'<span class="ic">{icon}</span>'
-                        f'<span class="nm">{html.escape(e.name)}</span>'
-                        f'<span class="sz">{sz}</span></a>')
+            nm_a = html.escape(e.name, quote=True)
+            rows.append(f'<div class="row" data-idx="{idx}" data-rel="{html.escape(relf, quote=True)}" data-name="{nm_a}">'
+                        f'<input type="checkbox" class="sel" aria-label="Selectionner {nm_a}">'
+                        f'<a class="lk" href="{href}" target="_blank"><span class="ic">{icon}</span>'
+                        f'<span class="nm">{html.escape(e.name)}</span></a>'
+                        f'<span class="sz">{sz}</span></div>')
 
         dirval = f"{idx}/{sub}" if sub else str(idx)
         glink = ('<a class="back" href="/files?dir='
@@ -9271,6 +9369,7 @@ class Handler(BaseHTTPRequestHandler):
         page = (BROWSE_PAGE
                 .replace('__EXTRA__', glink)
                 .replace('__CRUMBS__', ' / '.join(crumbs))
+                .replace('__CTX__', json.dumps({"idx": idx, "sub": sub}))
                 .replace('__ROWS__', '\n'.join(rows) or '<p class="empty">Dossier vide</p>'))
         self._send_html(page)
 
