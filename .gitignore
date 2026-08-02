@@ -88,3 +88,11 @@ docs/maintenance_state.json
 docs/maintenance_report.json
 docs/maintenance.log
 migration/
+eval/interet_v1.json
+eval/interet_candidats.json
+eval/interet_labels.json
+eval/interet_candidats_labels.json
+eval/interet_results.json
+eval/interet_candidats_results.json
+eval/interet_etiquetage.html
+eval/interet_candidats_etiquetage.html
