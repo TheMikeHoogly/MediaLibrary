@@ -57,6 +57,14 @@ et les skills `.claude/skills/` (`monolith-surgery` **avant tout edit de
 - **Figma** connecté (testé `whoami`), disponible pour bâtir la bibliothèque de
   composants « chambre noire » si on veut la source de vérité du design. Les
   autres connecteurs (Slack, Notion…) demandent un OAuth côté claude.ai.
+- **Travail multi-appareils (Dispatch).** Mike peut lancer/poursuivre une session
+  depuis son **téléphone** ou son **PC** : c'est la même conversation continue, mais
+  **le travail s'exécute sur le PC** (fichiers locaux du dossier `MediaLibrary`,
+  connecteurs, Chrome). Prérequis : **PC allumé + Claude Desktop ouvert**, le dossier
+  `C:\Prog\Claude\MediaLibrary` connecté à la session Cowork, et l'accès aux fichiers
+  activé dans Dispatch. Conséquence pratique : que la consigne vienne du PC ou du
+  mobile, c'est le **même dépôt local** et le même serveur (chez Mike) — `git push`
+  reste un geste que **Mike** fait sur le PC.
 
 ## ══ ÉTAT AU 2 AOÛT 2026 — LIRE EN PREMIER ══
 
