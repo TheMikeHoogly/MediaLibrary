@@ -4334,6 +4334,10 @@ h2 { font: 600 var(--t-lg)/1.2 var(--f-affichage); margin: 22px 0 10px; }
 .card { background: var(--salle-3); border: var(--trait); border-radius: 10px; padding: 12px; }
 .card .k { color: var(--graphite); font-size: 0.72rem; }
 .card .v { font: 600 var(--t-lg)/1.1 var(--f-donnees); margin-top: 4px; }
+.card .tv { color: var(--graphite); font-size: 0.75rem; margin-top: 4px; }
+a.card { text-decoration: none; color: inherit; display: block; transition: border-color .15s, background .15s; }
+a.card:hover { border-color: var(--graphite); background: var(--salle-2); }
+a.card .k { font-size: 0.95rem; color: var(--texte); }
 table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
 td, th { text-align: left; padding: 6px 8px; border-bottom: var(--trait); }
 td.n, th.n { text-align: right; font-family: var(--f-donnees); }
@@ -4361,6 +4365,17 @@ td.n, th.n { text-align: right; font-family: var(--f-donnees); }
     <button class="b" id="refresh" style="margin-left:auto;border-color:var(--graphite);color:var(--texte)">Rafraichir</button>
   </div>
   <p class="mut">Reconnaissance des visages : <b>CPU</b> (seul Ollama utilise le GPU). Cette page se rafraichit toute seule.</p>
+
+  <h2>Outils &amp; pages</h2>
+  <div class="cards">
+    <a class="card" href="/files"><div class="k">&#128247; Galerie</div><div class="tv">Planche contact, recherche par tags</div></a>
+    <a class="card" href="/browse"><div class="k">&#128193; Dossiers</div><div class="tv">Parcourir + gerer les fichiers (deplacer, renommer)</div></a>
+    <a class="card" href="/map"><div class="k">&#128506;&#65039; Carte</div><div class="tv">Photos geolocalisees</div></a>
+    <a class="card" href="/people"><div class="k">&#128101; Personnes</div><div class="tv">Nommer, verifier, tri au clavier</div></a>
+    <a class="card" href="/pets"><div class="k">&#128062; Animaux</div><div class="tv">Chats nommes, groupes</div></a>
+    <a class="card" href="/"><div class="k">&#128228; Envoyer des photos</div><div class="tv">Upload depuis le telephone</div></a>
+    <a class="card" href="/sante"><div class="k">&#129658; Sante</div><div class="tv">Fichiers a probleme (EXIF, illisibles)</div></a>
+  </div>
 
   <h2>Etat en direct</h2>
   <div class="cards" id="live"></div>
