@@ -549,6 +549,17 @@ traversent le chantier) :
       machine). **Reste :** rangement par année des `_A TRIER` ; branchement de
       l'application du renommage `_Uploads` ; installateur nouveau PC (prochain).
 
+    - **Rangement par année — GÉNÉRATEUR DE PLAN FAIT (02/08, branche
+      `integration`, lecture seule).** `rangement_annee.py` (pur, testé 10/10 —
+      `test_rangement_annee.py`) : `_A TRIER` → `<base>/AAAA/` via `_best_time`,
+      `_SANS_DATE/` si pas de date fiable (jamais deviné), aplati, collisions de
+      plan détectées. `server.generer_plan_annee()` construit le plan depuis
+      l'index en mémoire → `docs/plan_rangement_annee.{json,md}`. Exposé dans
+      `/reglages` (bouton + résumé par année). **NE DÉPLACE RIEN.** **RESTE :
+      l'application** (déplacer vers l'année) — réutilisera la primitive
+      `move`+`rekey_everywhere` déjà testée (`fichiers.py`), avec quarantaine des
+      doublons (via le plan de dédoublonnage) ; à câbler + garde-fous + valider.
+
     Note : le garde-fou anti-doublon **à l'upload** (point 17, `_upload_content_dup`)
     est déjà en place — il empêche d'*ajouter* des doublons ; ce chantier-ci
     nettoie ceux **déjà** sur le NAS.
