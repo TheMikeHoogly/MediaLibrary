@@ -92,9 +92,18 @@ nav+galerie vérifiés. Commits : `675ec05`→`ddb0f44` (branche `main`, **à po
 - **Sous-dossiers Uploads jamais scannes** — `scan_uploads` etait a plat (`iterdir`) :
   un sous-dossier (ex. ARZOPA) n'etait jamais enumere ni tague. Passe en `rglob`
   recursif (clés nom/relatif posix, `own` = clés non-absolues).
-- **File-ops** : backend fini + teste sur branche `feat/file-ops` (fichiers.py +
-  test_fichiers.py 23/23, routes /api/files/*). RESTE : UI /browse (selection +
-  barre d'actions papier + toast undo).
+- **File-ops** : COMPLET (backend + UI) sur branche `feat/file-ops` (fichiers.py +
+  test_fichiers.py 23/23, routes /api/files/*, UI /browse). RESTE : valider en reel
+  puis merger.
+- **Centre de controle `/reglages`** : COMPLET sur branche `feat/control-center`
+  (partie de `main`, a merger apres validation). Onglet nav « Reglages » ; dashboard
+  chambre noire lecture seule (etat live hw/files, comptes, maintenance, config) +
+  actions SURES : `POST /api/maint/run` (cycle en fond), `/toggle` (pause runtime
+  `MAINT_PAUSED`), `/census` (recensement lecture seule). Endpoint `GET
+  /api/maint/status`. Rien de destructif en un clic (le dedoublonnage reste
+  gouverne par l'autonomie du cycle, quarantaine reversible). **RESTE** : valider en
+  reel, puis eventuellement exposer l'application du plan de rangement (garde-fous)
+  et l'edition des reglages (aujourd'hui lecture seule).
 
 **◐ ÉTAPE B (redesign structurel) — EN COURS (01/08).** Faits et commités
 (`86b6b8d`, `d897536`) : **planche contact** (`GALLERY .grid` en `auto-fill`+
