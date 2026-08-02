@@ -33,63 +33,41 @@ Dernière mise à jour : 2 août 2026.
 
 ## Prochaine étape décidée
 
-> **⚑ SESSION 02/08 — tout le neuf est sur la branche `integration`** (= `main`
-> + file-ops + control-center), que Mike fait tourner. **Prochaine étape n°0 :
-> valider en réel puis `git merge integration` dans `main` + push.** Détail
-> complet et roadmap de la suite dans `PROMPT_NOUVELLE_SESSION.md` (§ « État au 2
-> août »). Livré : redesign étape A (7 pages tokenisées) + étape B (planche
-> contact, View Transitions, modale papier, **tri au clavier du curateur**),
-> correctifs tagging (Mathilde `/api/names[:40]→[:2000]`, ARZOPA scan récursif
-> d'Uploads), **gestion de fichiers `/browse`** (`fichiers.py`, 23/23),
-> **centre de contrôle `/reglages`** (hub + monitoring + maintenance),
-> **plan de rangement par année** (`rangement_annee.py`, lecture seule, 10/10).
+**État au 2 août 2026 (fin de session rangement + applicateur).**
 
-**CAP ACTUEL = redesign UI/UX « chambre noire » (décidé avec Mike, 01/08).**
+- **Branches : `integration` fusionnée.** `main` == `integration` == `origin/main`.
+  Le neuf des sessions 01-02/08 (redesign « chambre noire », gestion de fichiers
+  `/browse`, centre de contrôle `/reglages`, plan de rangement par année) est donc
+  dans `main`. Le seul en-cours : `feat/rangement-annee-apply` (applicateur du
+  point 19), à merger une fois le rangement validé en réel.
+- **Rangement par année (point 19) : applicateur fait et testé**, plan généré
+  (11 355 à ranger, 0 sans date, 0 conflit). **En cours d'application par Mike**
+  (dry-run → lot → reste, réversible via `--undo`).
 
-**◐ ÉTAPE A (TOKENISATION) FAITE SUR LES 7 PAGES + LA BARRE (01/08) — à valider
-en réel.** Toutes les couleurs/polices en dur des pages ont été remplacées par
-les tokens `ui/tokens.css` (`--salle`/`-2`/`-3`, `--texte`/`--graphite`,
-`--papier`/`--texte-papier`, `--trait`, `--f-texte`/`--f-donnees`, accents
-`--veilleuse`/`--fixateur`/`--encre`). Sémantique appliquée partout : **fixateur**
-= filtre/onglet actif, zone géo, sélection de vignettes ; **veilleuse** = bandeau
-IA `#pending`, barres de progression, focus ; **encre** = destructif (« Tout
-effacer », retrait d'intrus) ; **papier** = bouton principal + onglet nav actif.
-Bleu iOS (`#0a84ff`/`#5b9dff`/`#2a6df0`/`#7db4ff`) et violets éliminés ; gris
-neutres froids → noir chaud. Ordre traité : `BROWSE`, `APP_NAV_CSS`, `HTML_PAGE`
-(upload), `MAP`, `FACES`, `PETS`, `PEOPLE`, `GALLERY`. Structure/espacements/rayons
-**inchangés** (redesign structurel = étape B). Chaque page : `py_compile` OK.
+**Prochaines étapes, par valeur :**
 
-**Garde-fou de méthode ajouté : `verifier_ui_tokens.py`** (scanne les constantes
-de page, signale les interdits `photo-ui`, code sortie 1 si interdit dur). État
-final : **0 interdit dur sur les 9 constantes** (aperçus nav + galerie rendus et
-vérifiés visuellement).
+1. **Nouveau — triage des images sans intérêt (point 21).** Détecter documents /
+   captures d'écran / factures / photos floues ou erronées (surtout sous `_A TRIER`,
+   37 % du fonds), les **regrouper par motif**, et permettre la **suppression
+   individuelle réversible** depuis le web. Surtout de l'**assemblage de briques
+   existantes** (SigLIP + score de flou + quarantaine `.corbeille-rangement/`).
+2. **Priorité n°1 reconnaissance** — confirmer ~100 propositions dans `/people`
+   (tri clavier prêt). Le geste **humain** qui vaut plus que tout changement d'algo
+   (vérité terrain à 0,8 %).
+3. **Renommage intelligent (point 20)** — brancher l'application (cœur `renommage.py`
+   fait et testé ; reste : re-clé + provenance + undo + 2 faits à `None`).
+4. **Redesign étape B — reste** : registre **papier** sur les cartes de clusters
+   (`/people`, `/pets`), **centre de tâches** remplaçant `#pending`, **numéro de
+   vue** sur la planche contact. Détail dans « Interface » (points 9-12).
 
-**RESTE :**
-1. **Valider en réel au navigateur** les 7 pages (Mike). Points d'attention :
-   contraste des `--graphite` hérités, lisibilité des popups papier (carte),
-   états actifs teal.
+Le redesign « chambre noire » — étape A (tokenisation des 7 pages + barre,
+`verifier_ui_tokens.py` : 0 interdit dur) et l'essentiel de l'étape B (planche
+contact `auto-fill`, View Transitions, modale papier, **tri clavier du curateur**)
+— est **fait et validé en réel**.
 
-**◐ ÉTAPE B (redesign structurel) — EN COURS (01/08), jamais mélangée à A :**
-- ✓ **Planche contact** — `GALLERY .grid` en `repeat(auto-fill, minmax(clamp(96px,
-  18vw,168px),1fr))`, gouttière `--e-1`, `content-visibility:auto` sur les cellules.
-  Retire le dernier interdit structurel `photo-ui` (colonnes en dur) + la media
-  query. Aperçu vérifié.
-- ✓ **View Transitions** — `@view-transition{navigation:auto}` dans `base.css` :
-  transition native multi-document, progressive, respecte reduced-motion.
-- ✓ **Fix `__EXTRA__`** de `_serve_health` (bug préexistant, littéral affiché).
-- ✓ **Deux registres — 1re surface** : la modale « nommer rapidement » (`.qn-card`)
-  passe sur **papier** (posée sur scrim sombre), champ clair, boutons adaptés,
-  primaire = `fixateur`. Aperçu vérifié. **RESTE** : propager le registre papier aux
-  cartes de clusters toujours visibles (`.cl` sur `PEOPLE`, `.group` sur `PETS`) —
-  plus gros changement du flux principal, **à valider en réel d'abord**.
-- **RESTE** : **centre de tâches** remplaçant `#pending` (tâche/restant/CPU-GPU/
-  Pause, données via `hw_state()`/`system_busy()`/tailles de files) ; **numéro de
-  vue** en marge des cellules (`.vue__num`), signature planche contact.
-2. Bibliothèque Figma (`figma-generate-library`) comme source des composants.
-
-Voir la section « Interface » plus bas (points 9-12 + composants signature) pour
-le détail. **Une phrase pour démarrer** : « Lis ROADMAP.md, charge `photo-ui` et
-`monolith-surgery`, et tokenise `BROWSE_PAGE`. »
+**Une phrase pour démarrer la prochaine session** : « Lis ROADMAP.md et
+`eval/DECISIONS.md`, puis attaque le triage des images sans intérêt (point 21) —
+commence par mesurer un détecteur avant de bâtir (`vision-eval`). »
 
 ### En réserve (parké, non prioritaire)
 
@@ -101,29 +79,6 @@ le détail. **Une phrase pour démarrer** : « Lis ROADMAP.md, charge `photo-ui`
   de groupes).
 - **Éval tagging — assertions vs pixels (parké).** Ci-dessous, conservé pour ne
   pas reperdre le fil :
-
-**Assertions vs pixels : mesuré, noté à l'aveugle et tranché (31/07, voir
-`eval/DECISIONS.md`).** Verdict en deux temps. Proxies automatiques : V1 (pixels
-jetés) disqualifié (33 % de descriptions « méta ») ; l'impératif de noms au prompt
-est inefficace (16 % d'ancrage) et coûteux (× 2,6, VRAM 3 950 Mo au ras du
-plafond). **Notation humaine (40 cartes) : l'hybride V2 gagne — meilleure
-description dans 60 % des cas contre 30 % pour l'image seule**, hallucination à
-peine plus haute (8 % vs 5 %), et il gagne dans les trois catégories. Les
-assertions **améliorent** donc la description ; c'est la mesure automatique seule
-(« V2 ≈ V0 ») qui l'avait manqué.
-
-**Cap retenu :** garder **l'hybride assertions + image** (apport confirmé par
-l'humain), mais **sans l'impératif de noms** (c'est lui le surcoût, pas les
-assertions), et **attacher les noms/date/lieu par fusion programmatique** plutôt
-que de les quémander au LLM (16 % d'obéissance). Le LLM reçoit les faits *en
-contexte* pour mieux décrire ; la couche d'assertions à provenance garantit le
-fait exact — ce qui débloque aussi la priorité n°1 (protéger les confirmations
-humaines), puis cache de raisonnement et mémoire globale.
-
-**Prochain pas éval, ciblé (mesurer avant de bâtir) :** noter/mesurer un V2
-« assertions en contexte, **sans** impératif » (version à 4,3 s, jamais notée car
-écrasée). Si elle garde l'avantage de qualité sans le surcoût, c'est le prompt de
-production, doublé de la fusion programmatique.
 
 **Assertions vs pixels : mesuré, noté à l'aveugle et tranché (31/07, voir
 `eval/DECISIONS.md`).** Verdict en deux temps. Proxies automatiques : V1 (pixels
@@ -605,6 +560,45 @@ traversent le chantier) :
       par **géocodage inverse** des GPS, type par **SigLIP**. Peut passer *après* le
       rangement par année, sur les fichiers déjà classés. Spec détaillée dans
       `docs/RANGEMENT_2026.md` (« Renommage intelligent »).
+
+21. **Triage des images sans intérêt — À FAIRE (demandé par Mike, 02/08).**
+    Beaucoup de fichiers sous `_A TRIER` sont des rebuts : documents scannés,
+    captures d'écran inutiles, copies de factures/reçus, photos floues ou erronées.
+    But : les **détecter**, les **regrouper par motif** dans une vue web, et
+    permettre à Mike de **supprimer individuellement** (réversible) ce qu'il ne veut
+    pas garder. Ce chantier traverse reconnaissance + interface + fichiers, mais
+    c'est surtout de l'**assemblage de briques existantes** — pas de nouveau modèle
+    lourd.
+
+    Briques réutilisables (ne pas réinventer) :
+    - **SigLIP zéro-shot** (déjà adopté, `eval/DECISIONS.md` 30/07 ; ~0,7 ms/vecteur,
+      VRAM négligeable). Le vocabulaire contrôlé a déjà `objet`, `affiche`,
+      `oeuvre d art`, `photo ratee` ; il suffit d'ajouter quelques libellés
+      (`document`, `capture d ecran`, `facture`/`recu`) pour classer les rebuts.
+      Les tags SigLIP sont aujourd'hui **proposés** (`semantic.py --tags`, point 4) —
+      cette vue en est le consommateur naturel.
+    - **Score de flou** — variance du Laplacien (OpenCV/numpy, **CPU, aucun modèle**),
+      seuil à mesurer. Couvre « floues ». « Erronées/corrompues » recoupe le chantier
+      de récupération d'images (987 fichiers, déjà inventorié).
+    - **Heuristique de nom** — `Screenshot_`, `VideoCapture_`, `WhatsApp` : signal
+      fort et gratuit pour « capture/transfert ».
+    - **Doublons** — déjà traités par le dédoublonnage par contenu ; ne pas re-résoudre.
+    - **Suppression réversible** — `FileOps.delete` (quarantaine `.corbeille-rangement/`,
+      jamais de `rm`) existe déjà (point 18) ; la vue de triage la réutilise.
+
+    À construire : (a) un **score/étiquette « intérêt »** par photo, assemblé des
+    signaux ci-dessus, **proposé** (jamais un tag dur, jamais d'auto-suppression) ;
+    (b) une **vue de triage web** — planche contact groupée par motif (document /
+    capture / flou / erroné), sélection multiple + garder/supprimer par vignette ;
+    (c) **suppression individuelle depuis la galerie/planche** (étendre le delete
+    `/browse` à la vue photos), avec toast d'annulation 10 s.
+
+    Discipline (`vision-eval`, non négociable) : **mesurer avant de bâtir** — précision
+    du détecteur « document »/« flou » sur un jeu de validation issu du corpus réel,
+    **coût des faux positifs** (ne jamais cacher une bonne photo), pic VRAM, décision
+    écrite dans `eval/DECISIONS.md`. La quarantaine réversible + le fait que le
+    classifieur ne fait que *proposer* (l'humain supprime) bornent le risque. À faire
+    **après** le rangement par année (c'est là, sous `_A TRIER`, que vivent les rebuts).
 
 ---
 

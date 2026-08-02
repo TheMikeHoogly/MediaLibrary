@@ -62,15 +62,14 @@ et les skills `.claude/skills/` (`monolith-surgery` **avant tout edit de
 
 ### Branches (IMPORTANT)
 
-- **`integration`** = `main` + TOUT le neuf ci-dessous. **Mike la fait tourner.**
-  C'est la branche de test unique. **Reste à valider en réel puis merger dans
-  `main` et pousser.**
-- `main` = les correctifs de tagging seuls. `feat/file-ops` et
-  `feat/control-center` = les deux features isolées (pour merge séparé si besoin).
-- Quand tout est validé : `git checkout main && git merge integration`, puis Mike
-  `git push`.
+- **`integration` fusionnée** : `main` == `integration` == `origin/main`. Tout le
+  neuf des sessions 01-02/08 (redesign, `/browse`, `/reglages`, plan de rangement)
+  est dans `main`.
+- **`feat/rangement-annee-apply`** = seul en-cours : applicateur du rangement par
+  année (point 19) + entrées roadmap. **À merger dans `main` une fois le rangement
+  validé en réel**, puis Mike `git push`.
 
-### Fait cette session (02/08) — sur `integration`
+### Fait cette session (02/08)
 
 - **Redesign « chambre noire » — étape A (tokenisation) : les 7 pages + la barre
   de nav.** Couleurs/polices en dur → tokens `ui/tokens.css`. Sémantique des
@@ -112,45 +111,45 @@ et les skills `.claude/skills/` (`monolith-surgery` **avant tout edit de
 
 ### Prochaines étapes, par valeur (roadmap de la suite)
 
-1. **Valider `integration` en réel** (Mike, en cours) : /browse
-   (déplacer/renommer/supprimer/annuler un fichier de test), /reglages (actions),
-   tri clavier /people, correctifs Mathilde/ARZOPA. Puis **merger dans `main` +
-   pousser**.
-2. **Priorité n°1 reconnaissance — confirmer ~100 propositions** (`/people`,
+1. **Finir le rangement par année** (en cours, Mike) : appliquer le plan via
+   `26 - Ranger par annee.bat` (dry-run → lot de 20 → reste, serveur arrêté),
+   vérifier sur le NAS, puis **merger `feat/rangement-annee-apply` dans `main`**.
+2. **NOUVEAU — triage des images sans intérêt (ROADMAP point 21).** Détecter
+   documents / captures / factures / photos floues ou erronées sous `_A TRIER`,
+   les regrouper par motif, suppression individuelle réversible depuis le web.
+   **Assemblage de briques existantes** (SigLIP + score de flou Laplacien +
+   quarantaine `FileOps.delete`). **Mesurer un détecteur avant de bâtir**
+   (`vision-eval`, décision écrite). C'est le cap de la prochaine session.
+3. **Priorité n°1 reconnaissance — confirmer ~100 propositions** (`/people`,
    maintenant rapide au clavier). C'est le geste HUMAIN qui vaut plus que tout
    changement d'algo (voir ROADMAP « À faire », Reconnaissance §1). Outillage
    prêt ; il « suffit » que Mike le fasse. Peut-être ajouter `1`–`9` = assigner à
    une personne connue, `Maj+clic` = plage.
-3. **Rangement par année — APPLICATEUR FAIT ET TESTÉ (02/08, branche
-   `feat/rangement-annee-apply`), reste à valider en réel.** `appliquer_plan_annee.py`
-   (calqué sur `appliquer_plan.py`) : serveur arrêté, **dry-run par défaut**,
-   `--appliquer`/`--limite N`/`--undo`. Refuse toute collision au dst (jamais
-   d'écrasement), re-clé via `rekey_stores` (miroir de `rekey_everywhere`), journal
-   undo. `test_appliquer_plan_annee.py` vert, `26 - Ranger par annee.bat` (ASCII).
-   `generer_plan_annee()` émet désormais `new_key` par move. **Validation réelle** :
-   générer le plan depuis `/reglages`, arrêter le serveur, lancer le `.bat` (dry-run
-   → lot de 20 → reste), vérifier sur le NAS, merger la branche. **Reste après** :
-   **application du renommage intelligent** sur `_Uploads` (cœur déterministe
-   `renommage.py` déjà fait et testé ; reste à brancher l'application + provenance
-   + GPS inversé/type SigLIP pour les 2 faits à None).
-4. **Étape B — reste redesign** : propager le registre **papier** aux cartes de
+4. **Renommage intelligent (ROADMAP point 20)** — brancher l'application sur
+   `_Uploads` (cœur déterministe `renommage.py` + `renommage_facts.py` faits et
+   testés ; reste : re-clé via `rekey_everywhere` + provenance + undo + GPS
+   inversé/type SigLIP pour les 2 faits à `None`). Peut passer après le rangement.
+5. **Étape B — reste redesign** : propager le registre **papier** aux cartes de
    clusters toujours visibles (`.cl` sur `/people`, `.group` sur `/pets`) — gros
    changement du flux de nommage, valider en réel d'abord ; **centre de tâches**
    remplaçant le bandeau `#pending` (données `hw_state()`/`system_busy()`/files) ;
    **numéro de vue** sur les cellules de la planche contact.
-5. **Édition des réglages depuis `/reglages`** (aujourd'hui lecture seule) : seuils,
+6. **Édition des réglages depuis `/reglages`** (aujourd'hui lecture seule) : seuils,
    autonomie/cadence de maintenance, racines — avec garde-fous.
-6. **Reconnaissance (algo)** : regroupement par **densité** (HDBSCAN / Chinese
+7. **Reconnaissance (algo)** : regroupement par **densité** (HDBSCAN / Chinese
    Whispers) au lieu du seuil global ; **AdaFace** sur le ré-embedding des visages
    faibles. La garde AMONT de 12b (`verifier_visages.py`, SigLIP humain vs
    animal/objet) reste à **mesurer** avant activation (`vision-eval`).
-7. **Une seule page « Sujets »** (fusion Personnes + Animaux, filtre par type ;
+8. **Une seule page « Sujets »** (fusion Personnes + Animaux, filtre par type ;
    le lieu comme 3ᵉ facette) — `SubjectStore` déjà unifié.
-8. **Éval tagging** (parké, tranché) : (a) mesurer un V2 « assertions sans
+9. **Éval tagging** (parké, tranché) : (a) mesurer un V2 « assertions sans
    impératif de noms » + fusion programmatique des noms/date/lieu ; (b)
    comparatif de modèles (`gemma4:e2b` FR natif vs `qwen3-vl:2b`) via
    `eval_tagging.py --modele … --variantes V0`, rejeter si le pic VRAM frôle 4 Go.
-9. **Bibliothèque Figma** comme source de vérité des composants (optionnel).
+10. **Multi-utilisateur / foyer partagé** (ROADMAP, futur) : `owner` par racine,
+    dédoublonnage scopé, rangement configurable par racine, renommage de racine,
+    comptes/droits. Noté pour plus tard.
+11. **Bibliothèque Figma** comme source de vérité des composants (optionnel).
 
 ### Cap long terme (garder en tête dans l'architecture)
 
