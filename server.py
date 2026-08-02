@@ -1794,16 +1794,27 @@ def _sync_dir(label, cur, own_keys, first=False, deep=False):
 
 def scan_uploads(first=False, deep=False):
     """Scan des racines : Uploads (plat) + dossiers à taguer (récursif)."""
-    # ── racine Uploads (clés = noms de fichiers) ──
+    # ── racine Uploads, RECURSIF : fichier a plat -> clé = nom ; fichier en
+    #    sous-dossier -> clé = chemin relatif posix (MEME convention que l'upload
+    #    de dossier, cf. _do_post ~« dest.relative_to(UPLOAD_DIR).as_posix() »).
+    #    Avant, ce scan etait plat (iterdir) : un sous-dossier depose hors de
+    #    l'app (ex. « ARZOPA ») n'etait JAMAIS enumere, donc jamais tague, meme
+    #    apres une nuit de serveur. La recursion le corrige. ──
     try:
-        imgs = [f for f in UPLOAD_DIR.iterdir()
+        imgs = [f for f in UPLOAD_DIR.rglob('*')
                 if f.is_file() and f.suffix.lower() in IMAGE_EXT
-                and not f.name.startswith(('.', '@', '#'))]
+                and not _is_hidden_path(f.relative_to(UPLOAD_DIR))]
     except OSError as e:
         print(f"  ⚠ Scan impossible: {e}")
         return
-    cur = {f.name: f for f in imgs}
-    own = [k for k in STORE.data if '/' not in _pkey(k)]
+    cur = {}
+    for f in imgs:
+        rel = f.relative_to(UPLOAD_DIR)
+        cur[f.name if len(rel.parts) == 1 else rel.as_posix()] = f
+    # « own » = les clés d'Uploads (nom simple OU relatif). Une clé de dossier
+    # supplementaire est ABSOLUE (jamais relative), donc exclue proprement : le
+    # scan Uploads ne purge pas les entrees des dossiers NAS a taguer.
+    own = [k for k in STORE.data if not Path(k).is_absolute()]
     _sync_dir("Uploads", cur, own, first, deep)
 
     # ── dossiers supplémentaires (dossiers_a_taguer.txt), récursif ──
@@ -8391,7 +8402,12 @@ class Handler(BaseHTTPRequestHandler):
         qs = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
         genre = (qs.get('genre', [''])[0] or '') or None
         prefixe = qs.get('q', [''])[0] or ''
-        noms = noms_pour_saisie(genre, prefixe)[:40]
+        # Le client met la liste en cache et filtre localement a la frappe : il
+        # faut donc renvoyer TOUTES les personnes/animaux, pas seulement les plus
+        # photographies. L'ancien cap [:40] excluait toute personne au-dela du
+        # 40e rang par volume (ex. Mathilde, 110 photos) — jamais proposee a
+        # l'autocompletion, donc re-creee comme « Nouveau » a chaque fois.
+        noms = noms_pour_saisie(genre, prefixe)[:2000]
         self._send(200, json.dumps({'noms': noms}, ensure_ascii=False).encode(),
                    'application/json')
 
