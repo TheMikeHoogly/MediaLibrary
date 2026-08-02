@@ -84,6 +84,18 @@ verifier_ui_tokens.py`, code 1 si un bleu iOS/gris neutre revient). Structure
 inchangée (redesign structurel = étape B). Tous `py_compile` OK, aperçus visuels
 nav+galerie vérifiés. Commits : `675ec05`→`ddb0f44` (branche `main`, **à pousser**).
 
+**Correctifs tagging (02/08, `main` `4580639`, DEMANDENT un redemarrage serveur) :**
+- **Autocompletion des noms tronquee** — `/api/names` renvoyait `noms_pour_saisie()[:40]`
+  (top-40 par volume) : toute personne au-dela (ex. Mathilde, 110 photos) etait
+  absente de l'autocompletion, donc re-creee comme « Nouveau » sans se lier a son
+  cluster. Cap porte a `[:2000]`. Verifie en direct (`q=math` renvoyait Mathilde).
+- **Sous-dossiers Uploads jamais scannes** — `scan_uploads` etait a plat (`iterdir`) :
+  un sous-dossier (ex. ARZOPA) n'etait jamais enumere ni tague. Passe en `rglob`
+  recursif (clés nom/relatif posix, `own` = clés non-absolues).
+- **File-ops** : backend fini + teste sur branche `feat/file-ops` (fichiers.py +
+  test_fichiers.py 23/23, routes /api/files/*). RESTE : UI /browse (selection +
+  barre d'actions papier + toast undo).
+
 **◐ ÉTAPE B (redesign structurel) — EN COURS (01/08).** Faits et commités
 (`86b6b8d`, `d897536`) : **planche contact** (`GALLERY .grid` en `auto-fill`+
 `clamp()` + `content-visibility`, dernier interdit structurel retiré) ; **View
