@@ -438,6 +438,64 @@ gagne 2 contre 1 ». Sans la notation, on aurait figé la mauvaise conclusion.
 
 ---
 
+## 2026-08-02 — Détecteurs de rebut pour le triage (point 21) — PROTOCOLE PRÉ-ENREGISTRÉ
+
+**Statut : banc écrit et testé (logique pure), DÉCISION EN ATTENTE du run sur la
+machine réelle.** Entrée posée *avant* la mesure, comme l'exige `vision-eval`
+(étape 0 : formuler l'hypothèse avant de mesurer). À compléter après le run.
+
+**Hypothèse (le défaut observé et la métrique qui le prouverait).** Une part
+notable des 12 501 fichiers sous `_A TRIER` sont des rebuts (documents scannés,
+captures d'écran, factures/reçus, photos floues ou ratées). Hypothèse : trois
+signaux **gratuits** — heuristique de nom, variance du Laplacien (flou), zéro-shot
+SigLIP sur des libellés rebut — suffisent à les **proposer** au triage sans
+nouveau modèle lourd. La métrique qui tranche n'est pas la justesse moyenne mais
+le **coût des faux positifs** : combien de **bonnes photos** seraient signalées à
+tort (une bonne photo cachée coûte plus qu'un rebut manqué).
+
+**Jeu de validation (figé, corpus réel).** `eval/interet_v1.json` — ~200 photos
+tirées de `_A TRIER` par empreinte de clé (sha1, même corpus → même échantillon),
+étiquetées **à la main** par Mike via `eval/interet_etiquetage.html` en
+`garder | document | capture | facture | flou | errone`
+(→ `eval/interet_labels.json`). Le banc ne lit que l'index et les fichiers ;
+il n'écrit aucun tag, ne supprime rien.
+
+**Ce qui est comparé.** Trois signaux, mesurés séparément puis combinés :
+1. **Nom** (`interet.indice_nom`) — `Screenshot_`, `-WA####`, `VideoCapture_`,
+   `Scan_`, `facture/recu`… détecteur binaire, coût nul.
+2. **Flou** (`interet.score_flou`, variance du Laplacien, CPU) — balayage de seuil,
+   sens « rebut si variance < seuil ».
+3. **SigLIP zéro-shot** — libellés rebut (`interet.LIBELLES_SIGLIP`, réutilise
+   l'encodeur de `semantic.py`, **sans toucher** `vocabulaire_tags.txt`), score
+   max par catégorie, balayage de seuil.
+
+**Métriques (par signal et par seuil, `eval/interet_results.json`).** Précision /
+rappel / F1 ; **`fp_bonnes`** = bonnes photos signalées à tort à chaque seuil ;
+seuil retenu = meilleur F1 **sous une borne de faux positifs** (`meilleur_seuil(…,
+fp_max=n/50)`) — si aucun seuil ne tient la borne, le signal est **à ne pas activer
+seul**. Pic **VRAM** mesuré pendant l'encodage SigLIP (rejet si trop proche des
+seuils du pipeline en place : `FACE_GPU_MIN_FREE_MB = 1200` exigé côté visages).
+Temps par image + extrapolation à `_A TRIER`.
+
+**Garde-fous de méthode déjà en place.** Logique pure isolée dans `interet.py`,
+**`test_interet.py` 15/15** dans le bac à sable (nom, flou synthétique, assemblage,
+métriques, balayage). Le classifieur ne fait que **proposer** ; la suppression
+reste le geste humain, réversible (`FileOps.delete` → `.corbeille-rangement/`).
+
+**Décision : à écrire après le run** (adopté / rejeté / à revoir, par signal et
+seuil). Ne rien câbler dans le serveur ni bâtir la vue de triage avant cette
+entrée — c'est l'ordre imposé par `vision-eval` (mesurer, décider, puis bâtir).
+
+**Lancer la mesure (machine réelle, NAS monté) :**
+
+```
+python eval_interet.py --echantillon 200   # tire l'échantillon + page d'étiquetage
+#   ... étiqueter dans eval/interet_etiquetage.html, déposer interet_labels.json ...
+python eval_interet.py --mesurer           # SigLIP + flou + nom, métriques + VRAM
+```
+
+---
+
 ## Annexe — bugs trouvés par les bancs d'essai eux-mêmes
 
 **2026-07-30, banc de classification :**

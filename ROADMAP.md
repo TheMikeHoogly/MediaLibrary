@@ -561,7 +561,31 @@ traversent le chantier) :
       rangement par année, sur les fichiers déjà classés. Spec détaillée dans
       `docs/RANGEMENT_2026.md` (« Renommage intelligent »).
 
-21. **Triage des images sans intérêt — À FAIRE (demandé par Mike, 02/08).**
+21. **Triage des images sans intérêt — BANC DE MESURE FAIT ET TESTÉ (02/08),
+    RUN RÉEL + DÉCISION EN ATTENTE.** Discipline `vision-eval` respectée : on
+    **mesure avant de bâtir**. Livré cette session :
+    - **`interet.py`** (module PUR, aucun import serveur/modèle au chargement) :
+      heuristique de nom (`indice_nom` — `Screenshot_`, `-WA####`, `VideoCapture_`,
+      `Scan_`, `facture/recu`…), score de flou (`score_flou` = variance du
+      Laplacien, cv2 paresseux + repli numpy), assemblage `proposer()` (jamais un
+      tag dur, jamais d'auto-suppression), et métriques (`metriques_binaire`,
+      `balayage_seuil`, `meilleur_seuil` **borné par le coût des faux positifs**).
+    - **`test_interet.py` 15/15** dans le bac à sable (nom, flou sur images
+      synthétiques, assemblage, métriques, balayage sup/inf).
+    - **`eval_interet.py`** (banc, miroir d'`eval_tagging.py`) : `--echantillon N`
+      tire ~200 photos figées sous `_A TRIER` (empreinte sha1) + génère une page
+      d'étiquetage HTML à vignettes inline ; `--mesurer` calcule les 3 signaux,
+      précision/rappel **par seuil**, **`fp_bonnes`** (bonnes photos signalées),
+      **pic VRAM**, temps/img → `eval/interet_results.json`. Ne touche PAS
+      `vocabulaire_tags.txt` (libellés rebut internes au banc).
+    - **Protocole pré-enregistré** dans `eval/DECISIONS.md` (hypothèse + jeu +
+      métriques ; décision à écrire après le run).
+    - **RESTE : le run réel** (NAS + GPU, chez Mike) → décision écrite par signal
+      et seuil ; **puis** seulement bâtir (b) la vue de triage web et (c) la
+      suppression individuelle réversible. **Ne rien câbler avant la décision.**
+
+    But (rappel) : détecter, **regrouper par motif**, permettre la **suppression
+    individuelle réversible** depuis le web.
     Beaucoup de fichiers sous `_A TRIER` sont des rebuts : documents scannés,
     captures d'écran inutiles, copies de factures/reçus, photos floues ou erronées.
     But : les **détecter**, les **regrouper par motif** dans une vue web, et

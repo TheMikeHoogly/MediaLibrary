@@ -122,12 +122,17 @@ et les skills `.claude/skills/` (`monolith-surgery` **avant tout edit de
 1. **Finir le rangement par année** (en cours, Mike) : appliquer le plan via
    `26 - Ranger par annee.bat` (dry-run → lot de 20 → reste, serveur arrêté),
    vérifier sur le NAS, puis **merger `feat/rangement-annee-apply` dans `main`**.
-2. **NOUVEAU — triage des images sans intérêt (ROADMAP point 21).** Détecter
-   documents / captures / factures / photos floues ou erronées sous `_A TRIER`,
-   les regrouper par motif, suppression individuelle réversible depuis le web.
-   **Assemblage de briques existantes** (SigLIP + score de flou Laplacien +
-   quarantaine `FileOps.delete`). **Mesurer un détecteur avant de bâtir**
-   (`vision-eval`, décision écrite). C'est le cap de la prochaine session.
+2. **Triage des images sans intérêt (ROADMAP point 21) — BANC FAIT, RUN EN
+   ATTENTE.** Livré 02/08 : `interet.py` (pur : heuristique de nom, score de flou
+   Laplacien, assemblage `proposer`, métriques bornées par le coût des faux
+   positifs) + `test_interet.py` **15/15** + `eval_interet.py` (échantillon figé
+   sous `_A TRIER`, page d'étiquetage HTML, mesure des 3 signaux + VRAM). Protocole
+   pré-enregistré dans `eval/DECISIONS.md`. **Prochain geste = le RUN réel** (chez
+   Mike, NAS + GPU) : `python eval_interet.py --echantillon 200`, étiqueter dans
+   `eval/interet_etiquetage.html`, déposer `interet_labels.json`, puis
+   `python eval_interet.py --mesurer` → **écrire la décision** (adopté/rejeté par
+   signal et seuil). **Ne bâtir la vue de triage + la suppression qu'APRÈS** la
+   décision (ordre `vision-eval` : mesurer → décider → bâtir).
 3. **Priorité n°1 reconnaissance — confirmer ~100 propositions** (`/people`,
    maintenant rapide au clavier). C'est le geste HUMAIN qui vaut plus que tout
    changement d'algo (voir ROADMAP « À faire », Reconnaissance §1). Outillage
