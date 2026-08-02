@@ -486,13 +486,37 @@ reste le geste humain, réversible (`FileOps.delete` → `.corbeille-rangement/`
 seuil). Ne rien câbler dans le serveur ni bâtir la vue de triage avant cette
 entrée — c'est l'ordre imposé par `vision-eval` (mesurer, décider, puis bâtir).
 
-**Lancer la mesure (machine réelle, NAS monté) :**
+**Lancer la mesure (machine réelle, NAS monté, DANS le `.venv` — sinon `open_clip`
+et `torch` manquent) :**
 
 ```
-python eval_interet.py --echantillon 200   # tire l'échantillon + page d'étiquetage
-#   ... étiqueter dans eval/interet_etiquetage.html, déposer interet_labels.json ...
-python eval_interet.py --mesurer           # SigLIP + flou + nom, métriques + VRAM
+.venv\Scripts\python.exe eval_interet.py --echantillon 200   # tirage aléatoire (coût FP)
+#   ... étiqueter, déposer interet_labels.json ...
+.venv\Scripts\python.exe eval_interet.py --mesurer
 ```
+
+**Correction de méthode (02/08, après premiers runs — leçon de circularité, la
+3ᵉ du projet).** Deux constats de terrain :
+1. **Un tirage aléatoire de `_A TRIER` ≈ 94 % de bonnes photos** (12 rebut / 212 :
+   5 capture, 4 flou, 3 document, **0 facture/erroné**). Bon pour mesurer le **coût
+   des faux positifs**, pauvre en positifs pour la précision/rappel.
+2. **Miner les candidats par le nom puis « vérifier » que le nom prédit la capture
+   est circulaire** — ça mesure sa propre prémisse (Mike : « j'ai tout classé
+   capture, comme le nom l'indiquait déjà »). Les screenshots/scans sont
+   **attrapables par une simple règle** (nom `Screenshot_` / dossier `\Screenshots\`,
+   `\Scans\`) : **aucun détecteur requis**, seule reste une **politique** (garder ou
+   non). Réécriture du mode `--candidats` : il **exclut** les fichiers pris par
+   règle et teste les photos **ambiguës** via un échantillon **stratifié sur tout le
+   spectre du flou** (net → flou), pour mesurer sans biais si la variance du
+   Laplacien sépare *garder* de *jeter* (`--mesurer --jeu candidats`, section
+   `flou_vs_rebut` : variance médiane garder vs rebut + balayage borné en FP).
+
+**Direction qui se dessine (à confirmer par le run stratifié) :** le gros de
+`_A TRIER` identifiable est du **screenshot attrapable par règle** (question de
+politique, pas de ML) ; documents/factures quasi absents ; le flou rare et risqué à
+signaler seul. La feature utile serait donc **une vue groupée par règle/motif +
+suppression humaine réversible**, le flou en simple **clé de tri**, plutôt qu'un
+classifieur. À trancher une fois le jeu stratifié étiqueté.
 
 ---
 

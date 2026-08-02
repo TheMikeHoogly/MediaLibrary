@@ -34,7 +34,7 @@ Sorties (dans eval/) :
   interet_labels.json        etiquettes humaines {cle: garder|document|...}
   interet_results.json       scores bruts par photo + metriques + VRAM (re-analysable)
 """
-import sys, os, io, json, time, base64, argparse, subprocess, threading
+import sys, os, io, re, json, time, base64, argparse, subprocess, threading
 from pathlib import Path
 
 import server as s          # sur : aucun thread ne demarre a l'import (garde __main__)
@@ -235,64 +235,88 @@ def cmd_echantillon(n):
     return 0
 
 
+# Dossiers dont le NOM dit deja « capture/scan » — attrapables par REGLE, sans
+# detecteur. Sert a EXCLURE ces fichiers du test (les inclure serait circulaire).
+_DOSSIER_REGLE = re.compile(r'screenshots?|captures?[ _]?d.?ecran|scans?', re.I)
+
+
+def _attrape_par_regle(k):
+    """True si le nom OU un dossier du chemin identifie deja un rebut (screenshot,
+    scan...). Ces fichiers ne testent aucun detecteur : c'est une regle + une
+    politique (garder ou non), pas un probleme de detection."""
+    if I.indice_nom(k)[0]:
+        return True
+    return any(_DOSSIER_REGLE.search(str(p)) for p in Path(k).parts[:-1])
+
+
 def cmd_candidats(n):
-    """Enrichit en REBUTS PROBABLES : au lieu d'un tirage aleatoire (94 % de bonnes
-    photos), on va chercher dans TOUT « _A TRIER » les noms suspects (gratuit) et
-    les photos les plus FLOUES (lecture NAS bornee). Mike etiquette ces candidats
-    -> on mesure la PRECISION de ce qu'on PROPOSERAIT a la suppression (la bonne
-    metrique quand les rebuts sont rares : un rebut manque reste, un faux positif
-    risque une bonne photo)."""
+    """Teste ce qu'un DETECTEUR pourrait apporter, sans circularite.
+
+    Lecon (Mike, 02/08) : mineur les candidats PAR LE NOM puis « verifier » que le
+    nom predit la capture, c'est mesurer sa propre premisse. Les screenshots/scans
+    sont attrapables par une simple REGLE (nom/dossier) — aucun detecteur requis,
+    juste une politique. On les EXCLUT donc du test.
+
+    Le test porte sur les photos AMBIGUES (aucun signal de nom/dossier), tirees en
+    echantillon STRATIFIE sur tout le spectre du flou (net -> flou). Ainsi le pool
+    n'est PAS pre-trie par la reponse : on peut mesurer honnetement si la variance
+    du Laplacien separe ce que Mike jette de ce qu'il garde."""
     import random
     sample_f, labels_f, html_f, _ = _fichiers_jeu('candidats')
     print("=" * 70)
-    print(f"  CANDIDATS REBUT — jusqu'a {n} photos suspectes sous « _A TRIER »")
+    print(f"  TEST DETECTEUR — {n} photos AMBIGUES sous « _A TRIER », stratifiees flou")
     print("=" * 70)
     cles = cles_a_trier()
-    print(f"  {len(cles)} photos sous _A TRIER au total.")
-    indices = {}
-    # 1) Noms suspects (signal gratuit, sur toutes les cles)
-    hits = []
-    for k in cles:
-        cat, motif = I.indice_nom(k)
-        if cat:
-            hits.append(k)
-            indices[k] = f"nom:{cat} ({motif})"
-    print(f"  {len(hits)} noms suspects (Screenshot_/-WA/Scan_/facture...).")
-    # 2) Flou : score un sous-ensemble borne des AUTRES, garde les plus flous
+    regle = [k for k in cles if _attrape_par_regle(k)]
+    ambigus = [k for k in cles if k not in set(regle)]
+    print(f"  {len(cles)} photos sous _A TRIER.")
+    print(f"  {len(regle)} attrapables par REGLE (nom/dossier screenshot/scan) —"
+          " EXCLUES du test (regle + politique, pas un detecteur).")
+    print(f"  {len(ambigus)} ambigues -> c'est la-dessus qu'un detecteur doit prouver"
+          " sa valeur.")
+    # Score de flou sur un sous-ensemble aleatoire borne des ambigues
     rng = random.Random(1234)
-    autres = [k for k in cles if k not in indices]
-    rng.shuffle(autres)
-    budget = min(len(autres), max(400, n * 8))
-    print(f"  Score de flou sur {budget} photos (lecture NAS)...")
+    rng.shuffle(ambigus)
+    budget = min(len(ambigus), max(600, n * 6))
+    print(f"\n  Score de flou sur {budget} ambigues (lecture NAS)...")
     scored = []
-    for i, k in enumerate(autres[:budget]):
+    for i, k in enumerate(ambigus[:budget]):
         v = I.score_flou(_resoudre(k))
         if v is not None:
             scored.append((v, k))
         if (i + 1) % 100 == 0:
             print(f"    {i+1}/{budget}")
     scored.sort()                     # variance croissante = plus flou d'abord
-    n_flou = max(1, n // 2)
-    for v, k in scored[:n_flou]:
-        indices[k] = f"flou (var={v:.0f})"
-    # 3) Assemble : moitie noms, moitie flous, cap n, ordre deterministe
-    cand = []
-    for k in hits + [k for _, k in scored[:n_flou]]:
-        if k not in cand:
-            cand.append(k)
-        if len(cand) >= n:
-            break
+    if not scored:
+        print("  x aucune photo ambigue lisible.")
+        return 1
+    # Stratification : 10 tranches egales du spectre de flou, autant de chaque
+    strates = 10
+    par_strate = max(1, n // strates)
+    taille = len(scored)
+    cand, indices = [], {}
+    for s in range(strates):
+        lo = s * taille // strates
+        hi = (s + 1) * taille // strates
+        tranche = scored[lo:hi]
+        pas = max(1, len(tranche) // par_strate) if tranche else 1
+        for v, k in tranche[::pas][:par_strate]:
+            if k not in indices:
+                indices[k] = f"flou var={v:.0f} (strate {s+1}/10)"
+                cand.append(k)
+    print(f"  {len(cand)} candidats stratifies (net -> flou) figes dans {sample_f.name}")
     EVAL_DIR.mkdir(exist_ok=True)
     sample_f.write_text(json.dumps(cand, ensure_ascii=False, indent=1),
                         encoding='utf-8')
-    print(f"\n  {len(cand)} candidats figes dans {sample_f.name}")
     print("  Generation des vignettes...")
     manquants = _ecrire_page(cand, html_f, indices)
     print(f"\n  Page d'etiquetage : {html_f}")
     if manquants:
         print(f"  ! {manquants} vignettes indisponibles.")
-    print(f"\n  Etiquette, telecharge -> renomme en {labels_f.name}, depose dans")
-    print(f"  {EVAL_DIR}, puis :  python eval_interet.py --mesurer --jeu candidats")
+    print("\n  Etiquette SANS te fier a l'indice de flou (juge la photo, pas le")
+    print("  chiffre) : garde ce que tu garderais, rebut ce que tu jetterais.")
+    print(f"  Telecharge -> renomme en {labels_f.name}, depose dans {EVAL_DIR}, puis :")
+    print("    ...\\.venv\\Scripts\\python.exe eval_interet.py --mesurer --jeu candidats")
     return 0
 
 
@@ -467,12 +491,31 @@ def cmd_mesurer(limit=None, jeu='aleatoire'):
     print("\n  SIGNAL FLOU (variance du Laplacien, CPU)")
     print(f"    {sum(ver_flou)} photos etiquetees 'flou'.")
     if best_flou:
-        print(f"    meilleur seuil {best_flou['seuil']:.0f} : precision "
+        print(f"    (vs 'flou') meilleur seuil {best_flou['seuil']:.0f} : precision "
               f"{best_flou['precision']:.0%} rappel {best_flou['rappel']:.0%}"
               f"  bonnes photos flouement signalees : {best_flou.get('fp_bonnes','?')}")
     else:
-        print("    aucun seuil ne tient la borne de faux positifs — signal a NE PAS"
-              " activer seul.")
+        print("    (vs 'flou') aucun seuil ne tient la borne FP — signal faible seul.")
+    # La VRAIE question du test stratifie : la variance separe-t-elle garder/jeter ?
+    bal_reb = I.balayage_seuil(sc_flou, verites_rebut, _seuils(sc_flou), sens='inf')
+    for l in bal_reb:
+        preds = [(flou[k] is not None and flou[k] < l['seuil']) for k in cles]
+        l['fp_bonnes'] = sum(1 for p, g in zip(preds, ver_garder) if p and g)
+    best_reb = I.meilleur_seuil(bal_reb, fp_max=max(1, len(cles) // 20))
+    res["signaux"]["flou_vs_rebut"] = {"balayage": bal_reb, "meilleur": best_reb}
+    import statistics as _st
+    v_gard = [flou[k] for k in cles if verite[k] == I.GARDER and flou[k] is not None]
+    v_reb = [flou[k] for k in cles if rebut_vrai[k] and flou[k] is not None]
+    if v_gard and v_reb:
+        print(f"    variance mediane — garder {_st.median(v_gard):.0f}  vs  "
+              f"rebut {_st.median(v_reb):.0f}  (si proches, le flou ne separe pas)")
+    if best_reb:
+        print(f"    (vs rebut) meilleur seuil {best_reb['seuil']:.0f} : precision "
+              f"{best_reb['precision']:.0%} rappel {best_reb['rappel']:.0%}"
+              f"  faux positifs (bonnes) : {best_reb.get('fp_bonnes','?')}")
+    else:
+        print("    (vs rebut) aucun seuil utile sous la borne FP — le flou seul ne"
+              " suffit pas a proposer une suppression.")
 
     # SigLIP : balayage par categorie (rebut si score >= seuil ; 'flou' exclu —
     # c'est un defaut de rendu, pas un sujet, mesure par la variance du Laplacien)
