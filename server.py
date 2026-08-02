@@ -7482,6 +7482,10 @@ button { font-family: inherit; }
 .clus { padding: 8px 16px; }
 .cl { background: var(--salle-3); border: var(--trait); border-radius: 10px;
       padding: 10px; margin-bottom: 10px; }
+/* Tri au clavier : la carte « en cours de decision » porte l'anneau veilleuse. */
+.cl.active { outline: 2px solid var(--veilleuse); outline-offset: 2px; }
+.kbd-hint { color: var(--graphite); font-size: 0.72rem; font-family: var(--f-donnees); }
+.kbd-hint b { color: var(--texte); font-weight: 600; }
 .cl .faces { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 8px; }
 .cl .faces img { width: 66px; height: 66px; object-fit: cover; border-radius: 6px;
                  background: var(--salle-3); }
@@ -7577,6 +7581,7 @@ input[type=text]:focus, input.qui:focus { border-color: var(--veilleuse); }
 
 <h2>À vérifier <span class="c" id="curc"></span>
   <button class="btn" id="curref" style="font-size:.72rem;padding:3px 9px;margin-left:6px">&#8635; Rafraîchir</button></h2>
+<div class="msg"><span class="kbd-hint">Raccourcis : <b>Espace</b>/<b>Entr&eacute;e</b> = oui &middot; <b>X</b> = non &middot; <b>Z</b> = annuler &middot; une lettre = corriger le nom</span></div>
 <div class="msg" id="curmsg">Chargement&hellip;</div>
 <div class="clus" id="autowrap"></div>
 <div class="clus" id="curbox"></div>
@@ -8023,9 +8028,40 @@ function loadCurator(rebuild){
       }
       box.appendChild(el);
     });
+    curMark();
   }).catch(function(){});
 }
 document.getElementById('curref').onclick=function(){ document.getElementById('curmsg').textContent='Analyse demandée…'; loadCurator(true); };
+
+// ── Tri au clavier (sert la priorite n1 : confirmer vite ~100 propositions).
+//    La carte « active » (la 1re de « A verifier ») porte l'anneau veilleuse ;
+//    les touches agissent dessus tant qu'on ne tape pas dans un champ. ──
+function curMark(){
+  var rows=document.querySelectorAll('#curbox > .cl');
+  rows.forEach(function(r,i){ r.classList.toggle('active', i===0); });
+  if(rows[0]){ try{ rows[0].scrollIntoView({block:'center'}); }catch(e){} }
+}
+function curUndo(){
+  var b=document.querySelector('#toastp button'); if(b){ b.click(); return; }
+  fetch('/api/undo',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'})
+    .then(function(){ loadCurator(true); loadPeople(); }).catch(function(){});
+}
+document.addEventListener('keydown', function(e){
+  var tag=(e.target.tagName||'').toLowerCase();
+  if(tag==='input'||tag==='textarea'||tag==='select'){ if(e.key==='Escape') e.target.blur(); return; }
+  var row=document.querySelector('#curbox > .cl.active'); if(!row) return;
+  var bs=row.querySelectorAll('button');
+  if(e.key===' '||e.key==='Enter'||e.key==='o'||e.key==='O'){
+    e.preventDefault(); if(bs[0]) bs[0].click(); setTimeout(curMark,150);
+  } else if(e.key==='x'||e.key==='X'||e.key==='Delete'){
+    e.preventDefault(); if(bs[1]) bs[1].click(); setTimeout(curMark,150);
+  } else if(e.key==='z'||e.key==='Z'){
+    e.preventDefault(); curUndo();
+  } else if(/^[a-zA-Z]$/.test(e.key)){
+    var inp=row.querySelector('.qui');
+    if(inp){ e.preventDefault(); inp.focus(); inp.value+=e.key; inp.dispatchEvent(new Event('input')); }
+  }
+});
 
 // ── diaporama des photos d'une personne (à la suite / aléatoire) ──
 var psPhotos=[], psOrder=[], psIdx=0, psName='', psTimer=null, psPaused=false, psDur=6000, psMode='seq';
