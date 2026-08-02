@@ -1950,6 +1950,31 @@ def rekey_everywhere(old, new, mtime=None, save=True):
     return moved
 
 
+# ─── Operations de fichiers (vue Dossiers) ───────────────────────────────────
+# Logique pure et testee dans fichiers.py (module stdlib, import leger). La
+# re-cle de l'index passe par rekey_everywhere : un deplacement/renommage ne
+# perd jamais un nom humain. « Supprimer » = quarantaine reversible, jamais rm.
+import fichiers
+FILE_OPS = None
+FILE_OPS_LOCK = threading.Lock()
+FILES_TRASH_DIR = SCRIPT_DIR / ".corbeille-rangement"
+
+
+def file_ops():
+    """Singleton FileOps branche sur les magasins du serveur (cree a la 1re
+    utilisation, donc apres l'ouverture des stores)."""
+    global FILE_OPS
+    if FILE_OPS is None:
+        FILE_OPS = fichiers.FileOps(
+            roots_fn=media_roots,
+            resolve_key=_resolve_key,
+            store_keys=lambda: list(STORE.data.keys()),
+            rekey=rekey_everywhere,
+            journal_path=SCRIPT_DIR / "fichiers_undo.json",
+            trash_dir=FILES_TRASH_DIR)
+    return FILE_OPS
+
+
 def _sans_accents(s):
     import unicodedata
     return ''.join(c for c in unicodedata.normalize('NFD', str(s).lower())
@@ -8042,6 +8067,36 @@ class Handler(BaseHTTPRequestHandler):
         except Exception:
             return {}
 
+    def _do_files_post(self, path):
+        """Operations de fichiers (vue Dossiers) : renommer / deplacer / creer
+        un dossier / supprimer (quarantaine reversible) / annuler. La logique
+        vit dans fichiers.py (module pur, teste). do_POST a deja appele
+        note_heavy_activity() (invariant UI > NAS)."""
+        d = self._read_json_body()
+        ops = file_ops()
+        up = UPLOAD_DIR
+        try:
+            with FILE_OPS_LOCK:
+                if path == '/api/files/rename':
+                    res = ops.rename(d.get('idx'), d.get('rel', ''), d.get('name', ''), up)
+                elif path == '/api/files/move':
+                    res = ops.move(d.get('idx'), d.get('rel', ''),
+                                   d.get('dst_idx'), d.get('dst_rel', ''), up)
+                elif path == '/api/files/mkdir':
+                    res = ops.mkdir(d.get('idx'), d.get('rel', ''), d.get('name', ''))
+                elif path == '/api/files/delete':
+                    res = ops.delete(d.get('idx'), d.get('rel', ''), up)
+                elif path == '/api/files/undo':
+                    res = ops.undo(up)
+                else:
+                    self._send(404, b'Not found', 'text/plain')
+                    return
+            self._send(200, json.dumps({"ok": True, **res},
+                       ensure_ascii=False).encode(), 'application/json')
+        except fichiers.FileOpError as e:
+            self._send(200, json.dumps({"ok": False, "error": str(e)},
+                       ensure_ascii=False).encode(), 'application/json')
+
     def _do_post(self):
         path = urllib.parse.urlparse(self.path).path
         if path == '/api/assign':
@@ -8053,6 +8108,9 @@ class Handler(BaseHTTPRequestHandler):
             self._send(200, json.dumps(
                 {"ok": bool(libelle), "libelle": libelle or ""},
                 ensure_ascii=False).encode(), 'application/json')
+            return
+        if path.startswith('/api/files/'):
+            self._do_files_post(path)
             return
         if path.startswith('/api/people/'):
             self._do_people_post(path)
