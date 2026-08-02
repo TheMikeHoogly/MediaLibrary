@@ -590,6 +590,39 @@ traversent le chantier) :
 
 ---
 
+## Multi-utilisateur / foyer partagé (futur, non prioritaire)
+
+Objectif à terme : plusieurs personnes du foyer déposent leurs photos (aujourd'hui
+Mike + Florine), chacune gardant **sa** hiérarchie de dossiers. Modèle visé : une
+racine par personne (« Photos Mike », « Photos Flo »), un **`owner` dérivé de la
+racine de premier niveau** stocké par entrée. Le multi-racines existe déjà
+(`media_roots()` + `dossiers_a_taguer.txt`), et le rangement par année est déjà
+**opt-in** (n'agit que sous `_A TRIER`) : la structure libre d'un autre utilisateur
+n'est donc jamais touchée. Ce qui reste à construire, quand le besoin sera là :
+
+- **Dédoublonnage scopé par racine / propriétaire.** Aujourd'hui `plan_rangement.py`
+  détecte les doublons par **contenu à l'échelle de tout le fonds** : la même photo
+  chez deux personnes serait vue comme un doublon (quarantaine + fusion de tags).
+  En multi-utilisateur, chacun garde sa copie → scoper la détection par racine (ou
+  par `owner`). Tant que ce n'est pas fait : **ne pas appliquer le dédoublonnage
+  cross-racines** (l'application est manuelle, donc sûr si on relit le plan).
+- **Rangement par année configurable par racine.** Liste explicite des racines qui
+  optent pour l'auto-rangement (ceinture-bretelles : même si un `_A TRIER` traînait
+  chez un utilisateur qui n'en veut pas, sa racine reste exclue).
+- **Renommer une racine sans casser l'index.** « Photos » → « Photos Mike » change
+  ≈ 30 000 clés (chemins absolus). Soit garder le dossier physique et n'afficher
+  qu'un libellé, soit un **outil de re-clé de préfixe de racine** dédié (primitive
+  `rekey_everywhere` / `rekey_prefix_all` déjà testée, mais à emballer + tester sur
+  une racine entière).
+- **Comptes et droits d'accès.** Aujourd'hui le serveur est **ouvert sur le réseau
+  local, sans authentification** — « racine partagée accessible à tous » est l'état
+  actuel. Un vrai cloisonnement par utilisateur (comptes, permissions par racine)
+  est un chantier à part entière, à poser au-dessus du modèle `owner` ci-dessus.
+
+Séquencement raisonnable le jour venu : `owner` par entrée → dédoublonnage scopé →
+rangement configurable par racine → outil de renommage de racine → (plus tard)
+comptes/droits. Décidé avec Mike (02/08) : **noté pour plus tard, pas maintenant.**
+
 ## Cap long terme — multimodalité et recherche AI
 
 Le projet a commencé par les **images** ; il ira vers la **vidéo** puis
