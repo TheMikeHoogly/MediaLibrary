@@ -7222,9 +7222,11 @@ button { font-family: inherit; }
   .cl .row .btn, .cl .row .qui, .cl .row input[type=text] { flex-basis: 100%; width: 100%; }
   .cl .row > img { align-self: flex-start; }
 }
-input[type=text] { padding: 7px 10px; border-radius: 8px; border: var(--trait);
+/* Cible aussi .qui : un des inputs .qui n'a pas d'attribut type, donc
+   input[type=text] seul le ratait -> champ blanc par defaut (bug reel). */
+input[type=text], input.qui { padding: 7px 10px; border-radius: 8px; border: var(--trait);
                    background: var(--salle-3); color: var(--texte); font-size: 0.85rem; outline: none; }
-input[type=text]:focus { border-color: var(--veilleuse); }
+input[type=text]:focus, input.qui:focus { border-color: var(--veilleuse); }
 .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(90px,1fr));
         gap: 6px; }
 .prop { position: relative; }
@@ -7301,14 +7303,16 @@ input[type=text]:focus { border-color: var(--veilleuse); }
 <div class="clus" id="autowrap"></div>
 <div class="clus" id="curbox"></div>
 
-<h2>Personnes nommées <span class="c" id="pc"></span></h2>
-<div class="people" id="people"></div>
-<div id="panel"></div>
-
+<!-- Files de travail (actionnables) AVANT la liste de reference des 324 nommes,
+     sinon le bouton « Nommer rapidement » est enterre sous les cartes. -->
 <h2>Groupes à nommer <span class="c" id="cc"></span>
   <button class="btn" id="quickbtn" style="font-size:.72rem;padding:3px 9px;margin-left:6px">&#9889; Nommer rapidement</button></h2>
 <div class="msg" id="clmsg">Chargement&hellip;</div>
 <div class="clus" id="clusters"></div>
+
+<h2>Personnes nommées <span class="c" id="pc"></span></h2>
+<div class="people" id="people"></div>
+<div id="panel"></div>
 
 <div class="note">Regarde une pile de visages : si c'est bien la même personne,
   tape son nom et clique « Nommer » — toutes ses photos reçoivent le mot-clé
