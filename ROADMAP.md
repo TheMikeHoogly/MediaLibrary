@@ -560,16 +560,29 @@ traversent le chantier) :
       machine). **Reste :** rangement par année des `_A TRIER` ; branchement de
       l'application du renommage `_Uploads` ; installateur nouveau PC (prochain).
 
-    - **Rangement par année — GÉNÉRATEUR DE PLAN FAIT (02/08, branche
-      `integration`, lecture seule).** `rangement_annee.py` (pur, testé 10/10 —
+    - **Rangement par année — GÉNÉRATEUR + APPLICATEUR FAITS ET TESTÉS (02/08,
+      branche `feat/rangement-annee-apply`, à valider en réel).**
+      Génération (lecture seule) : `rangement_annee.py` (pur, testé 10/10 —
       `test_rangement_annee.py`) : `_A TRIER` → `<base>/AAAA/` via `_best_time`,
       `_SANS_DATE/` si pas de date fiable (jamais deviné), aplati, collisions de
       plan détectées. `server.generer_plan_annee()` construit le plan depuis
-      l'index en mémoire → `docs/plan_rangement_annee.{json,md}`. Exposé dans
-      `/reglages` (bouton + résumé par année). **NE DÉPLACE RIEN.** **RESTE :
-      l'application** (déplacer vers l'année) — réutilisera la primitive
-      `move`+`rekey_everywhere` déjà testée (`fichiers.py`), avec quarantaine des
-      doublons (via le plan de dédoublonnage) ; à câbler + garde-fous + valider.
+      l'index en mémoire → `docs/plan_rangement_annee.{json,md}`, avec désormais
+      un **`new_key`** par move (clé cible calculée côté serveur où les racines/
+      `UPLOAD_DIR` sont connus). Exposé dans `/reglages`.
+      **Application : `appliquer_plan_annee.py`** (calqué sur `appliquer_plan.py`
+      du dédoublonnage) : **serveur arrêté**, **dry-run par défaut**, `--appliquer`,
+      `--limite N`, `--undo`. Par move : saute si src absent, **refuse toute
+      collision au dst** (jamais d'écrasement), déplace, re-clé via `rekey_stores`
+      (miroir exact de `rekey_everywhere` — tags + visages/personnes/animaux/chats
+      + vecteur sémantique), journal undo. Pas de fusion de nom (déplacement 1:1).
+      Testé : `test_appliquer_plan_annee.py` (move + re-clé nom humain préservé,
+      collision refusée, undo, repli `new_key` absent, idempotence). Lanceur ASCII
+      pur `26 - Ranger par annee.bat` (dry-run → lot de 20 → reste, confirmations
+      `choice`). `verifier_bat.py` OK, `py_compile` OK.
+      **RESTE : valider en réel** — générer le plan depuis `/reglages`, arrêter le
+      serveur, dry-run puis `--limite 20`, vérifier sur le NAS, puis le reste
+      (annulable via `--undo`). La quarantaine des doublons reste un geste séparé
+      (déjà appliqué, 8,4 Go) — une collision au dst est ici refusée, pas fusionnée.
 
     Note : le garde-fou anti-doublon **à l'upload** (point 17, `_upload_content_dup`)
     est déjà en place — il empêche d'*ajouter* des doublons ; ce chantier-ci

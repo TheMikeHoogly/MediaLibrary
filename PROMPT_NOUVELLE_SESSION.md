@@ -121,10 +121,15 @@ et les skills `.claude/skills/` (`monolith-surgery` **avant tout edit de
    changement d'algo (voir ROADMAP « À faire », Reconnaissance §1). Outillage
    prêt ; il « suffit » que Mike le fasse. Peut-être ajouter `1`–`9` = assigner à
    une personne connue, `Maj+clic` = plage.
-3. **Appliquer le plan de rangement par année** (destructif → prudent) : câbler
-   l'application (déplacer `_A TRIER` → année) en **réutilisant `fichiers.FileOps.
-   move` + `rekey_everywhere`** (primitive testée), avec quarantaine des doublons
-   (via le plan de dédoublonnage), dry-run + undo + revue humaine. Idem
+3. **Rangement par année — APPLICATEUR FAIT ET TESTÉ (02/08, branche
+   `feat/rangement-annee-apply`), reste à valider en réel.** `appliquer_plan_annee.py`
+   (calqué sur `appliquer_plan.py`) : serveur arrêté, **dry-run par défaut**,
+   `--appliquer`/`--limite N`/`--undo`. Refuse toute collision au dst (jamais
+   d'écrasement), re-clé via `rekey_stores` (miroir de `rekey_everywhere`), journal
+   undo. `test_appliquer_plan_annee.py` vert, `26 - Ranger par annee.bat` (ASCII).
+   `generer_plan_annee()` émet désormais `new_key` par move. **Validation réelle** :
+   générer le plan depuis `/reglages`, arrêter le serveur, lancer le `.bat` (dry-run
+   → lot de 20 → reste), vérifier sur le NAS, merger la branche. **Reste après** :
    **application du renommage intelligent** sur `_Uploads` (cœur déterministe
    `renommage.py` déjà fait et testé ; reste à brancher l'application + provenance
    + GPS inversé/type SigLIP pour les 2 faits à None).

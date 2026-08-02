@@ -4508,6 +4508,16 @@ def generer_plan_annee():
             continue
         items.append((key, str(p), _best_time(key, e)))
     plan = _ra.construire_plan(items)
+    # Cle CIBLE de chaque move, derivee ICI ou les racines/UPLOAD_DIR sont connus
+    # (le seul endroit qui peut la calculer correctement). L'applicateur autonome
+    # s'en sert pour re-cler l'index sans deviner ; il retombe sur str(dst) sinon.
+    #   - cle absolue (dossier NAS supplementaire, cas de « _A TRIER ») : new = str(dst)
+    #   - cle relative posix (fichier sous Uploads) : new = dst relatif a UPLOAD_DIR
+    for mv in plan['moves']:
+        if fichiers.norm(mv['key']) == fichiers.norm(mv['src']):
+            mv['new_key'] = str(Path(mv['dst']))
+        else:
+            mv['new_key'] = fichiers.key_for_new_path(UPLOAD_DIR, UPLOAD_DIR, mv['dst'])
     docs = SCRIPT_DIR / 'docs'
     try:
         docs.mkdir(exist_ok=True)

@@ -1,0 +1,195 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+APPLIQUE le plan de rangement par ANNEE, de facon REVERSIBLE.
+
+Lit `docs/plan_rangement_annee.json` (produit par server.generer_plan_annee via
+rangement_annee.py) et, pour chaque `move`, deplace le fichier de « _A TRIER »
+vers son dossier annee `<base>/AAAA/` (ou `<base>/_SANS_DATE/` sans date fiable),
+en gardant l'index et les noms humains coherents. Tout est annulable (`--undo`).
+
+A LANCER SERVEUR ARRETE (ecrivain unique de photos.db), comme appliquer_plan.py
+et les scripts migrate_*. Le NAS doit etre accessible (les fichiers y sont).
+
+Un `move` du plan porte : {key, src, dst, annee, new_key?}. `key`/`new_key`
+sont les cles d'index (avant/apres) ; `new_key` est calcule cote serveur ou les
+racines sont connues. S'il manque (vieux plan), on retombe sur str(dst) — correct
+pour un « _A TRIER » sur le NAS (cle = chemin absolu).
+
+Securite (ordre = garantie « aucune info perdue ») :
+  1. src doit exister ; sinon on SAUTE.
+  2. dst ne doit PAS exister : un deplacement ne RECOUVRE jamais un fichier deja
+     en place (collision disque). Sinon on SAUTE — a l'humain de trancher (le
+     dedoublonnage est un geste separe, deja applique).
+  3. Deplacement src -> dst (mkdir du dossier annee au besoin).
+  4. RE-CLE l'index : rekey tags + faces/people/animals/pets + semantique (memes
+     primitives que server.rekey_everywhere, via appliquer_plan.rekey_stores),
+     pour que tags/detections/empreintes suivent le fichier — aucun nom perdu.
+  5. Journalise l'op (undo).
+
+Le rangement ne FUSIONNE aucun nom (contrairement au dedoublonnage) : c'est un
+simple deplacement 1:1, le fichier reste unique.
+
+Modes :
+    python appliquer_plan_annee.py                 # DRY-RUN : dit ce qu'il ferait
+    python appliquer_plan_annee.py --appliquer     # execute
+    python appliquer_plan_annee.py --appliquer --limite 20   # petit lot d'abord
+    python appliquer_plan_annee.py --undo docs/undo_annee_XXXX.json --appliquer
+Options : --plan <chemin>, --db <chemin>.
+"""
+
+import argparse
+import json
+import shutil
+import sys
+import time
+from pathlib import Path
+
+# Reutilise les primitives d'index deja testees du dedoublonnage : rekey_stores
+# est le miroir EXACT de server.rekey_everywhere (tags + sujets + semantique).
+from appliquer_plan import open_stores, rekey_stores
+
+RACINE = Path(__file__).resolve().parent
+
+
+def _new_key(op):
+    """Cle d'index cible : le champ `new_key` du plan, ou str(dst) en repli
+    (cas « _A TRIER » sur NAS ou la cle est le chemin absolu)."""
+    nk = op.get('new_key')
+    return nk if nk else str(Path(op['dst']))
+
+
+def apply_move(op, stores, semantic, journal, dry=True):
+    src, dst = op['src'], op['dst']
+    old_key = op['key']
+    new_key = _new_key(op)
+    p_src, p_dst = Path(src), Path(dst)
+
+    if not p_src.exists():
+        print(f"  [skip] source absente : {src}")
+        return 'skip'
+    if p_dst.exists():
+        print(f"  [skip] destination deja prise (collision) : {dst}")
+        return 'skip'
+
+    if dry:
+        print(f"  [dry] {src}\n        -> {dst}")
+        return 'dry'
+
+    # 3) deplacement (le dossier annee est cree au besoin)
+    try:
+        p_dst.parent.mkdir(parents=True, exist_ok=True)
+        shutil.move(str(p_src), str(p_dst))
+    except OSError as e:
+        print(f"  [skip] deplacement impossible (SMB ?), op non appliquee : {src} ({e})")
+        return 'skip'
+
+    # 4) re-cle de l'index (le fichier vit maintenant a dst)
+    rekeyed = False
+    if stores is not None:
+        try:
+            rekeyed = rekey_stores(old_key, new_key, stores, semantic)
+        except Exception as e:                                    # noqa: BLE001
+            print(f"    ! re-cle index {old_key} -> {new_key} : {e}")
+
+    # 5) journal undo
+    journal['operations'].append(
+        {'src': src, 'dst': dst, 'old_key': old_key, 'new_key': new_key,
+         'index_rekey': rekeyed})
+    print(f"  [ok]  {src}\n        -> {dst}"
+          + ("  (index re-cle)" if rekeyed else "  (hors index)"))
+    return 'ok'
+
+
+def undo(journal_path, stores, semantic, dry=True):
+    j = json.loads(Path(journal_path).read_text(encoding='utf-8'))
+    ops = list(reversed(j.get('operations', [])))
+    print(f"Undo : {len(ops)} operation(s) a inverser depuis {journal_path}")
+    n = 0
+    for op in ops:
+        src, dst = op['src'], op['dst']
+        p_src, p_dst = Path(src), Path(dst)
+        if not p_dst.exists():
+            print(f"  [skip] cible introuvable : {dst}")
+            continue
+        if p_src.exists():
+            print(f"  [skip] l'origine existe deja : {src}")
+            continue
+        if dry:
+            print(f"  [dry] restaure {dst} -> {src}")
+            continue
+        try:
+            p_src.parent.mkdir(parents=True, exist_ok=True)
+            shutil.move(str(p_dst), str(p_src))
+        except OSError as e:
+            print(f"  [skip] restauration impossible : {dst} ({e})")
+            continue
+        if op.get('index_rekey') and stores is not None:
+            try:
+                rekey_stores(op['new_key'], op['old_key'], stores, semantic)
+            except Exception as e:                                # noqa: BLE001
+                print(f"    ! re-cle d'annulation : {e}")
+        # nettoie le dossier annee s'il est devenu vide
+        try:
+            p_dst.parent.rmdir()
+        except OSError:
+            pass
+        print(f"  [ok]  {dst} -> {src}")
+        n += 1
+    if not dry:
+        print(f"Undo termine : {n} fichier(s) restaure(s).")
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument('--appliquer', action='store_true', help='executer (sinon dry-run)')
+    ap.add_argument('--limite', type=int, default=0, help='n deplacements max')
+    ap.add_argument('--undo', metavar='JOURNAL', help='inverser une application')
+    ap.add_argument('--plan', default=str(RACINE / 'docs' / 'plan_rangement_annee.json'))
+    ap.add_argument('--db', default=str(RACINE / 'photos.db'))
+    args = ap.parse_args()
+
+    if args.undo:
+        dry = not args.appliquer
+        stores = semantic = None
+        if Path(args.db).exists():
+            stores, semantic = open_stores(args.db)
+        undo(args.undo, stores, semantic, dry=dry)
+        return 0
+
+    plan = json.loads(Path(args.plan).read_text(encoding='utf-8'))
+    moves = list(plan.get('moves', []))
+    if args.limite:
+        moves = moves[:args.limite]
+    dry = not args.appliquer
+    conflits = len(plan.get('conflits', []))
+    print(f"{'DRY-RUN' if dry else 'APPLICATION'} : {len(moves)} deplacement(s)"
+          + (f" — {conflits} conflit(s) de plan ignore(s)" if conflits else ""))
+
+    stores = semantic = None
+    if not dry and Path(args.db).exists():
+        stores, semantic = open_stores(args.db)
+    elif not dry:
+        print("  ! photos.db absent : deplacement seul, index non re-cle.")
+
+    journal = {'genere_le': time.strftime('%Y-%m-%d %H:%M:%S'),
+               'plan': str(args.plan), 'operations': []}
+    compte = {'ok': 0, 'dry': 0, 'skip': 0}
+    for op in moves:
+        r = apply_move(op, stores, semantic, journal, dry=dry)
+        compte[r] = compte.get(r, 0) + 1
+
+    if not dry and journal['operations']:
+        jp = RACINE / 'docs' / f"undo_annee_{time.strftime('%Y%m%d_%H%M%S')}.json"
+        jp.write_text(json.dumps(journal, ensure_ascii=False, indent=1),
+                      encoding='utf-8')
+        print(f"\nJournal undo : {jp}")
+    print(f"\nBilan : {compte}")
+    if dry:
+        print("(dry-run — rien deplace. Ajoute --appliquer, et --limite N pour un "
+              "petit lot d'abord.)")
+    return 0
+
+
+if __name__ == '__main__':
+    sys.exit(main())
