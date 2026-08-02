@@ -588,6 +588,24 @@ traversent le chantier) :
     est déjà en place — il empêche d'*ajouter* des doublons ; ce chantier-ci
     nettoie ceux **déjà** sur le NAS.
 
+20. **Renommage intelligent — CŒUR FAIT ET TESTÉ, APPLICATION À BRANCHER.**
+    Chantier **distinct du rangement par année** (point 19) : le rangement *classe*
+    les fichiers dans `AAAA/` sans toucher au nom ; le renommage, lui, *renomme*
+    les fichiers en un nom lisible et chronologique. Les noms bruts (`Screenshot_…`,
+    `VideoCapture_…`, `IMG_…`, `…_WhatsApp`) deviendraient un format canonique.
+    - ✓ **FAIT** : cœur déterministe `renommage.py` + `renommage_facts.py`
+      (assemblage du nom depuis les faits déjà connus : date, lieu/type, noms
+      humains, description), format `YYYYMMDD_<lieu-ou-type>_<sujet>.<ext>` (tri
+      lexicographique = chronologique), assaini pour Windows/SMB. N'ouvre aucun
+      fichier, n'appelle aucun modèle, ne mute rien. Testé (`test_renommage.py`).
+    - **RESTE — l'application réelle** (un autre étage, volontairement séparé car il
+      mute le NAS) : renommage sur le NAS + re-clé via `rekey_everywhere` (primitive
+      testée, réutilisable comme pour le point 19) + journal de provenance + undo +
+      revue humaine + dry-run. Compléter les **2 faits à `None`** en amont : lieu
+      par **géocodage inverse** des GPS, type par **SigLIP**. Peut passer *après* le
+      rangement par année, sur les fichiers déjà classés. Spec détaillée dans
+      `docs/RANGEMENT_2026.md` (« Renommage intelligent »).
+
 ---
 
 ## Multi-utilisateur / foyer partagé (futur, non prioritaire)
