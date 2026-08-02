@@ -92,9 +92,15 @@ nav+galerie vérifiés. Commits : `675ec05`→`ddb0f44` (branche `main`, **à po
 - **Sous-dossiers Uploads jamais scannes** — `scan_uploads` etait a plat (`iterdir`) :
   un sous-dossier (ex. ARZOPA) n'etait jamais enumere ni tague. Passe en `rglob`
   recursif (clés nom/relatif posix, `own` = clés non-absolues).
-- **File-ops** : backend fini + teste sur branche `feat/file-ops` (fichiers.py +
-  test_fichiers.py 23/23, routes /api/files/*). RESTE : UI /browse (selection +
-  barre d'actions papier + toast undo).
+- **File-ops (gestion de fichiers /browse) : COMPLET sur branche `feat/file-ops`**
+  (backend + UI). `fichiers.py` (pur, confinement + cle + quarantaine + undo) +
+  `test_fichiers.py` 23/23 ; routes `/api/files/rename|move|mkdir|delete|undo`
+  (`_do_files_post`, `file_ops()`), re-cle via `rekey_everywhere` (zero nom
+  perdu) ; UI `BROWSE_PAGE` (rangees selectionnables + barre papier couper/coller/
+  supprimer-quarantaine/nouveau dossier/annuler, `__CTX__` idx+sous-dossier). La
+  branche a `main` merge dedans (donc AUSSI les correctifs tagging). **RESTE :
+  valider en reel (deplacer/renommer/supprimer/annuler sur le NAS) puis merger
+  dans `main`.** Pour tester : redemarrer le serveur sur la branche `feat/file-ops`.
 
 **◐ ÉTAPE B (redesign structurel) — EN COURS (01/08).** Faits et commités
 (`86b6b8d`, `d897536`) : **planche contact** (`GALLERY .grid` en `auto-fill`+

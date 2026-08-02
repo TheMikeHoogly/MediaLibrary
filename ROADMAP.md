@@ -448,14 +448,22 @@ traversent le chantier) :
     > supprimées par mégarde. Reste à surveiller : une suppression manuelle sur
     > le NAS ne sera pas répercutée dans l'index (staleness mineure, comme pour
     > un dossier non configuré en `dossiers_a_taguer`).
-18. **Réorganiser le système de fichiers depuis la vue « Dossiers ».** `/browse`
-    (`BROWSE_PAGE`) est aujourd'hui en lecture seule. Ajouter des opérations sur
-    photos **et vidéos** directement sur le NAS : déplacer, renommer, créer des
-    dossiers, déplacements par lot depuis la sélection. Contraintes : chaque
-    déplacement re-clé l'index (`TagStore.rekey`) pour ne perdre ni tags ni
-    embeddings, opérations annulables, jamais de perte de nom humain. Les vidéos
-    entrent ici dans le périmètre (le pipeline ne traite aujourd'hui que les
-    photos).
+18. ✓ **FAIT sur branche `feat/file-ops` (02/08, à valider en réel puis merger).**
+    **Réorganiser le système de fichiers depuis la vue « Dossiers ».** `/browse`
+    n'est plus en lecture seule : renommer, déplacer (couper/coller via
+    `sessionStorage`, survit à la navigation), créer un dossier, supprimer
+    (**quarantaine réversible `.corbeille-rangement/`, jamais `rm`**), annuler
+    (journal undo serveur). Photos **et vidéos**. Architecture : module pur
+    `fichiers.py` (confinement, dérivation de clé selon la convention `scan`,
+    re-clé) + `test_fichiers.py` **23/23** (dont « aucun nom humain perdu ») ;
+    routes `/api/files/*` dans `server.py` (`_do_files_post`, singleton
+    `file_ops()`) ; chaque déplacement passe par **`rekey_everywhere`** (tags +
+    visages/personnes/animaux + vecteur sémantique). UI : barre d'actions sur
+    **papier** (registre « décider »), rangées sélectionnables (cible 22 px),
+    toast d'annulation. **RESTE** : valider en réel (déplacer/renommer/supprimer/
+    annuler sur le NAS), puis merger dans `main`. Renommage/déplacement de
+    **dossiers** entiers gérés (re-clé de l'arbre). Optionnel ensuite : rangement
+    par année automatisé (point 19, `_best_time`).
 
 19. **Dédoublonnage et rangement automatique par année.** Chantier à part entière,
     spécifié en détail dans **`docs/RANGEMENT_2026.md`** (problème mesuré,
