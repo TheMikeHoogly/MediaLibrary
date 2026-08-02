@@ -339,9 +339,13 @@ valider les composants Figma sur du réel avant de propager aux pages historique
     `--veilleuse` par photo pour l'état pipeline, numéro de vue en marge ;
     `content-visibility` puis **virtual scroll** au-delà de ~2 000 vignettes.
     C'est la signature visuelle de l'app.
-12. **Raccourcis clavier de tri** — `1`–`9` pour assigner, `Espace` confirmer,
-    `X` rejeter, `Z` annuler, `Maj+clic` pour une plage ; documentés dans l'UI.
-    Sert directement la priorité n°1 (confirmer vite 100 propositions).
+12. ◐ **Raccourcis clavier de tri — FAIT pour le curateur « À vérifier »
+    (02/08, branche `integration`, à valider en réel).** La carte active porte
+    l'anneau veilleuse ; hors champ de saisie : `Espace`/`Entrée`/`O` = oui,
+    `X`/`Suppr` = non, `Z` = annuler, une lettre = focus le champ nom + amorce
+    l'autocomplétion. Rappel affiché sous le titre. **Sert directement la
+    priorité n°1** (confirmer vite ~100 propositions). RESTE (optionnel) : `1`–`9`
+    pour assigner à une personne connue, `Maj+clic` pour une plage.
 
 **Bugs et manques observés le 01/08 (page `/people`, `PEOPLE_PAGE`) — à traiter
 en priorité au redesign :**
