@@ -86,7 +86,7 @@ def construire_plan(entries, lieux=None, gps_places=None, image_types=None):
         par_dossier.setdefault(d, []).append((key, n, entry))
 
     moves = []
-    n_laisses = n_inchanges = n_total = 0
+    n_laisses = n_inchanges = n_total = n_sans_date = 0
     for _dossier, items in par_dossier.items():
         n_total += len(items)
         # 1) réserver les noms des fichiers qu'on NE renomme PAS (non bruts),
@@ -100,6 +100,13 @@ def construire_plan(entries, lieux=None, gps_places=None, image_types=None):
             facts = rf.resolve_facts(key, entry, lieux=lieux,
                                      gps_place=gps_places.get(key),
                                      image_type=image_types.get(key))
+            # Sans AUCUNE date fiable, le nom deviendrait « 00000000_… » : pire
+            # que le nom brut. On ne renomme pas ces fichiers (choix Mike, 03/08) ;
+            # on garde leur nom d'origine (réservé pour ne pas être écrasé).
+            if str(facts.get('date8') or '').startswith('00000000'):
+                taken.add(old)
+                n_sans_date += 1
+                continue
             new = renommage.propose_basename(facts, taken=taken)
             if new == old:
                 taken.add(old)
@@ -110,7 +117,8 @@ def construire_plan(entries, lieux=None, gps_places=None, image_types=None):
                           'old_name': old, 'new_name': new})
 
     stats = {'a_renommer': len(moves), 'laisses_tels_quels': n_laisses,
-             'inchanges': n_inchanges, 'total': n_total}
+             'inchanges': n_inchanges, 'sans_date_ignores': n_sans_date,
+             'total': n_total}
     return moves, stats
 
 

@@ -30,18 +30,28 @@ def test_est_nom_brut_faux():
 
 def test_plan_ne_touche_que_les_bruts():
     entries = [
-        ("D/Screenshot_20190704.jpg", {}),
-        ("D/20190704_123045.jpg", {}),           # propre -> laisse tel quel
-        ("D/Photo0001.jpg", {}),
+        ("Photos/2019/Screenshot_20190704.jpg", {}),
+        ("Photos/2019/20190704_123045.jpg", {}),     # propre -> laisse tel quel
+        ("Photos/2019/Photo0001.jpg", {}),           # brut, date via dossier 2019
     ]
     moves, stats = P.construire_plan(entries)
     keys = {m["key"] for m in moves}
-    assert "D/20190704_123045.jpg" not in keys
-    assert "D/Screenshot_20190704.jpg" in keys
-    assert "D/Photo0001.jpg" in keys
+    assert "Photos/2019/20190704_123045.jpg" not in keys
+    assert "Photos/2019/Screenshot_20190704.jpg" in keys
+    assert "Photos/2019/Photo0001.jpg" in keys      # date = annee du dossier
     assert stats["total"] == 3
     assert stats["a_renommer"] == 2
     assert stats["laisses_tels_quels"] == 1
+
+
+def test_sans_date_non_renomme():
+    # aucune date fiable (dossier sans annee, pas de date dans le nom) : on NE
+    # fabrique PAS « 00000000_... », on laisse le nom brut (choix Mike, 03/08).
+    entries = [("Album/Photo0001.jpg", {})]
+    moves, stats = P.construire_plan(entries)
+    assert moves == []
+    assert stats["sans_date_ignores"] == 1
+    assert stats["a_renommer"] == 0
 
 
 def test_plan_porte_la_cle_et_change_le_nom():
@@ -102,6 +112,7 @@ TESTS = [
     ("collision meme dossier -> suffixe", test_collision_meme_dossier_suffixe),
     ("collision contre fichier non renomme", test_collision_contre_fichier_non_renomme),
     ("annee du dossier, pas du nom (IMG_1998)", test_annee_du_dossier_pas_du_nom),
+    ("sans date -> non renomme (pas de 00000000)", test_sans_date_non_renomme),
 ]
 
 
