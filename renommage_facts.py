@@ -70,8 +70,13 @@ def fname_datetime(name):
 
 
 def path_year(key):
-    """« YYYY » de la plus ancienne année trouvée dans le chemin, sinon None."""
-    yrs = [int(y) for y in _PATH_YEAR.findall(str(key)) if 1990 <= int(y) <= 2100]
+    """« YYYY » de la plus ancienne année trouvée dans le CHEMIN — dossiers datés
+    UNIQUEMENT, en EXCLUANT le nom de fichier. Un numéro de séquence comme
+    « IMG_1998 » n'est pas une année : le scanner ferait passer 1998 avant le
+    vrai dossier (2007) via `min()`, d'où une date fausse au renommage."""
+    k = str(key).replace('\\', '/')
+    dossier = k.rsplit('/', 1)[0] if '/' in k else ''
+    yrs = [int(y) for y in _PATH_YEAR.findall(dossier) if 1990 <= int(y) <= 2100]
     return f"{min(yrs):04d}" if yrs else None
 
 

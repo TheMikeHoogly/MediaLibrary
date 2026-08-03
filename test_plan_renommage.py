@@ -83,6 +83,17 @@ def test_collision_contre_fichier_non_renomme():
     assert nn.startswith("20190704-")            # suffixe de collision
 
 
+def test_annee_du_dossier_pas_du_nom():
+    # « IMG_1998 » dans un dossier « 2007 » : le 1998 du NOM ne doit pas etre lu
+    # comme une annee -> la date vient du DOSSIER (2007), pas de 1998. Regression
+    # trouvee en verifiant le plan reel (IMG_1998.jpg -> 19980000, faux).
+    entries = [("Photos/2007/IMG_1998.jpg", {})]
+    moves, _ = P.construire_plan(entries)
+    assert len(moves) == 1
+    nn = moves[0]["new_name"]
+    assert nn[:8] == "20070000", nn
+
+
 TESTS = [
     ("est_nom_brut : vrais", test_est_nom_brut_vrais),
     ("est_nom_brut : faux", test_est_nom_brut_faux),
@@ -90,6 +101,7 @@ TESTS = [
     ("plan porte la cle et change le nom", test_plan_porte_la_cle_et_change_le_nom),
     ("collision meme dossier -> suffixe", test_collision_meme_dossier_suffixe),
     ("collision contre fichier non renomme", test_collision_contre_fichier_non_renomme),
+    ("annee du dossier, pas du nom (IMG_1998)", test_annee_du_dossier_pas_du_nom),
 ]
 
 
