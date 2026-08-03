@@ -74,9 +74,10 @@ et les skills `.claude/skills/` (`monolith-surgery` **avant tout edit de
   `/browse`, `/reglages`, rangement par année générateur+applicateur, banc triage +
   pivot). Des branches de suivi existent encore mais `main` fait foi. `git push` =
   geste de Mike (impossible depuis le sandbox).
-- **`feat/triage-galerie` = build triage FAIT (03/08), à valider en réel + merger.**
-  Filtre par motif + suppression réversible dans la galerie (point 21). Vérifs
-  vertes ; reste la validation réelle de Mike, la revue de diff et le merge.
+- **Triage (point 21) = FAIT, REVU ET MERGÉ dans `main` (03/08, `4cb9aef`, poussé
+  sur `origin/main`).** Filtre par motif + suppression réversible dans la galerie.
+  Revue de diff faite (1 correctif Medium `b5e5773` : clé absolue pour racines
+  supplémentaires non indexées). Branche `feat/triage-galerie` fusionnée (ff).
 
 ### Rangement par année (point 19) : FAIT ET APPLIQUÉ (03/08)
 
@@ -127,8 +128,8 @@ plus que des fichiers sans date ; les rebuts datés sont dans les dossiers anné
 
 1. **Rangement par année — FAIT ET APPLIQUÉ (03/08)** (voir la section dédiée
    ci-dessus). Plus rien à faire ; l'index est stable.
-2. **Triage (ROADMAP point 21) — BUILD FAIT sur `feat/triage-galerie` (03/08).
-   ← RESTE : valider en réel + merger.** La mesure avait écarté le détecteur ML
+2. **Triage (ROADMAP point 21) — ✓ FAIT, REVU ET MERGÉ dans `main` (03/08,
+   `4cb9aef`).** La mesure avait écarté le détecteur ML
    (décision écrite `eval/DECISIONS.md` du 03/08) : rebut fiable minuscule
    (`inventaire_rebuts.py` → **462/33 109 = 1,4 %**), **surtout des photos à
    garder**. Livré : **filtre par motif/dossier + suppression individuelle
@@ -142,9 +143,9 @@ plus que des fichiers sans date ; les rebuts datés sont dans les dossiers anné
    démarrage zéro-dep confirmé. **Revue de diff FAITE (03/08)** : 1 correctif
    Medium commité (`b5e5773`) — clé absolue pour les racines supplémentaires non
    indexées (la suppression par clé retombait à tort sous Uploads). Tests verts.
-   **RESTE : Mike valide en réel (filtrer/supprimer/annuler sur le NAS ;
-   redémarrer le serveur pour charger le correctif), `git push`, merge.**
-   Jamais d'étiquette « rebut », jamais d'auto-sélection.
+   **Mergé (ff) dans `main` (`4cb9aef`) et poussé sur `origin/main` par Mike
+   (03/08).** La prochaine session doit charger le correctif au redémarrage du
+   serveur. Jamais d'étiquette « rebut », jamais d'auto-sélection.
 3. **Priorité n°1 reconnaissance — confirmer ~100 propositions** (`/people`,
    maintenant rapide au clavier). C'est le geste HUMAIN qui vaut plus que tout
    changement d'algo (voir ROADMAP « À faire », Reconnaissance §1). Outillage

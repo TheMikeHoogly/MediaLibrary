@@ -45,14 +45,13 @@ Dernière mise à jour : 3 août 2026.
   (Conséquence : `_A TRIER` ne contient presque plus que des fichiers sans date ;
   les rebuts datés sont désormais dans les dossiers année.)
 - **Triage (point 21) : détecteur ML écarté par la mesure, pivoté vers un petit
-  outil de confort — BUILD FAIT sur `feat/triage-galerie` (03/08), à valider en
-  réel puis merger.** Voir le point 21 détaillé plus bas et `eval/DECISIONS.md`
-  (03/08).
+  outil de confort — ✓ FAIT, REVU ET MERGÉ dans `main` (03/08, `4cb9aef`,
+  poussé sur `origin/main`).** Voir le point 21 détaillé plus bas et
+  `eval/DECISIONS.md` (03/08).
 
 **Prochaines étapes, par valeur :**
 
-1. **Build triage (point 21) — ✓ FAIT sur `feat/triage-galerie` (03/08),
-   RESTE : valider en réel + merger.** Filtre par motif/dossier (`?motif=`,
+1. **Triage (point 21) — ✓ FAIT, REVU ET MERGÉ dans `main` (03/08).** Filtre par motif/dossier (`?motif=`,
    chips `capture`/`document`/`facture` en `--fixateur`, lecture seule) +
    **suppression individuelle réversible** depuis la visionneuse de `/files`
    (bouton `--encre` cible 44 px → `/api/files/delete {key}` → `FileOps.delete`
@@ -69,9 +68,9 @@ Dernière mise à jour : 3 août 2026.
    supplémentaire (Uploads inchangé). `py_compile` + `test_fichiers` +
    `test_interet` verts, `verifier_ui_tokens` 0 interdit dur. Mineurs notés (non
    bloquants) : `classer_regle` appelé 2× quand motif actif ; `except` large qui
-   avale un bug de règle ; undo global (fenêtre 10 s). **RESTE : Mike valide en
-   réel (filtrer, supprimer, annuler sur le NAS ; redémarrer le serveur pour
-   charger le correctif) + `git push` + merge.** Jamais d'étiquette « rebut » (la règle `\Scans\` pointe
+   avale un bug de règle ; undo global (fenêtre 10 s). **Mergé dans `main`
+   (`4cb9aef`) et poussé par Mike (03/08).** Reste (optionnel) : traiter les 3
+   mineurs si le besoin s'en fait sentir. Jamais d'étiquette « rebut » (la règle `\Scans\` pointe
    des photos scannées à garder) ; jamais d'auto-sélection.
 2. **Priorité n°1 reconnaissance** — confirmer ~100 propositions dans `/people`
    (tri clavier prêt). Le geste **humain** qui vaut plus que tout changement d'algo
