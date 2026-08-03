@@ -44,6 +44,19 @@ def test_plan_ne_touche_que_les_bruts():
     assert stats["laisses_tels_quels"] == 1
 
 
+def test_sujet_force_le_francais():
+    # description IA anglaise + mots-cles francais -> le sujet doit etre en
+    # francais (kw_fr), pas les mots anglais.
+    entry = {'desc': 'a serene alpine landscape with mountains',
+             'kw_fr': ['montagne', 'ciel', 'lac']}
+    entries = [("Photos/2019/IMG_5000.jpg", entry)]
+    moves, _ = P.construire_plan(entries)
+    assert len(moves) == 1
+    nn = moves[0]['new_name'].lower()
+    assert 'landscape' not in nn and 'serene' not in nn and 'mountain' not in nn, nn
+    assert ('montagne' in nn or 'ciel' in nn or 'lac' in nn), nn
+
+
 def test_sans_date_non_renomme():
     # aucune date fiable (dossier sans annee, pas de date dans le nom) : on NE
     # fabrique PAS « 00000000_... », on laisse le nom brut (choix Mike, 03/08).
@@ -113,6 +126,7 @@ TESTS = [
     ("collision contre fichier non renomme", test_collision_contre_fichier_non_renomme),
     ("annee du dossier, pas du nom (IMG_1998)", test_annee_du_dossier_pas_du_nom),
     ("sans date -> non renomme (pas de 00000000)", test_sans_date_non_renomme),
+    ("sujet force le francais (desc anglaise)", test_sujet_force_le_francais),
 ]
 
 

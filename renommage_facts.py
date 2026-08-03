@@ -172,13 +172,53 @@ def ext_of(key):
     return name.rsplit('.', 1)[1] if '.' in name else ''
 
 
+# Mots ANGLAIS fréquents dans les descriptions IA (qwen déborde parfois en
+# anglais). Sert à repérer une description anglaise pour la remplacer par les
+# mots-clés FRANÇAIS (choix Mike, 03/08 : forcer le français dans les noms).
+_EN_STOP = {
+    'the', 'a', 'an', 'of', 'with', 'and', 'on', 'in', 'at', 'is', 'are',
+    'view', 'landscape', 'mountain', 'mountains', 'panoramic', 'panorama',
+    'scene', 'image', 'photo', 'picture', 'person', 'people', 'man', 'woman',
+    'trees', 'sky', 'water', 'snow', 'covered', 'serene', 'dense', 'small',
+    'large', 'blue', 'green', 'white', 'landscapes', 'clouds', 'field',
+}
+
+
+def _looks_english(text):
+    """Heuristique conservatrice : au moins DEUX mots anglais courants → on
+    considère la description comme anglaise. Le français en a rarement deux."""
+    mots = re.findall(r'[a-zA-Z]+', str(text).lower())
+    return sum(1 for m in mots if m in _EN_STOP) >= 2
+
+
+def _french_keywords(entry):
+    """Mots-clés FRANÇAIS de l'entrée (kw_fr), hors tags de nom (personne:/
+    animal:), pour reconstruire un sujet français quand la description déborde
+    en anglais. Renvoie les 3 premiers (ordre de l'index)."""
+    out = []
+    if isinstance(entry, dict):
+        for t in (entry.get('kw_fr') or []):
+            if (isinstance(t, str) and not t.startswith('personne:')
+                    and not t.startswith('animal:')):
+                out.append(t)
+    return out[:3]
+
+
 def resolve_facts(key, entry, lieux=None, gps_place=None, image_type=None):
     """Assemble le dict `facts` pour `renommage.propose_basename`.
 
     Lecture seule. `gps_place` et `image_type` sont fournis par l'appelant
     serveur quand il les a (géocodage inverse, SigLIP) ; None ici sinon.
-    La clé d'origine sert de graine anti-collision (`seed`)."""
+    La clé d'origine sert de graine anti-collision (`seed`).
+
+    Sujet en FRANÇAIS : si la description IA déborde en anglais ET que des
+    mots-clés français existent, on prend ceux-ci à la place (choix Mike, 03/08)."""
     datestamp, precision = resolve_datestamp(key, entry)
+    description = entry.get('desc') if isinstance(entry, dict) else None
+    if description and _looks_english(description):
+        fr = _french_keywords(entry)
+        if fr:
+            description = ' '.join(fr)
     facts = {
         'date8': datestamp,           # « YYYYMMDD » ou « YYYYMMDD-HHMMSS »
         'gps_place': gps_place,
@@ -186,7 +226,7 @@ def resolve_facts(key, entry, lieux=None, gps_place=None, image_type=None):
         'human_place': None,          # tag humain de lieu : brancher si dispo
         'image_type': image_type,
         'names': names_from_entry(entry),
-        'description': (entry.get('desc') if isinstance(entry, dict) else None),
+        'description': description,    # français forcé si l'IA a débordé en anglais
         'ext': ext_of(key),
         'seed': key,
         '_date_precision': precision,  # meta, ignoré par propose_basename
