@@ -8890,8 +8890,14 @@ class Handler(BaseHTTPRequestHandler):
             file_data.append({
                 'name': f.relative_to(folder).as_posix() if rec else f.name,
                 # Clé d'index : sert à recouper les résultats de la recherche
-                # sémantique, qui raisonne en clés et non en URL.
-                'key': str(f) if STORE.get(str(f)) is not None else f.name,
+                # sémantique (clés Uploads = nom nu), ET à cibler la suppression
+                # par clé (point 21). Pour une racine supplémentaire, on garde
+                # TOUJOURS le chemin absolu : un fichier non encore indexé y
+                # retombait sinon sur un nom nu, résolu à tort sous Uploads par
+                # _key_to_target (mauvaise racine). Uploads : comportement
+                # inchangé (nom nu, relatif).
+                'key': str(f) if (not is_uploads
+                                  or STORE.get(str(f)) is not None) else f.name,
                 'url': url_for(f),
                 'size': human_size(size),
                 'mtime': mtime,
