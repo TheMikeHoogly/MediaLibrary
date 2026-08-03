@@ -3441,7 +3441,8 @@ __FOLDERS__
   var MOTIFS = __MOTIFS__;
   var sorted = FILES.slice();
   var visible = FILES.slice();
-  var currentSort = 'date';
+  var currentSort = '';     // defini au premier appel de sortBy
+  var sortAsc = true;       // chronologique par defaut : du plus ancien au plus recent
   var observer;
   var lbIdx = 0;
   var TAGDATA = __TAGDATA__;
@@ -3499,13 +3500,31 @@ __FOLDERS__
 
   function esc(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
-  // ── sort ──
+  // ── sort (reversible) ──
+  // « Date » = date de PRISE (taken, repli mtime), du plus ancien au plus recent
+  // par defaut ; un reclic sur le meme bouton inverse le sens. « Nom » de meme
+  // (A-Z par defaut, reclic = Z-A). Le diaporama « Demo » suit ensuite cet ordre.
+  function photoTime(f){ return f.taken || f.mtime || 0; }
+  function updateSortButtons() {
+    var d = document.getElementById('btn-date'), n = document.getElementById('btn-name');
+    d.className = 'tb' + (currentSort==='date' ? ' active' : '');
+    n.className = 'tb' + (currentSort==='name' ? ' active' : '');
+    d.textContent = 'Date ' + (currentSort==='date' ? (sortAsc ? '↑' : '↓') : '');
+    n.textContent = currentSort==='name' ? ('Nom ' + (sortAsc ? 'A→Z' : 'Z→A')) : 'Nom A-Z';
+    d.title = currentSort==='date'
+      ? 'Chronologique — ' + (sortAsc ? 'du plus ancien au plus recent' : 'du plus recent au plus ancien') + ' (reclic pour inverser)'
+      : 'Trier par date de prise';
+    n.title = 'Trier par nom' + (currentSort==='name' ? ' (reclic pour inverser)' : '');
+  }
   function sortBy(m) {
-    currentSort = m;
-    document.getElementById('btn-date').className = 'tb' + (m==='date' ? ' active' : '');
-    document.getElementById('btn-name').className = 'tb' + (m==='name' ? ' active' : '');
-    if (m === 'date') sorted = FILES.slice().sort(function(a,b){ return b.mtime - a.mtime; });
-    else sorted = FILES.slice().sort(function(a,b){ return a.name.localeCompare(b.name); });
+    if (m === currentSort) sortAsc = !sortAsc;     // reclic = inverse le sens
+    else { currentSort = m; sortAsc = true; }       // nouveau tri = sens par defaut
+    updateSortButtons();
+    var s = FILES.slice();
+    if (m === 'date') s.sort(function(a,b){ return photoTime(a) - photoTime(b); });
+    else s.sort(function(a,b){ return a.name.localeCompare(b.name); });
+    if (!sortAsc) s.reverse();
+    sorted = s;
     applyFilter();
   }
 
@@ -3797,12 +3816,10 @@ __FOLDERS__
         var j = Math.floor(Math.random() * (i + 1));
         var tmp = arr[i]; arr[i] = arr[j]; arr[j] = tmp;
       }
-    } else if (m === 'seq') {
-      // diaporama normal = chronologique, du plus récent au plus ancien
-      arr.sort(function(a, b) {
-        return (visible[b].taken || visible[b].mtime || 0) - (visible[a].taken || visible[a].mtime || 0);
-      });
     }
+    // m === 'seq' : « Demo » suit l'ordre courant de la planche (tri + sens
+    // choisis par l'utilisateur). arr est deja 0..n-1 dans l'ordre de `visible`,
+    // donc on ne re-trie pas : on joue exactement ce que l'on voit.
     return arr;
   }
 
@@ -8937,6 +8954,9 @@ class Handler(BaseHTTPRequestHandler):
                 'url': url_for(f),
                 'size': human_size(size),
                 'mtime': mtime,
+                # Date de PRISE (epoch) pour le tri chronologique de la galerie
+                # et l'ordre du diaporama — _best_time : EXIF, sinon nom/annee, sinon mtime.
+                'taken': _best_time(str(f), entry),
                 'kw': kw,
                 'gps': entry.get('gps'),
                 'desc': entry.get('desc', ''),
@@ -8971,6 +8991,7 @@ class Handler(BaseHTTPRequestHandler):
                     'url': url,
                     'size': human_size(e.get('size') or 0),
                     'mtime': e.get('mtime') or 0,
+                    'taken': _best_time(k, e),   # date de prise (epoch) pour le tri chronologique
                     'kw': sorted(kws),
                     'gps': e.get('gps'),
                     'desc': e.get('desc', ''),
@@ -9735,8 +9756,9 @@ class Handler(BaseHTTPRequestHandler):
         elif mode == 'assoc':
             random.shuffle(items)          # départ varié
             items = _assoc_chain(items)
-        else:                               # seq : chronologique, du + récent au + ancien
-            items.sort(key=lambda it: it['taken'], reverse=True)
+        else:                               # seq : chronologique, du + ANCIEN au + récent (défaut)
+            # Photos sans date fiable (taken 0) reléguées en fin, comme la planche.
+            items.sort(key=lambda it: it['taken'] or float('inf'))
         CAP = 12000
         items = items[:CAP]
         body = json.dumps({'items': items, 'mode': mode, 'total': len(items)},
