@@ -4563,6 +4563,9 @@ td.n, th.n { text-align: right; font-family: var(--f-donnees); }
       <button class="b" id="census">Recensement (lecture seule)</button>
       <button class="b" id="planyear">Plan de rangement par annee</button>
       <button class="b" id="planren">Plan de renommage</button>
+      <button class="b" id="rencheck">Verifier le renommage (a blanc)</button>
+      <button class="b" id="renapply">Appliquer un lot de renommage</button>
+      <button class="b" id="renundo">Annuler le dernier renommage</button>
       <span class="mut" id="maint-msg"></span>
     </div>
     <table id="steps"><thead><tr><th>Etape</th><th>Autonomie</th><th class="n">Cadence</th><th>Dernier passage</th></tr></thead><tbody></tbody></table>
@@ -4648,6 +4651,9 @@ document.getElementById('pause').onclick=function(){ act('/api/maint/toggle'); }
 document.getElementById('census').onclick=function(){ act('/api/maint/census', 'Lancer le recensement complet ? Lecture seule mais ~4 h et sollicite le NAS.'); };
 document.getElementById('planyear').onclick=function(){ act('/api/maint/plan-annee'); };
 document.getElementById('planren').onclick=function(){ act('/api/maint/plan-renommage'); };
+document.getElementById('rencheck').onclick=function(){ act('/api/maint/rename-check'); };
+document.getElementById('renapply').onclick=function(){ act('/api/maint/rename-apply', 'Appliquer un lot de renommage (max 200 fichiers, EN PLACE sur le NAS) ? Reversible via Annuler.'); };
+document.getElementById('renundo').onclick=function(){ act('/api/maint/rename-undo', 'Annuler le dernier lot de renommage ?'); };
 load(); setInterval(load, 6000);
 </script>
 </body>
@@ -4778,6 +4784,109 @@ def _run_plan_renommage():
               f"{s['total']} (bruts seulement)")
     except Exception as e:                                    # noqa: BLE001
         print(f"  ⚠ plan renommage : {e}")
+
+
+RENOMMAGE_LOT = 200   # renommages effectifs par clic « Appliquer un lot »
+
+
+def appliquer_renommage(limite=None, dry=True):
+    """Applique `docs/plan_renommage.json` EN PLACE, IN-PROCESS, réversible.
+
+    Sécurité (miroir de `appliquer_plan_annee.py`) : la source doit exister, la
+    cible NE doit PAS exister (jamais d'écrasement), la clé cible doit être
+    absente de l'index. `dry=True` ne renomme rien (compte l'applicable). `limite`
+    borne le nombre de renommages EFFECTIFS (le reste attend un prochain lot ;
+    les déjà-renommés — source absente — sont sautés silencieusement, donc
+    recliquer reprend là où on s'était arrêté). Chaque renommage re-clé via
+    `rekey_everywhere` (tags + visages/animaux + sémantique → aucun nom humain
+    perdu) et un journal undo est écrit. Renvoie un résumé."""
+    plan_path = SCRIPT_DIR / 'docs' / 'plan_renommage.json'
+    try:
+        plan = json.loads(plan_path.read_text(encoding='utf-8'))
+    except Exception as e:                                    # noqa: BLE001
+        return {'ok': False, 'error': f'plan illisible ({e}) — génère-le d’abord.'}
+    moves = plan.get('moves') or []
+    faits, sautes, journal = 0, [], []
+    for mv in moves:
+        key, new_key, new_name = mv.get('key'), mv.get('new_key'), mv.get('new_name')
+        if not (key and new_key and new_name):
+            sautes.append([mv.get('old_name'), 'move incomplet']); continue
+        try:
+            src = _resolve_key(key)
+        except Exception:                                     # noqa: BLE001
+            sautes.append([mv.get('old_name'), 'clé irrésolue']); continue
+        if not src.is_file():
+            continue    # déjà renommé (source absente) → repris silencieusement
+        dst = src.parent / new_name
+        if dst.exists():
+            sautes.append([mv.get('old_name'), 'cible existante — jamais écraser']); continue
+        if STORE.data.get(new_key) is not None:
+            sautes.append([mv.get('old_name'), 'clé cible déjà indexée']); continue
+        # applicable
+        if not dry and limite is not None and faits >= limite:
+            break
+        if dry:
+            faits += 1; continue
+        try:
+            note_heavy_activity()
+            src.rename(dst)                       # même dossier → renommage atomique
+        except OSError as e:
+            sautes.append([mv.get('old_name'), f'rename: {e}']); continue
+        rekey_everywhere(key, new_key, save=False)
+        journal.append({'old_key': key, 'new_key': new_key,
+                        'src': str(src), 'dst': str(dst)})
+        faits += 1
+    if not dry and journal:
+        STORE.save()
+        for st in (FACE_STORE, PEOPLE_STORE, ANIMAL_STORE, PETS_STORE):
+            st.save()
+        ts = time.strftime('%Y%m%d_%H%M%S')
+        try:
+            (SCRIPT_DIR / 'docs' / f'undo_renommage_{ts}.json').write_text(
+                json.dumps(journal, ensure_ascii=False, indent=1), encoding='utf-8')
+        except OSError:
+            pass
+    return {'ok': True, 'dry': dry, 'faits': faits, 'sautes': len(sautes),
+            'exemples_sautes': sautes[:8], 'total_plan': len(moves)}
+
+
+def annuler_renommage(journal_path=None):
+    """Annule le dernier lot de renommage (ou le journal indiqué) : renomme
+    `dst → src` et re-clé `new_key → old_key`. Sûr et idempotent : un op déjà
+    annulé (dst absent ou src présent) est sauté."""
+    docs = SCRIPT_DIR / 'docs'
+    if journal_path:
+        jp = Path(journal_path)
+    else:
+        js = sorted(docs.glob('undo_renommage_*.json'))
+        if not js:
+            return {'ok': False, 'error': 'aucun lot de renommage à annuler.'}
+        jp = js[-1]
+    try:
+        journal = json.loads(jp.read_text(encoding='utf-8'))
+    except Exception as e:                                    # noqa: BLE001
+        return {'ok': False, 'error': str(e)}
+    annules = 0
+    for op in reversed(journal):
+        src, dst = Path(op['src']), Path(op['dst'])
+        if not dst.is_file() or src.exists():
+            continue
+        try:
+            note_heavy_activity()
+            dst.rename(src)
+        except OSError:
+            continue
+        rekey_everywhere(op['new_key'], op['old_key'], save=False)
+        annules += 1
+    if annules:
+        STORE.save()
+        for st in (FACE_STORE, PEOPLE_STORE, ANIMAL_STORE, PETS_STORE):
+            st.save()
+        try:
+            jp.rename(jp.with_name(jp.stem + '.annule.json'))
+        except OSError:
+            pass
+    return {'ok': True, 'annules': annules}
 
 
 def human_size(n):
@@ -9769,6 +9878,20 @@ class Handler(BaseHTTPRequestHandler):
         elif path == '/api/maint/plan-renommage':
             threading.Thread(target=_run_plan_renommage, daemon=True).start()
             res = {'ok': True, 'msg': 'Plan de renommage en cours (lecture seule) — docs/plan_renommage.md.'}
+        elif path == '/api/maint/rename-check':
+            res = appliquer_renommage(dry=True)
+            if res.get('ok'):
+                res['msg'] = (f"A blanc : {res['faits']} renommage(s) applicable(s), "
+                              f"{res['sautes']} saute(s) sur {res['total_plan']}.")
+        elif path == '/api/maint/rename-apply':
+            res = appliquer_renommage(limite=RENOMMAGE_LOT, dry=False)
+            if res.get('ok'):
+                res['msg'] = (f"Lot applique : {res['faits']} renomme(s), "
+                              f"{res['sautes']} saute(s). Reclique pour continuer.")
+        elif path == '/api/maint/rename-undo':
+            res = annuler_renommage()
+            if res.get('ok'):
+                res['msg'] = f"Annulation : {res['annules']} renommage(s) remis."
         else:
             self._send(404, b'Not found', 'text/plain')
             return

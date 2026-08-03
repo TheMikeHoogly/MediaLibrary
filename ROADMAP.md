@@ -611,11 +611,24 @@ traversent le chantier) :
       dur, `test_plan_renommage` 6/6. **Décision de conception : application
       IN-PROCESS, PAS de serveur arrêté** (le « serveur arrêté » des `.bat` vient de
       ce que ce sont des processus SÉPARÉS ouvrant `photos.db` ; SQLite = 1 écrivain).
-    - **RESTE — Phase 3 : l'applicateur in-process réversible** (renomme sur le NAS
-      + `rekey_everywhere` + undo, dry-run par défaut, refuse d'écraser une cible,
-      par lots) + boutons `/reglages` « Appliquer » / « Annuler ». Enrichir ensuite
-      les **2 faits à `None`** (lieu par géocodage GPS, type par SigLIP). Spec dans
-      `docs/RANGEMENT_2026.md` (« Renommage intelligent »).
+    - ✓ **Phase 3 FAITE sur `feat/renommage-plan` (03/08, à valider en réel)** —
+      applicateur in-process réversible. `appliquer_renommage(limite, dry)` :
+      renomme EN PLACE sur le NAS + `rekey_everywhere` (aucun nom humain perdu) +
+      **journal undo** (`docs/undo_renommage_*.json`). **Garde-fous** : source doit
+      exister, cible NE doit PAS exister (jamais d'écrasement), clé cible absente de
+      l'index, **dry-run** possible, **par lots** (`RENOMMAGE_LOT=200`, recliquer
+      reprend). `annuler_renommage()` : remet `dst→src` + re-clé inverse, idempotent.
+      Endpoints `POST /api/maint/rename-{check,apply,undo}` + boutons `/reglages`
+      **« Vérifier (à blanc) »**, **« Appliquer un lot »** (confirm), **« Annuler le
+      dernier renommage »** (confirm). `py_compile` OK, `verifier_ui_tokens` 0
+      interdit dur, `test_plan_renommage` 6/6. **RESTE : validation réelle par Mike**
+      (générer le plan, relire le `.md`, « Vérifier à blanc », appliquer un lot,
+      contrôler sur le NAS, annuler) — l'applicateur mute le NAS, non testable hors
+      machine ; les garde-fous + réversibilité + `rekey_everywhere` (déjà testé)
+      bornent le risque.
+    - **RESTE (enrichissement, non bloquant)** : compléter les **2 faits à `None`**
+      (lieu par géocodage inverse des GPS, type par SigLIP) pour des noms plus
+      riches. Spec dans `docs/RANGEMENT_2026.md` (« Renommage intelligent »).
 
 21. **Triage des images sans intérêt — DÉTECTEUR ML ÉCARTÉ, PIVOT « RÈGLES + REVUE
     HUMAINE » (03/08, décision écrite `eval/DECISIONS.md`).** La mesure a tranché
