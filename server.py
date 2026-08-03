@@ -4562,6 +4562,7 @@ td.n, th.n { text-align: right; font-family: var(--f-donnees); }
       <button class="b" id="pause">Pause</button>
       <button class="b" id="census">Recensement (lecture seule)</button>
       <button class="b" id="planyear">Plan de rangement par annee</button>
+      <button class="b" id="planren">Plan de renommage</button>
       <span class="mut" id="maint-msg"></span>
     </div>
     <table id="steps"><thead><tr><th>Etape</th><th>Autonomie</th><th class="n">Cadence</th><th>Dernier passage</th></tr></thead><tbody></tbody></table>
@@ -4646,6 +4647,7 @@ document.getElementById('run').onclick=function(){ act('/api/maint/run'); };
 document.getElementById('pause').onclick=function(){ act('/api/maint/toggle'); };
 document.getElementById('census').onclick=function(){ act('/api/maint/census', 'Lancer le recensement complet ? Lecture seule mais ~4 h et sollicite le NAS.'); };
 document.getElementById('planyear').onclick=function(){ act('/api/maint/plan-annee'); };
+document.getElementById('planren').onclick=function(){ act('/api/maint/plan-renommage'); };
 load(); setInterval(load, 6000);
 </script>
 </body>
@@ -4716,6 +4718,66 @@ def _run_plan_annee():
               f"{p['sans_date']} sans date, {len(p['conflits'])} conflits")
     except Exception as e:                                    # noqa: BLE001
         print(f"  ⚠ plan rangement annee : {e}")
+
+
+def _remplacer_nom(key, nouveau_nom):
+    """Cle avec le DERNIER composant remplace, en preservant le separateur
+    d'origine (Windows « \\ » pour les racines NAS, « / » pour Uploads). Sert a
+    deriver la cle CIBLE d'un renommage EN PLACE."""
+    k = str(key)
+    i = max(k.rfind('\\'), k.rfind('/'))
+    return (k[:i + 1] + nouveau_nom) if i >= 0 else nouveau_nom
+
+
+def generer_plan_renommage():
+    """Plan de RENOMMAGE des NOMS BRUTS, depuis l'index EN MEMOIRE. LECTURE
+    SEULE : n'ecrit AUCUN fichier media, seulement docs/plan_renommage.{json,md}.
+
+    Renommage EN PLACE (meme dossier) -> `new_key` = meme cle, nouveau nom de
+    base, separateur d'origine preserve, pour que l'applicateur in-process
+    re-cle l'index (rekey_everywhere) sans deviner. L'APPLICATION reste un geste
+    separe (Phase 3). Ne cible QUE les noms bruts (plan_renommage.est_nom_brut)."""
+    import plan_renommage as _pr
+    import renommage_facts as _rf
+    try:
+        lieux = _rf.load_lieux(LIEUX_FICHIER)
+    except Exception:                                         # noqa: BLE001
+        lieux = None
+    entries = [(k, e) for k, e in list(STORE.data.items())
+               if isinstance(e, dict) and not e.get('failed')]
+    moves, stats = _pr.construire_plan(entries, lieux=lieux)
+    for mv in moves:
+        mv['new_key'] = _remplacer_nom(mv['key'], mv['new_name'])
+    plan = {'moves': moves, 'stats': stats}
+    docs = SCRIPT_DIR / 'docs'
+    try:
+        docs.mkdir(exist_ok=True)
+    except OSError:
+        pass
+    (docs / 'plan_renommage.json').write_text(
+        json.dumps(plan, ensure_ascii=False, indent=1), encoding='utf-8')
+    lignes = ["# Plan de renommage (lecture seule) — noms bruts seulement", "",
+              f"- A renommer : **{stats['a_renommer']}**",
+              f"- Laisses tels quels (deja dates/propres) : {stats['laisses_tels_quels']}",
+              f"- Bruts deja au bon nom : {stats['inchanges']}",
+              f"- Total examine : {stats['total']}", "",
+              "## Exemples (30 premiers)", "",
+              "| Ancien nom | Nouveau nom |", "|---|---|"]
+    for mv in moves[:30]:
+        lignes.append(f"| {mv['old_name']} | {mv['new_name']} |")
+    (docs / 'plan_renommage.md').write_text("\n".join(lignes) + "\n",
+                                            encoding='utf-8')
+    return plan
+
+
+def _run_plan_renommage():
+    try:
+        p = generer_plan_renommage()
+        s = p['stats']
+        print(f"  ✏ plan renommage : {s['a_renommer']} a renommer sur "
+              f"{s['total']} (bruts seulement)")
+    except Exception as e:                                    # noqa: BLE001
+        print(f"  ⚠ plan renommage : {e}")
 
 
 def human_size(n):
@@ -9704,6 +9766,9 @@ class Handler(BaseHTTPRequestHandler):
         elif path == '/api/maint/plan-annee':
             threading.Thread(target=_run_plan_annee, daemon=True).start()
             res = {'ok': True, 'msg': 'Plan de rangement par annee en cours (lecture seule)...'}
+        elif path == '/api/maint/plan-renommage':
+            threading.Thread(target=_run_plan_renommage, daemon=True).start()
+            res = {'ok': True, 'msg': 'Plan de renommage en cours (lecture seule) — docs/plan_renommage.md.'}
         else:
             self._send(404, b'Not found', 'text/plain')
             return
