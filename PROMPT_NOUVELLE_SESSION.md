@@ -139,8 +139,11 @@ plus que des fichiers sans date ; les rebuts datés sont dans les dossiers anné
    cible 44 px dans la **visionneuse** + toast undo 10 s ; `'key'` ajouté aux DEUX
    constructions de `file_data`. Vérifs vertes : `py_compile`, `verifier_ui_tokens`
    (0 interdit dur), `test_interet` 16/16, `test_fichiers` 23/23, `test_ui_bundle`,
-   démarrage zéro-dep confirmé. **RESTE : Mike valide en réel (filtrer/supprimer/
-   annuler sur le NAS), revue `engineering:code-review`, `git push`, merge.**
+   démarrage zéro-dep confirmé. **Revue de diff FAITE (03/08)** : 1 correctif
+   Medium commité (`b5e5773`) — clé absolue pour les racines supplémentaires non
+   indexées (la suppression par clé retombait à tort sous Uploads). Tests verts.
+   **RESTE : Mike valide en réel (filtrer/supprimer/annuler sur le NAS ;
+   redémarrer le serveur pour charger le correctif), `git push`, merge.**
    Jamais d'étiquette « rebut », jamais d'auto-sélection.
 3. **Priorité n°1 reconnaissance — confirmer ~100 propositions** (`/people`,
    maintenant rapide au clavier). C'est le geste HUMAIN qui vaut plus que tout

@@ -61,9 +61,17 @@ Dernière mise à jour : 3 août 2026.
    (cle STORE → idx/rel) ajouté, `'key'` présent dans les DEUX constructions de
    `file_data`. Vérifs : `py_compile` OK, `verifier_ui_tokens.py` 0 interdit dur,
    `test_interet` 16/16, `test_fichiers` 23/23, `test_ui_bundle` OK, démarrage
-   zéro-dep confirmé (import paresseux `interet`). **RESTE : Mike valide en réel
-   (filtrer, supprimer, annuler sur le NAS) + revue de diff `engineering:code-review`
-   + `git push` + merge.** Jamais d'étiquette « rebut » (la règle `\Scans\` pointe
+   zéro-dep confirmé (import paresseux `interet`). **Revue de diff FAITE (03/08,
+   `engineering:code-review`)** : 1 correctif Medium appliqué et commité
+   (`b5e5773`) — la suppression par clé d'un fichier NON indexé d'une racine
+   supplémentaire retombait sur un nom nu, résolu à tort sous Uploads par
+   `_key_to_target` ; on garde désormais le chemin absolu pour toute racine
+   supplémentaire (Uploads inchangé). `py_compile` + `test_fichiers` +
+   `test_interet` verts, `verifier_ui_tokens` 0 interdit dur. Mineurs notés (non
+   bloquants) : `classer_regle` appelé 2× quand motif actif ; `except` large qui
+   avale un bug de règle ; undo global (fenêtre 10 s). **RESTE : Mike valide en
+   réel (filtrer, supprimer, annuler sur le NAS ; redémarrer le serveur pour
+   charger le correctif) + `git push` + merge.** Jamais d'étiquette « rebut » (la règle `\Scans\` pointe
    des photos scannées à garder) ; jamais d'auto-sélection.
 2. **Priorité n°1 reconnaissance** — confirmer ~100 propositions dans `/people`
    (tri clavier prêt). Le geste **humain** qui vaut plus que tout changement d'algo
