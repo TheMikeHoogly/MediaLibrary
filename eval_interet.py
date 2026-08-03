@@ -177,7 +177,7 @@ function maj(){
 function tele(){
   const blob = new Blob([JSON.stringify(etat,null,1)],{type:'application/json'});
   const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
-  a.download='interet_labels.json'; a.click();
+  a.download='__DLNAME__'; a.click();
 }
 maj();
 </script></body></html>
@@ -194,9 +194,10 @@ def _fichiers_jeu(jeu):
     return (SAMPLE_FILE, LABELS_FILE, LABEL_HTML, RESULTS_FILE)
 
 
-def _ecrire_page(cles, html_file, indices=None):
+def _ecrire_page(cles, html_file, indices=None, dlname='interet_labels.json'):
     """Genere la page d'etiquetage a vignettes inline pour une liste de cles.
     `indices` : dict cle -> texte d'indice (motif de candidat), optionnel.
+    `dlname`  : nom du fichier telecharge par le bouton (par jeu).
     Renvoie le nombre de vignettes indisponibles."""
     items, manquants = [], 0
     for i, k in enumerate(cles):
@@ -211,7 +212,8 @@ def _ecrire_page(cles, html_file, indices=None):
             print(f"    {i+1}/{len(cles)}")
     html = (_HTML_TETE
             .replace("__DATA__", json.dumps(items, ensure_ascii=False))
-            .replace("__CLASSES__", json.dumps(list(TOUTES_CLASSES))))
+            .replace("__CLASSES__", json.dumps(list(TOUTES_CLASSES)))
+            .replace("__DLNAME__", dlname))
     html_file.write_text(html, encoding='utf-8')
     return manquants
 
@@ -309,7 +311,8 @@ def cmd_candidats(n):
     sample_f.write_text(json.dumps(cand, ensure_ascii=False, indent=1),
                         encoding='utf-8')
     print("  Generation des vignettes...")
-    manquants = _ecrire_page(cand, html_f, indices)
+    manquants = _ecrire_page(cand, html_f, indices,
+                             dlname='interet_candidats_labels.json')
     print(f"\n  Page d'etiquetage : {html_f}")
     if manquants:
         print(f"  ! {manquants} vignettes indisponibles.")
@@ -367,6 +370,36 @@ def _seuils(valeurs, k=21):
     return [lo + (hi - lo) * j / (k - 1) for j in range(k)]
 
 
+def _trouver_labels(labels_f, sample_keys):
+    """Retrouve le fichier d'etiquettes meme mal nomme/place. Le bouton HTML
+    telecharge dans le dossier Telechargements ; l'ancien HTML nommait tout
+    'interet_labels.json'. On cherche donc, par ordre : le nom attendu dans eval/,
+    puis tout JSON d'eval/ et de ~/Downloads dont les cles recouvrent l'echantillon
+    a > 50 %. Renvoie (chemin, labels) ou (None, None)."""
+    if labels_f.exists():
+        return labels_f, json.loads(labels_f.read_text(encoding='utf-8'))
+    sk = set(sample_keys)
+    cands = list(EVAL_DIR.glob('interet*label*.json'))
+    for dl in (Path.home() / 'Downloads', Path.home() / 'Telechargements'):
+        if dl.is_dir():
+            cands += list(dl.glob('interet*label*.json'))
+    best, best_ov = None, 0.0
+    for c in cands:
+        try:
+            d = json.loads(c.read_text(encoding='utf-8'))
+        except Exception:                 # noqa: BLE001
+            continue
+        if not isinstance(d, dict) or not d:
+            continue
+        ov = len(sk & set(d)) / max(1, len(sk))
+        if ov > best_ov:
+            best, best_ov, best_d = c, ov, d
+    if best and best_ov >= 0.5:
+        print(f"  i etiquettes trouvees : {best}  (recouvrement {best_ov:.0%})")
+        return best, best_d
+    return None, None
+
+
 def cmd_mesurer(limit=None, jeu='aleatoire'):
     import numpy as np
     sample_f, labels_f, html_f, results_f = _fichiers_jeu(jeu)
@@ -374,11 +407,13 @@ def cmd_mesurer(limit=None, jeu='aleatoire'):
         print(f"  x {sample_f.name} absent — lance d'abord"
               f" --{'candidats' if jeu=='candidats' else 'echantillon'} N")
         return 1
-    if not labels_f.exists():
-        print(f"  x {labels_f.name} absent — etiquette via {html_f.name}")
-        return 1
     ech = json.loads(sample_f.read_text(encoding='utf-8'))
-    labels = json.loads(labels_f.read_text(encoding='utf-8'))
+    trouve, labels = _trouver_labels(labels_f, ech)
+    if labels is None:
+        print(f"  x {labels_f.name} introuvable (ni dans eval/ ni dans Telechargements)."
+              f"\n    Etiquette via {html_f.name}, telecharge, et depose le JSON"
+              f" dans {EVAL_DIR}\\{labels_f.name}")
+        return 1
     cles = [k for k in ech if k in labels]
     if limit:
         cles = cles[:limit]
