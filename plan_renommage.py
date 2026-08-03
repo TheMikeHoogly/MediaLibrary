@@ -66,6 +66,23 @@ def _split(key):
     return '', k
 
 
+def _suffixe_numerique(base, taken):
+    """Rend `base` unique dans `taken` par un compteur LISIBLE (« -2 », « -3 »…)
+    inséré avant l'extension. Plus joli qu'un hash : `20060000_Mike-et-Zab.jpg`
+    puis `20060000_Mike-et-Zab-2.jpg`. `base` inchangé s'il est déjà libre."""
+    if base not in taken:
+        return base
+    if '.' in base:
+        stem, ext = base.rsplit('.', 1)
+        ext = '.' + ext
+    else:
+        stem, ext = base, ''
+    n = 2
+    while f"{stem}-{n}{ext}" in taken:
+        n += 1
+    return f"{stem}-{n}{ext}"
+
+
 def construire_plan(entries, lieux=None, gps_places=None, image_types=None):
     """Construit le plan de renommage.
 
@@ -89,6 +106,9 @@ def construire_plan(entries, lieux=None, gps_places=None, image_types=None):
     n_laisses = n_inchanges = n_total = n_sans_date = 0
     for _dossier, items in par_dossier.items():
         n_total += len(items)
+        # Ordre DETERMINISTE (par nom d'origine) : la collision donne un compteur
+        # stable, et le fichier « le plus ancien par nom » garde le nom propre.
+        items.sort(key=lambda it: it[1].lower())
         # 1) réserver les noms des fichiers qu'on NE renomme PAS (non bruts),
         #    pour ne jamais entrer en collision avec eux.
         taken = set(n for _k, n, _e in items if not est_nom_brut(n))
@@ -107,7 +127,9 @@ def construire_plan(entries, lieux=None, gps_places=None, image_types=None):
                 taken.add(old)
                 n_sans_date += 1
                 continue
-            new = renommage.propose_basename(facts, taken=taken)
+            # base SANS suffixe hex (on ne passe pas `taken` a propose_basename),
+            # puis compteur lisible « -2/-3 » si collision dans le dossier.
+            new = _suffixe_numerique(renommage.propose_basename(facts), taken)
             if new == old:
                 taken.add(old)
                 n_inchanges += 1

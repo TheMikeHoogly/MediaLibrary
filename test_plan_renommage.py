@@ -88,8 +88,8 @@ def test_collision_meme_dossier_suffixe():
     moves, _ = P.construire_plan(entries)
     news = [m["new_name"] for m in moves]
     assert len(moves) == 2, moves
-    assert news[0] != news[1], news              # collision resolue
-    assert all(n[:8] == "20190704" for n in news)
+    # collision resolue par compteur LISIBLE (-2), pas un hash
+    assert "20190704.jpg" in news and "20190704-2.jpg" in news, news
 
 
 def test_collision_contre_fichier_non_renomme():
@@ -102,8 +102,7 @@ def test_collision_contre_fichier_non_renomme():
     moves, _ = P.construire_plan(entries)
     assert len(moves) == 1
     nn = moves[0]["new_name"]
-    assert nn != "20190704.jpg", nn              # n'ecrase pas le fichier existant
-    assert nn.startswith("20190704-")            # suffixe de collision
+    assert nn == "20190704-2.jpg", nn            # evite l'existant, compteur lisible
 
 
 def test_annee_du_dossier_pas_du_nom():
