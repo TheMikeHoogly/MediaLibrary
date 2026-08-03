@@ -153,7 +153,11 @@ const CLASSES = __CLASSES__;
 const etat = {};
 const grid = document.getElementById('grid');
 document.getElementById('n').textContent = DATA.length;
-for (const it of DATA){
+// IMPORTANT : la cle ne doit JAMAIS transiter par un litteral de chaine JS
+// (onclick="pick('...\cle...')") — les antislashs Windows y sont interpretes
+// comme des echappements (octal legacy \202 -> \x82) et la cle est corrompue.
+// On lie donc par INDICE et on relit DATA[idx].key (valeur JS intacte).
+DATA.forEach((it, idx) => {
   etat[it.key] = 'garder';
   const c = document.createElement('div'); c.className='card'+(it.hint?' hint':'');
   const img = it.thumb ? `<img src="data:image/jpeg;base64,${it.thumb}">`
@@ -162,14 +166,18 @@ for (const it of DATA){
   for (const cl of CLASSES){
     const g = cl==='garder' ? ' g' : '';
     const checked = cl==='garder' ? 'checked' : '';
-    opts += `<label class="${g}"><input type="radio" name="r_${it.i}" value="${cl}" ${checked}
-              onchange="pick('${it.key.replace(/'/g,"\\'")}','${cl}')"><span>${cl}</span></label>`;
+    opts += `<label class="${g}"><input type="radio" name="r_${idx}" value="${cl}" data-idx="${idx}" ${checked}><span>${cl}</span></label>`;
   }
   const h = it.hint ? ` · indice: ${it.hint}` : '';
   c.innerHTML = img + `<div class="nom">${it.nom}${h}</div><div class="opts">${opts}</div>`;
   grid.appendChild(c);
-}
-function pick(k,v){ etat[k]=v; maj(); }
+});
+grid.addEventListener('change', (e) => {
+  const t = e.target;
+  if (t && t.dataset && t.dataset.idx !== undefined){
+    etat[DATA[+t.dataset.idx].key] = t.value; maj();
+  }
+});
 function maj(){
   let r=0; for(const k in etat) if(etat[k]!=='garder') r++;
   document.getElementById('reste').textContent = r+' marquees rebut';
@@ -435,6 +443,14 @@ def cmd_mesurer(limit=None, jeu='aleatoire'):
     nom_cat = {k: I.indice_nom(k)[0] for k in cles}
 
     # ── Signal FLOU (CPU) ──
+    n_absent = sum(1 for k in cles if not _resoudre(k).exists())
+    if n_absent > len(cles) * 0.15:
+        print(f"\n  ⚠⚠ {n_absent}/{len(cles)} fichiers de l'echantillon sont INTROUVABLES.")
+        print("     L'index pointe vers d'anciens chemins — presque surement des")
+        print("     fichiers DEPLACES par le rangement par annee ENTRE l'echantillonnage")
+        print("     et la mesure. La mesure ne portera que sur les fichiers restants et")
+        print("     n'est PAS fiable. Re-tire l'echantillon une fois le rangement TERMINE")
+        print("     et l'index stable (les cles resolvent), puis re-etiquette et remesure.")
     print("\n  Score de flou (variance du Laplacien)...")
     flou = {}
     t0 = time.perf_counter()
@@ -491,6 +507,7 @@ def cmd_mesurer(limit=None, jeu='aleatoire'):
 
     # ── Metriques ──
     res = {"n": len(cles), "n_rebut": n_rebut, "repartition": repart,
+           "n_absent": n_absent,
            "vram_pic_mb": pic, "vram_libre_avant_mb": round(libre),
            "temps": {"flou_s": round(dt_flou, 1), "siglip_s": round(dt_sig, 1),
                      "flou_ms_img": round(dt_flou / len(cles) * 1000, 1),
