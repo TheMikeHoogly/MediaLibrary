@@ -7354,11 +7354,17 @@ var SPECIAUX=[
   {v:'__pas_animal__', t:'Ce n’est pas un animal', d:'peluche, statue, reflet… écarté définitivement'},
   {v:'__inconnu__',    t:'Animal inconnu',            d:'vrai animal, mais pas un des miens'}
 ];
-var NOMS_CACHE=null;
+var NOMS_CACHE=null, NOMS_CACHE_INFLIGHT=null;
 function chargerNoms(){
   if(NOMS_CACHE) return Promise.resolve(NOMS_CACHE);
-  return fetch('/api/names?genre=animal').then(function(r){return r.json();})
-    .then(function(d){ NOMS_CACHE=d.noms||[]; return NOMS_CACHE; });
+  // Deduplication : si plusieurs cartes demandent les noms avant la reponse,
+  // elles partagent la MEME requete au lieu d'en lancer une chacune (miroir de
+  // nomsPersonnes sur /people, qui corrigeait la tempete de /api/names).
+  if(NOMS_CACHE_INFLIGHT) return NOMS_CACHE_INFLIGHT;
+  NOMS_CACHE_INFLIGHT=fetch('/api/names?genre=animal').then(function(r){return r.json();})
+    .then(function(d){ NOMS_CACHE=d.noms||[]; NOMS_CACHE_INFLIGHT=null; return NOMS_CACHE; })
+    .catch(function(){ NOMS_CACHE_INFLIGHT=null; return []; });   // pas de rejet non capture
+  return NOMS_CACHE_INFLIGHT;
 }
 function toast(msg, jeton){
   var t=document.getElementById('toast');
@@ -7437,9 +7443,14 @@ function carteGroupe(c){
     b.textContent=txt; b.onclick=function(){ envoyer(val); }; return b;
   }
   inp.addEventListener('input',listeProps);
+  // Ne PAS peupler les propositions au chargement : chaque /api/names?genre=animal
+  // parcourt tout l'index cote serveur ; le faire pour chaque groupe en meme temps
+  // saturait le serveur (miroir du correctif /people). On differe au focus / a la
+  // frappe : un seul a la fois.
+  inp.addEventListener('focus',listeProps);
   inp.addEventListener('keydown',function(e){ if(e.key==='Enter'&&inp.value.trim()) envoyer(inp.value.trim()); });
   btn.onclick=function(){ if(inp.value.trim()) envoyer(inp.value.trim()); else inp.focus(); };
-  maj(); listeProps();
+  maj();
   return card;
 }
 

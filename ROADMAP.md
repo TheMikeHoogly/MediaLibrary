@@ -95,9 +95,13 @@ contact `auto-fill`, View Transitions, modale papier, **tri clavier du curateur*
 - **Garde amont de 12b (`vision-eval`)** — `verifier_visages.py` (SigLIP humain vs
   animal/objet) + plancher `det_score`, décision écrite avant activation. Voir
   point 12b. Le marquage humain réversible tient l'usage en attendant.
-- **Page Animaux** — `carteGroupe` a le même `listeProps()` eager que la
-  régression corrigée sur `/people` ; à porter par cohérence (sans urgence, peu
-  de groupes).
+- **Page Animaux** — ✓ **FAIT sur `fix/pets-names-lazy` (03/08, à valider en réel
+  puis merger).** `carteGroupe` avait le même `listeProps()` eager que la
+  régression corrigée sur `/people` (tempête de `/api/names`). Portage à
+  l'identique : `listeProps` différé au **focus** (plus au rendu) + **dédup
+  in-flight** de `chargerNoms` (miroir de `nomsPersonnes`/`NOMS_P_INFLIGHT`).
+  `py_compile` OK, `verifier_ui_tokens` 0 interdit dur. RESTE : Mike valide en
+  réel sur `/pets` (un seul `/api/names?genre=animal` au focus) + merge.
 - **Éval tagging — assertions vs pixels (parké).** Ci-dessous, conservé pour ne
   pas reperdre le fil :
 
