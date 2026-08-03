@@ -45,18 +45,26 @@ Dernière mise à jour : 3 août 2026.
   (Conséquence : `_A TRIER` ne contient presque plus que des fichiers sans date ;
   les rebuts datés sont désormais dans les dossiers année.)
 - **Triage (point 21) : détecteur ML écarté par la mesure, pivoté vers un petit
-  outil de confort.** Voir le point 21 détaillé plus bas et `eval/DECISIONS.md`
-  (03/08). Reste **un build** : filtre par motif + suppression réversible dans la
-  galerie, branche `feat/triage-galerie`, plan pas-à-pas au point 21.
+  outil de confort — BUILD FAIT sur `feat/triage-galerie` (03/08), à valider en
+  réel puis merger.** Voir le point 21 détaillé plus bas et `eval/DECISIONS.md`
+  (03/08).
 
 **Prochaines étapes, par valeur :**
 
-1. **Build triage (point 21)** — filtre par motif/dossier + **suppression
-   individuelle réversible** dans la galerie `/files`. Réutilise `interet.classer_regle`
-   (testé) + `FileOps.delete` (réversible) + toast undo de `/browse`. **Plan pas-à-pas
-   au point 21.** `monolith-surgery` + `photo-ui`, branche `feat/triage-galerie`,
-   revue de diff avant merge. Ne jamais étiqueter un motif « rebut » (la règle
-   `\Scans\` pointe des photos scannées à garder).
+1. **Build triage (point 21) — ✓ FAIT sur `feat/triage-galerie` (03/08),
+   RESTE : valider en réel + merger.** Filtre par motif/dossier (`?motif=`,
+   chips `capture`/`document`/`facture` en `--fixateur`, lecture seule) +
+   **suppression individuelle réversible** depuis la visionneuse de `/files`
+   (bouton `--encre` cible 44 px → `/api/files/delete {key}` → `FileOps.delete`
+   quarantaine + re-clé + toast undo 10 s). Réutilise `interet.classer_regle`
+   (testé) + `FileOps.delete` + le motif toast de `/browse`. `_key_to_target`
+   (cle STORE → idx/rel) ajouté, `'key'` présent dans les DEUX constructions de
+   `file_data`. Vérifs : `py_compile` OK, `verifier_ui_tokens.py` 0 interdit dur,
+   `test_interet` 16/16, `test_fichiers` 23/23, `test_ui_bundle` OK, démarrage
+   zéro-dep confirmé (import paresseux `interet`). **RESTE : Mike valide en réel
+   (filtrer, supprimer, annuler sur le NAS) + revue de diff `engineering:code-review`
+   + `git push` + merge.** Jamais d'étiquette « rebut » (la règle `\Scans\` pointe
+   des photos scannées à garder) ; jamais d'auto-sélection.
 2. **Priorité n°1 reconnaissance** — confirmer ~100 propositions dans `/people`
    (tri clavier prêt). Le geste **humain** qui vaut plus que tout changement d'algo
    (vérité terrain à 0,8 %).
@@ -593,8 +601,14 @@ traversent le chantier) :
     motif/dossier + suppression individuelle réversible dans la galerie** — jamais
     d'étiquette « rebut », jamais d'auto-sélection.
 
-    **Plan de build — branche `feat/triage-galerie` (session fraîche, `monolith-
-    surgery` + `photo-ui`, revue de diff avant merge) :**
+    **Plan de build — branche `feat/triage-galerie` : ✓ FAIT (03/08), à valider
+    en réel puis merger.** Les 4 étapes ci-dessous sont livrées dans `server.py`
+    (`_serve_gallery`, `_key_to_target`, route `/api/files/delete {key}`,
+    `GALLERY_PAGE`). Décision de conception au passage : le bouton supprimer vit
+    dans la **visionneuse** (lightbox), pas sur chaque vignette — geste délibéré,
+    cible 44 px, cohérent avec « revue humaine » (on regarde la photo avant de la
+    retirer). Vérifs vertes (voir « Prochaines étapes » §1). **RESTE : validation
+    réelle par Mike + revue de diff + merge.**
     1. **Filtre par motif dans `/files`** (lecture seule d'abord) : param `?motif=`,
        `import interet` paresseux, filtrer `file_data` via `interet.classer_regle(k)`.
        **Ajouter `'key'` dans les DEUX constructions de `file_data`** (chemin

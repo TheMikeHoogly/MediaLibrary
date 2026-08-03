@@ -1463,6 +1463,31 @@ def media_roots():
     return roots
 
 
+def _key_to_target(key):
+    """Cle d'index STORE -> (idx, rel) pour FileOps, ou None si la cle ne resout
+    sous aucune racine navigable. `rel` est le chemin relatif POSIX depuis la
+    racine, nom de fichier INCLUS (ce que delete/resolve_target attendent).
+
+    Miroir inverse de fichiers.key_for_new_path : par convention scan_uploads,
+    une cle relative (nom simple ou « Album/x.jpg ») vit sous UPLOAD_DIR
+    (racine 0), une cle absolue sous la racine supplementaire qui la contient
+    (la plus specifique si plusieurs s'imbriquent). Comparaison casse-insensible
+    via _pkey (les cles sont des chemins Windows)."""
+    p = Path(key)
+    if not p.is_absolute():
+        return 0, p.as_posix()
+    na = _pkey(p)
+    best = None
+    for i, (_label, root) in enumerate(media_roots()):
+        rp = _pkey(Path(root)).rstrip('/')
+        if na == rp or not na.startswith(rp + '/'):
+            continue
+        rel = p.as_posix()[len(Path(root).as_posix()):].lstrip('/')
+        if best is None or len(rp) > best[2]:
+            best = (i, rel, len(rp))
+    return (best[0], best[1]) if best else None
+
+
 def _folder_link_for_key(k, roots=None):
     """Pour une photo `k`, renvoie (label_dossier, url) où url pointe vers la
     vue Dossiers/galerie (/files?dir=…) de son dossier d'origine. Même logique
@@ -3299,6 +3324,35 @@ body { font-family: var(--f-texte);
 #ss-stop { position: absolute; top: 14px; right: 14px; background: rgba(0,0,0,0.6);
             color: #fff; border: var(--trait); border-radius: 8px;
             padding: 6px 14px; cursor: pointer; font-size: 0.85rem; z-index: 201; }
+
+/* -- barre de filtre par motif (point 21) : regroupe la vue par regle. Actif =
+   fixateur (choix humain), coherent avec les chips personnes/tags. -- */
+.motifbar { display: none; align-items: center; gap: 6px; padding: 8px 16px;
+            background: var(--salle-2); border-bottom: var(--trait); flex-wrap: wrap; }
+.motifbar.show { display: flex; }
+.motifbar .lbl { color: var(--graphite); font-size: 0.75rem; margin-right: 2px; }
+.mchip { min-height: 32px; padding: 5px 12px; border-radius: 999px; border: var(--trait);
+         background: var(--salle-3); color: var(--graphite); font-size: 0.8rem;
+         cursor: pointer; text-decoration: none; }
+.mchip.on { background: var(--fixateur); border-color: var(--fixateur); color: #fff; }
+.mchip .n { font-family: var(--f-donnees); font-size: 0.7rem; margin-left: 4px; opacity: 0.75; }
+.mchip.on .n { opacity: 1; }
+
+/* -- bouton supprimer dans la visionneuse : destructif = encre, cible 44px -- */
+#lb-del { min-height: var(--touch); padding: 0 14px; border-radius: 8px;
+          background: transparent; border: 1px solid var(--encre); color: var(--encre);
+          cursor: pointer; font-size: 0.9rem; }
+#lb-del:hover { background: var(--encre); color: #fff; }
+
+/* -- toast d'annulation 10s (meme registre que /browse et /people) -- */
+.gtoast { position: fixed; left: 50%; bottom: 16px; transform: translateX(-50%);
+          z-index: 300; display: none; gap: 12px; align-items: center;
+          max-width: 90vw; background: var(--salle-3); border: var(--trait);
+          border-radius: 999px; padding: 10px 10px 10px 18px; font-size: 13px;
+          color: var(--texte); box-shadow: 0 8px 24px #0008; }
+.gtoast.show { display: flex; }
+.gtoast .b { min-height: 36px; padding: 0 14px; border-radius: 999px; border: var(--trait);
+             background: var(--salle-2); color: var(--texte); cursor: pointer; }
 </style>
 </head>
 <body>
@@ -3323,6 +3377,7 @@ body { font-family: var(--f-texte);
 <div id="pending"></div>
 __FOLDERS__
 <div class="tagbar" id="tagbar"></div>
+<div class="motifbar" id="motifbar"></div>
 
 <div class="selbar" id="selbar">
   <span class="lbl">Personnes :</span>
@@ -3356,9 +3411,13 @@ __FOLDERS__
     <button id="lb-prev">&#8592;</button>
     <span id="lb-name"></span>
     <button id="lb-next">&#8594;</button>
+    <button id="lb-del" aria-label="Supprimer cette photo">&#128465;&#65039; Supprimer</button>
     <button id="lb-close">Fermer</button>
   </div>
 </div>
+
+<!-- toast d'annulation (suppression reversible, 10 s) -->
+<div class="gtoast" id="gtoast" role="status" aria-live="polite"></div>
 
 <!-- slideshow -->
 <div id="ss">
@@ -3379,6 +3438,7 @@ __FOLDERS__
   var REC = __REC__;
   var HASSUBS = __HASSUBS__;
   var DIRQ = __DIRQ__;
+  var MOTIFS = __MOTIFS__;
   var sorted = FILES.slice();
   var visible = FILES.slice();
   var currentSort = 'date';
@@ -4075,6 +4135,101 @@ __FOLDERS__
   buildTagbar();
   sortBy('date');
   poll();
+
+  // ── filtre par motif (point 21) : navigation serveur (?motif=), lecture
+  //    seule. Chips = liens ; actif en fixateur. Jamais une etiquette « rebut ».
+  function motifNavUrl(m) {
+    var params = new URLSearchParams(location.search);
+    if (m) params.set('motif', m); else params.delete('motif');
+    var qs = params.toString();
+    return location.pathname + (qs ? '?' + qs : '');
+  }
+  function buildMotifbar() {
+    var bar = document.getElementById('motifbar');
+    var counts = (MOTIFS && MOTIFS.counts) || {};
+    var sel = (MOTIFS && MOTIFS.sel) || '';
+    var LABELS = {capture: "Captures d'\\u00e9cran", document: 'Documents / scans',
+                  facture: 'Re\\u00e7us / factures'};
+    var order = ['capture', 'document', 'facture'];
+    var present = order.filter(function(k) { return counts[k]; });
+    if (!present.length && !sel) { bar.className = 'motifbar'; return; }
+    bar.innerHTML = '<span class="lbl">Motif :</span>';
+    present.forEach(function(k) {
+      var a = document.createElement('a');
+      a.className = 'mchip' + (sel === k ? ' on' : '');
+      a.href = motifNavUrl(sel === k ? '' : k);
+      if (sel === k) a.setAttribute('aria-current', 'true');
+      a.innerHTML = esc(LABELS[k] || k) + '<span class="n">' + counts[k] + '</span>';
+      bar.appendChild(a);
+    });
+    if (sel) {
+      var c = document.createElement('a');
+      c.className = 'mchip'; c.href = motifNavUrl('');
+      c.textContent = 'Tout afficher';
+      bar.appendChild(c);
+    }
+    bar.className = 'motifbar show';
+  }
+  buildMotifbar();
+
+  // ── suppression reversible depuis la visionneuse (point 21) ──
+  // Le fichier part immediatement en quarantaine (.corbeille-rangement/, cote
+  // serveur, re-cle de l'index compris) ; le toast offre l'annulation 10 s.
+  var gToastEl = document.getElementById('gtoast'), gToastT = null;
+  function gToast(msg, avecUndo) {
+    gToastEl.innerHTML = '';
+    var s = document.createElement('span'); s.textContent = msg;
+    gToastEl.appendChild(s);
+    if (avecUndo) {
+      var b = document.createElement('button');
+      b.className = 'b'; b.textContent = 'Annuler';
+      b.onclick = function() {
+        fetch('/api/files/undo', {method: 'POST',
+          headers: {'Content-Type': 'application/json'}, body: '{}'})
+          .then(function(r) { return r.json(); })
+          .then(function(r) {
+            if (r.ok) location.reload();
+            else gToast(r.error || 'Rien \\u00e0 annuler.', false);
+          })
+          .catch(function() { gToast('Le serveur n a pas r\\u00e9pondu.', false); });
+      };
+      gToastEl.appendChild(b);
+    }
+    gToastEl.className = 'gtoast show';
+    if (gToastT) clearTimeout(gToastT);
+    gToastT = setTimeout(function() { gToastEl.className = 'gtoast'; },
+                         avecUndo ? 10000 : 4000);
+  }
+
+  function removeCurrent() {
+    var f = visible[lbIdx];
+    function drop(arr) { var i = arr.indexOf(f); if (i >= 0) arr.splice(i, 1); }
+    drop(FILES); drop(sorted); drop(visible);
+    if (!visible.length) { closeLb(); renderGrid(); return; }
+    if (lbIdx >= visible.length) lbIdx = visible.length - 1;
+    renderGrid();
+    showLb();
+  }
+
+  document.getElementById('lb-del').onclick = function() {
+    var f = visible[lbIdx];
+    if (!f) return;
+    var btn = this; btn.disabled = true;
+    fetch('/api/files/delete', {method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({key: f.key})})
+      .then(function(r) { return r.json(); })
+      .then(function(r) {
+        btn.disabled = false;
+        if (!r.ok) { gToast(r.error || 'Echec de la suppression.', false); return; }
+        removeCurrent();
+        gToast('Photo d\\u00e9plac\\u00e9e vers la corbeille.', true);
+      })
+      .catch(function() {
+        btn.disabled = false;
+        gToast('Le serveur n a pas r\\u00e9pondu.', false);
+      });
+  };
 
   // ── filtres personnes + géo ──
   function haversine(la1, lo1, la2, lo2) {
@@ -8459,7 +8614,17 @@ class Handler(BaseHTTPRequestHandler):
                 elif path == '/api/files/mkdir':
                     res = ops.mkdir(d.get('idx'), d.get('rel', ''), d.get('name', ''))
                 elif path == '/api/files/delete':
-                    res = ops.delete(d.get('idx'), d.get('rel', ''), up)
+                    # Deux formes : {idx, rel} (vue Dossiers) ou {key} (galerie,
+                    # point 21). La cle est resolue en (idx, rel) ; introuvable
+                    # => FileOpError (deja capturee, renvoie {ok:false, error}).
+                    idx, rel = d.get('idx'), d.get('rel', '')
+                    if d.get('key') is not None:
+                        tgt = _key_to_target(d.get('key'))
+                        if not tgt:
+                            raise fichiers.FileOpError(
+                                "Photo introuvable dans les dossiers connus.")
+                        idx, rel = tgt
+                    res = ops.delete(idx, rel, up)
                 elif path == '/api/files/undo':
                     res = ops.undo(up)
                 else:
@@ -8612,6 +8777,10 @@ class Handler(BaseHTTPRequestHandler):
         tagsparam = (q.get('tags') or [''])[0]
         tmode = (q.get('tmode') or ['and'])[0]
         sel = [t.strip() for t in tagsparam.split(',') if t.strip()]
+        # Filtre par motif (point 21) : regroupe la vue par regle nom/dossier
+        # (capture / document / facture), lecture seule. Jamais une etiquette
+        # « rebut », jamais une auto-selection : un simple outil de confort.
+        motif = (q.get('motif') or [''])[0].strip()
 
         if dirparam:
             roots = media_roots()
@@ -8754,6 +8923,9 @@ class Handler(BaseHTTPRequestHandler):
                 folder_lbl, gurl = _folder_link_for_key(k, roots_cache)
                 file_data.append({
                     'name': name,
+                    # Cle d'index : necessaire au filtre par motif et a la
+                    # suppression par cle (meme role que dans le chemin nav).
+                    'key': k,
                     'url': url,
                     'size': human_size(e.get('size') or 0),
                     'mtime': e.get('mtime') or 0,
@@ -8764,8 +8936,28 @@ class Handler(BaseHTTPRequestHandler):
                     'gurl': gurl,
                 })
 
+        # Comptes par motif sur la vue courante, puis filtre eventuel. Import
+        # PARESSEUX : interet est pur (re/pathlib), aucun modele ni deps ML au
+        # chargement — le serveur demarre sans torch/cv2 (invariant zero-dep).
+        motif_counts = {}
+        try:
+            import interet
+            for _e in file_data:
+                _cat, _m = interet.classer_regle(_e.get('key', ''))
+                if _cat:
+                    motif_counts[_cat] = motif_counts.get(_cat, 0) + 1
+            if motif:
+                file_data = [_e for _e in file_data
+                             if interet.classer_regle(_e.get('key', ''))[0] == motif]
+        except Exception:                                     # noqa: BLE001
+            motif_counts = {}
+            if motif:
+                file_data = []
+
         page = (GALLERY_PAGE
                 .replace('__FOLDERS__', folders_html)
+                .replace('__MOTIFS__', json.dumps(
+                    {'counts': motif_counts, 'sel': motif}, ensure_ascii=False))
                 .replace('__FILE_JSON__', json.dumps(file_data, ensure_ascii=False))
                 .replace('__TAGGED__', str(STORE.tagged_count()))
                 .replace('__REC__', '1' if rec else '0')

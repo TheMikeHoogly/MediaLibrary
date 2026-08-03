@@ -74,8 +74,9 @@ et les skills `.claude/skills/` (`monolith-surgery` **avant tout edit de
   `/browse`, `/reglages`, rangement par année générateur+applicateur, banc triage +
   pivot). Des branches de suivi existent encore mais `main` fait foi. `git push` =
   geste de Mike (impossible depuis le sandbox).
-- **Prochain travail = branche neuve `feat/triage-galerie`** (build du filtre +
-  suppression réversible, point 21).
+- **`feat/triage-galerie` = build triage FAIT (03/08), à valider en réel + merger.**
+  Filtre par motif + suppression réversible dans la galerie (point 21). Vérifs
+  vertes ; reste la validation réelle de Mike, la revue de diff et le merge.
 
 ### Rangement par année (point 19) : FAIT ET APPLIQUÉ (03/08)
 
@@ -126,22 +127,21 @@ plus que des fichiers sans date ; les rebuts datés sont dans les dossiers anné
 
 1. **Rangement par année — FAIT ET APPLIQUÉ (03/08)** (voir la section dédiée
    ci-dessus). Plus rien à faire ; l'index est stable.
-2. **Triage (ROADMAP point 21) — MESURÉ, TRANCHÉ, PIVOTÉ (03/08). ← PROCHAIN BUILD.
-   Reste : un petit
-   build.** La mesure a écarté le détecteur ML (décision écrite `eval/DECISIONS.md` du
-   03/08) : le rebut fiable est minuscule (`inventaire_rebuts.py` → **462/33 109 =
-   1,4 %**) et **surtout des photos à garder** (WhatsApp reçus, screenshots gardés,
-   « documents » = photos scannées d'un voyage). Donc **pas de classifieur**, juste
-   un **outil de confort** décidé avec Mike : **filtre par motif/dossier + suppression
-   individuelle réversible dans la galerie `/files`**. Outillage de mesure conservé
-   (`interet.py` + `classer_regle` testé 16/16, `eval_interet.py`). **Prochain geste =
-   ce build**, sur branche **`feat/triage-galerie`**, plan détaillé pas-à-pas dans
-   `ROADMAP.md` point 21 (filtre `?motif=` dans `/files` en réutilisant
-   `interet.classer_regle` ; ajouter `'key'` aux DEUX constructions de `file_data` ;
-   `_key_to_target` + `/api/files/delete {key}` réutilisant `FileOps.delete`
-   réversible ; bouton supprimer `--encre` + toast undo 10 s). **Charge
-   `monolith-surgery` + `photo-ui`, branche, revue de diff avant merge.** Ne jamais
-   étiqueter un motif « rebut » (la règle `\Scans\` mal-signale des photos à garder).
+2. **Triage (ROADMAP point 21) — BUILD FAIT sur `feat/triage-galerie` (03/08).
+   ← RESTE : valider en réel + merger.** La mesure avait écarté le détecteur ML
+   (décision écrite `eval/DECISIONS.md` du 03/08) : rebut fiable minuscule
+   (`inventaire_rebuts.py` → **462/33 109 = 1,4 %**), **surtout des photos à
+   garder**. Livré : **filtre par motif/dossier + suppression individuelle
+   réversible dans la galerie `/files`** — `?motif=` (chips `capture`/`document`/
+   `facture` en `--fixateur`, lecture seule, `import interet` paresseux) ;
+   `_key_to_target` (clé STORE → idx/rel) ; `/api/files/delete {key}` →
+   `FileOps.delete` (quarantaine réversible + re-clé) ; bouton supprimer `--encre`
+   cible 44 px dans la **visionneuse** + toast undo 10 s ; `'key'` ajouté aux DEUX
+   constructions de `file_data`. Vérifs vertes : `py_compile`, `verifier_ui_tokens`
+   (0 interdit dur), `test_interet` 16/16, `test_fichiers` 23/23, `test_ui_bundle`,
+   démarrage zéro-dep confirmé. **RESTE : Mike valide en réel (filtrer/supprimer/
+   annuler sur le NAS), revue `engineering:code-review`, `git push`, merge.**
+   Jamais d'étiquette « rebut », jamais d'auto-sélection.
 3. **Priorité n°1 reconnaissance — confirmer ~100 propositions** (`/people`,
    maintenant rapide au clavier). C'est le geste HUMAIN qui vaut plus que tout
    changement d'algo (voir ROADMAP « À faire », Reconnaissance §1). Outillage
