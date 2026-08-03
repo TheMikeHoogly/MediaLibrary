@@ -80,6 +80,21 @@ Dernière mise à jour : 3 août 2026.
 4. **Redesign étape B — reste** : registre **papier** sur les cartes de clusters
    (`/people`, `/pets`), **centre de tâches** remplaçant `#pending`, **numéro de
    vue** sur la planche contact. Détail dans « Interface » (points 9-12).
+5. **Harmonisation de l'affichage des images (demande Mike, 03/08).** But : un
+   **sélecteur de type d'affichage cohérent sur toutes les vues** (Galerie /
+   Dossiers / Uploads partagent déjà `GALLERY_PAGE` ; restent les fiches détail
+   Animaux/Personnes) + **tri chronologique du plus ancien au plus récent par
+   défaut, réversible**, sur la **date de prise** (EXIF) avec repli fichier.
+   - ✓ **FAIT sur `feat/affichage-detail` (03/08, à valider + merger)** — fiches
+     détail : chargement fiabilisé (`openCat` vérifie `r.ok`, bouton **Réessayer**
+     au lieu du message mort « Erreur de chargement » ; `_serve_cat_photos` ne
+     renvoie plus jamais un 500 non-JSON) ; **chronologique ascendant** (chat +
+     personne, dates absentes en fin) ; **menu `d-mode` lisible** (tokens, options
+     contrastées). `py_compile` OK, `verifier_ui_tokens` 0 interdit dur.
+   - **RESTE** : (a) sur `GALLERY_PAGE`, tri « Date » sur `mtime` → passer à la
+     **date de prise** + **sens réversible** (défaut ascendant) + contrôle unifié
+     avec les diaporamas (Démo/Aléatoire/Association) ; (b) porter le même contrôle
+     d'affichage sur les fiches détail. Incrément suivant, à valider en réel.
 
 Le redesign « chambre noire » — étape A (tokenisation des 7 pages + barre,
 `verifier_ui_tokens.py` : 0 interdit dur) et l'essentiel de l'étape B (planche

@@ -7203,6 +7203,12 @@ PETS_PAGE = """<!DOCTYPE html>
   .dhead{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:6px;}
   .dhead .title{font-size:26px;font-weight:700;}
   .dhead .ct{color:var(--graphite);font-size:14px;}
+  /* menu de mode du diaporama : le rendu natif des <option> heritait un gris
+     peu lisible ; on force fond sombre + texte contraste (tokens photo-ui). */
+  #d-mode{background:var(--salle-3);color:var(--texte);border:var(--trait);
+    border-radius:9px;padding:8px 10px;font-size:14px;cursor:pointer;}
+  #d-mode:focus{border-color:var(--veilleuse);outline:none;}
+  #d-mode option{background:var(--salle-2);color:var(--texte);}
   .hint{color:var(--graphite);font-size:13px;margin:6px 0 18px;line-height:1.5;}
   .photos{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px;}
   .ph{position:relative;border-radius:11px;overflow:hidden;cursor:pointer;aspect-ratio:1;
@@ -7468,7 +7474,10 @@ function openCat(name){
   document.getElementById('d-play').disabled=true;
   var g=document.getElementById('d-photos'); g.innerHTML='<span class="muted">Chargement&hellip;</span>';
   window.scrollTo(0,0);
-  fetch('/api/pets/photos?name='+encodeURIComponent(name)).then(function(r){return r.json();}).then(function(d){
+  fetch('/api/pets/photos?name='+encodeURIComponent(name))
+    .then(function(r){ if(!r.ok) throw new Error('http '+r.status); return r.json(); })
+    .then(function(d){
+    if(d.error) throw new Error(d.error);
     var ph=d.photos||[]; CUR_PHOTOS=ph;
     document.getElementById('d-count').textContent=ph.length+' photo(s)';
     document.getElementById('d-play').disabled=!ph.length;
@@ -7483,11 +7492,26 @@ function openCat(name){
       d1.onclick=function(ev){ if(ev.target.classList.contains('zoom')){ openLb(p.url); return; } toggleSel(d1,p.key); };
       g.appendChild(d1);
     });
-  }).catch(function(){ g.innerHTML='<span class="muted">Erreur de chargement.</span>'; });
+  }).catch(function(){
+    // Cause la plus frequente : le serveur etait occupe (analyse IA en fond) et
+    // la requete a expire. On ne laisse pas un message mort : on propose de
+    // reessayer, le geste attendu.
+    document.getElementById('d-count').textContent='';
+    document.getElementById('d-play').disabled=true;
+    g.innerHTML='';
+    var w=document.createElement('span'); w.className='muted';
+    w.textContent='Chargement interrompu (le serveur est peut-etre occupe). ';
+    var b=document.createElement('button'); b.className='btn'; b.textContent='Reessayer';
+    b.style.marginLeft='6px'; b.onclick=function(){ openCat(name); };
+    w.appendChild(b); g.appendChild(w);
+  });
 }
 
 /* ---- diaporama d'un chat (chronologique / aléatoire / association) ---- */
-function seqPhotos(a){ return a.slice().sort(function(x,y){ return (y.taken||0)-(x.taken||0); }); }
+// Chronologique = du plus ANCIEN au plus recent (date de prise). Les photos sans
+// date fiable (taken absent) vont a la fin plutot qu'au debut.
+function seqPhotos(a){ return a.slice().sort(function(x,y){
+  return (x.taken||Infinity)-(y.taken||Infinity); }); }
 function shufflePhotos(a){ a=a.slice(); for(var i=a.length-1;i>0;i--){ var j=Math.floor(Math.random()*(i+1)); var t=a[i];a[i]=a[j];a[j]=t; } return a; }
 function assocPhotos(a){
   if(a.length<3) return a.slice();
@@ -8322,8 +8346,9 @@ function psApplyOrder(mode){
       cur=pool.splice(bi,1)[0]; ord.push(cur); }
     psOrder=ord;
   } else {
-    // diaporama normal = chronologique, du plus RÉCENT au plus ancien (date de prise)
-    psOrder.sort(function(a,b){ return (psPhotos[b].taken||0)-(psPhotos[a].taken||0); });
+    // diaporama normal = chronologique, du plus ANCIEN au plus recent (date de
+    // prise) ; photos sans date fiable en fin.
+    psOrder.sort(function(a,b){ return (psPhotos[a].taken||Infinity)-(psPhotos[b].taken||Infinity); });
   }
 }
 function startPersonSlideshow(name, mode){
@@ -9200,7 +9225,16 @@ class Handler(BaseHTTPRequestHandler):
         note_heavy_activity()   # ouverture d'un détail → le backfill cède le NAS
         q = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
         name = (q.get('name') or [''])[0]
-        body = json.dumps({"photos": cat_photos(name)},
+        try:
+            photos = cat_photos(name)
+        except Exception as e:                                # noqa: BLE001
+            # Jamais un 500 non-JSON (que le client ne sait pas lire) : on renvoie
+            # une erreur JSON exploitable, et l'UI propose de reessayer.
+            body = json.dumps({"photos": [], "error": str(e)[:200]},
+                              ensure_ascii=False).encode()
+            self._send(200, body, 'application/json')
+            return
+        body = json.dumps({"photos": photos},
                           ensure_ascii=False).encode()
         self._send(200, body, 'application/json')
 
