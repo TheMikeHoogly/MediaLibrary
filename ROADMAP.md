@@ -3,7 +3,7 @@
 Ce fichier survit aux sessions, contrairement à une liste de tâches en mémoire.
 Il est référencé par `CLAUDE.md`, donc relu au début de chaque session.
 
-Dernière mise à jour : 2 août 2026.
+Dernière mise à jour : 3 août 2026.
 
 ---
 
@@ -33,24 +33,30 @@ Dernière mise à jour : 2 août 2026.
 
 ## Prochaine étape décidée
 
-**État au 2 août 2026 (fin de session rangement + applicateur).**
+**État au 3 août 2026 (fin de session triage : mesuré, tranché, pivoté).**
 
-- **Branches : `integration` fusionnée.** `main` == `integration` == `origin/main`.
-  Le neuf des sessions 01-02/08 (redesign « chambre noire », gestion de fichiers
-  `/browse`, centre de contrôle `/reglages`, plan de rangement par année) est donc
-  dans `main`. Le seul en-cours : `feat/rangement-annee-apply` (applicateur du
-  point 19), à merger une fois le rangement validé en réel.
-- **Rangement par année (point 19) : applicateur fait et testé**, plan généré
-  (11 355 à ranger, 0 sans date, 0 conflit). **En cours d'application par Mike**
-  (dry-run → lot → reste, réversible via `--undo`).
+- **Branches : `main` == `origin/main`**, à jour. Le neuf des sessions 01-03/08
+  (redesign « chambre noire », gestion de fichiers `/browse`, centre de contrôle
+  `/reglages`, rangement par année générateur+applicateur, banc triage) est dans
+  `main`. Des branches de suivi existent encore (`feat/file-ops`,
+  `feat/control-center`…) mais `main` porte l'état courant. `git push` = geste de Mike.
+- **Rangement par année (point 19) : FAIT, testé et APPLIQUÉ (Mike, 03/08).** Les
+  fichiers datés sous `_A TRIER` sont rangés dans `AAAA/`, index re-clé et stable.
+  (Conséquence : `_A TRIER` ne contient presque plus que des fichiers sans date ;
+  les rebuts datés sont désormais dans les dossiers année.)
+- **Triage (point 21) : détecteur ML écarté par la mesure, pivoté vers un petit
+  outil de confort.** Voir le point 21 détaillé plus bas et `eval/DECISIONS.md`
+  (03/08). Reste **un build** : filtre par motif + suppression réversible dans la
+  galerie, branche `feat/triage-galerie`, plan pas-à-pas au point 21.
 
 **Prochaines étapes, par valeur :**
 
-1. **Nouveau — triage des images sans intérêt (point 21).** Détecter documents /
-   captures d'écran / factures / photos floues ou erronées (surtout sous `_A TRIER`,
-   37 % du fonds), les **regrouper par motif**, et permettre la **suppression
-   individuelle réversible** depuis le web. Surtout de l'**assemblage de briques
-   existantes** (SigLIP + score de flou + quarantaine `.corbeille-rangement/`).
+1. **Build triage (point 21)** — filtre par motif/dossier + **suppression
+   individuelle réversible** dans la galerie `/files`. Réutilise `interet.classer_regle`
+   (testé) + `FileOps.delete` (réversible) + toast undo de `/browse`. **Plan pas-à-pas
+   au point 21.** `monolith-surgery` + `photo-ui`, branche `feat/triage-galerie`,
+   revue de diff avant merge. Ne jamais étiqueter un motif « rebut » (la règle
+   `\Scans\` pointe des photos scannées à garder).
 2. **Priorité n°1 reconnaissance** — confirmer ~100 propositions dans `/people`
    (tri clavier prêt). Le geste **humain** qui vaut plus que tout changement d'algo
    (vérité terrain à 0,8 %).
@@ -65,9 +71,9 @@ Le redesign « chambre noire » — étape A (tokenisation des 7 pages + barre,
 contact `auto-fill`, View Transitions, modale papier, **tri clavier du curateur**)
 — est **fait et validé en réel**.
 
-**Une phrase pour démarrer la prochaine session** : « Lis ROADMAP.md et
-`eval/DECISIONS.md`, puis attaque le triage des images sans intérêt (point 21) —
-commence par mesurer un détecteur avant de bâtir (`vision-eval`). »
+**Une phrase pour démarrer la prochaine session** : « Lis ROADMAP.md (point 21) et
+`eval/DECISIONS.md`, charge `monolith-surgery` + `photo-ui`, crée la branche
+`feat/triage-galerie` et attaque le build du filtre + suppression réversible. »
 
 ### En réserve (parké, non prioritaire)
 
@@ -515,8 +521,8 @@ traversent le chantier) :
       machine). **Reste :** rangement par année des `_A TRIER` ; branchement de
       l'application du renommage `_Uploads` ; installateur nouveau PC (prochain).
 
-    - **Rangement par année — GÉNÉRATEUR + APPLICATEUR FAITS ET TESTÉS (02/08,
-      branche `feat/rangement-annee-apply`, à valider en réel).**
+    - **Rangement par année — GÉNÉRATEUR + APPLICATEUR FAITS, TESTÉS ET APPLIQUÉS
+      (dans `main` ; appliqué en réel par Mike le 03/08, index stable).**
       Génération (lecture seule) : `rangement_annee.py` (pur, testé 10/10 —
       `test_rangement_annee.py`) : `_A TRIER` → `<base>/AAAA/` via `_best_time`,
       `_SANS_DATE/` si pas de date fiable (jamais deviné), aplati, collisions de
@@ -534,10 +540,10 @@ traversent le chantier) :
       collision refusée, undo, repli `new_key` absent, idempotence). Lanceur ASCII
       pur `26 - Ranger par annee.bat` (dry-run → lot de 20 → reste, confirmations
       `choice`). `verifier_bat.py` OK, `py_compile` OK.
-      **RESTE : valider en réel** — générer le plan depuis `/reglages`, arrêter le
-      serveur, dry-run puis `--limite 20`, vérifier sur le NAS, puis le reste
-      (annulable via `--undo`). La quarantaine des doublons reste un geste séparé
-      (déjà appliqué, 8,4 Go) — une collision au dst est ici refusée, pas fusionnée.
+      **APPLIQUÉ (03/08)** — plan généré, serveur arrêté, dry-run puis lots, vérifié
+      sur le NAS, index re-clé et stable. La quarantaine des doublons était un geste
+      séparé (déjà appliqué, 8,4 Go) — une collision au dst est ici refusée, pas
+      fusionnée.
 
     Note : le garde-fou anti-doublon **à l'upload** (point 17, `_upload_content_dup`)
     est déjà en place — il empêche d'*ajouter* des doublons ; ce chantier-ci

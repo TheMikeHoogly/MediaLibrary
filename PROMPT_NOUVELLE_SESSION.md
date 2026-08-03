@@ -3,7 +3,7 @@
 > Copie tout le bloc ci-dessous dans une nouvelle conversation Cowork, après
 > avoir connecté le dossier `C:\Prog\Claude\MediaLibrary`.
 >
-> Dernière mise à jour : **2 août 2026** (fin de session UI/features).
+> Dernière mise à jour : **3 août 2026** (fin de session triage : mesuré, tranché, pivoté).
 
 ---
 
@@ -66,16 +66,21 @@ et les skills `.claude/skills/` (`monolith-surgery` **avant tout edit de
   mobile, c'est le **même dépôt local** et le même serveur (chez Mike) — `git push`
   reste un geste que **Mike** fait sur le PC.
 
-## ══ ÉTAT AU 2 AOÛT 2026 — LIRE EN PREMIER ══
+## ══ ÉTAT AU 3 AOÛT 2026 — LIRE EN PREMIER ══
 
 ### Branches (IMPORTANT)
 
-- **`integration` fusionnée** : `main` == `integration` == `origin/main`. Tout le
-  neuf des sessions 01-02/08 (redesign, `/browse`, `/reglages`, plan de rangement)
-  est dans `main`.
-- **`feat/rangement-annee-apply`** = seul en-cours : applicateur du rangement par
-  année (point 19) + entrées roadmap. **À merger dans `main` une fois le rangement
-  validé en réel**, puis Mike `git push`.
+- **`main` == `origin/main`**, porte l'état courant (sessions 01-03/08 : redesign,
+  `/browse`, `/reglages`, rangement par année générateur+applicateur, banc triage +
+  pivot). Des branches de suivi existent encore mais `main` fait foi. `git push` =
+  geste de Mike (impossible depuis le sandbox).
+- **Prochain travail = branche neuve `feat/triage-galerie`** (build du filtre +
+  suppression réversible, point 21).
+
+### Rangement par année (point 19) : FAIT ET APPLIQUÉ (03/08)
+
+Appliqué en réel par Mike, index re-clé et stable. `_A TRIER` ne contient presque
+plus que des fichiers sans date ; les rebuts datés sont dans les dossiers année.
 
 ### Fait cette session (02/08)
 
@@ -119,10 +124,10 @@ et les skills `.claude/skills/` (`monolith-surgery` **avant tout edit de
 
 ### Prochaines étapes, par valeur (roadmap de la suite)
 
-1. **Finir le rangement par année** (en cours, Mike) : appliquer le plan via
-   `26 - Ranger par annee.bat` (dry-run → lot de 20 → reste, serveur arrêté),
-   vérifier sur le NAS, puis **merger `feat/rangement-annee-apply` dans `main`**.
-2. **Triage (ROADMAP point 21) — MESURÉ, TRANCHÉ, PIVOTÉ (03/08). Reste : un petit
+1. **Rangement par année — FAIT ET APPLIQUÉ (03/08)** (voir la section dédiée
+   ci-dessus). Plus rien à faire ; l'index est stable.
+2. **Triage (ROADMAP point 21) — MESURÉ, TRANCHÉ, PIVOTÉ (03/08). ← PROCHAIN BUILD.
+   Reste : un petit
    build.** La mesure a écarté le détecteur ML (décision écrite `eval/DECISIONS.md` du
    03/08) : le rebut fiable est minuscule (`inventaire_rebuts.py` → **462/33 109 =
    1,4 %**) et **surtout des photos à garder** (WhatsApp reçus, screenshots gardés,
