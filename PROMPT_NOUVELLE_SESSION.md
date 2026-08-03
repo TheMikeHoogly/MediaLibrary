@@ -122,17 +122,21 @@ et les skills `.claude/skills/` (`monolith-surgery` **avant tout edit de
 1. **Finir le rangement par année** (en cours, Mike) : appliquer le plan via
    `26 - Ranger par annee.bat` (dry-run → lot de 20 → reste, serveur arrêté),
    vérifier sur le NAS, puis **merger `feat/rangement-annee-apply` dans `main`**.
-2. **Triage des images sans intérêt (ROADMAP point 21) — BANC FAIT, RUN EN
-   ATTENTE.** Livré 02/08 : `interet.py` (pur : heuristique de nom, score de flou
-   Laplacien, assemblage `proposer`, métriques bornées par le coût des faux
-   positifs) + `test_interet.py` **15/15** + `eval_interet.py` (échantillon figé
-   sous `_A TRIER`, page d'étiquetage HTML, mesure des 3 signaux + VRAM). Protocole
-   pré-enregistré dans `eval/DECISIONS.md`. **Prochain geste = le RUN réel** (chez
-   Mike, NAS + GPU) : `python eval_interet.py --echantillon 200`, étiqueter dans
-   `eval/interet_etiquetage.html`, déposer `interet_labels.json`, puis
-   `python eval_interet.py --mesurer` → **écrire la décision** (adopté/rejeté par
-   signal et seuil). **Ne bâtir la vue de triage + la suppression qu'APRÈS** la
-   décision (ordre `vision-eval` : mesurer → décider → bâtir).
+2. **Triage (ROADMAP point 21) — MESURÉ, TRANCHÉ, PIVOTÉ (03/08). Reste : un petit
+   build.** La mesure a écarté le détecteur ML (décision écrite `eval/DECISIONS.md` du
+   03/08) : le rebut fiable est minuscule (`inventaire_rebuts.py` → **462/33 109 =
+   1,4 %**) et **surtout des photos à garder** (WhatsApp reçus, screenshots gardés,
+   « documents » = photos scannées d'un voyage). Donc **pas de classifieur**, juste
+   un **outil de confort** décidé avec Mike : **filtre par motif/dossier + suppression
+   individuelle réversible dans la galerie `/files`**. Outillage de mesure conservé
+   (`interet.py` + `classer_regle` testé 16/16, `eval_interet.py`). **Prochain geste =
+   ce build**, sur branche **`feat/triage-galerie`**, plan détaillé pas-à-pas dans
+   `ROADMAP.md` point 21 (filtre `?motif=` dans `/files` en réutilisant
+   `interet.classer_regle` ; ajouter `'key'` aux DEUX constructions de `file_data` ;
+   `_key_to_target` + `/api/files/delete {key}` réutilisant `FileOps.delete`
+   réversible ; bouton supprimer `--encre` + toast undo 10 s). **Charge
+   `monolith-surgery` + `photo-ui`, branche, revue de diff avant merge.** Ne jamais
+   étiqueter un motif « rebut » (la règle `\Scans\` mal-signale des photos à garder).
 3. **Priorité n°1 reconnaissance — confirmer ~100 propositions** (`/people`,
    maintenant rapide au clavier). C'est le geste HUMAIN qui vaut plus que tout
    changement d'algo (voir ROADMAP « À faire », Reconnaissance §1). Outillage

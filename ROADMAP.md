@@ -573,10 +573,42 @@ traversent le chantier) :
     bon marché sans risquer une bonne photo. **Décision de conception** : pas de
     classifieur ML ; **vue groupée par motif/règle + suppression individuelle
     réversible** (`FileOps.delete`), flou au mieux en **clé de tri**, rebut subtil
-    laissé à la revue humaine. **Prochain pas (lecture seule) : `inventaire_rebuts.py`**
-    (fait, testé — chiffre/regroupe le rebut par règle sur TOUTE la médiathèque, le
-    rangement ayant dispersé les rebuts datés dans les dossiers année) → lire
-    `docs/inventaire_rebuts.md`, puis bâtir la vue de triage sur ces briques.
+    laissé à la revue humaine.
+
+    **Inventaire fait (03/08, `docs/inventaire_rebuts.md`) — il rétrécit encore le
+    chantier :** seulement **462 / 33 109 images (1,4 %)** attrapables par règle, et
+    **même celles-là sont surtout des photos à GARDER** : ~214 WhatsApp (photos
+    reçues, souvent réelles), 214 screenshots (Mike en garde beaucoup), et les 24
+    « document » sont en fait des **photos scannées d'un voyage (Bolivie)** dans un
+    dossier `Scans` — des trésors, pas des rebuts (la règle `\Scans\`→document
+    mal-signale des keepers : **ne jamais présenter comme « rebut »**). Conclusion
+    affinée : **aucun ensemble « junk » sûr à surfacer**, même par règle. La feature
+    se réduit à un **petit outil de confort** choisi par Mike (03/08) : **filtre par
+    motif/dossier + suppression individuelle réversible dans la galerie** — jamais
+    d'étiquette « rebut », jamais d'auto-sélection.
+
+    **Plan de build — branche `feat/triage-galerie` (session fraîche, `monolith-
+    surgery` + `photo-ui`, revue de diff avant merge) :**
+    1. **Filtre par motif dans `/files`** (lecture seule d'abord) : param `?motif=`,
+       `import interet` paresseux, filtrer `file_data` via `interet.classer_regle(k)`.
+       **Ajouter `'key'` dans les DEUX constructions de `file_data`** (chemin
+       navigation : déjà présent ~l.8725 ; chemin sélection-de-tags ~l.8755 : **NON,
+       l'ajouter**). Barre de filtre neutre dans `GALLERY_PAGE` (l.3166), libellés
+       neutres (« Captures d'écran », « WhatsApp », « Dossier … »), actif en
+       `--fixateur` (tokens `photo-ui`).
+    2. **Suppression par clé** : helper `_key_to_target(key)->(idx,rel)` (réutiliser
+       la logique clé→(i,rel) de `_serve_geo` ~l.8796) ; étendre la branche
+       `/api/files/delete` (~l.8461) pour accepter `{key}` → idx/rel →
+       `file_ops().delete(idx, rel, UPLOAD_DIR)` (déjà réversible : `.corbeille-
+       rangement/` + re-clé + undo). Undo via `/api/files/undo` existant.
+    3. **UI galerie** : bouton supprimer par photo (`--encre`, cible 44 px,
+       `aria-label`) → POST `{key}` → retire la carte + **toast d'annulation 10 s**
+       (`role=status`, motif réutilisé de `/browse` et `/people`).
+    4. **Garde-fous** : démarrage sans deps ML (interet = re/pathlib, cv2 paresseux
+       non utilisé ici) ; aucun nom humain perdu (delete re-clé via FileOps) ; tokens
+       + a11y `photo-ui` ; `verifier_ui_tokens.py` après édition UI ; revue
+       `engineering:code-review` du diff avant merge.
+
     Outillage de mesure conservé (`interet.py`, `eval_interet.py`, `classer_regle`
     testé) si un besoin de détecteur réapparaît. Détail historique ci-dessous.
 
