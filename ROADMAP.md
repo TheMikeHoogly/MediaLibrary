@@ -593,13 +593,25 @@ traversent le chantier) :
       humains, description), format `YYYYMMDD_<lieu-ou-type>_<sujet>.<ext>` (tri
       lexicographique = chronologique), assaini pour Windows/SMB. N'ouvre aucun
       fichier, n'appelle aucun modèle, ne mute rien. Testé (`test_renommage.py`).
-    - **RESTE — l'application réelle** (un autre étage, volontairement séparé car il
-      mute le NAS) : renommage sur le NAS + re-clé via `rekey_everywhere` (primitive
-      testée, réutilisable comme pour le point 19) + journal de provenance + undo +
-      revue humaine + dry-run. Compléter les **2 faits à `None`** en amont : lieu
-      par **géocodage inverse** des GPS, type par **SigLIP**. Peut passer *après* le
-      rangement par année, sur les fichiers déjà classés. Spec détaillée dans
-      `docs/RANGEMENT_2026.md` (« Renommage intelligent »).
+    - ✓ **Générateur de plan (Phase 1) FAIT sur `feat/renommage-plan` (03/08)** :
+      `plan_renommage.py` (pur, lecture seule, `test_plan_renommage.py` **6/6**).
+      `est_nom_brut()` cible **les seuls noms bruts** (Screenshot_, VideoCapture_,
+      IMG_, `-WA####`, Scan_, Photo0#, hash de contenu…) et **laisse les noms déjà
+      datés/propres** (`20190704_123045.jpg`) — choix Mike (03/08). `construire_plan`
+      propose via le cœur `renommage.py`, **renommage EN PLACE**, collisions résolues
+      par dossier (réserve d'abord les noms non renommés). Miroir de
+      `rangement_annee.py`.
+    - **RESTE — décision de conception (03/08) : application IN-PROCESS, PAS de
+      serveur arrêté.** Le « serveur arrêté » des `.bat` vient du fait que ce sont
+      des processus SÉPARÉS ouvrant `photos.db` (SQLite = 1 seul écrivain). L'apply
+      tournera DANS le serveur (comme le dédoublonnage de l'orchestrateur), donc
+      lançable depuis `/reglages` sans rien arrêter. Étages restants : (a)
+      `server.generer_plan_renommage()` (in-process, lit l'index, écrit
+      `docs/plan_renommage.{json,md}`) ; (b) applicateur in-process réversible
+      (renomme + `rekey_everywhere` + undo, dry-run, refuse d'écraser une cible) ;
+      (c) boutons `/reglages` (générer / appliquer par lots / annuler). Enrichir
+      ensuite les **2 faits à `None`** (lieu par géocodage GPS, type par SigLIP).
+      Spec dans `docs/RANGEMENT_2026.md` (« Renommage intelligent »).
 
 21. **Triage des images sans intérêt — DÉTECTEUR ML ÉCARTÉ, PIVOT « RÈGLES + REVUE
     HUMAINE » (03/08, décision écrite `eval/DECISIONS.md`).** La mesure a tranché
