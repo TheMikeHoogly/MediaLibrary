@@ -561,9 +561,26 @@ traversent le chantier) :
       rangement par année, sur les fichiers déjà classés. Spec détaillée dans
       `docs/RANGEMENT_2026.md` (« Renommage intelligent »).
 
-21. **Triage des images sans intérêt — BANC DE MESURE FAIT ET TESTÉ (02/08),
-    RUN RÉEL + DÉCISION EN ATTENTE.** Discipline `vision-eval` respectée : on
-    **mesure avant de bâtir**. Livré cette session :
+21. **Triage des images sans intérêt — DÉTECTEUR ML ÉCARTÉ, PIVOT « RÈGLES + REVUE
+    HUMAINE » (03/08, décision écrite `eval/DECISIONS.md`).** La mesure a tranché
+    autrement que prévu. Deux runs invalidés (bug de corruption des étiquettes de la
+    page — antislashs lus comme octal JS, **corrigé**, 23 marques récupérées ; puis
+    **clés périmées** car le rangement par année a déplacé 180/200 fichiers pendant
+    l'opération → 20 photos scorées seulement). Faits robustes : SigLIP zéro-shot
+    **3878 Mo VRAM** (au ras des 4 Go) ; le rebut **évident** est attrapable **par
+    règle** (nom/dossier `Screenshots`/`Scans`) ; le rebut **subtil** (~11 % des
+    ambiguës : reçu photographié, photo « bof ») n'est pas isolable par un zéro-shot
+    bon marché sans risquer une bonne photo. **Décision de conception** : pas de
+    classifieur ML ; **vue groupée par motif/règle + suppression individuelle
+    réversible** (`FileOps.delete`), flou au mieux en **clé de tri**, rebut subtil
+    laissé à la revue humaine. **Prochain pas (lecture seule) : `inventaire_rebuts.py`**
+    (fait, testé — chiffre/regroupe le rebut par règle sur TOUTE la médiathèque, le
+    rangement ayant dispersé les rebuts datés dans les dossiers année) → lire
+    `docs/inventaire_rebuts.md`, puis bâtir la vue de triage sur ces briques.
+    Outillage de mesure conservé (`interet.py`, `eval_interet.py`, `classer_regle`
+    testé) si un besoin de détecteur réapparaît. Détail historique ci-dessous.
+
+    ~~Discipline `vision-eval` : mesurer avant de bâtir.~~ Livré au fil des runs :
     - **`interet.py`** (module PUR, aucun import serveur/modèle au chargement) :
       heuristique de nom (`indice_nom` — `Screenshot_`, `-WA####`, `VideoCapture_`,
       `Scan_`, `facture/recu`…), score de flou (`score_flou` = variance du

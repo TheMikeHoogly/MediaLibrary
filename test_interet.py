@@ -57,6 +57,22 @@ def test_indice_nom_ignore_le_chemin():
     _ck(cat is None, "le chemin a contamine la decision (doit ignorer le dossier)")
 
 
+def test_classer_regle_nom_et_dossier():
+    # nom seul
+    cat, _ = I.classer_regle(r"\\NAS\home\Photos\2024\Screenshot_1.png")
+    _ck(cat == "capture", f"nom screenshot -> {cat!r}")
+    # dossier seul (nom neutre) — cat 'capture' des deux cotes ; le motif differe
+    # selon l'OS (Path.name ne decoupe pas '\' sous Linux), on ne teste que la cat
+    cat, m = I.classer_regle(r"\\NAS\home\Photos\_A TRIER\Samsung\Screenshots\IMG_9.jpg")
+    _ck(cat == "capture", f"dossier Screenshots -> {cat!r},{m!r}")
+    from pathlib import PureWindowsPath   # verifie la branche dossier explicitement
+    parts = PureWindowsPath(r"\\NAS\home\Photos\Scans\bulletin.jpg").parts[:-1]
+    _ck(any(I._DOSSIER_REGLE.search(str(p)) for p in parts), "dossier Scans non reconnu")
+    # vraie photo ambigue -> rien
+    cat, _ = I.classer_regle(r"\\NAS\home\Photos\2023\240211_Samsung\20231230_120000.jpg")
+    _ck(cat is None, f"photo ambigue faussement classee {cat!r}")
+
+
 # ─────────────────────────── Score de flou ────────────────────────────────────
 
 def _damier(n=256, case=8):

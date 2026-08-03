@@ -89,6 +89,28 @@ def indice_nom(nom_ou_chemin) -> tuple[str | None, str | None]:
     return None, None
 
 
+# Dossiers dont le NOM identifie deja un rebut (capture/scan). Un rebut « pris par
+# regle » ne demande aucun detecteur : c'est une regle + une politique (garder ou
+# non), pas un probleme de classification.
+_DOSSIER_REGLE = re.compile(r'screenshots?|captures?[ _]?d.?ecran|scans?', re.I)
+
+
+def classer_regle(key) -> tuple[str | None, str | None]:
+    """(categorie, motif) si `key` est un rebut attrapable par REGLE — nom de
+    fichier OU dossier du chemin (`\\Screenshots\\`, `\\Scans\\`...). Sinon
+    (None, None). Les cles du projet sont des chemins Windows : on decoupe avec
+    PureWindowsPath pour rester correct meme execute sous Linux (tests)."""
+    from pathlib import PureWindowsPath
+    cat, motif = indice_nom(key)
+    if cat:
+        return cat, motif
+    for p in PureWindowsPath(str(key)).parts[:-1]:
+        if _DOSSIER_REGLE.search(str(p)):
+            return ("document" if "scan" in str(p).lower() else "capture",
+                    f"dossier {p}")
+    return None, None
+
+
 # ─────────────────────────── Score de flou ────────────────────────────────────
 # Variance du Laplacien : mesure classique de nettete (CPU, aucun modele). Une
 # image nette a beaucoup de hautes frequences -> forte variance ; une image floue

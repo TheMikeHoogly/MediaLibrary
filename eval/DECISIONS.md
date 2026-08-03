@@ -520,6 +520,53 @@ classifieur. À trancher une fois le jeu stratifié étiqueté.
 
 ---
 
+## 2026-08-03 — Triage (point 21) : détecteur ML écarté par conception, pivot règles + revue humaine
+
+**Contexte : deux mesures invalidées, aucune n'a produit un banc exploitable.**
+1. **Bug de corruption des étiquettes (page HTML du banc) — corrigé.** Le clic sur
+   une catégorie passait la clé par `onchange="pick('…\chemin…')"` ; les antislashs
+   Windows y étaient lus comme des échappements **octaux legacy JS** (`\202`→`\x82`),
+   donc les marques étaient stockées sous une clé corrompue qui ne correspondait
+   plus à l'échantillon → la mesure lisait « tout garder ». Réparé (liaison par
+   **indice**, la clé ne transite plus par un littéral JS). Les 23 marques du run
+   candidats ont été **récupérées** en reconstruisant le mangling depuis les vraies
+   clés (0 perdue).
+2. **Clés périmées par le rangement concurrent.** Entre l'échantillonnage et la
+   mesure, le rangement par année a **déplacé 180/200 fichiers** hors de `_A TRIER`
+   → introuvables → **seules 20 photos scorées**. Les chiffres flou/SigLIP sont donc
+   du bruit (les positifs n'étaient quasi pas dans les 20). Garde-fou ajouté :
+   `--mesurer` **alerte** si >15 % des clés ne résolvent plus.
+
+**Seuls faits robustes.** (a) SigLIP zéro-shot a coûté **3878 Mo de VRAM au pic**
+(à ~200 Mo du plafond de 4 Go, en concurrence avec les pipelines) ; (b) sur un jeu
+**ambigu** (hors screenshots/scans pris par règle), Mike a marqué **23/200 rebut
+(~11 %)**, tous **subtils** (reçu photographié, photo « bof », capture hors dossier
+Screenshots) ; (c) le rebut **évident** est, par définition, **attrapable par une
+règle** (nom `Screenshot_`/`-WA`/`Scan_`, dossier `\Screenshots\`/`\Scans\`).
+
+**Décision : ne pas poursuivre un détecteur ML pour le triage.** Non pas sur un
+benchmark propre (on ne l'a pas), mais comme **décision de conception** : le rebut
+évident se règle par une **règle** (précision d'une règle, coût nul, pas de VRAM) ;
+le rebut subtil n'est pas ce qu'un zéro-shot bon marché sait isoler, et un faux
+positif y coûte une **bonne photo**. Refaire un 3ᵉ tour d'étiquetage pour un gain
+attendu nul n'est pas justifié. La suppression étant **humaine et réversible**
+(`FileOps.delete` → `.corbeille-rangement/`), un classifieur n'ajoute que du risque.
+
+**Cap retenu.** Une **vue groupée par motif/règle + suppression individuelle
+réversible** ; le flou au mieux comme **clé de tri**, jamais un flag ; le rebut
+subtil laissé à la **revue humaine** (parcours de la galerie), pas à une détection.
+Premier pas, lecture seule : `inventaire_rebuts.py` chiffre et regroupe le rebut par
+règle sur **toute** la médiathèque (le rangement a dispersé les rebuts datés dans
+les dossiers année). Briques réutilisées : `interet.classer_regle` (nom + dossier,
+testé), `FileOps.delete`, le dédoublonnage déjà fait.
+
+**Leçon de méthode.** Un banc peut être invalidé par son **outil de collecte**
+(clés corrompues à la saisie) autant que par sa vérité terrain, et par une
+**mutation concurrente du corpus** (rangement en cours) — vérifier que les clés
+résolvent fait désormais partie du protocole.
+
+---
+
 ## Annexe — bugs trouvés par les bancs d'essai eux-mêmes
 
 **2026-07-30, banc de classification :**
