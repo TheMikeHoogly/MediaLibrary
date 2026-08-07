@@ -2574,12 +2574,30 @@ def attribuer_visage(cle, i, cible, personne_proposee=""):
                 excl.append(cle)
                 pe['exclude'] = excl
                 PEOPLE_STORE.set(pk, pe)
+        # Si la photo PORTE déjà le tag de la personne proposée (carte « faux
+        # positif ? » : on écarte un non-visage déjà tagué), on retire ce tag
+        # erroné — sinon la même fausse alerte reviendrait à chaque passe.
+        se_sp = STORE.data.get(cle)
+        tag_sp = f"personne:{personne_proposee}"
+        retire_sp = False
+        if se_sp is not None and personne_proposee and _kw_has(se_sp, tag_sp):
+            _index_remove_person(cle, tag_sp)
+            _enqueue_person_write(cle, tag_sp, 'del')
+            STORE.save()
+            retire_sp = True
+        _suggest_remove(lambda s: s.get('type') == 'remove'
+                        and s.get('person') == personne_proposee
+                        and s.get('key') == cle)
 
         def defaire_excl():
             pe2 = PEOPLE_STORE.data.get(pk)
             if isinstance(pe2, dict):
                 pe2['exclude'] = [x for x in (pe2.get('exclude') or []) if x != cle]
                 PEOPLE_STORE.set(pk, pe2)
+            if retire_sp:
+                _index_add_person(cle, tag_sp)
+                _enqueue_person_write(cle, tag_sp, 'add')
+                STORE.save()
         jeton = _empiler_annulation(f"visage écarté de {personne_proposee}",
                                     defaire_excl)
         return {"ok": True, "jeton": jeton,
@@ -2590,7 +2608,19 @@ def attribuer_visage(cle, i, cible, personne_proposee=""):
         return {"ok": False}
     tag = f"personne:{nom}"
     se = STORE.data.get(cle)
-    if se is None or _kw_has(se, tag):
+    if se is None:
+        return {"ok": True, "n": 0, "libelle": "déjà attribué"}
+    if _kw_has(se, tag):
+        # Déjà tagué avec CE nom. Si l'utilisateur re-confirme le même nom depuis
+        # une carte « faux positif ? », c'est un « oui, c'est bien elle » : on
+        # l'enregistre (ne plus signaler + enrichit la signature) au lieu d'un
+        # no-op muet qui laissait la fausse alerte revenir à chaque passe.
+        if personne_proposee and nom.lower() == personne_proposee.lower():
+            _person_add_set(nom, 'confirmed', cle)
+            _person_add_ref(nom, cle, int(i or 0))
+            _suggest_remove(lambda s: s.get('type') == 'remove'
+                            and s.get('person') == nom and s.get('key') == cle)
+            return {"ok": True, "n": 0, "libelle": f"confirmé : {nom}"}
         return {"ok": True, "n": 0, "libelle": "déjà attribué"}
     _index_add_person(cle, tag)
     _enqueue_person_write(cle, tag, 'add')
@@ -2598,6 +2628,8 @@ def attribuer_visage(cle, i, cible, personne_proposee=""):
     # devient une exclusion : sinon elle reviendra indéfiniment.
     corrige = personne_proposee and nom.lower() != personne_proposee.lower()
     pk = (personne_proposee or "").lower()
+    tag_ancien = f"personne:{personne_proposee}"
+    retire_ancien = False
     if corrige:
         pe = PEOPLE_STORE.data.get(pk)
         if isinstance(pe, dict):
@@ -2606,11 +2638,23 @@ def attribuer_visage(cle, i, cible, personne_proposee=""):
                 excl.append(cle)
                 pe['exclude'] = excl
                 PEOPLE_STORE.set(pk, pe)
+        # Corriger depuis une carte « faux positif ? » : la photo PORTE le tag
+        # erroné. On le retire (sinon la même fausse alerte revient sans fin).
+        if _kw_has(se, tag_ancien):
+            _index_remove_person(cle, tag_ancien)
+            _enqueue_person_write(cle, tag_ancien, 'del')
+            retire_ancien = True
+        _suggest_remove(lambda s: s.get('type') == 'remove'
+                        and s.get('person') == personne_proposee
+                        and s.get('key') == cle)
     STORE.save()
 
     def defaire():
         _index_remove_person(cle, tag)
         _enqueue_person_write(cle, tag, 'del')
+        if retire_ancien:
+            _index_add_person(cle, tag_ancien)
+            _enqueue_person_write(cle, tag_ancien, 'add')
         if corrige:
             pe2 = PEOPLE_STORE.data.get(pk)
             if isinstance(pe2, dict):
@@ -8459,24 +8503,33 @@ function loadCurator(rebuild){
     box.innerHTML='';
     items.forEach(function(s){
       var el=document.createElement('div'); el.className='cl'; var html='';
+      var crop='<img loading="lazy" src="'+esc(s.crop_url)+'" style="width:80px;height:80px;object-fit:cover;border-radius:8px;background:#222">';
       if(s.type==='merge'){
         html='<div class="row"><span class="sz">Même personne ? <b>'+esc(s.a)+'</b> et <b>'+esc(s.b)+'</b> (sim '+s.sim+')</span>'+
           '<button class="btn prim">✓ Fusionner</button><button class="btn">✗ Différents</button></div>';
+      } else if(s.type==='remove'){
+        // « Faux positif ? » : la photo EST taguée X mais le visage ressemble
+        // peu à X. Trois réponses claires : garder (ce n'est PAS un faux
+        // positif → on confirme, plus jamais reproposé), retirer le tag, ou
+        // corriger vers le bon nom. Clavier : Espace/O = garder, X = retirer.
+        var labelR='<b>Faux positif ?</b> visage tagué <b>'+esc(s.person)+'</b> — score '+s.sim;
+        html='<div class="row" style="align-items:center">'+crop+
+          '<a href="'+esc(s.url)+'" target="_blank" rel="noopener" class="sz" style="text-decoration:none;color:#9db8d8">'+labelR+'</a>'+
+          '<button class="btn prim">✓ Oui, c’est '+esc(s.person)+'</button>'+
+          '<button class="btn warn">✗ Retirer le tag</button>'+
+          '<input class="qui" placeholder="ou : c’est…" autocomplete="off">'+
+          '<button class="btn">Pas un visage</button></div>'+
+          '<div class="props2" style="margin-top:6px"></div>';
       } else {
-        var crop='<img loading="lazy" src="'+esc(s.crop_url)+'" style="width:80px;height:80px;object-fit:cover;border-radius:8px;background:#222">';
-        // Pourquoi la question est posée : le rattachement automatique n'a
-        // PAS eu lieu parce qu'une autre personne obtient un score trop
-        // proche. Le dire évite de subir une demande incompréhensible.
-        var doute=(s.rival && s.type!=='remove')
+        // Ajout proposé. Pourquoi la question est posée : le rattachement auto
+        // n'a PAS eu lieu parce qu'une autre personne obtient un score proche.
+        var doute=s.rival
           ? (' <span style="color:#f0a35b">· hésite avec <b>'+esc(s.rival)+
              '</b> ('+s.rival_sim+', écart '+s.margin+')</span>') : '';
-        var label=(s.type==='remove')
-          ? ('<b>Faux positif ?</b> visage tagué <b>'+esc(s.person)+'</b> — score '+s.sim)
-          : ('<b>Ajouter à '+esc(s.person)+' ?</b> — score '+s.sim+doute);
-        var yes=(s.type==='remove')?'✓ Retirer':'✓ Oui, '+esc(s.person);
+        var label='<b>Ajouter à '+esc(s.person)+' ?</b> — score '+s.sim+doute;
         html='<div class="row" style="align-items:center">'+crop+
           '<a href="'+esc(s.url)+'" target="_blank" rel="noopener" class="sz" style="text-decoration:none;color:#9db8d8">'+label+'</a>'+
-          '<button class="btn prim">'+yes+'</button>'+
+          '<button class="btn prim">✓ Oui, '+esc(s.person)+'</button>'+
           '<input class="qui" placeholder="ou : c’est…" autocomplete="off">'+
           '<button class="btn">✗ Aucun</button></div>'+
           '<div class="props2" style="margin-top:6px"></div>';
@@ -8486,10 +8539,21 @@ function loadCurator(rebuild){
       if(s.type==='merge'){
         b[0].onclick=function(){curResolve('accept',s,el);};
         b[1].onclick=function(){curResolve('reject',s,el);};
+      } else if(s.type==='remove'){
+        // b[0] Garder = curator_reject : « c'est bien elle », enregistré comme
+        // confirmé → plus jamais reproposé (+ enrichit la signature). b[1]
+        // Retirer = curator_accept (untag). b[2] Pas un visage = écarte + untag.
+        b[0].onclick=function(){ curResolve('reject',s,el); };
+        b[1].onclick=function(){ curResolve('accept',s,el); };
+        b[2].onclick=function(){ assigner(s, el, '__pas_visage__'); };
+        var qr=el.querySelector('.qui'), prr=el.querySelector('.props2');
+        if(qr){
+          qr.addEventListener('input',function(){ propose2(qr,prr,s,el); });
+          qr.addEventListener('keydown',function(e){
+            if(e.key==='Enter'&&qr.value.trim()) assigner(s,el,qr.value.trim()); });
+        }
       } else {
-        // Attribution unifiée : accepter, CORRIGER vers un autre nom, ou
-        // écarter. Le binaire d'avant jetait le nom que l'utilisateur
-        // connaissait déjà — c'est précisément ce cas-là qui coûtait cher.
+        // Ajout : accepter, CORRIGER vers un autre nom, ou écarter (pas un visage).
         b[0].onclick=function(){curResolve('accept',s,el);};
         b[1].onclick=function(){ assigner(s, el, '__pas_visage__'); };
         var q=el.querySelector('.qui'), pr=el.querySelector('.props2');
