@@ -49,6 +49,26 @@ Dernière mise à jour : 7 août 2026 (session « affichage + renommage intellig
   poussé sur `origin/main`).** Voir le point 21 détaillé plus bas et
   `eval/DECISIONS.md` (03/08).
 
+**À VALIDER EN RÉEL — branche `integration-2026-08-07` (07/08 soir) :**
+
+0. **Deux correctifs prêts, mergés sur `integration-2026-08-07` (tester d'un coup :
+   `git checkout integration-2026-08-07` + redémarrer le serveur) :**
+   - **Carte Animaux « Rejeter le groupe »** (`868fde1`, point 4 ci-dessous) —
+     parité avec les visages, cible `__non_group__` réversible.
+   - **Curateur « Faux positif ? » corrigé** (`0347793`). Le vrai bug : l'UI
+     n'appelait jamais `curator_reject` (qui marque `confirmed` → plus jamais
+     reproposé) pour les faux positifs ; re-taguer le même nom = no-op muet
+     (`attribuer_visage` renvoyait « déjà attribué »), donc la même proposition
+     revenait à chaque passe. Fix UI : 3 actions claires sur la carte — **« ✓ Oui,
+     c'est X »** (= `reject` : confirme, ne plus signaler, enrichit la signature),
+     **« ✗ Retirer le tag »** (= `accept` : untag), **« c'est… »** (corrige : pose
+     le bon nom ET retire l'ancien). Clavier : Espace/O = garder, X = retirer
+     (avant : Espace retirait le tag — dangereux). Backend `attribuer_visage` durci :
+     re-confirmer le même nom → `confirmed` + prune ; corriger/`__pas_visage__` sur
+     un FP → retire le tag erroné (réversible). `py_compile` + `verifier_ui_tokens`
+     0 dur + repro logique isolée 4/4. **Si OK → merger dans `main` + push (Mike).**
+   - Outil `27 - Commit de session.bat` (branche + add + commit + push, ASCII pur).
+
 **Prochaines étapes, par valeur :**
 
 1. **Triage (point 21) — ✓ FAIT, REVU ET MERGÉ dans `main` (03/08).** Filtre par motif/dossier (`?motif=`,

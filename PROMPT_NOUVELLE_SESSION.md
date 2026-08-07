@@ -70,13 +70,36 @@ et les skills `.claude/skills/` (`monolith-surgery` **avant tout edit de
 
 ### Branches (IMPORTANT)
 
-- **`main` porte tout le travail de cette session** (tip `c5b1fde`). Les quatre
-  branches de la session sont **mergées dans `main`** : `fix/pets-names-lazy`,
-  `feat/affichage-detail`, `feat/renommage-plan`, `fix/renommage-annee-dossier`.
-  `git push` = geste de Mike (impossible depuis le sandbox) — **vérifier que
-  `origin/main` est bien à jour** en début de session (`git status`).
-- Le serveur a été **redémarré** par Mike sur ce code ; les nouvelles fonctions
-  (renommage, tri chronologique, correctifs fiches) sont **live**.
+- **`main`** porte le travail des sessions précédentes (renommage, affichage…).
+- **`integration-2026-08-07`** = branche de test de la session du 07/08 (soir).
+  Elle **merge deux correctifs** prêts à valider en réel :
+  - `feat/pets-rejeter-groupe` (`868fde1`) — bouton « Rejeter le groupe » sur `/pets`.
+  - `fix/curateur-faux-positifs` (`0347793`) — carte « Faux positif ? » : option
+    « C'est correct » + les mêmes propositions ne reviennent plus.
+  - + l'outil `27 - Commit de session.bat`.
+  **Pour tester les deux d'un coup : `git checkout integration-2026-08-07` puis
+  redémarrer le serveur.** Si OK → merger `integration-2026-08-07` dans `main` +
+  `git push` (geste de Mike).
+- `git push` impossible depuis le sandbox — **c'est Mike qui pousse**. Vérifier
+  `git status` / `origin/main` en début de session.
+- **Fin de session** : lancer `27 - Commit de session.bat` (branche + add +
+  commit + push, ASCII pur) ; Claude met à jour ROADMAP.md + ce fichier.
+
+### Fait le 07/08 (soir) — sur `integration-2026-08-07`, À VALIDER EN RÉEL
+
+- **Carte Animaux (`/pets`) : bouton « Rejeter le groupe »** à parité avec les
+  visages. Backend : cible `__non_group__` → flag `non_group` réversible (distinct
+  de `suspect`/`inconnu`), exclu du regroupement. `868fde1`.
+- **Curateur « Faux positif ? » (`/people`) : corrigé.** Le backend
+  `curator_reject` (marque `confirmed` → plus jamais reproposé) existait mais l'UI
+  ne l'appelait jamais pour les faux positifs ; re-taguer le même nom tombait sur
+  un no-op muet → la même proposition revenait sans fin. Désormais 3 actions
+  claires : **« ✓ Oui, c'est X »** (confirme, ne plus signaler + enrichit la
+  signature), **« ✗ Retirer le tag »** (vrai faux positif), **« c'est… »**
+  (corrige : retire l'ancien tag erroné). Clavier : Espace/O = garder, X = retirer.
+  Backend durci (`attribuer_visage`) : re-confirmer = confirmé ; corriger/pas-un-
+  visage retire le tag erroné. `0347793`. **Repro logique 4/4** ; à valider en réel.
+- **Outil `27 - Commit de session.bat`** (branche + add + commit + push, ASCII pur).
 
 ### Fait cette session (03-07/08) — LE NEUF
 
