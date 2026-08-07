@@ -27,17 +27,23 @@ git status -s
 echo.
 
 REM --- Branche (optionnel) ---
+REM La plupart du temps : repondre N pour commiter sur la branche courante.
+choice /c ON /n /m "Creer une NOUVELLE branche ? (O = oui / N = rester sur !BRANCH!) : "
+if errorlevel 2 goto :apres_branche
 set "NEWBR="
-set /p "NEWBR=Creer une NOUVELLE branche ? (nom, ou Entree pour rester) : "
-if not "!NEWBR!"=="" (
-  git checkout -b "!NEWBR!"
-  if errorlevel 1 (
-    echo Echec de creation de la branche. Abandon.
-    pause
-    exit /b 1
-  )
-  set "BRANCH=!NEWBR!"
+set /p "NEWBR=Nom de la nouvelle branche : "
+if "!NEWBR!"=="" (
+  echo Nom vide : on reste sur !BRANCH!.
+  goto :apres_branche
 )
+git checkout -b "!NEWBR!"
+if errorlevel 1 (
+  echo Echec de creation de la branche. Abandon.
+  pause
+  exit /b 1
+)
+set "BRANCH=!NEWBR!"
+:apres_branche
 
 REM --- Message de commit ---
 set "MSG="
