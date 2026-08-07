@@ -184,13 +184,17 @@ plus que des fichiers sans date ; les rebuts datés sont dans les dossiers anné
    clavier prêt). Le geste HUMAIN qui vaut plus que tout changement d'algo (vérité
    terrain à 0,8 %). Option code : `1`–`9` = assigner à une personne connue,
    `Maj+clic` = plage.
-3. **Harmonisation carte Animaux (DEMANDÉ par Mike, NON fait).** La carte de groupe
-   `/pets` (`carteGroupe`) n'a PAS le bouton **« Rejeter le groupe »** ni les options
-   spéciales bien visibles que les visages ont (`carteGroupeP` : « Rejeter le
-   groupe » + « Ce n'est pas un visage »). Porter la parité (le tableau
-   d'harmonisation ROADMAP l'exige : « tout outil d'un côté sert de l'autre »).
-   Utile pour les groupes mixtes (ex. Inti+Luna, la paire difficile). La sélection
-   par vignette + noms multiples + annulation existent déjà côté animaux.
+3. **Harmonisation carte Animaux — ✓ FAIT sur `feat/pets-rejeter-groupe`
+   (`868fde1`, 07/08, à valider en réel puis merger).** `carteGroupe` (`/pets`) a
+   le bouton visible **« Rejeter le groupe »** à parité avec `carteGroupeP`.
+   Backend : cible `__non_group__` pour `attribuer_animaux` → flag `non_group`
+   réversible (distinct de `suspect`/`inconnu`) ; `_nommable` le saute, donc le
+   regroupement l'exclut — miroir de `_marquer_visages`. UI : `envoyer(cible,
+   tous)` sur TOUS les membres + toast d'annulation. `__pas_animal__`/`__inconnu__`
+   restaient visibles dans les propositions. Vérifs vertes (`py_compile`,
+   `verifier_ui_tokens` 0 dur, repro logique isolée — photos.db WAL non ouvrable
+   depuis le sandbox). **RESTE : Mike valide en réel (rejeter un groupe sur
+   `/pets`, annuler) + merge.**
 4. **Étape B — reste redesign** : registre **papier** sur les cartes de clusters
    toujours visibles (`.cl` /people, `.group` /pets) — gros changement du flux de
    nommage, valider en réel d'abord ; **centre de tâches** remplaçant `#pending`

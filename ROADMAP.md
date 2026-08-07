@@ -81,10 +81,20 @@ Dernière mise à jour : 7 août 2026 (session « affichage + renommage intellig
 3. **Priorité n°1 reconnaissance** — confirmer ~100 propositions dans `/people`
    (tri clavier prêt). Le geste **humain** qui vaut plus que tout changement d'algo
    (vérité terrain à 0,8 %).
-4. **Harmonisation carte Animaux (demandé par Mike, NON fait)** — `carteGroupe`
-   (`/pets`) manque le bouton **« Rejeter le groupe »** et les options spéciales
-   visibles que les visages ont (`carteGroupeP`). Porter la parité (cf. tableau
-   d'harmonisation). Utile pour les groupes mixtes (Inti+Luna).
+4. **Harmonisation carte Animaux — ✓ FAIT sur `feat/pets-rejeter-groupe`
+   (`868fde1`, 07/08, à valider en réel puis merger).** `carteGroupe` (`/pets`) a
+   désormais le bouton visible **« Rejeter le groupe »** (`.btn.danger`) à parité
+   avec les visages (`carteGroupeP`). Backend : cible spéciale `__non_group__`
+   pour `attribuer_animaux` → flag `non_group` (réversible, `par_humain`),
+   **distinct** de `suspect` (pas un animal) et `inconnu` (animal inconnu) ;
+   `_nommable` saute `non_group`, donc `_gather_cats`/le regroupement l'excluent —
+   miroir exact de `_marquer_visages`. UI : `envoyer(cible, tous)` agit sur TOUS
+   les membres, toast d'annulation, catch réseau. Les options `__pas_animal__` /
+   `__inconnu__` restaient déjà visibles dans les propositions (parité « Ce n'est
+   pas un visage »). Vérifs : `py_compile` OK, `verifier_ui_tokens` 0 interdit dur,
+   logique isolée testée (photos.db en WAL non ouvrable depuis le sandbox → repro
+   pure). **RESTE : Mike valide en réel sur `/pets` (rejeter un groupe, annuler),
+   puis merge.**
 5. **Redesign étape B — reste** : registre **papier** sur les cartes de clusters
    (`/people`, `/pets`), **centre de tâches** remplaçant `#pending`, **numéro de
    vue** sur la planche contact. Détail dans « Interface » (points 9-12).
