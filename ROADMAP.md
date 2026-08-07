@@ -3,7 +3,7 @@
 Ce fichier survit aux sessions, contrairement à une liste de tâches en mémoire.
 Il est référencé par `CLAUDE.md`, donc relu au début de chaque session.
 
-Dernière mise à jour : 3 août 2026.
+Dernière mise à jour : 7 août 2026 (session « affichage + renommage intelligent »).
 
 ---
 
@@ -72,38 +72,44 @@ Dernière mise à jour : 3 août 2026.
    (`4cb9aef`) et poussé par Mike (03/08).** Reste (optionnel) : traiter les 3
    mineurs si le besoin s'en fait sentir. Jamais d'étiquette « rebut » (la règle `\Scans\` pointe
    des photos scannées à garder) ; jamais d'auto-sélection.
-2. **Priorité n°1 reconnaissance** — confirmer ~100 propositions dans `/people`
+2. **Renommage intelligent (point 20) — ✓ FAIT et vérifié en réel, PRÊT À
+   APPLIQUER (07/08).** Flux complet dans `/reglages` (Plan → Vérifier à blanc →
+   Appliquer un lot → Annuler), in-process, réversible, garde-fous. Plan actuel =
+   **2114 à renommer**. **Le geste qui reste est HUMAIN (Mike applique les lots).**
+   Reste code optionnel : enrichir les 2 faits `None` (lieu par géocodage GPS,
+   type SigLIP). Détail : point 20 plus bas.
+3. **Priorité n°1 reconnaissance** — confirmer ~100 propositions dans `/people`
    (tri clavier prêt). Le geste **humain** qui vaut plus que tout changement d'algo
    (vérité terrain à 0,8 %).
-3. **Renommage intelligent (point 20)** — brancher l'application (cœur `renommage.py`
-   fait et testé ; reste : re-clé + provenance + undo + 2 faits à `None`).
-4. **Redesign étape B — reste** : registre **papier** sur les cartes de clusters
+4. **Harmonisation carte Animaux (demandé par Mike, NON fait)** — `carteGroupe`
+   (`/pets`) manque le bouton **« Rejeter le groupe »** et les options spéciales
+   visibles que les visages ont (`carteGroupeP`). Porter la parité (cf. tableau
+   d'harmonisation). Utile pour les groupes mixtes (Inti+Luna).
+5. **Redesign étape B — reste** : registre **papier** sur les cartes de clusters
    (`/people`, `/pets`), **centre de tâches** remplaçant `#pending`, **numéro de
    vue** sur la planche contact. Détail dans « Interface » (points 9-12).
-5. **Harmonisation de l'affichage des images (demande Mike, 03/08).** But : un
-   **sélecteur de type d'affichage cohérent sur toutes les vues** (Galerie /
-   Dossiers / Uploads partagent déjà `GALLERY_PAGE` ; restent les fiches détail
-   Animaux/Personnes) + **tri chronologique du plus ancien au plus récent par
-   défaut, réversible**, sur la **date de prise** (EXIF) avec repli fichier.
-   - ✓ **FAIT sur `feat/affichage-detail` (03/08, à valider + merger)** — fiches
-     détail : chargement fiabilisé (`openCat` vérifie `r.ok`, bouton **Réessayer**
-     au lieu du message mort « Erreur de chargement » ; `_serve_cat_photos` ne
-     renvoie plus jamais un 500 non-JSON) ; **chronologique ascendant** (chat +
-     personne, dates absentes en fin) ; **menu `d-mode` lisible** (tokens, options
-     contrastées). `py_compile` OK, `verifier_ui_tokens` 0 interdit dur.
-   - **RESTE** : (a) sur `GALLERY_PAGE`, tri « Date » sur `mtime` → passer à la
-     **date de prise** + **sens réversible** (défaut ascendant) + contrôle unifié
-     avec les diaporamas (Démo/Aléatoire/Association) ; (b) porter le même contrôle
-     d'affichage sur les fiches détail. Incrément suivant, à valider en réel.
+6. **Harmonisation de l'affichage des images (demande Mike) — ✓ FAIT ET MERGÉ
+   (07/08).** Galerie `GALLERY_PAGE` (Galerie/Dossiers/Uploads) : tri **Date** sur
+   la **date de prise** (`taken`, repli `mtime`), **du plus ancien au plus récent
+   par défaut, reclic pour inverser** (↑/↓) ; **Nom** A-Z/Z-A ; diaporama **Démo**
+   suit l'ordre courant de la planche. Fiches détail Animaux/Personnes :
+   chronologique ascendant + **chargement fiabilisé** (`openCat` vérifie `r.ok` +
+   bouton **Réessayer** ; `_serve_cat_photos` jamais un 500 non-JSON — corrige
+   l'« Erreur de chargement » de Caline) + menu `d-mode` lisible. **RESTE
+   (optionnel)** : porter le sélecteur d'ordre réversible aux fiches détail si on
+   veut le contrôle **identique** partout (aujourd'hui elles trient ascendant sans
+   bouton d'inversion).
 
 Le redesign « chambre noire » — étape A (tokenisation des 7 pages + barre,
 `verifier_ui_tokens.py` : 0 interdit dur) et l'essentiel de l'étape B (planche
 contact `auto-fill`, View Transitions, modale papier, **tri clavier du curateur**)
 — est **fait et validé en réel**.
 
-**Une phrase pour démarrer la prochaine session** : « Lis ROADMAP.md (point 21) et
-`eval/DECISIONS.md`, charge `monolith-surgery` + `photo-ui`, crée la branche
-`feat/triage-galerie` et attaque le build du filtre + suppression réversible. »
+**Une phrase pour démarrer la prochaine session** : « Lis `PROMPT_NOUVELLE_SESSION.md`
+puis ROADMAP.md ; tout le neuf est mergé dans `main`. Le renommage intelligent est
+complet et prêt — Mike applique les lots depuis `/reglages`. Prochain code utile :
+harmoniser la carte Animaux (bouton “Rejeter le groupe”) ou enrichir les 2 faits
+`None` du renommage (géocodage GPS / type SigLIP). »
 
 ### En réserve (parké, non prioritaire)
 

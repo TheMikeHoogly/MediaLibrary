@@ -3,7 +3,7 @@
 > Copie tout le bloc ci-dessous dans une nouvelle conversation Cowork, après
 > avoir connecté le dossier `C:\Prog\Claude\MediaLibrary`.
 >
-> Dernière mise à jour : **3 août 2026** (fin de session triage : mesuré, tranché, pivoté).
+> Dernière mise à jour : **7 août 2026** (session « affichage + renommage intelligent » : renommage complet et vérifié en réel, prêt à appliquer).
 
 ---
 
@@ -66,25 +66,70 @@ et les skills `.claude/skills/` (`monolith-surgery` **avant tout edit de
   mobile, c'est le **même dépôt local** et le même serveur (chez Mike) — `git push`
   reste un geste que **Mike** fait sur le PC.
 
-## ══ ÉTAT AU 3 AOÛT 2026 — LIRE EN PREMIER ══
+## ══ ÉTAT AU 7 AOÛT 2026 — LIRE EN PREMIER ══
 
 ### Branches (IMPORTANT)
 
-- **`main` == `origin/main`**, porte l'état courant (sessions 01-03/08 : redesign,
-  `/browse`, `/reglages`, rangement par année générateur+applicateur, banc triage +
-  pivot). Des branches de suivi existent encore mais `main` fait foi. `git push` =
-  geste de Mike (impossible depuis le sandbox).
-- **Triage (point 21) = FAIT, REVU ET MERGÉ dans `main` (03/08, `4cb9aef`, poussé
-  sur `origin/main`).** Filtre par motif + suppression réversible dans la galerie.
-  Revue de diff faite (1 correctif Medium `b5e5773` : clé absolue pour racines
-  supplémentaires non indexées). Branche `feat/triage-galerie` fusionnée (ff).
+- **`main` porte tout le travail de cette session** (tip `c5b1fde`). Les quatre
+  branches de la session sont **mergées dans `main`** : `fix/pets-names-lazy`,
+  `feat/affichage-detail`, `feat/renommage-plan`, `fix/renommage-annee-dossier`.
+  `git push` = geste de Mike (impossible depuis le sandbox) — **vérifier que
+  `origin/main` est bien à jour** en début de session (`git status`).
+- Le serveur a été **redémarré** par Mike sur ce code ; les nouvelles fonctions
+  (renommage, tri chronologique, correctifs fiches) sont **live**.
+
+### Fait cette session (03-07/08) — LE NEUF
+
+- **Renommage intelligent (point 20) : COMPLET et vérifié en réel — PRÊT À
+  APPLIQUER (Mike n'a pas encore lancé de lot).** Flux de bout en bout dans
+  `/reglages` → Maintenance :
+  - **Générateur** `plan_renommage.py` (pur, `test_plan_renommage.py` **9/9**) +
+    `server.generer_plan_renommage()` (in-process, lecture seule) → écrit
+    `docs/plan_renommage.{json,md}`. Ne cible QUE les **noms bruts**
+    (`est_nom_brut` : Screenshot_/VideoCapture_/IMG_/-WA/Scan_/Photo0#/hash) ;
+    laisse les noms déjà datés. **Décisions Mike** : (a) noms bruts seulement ;
+    (b) **ne pas** renommer les fichiers **sans date fiable** (pas de `00000000_`) ;
+    (c) **forcer le français** dans le sujet quand la description IA déborde en
+    anglais (kw_fr) ; (d) suffixe de collision **lisible** `-2/-3` (pas un hash).
+  - **Applicateur in-process réversible** `appliquer_renommage(limite, dry)` :
+    renomme EN PLACE + `rekey_everywhere` (aucun nom humain perdu) + **journal
+    undo** ; garde-fous : source existe, cible n'existe PAS (jamais d'écrasement),
+    clé cible absente de l'index, **par lots** (`RENOMMAGE_LOT=200`),
+    `annuler_renommage()` idempotent. Endpoints `POST /api/maint/rename-{check,
+    apply,undo}` + boutons **Vérifier à blanc / Appliquer un lot / Annuler**.
+  - **Décision de conception** : application **IN-PROCESS** → **PAS besoin
+    d'arrêter le serveur** (le « serveur arrêté » des `.bat` vient de ce qu'ils
+    ouvrent `photos.db` en 2ᵉ processus ; SQLite = 1 écrivain).
+  - **Vérifié en réel (Chrome + lecture de `docs/`)** : plan = **2114 à renommer**
+    (1531 dates précises YYYYMMDD, 583 année-seule YYYY0000), 0 nom `00000000`,
+    « à blanc » = 2114 applicables / 0 sauté. **Reste : Mike applique les lots**
+    (Vérifier → Appliquer un lot → contrôler NAS → répéter ; Annuler si besoin).
+  - Note dates : `resolve_datestamp` priorise l'**EXIF `taken`** ; sur ces 2114
+    bruts l'EXIF est absent (captures/WhatsApp/exports réduits) → date du nom
+    (1531) ou année du dossier (583). Correct et attendu.
+- **Correctif date renommage** : `path_year()` ne scanne plus que le **dossier**
+  (jamais le nom) — un `IMG_1998` n'est plus lu comme l'année 1998.
+- **Affichage harmonisé + tri chronologique réversible** (`feat/affichage-detail`) :
+  galerie `GALLERY_PAGE` (couvre Galerie/Dossiers/Uploads) — bouton **Date** trie
+  sur la **date de prise** (`taken`, repli `mtime`), **du plus ancien au plus
+  récent par défaut, reclic pour inverser** (flèche ↑/↓) ; **Nom** idem (A-Z/Z-A) ;
+  le diaporama **Démo** suit l'ordre courant de la planche. Fiches détail
+  Animaux/Personnes : chronologique ascendant ; **chargement fiabilisé** (openCat
+  vérifie `r.ok` + bouton **Réessayer**, `_serve_cat_photos` ne renvoie plus de
+  500 non-JSON — corrige l'« Erreur de chargement » de Caline sous charge) ; menu
+  `d-mode` lisible.
+- **Page Animaux** (`fix/pets-names-lazy`) : port du correctif `/people` (tempête
+  de `/api/names`) — `listeProps` au **focus** + **dédup in-flight** de
+  `chargerNoms`.
+- **Triage (point 21) = MERGÉ (`4cb9aef`)** — filtre par motif + suppression
+  réversible dans la galerie `/files` (session précédente).
 
 ### Rangement par année (point 19) : FAIT ET APPLIQUÉ (03/08)
 
 Appliqué en réel par Mike, index re-clé et stable. `_A TRIER` ne contient presque
 plus que des fichiers sans date ; les rebuts datés sont dans les dossiers année.
 
-### Fait cette session (02/08)
+### Fait sessions précédentes (01-02/08) — rappel
 
 - **Redesign « chambre noire » — étape A (tokenisation) : les 7 pages + la barre
   de nav.** Couleurs/polices en dur → tokens `ui/tokens.css`. Sémantique des
@@ -126,40 +171,35 @@ plus que des fichiers sans date ; les rebuts datés sont dans les dossiers anné
 
 ### Prochaines étapes, par valeur (roadmap de la suite)
 
-1. **Rangement par année — FAIT ET APPLIQUÉ (03/08)** (voir la section dédiée
-   ci-dessus). Plus rien à faire ; l'index est stable.
-2. **Triage (ROADMAP point 21) — ✓ FAIT, REVU ET MERGÉ dans `main` (03/08,
-   `4cb9aef`).** La mesure avait écarté le détecteur ML
-   (décision écrite `eval/DECISIONS.md` du 03/08) : rebut fiable minuscule
-   (`inventaire_rebuts.py` → **462/33 109 = 1,4 %**), **surtout des photos à
-   garder**. Livré : **filtre par motif/dossier + suppression individuelle
-   réversible dans la galerie `/files`** — `?motif=` (chips `capture`/`document`/
-   `facture` en `--fixateur`, lecture seule, `import interet` paresseux) ;
-   `_key_to_target` (clé STORE → idx/rel) ; `/api/files/delete {key}` →
-   `FileOps.delete` (quarantaine réversible + re-clé) ; bouton supprimer `--encre`
-   cible 44 px dans la **visionneuse** + toast undo 10 s ; `'key'` ajouté aux DEUX
-   constructions de `file_data`. Vérifs vertes : `py_compile`, `verifier_ui_tokens`
-   (0 interdit dur), `test_interet` 16/16, `test_fichiers` 23/23, `test_ui_bundle`,
-   démarrage zéro-dep confirmé. **Revue de diff FAITE (03/08)** : 1 correctif
-   Medium commité (`b5e5773`) — clé absolue pour les racines supplémentaires non
-   indexées (la suppression par clé retombait à tort sous Uploads). Tests verts.
-   **Mergé (ff) dans `main` (`4cb9aef`) et poussé sur `origin/main` par Mike
-   (03/08).** La prochaine session doit charger le correctif au redémarrage du
-   serveur. Jamais d'étiquette « rebut », jamais d'auto-sélection.
-3. **Priorité n°1 reconnaissance — confirmer ~100 propositions** (`/people`,
-   maintenant rapide au clavier). C'est le geste HUMAIN qui vaut plus que tout
-   changement d'algo (voir ROADMAP « À faire », Reconnaissance §1). Outillage
-   prêt ; il « suffit » que Mike le fasse. Peut-être ajouter `1`–`9` = assigner à
-   une personne connue, `Maj+clic` = plage.
-4. **Renommage intelligent (ROADMAP point 20)** — brancher l'application sur
-   `_Uploads` (cœur déterministe `renommage.py` + `renommage_facts.py` faits et
-   testés ; reste : re-clé via `rekey_everywhere` + provenance + undo + GPS
-   inversé/type SigLIP pour les 2 faits à `None`). Peut passer après le rangement.
-5. **Étape B — reste redesign** : propager le registre **papier** aux cartes de
-   clusters toujours visibles (`.cl` sur `/people`, `.group` sur `/pets`) — gros
-   changement du flux de nommage, valider en réel d'abord ; **centre de tâches**
-   remplaçant le bandeau `#pending` (données `hw_state()`/`system_busy()`/files) ;
-   **numéro de vue** sur les cellules de la planche contact.
+1. **Renommage intelligent (point 20) — FAIT et vérifié, PRÊT À APPLIQUER.** Le
+   geste qui reste est **HUMAIN, à Mike** : `/reglages` → Maintenance → **« Plan de
+   renommage »** → relire `docs/plan_renommage.md` → **« Vérifier à blanc »** →
+   **« Appliquer un lot »** (200, réversible) → contrôler sur le NAS → répéter
+   jusqu'à 0 ; **« Annuler »** si besoin. Plan actuel = **2114 à renommer**. **Reste
+   code, optionnel/non bloquant** : enrichir les 2 faits `None` — **lieu** par
+   géocodage inverse des GPS (684 photos géolocalisées ; **chercher un connecteur
+   au registre MCP** avant d'écrire du code jetable) et **type** par SigLIP — pour
+   des noms plus riches.
+2. **Priorité n°1 reconnaissance — confirmer ~100 propositions** (`/people`, tri
+   clavier prêt). Le geste HUMAIN qui vaut plus que tout changement d'algo (vérité
+   terrain à 0,8 %). Option code : `1`–`9` = assigner à une personne connue,
+   `Maj+clic` = plage.
+3. **Harmonisation carte Animaux (DEMANDÉ par Mike, NON fait).** La carte de groupe
+   `/pets` (`carteGroupe`) n'a PAS le bouton **« Rejeter le groupe »** ni les options
+   spéciales bien visibles que les visages ont (`carteGroupeP` : « Rejeter le
+   groupe » + « Ce n'est pas un visage »). Porter la parité (le tableau
+   d'harmonisation ROADMAP l'exige : « tout outil d'un côté sert de l'autre »).
+   Utile pour les groupes mixtes (ex. Inti+Luna, la paire difficile). La sélection
+   par vignette + noms multiples + annulation existent déjà côté animaux.
+4. **Étape B — reste redesign** : registre **papier** sur les cartes de clusters
+   toujours visibles (`.cl` /people, `.group` /pets) — gros changement du flux de
+   nommage, valider en réel d'abord ; **centre de tâches** remplaçant `#pending`
+   (données `hw_state()`/`system_busy()`/files) ; **numéro de vue** sur la planche
+   contact. **Affichage** : porter le sélecteur d'ordre réversible (fait sur la
+   galerie) aux fiches détail Animaux/Personnes si on veut l'unifier partout.
+5. **Triage (point 21) — MERGÉ (`4cb9aef`).** Filtre par motif + suppression
+   réversible dans la galerie. Mineurs optionnels notés (`classer_regle` appelé 2×
+   quand motif actif ; `except` large qui avale un bug de règle ; undo global).
 6. **Édition des réglages depuis `/reglages`** (aujourd'hui lecture seule) : seuils,
    autonomie/cadence de maintenance, racines — avec garde-fous.
 7. **Reconnaissance (algo)** : regroupement par **densité** (HDBSCAN / Chinese
