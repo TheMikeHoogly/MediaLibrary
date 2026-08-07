@@ -4578,6 +4578,13 @@ td.n, th.n { text-align: right; font-family: var(--f-donnees); }
          border: 1px solid var(--graphite-p); color: var(--graphite-p); }
 .badge.on { color: #fff; background: var(--fixateur); border-color: var(--fixateur); }
 .badge.paused { color: #fff; background: var(--veilleuse); border-color: var(--veilleuse); }
+.subh { font: 600 var(--t-sm)/1.2 var(--f-affichage); margin: 16px 0 2px; letter-spacing: -0.01em; }
+.stepren { list-style: none; display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
+.stepren li { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.stepren > li > .b { flex: 0 0 auto; min-width: 12rem; }
+.stepren .mut { flex: 1 1 14rem; min-width: 0; }
+.renmsg { margin-top: 10px; padding: 8px 12px; border-radius: 6px; background: var(--papier-2);
+          color: var(--texte-papier); font: 500 0.82rem var(--f-donnees); }
 </style>
 </head>
 <body>
@@ -4614,14 +4621,20 @@ td.n, th.n { text-align: right; font-family: var(--f-donnees); }
       <button class="b" id="pause">Pause</button>
       <button class="b" id="census">Recensement (lecture seule)</button>
       <button class="b" id="planyear">Plan de rangement par annee</button>
-      <button class="b" id="planren">Plan de renommage</button>
-      <button class="b" id="rencheck">Verifier le renommage (a blanc)</button>
-      <button class="b" id="renapply">Appliquer un lot de renommage</button>
-      <button class="b" id="renundo">Annuler le dernier renommage</button>
       <span class="mut" id="maint-msg"></span>
     </div>
     <table id="steps"><thead><tr><th>Etape</th><th>Autonomie</th><th class="n">Cadence</th><th>Dernier passage</th></tr></thead><tbody></tbody></table>
     <p class="mut" style="margin-top:8px">Autonomie : <b>auto</b> = executee seule quand due (sur/reversible) ; <b>propose</b> = plan prepare, pas applique ; <b>off</b> = desactivee.</p>
+
+    <h4 class="subh">Renommage intelligent des fichiers</h4>
+    <p class="mut">Renomme les fichiers bruts (Screenshot_, IMG_, exports WhatsApp&hellip;) en noms dates et lisibles, EN PLACE sur le NAS. Entierement reversible. Suis les 4 etapes dans l'ordre :</p>
+    <ol class="stepren">
+      <li><button class="b" id="planren">1 &middot; Generer le plan</button><span class="mut">Ecrit <b>docs/plan_renommage.md</b> &mdash; a relire avant d'appliquer.</span></li>
+      <li><button class="b" id="rencheck">2 &middot; Verifier a blanc</button><span class="mut">Simulation : compte les renommages applicables, ne touche aucun fichier.</span></li>
+      <li><button class="b prim" id="renapply">3 &middot; Appliquer un lot</button><span class="mut">Renomme reellement jusqu'a 200 fichiers. Reclique pour le lot suivant, jusqu'a 0 restant.</span></li>
+      <li><button class="b" id="renundo">4 &middot; Annuler le dernier lot</button><span class="mut">Defait le dernier lot applique.</span></li>
+    </ol>
+    <div class="renmsg" id="ren-msg" role="status" aria-live="polite">Clique &laquo;&nbsp;1 &middot; Generer le plan&nbsp;&raquo; pour commencer.</div>
   </div>
 
   <h2>Dedoublonnage &amp; rangement</h2>
@@ -4689,23 +4702,24 @@ function load(){
     document.getElementById('config').innerHTML='<table>'+rows+'</table>';
   }).catch(function(){});
 }
-function act(u, warn){
+function act(u, warn, msgId){
   if(warn && !confirm(warn)) return;
-  document.getElementById('maint-msg').textContent='\\u2026';
+  var el=document.getElementById(msgId||'maint-msg');
+  el.textContent='\\u2026';
   j(u,{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'}).then(function(r){
-    document.getElementById('maint-msg').textContent = r.msg || (r.paused!=null?(r.paused?'Maintenance en pause.':'Maintenance reprise.'):(r.ok?'OK.':(r.error||'Echec.')));
+    el.textContent = r.msg || (r.paused!=null?(r.paused?'Maintenance en pause.':'Maintenance reprise.'):(r.ok?'OK.':(r.error||'Echec.')));
     setTimeout(load, 800);
-  }).catch(function(){ document.getElementById('maint-msg').textContent='Le serveur n a pas repondu.'; });
+  }).catch(function(){ el.textContent='Le serveur n a pas repondu.'; });
 }
 document.getElementById('refresh').onclick=load;
 document.getElementById('run').onclick=function(){ act('/api/maint/run'); };
 document.getElementById('pause').onclick=function(){ act('/api/maint/toggle'); };
 document.getElementById('census').onclick=function(){ act('/api/maint/census', 'Lancer le recensement complet ? Lecture seule mais ~4 h et sollicite le NAS.'); };
 document.getElementById('planyear').onclick=function(){ act('/api/maint/plan-annee'); };
-document.getElementById('planren').onclick=function(){ act('/api/maint/plan-renommage'); };
-document.getElementById('rencheck').onclick=function(){ act('/api/maint/rename-check'); };
-document.getElementById('renapply').onclick=function(){ act('/api/maint/rename-apply', 'Appliquer un lot de renommage (max 200 fichiers, EN PLACE sur le NAS) ? Reversible via Annuler.'); };
-document.getElementById('renundo').onclick=function(){ act('/api/maint/rename-undo', 'Annuler le dernier lot de renommage ?'); };
+document.getElementById('planren').onclick=function(){ act('/api/maint/plan-renommage', null, 'ren-msg'); };
+document.getElementById('rencheck').onclick=function(){ act('/api/maint/rename-check', null, 'ren-msg'); };
+document.getElementById('renapply').onclick=function(){ act('/api/maint/rename-apply', 'Appliquer un lot de renommage (max 200 fichiers, EN PLACE sur le NAS) ? Reversible via Annuler.', 'ren-msg'); };
+document.getElementById('renundo').onclick=function(){ act('/api/maint/rename-undo', 'Annuler le dernier lot de renommage ?', 'ren-msg'); };
 load(); setInterval(load, 6000);
 </script>
 </body>
