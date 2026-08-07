@@ -189,7 +189,8 @@ def _nommable(a):
     contredites (voir verifier_especes.py) : c'est ce qui empêche un groupe
     de macaques d'être présenté comme « 9 apparitions de ce chat ».
     """
-    if not isinstance(a, dict) or a.get('suspect') or a.get('inconnu'):
+    if (not isinstance(a, dict) or a.get('suspect') or a.get('inconnu')
+            or a.get('non_group')):
         return False
     return a.get('species') in ANIMAL_NAMEABLE
 
@@ -2411,7 +2412,16 @@ def attribuer_animaux(membres, cible):
         return {"ok": False, "n": 0}
 
     if isinstance(cible, str) and cible in CIBLES_SPECIALES:
-        champ = 'suspect' if cible == CIBLE_PAS_ANIMAL else 'inconnu'
+        # Trois rejets distincts, comme côté visages (harmonisation) :
+        #   pas un animal (suspect) · animal inconnu (inconnu) ·
+        #   « Rejeter le groupe » = vrais animaux mais cluster non nommable
+        #   (nuques, profils flous) → non_group, honoré par _nommable/_gather_cats.
+        if cible == CIBLE_NON_GROUP:
+            champ, libelle = 'non_group', "marquée(s) non regroupable(s)"
+        elif cible == CIBLE_PAS_ANIMAL:
+            champ, libelle = 'suspect', "écartée(s) (pas un animal)"
+        else:
+            champ, libelle = 'inconnu', "marquée(s) inconnue(s)"
         touchees = []
         for k, i in membres:
             e = ANIMAL_STORE.data.get(k)
@@ -2432,8 +2442,6 @@ def attribuer_animaux(membres, cible):
             ANIMAL_STORE.save()
             _invalider_groupes_animaux()
 
-        libelle = ("écartées (pas un animal)" if cible == CIBLE_PAS_ANIMAL
-                   else "marquées inconnues")
         jeton = _empiler_annulation(f"{len(touchees)} détection(s) {libelle}", defaire)
         _invalider_groupes_animaux()
         return {"ok": True, "n": len(touchees), "jeton": jeton,
@@ -7586,7 +7594,8 @@ function carteGroupe(c){
       ' <span style="color:var(--graphite)">— clique pour désélectionner</span></div>'+
     '<div class="thumbs"></div>'+
     '<div class="nmrow"><input placeholder="C’est… (« Inti, Luna » si les deux)" autocomplete="off">'+
-    '<button class="btn primary">Attribuer</button></div>'+
+    '<button class="btn primary">Attribuer</button>'+
+    '<button class="btn danger rejeter">Rejeter le groupe</button></div>'+
     '<div class="props" style="margin-top:6px"></div>';
   var zone=card.querySelector('.thumbs');
   (c.crops||[]).forEach(function(u,i){
@@ -7601,23 +7610,27 @@ function carteGroupe(c){
     zone.appendChild(b);
   });
   var inp=card.querySelector('input'), btn=card.querySelector('button.primary');
+  var rej=card.querySelector('.rejeter');
   var props=card.querySelector('.props');
   function choisis(){ return membres.filter(function(_m,i){return sel[i];}); }
   function maj(){ btn.textContent='Attribuer '+choisis().length; }
-  function envoyer(cible){
-    var m=choisis(); if(!m.length){ inp.focus(); return; }
+  // « tous » = rejet du groupe entier (miroir de carteGroupeP côté visages) :
+  // on n'agit pas sur la sélection mais sur tous les membres.
+  function envoyer(cible, tous){
+    var m=tous?membres:choisis(); if(!m.length){ inp.focus(); return; }
     // Deux animaux sur la même photo : on accepte plusieurs noms séparés
     // par une virgule ou un « + ». Les deux tags sont posés.
     if(typeof cible==='string' && /[,+]/.test(cible))
       cible=cible.split(/\s*[,+]\s*/).filter(Boolean);
-    btn.disabled=true;
+    btn.disabled=true; rej.disabled=true;
     post('/api/assign',{genre:'animal',membres:m,cible:cible}).then(function(r){
-      btn.disabled=false;
+      btn.disabled=false; rej.disabled=false;
       if(!r.ok){ props.textContent=r.erreur||'échec'; return; }
       toast(r.libelle||'fait', r.jeton);
       if(m.length>=membres.length){ card.remove(); } else { loadClusters(true); }
       loadNamed(); loadStatus();
-    });
+    }).catch(function(){ btn.disabled=false; rej.disabled=false;
+      props.textContent='Le serveur n a pas repondu. Reessaie dans un instant.'; });
   }
   function listeProps(){
     var t=inp.value.trim().toLowerCase();
@@ -7644,6 +7657,9 @@ function carteGroupe(c){
   inp.addEventListener('focus',listeProps);
   inp.addEventListener('keydown',function(e){ if(e.key==='Enter'&&inp.value.trim()) envoyer(inp.value.trim()); });
   btn.onclick=function(){ if(inp.value.trim()) envoyer(inp.value.trim()); else inp.focus(); };
+  // Rejeter le groupe entier : vrais animaux mais cluster non nommable
+  // (nuques, profils). Réversible via le toast d'annulation. Miroir des visages.
+  rej.onclick=function(){ envoyer('__non_group__', true); };
   maj();
   return card;
 }
