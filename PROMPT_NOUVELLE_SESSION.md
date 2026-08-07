@@ -70,16 +70,12 @@ et les skills `.claude/skills/` (`monolith-surgery` **avant tout edit de
 
 ### Branches (IMPORTANT)
 
-- **`main`** porte le travail des sessions précédentes (renommage, affichage…).
-- **`integration-2026-08-07`** = branche de test de la session du 07/08 (soir).
-  Elle **merge deux correctifs** prêts à valider en réel :
-  - `feat/pets-rejeter-groupe` (`868fde1`) — bouton « Rejeter le groupe » sur `/pets`.
-  - `fix/curateur-faux-positifs` (`0347793`) — carte « Faux positif ? » : option
-    « C'est correct » + les mêmes propositions ne reviennent plus.
-  - + l'outil `27 - Commit de session.bat`.
-  **Pour tester les deux d'un coup : `git checkout integration-2026-08-07` puis
-  redémarrer le serveur.** Si OK → merger `integration-2026-08-07` dans `main` +
-  `git push` (geste de Mike).
+- **`main`** porte tout le travail, **y compris les deux correctifs du 07/08
+  validés en réel et mergés** (rejet de groupe `/pets` `868fde1`, curateur
+  faux-positifs `/people` `0347793`, + outil `27 - Commit de session.bat`).
+  `integration-2026-08-07` est donc absorbée dans `main` (fast-forward).
+  **`main` est 7 commits en avance sur `origin/main` → il ne reste que `git push`
+  (geste de Mike).**
 - `git push` impossible depuis le sandbox — **c'est Mike qui pousse**. Vérifier
   `git status` / `origin/main` en début de session.
 - **Fin de session** : lancer `27 - Commit de session.bat` (branche + add +

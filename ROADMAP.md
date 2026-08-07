@@ -49,10 +49,23 @@ Dernière mise à jour : 7 août 2026 (session « affichage + renommage intellig
   poussé sur `origin/main`).** Voir le point 21 détaillé plus bas et
   `eval/DECISIONS.md` (03/08).
 
-**À VALIDER EN RÉEL — branche `integration-2026-08-07` (07/08 soir) :**
+**✓ VALIDÉ EN RÉEL ET MERGÉ DANS `main` (07/08, session validation) — reste `git push` (Mike).**
+`main` est **7 commits en avance sur `origin/main`** (fast-forward, prêt à pousser).
+Validation faite via Chrome sur le serveur réel (192.168.0.13:8080, tournant bien
+sur le code d'`integration-2026-08-07`) :
+- **`/pets` « Rejeter le groupe » : aller-retour réversible complet prouvé** —
+  rejet d'un groupe (`n:2`, `__non_group__`), les 2 membres exclus du regroupement
+  (691→689 après reconstruction), annulation restaure exactement (689→691). Zéro
+  mutation nette.
+- **`/people` curateur faux-positifs : validé** — câblage des 3 actions confirmé
+  (« Oui c'est X » → `curator_reject`/`confirmed` ; « Retirer le tag » →
+  `curator_accept` ; « c'est… »/champ → correction), mécanisme « ne revient plus »
+  prouvé par le code (`build_suggestions` saute les clés `confirmed`, l. 7296), et
+  curateur opérationnel en réel (35 suggestions dont 1 « faux positif » Zab). Le
+  clic « Oui c'est X » lui-même est un jugement d'identité laissé à Mike (non
+  fabriqué sur les vraies photos).
 
-0. **Deux correctifs prêts, mergés sur `integration-2026-08-07` (tester d'un coup :
-   `git checkout integration-2026-08-07` + redémarrer le serveur) :**
+0. **(HISTORIQUE) Deux correctifs, désormais dans `main` :**
    - **Carte Animaux « Rejeter le groupe »** (`868fde1`, point 4 ci-dessous) —
      parité avec les visages, cible `__non_group__` réversible.
    - **Curateur « Faux positif ? » corrigé** (`0347793`). Le vrai bug : l'UI
