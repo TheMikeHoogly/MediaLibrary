@@ -923,6 +923,39 @@ def read_gps(paths, progress=False):
     return result
 
 
+def read_meta_and_gps(path):
+    """Lit en UN SEUL appel exiftool les mots-clés/description existants ET le
+    GPS d'un fichier. Fusionne `read_existing_metadata` + `read_gps` pour le
+    worker de tagging : une lecture NAS et un process exiftool de moins par
+    photo, pendant que le GPU attend l'I/O. Le GPS est inchangé par l'écriture
+    des mots-clés (`write_metadata` ne touche que Keywords/Description), donc
+    lire avant l'écriture donne la même valeur qu'après.
+
+    Retourne (kw_list|None, desc, gps[lat,lon]|None). Le parsing pur (testé) vit
+    dans `tagging_meta.parse_meta_gps_item`."""
+    if not EXIFTOOL:
+        return None, "", None
+    import tagging_meta
+    args = ["-json", "-n", "-q", "-m", "-fast2",
+            "-charset", "filename=UTF8",
+            "-XMP-dc:Subject", "-IPTC:Keywords", "-XMP-dc:Description",
+            "-Composite:GPSLatitude", "-Composite:GPSLongitude", str(path)]
+    try:
+        r = _run_exiftool(args)
+        items = json.loads(r.stdout or "[]")
+        return tagging_meta.parse_meta_gps_item(items[0]) if items else (None, "", None)
+    except Exception:
+        return None, "", None
+
+
+def _merge_named_tags(kw_fr, existing_kw):
+    """Réintègre les tags nommés (personne:/animal:) déjà présents dans le
+    fichier — invariant sacré : jamais perdre un nom humain. Délègue à la
+    logique pure testée (`tagging_meta.merge_named_tags`)."""
+    import tagging_meta
+    return tagging_meta.merge_named_tags(kw_fr, existing_kw)
+
+
 def backfill_gps():
     """Complète l'index en lisant le GPS des photos déjà taguées qui n'ont
     pas encore de champ 'gps'. Tourne une fois au démarrage, en tâche de
@@ -1245,23 +1278,20 @@ def tagger_worker():
             b64 = image_to_b64(path)
             raw = ollama_generate(b64)
             kw_fr, kw_en, desc = parse_tags(raw)
-            # PÉRENNITÉ : ne jamais perdre les tags nommés (personne:/animal:) déjà
-            # écrits dans le fichier. Un ré-tagging IA (fichier modifié) les
-            # ré-intègre au lieu de les écraser.
+            # UNE seule lecture exiftool pour les mots-clés existants ET le GPS
+            # (au lieu de deux appels séparés) : une lecture NAS et un process
+            # de moins par photo, pendant que le GPU attend l'I/O.
+            # PÉRENNITÉ : ne jamais perdre les tags nommés (personne:/animal:)
+            # déjà écrits dans le fichier — un ré-tagging IA les ré-intègre au
+            # lieu de les écraser (logique pure testée : tagging_meta).
             try:
-                ex = read_existing_metadata([path]).get(_pkey(path))
-                if ex:
-                    for t in ex[0]:
-                        tl = str(t).lower()
-                        if (tl.startswith('personne:') or tl.startswith('animal:')) \
-                                and t not in kw_fr:
-                            kw_fr.append(t)
+                existing_kw, _exdesc, gps = read_meta_and_gps(path)
+                kw_fr = _merge_named_tags(kw_fr, existing_kw)
             except Exception:
-                pass
+                gps = None
             merged = list(dict.fromkeys(kw_fr + kw_en))
             in_file = write_metadata(path, merged, desc)
             size, mtime = _stat_of(path)   # après écriture des métadonnées
-            gps = read_gps([path]).get(_pkey(path))
             entry = {"kw_fr": kw_fr, "kw_en": kw_en, "desc": desc,
                      "in_file": in_file, "at": time.time(),
                      "size": size, "mtime": mtime, "gps": gps if gps else None}
