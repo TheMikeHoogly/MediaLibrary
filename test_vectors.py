@@ -190,6 +190,30 @@ def t_suppression(tmp):
     cx.close()
 
 
+def t_delete_all(tmp):
+    """delete_all retire les DEUX formes (suffixe + cle nue) d'une photo, sans
+    toucher un voisin dont la cle a la cible pour simple prefixe."""
+    cx = connecte(f"{tmp}/da.db")
+    vs = VectorStore(cx)
+    vs.put_many_b64('face', [(f"a/p.jpg\x1ffaces\x1f{i}", b64_de([0.1] * 512))
+                             for i in range(3)])            # 3 suffixe visages
+    vs.put_b64('animal', "a/p.jpg\x1fanimals\x1f0", b64_de([0.2] * 768))  # suffixe animal
+    vs.put_b64('photo', "a/p.jpg", b64_de([0.3] * 512))    # cle NUE semantique
+    vs.put_b64('photo', "a/p.jpg2", b64_de([0.4] * 512))   # voisin (prefixe) : reste
+    vs.put_b64('face', "autre.jpg\x1ffaces\x1f0", b64_de([0.5] * 512))    # autre photo
+    n = vs.delete_all("a/p.jpg")
+    verifie("delete_all retire les 5 vecteurs de la photo (2 formes)", n == 5, n)
+    verifie("le voisin « {key}2 » (cle nue) survit",
+            "a/p.jpg2" in vs.load_all_b64('photo'))
+    verifie("une autre photo survit", vs.count('face') == 1, vs.count('face'))
+    verifie("plus aucun vecteur de la cible",
+            "a/p.jpg" not in vs.load_all_b64('photo')
+            and all(not k.startswith("a/p.jpg\x1f")
+                    for k in vs.load_all_b64('face')))
+    verifie("idempotent (rejoue -> 0)", vs.delete_all("a/p.jpg") == 0)
+    cx.close()
+
+
 def t_occupation(tmp):
     """Regression : la table vectors ne doit PAS etre en WITHOUT ROWID."""
     import numpy as np
@@ -310,8 +334,8 @@ def mesures_reelles(db):
 def main():
     tmp = Path(tempfile.mkdtemp(prefix="test_vec_"))
     for t in (t_aller_retour, t_extraction_reinjection, t_champ_non_vectoriel,
-              t_recherche, t_recherche_restreinte, t_suppression, t_occupation,
-              t_migration_schema_v1):
+              t_recherche, t_recherche_restreinte, t_suppression, t_delete_all,
+              t_occupation, t_migration_schema_v1):
         sous = tmp / t.__name__
         sous.mkdir(parents=True, exist_ok=True)
         try:

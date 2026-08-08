@@ -224,6 +224,33 @@ class VectorStore:
             self._cache.clear()
         return n
 
+    def delete_all(self, key):
+        """Supprime TOUS les vecteurs de la photo `key`, quel que soit le `kind`.
+        Miroir de `rekey_prefix_all` pour la SUPPRESSION (fichier disparu) : les
+        deux formes de cle doivent partir —
+          - suffixe « {key}\\x1f{champ}\\x1f{i} » (visages/animaux/refs) ;
+          - cle NUE « {key} » (magasin semantique, kind='photo').
+        La cle nue est appariee a l'identique (`k = key`) : un voisin « {key}2 »
+        n'est jamais touche. Une seule transaction ; en cas d'echec, ROLLBACK
+        complet (pas de suppression partielle). Renvoie le nombre de lignes
+        supprimees. Idempotent (rejoue -> 0)."""
+        lo = key + '\x1f'
+        hi = key + '\x1f' + '￿'
+        cx = self.cx
+        cx.execute("BEGIN IMMEDIATE")
+        try:
+            n = cx.execute(
+                "DELETE FROM vectors WHERE k>=? AND k<?", (lo, hi)).rowcount
+            n += cx.execute(
+                "DELETE FROM vectors WHERE k = ?", (key,)).rowcount
+            cx.execute("COMMIT")
+        except Exception:
+            cx.execute("ROLLBACK")
+            raise
+        if n:
+            self._cache.clear()
+        return n
+
     def count(self, kind=None):
         if kind:
             return self.cx.execute("SELECT count(*) FROM vectors WHERE kind=?",

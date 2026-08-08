@@ -88,6 +88,20 @@ seuil/modèle).
   refuse encore (auth `context=mcp` distincte, et le connecteur se déconnecte/reconnecte
   en boucle dans la preview). Config prête ; à retester « teste GitKraken » quand stable.
   Le `.bat` 28 fait le merge sans GitKraken de toute façon.
+- **Orphelins de suppression (BUG trouvé ET corrigé 08/08).** `_sync_dir` étape 4 ne
+  purgeait que le TagStore ; visages/animaux/vecteurs d'un fichier disparu restaient
+  (« ARZOPA »). Diagnostic `verifier_orphelins.py` (read-only) : **4569 orphelins, 0
+  nommé**. Correctif en place : `vectors.delete_all` (+test_vectors 34/34) + `forget_everywhere`
+  câblé dans `_sync_dir` étape 4, noms préservés (fiches keyées par nom). **Reste Mike** :
+  committer + **redémarrer** (le scan de démarrage purge le backlog en cascade), puis
+  relancer `verifier_orphelins.py` → doit tomber à ~0. Détections : `server.py`
+  (`forget_everywhere`, `_sync_dir`), `vectors.py` (`delete_all`).
+- **Garde SigLIP humain/animal (item 12b) — MESURÉ 08/08 → REJETÉ tel quel.**
+  `verifier_visages.py` a tourné : pic VRAM 2707 Mo OK, mais **18 % de faux rejets**
+  (vrais humains endormis/près d'un chat lus « cat »), scores chevauchants → pas de
+  seuil global viable (détail `eval/DECISIONS.md`). **Ne pas câbler.** Si on y revient :
+  re-mesurer sur découpes SANS marge (0,3 embarque le chat voisin). Remède Mutz retenu =
+  l'action manuelle « C'est un animal » déjà livrée.
 - **Cross-pipeline (ROADMAP item 2) — CODÉ, à valider en réel.** `server.py`, UI seule :
   `/people` option **« C'est un animal (pas une personne) »** (`SPECIAUX_P` → `__pas_visage__`) ;
   `/pets` miroir **« C'est une personne (pas un animal) »** (`SPECIAUX` → `__pas_animal__`).

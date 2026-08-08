@@ -567,6 +567,105 @@ résolvent fait désormais partie du protocole.
 
 ---
 
+## 2026-08-08 — Garde humain/animal des visages (item 12b) — PROTOCOLE PRÉ-ENREGISTRÉ
+
+**Statut : banc écrit et testé (logique pure, `test_verifier_visages.py` 15/15
+dans le bac à sable), DÉCISION EN ATTENTE du run sur la machine réelle.** Entrée
+posée *avant* la mesure, comme l'exige `vision-eval` (étape 0 : formuler
+l'hypothèse avant de mesurer). À compléter après le run.
+
+**Le défaut observé.** Le pipeline visages (InsightFace) n'a aucun garde
+humain/animal : il accepte toute détection de `det_score ≥ FACE_DET_THRESHOLD`
+(0,50, volontairement bas pour capter profils/flous). Une face canine frontale
+passe → le chien **Mutz** forme un groupe de 25 « visages » sur `/people`. Miroir
+exact du défaut YOLO/COCO résolu côté animaux (entrée du 30/07).
+
+**Hypothèse.** Une passe SigLIP « visage humain vs animal vs objet » sur les
+découpes déjà en cache (`face_thumbs/`, aucun accès NAS) sait isoler ces fausses
+détections. La métrique qui tranche n'est **pas** la justesse moyenne mais le
+**coût des faux rejets** : combien de **vrais visages humains** seraient écartés à
+tort (un vrai visage caché coûte plus qu'une face de chien manquée). Contrainte
+matérielle : le **pic VRAM** doit rester loin des 4 Go pendant qu'Ollama est
+résident (cf. triage rejeté en partie pour 3878 Mo).
+
+**Jeu de validation (figé, corpus réel).** Les découpes de visages exploitables
+(`det_score ≥ 0,50`, non jugées par un humain) déjà en cache. Le banc n'écrit
+aucun tag par défaut ; il exporte un échantillon des **écartés** dans
+`eval/visages/` + `eval/visages.json`, que Mike étiquette `vrai_humain: true/false`.
+Un seul `vrai_humain: true` parmi les écartés **est** un faux rejet.
+
+**Ce qui est comparé.** `verifier_visages.py` : SigLIP zéro-shot sur un
+vocabulaire **local** (13 libellés → 3 codes `humain`/`animal`/`objet`, **sans
+toucher** `vocabulaire_tags.txt`), score max par code, marge avec la 2ᵉ hypothèse.
+Un visage est `nonhumain` si `code != humain` **et** `score ≥ seuil` **et**
+`marge ≥ marge_min`. Le rapport balaie plusieurs seuils (0,03 → 0,18) pour montrer
+l'agressivité ; le seuil retenu sera le meilleur **sous une borne de faux rejets**,
+fixée après étiquetage.
+
+**Métriques.** Tableau croisé humain/animal/objet ; nombre d'écartés par seuil ;
+**faux rejets** (via l'étiquetage humain de l'échantillon) ; **pic VRAM** mesuré
+pendant l'encodage (rejet si proche de 4 Go) ; ms/découpe.
+
+**Garde-fous de méthode déjà en place.** Logique pure isolée et testée
+(`test_verifier_visages.py` 15/15 : parité de la formule de cache avec `server.py`,
+classement, seuils, tableau croisé, invariant « un humain n'est jamais écarté »).
+Imports lourds (`semantic`/`torch`) paresseux → le test tourne sans GPU. Le banc
+**MESURE, n'ACTIVE rien** : `--appliquer` écrit seulement des annotations
+(`vis_ia`/`vis_score`/`vis_marge`/`nonhumain`), ne pose **pas** `pas_visage`, ne
+retire rien du pipeline (le serveur n'honore pas encore `nonhumain` — câblage =
+étape séparée, APRÈS cette entrée). Jugements humains (`par_humain`) jamais
+réévalués.
+
+**Décision : à écrire après le run** (adopté / rejeté / seuil retenu). Ne rien
+câbler dans `server.py` avant — ordre imposé par `vision-eval` (mesurer, décider,
+puis bâtir).
+
+**Lancer la mesure (machine réelle, DANS le `.venv`, page Personnes ouverte une
+fois pour peupler `face_thumbs/`) :**
+
+```
+.venv\Scripts\python.exe verifier_visages.py                # simulation + rapport + pic VRAM
+.venv\Scripts\python.exe verifier_visages.py --exporter 40  # echantillon a etiqueter
+#   ... remplir 'vrai_humain' dans eval/visages.json ...
+```
+
+**RÉSULTAT (08/08).** 16 570 découpes encodées, **pic VRAM 2707 Mo** (large sous
+4 Go — la contrainte matérielle passe). Tableau : humain 97,8 %, objet 1,4 %,
+animal 0,8 % ; **106 écartés au seuil 0,05.** Échantillon de 40 écartés relu
+(revue Claude sur planche-contact, à confirmer par Mike) : **7 sont de VRAIS
+visages humains — 18 % de faux rejets.** Ce sont des personnes endormies ou
+allongées près d'un chat, lues « the face of a cat » par SigLIP. Scores des faux
+rejets : **0,102 à 0,149**, qui **chevauchent** ceux des vrais non-humains
+(statues/chats à 0,10–0,15). Même en écartant les 2 cas de visages distordus et
+le 1 incertain, il reste **5 faux rejets nets à 0,102–0,113**.
+
+**DÉCISION : NE PAS ACTIVER la garde telle quelle. Le nettoyage automatique est
+REJETÉ sur cette conception.** Le coût des faux rejets (cacher un vrai visage de
+famille) est trop élevé, et surtout **les distributions de score se chevauchent**
+— aucun seuil global ne sépare un humain endormi d'une statue. Confirme, une fois
+de plus, la règle du projet : un proxy zéro-shot bon marché n'isole pas le cas
+subtil, et un faux positif y coûte une bonne donnée (parallèle exact avec le
+triage rejeté le 03/08).
+
+**Pistes restantes (à MESURER, ne rien bâtir avant) :**
+1. **Découpes sans marge.** Les vignettes ont 0,3 de marge qui embarque le chat
+   voisin — cause probable du « personne+chat → chat ». Régénérer des découpes
+   serrées (géométrie du calcul d'empreinte, comme `--equitable` côté animaux) et
+   re-mesurer : c'est la piste la plus prometteuse.
+2. **Deux signaux plutôt qu'un seuil global** (non-humain très net ET confirmé par
+   un autre indice, ex. faiblesse de l'embedding InsightFace).
+3. **À défaut, s'en tenir à l'action manuelle « C'est un animal »** livrée ce jour
+   (cartes de groupe + curateur `/people`, miroir `/pets`) : remède suffisant pour
+   Mutz, sans aucun risque de faux rejet. C'est l'état retenu par défaut.
+
+**Leçon de méthode.** Le banc a fait son travail : mesurer AVANT d'activer a
+empêché de cacher 5 à 7 vrais visages. Le pic VRAM était bon (2707 Mo), la
+justesse « moyenne » excellente (97,8 %) — et pourtant la garde est inutilisable,
+parce que la seule métrique qui compte ici (faux rejets) la condamne. Un bon score
+moyen n'est pas un feu vert.
+
+---
+
 ## Annexe — bugs trouvés par les bancs d'essai eux-mêmes
 
 **2026-07-30, banc de classification :**

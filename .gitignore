@@ -32,10 +32,12 @@ recuperees/
 # des visages et des chemins réels.
 eval/echantillon/
 eval/especes/
+eval/visages/
 eval/illisibles/
 eval/crops_res/
 eval/echantillon.json
 eval/especes.json
+eval/visages.json
 eval/illisibles.json
 eval/recuperees.json
 eval/animaux.json

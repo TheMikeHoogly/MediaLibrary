@@ -1843,10 +1843,14 @@ def _sync_dir(label, cur, own_keys, first=False, deep=False):
             print(f"  ♻ {label} : {len(changed)} fichier(s) modifié(s) → re-tagging")
 
     # 4) fichiers disparus : nettoyage (la racine vient d'être listée, donc joignable)
+    #    forget_everywhere purge en cascade tags + détections visages/animaux +
+    #    vecteur sémantique (avant : STORE seul → détections orphelines, bug ARZOPA).
+    #    Les fiches nommées (PEOPLE/PETS, keyées par nom) ne sont pas touchées.
     if orphans:
-        n = STORE.remove_many(orphans)
+        n = forget_everywhere(orphans)
         if n:
-            print(f"  🧹 {label} : {n} entrée(s) de fichiers disparus retirée(s)")
+            print(f"  🧹 {label} : {n} entrée(s) de fichiers disparus retirée(s)"
+                  f" (tags + visages/animaux + vecteurs)")
 
 
 def scan_uploads(first=False, deep=False):
@@ -2016,6 +2020,46 @@ def rekey_everywhere(old, new, mtime=None, save=True):
         for st in subject_stores:
             st.save()
     return moved
+
+
+def forget_everywhere(keys):
+    """Inverse de `rekey_everywhere` : OUBLIE completement des cles dont le
+    FICHIER a disparu. Sans elle, la purge du scan (`_sync_dir` etape 4) ne
+    retirait que le store `tags` et laissait les detections visages/animaux et
+    le vecteur semantique orphelins (bug « ARZOPA », constate le 08/08 :
+    ~4 500 detections de fichiers supprimes subsistaient).
+
+    Retire donc, pour chaque cle :
+      - l'entree `tags` (STORE) ;
+      - les detections `faces` et `animals` — dont leurs vecteurs, purges par
+        `_ecrire` (via `vec.delete_prefix`) au moment du `remove_many` ;
+      - le vecteur semantique nu (kind='photo') via `delete_all`.
+
+    AUCUN nom humain perdu, par construction : les fiches PEOPLE/PETS sont keyees
+    par NOM (« mike », « luna »), pas par chemin de photo — elles ne sont donc
+    jamais touchees ici. Le tag `personne:`/`animal:` de la photo disparait avec
+    la photo (elle n'existe plus), mais la fiche et sa signature (refs = copies)
+    survivent. Renvoie le nombre d'entrees `tags` retirees.
+    """
+    keys = [k for k in keys if k]
+    if not keys:
+        return 0
+    n = STORE.remove_many(keys)
+    # Seules FACE_STORE et ANIMAL_STORE portent des detections keyees par photo.
+    # PEOPLE/PETS sont keyes par nom -> volontairement exclus (ne rien casser).
+    for st in (FACE_STORE, ANIMAL_STORE):
+        try:
+            st.remove_many(keys)
+        except Exception as e:                               # noqa: BLE001
+            print(f"  ⚠ oubli {getattr(st, 'path', st)} : {e}")
+    if hasattr(STORE, 'cx'):
+        try:
+            pv = photo_vectors()
+            for k in keys:
+                pv.delete_all(k)
+        except Exception as e:                               # noqa: BLE001
+            print(f"  ⚠ oubli vecteur semantique : {e}")
+    return n
 
 
 # ─── Operations de fichiers (vue Dossiers) ───────────────────────────────────

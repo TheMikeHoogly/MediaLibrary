@@ -113,10 +113,14 @@ Convergence naturelle avec l'item 2 (action cross-pipeline).
 
 ### 7. Reconnaissance — algorithme
 
-- **Garde amont humain/animal (12b)** — `verifier_visages.py` : SigLIP « visage humain
-  vs animal/objet » sur les découpes (miroir de `verifier_especes.py`, passe séparée
-  hors serveur) + plancher `det_score`/pose pour écarter nuques et profils du statut
-  *nommable*. **Mesurer avant d'activer** (`vision-eval`). Résout l'item 2 à la racine.
+- **Garde amont humain/animal (12b)** — **MESURÉ le 08/08 → REJETÉ tel quel.**
+  `verifier_visages.py` + test 15/15 ont tourné : pic VRAM 2707 Mo (OK) mais
+  **18 % de faux rejets** (7/40 écartés = vrais humains endormis/près d'un chat, lus
+  « cat »), scores 0,10–0,15 **chevauchant** les vrais non-humains → aucun seuil global
+  ne sépare. Détail : `eval/DECISIONS.md`. **Ne pas câbler.** Piste la plus prometteuse
+  si on y revient : **re-mesurer sur découpes SANS marge** (la marge 0,3 embarque le chat
+  voisin). En attendant, le remède Mutz est l'**action manuelle** « C'est un animal »
+  livrée (cartes de groupe + curateur `/people` + miroir `/pets`).
 - **Regroupement par densité** (HDBSCAN / Chinese Whispers) au lieu d'un seuil global
   unique — un seuil ne sert pas à la fois des portraits nets et des profils de 90 px.
 - **AdaFace** sur le chemin de ré-embedding des visages faibles.
@@ -144,6 +148,16 @@ page Carte partager le vocabulaire de la barre de recherche. (Recouvre l'enrichi
 
 ### 10. Données & finitions
 
+- **Purge de suppression incomplète (BUG — diagnostiqué ET corrigé le 08/08).**
+  `_sync_dir` étape 4 ne retirait un fichier disparu que du **TagStore** ; visages/
+  animaux/vecteurs restaient orphelins (cas « ARZOPA »). Diagnostic (`verifier_orphelins.py`,
+  read-only) : **4569 orphelins, 0 nommé** (48 `par_humain`, jugements sur photos
+  disparues, sans objet). Correctif **implémenté** : `vectors.delete_all` (2 formes
+  suffixe+clé nue, test_vectors 34/34), `forget_everywhere` (miroir de
+  `rekey_everywhere`) câblé dans `_sync_dir` étape 4. Noms **préservés par
+  construction** (fiches PEOPLE/PETS keyées par nom, jamais touchées). **Reste
+  (geste Mike)** : committer + **redémarrer** — le `scan_uploads` de démarrage purge
+  le backlog en cascade — puis relancer `verifier_orphelins.py` pour confirmer ~0.
 - **Fiche « Flo »** (3 478 photos, 80 références, 17 exclusions) probablement mal
   constituée — c'est elle qui rend Florine ambiguë.
 - **Doublons de fiches** entre personnes et animaux.
