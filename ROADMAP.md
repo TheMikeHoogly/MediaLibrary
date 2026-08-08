@@ -65,11 +65,14 @@ bas pour capter profils/flous), et une face canine frontale passe.
 - **Correction manuelle immédiate — existe déjà** : « Rejeter le groupe »
   (`__non_group__`) ou « Ce n'est pas un visage » (`__pas_visage__`) sur le groupe
   `/people`. Réversible. À faire dès maintenant pour Mutz.
-- **À ajouter — action explicite et symétrique** : « C'est un animal (pas une
-  personne) » sur un groupe visage → retire des personnes ET (option) confirme côté
-  animaux ; miroir « C'est une personne (pas un animal) » sur `/pets`. Plus clair que
-  « pas un visage », cohérent avec l'harmonisation personnes/animaux. Réutilise
-  `attribuer_visages`/`attribuer_animaux` + cibles spéciales + toast d'annulation.
+- **Action explicite et symétrique — FAIT (branche courante, à valider en réel).**
+  `/people` : option **« C'est un animal (pas une personne) »** (→ `__pas_visage__`,
+  `SPECIAUX_P`) à côté de « Ce n'est pas un visage » (objets/reflets). `/pets` : miroir
+  **« C'est une personne (pas un animal) »** (→ `__pas_animal__`, `SPECIAUX`). UI seule,
+  aucune modif backend : réutilise les cibles spéciales déjà gérées par
+  `attribuer_visages`/`attribuer_animaux`, réversible via le toast. `py_compile` OK.
+  Reste à observer en réel sur le groupe Mutz. L'option « confirme côté animaux » a été
+  volontairement écartée du périmètre (lien découpe visage ↔ détection YOLO non trivial).
 - **Le vrai fix automatique = item 7 ci-dessous (garde amont 12b)** : une vérification
   SigLIP « visage humain vs animal/objet » + plancher `det_score` empêcherait le groupe
   de se former. Mutz est le cas d'école qui justifie de le mesurer et l'activer.

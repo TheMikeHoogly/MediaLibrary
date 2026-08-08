@@ -30,8 +30,11 @@ if errorlevel 1 (
 REM --- Verrou git perime (.git\index.lock) ---
 REM   Un client git (GitKraken Desktop) ouvert sur le depot, ou un process git
 REM   plante, laisse un .lock qui bloque les operations git.
-if not exist ".git\index.lock" goto :apres_verrou
-echo ATTENTION : un verrou git est present : .git\index.lock
+set "GITLOCK="
+if exist ".git\index.lock" set "GITLOCK=1"
+if exist ".git\HEAD.lock" set "GITLOCK=1"
+if not defined GITLOCK goto :apres_verrou
+echo ATTENTION : un verrou git est present dans .git (index.lock ou HEAD.lock).
 echo   Cause habituelle : GitKraken Desktop ouvert sur ce depot,
 echo   ou un process git precedent qui a plante.
 echo   Ferme GitKraken Desktop s'il est ouvert sur ce depot avant de continuer.

@@ -74,6 +74,27 @@ seuil/modèle).
 
 ## ══ ÉTAT AU 8 AOÛT 2026 — LIRE EN PREMIER ══
 
+### Session git + cross-pipeline (dernière en date)
+
+- **`feat/menage-ui-gpu-0807` a été mergée dans `main`** par fast-forward côté remote
+  (nouveau `28 - Fusionner la branche dans main.bat` : `git push origin HEAD:main` sans
+  checkout local → contourne le verrou `server.py`). `main` == `origin/main` à jour.
+- **Outillage git ajouté** : `28 - Fusionner…bat`, `docs/GIT_WORKFLOW.md` (workflow
+  complet documenté), et un **garde-fou anti-verrou** dans les bats 27 **et** 28 (détecte
+  `.git\index.lock`/`HEAD.lock`, propose de le supprimer après confirmation — cause
+  habituelle : GitKraken Desktop ouvert sur le dépôt). `.gitignore` : artefacts
+  `plan_renommage`/`undo_renommage` ignorés.
+- **GitKraken** : compte + CLI (`gk`) authentifiés côté Mike, MAIS le **connecteur MCP**
+  refuse encore (auth `context=mcp` distincte, et le connecteur se déconnecte/reconnecte
+  en boucle dans la preview). Config prête ; à retester « teste GitKraken » quand stable.
+  Le `.bat` 28 fait le merge sans GitKraken de toute façon.
+- **Cross-pipeline (ROADMAP item 2) — CODÉ, à valider en réel.** `server.py`, UI seule :
+  `/people` option **« C'est un animal (pas une personne) »** (`SPECIAUX_P` → `__pas_visage__`) ;
+  `/pets` miroir **« C'est une personne (pas un animal) »** (`SPECIAUX` → `__pas_animal__`).
+  `py_compile` OK. **RESTE (geste Mike) : commit (bat 27) + push + REDÉMARRER le serveur +
+  tester** sur le groupe Mutz. Non commité au moment d'écrire (le sandbox n'a pas les droits
+  d'écrire refs/locks dans `.git` — édition de fichiers OK, choréo git = côté Mike).
+
 ### Branches
 
 - **`main` == `origin/main`**, poussé et à jour. Porte tout l'intégré, dont les

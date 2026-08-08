@@ -7642,6 +7642,7 @@ function loadClusters(rebuild){
    qui permet de traiter un groupe mixte sans fonction « scinder ». */
 var SPECIAUX=[
   {v:'__pas_animal__', t:'Ce n’est pas un animal', d:'peluche, statue, reflet… écarté définitivement'},
+  {v:'__pas_animal__', t:'C’est une personne (pas un animal)', d:'humain détecté comme animal — miroir de « C’est un animal » côté Personnes'},
   {v:'__inconnu__',    t:'Animal inconnu',            d:'vrai animal, mais pas un des miens'}
 ];
 var NOMS_CACHE=null, NOMS_CACHE_INFLIGHT=null;
@@ -8358,8 +8359,17 @@ function findMore(name,box){
    chat) sans « scinder ». Un rejet est une attribution à une cible spéciale :
    « Ce n'est pas un visage » (découpe de chat/objet → hors pipeline visages),
    « Rejeter le groupe » (vrais visages non regroupables). Tout est réversible. */
-var SPECIAL_PAS_VISAGE={v:'__pas_visage__', t:'Ce n’est pas un visage',
-  d:'découpe de chat, objet, reflet — écarté du pipeline visages'};
+/* Cibles spéciales de rejet, dans l'ordre d'affichage. « C'est un animal »
+   et « Ce n'est pas un visage » pointent la même cible (__pas_visage__, écart
+   réversible du pipeline visages) : deux libellés d'INTENTION distincts pour le
+   même geste. Le premier traite explicitement le cas Mutz (chien/chat détecté
+   comme visage), miroir du « C'est une personne » ajouté côté Animaux. */
+var SPECIAUX_P=[
+  {v:'__pas_visage__', t:'C’est un animal (pas une personne)',
+   d:'chien ou chat détecté comme visage — ex. Mutz'},
+  {v:'__pas_visage__', t:'Ce n’est pas un visage',
+   d:'objet, statue, reflet — écarté du pipeline visages'}
+];
 function carteGroupeP(c){
   var el=document.createElement('div'); el.className='cl';
   var membres=c.membres||[];
@@ -8410,8 +8420,7 @@ function carteGroupeP(c){
         .slice(0,4).forEach(function(p){ props.appendChild(prop(p.nom+' · '+p.n, p.nom)); });
       if(t && !noms.some(function(p){return p.nom.toLowerCase()===t;}))
         props.appendChild(prop('Nouveau : '+inp.value.trim(), inp.value.trim()));
-      if(!t) props.appendChild(prop(SPECIAL_PAS_VISAGE.t+' — '+SPECIAL_PAS_VISAGE.d,
-                                    SPECIAL_PAS_VISAGE.v));
+      if(!t) SPECIAUX_P.forEach(function(s){ props.appendChild(prop(s.t+' — '+s.d, s.v)); });
     });
   }
   function prop(txt,val){
