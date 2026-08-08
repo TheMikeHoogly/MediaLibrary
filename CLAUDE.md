@@ -149,11 +149,15 @@ cause.
 
 ## État connu du système
 
-- **Le GPU n'est utilisé que par Ollama.** `torch` installé est la build CPU
-  (`2.13.0+cpu`, `cuda = None`) et un dossier `~orch` orphelin traîne dans le
-  venv, vestige d'une désinstallation pip interrompue. YOLO, DINOv2 et
-  InsightFace tournent donc tous sur CPU, et les seuils `*_GPU_MIN_FREE_MB`
-  sont sans effet. Les erreurs `cublasLt64_13.dll introuvable` au démarrage
-  viennent de là — elles sont bénignes (repli `CPUExecutionProvider`).
+- **GPU réparé (corrigé 08/08).** `torch` est bien la build **CUDA**
+  (`2.13.0+cu130`, `cuda = '13.0'`), avec `onnxruntime_gpu` et `torchvision+cu130` ;
+  plus d'orphelin `~orch`. Le GPU **fait** le tagging (Ollama, rafales ~91 %). Mais
+  sur **4 Go partagés**, Ollama résident (~3,5 Go, `keep_alive 30m`) laisse trop peu
+  de VRAM libre : les seuils `*_GPU_MIN_FREE_MB` (visages 1200 / animaux 1600 /
+  DINOv2 1800) ne passent pas quand Ollama occupe la carte → repli CPU pour les
+  pipelines CV. `FACE_USE_GPU=False` est **volontaire** (VRAM prise par Ollama).
+  Le vrai frein du débit de tagging n'est pas le device mais la **RAM** (machine
+  chargée, plancher `REEMBED_MIN_RAM_GB=1.5` proche du libre) et l'**I/O NAS** par
+  photo. (Diagnostic mesuré le 08/08 — voir `PROMPT_NOUVELLE_SESSION.md`.)
 - Migration SQLite : faite et vérifiée (64 676 entrées, 318 personnes, 9 chats).
 - Sortie des embeddings : script prêt, validé sur copie de la base réelle.

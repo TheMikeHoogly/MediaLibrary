@@ -76,6 +76,26 @@ et les skills `.claude/skills/` (`monolith-surgery` **avant tout edit de
   `integration-2026-08-07` est donc absorbée dans `main` (fast-forward).
   **`main` est 7 commits en avance sur `origin/main` → il ne reste que `git push`
   (geste de Mike).**
+- **`feat/menage-ui-gpu-0807`** = branche de la session « ménage » (08/08), **que
+  le serveur exécute actuellement** (Mike a redémarré dessus). 4 commits au-dessus
+  de `main`, à valider en réel puis merger :
+  - **Archivage de 22 `.bat` obsolètes/dangereux** dans `_bat_archive/` (réversible,
+    README). Les deux dangereux neutralisés : `2 - Installer et nettoyer` (tirait
+    `qwen3-vl:4b` + supprimait `gemma4:e2b`) et `13 - Reparer le GPU` (re-cassait le
+    GPU déjà réparé). 12 `.bat` courants gardés à la racine.
+  - **`/reglages` : bloc « Renommage intelligent » numéroté** (4 étapes dans l'ordre)
+    + zone de message dédiée persistante (« X renommés / Y restants »). **Validé en
+    réel.** (Les boutons existaient mais étaient noyés dans une rangée de 8.)
+  - **Tagging : une seule lecture exiftool par photo** (tags+desc+GPS combinés au
+    lieu de 2 appels) → une lecture NAS + un process de moins par photo. Module pur
+    `tagging_meta.py` + `test_tagging_meta.py` **15/15**. Invariant noms préservé
+    (testé). **À valider en réel après redémarrage** (mesurer le débit tag/min).
+  - **Diagnostic GPU/RAM (pas de code)** : le GPU FAIT le tagging (rafales 91 %) ;
+    le frein est la RAM (serveur sain ~1,95 Go ; machine chargée : Claude Desktop
+    ~1 Go, Chrome, Defender, apps de fond). Levier : fermer les apps de fond
+    pendant un gros run. `CLAUDE.md` « État connu » était PÉRIMÉ : torch est bien
+    `2.13.0+cu130` (CUDA), pas la build CPU. `FACE_USE_GPU=False` reste volontaire
+    (VRAM prise par Ollama sur 4 Go).
 - `git push` impossible depuis le sandbox — **c'est Mike qui pousse**. Vérifier
   `git status` / `origin/main` en début de session.
 - **Fin de session** : lancer `27 - Commit de session.bat` (branche + add +
