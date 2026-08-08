@@ -19,6 +19,33 @@ if errorlevel 1 (
   exit /b 1
 )
 
+REM --- Verrou git perime (.git\index.lock) ---
+REM   Deja rencontre 2x : un client git (GitKraken Desktop) ouvert sur le
+REM   depot, ou un process git plante, laisse un .lock qui bloque tout commit.
+if not exist ".git\index.lock" goto :apres_verrou
+echo ATTENTION : un verrou git est present : .git\index.lock
+echo   Cause habituelle : GitKraken Desktop ouvert sur ce depot,
+echo   ou un process git precedent qui a plante.
+echo   Ferme GitKraken Desktop s'il est ouvert sur ce depot avant de continuer.
+echo.
+choice /c ON /n /m "Supprimer ce verrou et continuer ? (O = oui / N = annuler) : "
+if errorlevel 2 (
+  echo Annule : le verrou est laisse en place.
+  pause
+  exit /b 1
+)
+del /q ".git\*.lock" 2>nul
+del /q ".git\refs\heads\*.lock" 2>nul
+if exist ".git\index.lock" (
+  echo Echec : impossible de supprimer le verrou. Un client git tourne encore ?
+  echo Ferme-le completement, puis relance ce script.
+  pause
+  exit /b 1
+)
+echo Verrou supprime.
+echo.
+:apres_verrou
+
 for /f "delims=" %%b in ('git branch --show-current') do set "BRANCH=%%b"
 echo Branche courante : !BRANCH!
 echo.

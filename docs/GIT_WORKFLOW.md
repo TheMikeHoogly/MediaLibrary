@@ -124,6 +124,21 @@ Pour l'activer : `gk auth login` dans un terminal, ou le lien de connexion
 GitKraken. Après ça, Claude pourra ouvrir et fusionner les PR directement, et ce
 fichier sera complété avec ce flux.
 
+## Verrou git bloqué (`.git/index.lock`)
+
+Symptôme : `fatal: Unable to create '.../.git/index.lock': File exists`. Un
+client git (souvent **GitKraken Desktop** ouvert sur le dépôt) ou un process git
+qui a planté a laissé un verrou. Les bats `27` et `28` **détectent ce verrou au
+démarrage**, expliquent la cause et proposent de le supprimer (après avoir fermé
+GitKraken Desktop). À la main si besoin :
+
+```bat
+del "C:\Prog\Claude\MediaLibrary\.git\index.lock"
+```
+
+Si le verrou réapparaît aussitôt, c'est qu'un client git tourne encore en
+arrière-plan : ferme-le complètement, puis recommence.
+
 ## Vérifier l'état à tout moment
 
 ```bat
