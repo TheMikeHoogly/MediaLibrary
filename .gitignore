@@ -84,6 +84,9 @@ docs/undo_rangement_*.json
 docs/plan_rangement_annee.json
 docs/plan_rangement_annee.md
 docs/undo_annee_*.json
+docs/plan_renommage.json
+docs/plan_renommage.md
+docs/undo_renommage_*.json
 docs/maintenance_state.json
 docs/maintenance_report.json
 docs/maintenance.log
