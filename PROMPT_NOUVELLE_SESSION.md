@@ -3,7 +3,8 @@
 > Copie tout le bloc ci-dessous dans une nouvelle conversation Cowork, après
 > avoir connecté le dossier `C:\Prog\Claude\MediaLibrary`.
 >
-> Dernière mise à jour : **7 août 2026** (session « affichage + renommage intelligent » : renommage complet et vérifié en réel, prêt à appliquer).
+> Dernière mise à jour : **8 août 2026** (session « ménage » : audit `.bat`, UI
+> renommage, optimisation tagging, diagnostic GPU/RAM, item Mutz, ROADMAP réécrite).
 
 ---
 
@@ -13,11 +14,13 @@ YOLO/DINOv2, RTX 3050 4 Go). Dossier : `C:\Prog\Claude\MediaLibrary`. Tout
 l'état vit dans les fichiers, pas dans l'historique de conversation.
 
 **Lis d'abord, dans l'ordre :** `CLAUDE.md` (règles absolues) → `ROADMAP.md`
-(état + chantiers par valeur) → `eval/DECISIONS.md` (idées déjà **rejetées sur
-mesure** : MegaDescriptor, contre-exemples, `sqlite-vec`, injection des noms au
-prompt) → selon le sujet : `docs/RANGEMENT_2026.md`, `docs/AUDIT_EXTERNE_2026.md`,
-et les skills `.claude/skills/` (`monolith-surgery` **avant tout edit de
-`server.py`**, `photo-ui` pour l'UI, `vision-eval` pour un seuil/modèle).
+(carte des priorités, réécrite au propre le 08/08 — « À faire, par ordre de
+valeur ») → `eval/DECISIONS.md` (idées déjà **rejetées sur mesure** :
+MegaDescriptor, contre-exemples, `sqlite-vec`, injection des noms au prompt,
+détecteur ML de triage) → selon le sujet : `docs/RANGEMENT_2026.md`,
+`docs/AUDIT_EXTERNE_2026.md`, et les skills `.claude/skills/` (`monolith-surgery`
+**avant tout edit de `server.py`**, `photo-ui` pour l'UI, `vision-eval` pour un
+seuil/modèle).
 
 ## Garde-fous à ne jamais oublier
 
@@ -27,264 +30,102 @@ et les skills `.claude/skills/` (`monolith-surgery` **avant tout edit de
   vecteur sémantique).
 - **Ne pas ouvrir `photos.db` (WAL) depuis le sandbox Linux** — le serveur (sur
   la machine de Mike) est l'écrivain unique. Les tests qui touchent la vraie base
-  la **copient** d'abord. Les passes Ollama/GPU tournent chez Mike, via les `.bat`
-  numérotés (**ASCII pur** : `python verifier_bat.py` et **lire sa sortie**).
+  la **copient** d'abord. Conséquence : la logique risquée vit dans des **modules
+  purs** testables hors machine (`fichiers.py`, `renommage.py`, `interet.py`,
+  `tagging_meta.py`…) + `test_*.py`. `server.py` ouvre les stores au niveau module
+  → **ne pas l'importer** dans un test du sandbox.
 - **Un score parfait est une alarme, un proxy n'est pas le juge.** Vérifier
-  l'**effet réel** d'une correction (la notation humaine a renversé « V2 ≈ V0 »).
+  l'**effet réel** d'une correction (la notation humaine a renversé « V2 ≈ V0 » ;
+  trois diagnostics ont été justes sans traiter la vraie cause).
 - **Zéro dépendance au démarrage** (imports lourds paresseux) ; côté client,
   **zéro build, zéro npm**.
 - **`server.py` fait ~9 400 lignes.** Charge `monolith-surgery` avant d'y toucher.
-  Toute modif risquée passe par une **branche**. Garde-fou UI : `python
-  verifier_ui_tokens.py` (0 interdit dur attendu). Tests : `test_*.py`.
+  Toute modif risquée passe par une **branche**. Garde-fous : `python
+  verifier_ui_tokens.py` (0 interdit dur) pour l'UI, `python verifier_bat.py`
+  (**ASCII pur**, lire sa sortie) pour les `.bat`, `py_compile` + `test_*.py`.
 
-## Outillage (ce qui marche depuis la session)
+## Outillage (ce qui marche)
 
-- **Git autonome** : `git` marche dans le shell (`origin =
-  TheMikeHoogly/MediaLibrary`). Commits au fil de l'eau. Si un verrou périmé
-  bloque (`.git/*.lock`), demander une fois `mcp__cowork__allow_cowork_file_delete`
-  puis `rm -f .git/*.lock`. **`git push` impossible depuis le sandbox** (proxy) —
-  **c'est Mike qui pousse** depuis sa machine.
-- **Tester en RÉEL le site** : le serveur tourne chez Mike (192.168.0.13:8080).
+- **Git** marche dans le shell (`origin = TheMikeHoogly/MediaLibrary`). Commits au
+  fil de l'eau sur une branche. Si un verrou périmé bloque (`.git/*.lock`), demander
+  une fois `mcp__cowork__allow_cowork_file_delete` puis `rm -f .git/*.lock`.
+  **`git push` et les merges dans `main` sont des gestes de Mike** (le sandbox ne
+  pousse pas ; et merger en local échoue tant que le serveur verrouille `server.py`
+  — préférer éditer en place sur une branche, puis Mike pousse/merge). Éditer un
+  fichier ouvert par le serveur marche (écriture en place), mais **un `git checkout`
+  qui doit réécrire `server.py` échoue** → faire avancer un ref par `update-ref` +
+  `git reset` si besoin (cf. session 07/08).
+- **Tester en RÉEL le site** : le serveur tourne chez Mike (**192.168.0.13:8080**).
   Utiliser **Claude-in-Chrome** (`mcp__claude-in-chrome__*`) pour naviguer,
-  screenshoter, exécuter du JS de diagnostic (ex. `fetch('/api/...')`). C'est ce
-  qui a trouvé des bugs que les maquettes cachaient. Aperçus visuels rapides :
-  outil `mcp__visualize__show_widget` (maquette, pas le vrai site).
+  screenshoter, exécuter du JS de diagnostic (`fetch('/api/...')`, aller-retours
+  réversibles sur les vraies données). C'est ce qui a trouvé des bugs que les
+  maquettes cachaient. **Le serveur ne recharge pas le code à chaud** : une modif de
+  `server.py` n'est active qu'après un **redémarrage** (`0 - Démarrer le serveur.bat`).
+- **Computer-use** (`mcp__computer-use__*`) disponible pour lire l'écran de Mike
+  (ex. Gestionnaire des tâches pour la RAM). `request_access` d'abord.
 - **Avancer en autonomie** : quand Mike dit « continue », il n'est souvent pas au
-  PC — avancer sans question bloquante, prendre les décisions raisonnables, aller
-  au bout de la roadmap. Redémarrer le serveur = arrêter/relancer
-  `0 - Démarrer le serveur.bat` (Mike, pas de git à taper si le dossier est déjà
-  sur la bonne branche).
-- **Figma** connecté (testé `whoami`), disponible pour bâtir la bibliothèque de
-  composants « chambre noire » si on veut la source de vérité du design. Les
-  autres connecteurs (Slack, Notion…) demandent un OAuth côté claude.ai.
-- **Travail multi-appareils (Dispatch).** Mike peut lancer/poursuivre une session
-  depuis son **téléphone** ou son **PC** : c'est la même conversation continue, mais
-  **le travail s'exécute sur le PC** (fichiers locaux du dossier `MediaLibrary`,
-  connecteurs, Chrome). Prérequis : **PC allumé + Claude Desktop ouvert**, le dossier
-  `C:\Prog\Claude\MediaLibrary` connecté à la session Cowork, et l'accès aux fichiers
-  activé dans Dispatch. Conséquence pratique : que la consigne vienne du PC ou du
-  mobile, c'est le **même dépôt local** et le même serveur (chez Mike) — `git push`
-  reste un geste que **Mike** fait sur le PC.
+  PC — avancer sans question bloquante, décisions raisonnables, aller au bout.
+- **Connecteurs** : Figma connecté. Les autres (Slack, Notion…) demandent un OAuth
+  côté claude.ai. Pour un besoin externe ponctuel (ex. géocodage inverse des GPS),
+  chercher d'abord au **registre MCP** avant d'écrire du code jetable.
+- **Multi-appareils (Dispatch)** : Mike peut piloter depuis téléphone ou PC, mais le
+  travail s'exécute **sur le PC** (mêmes fichiers, même serveur). PC allumé + Claude
+  Desktop ouvert + dossier connecté requis.
 
-## ══ ÉTAT AU 7 AOÛT 2026 — LIRE EN PREMIER ══
+## ══ ÉTAT AU 8 AOÛT 2026 — LIRE EN PREMIER ══
 
-### Branches (IMPORTANT)
+### Branches
 
-- **`main`** porte tout le travail, **y compris les deux correctifs du 07/08
-  validés en réel et mergés** (rejet de groupe `/pets` `868fde1`, curateur
-  faux-positifs `/people` `0347793`, + outil `27 - Commit de session.bat`).
-  `integration-2026-08-07` est donc absorbée dans `main` (fast-forward).
-  **`main` est 7 commits en avance sur `origin/main` → il ne reste que `git push`
-  (geste de Mike).**
-- **`feat/menage-ui-gpu-0807`** = branche de la session « ménage » (08/08), **que
-  le serveur exécute actuellement** (Mike a redémarré dessus). 4 commits au-dessus
-  de `main`, à valider en réel puis merger :
-  - **Archivage de 22 `.bat` obsolètes/dangereux** dans `_bat_archive/` (réversible,
-    README). Les deux dangereux neutralisés : `2 - Installer et nettoyer` (tirait
-    `qwen3-vl:4b` + supprimait `gemma4:e2b`) et `13 - Reparer le GPU` (re-cassait le
-    GPU déjà réparé). 12 `.bat` courants gardés à la racine.
-  - **`/reglages` : bloc « Renommage intelligent » numéroté** (4 étapes dans l'ordre)
-    + zone de message dédiée persistante (« X renommés / Y restants »). **Validé en
-    réel.** (Les boutons existaient mais étaient noyés dans une rangée de 8.)
-  - **Tagging : une seule lecture exiftool par photo** (tags+desc+GPS combinés au
-    lieu de 2 appels) → une lecture NAS + un process de moins par photo. Module pur
-    `tagging_meta.py` + `test_tagging_meta.py` **15/15**. Invariant noms préservé
-    (testé). **À valider en réel après redémarrage** (mesurer le débit tag/min).
-  - **Diagnostic GPU/RAM (pas de code)** : le GPU FAIT le tagging (rafales 91 %) ;
-    le frein est la RAM (serveur sain ~1,95 Go ; machine chargée : Claude Desktop
-    ~1 Go, Chrome, Defender, apps de fond). Levier : fermer les apps de fond
-    pendant un gros run. `CLAUDE.md` « État connu » était PÉRIMÉ : torch est bien
-    `2.13.0+cu130` (CUDA), pas la build CPU. `FACE_USE_GPU=False` reste volontaire
-    (VRAM prise par Ollama sur 4 Go).
-- `git push` impossible depuis le sandbox — **c'est Mike qui pousse**. Vérifier
-  `git status` / `origin/main` en début de session.
-- **Fin de session** : lancer `27 - Commit de session.bat` (branche + add +
-  commit + push, ASCII pur) ; Claude met à jour ROADMAP.md + ce fichier.
+- **`main` == `origin/main`**, poussé et à jour. Porte tout l'intégré, dont les
+  deux correctifs du 07/08 (rejet de groupe `/pets`, curateur faux-positifs
+  `/people`).
+- **`feat/menage-ui-gpu-0807`** — **poussée sur `origin`** (branche de suivi créée),
+  **pas encore mergée dans `main`**, **exécutée par le serveur** (Mike a redémarré
+  dessus). Contient la session ménage :
+  - **Archivage de 22 `.bat`** obsolètes/dangereux dans `_bat_archive/` (réversible,
+    README). Neutralisés : `2 - Installer et nettoyer` (tirait `qwen3-vl:4b` +
+    supprimait `gemma4:e2b`) et `13 - Reparer le GPU` (re-cassait le GPU réparé).
+  - **`/reglages` : bloc « Renommage intelligent » numéroté** (4 étapes) + message
+    persistant. **Validé en réel.**
+  - **Tagging : 1 seule lecture exiftool/photo** (tags+desc+GPS combinés). Module pur
+    `tagging_meta.py` + `test_tagging_meta.py` **15/15**, invariant noms préservé.
+    **RESTE : valider en réel après un redémarrage** — mesurer le débit tag/min
+    avant/après pour chiffrer le gain.
+  - **`CLAUDE.md` corrigé** : torch est bien **CUDA** `2.13.0+cu130` (l'ancienne
+    mention « build CPU » était périmée).
+  - **ROADMAP.md réécrite** (886 → 183 lignes), ordonnée par valeur, historique
+    condensé (le détail reste dans git + `eval/DECISIONS.md`).
+- **Fin de session** : `27 - Commit de session.bat` (branche + add + commit + push,
+  ASCII pur) ; Claude met à jour ROADMAP.md + ce fichier.
 
-### Fait le 07/08 (soir) — sur `integration-2026-08-07`, À VALIDER EN RÉEL
+### Diagnostic GPU / RAM (08/08, mesuré — pas de bug de device)
 
-- **Carte Animaux (`/pets`) : bouton « Rejeter le groupe »** à parité avec les
-  visages. Backend : cible `__non_group__` → flag `non_group` réversible (distinct
-  de `suspect`/`inconnu`), exclu du regroupement. `868fde1`.
-- **Curateur « Faux positif ? » (`/people`) : corrigé.** Le backend
-  `curator_reject` (marque `confirmed` → plus jamais reproposé) existait mais l'UI
-  ne l'appelait jamais pour les faux positifs ; re-taguer le même nom tombait sur
-  un no-op muet → la même proposition revenait sans fin. Désormais 3 actions
-  claires : **« ✓ Oui, c'est X »** (confirme, ne plus signaler + enrichit la
-  signature), **« ✗ Retirer le tag »** (vrai faux positif), **« c'est… »**
-  (corrige : retire l'ancien tag erroné). Clavier : Espace/O = garder, X = retirer.
-  Backend durci (`attribuer_visage`) : re-confirmer = confirmé ; corriger/pas-un-
-  visage retire le tag erroné. `0347793`. **Repro logique 4/4** ; à valider en réel.
-- **Outil `27 - Commit de session.bat`** (branche + add + commit + push, ASCII pur).
+Le GPU **fait** le tagging (Ollama résident ~3,5 Go, util en **rafales ~91 %**). Le
+frein n'est pas la sélection de device mais : **(1) la RAM** — machine chargée, RAM
+libre ~1,4 Go proche du plancher `REEMBED_MIN_RAM_GB=1.5` qui déclenche l'auto-bridage
+(`system_busy`) ; le serveur lui-même est sain (~1,95 Go), le reste est Claude Desktop
+(~1 Go), Chrome, Defender, apps de fond. **(2) l'I/O NAS** par photo (~20 s hors-GPU).
+Levier sans code : **fermer les apps de fond** pendant un gros run. Sur 4 Go partagés,
+Ollama + vision ne tiennent pas ensemble sur le GPU → `FACE_USE_GPU=False` volontaire.
 
-### Fait cette session (03-07/08) — LE NEUF
+### Prochain pas (détail et ordre complet dans `ROADMAP.md`)
 
-- **Renommage intelligent (point 20) : COMPLET et vérifié en réel — PRÊT À
-  APPLIQUER (Mike n'a pas encore lancé de lot).** Flux de bout en bout dans
-  `/reglages` → Maintenance :
-  - **Générateur** `plan_renommage.py` (pur, `test_plan_renommage.py` **9/9**) +
-    `server.generer_plan_renommage()` (in-process, lecture seule) → écrit
-    `docs/plan_renommage.{json,md}`. Ne cible QUE les **noms bruts**
-    (`est_nom_brut` : Screenshot_/VideoCapture_/IMG_/-WA/Scan_/Photo0#/hash) ;
-    laisse les noms déjà datés. **Décisions Mike** : (a) noms bruts seulement ;
-    (b) **ne pas** renommer les fichiers **sans date fiable** (pas de `00000000_`) ;
-    (c) **forcer le français** dans le sujet quand la description IA déborde en
-    anglais (kw_fr) ; (d) suffixe de collision **lisible** `-2/-3` (pas un hash).
-  - **Applicateur in-process réversible** `appliquer_renommage(limite, dry)` :
-    renomme EN PLACE + `rekey_everywhere` (aucun nom humain perdu) + **journal
-    undo** ; garde-fous : source existe, cible n'existe PAS (jamais d'écrasement),
-    clé cible absente de l'index, **par lots** (`RENOMMAGE_LOT=200`),
-    `annuler_renommage()` idempotent. Endpoints `POST /api/maint/rename-{check,
-    apply,undo}` + boutons **Vérifier à blanc / Appliquer un lot / Annuler**.
-  - **Décision de conception** : application **IN-PROCESS** → **PAS besoin
-    d'arrêter le serveur** (le « serveur arrêté » des `.bat` vient de ce qu'ils
-    ouvrent `photos.db` en 2ᵉ processus ; SQLite = 1 écrivain).
-  - **Vérifié en réel (Chrome + lecture de `docs/`)** : plan = **2114 à renommer**
-    (1531 dates précises YYYYMMDD, 583 année-seule YYYY0000), 0 nom `00000000`,
-    « à blanc » = 2114 applicables / 0 sauté. **Reste : Mike applique les lots**
-    (Vérifier → Appliquer un lot → contrôler NAS → répéter ; Annuler si besoin).
-  - Note dates : `resolve_datestamp` priorise l'**EXIF `taken`** ; sur ces 2114
-    bruts l'EXIF est absent (captures/WhatsApp/exports réduits) → date du nom
-    (1531) ou année du dossier (583). Correct et attendu.
-- **Correctif date renommage** : `path_year()` ne scanne plus que le **dossier**
-  (jamais le nom) — un `IMG_1998` n'est plus lu comme l'année 1998.
-- **Affichage harmonisé + tri chronologique réversible** (`feat/affichage-detail`) :
-  galerie `GALLERY_PAGE` (couvre Galerie/Dossiers/Uploads) — bouton **Date** trie
-  sur la **date de prise** (`taken`, repli `mtime`), **du plus ancien au plus
-  récent par défaut, reclic pour inverser** (flèche ↑/↓) ; **Nom** idem (A-Z/Z-A) ;
-  le diaporama **Démo** suit l'ordre courant de la planche. Fiches détail
-  Animaux/Personnes : chronologique ascendant ; **chargement fiabilisé** (openCat
-  vérifie `r.ok` + bouton **Réessayer**, `_serve_cat_photos` ne renvoie plus de
-  500 non-JSON — corrige l'« Erreur de chargement » de Caline sous charge) ; menu
-  `d-mode` lisible.
-- **Page Animaux** (`fix/pets-names-lazy`) : port du correctif `/people` (tempête
-  de `/api/names`) — `listeProps` au **focus** + **dédup in-flight** de
-  `chargerNoms`.
-- **Triage (point 21) = MERGÉ (`4cb9aef`)** — filtre par motif + suppression
-  réversible dans la galerie `/files` (session précédente).
+Gestes **humains** à Mike, prêts :
+1. **Confirmer ~100 propositions de visages** dans `/people` (priorité n°1, vérité
+   terrain à 0,8 %, tri clavier prêt).
+2. **Mutz** : sur son groupe de « visages » dans `/people`, cliquer **« Rejeter le
+   groupe »** (réversible ; il reste dans Animaux). Cause = pas de garde humain/animal
+   + `FACE_DET_THRESHOLD=0.50`. Voir **ROADMAP item 2** (action explicite « c'est un
+   animal/une personne » à ajouter + garde SigLIP amont 12b à mesurer).
+3. **Appliquer les lots de renommage** : `/reglages` → « Renommage intelligent »
+   (Générer → Vérifier à blanc → Appliquer un lot ×N → Annuler). Plan = **2114**.
+4. **Redémarrer le serveur** pour activer l'optimisation tagging, puis demander la
+   mesure du gain.
 
-### Rangement par année (point 19) : FAIT ET APPLIQUÉ (03/08)
-
-Appliqué en réel par Mike, index re-clé et stable. `_A TRIER` ne contient presque
-plus que des fichiers sans date ; les rebuts datés sont dans les dossiers année.
-
-### Fait sessions précédentes (01-02/08) — rappel
-
-- **Redesign « chambre noire » — étape A (tokenisation) : les 7 pages + la barre
-  de nav.** Couleurs/polices en dur → tokens `ui/tokens.css`. Sémantique des
-  accents : **fixateur** (teal) = sélection/filtre actif ; **veilleuse** (orange)
-  = IA en cours/focus ; **encre** (rouge) = destructif ; **papier** = principal +
-  onglet nav actif. Garde-fou `verifier_ui_tokens.py` (**0 interdit dur** sur les
-  10 constantes de page).
-- **Redesign — étape B (structurel)** : **planche contact** (`GALLERY .grid` en
-  `auto-fill`+`clamp()` + `content-visibility`) ; **View Transitions**
-  (`@view-transition` dans `base.css`) ; modale « nommer rapidement » sur
-  **papier** (concept deux registres) ; **tri au clavier** du curateur `/people`
-  (Espace/Entrée = oui, X = non, Z = annuler, lettre = corriger — sert la
-  **priorité n°1** : confirmer vite ~100 propositions).
-- **Correctifs tagging** (aussi sur `main`) : `/api/names` n'était plus tronqué à
-  `[:40]` (Mathilde, 110 photos, redevenait « Nouveau ») → `[:2000]` ;
-  `scan_uploads` scanne enfin les **sous-dossiers d'Uploads** (`rglob`, ARZOPA
-  n'était jamais tagué). Diagnostiqués **en direct** via Chrome.
-- **Gestion de fichiers sur `/browse`** (point 18) : `fichiers.py` (pur, testé
-  **`test_fichiers.py` 23/23** — dont « aucun nom humain perdu ») + routes
-  `/api/files/rename|move|mkdir|delete|undo` (`_do_files_post`, `file_ops()`,
-  re-clé via `rekey_everywhere`). Supprimer = **quarantaine réversible**, jamais
-  `rm`. UI : rangées sélectionnables + barre d'actions **papier** (couper/coller
-  via `sessionStorage`, nouveau dossier, annuler).
-- **Centre de contrôle `/reglages`** (onglet ⚙ dans la nav) : hub central.
-  « Outils & pages » (liens vers Galerie/Dossiers/Carte/Personnes/Animaux/Upload/
-  **Santé** — cette dernière n'était atteignable que par URL) ; état live
-  (hw/files/comptes) ; **maintenance** (badge auto/pause, table des étapes,
-  actions sûres : lancer un cycle, Pause `MAINT_PAUSED`, recensement, **plan de
-  rangement par année**) ; réglages (modèle/versions/seuils/racines) en lecture
-  seule. Endpoints `GET /api/maint/status`, `POST /api/maint/{run,toggle,census,
-  plan-annee}`.
-- **Plan de rangement par année** (point 19, lecture seule) : `rangement_annee.py`
-  (pur, testé **10/10**) + `server.generer_plan_annee()` → `_A TRIER` →
-  `<base>/AAAA/` via `_best_time`, `_SANS_DATE/` si pas de date fiable. **Ne
-  déplace RIEN** — juste `docs/plan_rangement_annee.{json,md}`.
-- **Petits bugs corrigés** : champ `.qui` blanc (input sans `type` raté par
-  `input[type=text]`) ; bouton « Nommer rapidement » enterré sous 324 cartes
-  (section « Groupes à nommer » remontée avant « Personnes nommées »).
-
-### Prochaines étapes, par valeur (roadmap de la suite)
-
-1. **Renommage intelligent (point 20) — FAIT et vérifié, PRÊT À APPLIQUER.** Le
-   geste qui reste est **HUMAIN, à Mike** : `/reglages` → Maintenance → **« Plan de
-   renommage »** → relire `docs/plan_renommage.md` → **« Vérifier à blanc »** →
-   **« Appliquer un lot »** (200, réversible) → contrôler sur le NAS → répéter
-   jusqu'à 0 ; **« Annuler »** si besoin. Plan actuel = **2114 à renommer**. **Reste
-   code, optionnel/non bloquant** : enrichir les 2 faits `None` — **lieu** par
-   géocodage inverse des GPS (684 photos géolocalisées ; **chercher un connecteur
-   au registre MCP** avant d'écrire du code jetable) et **type** par SigLIP — pour
-   des noms plus riches.
-2. **Priorité n°1 reconnaissance — confirmer ~100 propositions** (`/people`, tri
-   clavier prêt). Le geste HUMAIN qui vaut plus que tout changement d'algo (vérité
-   terrain à 0,8 %). Option code : `1`–`9` = assigner à une personne connue,
-   `Maj+clic` = plage.
-3. **Harmonisation carte Animaux — ✓ FAIT sur `feat/pets-rejeter-groupe`
-   (`868fde1`, 07/08, à valider en réel puis merger).** `carteGroupe` (`/pets`) a
-   le bouton visible **« Rejeter le groupe »** à parité avec `carteGroupeP`.
-   Backend : cible `__non_group__` pour `attribuer_animaux` → flag `non_group`
-   réversible (distinct de `suspect`/`inconnu`) ; `_nommable` le saute, donc le
-   regroupement l'exclut — miroir de `_marquer_visages`. UI : `envoyer(cible,
-   tous)` sur TOUS les membres + toast d'annulation. `__pas_animal__`/`__inconnu__`
-   restaient visibles dans les propositions. Vérifs vertes (`py_compile`,
-   `verifier_ui_tokens` 0 dur, repro logique isolée — photos.db WAL non ouvrable
-   depuis le sandbox). **RESTE : Mike valide en réel (rejeter un groupe sur
-   `/pets`, annuler) + merge.**
-4. **Étape B — reste redesign** : registre **papier** sur les cartes de clusters
-   toujours visibles (`.cl` /people, `.group` /pets) — gros changement du flux de
-   nommage, valider en réel d'abord ; **centre de tâches** remplaçant `#pending`
-   (données `hw_state()`/`system_busy()`/files) ; **numéro de vue** sur la planche
-   contact. **Affichage** : porter le sélecteur d'ordre réversible (fait sur la
-   galerie) aux fiches détail Animaux/Personnes si on veut l'unifier partout.
-5. **Triage (point 21) — MERGÉ (`4cb9aef`).** Filtre par motif + suppression
-   réversible dans la galerie. Mineurs optionnels notés (`classer_regle` appelé 2×
-   quand motif actif ; `except` large qui avale un bug de règle ; undo global).
-6. **Édition des réglages depuis `/reglages`** (aujourd'hui lecture seule) : seuils,
-   autonomie/cadence de maintenance, racines — avec garde-fous.
-7. **Reconnaissance (algo)** : regroupement par **densité** (HDBSCAN / Chinese
-   Whispers) au lieu du seuil global ; **AdaFace** sur le ré-embedding des visages
-   faibles. La garde AMONT de 12b (`verifier_visages.py`, SigLIP humain vs
-   animal/objet) reste à **mesurer** avant activation (`vision-eval`).
-8. **Une seule page « Sujets »** (fusion Personnes + Animaux, filtre par type ;
-   le lieu comme 3ᵉ facette) — `SubjectStore` déjà unifié.
-9. **Éval tagging** (parké, tranché) : (a) mesurer un V2 « assertions sans
-   impératif de noms » + fusion programmatique des noms/date/lieu ; (b)
-   comparatif de modèles (`gemma4:e2b` FR natif vs `qwen3-vl:2b`) via
-   `eval_tagging.py --modele … --variantes V0`, rejeter si le pic VRAM frôle 4 Go.
-10. **Multi-utilisateur / foyer partagé** (ROADMAP, futur) : `owner` par racine,
-    dédoublonnage scopé, rangement configurable par racine, renommage de racine,
-    comptes/droits. Noté pour plus tard.
-11. **Bibliothèque Figma** comme source de vérité des composants (optionnel).
-
-### Cap long terme (garder en tête dans l'architecture)
-
-**Multimodalité** : images → **vidéo** → **audio** (dans cet ordre). Plusieurs
-briques incluent déjà les vidéos (rangement, dédoublonnage, renommage, vue
-Dossiers) ; le pipeline IA ne tague encore que les photos. **Recherche AI** en
-langage naturel dans le serveur (« les étés à Bremblens avec Luna ») — c'est là
-que la compression de contexte et l'exposition du serveur en MCP prendront sens.
-
-## Référence — chantiers déjà bouclés (rappel)
-
-- **Rangement & dédoublonnage** (`docs/RANGEMENT_2026.md`) : recensement Phase 0
-  (34 305 fichiers, 261 groupes de doublons, **8,4 Go**, 12 714 sous `_A TRIER`),
-  plan + applicateur + purge **faits, testés, appliqués en vrai (8,4 Go
-  récupérés)**. Orchestrateur de maintenance dans le serveur (`maintenance.py`,
-  `run_cycle`, autonomie par étape). Point de re-clé unique `rekey_everywhere`
-  testé sur copie. Renommage intelligent : cœur déterministe `renommage.py` +
-  `renommage_facts.py` + dry-run faits et testés (reste : l'application réelle).
-- **Installateur nouveau PC** : `installer.py` + `migrer.py` + `INSTALLATION.md`
-  (à valider sur un vrai nouveau PC).
-- **Fondations design** : `ui/tokens.css` + `base.css` + `components.css`,
-  `ui_shared_css()` injecté par `_send_html`, `bundle.py` → `dist/`,
-  `test_ui_bundle.py` 4/4.
-- **Reconnaissance** : SigLIP 2 (recherche sémantique), recherche à 3 dimensions
-  (qui/où/quoi), reconnaissance animale à 97,4 % rang-1. Correctif SMB Errno 22
-  (lecture avec retry) mergé.
+Prochains **code** utiles (par valeur, cf. ROADMAP) : action cross-pipeline
+personne/animal (item 2) ; garde SigLIP humain/animal 12b (`vision-eval`) ; redesign
+étape B (centre de tâches, registre papier) ; page « Sujets » unifiée ; algo
+(HDBSCAN, AdaFace) ; géocodage inverse des 684 GPS (enrichit renommage + carte).
 
 Après lecture : dis **« Go »** pour un débrief + prochaines étapes (protocole
 `CLAUDE.md`), ou attaque directement le point le plus utile en proposant un plan
