@@ -66,8 +66,9 @@ bas pour capter profils/flous), et une face canine frontale passe.
   (`__non_group__`) ou « Ce n'est pas un visage » (`__pas_visage__`) sur le groupe
   `/people`. Réversible. À faire dès maintenant pour Mutz.
 - **Action explicite et symétrique — FAIT (branche courante, à valider en réel).**
-  `/people` : option **« C'est un animal (pas une personne) »** (→ `__pas_visage__`,
-  `SPECIAUX_P`) à côté de « Ce n'est pas un visage » (objets/reflets). `/pets` : miroir
+  `/people` : option **« C'est un animal (pas une personne) »** (→ `__pas_visage__`) dans
+  les **trois** surfaces — cartes de groupe (`SPECIAUX_P`) ET curateur de faux-positifs
+  (bouton `.anim`, cas `remove` et `ajout`). `/pets` : miroir
   **« C'est une personne (pas un animal) »** (→ `__pas_animal__`, `SPECIAUX`). UI seule,
   aucune modif backend : réutilise les cibles spéciales déjà gérées par
   `attribuer_visages`/`attribuer_animaux`, réversible via le toast. `py_compile` OK.

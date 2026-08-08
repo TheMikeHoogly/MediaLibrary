@@ -8571,7 +8571,8 @@ function loadCurator(rebuild){
           '<button class="btn prim">✓ Oui, c’est '+esc(s.person)+'</button>'+
           '<button class="btn warn">✗ Retirer le tag</button>'+
           '<input class="qui" placeholder="ou : c’est…" autocomplete="off">'+
-          '<button class="btn">Pas un visage</button></div>'+
+          '<button class="btn">Pas un visage</button>'+
+          '<button class="btn anim">C’est un animal</button></div>'+
           '<div class="props2" style="margin-top:6px"></div>';
       } else {
         // Ajout proposé. Pourquoi la question est posée : le rattachement auto
@@ -8584,7 +8585,8 @@ function loadCurator(rebuild){
           '<a href="'+esc(s.url)+'" target="_blank" rel="noopener" class="sz" style="text-decoration:none;color:#9db8d8">'+label+'</a>'+
           '<button class="btn prim">✓ Oui, '+esc(s.person)+'</button>'+
           '<input class="qui" placeholder="ou : c’est…" autocomplete="off">'+
-          '<button class="btn">✗ Aucun</button></div>'+
+          '<button class="btn">✗ Aucun</button>'+
+          '<button class="btn anim">C’est un animal</button></div>'+
           '<div class="props2" style="margin-top:6px"></div>';
       }
       el.innerHTML=html;
@@ -8599,6 +8601,10 @@ function loadCurator(rebuild){
         b[0].onclick=function(){ curResolve('reject',s,el); };
         b[1].onclick=function(){ curResolve('accept',s,el); };
         b[2].onclick=function(){ assigner(s, el, '__pas_visage__'); };
+        // « C'est un animal » : meme cible que « Pas un visage » (__pas_visage__,
+        // ecarte du pipeline visages, reversible) mais intention explicite (Mutz).
+        var baR=el.querySelector('.anim');
+        if(baR) baR.onclick=function(){ assigner(s, el, '__pas_visage__'); };
         var qr=el.querySelector('.qui'), prr=el.querySelector('.props2');
         if(qr){
           qr.addEventListener('input',function(){ propose2(qr,prr,s,el); });
@@ -8609,6 +8615,8 @@ function loadCurator(rebuild){
         // Ajout : accepter, CORRIGER vers un autre nom, ou écarter (pas un visage).
         b[0].onclick=function(){curResolve('accept',s,el);};
         b[1].onclick=function(){ assigner(s, el, '__pas_visage__'); };
+        var baA=el.querySelector('.anim');
+        if(baA) baA.onclick=function(){ assigner(s, el, '__pas_visage__'); };
         var q=el.querySelector('.qui'), pr=el.querySelector('.props2');
         if(q){
           q.addEventListener('input',function(){ propose2(q,pr,s,el); });
