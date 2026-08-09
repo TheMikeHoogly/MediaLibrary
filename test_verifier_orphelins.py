@@ -55,6 +55,34 @@ def test_resoudre():
     return ok
 
 
+def test_basename_cle():
+    ok = True
+    ok &= _check(vo.basename_cle("ads\\ARZOPA\\5bBcn6-x.JPG") == "5bbcn6-x.jpg",
+                 "antislash Windows + minuscules")
+    ok &= _check(vo.basename_cle("ARZOPA/5bBcn6-x.JPG") == "5bbcn6-x.jpg",
+                 "slash avant + minuscules (meme basename que la vraie cle)")
+    ok &= _check(vo.basename_cle("photo.png") == "photo.png", "nom simple")
+    ok &= _check(vo.basename_cle("dossier/") == "dossier",
+                 "slash final ignore")
+    return ok
+
+
+def test_est_fantome():
+    ok = True
+    # La vraie cle « ads\ARZOPA\5bBcn6-x.JPG » est presente -> son basename l'est.
+    presents = {"5bbcn6-x.jpg", "autre.png"}
+    # La cle malformee « ARZOPA/5bBcn6-x.JPG » est orpheline MAIS fantome : meme
+    # basename qu'un present -> purge sans risque (la photo existe ailleurs).
+    ok &= _check(vo.est_fantome("ARZOPA/5bBcn6-x.JPG", presents) is True,
+                 "doublon malforme d'une cle presente -> FANTOME")
+    # Un fichier vraiment disparu : aucun present ne partage son basename.
+    ok &= _check(vo.est_fantome("ads\\VieuxDossier\\disparu.jpg", presents) is False,
+                 "aucun sibling present -> vrai disparu")
+    ok &= _check(vo.est_fantome("x.jpg", set()) is False,
+                 "ensemble vide -> jamais fantome")
+    return ok
+
+
 if __name__ == "__main__":
     print("== noms_humains ==")
     a = test_noms_humains()
@@ -62,8 +90,12 @@ if __name__ == "__main__":
     b = test_statut()
     print("== resoudre ==")
     c = test_resoudre()
+    print("== basename_cle ==")
+    d = test_basename_cle()
+    print("== est_fantome ==")
+    e = test_est_fantome()
     print()
-    if a and b and c:
+    if a and b and c and d and e:
         print("TOUS LES TESTS PASSENT")
         raise SystemExit(0)
     print("DES TESTS ONT ECHOUE")

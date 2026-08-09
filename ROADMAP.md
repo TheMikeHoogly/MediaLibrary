@@ -6,10 +6,11 @@ est la **carte des priorités** ; le détail vit ailleurs et est référencé :
 dédoublonnage), `docs/AUDIT_EXTERNE_2026.md` (direction tagging), `PROMPT_NOUVELLE_
 SESSION.md` (reprise exacte), et l'historique git (chaque chantier fini y est).
 
-Dernière mise à jour : **9 août 2026 (soir)**. Diagnostic des propositions sans image
-sur `/people` (clés fantômes ARZOPA — fix proposé, non câblé) ; `verifier_bat.py` renforcé
-(contrôle des fins de ligne, commité) ; blocage `.bat` LF/CRLF de bat 28 encore ouvert.
-Détail complet dans `PROMPT_NOUVELLE_SESSION.md` (section « ÉTAT AU 9 AOÛT (soir) »).
+Dernière mise à jour : **10 août 2026**. Fix des propositions sans image sur `/people`
+IMPLÉMENTÉ (garde-fou clés fantômes ARZOPA dans `build_suggestions`, + `verifier_orphelins.py`
+distingue fantôme/disparu, tests 19/19) — reste commit+redémarrage (geste Mike). Rappels
+ouverts : blocage `.bat` LF/CRLF de bat 28 ; géocodage `gps_place` à activer.
+Détail complet dans `PROMPT_NOUVELLE_SESSION.md`.
 Rappel matin : géocodage inverse offline `gps_place` codé et testé en sandbox, à activer.
 
 ---
@@ -170,14 +171,19 @@ Carte le vocabulaire de la barre de recherche.
 
 ### 10. Données & finitions
 
-- **Propositions « À vérifier » sans image sur `/people` (diagnostiqué 09/08, fix NON
-  câblé).** Clés fantômes dans `FACE_STORE` : même photo ARZOPA sous une clé correcte
-  (`ads\ARZOPA\…`) ET une clé malformée (`ARZOPA/…`, slash avant, sans racine `ads\`) qui
-  ne se résout pas → `/api/facecrop` 404 → carte sans vignette (vérifié en direct : 3/19,
-  toutes ARZOPA). `build_suggestions()` ne vérifie pas que le fichier se résout. **Fix
-  proposé** : garde-fou `is_file()` sur les items `add` dans `build_suggestions` (aucun
-  risque de nom, ça ne touche que des propositions) + étendre `verifier_orphelins.py` pour
-  compter/purger les clés non résolvables. Détail : `PROMPT_NOUVELLE_SESSION.md`.
+- **Propositions « À vérifier » sans image sur `/people` (diagnostiqué 09/08, fix IMPLÉMENTÉ
+  10/08 — à valider en réel).** Clés fantômes dans `FACE_STORE` : même photo ARZOPA sous une
+  clé correcte (`ads\ARZOPA\…`) ET une clé malformée (`ARZOPA/…`, slash avant, sans racine
+  `ads\`) qui ne se résout pas → `/api/facecrop` 404 → carte sans vignette (vérifié en direct :
+  3/19, toutes ARZOPA). **Fait :** garde-fou dans `build_suggestions()` (`server.py`) — une
+  proposition/auto-attribution `add` dont `_resolve_key(k)` n'est pas un fichier est écartée,
+  **seulement si la racine est joignable** (jamais NAS déconnecté — leçon `verifier_orphelins`).
+  Un seul `is_file()` sur les vrais candidats ; ne touche que des propositions, aucun nom perdu.
+  `py_compile` OK. Et `verifier_orphelins.py` (read-only) distingue désormais une **clé
+  fantôme** (doublon malformé dont un sibling présent partage le basename — purge sans risque)
+  d'un vrai fichier disparu (`basename_cle`/`est_fantome`, `test_verifier_orphelins` 19/19).
+  **Reste (Mike) :** commit (bat 27) + **redémarrer** + vérifier que les 3 cartes ARZOPA sans
+  vignette disparaissent ; puis `verifier_orphelins.py` pour chiffrer/purger les fantômes.
 - **Purge de suppression incomplète (BUG — diagnostiqué ET corrigé le 08/08).**
   `_sync_dir` étape 4 ne retirait un fichier disparu que du **TagStore** ; visages/
   animaux/vecteurs restaient orphelins (cas « ARZOPA »). Diagnostic (`verifier_orphelins.py`,

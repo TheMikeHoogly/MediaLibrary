@@ -7320,6 +7320,19 @@ def build_suggestions():
             add_seen = set()
             auto_count = 0
             best_av = {}          # avatar : meilleur visage par personne (index → (sim,clé,i))
+            # Garde-fou « clés fantômes » (cas ARZOPA) : une même photo pouvait
+            # exister sous une clé correcte (« ads\ARZOPA\… ») ET une clé malformée
+            # (« ARZOPA\… », sans la racine) qui ne résout vers aucun fichier →
+            # /api/facecrop 404 → carte sans vignette. On écarte ces propositions,
+            # mais SEULEMENT si la racine est joignable, jamais quand le NAS est
+            # déconnecté (sinon tout le corpus passerait pour disparu — leçon de
+            # verifier_orphelins). Ne touche QUE des propositions : aucun nom perdu.
+            def _racine_ok(p):
+                try:
+                    return Path(p).exists()
+                except OSError:
+                    return False
+            _up_ok = _racine_ok(UPLOAD_DIR)
             for k, e in list(FACE_STORE.data.items()):
                 if not isinstance(e, dict) or e.get('failed'):
                     continue
@@ -7361,6 +7374,17 @@ def build_suggestions():
                     if kk in add_seen:
                         continue
                     add_seen.add(kk)
+                    # Clé fantôme : proposition (ou auto-attribution) écartée si le
+                    # fichier ne se résout pas ET que sa racine est joignable. Un
+                    # seul is_file() local, sur les vrais candidats uniquement.
+                    _rp = _resolve_key(k)
+                    _root_ok = _racine_ok(Path(_rp.anchor)) if _rp.is_absolute() else _up_ok
+                    if _root_ok:
+                        try:
+                            if not _rp.is_file():
+                                continue
+                        except OSError:
+                            pass
                     margin = best - second
                     if AUTO_ADD_ENABLE and best >= AUTO_ADD_SIM and margin >= AUTO_ADD_MARGIN:
                         if _auto_add(nm, k, i, best):

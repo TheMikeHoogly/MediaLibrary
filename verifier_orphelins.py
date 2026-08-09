@@ -74,6 +74,23 @@ def resoudre(cle, upload_dir):
     return p if p.is_absolute() else Path(upload_dir) / cle
 
 
+def basename_cle(cle):
+    """Dernier composant d'une cle (nom de fichier), en minuscules. Sert a
+    reconnaitre un DOUBLON malforme : deux cles qui pointent la meme photo mais
+    dont une seule se resout (cas ARZOPA : « ads\\ARZOPA\\x.JPG » se resout,
+    « ARZOPA/x.JPG » non — meme basename « x.jpg »)."""
+    s = str(cle).replace('\\', '/').rstrip('/')
+    return s.rsplit('/', 1)[-1].lower()
+
+
+def est_fantome(cle, basenames_presents):
+    """Un orphelin est une CLE FANTOME (doublon malforme, purge sans risque) si
+    un fichier de MEME basename existe par ailleurs sous une cle qui, elle, se
+    resout. Sinon c'est un vrai fichier DISPARU. `basenames_presents` = ensemble
+    des basenames des cles presentes de la meme table."""
+    return basename_cle(cle) in basenames_presents
+
+
 # ── Configuration (repliquee, SANS importer server.py) ──────────────────────
 
 def _premiere_ligne(nom):
@@ -170,6 +187,11 @@ def analyser_table(cx, table, det_field, upload_dir, extra, noms,
     orph_nommes = 0
     orph_humain = 0
     echantillon = []
+    # Basenames des cles PRESENTES : sert a distinguer une cle fantome (doublon
+    # malforme dont la vraie photo est bien la, sous une autre cle) d'un vrai
+    # fichier disparu. Passe unique : on collecte d'abord, on classe ensuite.
+    basenames_presents = set()
+    orphelins = []                       # (cle, nomme, par_humain)
     for cle, v in cx.execute(f'SELECT k, v FROM {table}'):
         if filtre and filtre.lower() not in cle.lower():
             continue
@@ -178,7 +200,9 @@ def analyser_table(cx, table, det_field, upload_dir, extra, noms,
         joignable = _racine_joignable(cle, chemin, upload_dir, extra, cache)
         st = statut(joignable, _existe(chemin) and chemin.is_file())
         compte[st] += 1
-        if st == 'orphelin':
+        if st == 'present':
+            basenames_presents.add(basename_cle(cle))
+        elif st == 'orphelin':
             nomme = cle in noms
             par_humain = False
             try:
@@ -191,16 +215,24 @@ def analyser_table(cx, table, det_field, upload_dir, extra, noms,
                 orph_nommes += 1
             if par_humain:
                 orph_humain += 1
-            if len(echantillon) < 15:
-                marque = []
-                if nomme:
-                    marque.append('/'.join(sorted(noms[cle])))
-                if par_humain:
-                    marque.append('par_humain')
-                echantillon.append((cle, ', '.join(marque) or 'anonyme'))
+            orphelins.append((cle, nomme, par_humain))
         if bavard and total % 5000 == 0:
             print(f"    {table}: {total} examinees…", flush=True)
-    return total, compte, orph_nommes, orph_humain, echantillon
+    # Classement final orphelin : fantome (doublon d'une cle presente) vs disparu.
+    orph_fantomes = 0
+    for cle, nomme, par_humain in orphelins:
+        fant = est_fantome(cle, basenames_presents)
+        if fant:
+            orph_fantomes += 1
+        if len(echantillon) < 15:
+            marque = []
+            marque.append('FANTOME' if fant else 'disparu')
+            if nomme:
+                marque.append('/'.join(sorted(noms[cle])))
+            if par_humain:
+                marque.append('par_humain')
+            echantillon.append((cle, ', '.join(marque)))
+    return total, compte, orph_nommes, orph_humain, orph_fantomes, echantillon
 
 
 def main():
@@ -231,28 +263,32 @@ def main():
     print(f"  {len(noms)} photo(s) portant un nom humain (personne:/animal:)\n")
 
     champ = {'faces': 'faces', 'animals': 'animals'}
-    total_orph = total_nom = 0
+    total_orph = total_nom = total_fant = 0
     for t in tables:
-        total, compte, o_nom, o_hum, ech = analyser_table(
+        total, compte, o_nom, o_hum, o_fant, ech = analyser_table(
             cx, t, champ[t], upload_dir, extra, noms, filtre)
         total_orph += compte['orphelin']
         total_nom += o_nom
+        total_fant += o_fant
         print("-" * 70)
         print(f"  Table {t} : {total} entree(s)")
         print(f"    presentes    : {compte['present']}")
         print(f"    ORPHELINES   : {compte['orphelin']}"
               f"  (dont {o_nom} nommee(s), {o_hum} jugee(s) par un humain)")
+        print(f"      dont FANTOMES : {o_fant}"
+              f"  (doublon malforme d'une cle presente — cas ARZOPA, purge sans risque)")
         print(f"    indeterminees: {compte['indetermine']}"
               f"  (racine injoignable — NON comptees comme orphelines)")
         if ech:
             print("    Echantillon d'orphelines :")
             for cle, marque in ech:
-                print(f"      [{marque:<18}] {cle[:70]}")
+                print(f"      [{marque:<32}] {cle[:70]}")
         print()
 
     cx.close()
     print("=" * 70)
-    print(f"  TOTAL orphelines : {total_orph}  (dont {total_nom} nommee(s))")
+    print(f"  TOTAL orphelines : {total_orph}  (dont {total_nom} nommee(s),"
+          f" {total_fant} cle(s) fantome(s))")
     if compte.get('indetermine'):
         print("  ! Des entrees sont indeterminees : relance NAS branche pour un")
         print("    compte fiable avant tout nettoyage.")

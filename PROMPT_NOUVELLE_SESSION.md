@@ -3,10 +3,12 @@
 > Copie tout le bloc ci-dessous dans une nouvelle conversation Cowork, après
 > avoir connecté le dossier `C:\Prog\Claude\MediaLibrary`.
 >
-> Dernière mise à jour : **9 août 2026 (soir)**. Trois choses cette session :
-> (1) diagnostic des **propositions sans image** sur `/people` ; (2) `verifier_bat.py`
-> renforcé (contrôle des fins de ligne) — commité/poussé ; (3) galère `.bat` LF/CRLF
-> encore ouverte. Détail dans la section « ÉTAT AU 9 AOÛT (soir) » plus bas.
+> Dernière mise à jour : **10 août 2026**. Le fix des **propositions sans image** sur
+> `/people` (clés fantômes ARZOPA) est **IMPLÉMENTÉ** : garde-fou dans `build_suggestions`
+> (`server.py`) + `verifier_orphelins.py` qui distingue fantôme/disparu (tests 19/19). Édité
+> en place, **non commité** (git = geste Mike) → reste commit + redémarrage, cf. section
+> « ÉTAT AU 9 AOÛT (soir) » point 1. Restent ouverts : galère `.bat` LF/CRLF (bat 28),
+> géocodage `gps_place` à activer.
 >
 > Rappel session 09/08 (matin) : géocodage inverse OFFLINE `gps_place`
 > (`geocode.py` + `enrichir_lieux.py` + bat 18 + câblage `server.py`) codé et testé
@@ -84,7 +86,25 @@ seuil/modèle).
 
 ## ══ ÉTAT AU 9 AOÛT 2026 (soir) — LIRE EN PREMIER ══
 
-### 1. Propositions « À vérifier » SANS IMAGE sur `/people` — diagnostiqué, fix NON câblé
+### 1. Propositions « À vérifier » SANS IMAGE sur `/people` — fix IMPLÉMENTÉ 10/08 (reste commit+redémarrage Mike)
+
+**FAIT le 10/08 (édité en place, NON commité — la choréo git est un geste de Mike).**
+- `server.py`, `build_suggestions()` : garde-fou clés fantômes. Juste avant l'auto-attribution
+  et l'ajout d'une proposition `add`, on écarte un candidat dont `_resolve_key(k)` n'est pas un
+  fichier — **uniquement si la racine est joignable** (probe `_racine_ok(UPLOAD_DIR)` + ancre
+  pour les clés absolues), jamais quand le NAS est déconnecté (sinon tout passerait pour
+  disparu). Un seul `is_file()` par vrai candidat. Ne touche QUE des propositions : aucun nom
+  perdu. `py_compile` OK.
+- `verifier_orphelins.py` (read-only) : ajout de `basename_cle()` + `est_fantome()` et
+  classement des orphelins en **FANTOME** (doublon malformé dont un sibling présent partage le
+  basename — cas ARZOPA, purge sans risque) vs **disparu**. Rapport enrichi (« dont FANTOMES :
+  N »). `test_verifier_orphelins.py` 19/19 (bac à sable).
+- **Reste (Mike) :** `27 - Commit de session.bat` → push, **redémarrer** le serveur, vérifier
+  que les 3 cartes ARZOPA sans vignette de `/people` disparaissent ; puis
+  `.venv\Scripts\python.exe verifier_orphelins.py --filtre ARZOPA` pour chiffrer les fantômes,
+  et décider de la purge (cause racine — étendre le nettoyage de `FACE_STORE`).
+
+**Diagnostic d'origine (conservé) :**
 
 **Symptôme (constaté par Mike).** Dans la file « À vérifier » de `/people`, certaines
 cartes s'affichent sans vignette (image cassée), à côté d'autres qui en ont une.
