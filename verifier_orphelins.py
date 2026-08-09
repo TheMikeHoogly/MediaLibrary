@@ -91,6 +91,34 @@ def est_fantome(cle, basenames_presents):
     return basename_cle(cle) in basenames_presents
 
 
+def cles_fantomes_par_collision(keys, est_fichier, named=None):
+    """Selection PURE et PEU COUTEUSE des cles fantomes a purger, sans stater
+    tout le store. On groupe les cles par basename ; on ne considere que les
+    basenames en COLLISION (>= 2 cles) — normalement rares. Dans un groupe qui
+    contient a la fois des cles qui se resolvent (est_fichier vrai) ET des cles
+    absentes, les absentes sont des DOUBLONS MALFORMES (la vraie donnee reste
+    sous la cle presente) : on les purge, SAUF celles portant un nom humain
+    (`named`). Cout : est_fichier n'est appele que sur les cles en collision.
+
+    keys       : iterable de cles d'un store.
+    est_fichier: callable cle -> bool (la cle resout-elle vers un fichier reel).
+    named      : ensemble de cles a NE JAMAIS toucher (tag personne:/animal:).
+    Renvoie la liste triee des cles fantomes."""
+    named = named or set()
+    groupes = {}
+    for k in keys:
+        groupes.setdefault(basename_cle(k), []).append(k)
+    out = []
+    for bn, ks in groupes.items():
+        if len(ks) < 2:
+            continue
+        presents = [k for k in ks if est_fichier(k)]
+        absents = [k for k in ks if not est_fichier(k)]
+        if presents and absents:
+            out += [k for k in absents if k not in named]
+    return sorted(set(out))
+
+
 # ── Configuration (repliquee, SANS importer server.py) ──────────────────────
 
 def _premiere_ligne(nom):

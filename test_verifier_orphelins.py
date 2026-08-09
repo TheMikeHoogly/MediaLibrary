@@ -83,6 +83,35 @@ def test_est_fantome():
     return ok
 
 
+def test_cles_fantomes_par_collision():
+    ok = True
+    # Cas ARZOPA : la vraie cle se resout, la malformee non, meme basename.
+    keys = [
+        "ads\\ARZOPA\\5bBcn6-x.JPG",   # presente
+        "ARZOPA/5bBcn6-x.JPG",          # FANTOME (meme basename, absente)
+        "ads\\autre\\photo.png",       # presente, unique -> ignoree
+    ]
+    present = {"ads\\ARZOPA\\5bBcn6-x.JPG", "ads\\autre\\photo.png"}
+    est_fichier = lambda k: k in present
+    r = vo.cles_fantomes_par_collision(keys, est_fichier)
+    ok &= _check(r == ["ARZOPA/5bBcn6-x.JPG"], "isole le doublon malforme absent")
+
+    # Garde-fou : une cle nommee n'est jamais purgee, meme fantome.
+    r2 = vo.cles_fantomes_par_collision(keys, est_fichier,
+                                        named={"ARZOPA/5bBcn6-x.JPG"})
+    ok &= _check(r2 == [], "cle nommee jamais purgee")
+
+    # Basename unique (pas de collision) -> jamais fantome, meme si absent.
+    r3 = vo.cles_fantomes_par_collision(["seul/absent.jpg"], lambda k: False)
+    ok &= _check(r3 == [], "sans collision -> rien (vrai disparu, pas fantome)")
+
+    # Collision mais TOUTES absentes -> aucune n'est presente -> rien a purger
+    # (on ne sait pas laquelle est la bonne : ce sont des disparus, pas des doublons).
+    r4 = vo.cles_fantomes_par_collision(["a/x.jpg", "b/x.jpg"], lambda k: False)
+    ok &= _check(r4 == [], "collision toutes absentes -> rien (prudence)")
+    return ok
+
+
 if __name__ == "__main__":
     print("== noms_humains ==")
     a = test_noms_humains()
@@ -94,8 +123,10 @@ if __name__ == "__main__":
     d = test_basename_cle()
     print("== est_fantome ==")
     e = test_est_fantome()
+    print("== cles_fantomes_par_collision ==")
+    f = test_cles_fantomes_par_collision()
     print()
-    if a and b and c and d and e:
+    if a and b and c and d and e and f:
         print("TOUS LES TESTS PASSENT")
         raise SystemExit(0)
     print("DES TESTS ONT ECHOUE")

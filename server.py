@@ -2062,6 +2062,55 @@ def forget_everywhere(keys):
     return n
 
 
+def purge_cles_fantomes(dry_run=False):
+    """Retire les CLES FANTOMES de FACE_STORE/ANIMAL_STORE : des cles MALFORMEES
+    qui ne resolvent vers aucun fichier alors qu'un DOUBLON de meme basename
+    existe sous une cle qui, elle, se resout (cas « ARZOPA » : la vraie photo est
+    sous « ads\\ARZOPA\\x.JPG », un doublon fantome traine sous « ARZOPA/x.JPG »
+    sans la racine). Ces cles fantomes gonflaient la file « A verifier » de
+    /people avec des cartes sans vignette (/api/facecrop 404).
+
+    A la difference des fichiers disparus (traites par _sync_dir via la liste du
+    dossier), une cle fantome n'appartient a aucun dossier scanne : elle ne se
+    resout tout simplement pas. On la detecte SANS stater tout le store :
+    `cles_fantomes_par_collision` ne stat que les basenames en COLLISION (rares).
+
+    SANS RISQUE par construction : on ne retire qu'un doublon dont la vraie donnee
+    subsiste sous la bonne cle ; et jamais une cle portant un nom humain
+    (`personne:`/`animal:`). Ne s'execute que si Uploads est joignable (sinon tout
+    passerait pour fantome — meme prudence que _sync_dir). Renvoie la liste
+    purgee (ou seulement detectee si dry_run)."""
+    try:
+        if not UPLOAD_DIR.exists():
+            return []
+    except OSError:
+        return []
+    from verifier_orphelins import cles_fantomes_par_collision
+    # Cles portant un nom humain : jamais touchees (garde-fou defensif ; en
+    # pratique le nom vit dans STORE/PEOPLE, pas dans une cle fantome).
+    named = set()
+    for k, se in list(STORE.data.items()):
+        if isinstance(se, dict) and any(
+                str(kw).startswith(('personne:', 'animal:'))
+                for kw in (se.get('kw_fr') or [])):
+            named.add(k)
+
+    def _est_fichier(k):
+        try:
+            return _resolve_key(k).is_file()
+        except OSError:
+            return False
+
+    fantomes = []
+    for st in (FACE_STORE, ANIMAL_STORE):
+        fantomes += cles_fantomes_par_collision(
+            list(st.data.keys()), _est_fichier, named)
+    fantomes = sorted(set(fantomes))
+    if fantomes and not dry_run:
+        forget_everywhere(fantomes)
+    return fantomes
+
+
 # ─── Operations de fichiers (vue Dossiers) ───────────────────────────────────
 # Logique pure et testee dans fichiers.py (module stdlib, import leger). La
 # re-cle de l'index passe par rekey_everywhere : un deplacement/renommage ne
@@ -2909,6 +2958,17 @@ def maintenance_loop():
     if bad:
         n = STORE.remove_many(bad)
         print(f"  🧹 {n} entrée(s) de dossiers cachés retirée(s) de l'index")
+    # Purge unique des clés fantômes (doublons malformés type « ARZOPA » qui ne
+    # résolvent pas mais dont la vraie photo existe sous une clé correcte). Sans
+    # risque (aucun nom humain), et peu coûteux (ne stat que les collisions).
+    try:
+        fant = purge_cles_fantomes()
+        if fant:
+            ex = ', '.join(k[:40] for k in fant[:3])
+            print(f"  🧹 {len(fant)} clé(s) fantôme(s) purgée(s) de FACE/ANIMAL "
+                  f"(doublons malformés, ex. {ex})")
+    except Exception as e:                                   # noqa: BLE001
+        print(f"  ⚠ purge clés fantômes ignorée : {e}")
     first = True
     cycle = 0
     while True:

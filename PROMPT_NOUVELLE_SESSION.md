@@ -3,13 +3,59 @@
 > Copie tout le bloc ci-dessous dans une nouvelle conversation Cowork, après
 > avoir connecté le dossier `C:\Prog\Claude\MediaLibrary`.
 >
-> Dernière mise à jour : **10 août 2026**. Le fix des **propositions sans image** sur
-> `/people` (clés fantômes ARZOPA) est **IMPLÉMENTÉ** : garde-fou dans `build_suggestions`
-> (`server.py`) + `verifier_orphelins.py` qui distingue fantôme/disparu (tests 19/19). Édité
-> en place, **non commité** (git = geste Mike) → reste commit + redémarrage, cf. section
-> « ÉTAT AU 9 AOÛT (soir) » point 1. Restent ouverts : galère `.bat` LF/CRLF (bat 28),
-> géocodage `gps_place` à activer.
+> Dernière mise à jour : **10 août 2026**. **PROCHAIN CHANTIER = #3 : archive
+> « (Inconnus) »** — voir le bloc « PROCHAINE SESSION : #3 » juste en dessous.
+> Cette session : fix `/people` sans image **livré + observé** (19→12 propositions,
+> 0 vignette cassée) ; **purge auto des clés fantômes** au démarrage (`purge_cles_fantomes`,
+> tests 23/23) ; **bat 28 RÉSOLU** (vraie cause = parenthèses nues dans un `echo` en bloc,
+> pas l'eol). Reste ouvert : géocodage `gps_place` à activer.
 >
+> **GESTE MIKE avant #3** : committer + **redémarrer** (active la purge fantômes ; log
+> `🧹 N clé(s) fantôme(s) purgée(s)`). Non commité au moment d'écrire : `server.py`
+> (`purge_cles_fantomes` + appel dans `maintenance_loop`), `verifier_orphelins.py`
+> (`cles_fantomes_par_collision`), `test_verifier_orphelins.py`, `ROADMAP.md`, ce fichier.
+> Le fix `/people` (`build_suggestions`) + bat 28 sont **déjà commités/poussés** (`main` à jour).
+
+---
+
+## ══ PROCHAINE SESSION : #3 — archive « (Inconnus) » ══
+
+**Besoin (mots de Mike).** Beaucoup de visages proposés dans `/people` sont des personnes
+qu'il ne reconnaît pas. Il veut pouvoir les **archiver sous « (Inconnus) »** pour les sortir
+de la file « À vérifier », **afin de pouvoir les re-tagger correctement** plus tard s'il se
+souvient d'un nom.
+
+**Deux décisions de conception à confirmer avec Mike au démarrage** (question posée, pas
+encore répondue — proposer ces défauts et attaquer) :
+1. **Persistance — défaut recommandé : archive RÉVERSIBLE en base, SANS écrire dans les
+   XMP.** Cohérent avec les rejets existants (`__non_group__`, `__pas_visage__`) et respecte
+   l'invariant « les noms ne se perdent jamais » (on n'écrit pas un faux nom sur des milliers
+   de fichiers). L'alternative (écrire `personne:(Inconnus)` dans les XMP) pollue les
+   métadonnées et impose une réécriture à chaque identification — à ne prendre que si Mike y
+   tient.
+2. **Structure — défaut recommandé : garder les clusters SÉPARÉS** sous un onglet/filtre
+   « Inconnus » (re-tagger un groupe d'un coup = l'usage visé), plutôt qu'un seul bucket
+   fourre-tout.
+
+**Chemin d'implémentation (calqué sur l'existant, `monolith-surgery` + `photo-ui` d'abord).**
+Le mécanisme est déjà là : `attribuer_visages(membres, cible)` (server.py l.2916) route les
+**cibles spéciales** (`CIBLES_SPECIALES`, l.2479-2480 : `__pas_visage__`, `__non_group__`)
+vers `_marquer_visages(membres, champ)` qui pose un champ sur la détection. Donc :
+- Ajouter une cible **`__inconnu__`** (nouveau champ `inconnu` sur la détection), réversible
+  via le toast d'annulation comme les autres marquages.
+- `build_suggestions()` (l.~7282) : exclure les détections `inconnu` de la file « À vérifier »
+  (comme `pas_visage` est déjà exclu, l.~7335).
+- UI `PEOPLE_PAGE` : bouton « C'est un inconnu / archiver » dans les 3 surfaces
+  (cartes de groupe `SPECIAUX_P` l.8526, curateur), + un **filtre/onglet « Inconnus »**
+  listant ces clusters archivés pour re-tag ultérieur (attribuer un vrai nom lève `inconnu`).
+- Tests : logique pure si extractible ; sinon `py_compile` + validation en réel sur un
+  cluster (serveur redémarré). Discipline : observer l'effet avant d'acquérir.
+
+Repères : `PERSON_QUEUE` l.379, `person_writer` l.6875, `curator_reject` l.7556,
+`SPECIAUX_P` l.8526, `attribuer_visages` l.2916, `CIBLE_*` l.2479.
+
+---
+
 > Rappel session 09/08 (matin) : géocodage inverse OFFLINE `gps_place`
 > (`geocode.py` + `enrichir_lieux.py` + bat 18 + câblage `server.py`) codé et testé
 > en sandbox — reste à activer côté Mike (bloc dédié plus bas).
@@ -138,40 +184,36 @@ Il vérifiait l'ASCII mais **pas** les fins de ligne. Ajout d'un contrôle : un 
 même classe de bug silencieux que le non-ASCII. Sert aussi de hook `PostToolUse` → bloque
 désormais à l'écriture un `.bat` en LF. Testé (flag un `.bat` LF, laisse passer les CRLF).
 
-### 3. BLOCAGE OUVERT : `28 - Fusionner la branche dans main.bat` — « qui était inattendu »
+### 3. RÉSOLU (10/08) : `28 - Fusionner la branche dans main.bat` — « qui était inattendu »
 
-**Symptôme.** bat 28 plante juste après `echo Recuperation de l'etat distant (git
-fetch)...` avec l'erreur cmd française « qui était inattendu » (= un token inattendu, un
-`)` typiquement), dans le bloc `if errorlevel 1 (…)` lignes 86-90.
+**Vraie cause (mesurée, ce n'était PAS l'eol).** Deux `echo` À L'INTÉRIEUR d'un bloc
+`if errorlevel 1 ( … )` contenaient des **parenthèses non échappées** : L101
+`echo   Il faut une vraie fusion (merge commit ou rebase), qui` (bloc 96-113) et L145
+`echo Relance le script (il refera le fetch et le controle).` (bloc 143-148). Dans un
+bloc `( )`, un `)` nu dans un `echo` **ferme le bloc prématurément** (le `(` en milieu de
+texte, lui, est ignoré — asymétrie du parseur). Le mot qui suivait, `qui`, devenait le
+token inattendu → message littéral « **qui** était inattendu ». Le bloc plantait au PARSE,
+donc quelle que soit la valeur d'errorlevel (la condition n'a pas besoin d'être vraie).
 
-**Écarté (mesuré).** (a) **Non-ASCII** : le fichier est ASCII pur (`verifier_bat.py` OK).
-(b) **Contenu** : les octets commités (git HEAD) sont propres, structure identique aux
-blocs `if errorlevel 1 (…)` qui, eux, parsent bien (l.24, 73) ; et **bat 28 tournait le
-08/08**. (c) **bat 27**, lui, tourne (CRLF natif) et a des blocs identiques.
+**Comment on l'a trouvée — la bonne méthode après 2 fausses pistes (eol, puis parenthèses
+« équilibrées »).** On avait écarté à tort : ASCII (verifier_bat OK), octets cachés (blob
+propre), eol (mesuré `CR=172 LF=172` = CRLF propre — l'eol n'était PAS le problème), et
+une simu de parenthèses qui les comptait *équilibrées* (elle modélisait mal cmd : le `(`
+d'un echo ne compte pas, le `)` si). Décisif : rejouer le VRAI bat 28 **écho activé**
+(`Get-Content … | Select-Object -Skip 1 | Set-Content _dbg28.bat; cmd /c _dbg28.bat`) →
+la dernière commande affichée avant l'erreur a nommé la ligne. Leçon : quand la déduction
+statique tourne en rond, **instrumenter et mesurer sur la vraie machine** (echo on).
 
-**Ce qui reste suspect : les fins de ligne côté Windows de bat 28.** cmd.exe déraille sur
-les blocs `(` multi-lignes en LF. MAIS `git checkout -- *.bat` (censé appliquer
-`eol=crlf`) n'a **pas** débloqué — donc soit l'eol n'est pas réappliqué sur la machine de
-Mike, soit c'est autre chose.
+**Correctif appliqué (natif Windows, CRLF préservé) — vérifié `verifier_bat.py` vert :**
+échapper les parens des deux lignes en `^(` `^)`, via
+`[IO.File]::ReadAllText`/`WriteAllText` + `.Replace(...)` (jamais depuis le sandbox).
+bat 28 relancé sans erreur, `main` fusionnée.
 
-**⚠ LEÇON DE MÉTHODE (importante).** Écrire/convertir un `.bat` **depuis le sandbox**
-n'atteint PAS Windows comme un CRLF propre (translation de fins de ligne du montage,
-voire double-CR). **Ne jamais corriger l'eol d'un `.bat` depuis le sandbox** — le faire
-côté Windows (git, ou PowerShell natif). Et **ne jamais** utiliser
-`open(f,'wb').write(open(f,'rb').read())` : `wb` tronque le fichier AVANT que `rb` ne
-lise → il **vide** le fichier (ça a vidé les 14 `.bat`, restaurés ensuite par
-`git checkout -- *.bat`).
-
-**Prochaines étapes bat 28 (au choix, côté Mike/Windows) :**
-- **Contourner (le plus simple)** : `git push origin HEAD:main` fait la fusion sans bat 28.
-- **Diagnostiquer l'eol réel** (PowerShell, natif Windows) :
-  `$b=[IO.File]::ReadAllBytes("28 - Fusionner la branche dans main.bat"); "CR=$(($b|?{$_-eq13}).Count) LF=$(($b|?{$_-eq10}).Count)"`
-  (CR<LF ⇒ LF nu ; CR>LF ⇒ double-CR).
-- **Forcer un CRLF propre** (PowerShell, lit TOUT avant d'écrire) :
-  `Get-ChildItem *.bat|%{ $t=([IO.File]::ReadAllText($_.FullName)) -replace "`r","" -replace "`n","`r`n"; [IO.File]::WriteAllText($_.FullName,$t) }` puis `python verifier_bat.py`.
-- **Si ça résiste toujours** : réécrire les blocs `if errorlevel 1 (…)` de bat 28 en
-  `if errorlevel 1 goto :label` (ou `cmd || ( … )` sur UNE ligne), immunisés contre l'eol
-  — mais l'écrire **côté Windows**, pas depuis le sandbox.
+**⚠ LEÇON EOL (toujours valable pour l'écriture des `.bat`).** Écrire/convertir un `.bat`
+**depuis le sandbox** n'atteint PAS Windows en CRLF propre. Corriger un `.bat` **côté
+Windows** (PowerShell `ReadAllText`/`WriteAllText`). Ne **jamais**
+`open(f,'wb').write(open(f,'rb').read())` (`wb` tronque avant que `rb` lise → vide le
+fichier). Garde-fou : `verifier_bat.py` signale désormais aussi le LF nu.
 
 ---
 

@@ -8,9 +8,10 @@ SESSION.md` (reprise exacte), et l'historique git (chaque chantier fini y est).
 
 Dernière mise à jour : **10 août 2026**. Fix des propositions sans image sur `/people`
 IMPLÉMENTÉ (garde-fou clés fantômes ARZOPA dans `build_suggestions`, + `verifier_orphelins.py`
-distingue fantôme/disparu, tests 19/19) — reste commit+redémarrage (geste Mike). Rappels
-ouverts : blocage `.bat` LF/CRLF de bat 28 ; géocodage `gps_place` à activer.
-Détail complet dans `PROMPT_NOUVELLE_SESSION.md`.
+distingue fantôme/disparu, tests 19/19) — **commité, poussé, serveur redémarré : ACTIF**.
+bat 28 « qui était inattendu » **RÉSOLU** (vraie cause = parenthèses nues dans un `echo`
+en bloc, L101/L145 — pas l'eol ; corrigé natif Windows). Reste ouvert : géocodage
+`gps_place` à activer. Détail dans `PROMPT_NOUVELLE_SESSION.md`.
 Rappel matin : géocodage inverse offline `gps_place` codé et testé en sandbox, à activer.
 
 ---
@@ -58,6 +59,12 @@ rendu 100 % parce que la mesure était devenue circulaire (auto-attribution). **
 ~100 propositions dans `/people` vaut plus que tout changement d'algorithme.** Le tri
 clavier est prêt (Espace/O = oui, X = non, Z = annuler, lettre = corriger). Option
 code : `1`–`9` pour assigner à une personne connue, `Maj+clic` pour une plage.
+
+> **CHANTIER ACTIF (10/08) — archive « (Inconnus) » (#3).** Mike a confirmé la majorité
+> des visages ; il reste beaucoup d'inconnus. Feature : les archiver sous « (Inconnus) »
+> (réversible, sans XMP par défaut) pour les sortir de la file « À vérifier » et les
+> re-tagger plus tard. Conception, chemin d'implémentation et repères de code : voir le
+> bloc « PROCHAINE SESSION : #3 » de `PROMPT_NOUVELLE_SESSION.md`.
 
 ### 2. Détections d'animaux mal classées en visages — et l'inverse (Mutz)
 
@@ -181,9 +188,13 @@ Carte le vocabulaire de la barre de recherche.
   Un seul `is_file()` sur les vrais candidats ; ne touche que des propositions, aucun nom perdu.
   `py_compile` OK. Et `verifier_orphelins.py` (read-only) distingue désormais une **clé
   fantôme** (doublon malformé dont un sibling présent partage le basename — purge sans risque)
-  d'un vrai fichier disparu (`basename_cle`/`est_fantome`, `test_verifier_orphelins` 19/19).
-  **Reste (Mike) :** commit (bat 27) + **redémarrer** + vérifier que les 3 cartes ARZOPA sans
-  vignette disparaissent ; puis `verifier_orphelins.py` pour chiffrer/purger les fantômes.
+  d'un vrai fichier disparu (`basename_cle`/`est_fantome`). **Cause racine traitée (10/08) :**
+  `purge_cles_fantomes()` s'exécute une fois au démarrage de `maintenance_loop` — retire de
+  FACE/ANIMAL_STORE les doublons malformés (via `forget_everywhere`, jamais une clé nommée),
+  détection peu coûteuse (`cles_fantomes_par_collision` ne stat que les basenames en
+  collision). Logique pure testée, `test_verifier_orphelins` 23/23. Effet UI déjà **observé
+  en réel** (19 → 12 propositions, 0 vignette cassée). **Reste (Mike) :** commit + redémarrage
+  → une ligne `🧹 N clé(s) fantôme(s) purgée(s)` confirmera le nettoyage du store.
 - **Purge de suppression incomplète (BUG — diagnostiqué ET corrigé le 08/08).**
   `_sync_dir` étape 4 ne retirait un fichier disparu que du **TagStore** ; visages/
   animaux/vecteurs restaient orphelins (cas « ARZOPA »). Diagnostic (`verifier_orphelins.py`,
