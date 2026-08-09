@@ -18,6 +18,20 @@ le nommer → il en sort et devient une personne). Précédemment : fix proposit
 purge clés fantômes (commit+redémarrage encore dus), bat 28 RÉSOLU. Reste aussi ouvert :
 géocodage `gps_place` à activer. Détail dans `PROMPT_NOUVELLE_SESSION.md`.
 
+**BUG CURATEUR CORRIGÉ (10/08 soir).** Nommer un **nouveau** groupe depuis « À vérifier »
+(carte « Ajouter à X ? » → saisir un nom neuf) ne le sauvegardait pas : `attribuer_visage`
+(curateur unitaire) posait seulement le tag XMP, sans créer la **fiche `PEOPLE_STORE`** ni
+inscrire le visage comme référence/assigné — d'où « Liam Guhl » perdu au redémarrage et la
+proposition qui revenait. Corrigé : la branche de nommage délègue à `_nommer_membres_visages`
+(fiche + réf + visage assigné + tag), comme le chemin des groupes ; répare aussi les tags
+déjà posés sans fiche. Réversible. py_compile OK. **À valider en réel après redémarrage.**
+
+**IDÉE UI À VENIR — `/reglages` en « tour de contrôle » (demande Mike 10/08).** Voir d'un
+coup d'œil l'état de l'app et surtout le **statut de tous les workers** (tâches de fond) :
+tagging (`TAG_QUEUE`), visages (`FACE_QUEUE`), animaux (`ANIMAL_QUEUE`), écriture des noms
+(`PERSON_QUEUE`), ré-embedding (`PET_EMBED_STATE`), maintenance/backup, + device (CPU/GPU),
+RAM/VRAM libre, `system_busy`. Converge avec l'item 5 (« centre de tâches »). Détail item 5.
+
 ---
 
 ## État des branches
@@ -145,6 +159,21 @@ tâches** remplaçant le bandeau `#pending` (données déjà là : `hw_state()`,
 toujours visibles (`/people`, `/pets`) — gros changement du flux de nommage, valider en
 réel d'abord ; **numéro de vue** en marge de la planche contact ; porter le **sélecteur
 d'ordre réversible** (fait sur la galerie) aux fiches détail Animaux/Personnes.
+
+> **`/reglages` en « TOUR DE CONTRÔLE » (demande explicite de Mike, 10/08) — priorité UI/UX
+> montante.** Une page où Mike voit *d'un coup d'œil* l'état de l'app et **tout ce qui tourne
+> en fond**. Concrètement, le statut de chaque worker/tâche de fond, en direct :
+> tagging (`tagger_worker` / `TAG_QUEUE`), visages (`FACE_QUEUE`), animaux (`ANIMAL_QUEUE`),
+> écriture des noms dans les fichiers (`person_writer` / `PERSON_QUEUE`), ré-embedding
+> (`reembed_loop` / `PET_EMBED_STATE`), maintenance + backup NAS (`maintenance_loop`),
+> curateur/clusters (build en cours ?). Pour chacun : en cours / au repos, reste-à-faire
+> (taille de file), device (CPU/GPU), dernier passage. Plus l'état matériel : RAM/VRAM libre
+> (`hw_state()`), `system_busy()` (auto-bridage), Ollama résident ou non. Toutes les données
+> existent déjà côté serveur — c'est un travail d'**exposition** (un `/api/etat` agrégé +
+> rendu papier, rafraîchi périodiquement) et de design, sans nouveau pipeline. Respecter
+> `photo-ui` : `--f-donnees` pour tous les nombres, `--veilleuse` = en cours, `--fixateur` =
+> au repos/OK, boutons Pause où c'est déjà possible. C'est le point d'entrée naturel du
+> « centre de tâches » ci-dessus, côté `/reglages` plutôt qu'en bandeau.
 
 ### 6. Une seule page « Sujets »
 

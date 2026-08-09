@@ -2767,19 +2767,20 @@ def attribuer_visage(cle, i, cible, personne_proposee=""):
     if se is None:
         return {"ok": True, "n": 0, "libelle": "déjà attribué"}
     if _kw_has(se, tag):
-        # Déjà tagué avec CE nom. Si l'utilisateur re-confirme le même nom depuis
-        # une carte « faux positif ? », c'est un « oui, c'est bien elle » : on
-        # l'enregistre (ne plus signaler + enrichit la signature) au lieu d'un
-        # no-op muet qui laissait la fausse alerte revenir à chaque passe.
-        if personne_proposee and nom.lower() == personne_proposee.lower():
+        # Déjà tagué avec CE nom. On délègue quand même à _nommer_membres_visages :
+        # c'est idempotent sur le tag (il ne re-tague pas) mais il CRÉE/complète la
+        # FICHE et inscrit le visage comme référence + assigné. Ça répare le cas des
+        # anciens tags posés SANS fiche par le curateur unitaire (le bug corrigé ici)
+        # et, si l'utilisateur re-confirme le même nom depuis « faux positif ? »,
+        # enregistre la confirmation (plus jamais signalé).
+        confirme = bool(personne_proposee) and nom.lower() == personne_proposee.lower()
+        res0 = _nommer_membres_visages([(cle, int(i or 0))], nom)
+        if confirme:
             _person_add_set(nom, 'confirmed', cle)
-            _person_add_ref(nom, cle, int(i or 0))
             _suggest_remove(lambda s: s.get('type') == 'remove'
                             and s.get('person') == nom and s.get('key') == cle)
-            return {"ok": True, "n": 0, "libelle": f"confirmé : {nom}"}
-        return {"ok": True, "n": 0, "libelle": "déjà attribué"}
-    _index_add_person(cle, tag)
-    _enqueue_person_write(cle, tag, 'add')
+        return {"ok": True, "n": res0.get("n", 0), "jeton": res0.get("jeton"),
+                "libelle": (f"confirmé : {nom}" if confirme else f"→ {nom}")}
     # Si l'utilisateur corrige vers un AUTRE nom, la proposition initiale
     # devient une exclusion : sinon elle reviendra indéfiniment.
     corrige = personne_proposee and nom.lower() != personne_proposee.lower()
@@ -2803,23 +2804,32 @@ def attribuer_visage(cle, i, cible, personne_proposee=""):
         _suggest_remove(lambda s: s.get('type') == 'remove'
                         and s.get('person') == personne_proposee
                         and s.get('key') == cle)
-    STORE.save()
+        STORE.save()
+
+    # Nommage réel : créer/enrichir la FICHE (PEOPLE_STORE) avec ce visage comme
+    # référence et l'inscrire dans `faces` (donc « assigné » : il ne revient plus
+    # dans « À vérifier » ni « À nommer »), + écrire le tag XMP. C'est ce que faisait
+    # déjà le chemin des GROUPES (_nommer_membres_visages) mais PAS le curateur
+    # unitaire : il ne posait que le tag, d'où un « nouveau » nom jamais sauvegardé
+    # comme personne/groupe et une proposition qui revenait au redémarrage.
+    res = _nommer_membres_visages([(cle, int(i or 0))], nom)
+    jeton_nom = res.get('jeton')
 
     def defaire():
-        _index_remove_person(cle, tag)
-        _enqueue_person_write(cle, tag, 'del')
+        if jeton_nom:
+            annuler(jeton_nom)              # défait fiche + référence + tag
         if retire_ancien:
             _index_add_person(cle, tag_ancien)
             _enqueue_person_write(cle, tag_ancien, 'add')
+            STORE.save()
         if corrige:
             pe2 = PEOPLE_STORE.data.get(pk)
             if isinstance(pe2, dict):
                 pe2['exclude'] = [x for x in (pe2.get('exclude') or []) if x != cle]
                 PEOPLE_STORE.set(pk, pe2)
-        STORE.save()
 
     jeton = _empiler_annulation(f"photo attribuée à {nom}", defaire)
-    return {"ok": True, "n": 1, "jeton": jeton, "corrige": bool(corrige),
+    return {"ok": True, "n": res.get("n", 1), "jeton": jeton, "corrige": bool(corrige),
             "libelle": f"→ {nom}" + (f" (corrigé depuis {personne_proposee})"
                                      if corrige else "")}
 
