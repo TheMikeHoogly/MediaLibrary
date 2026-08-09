@@ -18,29 +18,27 @@ serveur Python stdlib pur, pipelines Ollama/InsightFace/YOLO/DINOv2, RTX 3050 4 
 
 ## Où on en est (9/08/2026)
 
-- **✅ Reclassement Mutz/Caline : FAIT & vérifié le 9/08.** 88 photos passées de
-  `personne:` à `animal:` (Mutz 5, Caline 83), fiche Caline en double retirée, aucune
-  perte (88/88 vérifiées). Outil réversible dans `/reglages` → « Reclassement ». Le vrai
-  journal `docs/undo_reclassement_1786307562.json` existe encore : **cliquer Annuler
-  reviendrait à revenir en arrière** — ne pas y toucher sauf pour ça.
-- **⏳ À confirmer visuellement (déployé, serveur redémarré) :** (a) **`/people` allégé**
-  (rendu par lots `renderInBatches` — défiler doit être fluide, nommer un groupe, Inconnus) ;
-  (b) carte **« Empreintes animaux »** (stock réel ~4826) dans `/reglages`. Détail : `ROADMAP.md`.
-- **Nettoyage de session : LIVRÉ** — `29 - Nettoyage de session.bat` /
-  `nettoyer_session.py` (quarantaine réversible + lint `*.md`), étape ajoutée à `CLAUDE.md`.
-  Passe initiale faite. À lancer en fin de chaque session.
-- **#3 archive « Inconnus » + fix curateur : validés en réel.** Détail : `ROADMAP.md`.
-- Serveur : branche `feat/menage-ui-gpu-0807` (== `main`). **Reste : commit/push** de la
-  session (geste Mike, `docs/GIT_WORKFLOW.md`).
-- **Ouvert** : activer le géocodage `gps_place` (gestes Mike : bat 18 → `enrichir_lieux.py`
-  → `--ecrire` → redémarrer).
+Session 9/08 **commitée + fusionnée dans `main`**, serveur redémarré. Tout est validé,
+rien en attente. Acquis de la session (détail : `ROADMAP.md` + git) :
+- **`/people` allégé** — rendu par lots (`renderInBatches`), défilement fluide.
+- **Tour de contrôle `/reglages`** complétée : carte « Empreintes animaux » = stock réel.
+- **Nettoyage de fin de session** — `29 - Nettoyage de session.bat` / `nettoyer_session.py`
+  (quarantaine réversible `_corbeille_session/` + lint `*.md`). **À lancer en fin de chaque
+  session** (au protocole `CLAUDE.md`).
+- **Reclassement `personne:`→`animal:`** dans `/reglages` : Mutz + Caline reclassés, doublon
+  de fiche Caline retiré, vérifié 88/88 sans perte. Réversible ; relancer l'outil (Aperçu →
+  Appliquer) dès qu'un nouveau nom d'animal se retrouve tagué en `personne:`.
+
+- **Ouvert (gestes Mike)** : lots de renommage + géocodage `gps_place` (bat 18 →
+  `enrichir_lieux.py` → `--ecrire` → redémarrer) ; `git push` si pas déjà fait.
 
 ## Prochain chantier — au choix par valeur (cf. ROADMAP)
 
-1. **Valider en réel** `/people` allégé + carte « Empreintes chats » (après redémarrage).
-2. Confirmer ~100 propositions dans `/people` (vérité terrain, priorité n°1).
-3. Appliquer les lots de renommage / activer `gps_place` (gestes Mike).
-4. Page « Sujets » unifiée.
+1. **Vérité terrain (priorité n°1)** : confirmer ~100 propositions dans `/people` (tri
+   clavier Espace/X/Z ; la page est désormais fluide).
+2. Appliquer les lots de renommage + activer `gps_place` (gestes Mike).
+3. Page « Sujets » unifiée (Personnes + Animaux).
+4. Recherche en langue naturelle (SigLIP 2).
 
 ## Rappels opérationnels
 
