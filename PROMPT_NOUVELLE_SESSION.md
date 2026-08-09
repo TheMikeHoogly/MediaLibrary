@@ -3,15 +3,18 @@
 > Copie tout le bloc ci-dessous dans une nouvelle conversation Cowork, après
 > avoir connecté le dossier `C:\Prog\Claude\MediaLibrary`.
 >
-> Dernière mise à jour : **9 août 2026** (géocodage inverse OFFLINE `gps_place` :
-> `geocode.py` + `enrichir_lieux.py` + bat 18 + câblage `server.py`, tout testé en
-> sandbox — reste à activer côté Mike. Détail plus bas.)
+> Dernière mise à jour : **9 août 2026 (soir)**. Trois choses cette session :
+> (1) diagnostic des **propositions sans image** sur `/people` ; (2) `verifier_bat.py`
+> renforcé (contrôle des fins de ligne) — commité/poussé ; (3) galère `.bat` LF/CRLF
+> encore ouverte. Détail dans la section « ÉTAT AU 9 AOÛT (soir) » plus bas.
 >
-> Note : la session du 08/08 (workflow git, action cross-pipeline « C'est un animal »,
-> garde SigLIP mesurée puis REJETÉE, bug orphelins corrigé) a bien été **commitée et
-> poussée** sur `feat/menage-ui-gpu-0807`, et le serveur a été **redémarré** (le log
-> montre la purge d'orphelins active). `main` reste EN DESSOUS de la branche (pas
-> encore fusionnée).
+> Rappel session 09/08 (matin) : géocodage inverse OFFLINE `gps_place`
+> (`geocode.py` + `enrichir_lieux.py` + bat 18 + câblage `server.py`) codé et testé
+> en sandbox — reste à activer côté Mike (bloc dédié plus bas).
+>
+> Note : `main` est **À JOUR** — fusionnée le 09/08 (soir) par `git push origin HEAD:main`
+> (fast-forward vers `e6a7564`, qui inclut tout le travail 08/08 + géocodage + le
+> renfort `verifier_bat.py`). `main == origin/main == feat/menage-ui-gpu-0807`.
 
 ---
 
@@ -78,6 +81,79 @@ seuil/modèle).
 - **Multi-appareils (Dispatch)** : Mike peut piloter depuis téléphone ou PC, mais le
   travail s'exécute **sur le PC** (mêmes fichiers, même serveur). PC allumé + Claude
   Desktop ouvert + dossier connecté requis.
+
+## ══ ÉTAT AU 9 AOÛT 2026 (soir) — LIRE EN PREMIER ══
+
+### 1. Propositions « À vérifier » SANS IMAGE sur `/people` — diagnostiqué, fix NON câblé
+
+**Symptôme (constaté par Mike).** Dans la file « À vérifier » de `/people`, certaines
+cartes s'affichent sans vignette (image cassée), à côté d'autres qui en ont une.
+
+**Cause, VÉRIFIÉE en direct sur le serveur (Chrome, `/api/curator/list`).** Ce sont des
+**clés fantômes** dans `FACE_STORE` : le même fichier ARZOPA existe deux fois, sous une
+clé correcte (`ads\ARZOPA\5bBcn6-…JPG` → vignette 200) ET une clé malformée
+(`ARZOPA/5bBcn6-…JPG`, slash avant, sans la racine `ads\`). `_resolve_key` (server.py
+l.1345 : clé absolue = chemin direct, sinon `UPLOAD_DIR / clé`) pointe la clé fantôme
+vers `Uploads/ARZOPA/…` qui n'existe pas → `/api/facecrop` renvoie **404** → image
+cassée. Sur 19 propositions actuelles, **3 sont dans ce cas, toutes ARZOPA**.
+`build_suggestions()` (server.py ~l.7282) propose **toute** empreinte de `FACE_STORE`
+**sans jamais vérifier que le fichier se résout** → les clés mortes passent dans la file.
+C'est le résidu du cas « ARZOPA » : `forget_everywhere` ne purge que les clés dont le
+fichier a *disparu d'un dossier scanné*, pas une clé fantôme qui n'a jamais correspondu
+à un chemin réel.
+
+**Fix proposé (à IMPLÉMENTER, non fait — Mike n'a pas encore dit go) :**
+1. **Garde-fou dans `build_suggestions()`** : ignorer un item `add` si
+   `_resolve_key(k)` n'est pas un fichier. Coût = un `is_file()` local par visage
+   candidat, **aucun risque de perte de nom** (ça ne touche que des propositions, jamais
+   un nom confirmé). `monolith-surgery` avant d'éditer `server.py` ; redémarrage = geste Mike.
+2. **Cause racine** : étendre `verifier_orphelins.py` (read-only) pour compter aussi les
+   clés qui **ne se résolvent pas** (pas seulement les fichiers disparus), puis purger ces
+   clés fantômes ARZOPA de `FACE_STORE`.
+
+### 2. `verifier_bat.py` renforcé — FAIT, commité/poussé (commit `e6a7564`)
+
+Il vérifiait l'ASCII mais **pas** les fins de ligne. Ajout d'un contrôle : un `.bat` en
+**LF pur** (ou mixte) est signalé (« fins de ligne : N ligne(s) en LF au lieu de CRLF »),
+même classe de bug silencieux que le non-ASCII. Sert aussi de hook `PostToolUse` → bloque
+désormais à l'écriture un `.bat` en LF. Testé (flag un `.bat` LF, laisse passer les CRLF).
+
+### 3. BLOCAGE OUVERT : `28 - Fusionner la branche dans main.bat` — « qui était inattendu »
+
+**Symptôme.** bat 28 plante juste après `echo Recuperation de l'etat distant (git
+fetch)...` avec l'erreur cmd française « qui était inattendu » (= un token inattendu, un
+`)` typiquement), dans le bloc `if errorlevel 1 (…)` lignes 86-90.
+
+**Écarté (mesuré).** (a) **Non-ASCII** : le fichier est ASCII pur (`verifier_bat.py` OK).
+(b) **Contenu** : les octets commités (git HEAD) sont propres, structure identique aux
+blocs `if errorlevel 1 (…)` qui, eux, parsent bien (l.24, 73) ; et **bat 28 tournait le
+08/08**. (c) **bat 27**, lui, tourne (CRLF natif) et a des blocs identiques.
+
+**Ce qui reste suspect : les fins de ligne côté Windows de bat 28.** cmd.exe déraille sur
+les blocs `(` multi-lignes en LF. MAIS `git checkout -- *.bat` (censé appliquer
+`eol=crlf`) n'a **pas** débloqué — donc soit l'eol n'est pas réappliqué sur la machine de
+Mike, soit c'est autre chose.
+
+**⚠ LEÇON DE MÉTHODE (importante).** Écrire/convertir un `.bat` **depuis le sandbox**
+n'atteint PAS Windows comme un CRLF propre (translation de fins de ligne du montage,
+voire double-CR). **Ne jamais corriger l'eol d'un `.bat` depuis le sandbox** — le faire
+côté Windows (git, ou PowerShell natif). Et **ne jamais** utiliser
+`open(f,'wb').write(open(f,'rb').read())` : `wb` tronque le fichier AVANT que `rb` ne
+lise → il **vide** le fichier (ça a vidé les 14 `.bat`, restaurés ensuite par
+`git checkout -- *.bat`).
+
+**Prochaines étapes bat 28 (au choix, côté Mike/Windows) :**
+- **Contourner (le plus simple)** : `git push origin HEAD:main` fait la fusion sans bat 28.
+- **Diagnostiquer l'eol réel** (PowerShell, natif Windows) :
+  `$b=[IO.File]::ReadAllBytes("28 - Fusionner la branche dans main.bat"); "CR=$(($b|?{$_-eq13}).Count) LF=$(($b|?{$_-eq10}).Count)"`
+  (CR<LF ⇒ LF nu ; CR>LF ⇒ double-CR).
+- **Forcer un CRLF propre** (PowerShell, lit TOUT avant d'écrire) :
+  `Get-ChildItem *.bat|%{ $t=([IO.File]::ReadAllText($_.FullName)) -replace "`r","" -replace "`n","`r`n"; [IO.File]::WriteAllText($_.FullName,$t) }` puis `python verifier_bat.py`.
+- **Si ça résiste toujours** : réécrire les blocs `if errorlevel 1 (…)` de bat 28 en
+  `if errorlevel 1 goto :label` (ou `cmd || ( … )` sur UNE ligne), immunisés contre l'eol
+  — mais l'écrire **côté Windows**, pas depuis le sandbox.
+
+---
 
 ## ══ ÉTAT AU 8 AOÛT 2026 — LIRE EN PREMIER ══
 

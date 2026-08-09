@@ -6,22 +6,26 @@ est la **carte des priorités** ; le détail vit ailleurs et est référencé :
 dédoublonnage), `docs/AUDIT_EXTERNE_2026.md` (direction tagging), `PROMPT_NOUVELLE_
 SESSION.md` (reprise exacte), et l'historique git (chaque chantier fini y est).
 
-Dernière mise à jour : **9 août 2026** (géocodage inverse offline `gps_place` :
-module + batch + bat + câblage serveur, testés en sandbox — à activer côté Mike).
+Dernière mise à jour : **9 août 2026 (soir)**. Diagnostic des propositions sans image
+sur `/people` (clés fantômes ARZOPA — fix proposé, non câblé) ; `verifier_bat.py` renforcé
+(contrôle des fins de ligne, commité) ; blocage `.bat` LF/CRLF de bat 28 encore ouvert.
+Détail complet dans `PROMPT_NOUVELLE_SESSION.md` (section « ÉTAT AU 9 AOÛT (soir) »).
+Rappel matin : géocodage inverse offline `gps_place` codé et testé en sandbox, à activer.
 
 ---
 
 ## État des branches
 
-- **`main` == `origin/main`**, à jour et poussé. Porte tout le travail intégré,
-  y compris les deux correctifs du 07/08 (rejet de groupe `/pets`, curateur
-  faux-positifs `/people`).
-- **`feat/menage-ui-gpu-0807`** (branche courante, exécutée par le serveur) —
-  4+ commits au-dessus de `main`, **pas encore poussée** : archivage `.bat`, bloc
-  renommage `/reglages` (validé en réel), optimisation tagging (testée, à mesurer
-  en réel), docs. Pour publier : `git push --set-upstream origin feat/menage-ui-gpu-0807`.
-- `git push` et les merges dans `main` sont des **gestes de Mike** (le sandbox ne
-  pousse pas ; et merger en local échoue tant que le serveur verrouille `server.py`).
+- **`main` == `origin/main` == `feat/menage-ui-gpu-0807` == `e6a7564`** (fusion 09/08 soir
+  par `git push origin HEAD:main`, fast-forward). Porte TOUT l'intégré : travail 08/08
+  (cross-pipeline, orphelins, garde SigLIP rejetée), géocodage inverse `gps_place`, carte
+  avec lieu, et le renfort `verifier_bat.py` (contrôle des fins de ligne).
+- La branche `feat/menage-ui-gpu-0807` reste la branche de travail exécutée par le serveur ;
+  elle est maintenant au même niveau que `main`. Prochain chantier = nouveaux commits dessus
+  (ou une branche neuve depuis `main`), puis `git push origin HEAD:main` pour refusionner.
+- `git push` et les merges dans `main` sont des **gestes de Mike** (le sandbox ne pousse
+  pas). La fusion sans checkout local = `git push origin HEAD:main` (contourne le verrou
+  `server.py` ET le `.bat` 28 cassé — cf. `PROMPT_NOUVELLE_SESSION.md`).
 
 ---
 
@@ -166,6 +170,14 @@ Carte le vocabulaire de la barre de recherche.
 
 ### 10. Données & finitions
 
+- **Propositions « À vérifier » sans image sur `/people` (diagnostiqué 09/08, fix NON
+  câblé).** Clés fantômes dans `FACE_STORE` : même photo ARZOPA sous une clé correcte
+  (`ads\ARZOPA\…`) ET une clé malformée (`ARZOPA/…`, slash avant, sans racine `ads\`) qui
+  ne se résout pas → `/api/facecrop` 404 → carte sans vignette (vérifié en direct : 3/19,
+  toutes ARZOPA). `build_suggestions()` ne vérifie pas que le fichier se résout. **Fix
+  proposé** : garde-fou `is_file()` sur les items `add` dans `build_suggestions` (aucun
+  risque de nom, ça ne touche que des propositions) + étendre `verifier_orphelins.py` pour
+  compter/purger les clés non résolvables. Détail : `PROMPT_NOUVELLE_SESSION.md`.
 - **Purge de suppression incomplète (BUG — diagnostiqué ET corrigé le 08/08).**
   `_sync_dir` étape 4 ne retirait un fichier disparu que du **TagStore** ; visages/
   animaux/vecteurs restaient orphelins (cas « ARZOPA »). Diagnostic (`verifier_orphelins.py`,
