@@ -6,13 +6,17 @@ est la **carte des priorités** ; le détail vit ailleurs et est référencé :
 dédoublonnage), `docs/AUDIT_EXTERNE_2026.md` (direction tagging), `PROMPT_NOUVELLE_
 SESSION.md` (reprise exacte), et l'historique git (chaque chantier fini y est).
 
-Dernière mise à jour : **10 août 2026**. Fix des propositions sans image sur `/people`
-IMPLÉMENTÉ (garde-fou clés fantômes ARZOPA dans `build_suggestions`, + `verifier_orphelins.py`
-distingue fantôme/disparu, tests 19/19) — **commité, poussé, serveur redémarré : ACTIF**.
-bat 28 « qui était inattendu » **RÉSOLU** (vraie cause = parenthèses nues dans un `echo`
-en bloc, L101/L145 — pas l'eol ; corrigé natif Windows). Reste ouvert : géocodage
-`gps_place` à activer. Détail dans `PROMPT_NOUVELLE_SESSION.md`.
-Rappel matin : géocodage inverse offline `gps_place` codé et testé en sandbox, à activer.
+Dernière mise à jour : **10 août 2026 (soir)**. **Chantier #3 — archive « (Inconnus) » :
+CODÉ, à valider en réel.** Côté visages : nouvelle cible `__inconnu__` (champ `inconnu` sur
+la détection, réversible, JAMAIS de XMP), exclue de « Groupes à nommer » et de « À vérifier » ;
+nommer un cluster lève l'archive ; nouvelle vue « Inconnus (archivés) » (clusters séparés,
+seuil min=1) avec re-tag ou « Réactiver » ; endpoints `/api/people/inconnus` (GET) et
+`/api/people/desarchiver` (POST). `server.py` édité en place (py_compile OK, `node --check` OK
+sur le JS ajouté), **écrit sur la machine**. **Reste (Mike) : commit + REDÉMARRER + valider
+en réel** sur `/people` (archiver un groupe → il quitte la file et apparaît sous « Inconnus » ;
+le nommer → il en sort et devient une personne). Précédemment : fix propositions sans image +
+purge clés fantômes (commit+redémarrage encore dus), bat 28 RÉSOLU. Reste aussi ouvert :
+géocodage `gps_place` à activer. Détail dans `PROMPT_NOUVELLE_SESSION.md`.
 
 ---
 
@@ -60,11 +64,20 @@ rendu 100 % parce que la mesure était devenue circulaire (auto-attribution). **
 clavier est prêt (Espace/O = oui, X = non, Z = annuler, lettre = corriger). Option
 code : `1`–`9` pour assigner à une personne connue, `Maj+clic` pour une plage.
 
-> **CHANTIER ACTIF (10/08) — archive « (Inconnus) » (#3).** Mike a confirmé la majorité
-> des visages ; il reste beaucoup d'inconnus. Feature : les archiver sous « (Inconnus) »
-> (réversible, sans XMP par défaut) pour les sortir de la file « À vérifier » et les
-> re-tagger plus tard. Conception, chemin d'implémentation et repères de code : voir le
-> bloc « PROCHAINE SESSION : #3 » de `PROMPT_NOUVELLE_SESSION.md`.
+> **CHANTIER #3 — archive « (Inconnus) » : CODÉ (10/08 soir), à valider en réel.**
+> Défauts confirmés par Mike : archive **réversible en base, SANS XMP** ; **clusters séparés**
+> sous une vue « Inconnus ». Livré (server.py, écrit sur la machine) : cible `__inconnu__`
+> côté visages (champ `inconnu`, miroir du côté animaux) ; exclusion de « Groupes à nommer »
+> (`_gather_faces`) et « À vérifier » (`build_suggestions`) ; **nommer un cluster lève
+> l'archive** (`_nommer_membres_visages`) ; `INCONNU_CACHE` + `build_inconnus()` (seuil min=1,
+> ne cache aucun singleton) ; `desarchiver_visages()` ; endpoints `/api/people/inconnus` +
+> `/api/people/desarchiver`. UI `PEOPLE_PAGE` : bouton « Archiver (inconnu) » + entrée
+> `SPECIAUX_P` (sous-ensemble) ; section « Inconnus (archivés) » chargée à la demande
+> (« Afficher »), re-tag par nommage ou « Réactiver ». py_compile + `node --check` verts.
+> **Reste (Mike) : commit + REDÉMARRER + valider en réel.** Vérifs : archiver un groupe le
+> sort de la file et le fait apparaître sous « Inconnus » ; le nommer le sort des inconnus et
+> crée/enrichit la personne ; « Réactiver » le renvoie dans « Groupes à nommer » ; toasts
+> d'annulation OK sur les trois gestes.
 
 ### 2. Détections d'animaux mal classées en visages — et l'inverse (Mutz)
 

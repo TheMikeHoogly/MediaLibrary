@@ -379,6 +379,10 @@ PEOPLE_STORE = make_store(PEOPLE_FILE)
 PERSON_QUEUE = queue.Queue()          # (chemin, tag) à écrire dans les fichiers
 CLUSTER_CACHE = {"at": 0.0, "building": False, "clusters": [], "byid": {}}
 CLUSTER_LOCK = threading.Lock()
+# Vue « (Inconnus) » : clusters des visages archivés (champ 'inconnu'), séparés de
+# la file « À nommer » pour un re-tag ultérieur. Même forme que CLUSTER_CACHE.
+INCONNU_CACHE = {"at": 0.0, "building": False, "clusters": [], "byid": {}}
+INCONNU_LOCK = threading.Lock()
 
 
 # ─── Magasin de sujets commun (point 7 du ROADMAP) ───────────────────────────
@@ -2827,6 +2831,11 @@ def _invalider_groupes_visages():
         CLUSTER_CACHE["clusters"] = []
         CLUSTER_CACHE["byid"] = {}
         CLUSTER_CACHE["at"] = 0.0
+    # La vue « (Inconnus) » dépend des mêmes marquages : la forcer à se reconstruire.
+    with INCONNU_LOCK:
+        INCONNU_CACHE["clusters"] = []
+        INCONNU_CACHE["byid"] = {}
+        INCONNU_CACHE["at"] = 0.0
 
 
 def _marquer_visages(membres, champ):
@@ -2854,6 +2863,7 @@ def _marquer_visages(membres, champ):
         _invalider_groupes_visages()
 
     libelle = ("écartée(s) (pas un visage)" if champ == 'pas_visage'
+               else "archivée(s) comme inconnue(s)" if champ == 'inconnu'
                else "marquée(s) non regroupable(s)")
     jeton = _empiler_annulation(f"{len(touches)} vignette(s) {libelle}", defaire)
     _invalider_groupes_visages()
@@ -2866,6 +2876,7 @@ def _nommer_membres_visages(membres, nom):
     Réversible. Miroir de _nommer_membres_animaux (harmonisation des pipelines)."""
     tag = f"personne:{nom}"
     refs = []
+    reactives = []                 # visages archivés « inconnu » levés par ce nommage
     for (k, i) in membres:
         fe = FACE_STORE.data.get(k)
         faces = (fe.get('faces') if isinstance(fe, dict) else None) or []
@@ -2873,6 +2884,14 @@ def _nommer_membres_visages(membres, nom):
             emb = faces[i].get('emb')
             if emb and len(refs) < 40:
                 refs.append(emb)
+            # Nommer un visage archivé sous « (Inconnus) », c'est lui donner une
+            # identité : on lève l'archive (miroir de _nommer_membres_animaux qui
+            # relève 'inconnu'). Réversible : restauré dans defaire().
+            if faces[i].get('inconnu'):
+                faces[i].pop('inconnu', None)
+                reactives.append((k, i))
+    if reactives:
+        FACE_STORE.save()
 
     pk = nom.lower()
     existait = pk in PEOPLE_STORE.data
@@ -2898,6 +2917,13 @@ def _nommer_membres_visages(membres, nom):
         for k in ajoutees:
             _index_remove_person(k, tag)
             _enqueue_person_write(k, tag, 'del')
+        for k, i in reactives:                     # ré-archive ce qui était inconnu
+            fe = FACE_STORE.data.get(k)
+            faces = (fe.get('faces') if isinstance(fe, dict) else None) or []
+            if i < len(faces):
+                faces[i]['inconnu'] = True
+        if reactives:
+            FACE_STORE.save()
         if existait:
             PEOPLE_STORE.set(pk, avant)
         else:
@@ -2926,7 +2952,15 @@ def attribuer_visages(membres, cible):
         return {"ok": False, "n": 0}
 
     if isinstance(cible, str) and cible in CIBLES_SPECIALES:
-        champ = 'pas_visage' if cible == CIBLE_PAS_VISAGE else 'non_group'
+        # __inconnu__ (archive « (Inconnus) ») : vrai visage humain mais personne
+        # non reconnue — on l'archive pour le re-tagger plus tard, sans ecrire de
+        # faux nom dans les XMP. Miroir du champ 'inconnu' cote animaux.
+        if cible == CIBLE_PAS_VISAGE:
+            champ = 'pas_visage'
+        elif cible == CIBLE_INCONNU:
+            champ = 'inconnu'
+        else:
+            champ = 'non_group'
         return _marquer_visages(membres, champ)
 
     noms = cible if isinstance(cible, list) else [cible]
@@ -6697,8 +6731,10 @@ def _gather_faces():
                 continue
             # Marquages humains (12b) : une decoupe jugee « pas un visage »
             # (chat, objet) ou un visage juge « non regroupable » (nuque,
-            # profil detourne) ne doit plus jamais reformer un groupe.
-            if f.get('pas_visage') or f.get('non_group'):
+            # profil detourne) ne doit plus jamais reformer un groupe. Un visage
+            # archive sous « (Inconnus) » (inconnu) est sorti de « A nommer » : il
+            # vit dans sa propre vue, jusqu'a re-tag.
+            if f.get('pas_visage') or f.get('non_group') or f.get('inconnu'):
                 continue
             emb = f.get('emb')
             if not emb:
@@ -6841,6 +6877,105 @@ def build_clusters():
     finally:
         with CLUSTER_LOCK:
             CLUSTER_CACHE["building"] = False
+
+
+def _gather_inconnus():
+    """Visages archivés sous « (Inconnus) » : (vecteurs, meta). Symétrique de
+    _gather_faces mais NE garde QUE les détections marquées 'inconnu' (et jamais
+    déjà attribuées, ni 'pas_visage'/'non_group')."""
+    assigned = _assigned_face_set(PEOPLE_STORE)
+    vecs, meta = [], []
+    for k, e in list(FACE_STORE.data.items()):
+        if not isinstance(e, dict) or e.get('failed'):
+            continue
+        for i, f in enumerate(e.get('faces') or []):
+            if not f.get('inconnu') or f.get('pas_visage') or f.get('non_group'):
+                continue
+            if (k, i) in assigned:
+                continue
+            emb = f.get('emb')
+            if not emb:
+                continue
+            try:
+                vecs.append(_emb_from_b64(emb))
+                meta.append((k, i))
+            except Exception:
+                continue
+    return vecs, meta
+
+
+def build_inconnus():
+    """Regroupe les visages archivés « (Inconnus) » (tâche de fond, cache).
+
+    Seuil de taille = 1 : contrairement à « À nommer » (min 3), un inconnu
+    archivé ne doit JAMAIS disparaître de la vue, même seul — c'est une file de
+    re-tag, pas une découverte de groupes. Nommer un cluster lève l'archive."""
+    with INCONNU_LOCK:
+        if INCONNU_CACHE["building"]:
+            return
+        INCONNU_CACHE["building"] = True
+    try:
+        try:
+            import numpy  # noqa: F401
+        except Exception as e:
+            print(f"  ⚠ Regroupement des inconnus impossible (numpy absent) : {e}")
+            return
+        vecs, meta = _gather_inconnus()
+        if not vecs:
+            with INCONNU_LOCK:
+                INCONNU_CACHE["clusters"] = []
+                INCONNU_CACHE["byid"] = {}
+                INCONNU_CACHE["at"] = time.time()
+            return
+        clusters = cluster_faces(vecs, meta, FACE_CLUSTER_SIM, 1)
+        clusters.sort(key=lambda c: c["size"], reverse=True)
+        light, byid = [], {}
+        for n, c in enumerate(clusters):
+            cid = str(n)
+            members = c["members"]
+            light.append({"cid": cid, "size": c["size"],
+                          "membres": [[k, i] for (k, i) in members[:18]],
+                          "crops": [_crop_url(k, i) for (k, i) in members[:18]]})
+            byid[cid] = members
+        with INCONNU_LOCK:
+            INCONNU_CACHE["clusters"] = light
+            INCONNU_CACHE["byid"] = byid
+            INCONNU_CACHE["at"] = time.time()
+        print(f"  📦 {len(light)} groupe(s) d'inconnus archivés")
+    finally:
+        with INCONNU_LOCK:
+            INCONNU_CACHE["building"] = False
+
+
+def desarchiver_visages(membres):
+    """Sort un sous-ensemble de visages de l'archive « (Inconnus) » sans les
+    nommer : lève le champ 'inconnu' pour qu'ils réintègrent « À nommer ».
+    Réversible (miroir de _marquer_visages)."""
+    membres = [(str(k), int(i)) for k, i in membres if str(k)]
+    touches = []
+    for k, i in membres:
+        e = FACE_STORE.data.get(k)
+        faces = (e.get('faces') if isinstance(e, dict) else None) or []
+        if i < len(faces) and faces[i].get('inconnu'):
+            faces[i].pop('inconnu', None)
+            touches.append((k, i))
+    if not touches:
+        return {"ok": True, "n": 0, "libelle": "rien à réactiver"}
+    FACE_STORE.save()
+
+    def defaire():
+        for k, i in touches:
+            e = FACE_STORE.data.get(k)
+            faces = (e.get('faces') if isinstance(e, dict) else None) or []
+            if i < len(faces):
+                faces[i]['inconnu'] = True
+        FACE_STORE.save()
+        _invalider_groupes_visages()
+
+    libelle = f"{len(touches)} visage(s) réactivé(s)"
+    jeton = _empiler_annulation(libelle, defaire)
+    _invalider_groupes_visages()
+    return {"ok": True, "n": len(touches), "jeton": jeton, "libelle": libelle}
 
 
 def write_person_tag(path, tag):
@@ -7405,7 +7540,9 @@ def build_suggestions():
                 for i, f in enumerate(e.get('faces') or []):
                     # 12b : une decoupe marquee « pas un visage » (chat, objet)
                     # ne doit jamais etre proposee au rattachement a une personne.
-                    if f.get('pas_visage'):
+                    # Idem un visage archive « inconnu » : hors file « A verifier »
+                    # tant qu'il n'est pas re-tague.
+                    if f.get('pas_visage') or f.get('inconnu'):
                         continue
                     emb = f.get('emb')
                     if not emb:
@@ -8314,6 +8451,11 @@ input[type=text]:focus, input.qui:focus { border-color: var(--veilleuse); }
 <div class="msg" id="clmsg">Chargement&hellip;</div>
 <div class="clus" id="clusters"></div>
 
+<h2>Inconnus (archiv&eacute;s) <span class="c" id="inc"></span>
+  <button class="btn" id="inbtn" style="font-size:.72rem;padding:3px 9px;margin-left:6px">Afficher</button></h2>
+<div class="msg" id="inmsg">Visages mis de c&ocirc;t&eacute; pour un re-tag ult&eacute;rieur. Nommer un groupe le sort des inconnus ; &laquo;&nbsp;R&eacute;activer&nbsp;&raquo; le renvoie dans &laquo;&nbsp;Groupes &agrave; nommer&nbsp;&raquo;.</div>
+<div class="clus" id="inconnus"></div>
+
 <h2>Personnes nommées <span class="c" id="pc"></span></h2>
 <div class="people" id="people"></div>
 <div id="panel"></div>
@@ -8527,7 +8669,9 @@ var SPECIAUX_P=[
   {v:'__pas_visage__', t:'C’est un animal (pas une personne)',
    d:'chien ou chat détecté comme visage — ex. Mutz'},
   {v:'__pas_visage__', t:'Ce n’est pas un visage',
-   d:'objet, statue, reflet — écarté du pipeline visages'}
+   d:'objet, statue, reflet — écarté du pipeline visages'},
+  {v:'__inconnu__', t:'C’est un inconnu (archiver)',
+   d:'vrai visage, personne non reconnue — à re-tagger plus tard'}
 ];
 function carteGroupeP(c){
   var el=document.createElement('div'); el.className='cl';
@@ -8538,7 +8682,8 @@ function carteGroupeP(c){
     '<div class="faces"></div>'+
     '<div class="row"><input type="text" class="qui" placeholder="C’est… (nom de la personne)" autocomplete="off">'+
     '<button class="btn prim nommer">Attribuer</button>'+
-    '<button class="btn warn rejeter">Rejeter le groupe</button></div>'+
+    '<button class="btn warn rejeter">Rejeter le groupe</button>'+
+    '<button class="btn archiver" title="Sortir ce groupe de la file, à re-tagger plus tard">Archiver (inconnu)</button></div>'+
     '<div class="props2" style="margin-top:6px"></div>';
   var zone=el.querySelector('.faces');
   (c.crops||[]).forEach(function(u,i){
@@ -8552,7 +8697,8 @@ function carteGroupeP(c){
     paint(); zone.appendChild(b);
   });
   var inp=el.querySelector('input'), btn=el.querySelector('.nommer'),
-      rej=el.querySelector('.rejeter'), props=el.querySelector('.props2');
+      rej=el.querySelector('.rejeter'), arch=el.querySelector('.archiver'),
+      props=el.querySelector('.props2');
   function choisis(){ return membres.filter(function(_m,i){return sel[i];}); }
   function maj(){ btn.textContent='Attribuer '+choisis().length; }
   function envoyer(cible, tous){
@@ -8561,14 +8707,14 @@ function carteGroupeP(c){
     // Deux personnes sur la même vignette : plusieurs noms séparés par « , » ou « + ».
     if(typeof cible==='string' && /[,+]/.test(cible))
       cible=cible.split(/\\s*[,+]\\s*/).filter(Boolean);
-    btn.disabled=true; rej.disabled=true;
+    btn.disabled=true; rej.disabled=true; if(arch) arch.disabled=true;
     post('/api/assign',{genre:'visage',membres:m,cible:cible}).then(function(r){
-      btn.disabled=false; rej.disabled=false;
+      btn.disabled=false; rej.disabled=false; if(arch) arch.disabled=false;
       if(!r.ok){ props.textContent=r.erreur||'échec'; return; }
-      toastP(r.libelle||'fait', r.jeton, function(){ loadClusters(true); loadPeople(); });
+      toastP(r.libelle||'fait', r.jeton, function(){ loadClusters(true); loadPeople(); loadInconnus(true); });
       if(m.length>=membres.length){ el.remove(); } else { loadClusters(true); }
-      loadPeople();
-    }).catch(function(e){ btn.disabled=false; rej.disabled=false;
+      loadPeople(); loadInconnus(true);
+    }).catch(function(e){ btn.disabled=false; rej.disabled=false; if(arch) arch.disabled=false;
       props.textContent='Le serveur n a pas repondu. Reessaie dans un instant.'; });
   }
   function listeProps(){
@@ -8596,6 +8742,7 @@ function carteGroupeP(c){
   inp.addEventListener('keydown',function(e){ if(e.key==='Enter'&&inp.value.trim()) envoyer(inp.value.trim(),false); });
   btn.onclick=function(){ if(inp.value.trim()) envoyer(inp.value.trim(),false); else inp.focus(); };
   rej.onclick=function(){ envoyer('__non_group__', true); };
+  if(arch) arch.onclick=function(){ envoyer('__inconnu__', true); };
   maj();
   return el;
 }
@@ -8615,6 +8762,102 @@ function loadClusters(rebuild){
 document.getElementById('recluster').onclick=function(){
   document.getElementById('clmsg').textContent='Regroupement demandé…';
   post('/api/people/recluster',{}).then(function(){ setTimeout(function(){loadClusters(false);},1500); });
+};
+
+// ── Inconnus (archivés) : file de re-tag, chargée à la demande ──
+// Vue paresseuse : on ne construit les groupes d'inconnus (potentiellement
+// nombreux) que si l'utilisateur ouvre la section. Nommer un groupe lève
+// l'archive (côté serveur, _nommer_membres_visages) ; « Réactiver » le renvoie
+// dans « Groupes à nommer » sans lui donner de nom (/api/people/desarchiver).
+var INCONNU_SHOWN=false;
+function loadInconnus(rebuild){
+  if(!INCONNU_SHOWN) return;
+  fetch('/api/people/inconnus'+(rebuild?'?rebuild=1':'')).then(function(r){return r.json();}).then(function(d){
+    var box=document.getElementById('inconnus');
+    document.getElementById('inc').textContent=d.count?('('+d.count+')'):'';
+    if(d.building){ box.innerHTML='<span style="color:var(--graphite);padding:6px">Regroupement des inconnus…</span>';
+      setTimeout(function(){loadInconnus(false);},3000); return; }
+    box.innerHTML='';
+    if(!d.clusters.length){ box.innerHTML='<span style="color:var(--graphite);padding:6px">Aucun visage archivé.</span>'; return; }
+    d.clusters.forEach(function(c){ box.appendChild(carteInconnu(c)); });
+  });
+}
+function carteInconnu(c){
+  var el=document.createElement('div'); el.className='cl';
+  var membres=c.membres||[];
+  var sel=membres.map(function(){return true;});
+  el.innerHTML='<div class="sz" style="color:var(--graphite);font-size:.8rem;margin-bottom:6px">'+c.size+
+      ' visage(s) archivé(s) <span style="color:var(--graphite)">— nomme le groupe pour l’identifier, ou réactive-le</span></div>'+
+    '<div class="faces"></div>'+
+    '<div class="row"><input type="text" class="qui" placeholder="C’est… (nom de la personne)" autocomplete="off">'+
+    '<button class="btn prim nommer">Attribuer</button>'+
+    '<button class="btn reactiver" title="Renvoyer ce groupe dans Groupes à nommer">Réactiver</button></div>'+
+    '<div class="props2" style="margin-top:6px"></div>';
+  var zone=el.querySelector('.faces');
+  (c.crops||[]).forEach(function(u,i){
+    var b=document.createElement('button'); b.type='button';
+    b.style.cssText='padding:0;border:none;background:none;cursor:pointer;position:relative;line-height:0';
+    b.innerHTML='<img loading="lazy" src="'+esc(u)+'" alt="">';
+    function paint(){ b.setAttribute('aria-pressed',sel[i]?'true':'false');
+      b.style.opacity=sel[i]?'1':'.35';
+      b.style.outline=sel[i]?'2px solid #4a8c7b':'none'; b.style.outlineOffset='-2px'; }
+    b.onclick=function(){ sel[i]=!sel[i]; paint(); };
+    paint(); zone.appendChild(b);
+  });
+  var inp=el.querySelector('input'), btn=el.querySelector('.nommer'),
+      rea=el.querySelector('.reactiver'), props=el.querySelector('.props2');
+  function choisis(){ return membres.filter(function(_m,i){return sel[i];}); }
+  function nommer(noms){
+    var m=choisis(); if(!m.length){ inp.focus(); return; }
+    var cible=noms;
+    if(typeof cible==='string' && /[,+]/.test(cible)) cible=cible.split(/\\s*[,+]\\s*/).filter(Boolean);
+    btn.disabled=true; rea.disabled=true;
+    post('/api/assign',{genre:'visage',membres:m,cible:cible}).then(function(r){
+      btn.disabled=false; rea.disabled=false;
+      if(!r.ok){ props.textContent=r.erreur||'échec'; return; }
+      toastP(r.libelle||'fait', r.jeton, function(){ loadInconnus(true); loadClusters(false); loadPeople(); });
+      loadInconnus(true); loadPeople();
+    }).catch(function(){ btn.disabled=false; rea.disabled=false;
+      props.textContent='Le serveur n a pas repondu. Reessaie dans un instant.'; });
+  }
+  function reactiver(){
+    btn.disabled=true; rea.disabled=true;
+    post('/api/people/desarchiver',{membres:membres}).then(function(r){
+      btn.disabled=false; rea.disabled=false;
+      if(!r.ok){ props.textContent=(r&&r.erreur)||'échec'; return; }
+      toastP(r.libelle||'réactivé', r.jeton, function(){ loadInconnus(true); loadClusters(true); });
+      el.remove(); loadClusters(true);
+    }).catch(function(){ btn.disabled=false; rea.disabled=false;
+      props.textContent='Le serveur n a pas repondu. Reessaie dans un instant.'; });
+  }
+  function prop(txt,val){
+    var b=document.createElement('button'); b.className='btn';
+    b.style.cssText='display:block;width:100%;text-align:left;margin:2px 0;font-size:12.5px';
+    b.textContent=txt; b.onclick=function(){ nommer(val); }; return b;
+  }
+  function listeProps(){
+    var t=inp.value.trim().toLowerCase();
+    nomsPersonnes().then(function(noms){
+      props.innerHTML='';
+      noms.filter(function(p){return !t||p.nom.toLowerCase().indexOf(t)===0;})
+        .slice(0,4).forEach(function(p){ props.appendChild(prop(p.nom+' · '+p.n, p.nom)); });
+      if(t && !noms.some(function(p){return p.nom.toLowerCase()===t;}))
+        props.appendChild(prop('Nouveau : '+inp.value.trim(), inp.value.trim()));
+    });
+  }
+  inp.addEventListener('input',listeProps);
+  inp.addEventListener('focus',listeProps);
+  inp.addEventListener('keydown',function(e){ if(e.key==='Enter'&&inp.value.trim()) nommer(inp.value.trim()); });
+  btn.onclick=function(){ if(inp.value.trim()) nommer(inp.value.trim()); else inp.focus(); };
+  rea.onclick=reactiver;
+  return el;
+}
+document.getElementById('inbtn').onclick=function(){
+  var box=document.getElementById('inconnus'), b=document.getElementById('inbtn');
+  if(INCONNU_SHOWN){ INCONNU_SHOWN=false; box.innerHTML=''; document.getElementById('inc').textContent=''; b.textContent='Afficher'; return; }
+  INCONNU_SHOWN=true; b.textContent='Masquer';
+  box.innerHTML='<span style="color:var(--graphite);padding:6px">Regroupement des inconnus…</span>';
+  loadInconnus(true);
 };
 
 // ── file « À vérifier » (curateur) ──
@@ -9055,6 +9298,9 @@ class Handler(BaseHTTPRequestHandler):
 
         elif path == '/api/people/clusters':
             self._serve_people_clusters()
+
+        elif path == '/api/people/inconnus':
+            self._serve_people_inconnus()
 
         elif path == '/api/people/list':
             self._serve_people_list()
@@ -9977,6 +10223,25 @@ class Handler(BaseHTTPRequestHandler):
                           ensure_ascii=False).encode()
         self._send(200, body, 'application/json')
 
+    def _serve_people_inconnus(self):
+        q = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
+        rebuild = (q.get('rebuild') or ['0'])[0] == '1'
+        with INCONNU_LOCK:
+            building = INCONNU_CACHE["building"]
+            at = INCONNU_CACHE["at"]
+        # `at == 0` = jamais construit (ou invalidé) : on (re)construit une fois.
+        # Un résultat VIDE est un état valide (aucun archivé) — pas de reconstruction
+        # en boucle, car build_inconnus pose toujours `at` même à vide.
+        if (rebuild or at == 0.0) and not building:
+            threading.Thread(target=build_inconnus, daemon=True).start()
+            building = True
+        with INCONNU_LOCK:
+            clusters = list(INCONNU_CACHE["clusters"])
+        body = json.dumps({"building": building, "at": at,
+                           "count": len(clusters), "clusters": clusters},
+                          ensure_ascii=False).encode()
+        self._send(200, body, 'application/json')
+
     def _serve_people_list(self):
         body = json.dumps({"people": people_list()}, ensure_ascii=False).encode()
         self._send(200, body, 'application/json')
@@ -10079,6 +10344,11 @@ class Handler(BaseHTTPRequestHandler):
             if not building:
                 threading.Thread(target=build_clusters, daemon=True).start()
             self._send(200, b'{"building": true}', 'application/json')
+        elif path == '/api/people/desarchiver':
+            membres = data.get('membres') or []
+            res = desarchiver_visages(membres)
+            self._send(200, json.dumps(res, ensure_ascii=False).encode(),
+                       'application/json')
         else:
             self._send(404, b'Not found', 'text/plain')
 

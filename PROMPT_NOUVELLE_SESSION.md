@@ -3,56 +3,68 @@
 > Copie tout le bloc ci-dessous dans une nouvelle conversation Cowork, après
 > avoir connecté le dossier `C:\Prog\Claude\MediaLibrary`.
 >
-> Dernière mise à jour : **10 août 2026**. **PROCHAIN CHANTIER = #3 : archive
-> « (Inconnus) »** — voir le bloc « PROCHAINE SESSION : #3 » juste en dessous.
-> Cette session : fix `/people` sans image **livré + observé** (19→12 propositions,
-> 0 vignette cassée) ; **purge auto des clés fantômes** au démarrage (`purge_cles_fantomes`,
-> tests 23/23) ; **bat 28 RÉSOLU** (vraie cause = parenthèses nues dans un `echo` en bloc,
-> pas l'eol). Reste ouvert : géocodage `gps_place` à activer.
+> Dernière mise à jour : **10 août 2026 (soir)**. **#3 archive « (Inconnus) » : CODÉ,
+> à valider en réel** (le bloc « PROCHAINE SESSION : #3 » ci-dessous est requalifié en
+> checklist de validation). **PROCHAIN CHANTIER après validation**, au choix par valeur :
+> activer le géocodage `gps_place` (gestes Mike), item 5 (centre de tâches / registre papier),
+> ou item 6 (page « Sujets » unifiée — convergence avec l'action cross-pipeline). Cette
+> session : #3 livré (server.py écrit sur la machine ; py_compile + `node --check` OK).
 >
-> **GESTE MIKE avant #3** : committer + **redémarrer** (active la purge fantômes ; log
-> `🧹 N clé(s) fantôme(s) purgée(s)`). Non commité au moment d'écrire : `server.py`
-> (`purge_cles_fantomes` + appel dans `maintenance_loop`), `verifier_orphelins.py`
-> (`cles_fantomes_par_collision`), `test_verifier_orphelins.py`, `ROADMAP.md`, ce fichier.
-> Le fix `/people` (`build_suggestions`) + bat 28 sont **déjà commités/poussés** (`main` à jour).
+> **GESTE MIKE — commit + REDÉMARRER (indispensable : le serveur ne recharge pas à chaud).**
+> Ce redémarrage active d'un coup TOUT le non-commité accumulé : #3 (archive Inconnus), la
+> purge auto des clés fantômes (`purge_cles_fantomes`, log `🧹 N clé(s) fantôme(s) purgée(s)`),
+> et le fix propositions sans image. Non commité au moment d'écrire : `server.py` (#3 +
+> `purge_cles_fantomes` + `build_suggestions`), `verifier_orphelins.py`,
+> `test_verifier_orphelins.py`, `ROADMAP.md`, ce fichier. bat 28 est **déjà commité/poussé**.
 
 ---
 
-## ══ PROCHAINE SESSION : #3 — archive « (Inconnus) » ══
+## ══ #3 — archive « (Inconnus) » : CODÉ, CHECKLIST DE VALIDATION EN RÉEL ══
 
 **Besoin (mots de Mike).** Beaucoup de visages proposés dans `/people` sont des personnes
-qu'il ne reconnaît pas. Il veut pouvoir les **archiver sous « (Inconnus) »** pour les sortir
-de la file « À vérifier », **afin de pouvoir les re-tagger correctement** plus tard s'il se
-souvient d'un nom.
+qu'il ne reconnaît pas. Les **archiver sous « (Inconnus) »** pour les sortir de la file
+« À vérifier », **afin de les re-tagger correctement** plus tard s'il se souvient d'un nom.
 
-**Deux décisions de conception à confirmer avec Mike au démarrage** (question posée, pas
-encore répondue — proposer ces défauts et attaquer) :
-1. **Persistance — défaut recommandé : archive RÉVERSIBLE en base, SANS écrire dans les
-   XMP.** Cohérent avec les rejets existants (`__non_group__`, `__pas_visage__`) et respecte
-   l'invariant « les noms ne se perdent jamais » (on n'écrit pas un faux nom sur des milliers
-   de fichiers). L'alternative (écrire `personne:(Inconnus)` dans les XMP) pollue les
-   métadonnées et impose une réécriture à chaque identification — à ne prendre que si Mike y
-   tient.
-2. **Structure — défaut recommandé : garder les clusters SÉPARÉS** sous un onglet/filtre
-   « Inconnus » (re-tagger un groupe d'un coup = l'usage visé), plutôt qu'un seul bucket
-   fourre-tout.
+**Décisions confirmées par Mike (10/08).** 1) Persistance : archive **RÉVERSIBLE en base,
+SANS XMP**. 2) Structure : **clusters SÉPARÉS** sous une vue « Inconnus ».
 
-**Chemin d'implémentation (calqué sur l'existant, `monolith-surgery` + `photo-ui` d'abord).**
-Le mécanisme est déjà là : `attribuer_visages(membres, cible)` (server.py l.2916) route les
-**cibles spéciales** (`CIBLES_SPECIALES`, l.2479-2480 : `__pas_visage__`, `__non_group__`)
-vers `_marquer_visages(membres, champ)` qui pose un champ sur la détection. Donc :
-- Ajouter une cible **`__inconnu__`** (nouveau champ `inconnu` sur la détection), réversible
-  via le toast d'annulation comme les autres marquages.
-- `build_suggestions()` (l.~7282) : exclure les détections `inconnu` de la file « À vérifier »
-  (comme `pas_visage` est déjà exclu, l.~7335).
-- UI `PEOPLE_PAGE` : bouton « C'est un inconnu / archiver » dans les 3 surfaces
-  (cartes de groupe `SPECIAUX_P` l.8526, curateur), + un **filtre/onglet « Inconnus »**
-  listant ces clusters archivés pour re-tag ultérieur (attribuer un vrai nom lève `inconnu`).
-- Tests : logique pure si extractible ; sinon `py_compile` + validation en réel sur un
-  cluster (serveur redémarré). Discipline : observer l'effet avant d'acquérir.
+**Livré (server.py, écrit sur la machine — non commité, redémarrage requis).**
+- Cible **`__inconnu__`** côté visages → champ `inconnu` (miroir animaux). Routage explicite
+  dans `attribuer_visages` (plus de collision avec `non_group`), libellé dans `_marquer_visages`.
+- **Nommer un cluster lève `inconnu`** (`_nommer_membres_visages`, réversible dans `defaire`).
+- Exclusion des archivés de « Groupes à nommer » (`_gather_faces`) ET « À vérifier »
+  (`build_suggestions`).
+- Vue séparée : `INCONNU_CACHE`/`INCONNU_LOCK`, `_gather_inconnus()`, `build_inconnus()`
+  (seuil min=1 → aucun singleton caché), `desarchiver_visages()`. `_invalider_groupes_visages`
+  reset aussi `INCONNU_CACHE`.
+- Endpoints : `GET /api/people/inconnus` (build paresseux, `at==0` = à (re)construire, vide =
+  état valide), `POST /api/people/desarchiver`.
+- UI `PEOPLE_PAGE` : bouton « Archiver (inconnu) » sur la carte de groupe + entrée `SPECIAUX_P`
+  (sous-ensemble) ; section « Inconnus (archivés) » chargée à la demande (bouton « Afficher »,
+  `INCONNU_SHOWN`), `carteInconnu()` (nommer → lève l'archive ; « Réactiver » → `desarchiver`).
+- Vérifs faites : `py_compile` vert ; `node --check` vert sur le JS ajouté (carteGroupeP + vue
+  Inconnus). Pas de `.bat` touché.
 
-Repères : `PERSON_QUEUE` l.379, `person_writer` l.6875, `curator_reject` l.7556,
-`SPECIAUX_P` l.8526, `attribuer_visages` l.2916, `CIBLE_*` l.2479.
+**CHECKLIST à valider en réel (après commit + REDÉMARRAGE), sur `/people` (192.168.0.13:8080,
+Claude-in-Chrome) :**
+1. Sur un groupe de « Groupes à nommer », cliquer **« Archiver (inconnu) »** → le groupe
+   disparaît de la file, toast d'annulation présent.
+2. Cliquer **« Afficher »** sous « Inconnus (archivés) » → les groupes archivés apparaissent
+   (le compteur `(n)` se remplit). Vérifier qu'un archivé N'EST PAS reproposé dans « À vérifier ».
+3. **Nommer** un groupe d'inconnus (nom existant ou nouveau) → il quitte les inconnus, la
+   personne est créée/enrichie, tag `personne:Nom` écrit. Annulation OK (revient en inconnu).
+4. **« Réactiver »** un groupe → il repart dans « Groupes à nommer ». Annulation OK.
+5. Cas Mutz / cross-pipeline toujours OK (SPECIAUX_P : « C'est un animal », « Pas un visage »,
+   « C'est un inconnu » cohabitent).
+
+Repères code (server.py) : `CIBLE_INCONNU`/`CIBLES_SPECIALES` l.~2478 ; `attribuer_visages`,
+`_marquer_visages`, `_nommer_membres_visages` (bloc ~2865-2960) ; `_gather_faces`,
+`build_clusters`, `_gather_inconnus`, `build_inconnus`, `desarchiver_visages` (bloc ~6720-6970) ;
+`build_suggestions` (exclusion `inconnu`) ; `SPECIAUX_P` + `carteGroupeP` + `carteInconnu` +
+`loadInconnus` (PEOPLE_PAGE) ; endpoints `_serve_people_inconnus` / `_do_people_post`.
+
+**Discipline (rappel).** Une correction n'est acquise qu'une fois son effet observé en réel —
+ici, dérouler la checklist avant de cocher #3 comme fait dans la ROADMAP.
 
 ---
 
