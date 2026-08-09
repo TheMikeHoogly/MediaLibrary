@@ -55,6 +55,13 @@ eval/notes.json
 # ─── Modèles et outils téléchargés ───────────────────────────────────────────
 *.pt
 exiftool-*/
+# Gazetteer GeoNames pour le géocodage inverse offline : téléchargé une fois par
+# « 18 - Telecharger le gazetteer (geocodage).bat », régénérable, ~13 Mo.
+cities1000.txt
+cities1000.zip
+# Sortie du géocodage inverse : {clé_photo -> lieu}, générée par enrichir_lieux.py
+# (contient des chemins réels de photos de famille) — locale, régénérable.
+gps_places.json
 
 # ─── Configuration locale : chemins privés et jetons ─────────────────────────
 data_dir.txt

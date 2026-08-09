@@ -6,8 +6,8 @@ est la **carte des priorités** ; le détail vit ailleurs et est référencé :
 dédoublonnage), `docs/AUDIT_EXTERNE_2026.md` (direction tagging), `PROMPT_NOUVELLE_
 SESSION.md` (reprise exacte), et l'historique git (chaque chantier fini y est).
 
-Dernière mise à jour : **8 août 2026** (session « ménage » : audit .bat, UI
-renommage, optimisation tagging, diagnostic GPU/RAM, item Mutz).
+Dernière mise à jour : **9 août 2026** (géocodage inverse offline `gps_place` :
+module + batch + bat + câblage serveur, testés en sandbox — à activer côté Mike).
 
 ---
 
@@ -85,8 +85,24 @@ bas pour capter profils/flous), et une face canine frontale passe.
 Flux complet dans `/reglages` → « Renommage intelligent » (bloc numéroté depuis 08/08) :
 Générer le plan → Vérifier à blanc → Appliquer un lot (200, réversible) → répéter →
 Annuler si besoin. Plan actuel = **2114 fichiers**. Reste code **optionnel** : enrichir
-les 2 faits `None` — lieu par géocodage inverse des 684 GPS (chercher un connecteur au
-registre MCP avant d'écrire du code jetable), type par SigLIP — pour des noms plus riches.
+le fait `image_type` (SigLIP) pour des noms plus riches. Le fait **`gps_place` est FAIT**
+(géocodage inverse offline, cf. ci-dessous) — reste à le faire tourner (geste Mike).
+
+**Géocodage inverse `gps_place` — CODÉ (09/08), à activer (geste Mike).**
+Décision d'archi : **offline**, pas de connecteur cloud. Le registre MCP n'offrait que
+TomTom (OAuth par session, cloud) — inadapté à un batch serveur autonome, et discutable côté
+vie privée des GPS familiaux. À la place, un **gazetteer local** GeoNames `cities1000` +
+plus-proche-voisin en **stdlib pure**. Pièces livrées et testées en sandbox :
+`geocode.py` (module pur, 35/35), `test_geocode.py`, `enrichir_lieux.py` (batch : lit
+`photos.db` en **lecture seule**, clusterise les points, géocode les centroïdes, écrit
+`gps_places.json` + ajoute des lieux à `lieux.txt` de façon **réversible**, 23/23),
+`test_enrichir_lieux.py`, `18 - Telecharger le gazetteer (geocodage).bat` (ASCII pur, vérifié).
+Câblage `server.py` minimal : `gps_places_connus()` (cache mtime) alimente
+`construire_plan(..., gps_places=…)` — la plomberie de `plan_renommage`/`renommage_facts`
+existait déjà. **Le serveur n'importe PAS `geocode`** (il ne lit que le JSON) → zéro
+dépendance ajoutée. Bout-en-bout vérifié : un point Bremblens → `…_bremblens_…jpg`.
+**Reste (Mike) :** lancer le bat 18 (téléchargement unique), puis
+`.venv\Scripts\python.exe enrichir_lieux.py` (aperçu) puis `--ecrire`, puis **redémarrer**.
 
 ### 4. Valider + merger la branche « ménage » (`feat/menage-ui-gpu-0807`)
 
@@ -133,9 +149,10 @@ Convergence naturelle avec l'item 2 (action cross-pipeline).
 
 ### 8. Recherche — carte & lieux
 
-Les 684 photos géolocalisées devraient enrichir `lieux.txt` par géocodage inverse, et la
-page Carte partager le vocabulaire de la barre de recherche. (Recouvre l'enrichissement
-« lieu » de l'item 3 — un seul chantier géocodage.)
+Le géocodage inverse qui enrichit `lieux.txt` est **codé** (cf. item 3) — une fois lancé
+par Mike, `lieux.txt` gagne les communes des 684 GPS et la recherche par lieu les reconnaît.
+Reste à faire partager à la page Carte le vocabulaire de la barre de recherche (et, plus tard,
+afficher le libellé de lieu sur les marqueurs à partir de `gps_places.json`).
 
 ### 9. Éval tagging (parké, déjà tranché)
 

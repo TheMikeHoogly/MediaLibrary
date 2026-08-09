@@ -3,8 +3,15 @@
 > Copie tout le bloc ci-dessous dans une nouvelle conversation Cowork, après
 > avoir connecté le dossier `C:\Prog\Claude\MediaLibrary`.
 >
-> Dernière mise à jour : **8 août 2026** (session « ménage » : audit `.bat`, UI
-> renommage, optimisation tagging, diagnostic GPU/RAM, item Mutz, ROADMAP réécrite).
+> Dernière mise à jour : **9 août 2026** (géocodage inverse OFFLINE `gps_place` :
+> `geocode.py` + `enrichir_lieux.py` + bat 18 + câblage `server.py`, tout testé en
+> sandbox — reste à activer côté Mike. Détail plus bas.)
+>
+> Note : la session du 08/08 (workflow git, action cross-pipeline « C'est un animal »,
+> garde SigLIP mesurée puis REJETÉE, bug orphelins corrigé) a bien été **commitée et
+> poussée** sur `feat/menage-ui-gpu-0807`, et le serveur a été **redémarré** (le log
+> montre la purge d'orphelins active). `main` reste EN DESSOUS de la branche (pas
+> encore fusionnée).
 
 ---
 
@@ -109,29 +116,21 @@ seuil/modèle).
   tester** sur le groupe Mutz. Non commité au moment d'écrire (le sandbox n'a pas les droits
   d'écrire refs/locks dans `.git` — édition de fichiers OK, choréo git = côté Mike).
 
-### Branches
+### Branches et commits en attente
 
-- **`main` == `origin/main`**, poussé et à jour. Porte tout l'intégré, dont les
-  deux correctifs du 07/08 (rejet de groupe `/pets`, curateur faux-positifs
-  `/people`).
-- **`feat/menage-ui-gpu-0807`** — **poussée sur `origin`** (branche de suivi créée),
-  **pas encore mergée dans `main`**, **exécutée par le serveur** (Mike a redémarré
-  dessus). Contient la session ménage :
-  - **Archivage de 22 `.bat`** obsolètes/dangereux dans `_bat_archive/` (réversible,
-    README). Neutralisés : `2 - Installer et nettoyer` (tirait `qwen3-vl:4b` +
-    supprimait `gemma4:e2b`) et `13 - Reparer le GPU` (re-cassait le GPU réparé).
-  - **`/reglages` : bloc « Renommage intelligent » numéroté** (4 étapes) + message
-    persistant. **Validé en réel.**
-  - **Tagging : 1 seule lecture exiftool/photo** (tags+desc+GPS combinés). Module pur
-    `tagging_meta.py` + `test_tagging_meta.py` **15/15**, invariant noms préservé.
-    **RESTE : valider en réel après un redémarrage** — mesurer le débit tag/min
-    avant/après pour chiffrer le gain.
-  - **`CLAUDE.md` corrigé** : torch est bien **CUDA** `2.13.0+cu130` (l'ancienne
-    mention « build CPU » était périmée).
-  - **ROADMAP.md réécrite** (886 → 183 lignes), ordonnée par valeur, historique
-    condensé (le détail reste dans git + `eval/DECISIONS.md`).
-- **Fin de session** : `27 - Commit de session.bat` (branche + add + commit + push,
-  ASCII pur) ; Claude met à jour ROADMAP.md + ce fichier.
+- **`main` == `origin/main`** — porte tout l'intégré jusqu'à la session « ménage »
+  (mergée le 08/08 par fast-forward via `28 - Fusionner la branche dans main.bat`).
+- **`feat/menage-ui-gpu-0807`** (branche courante, exécutée par le serveur) — porte,
+  AU-DESSUS de `main`, le travail de cette 2ᵉ session. Déjà commité : garde-fou
+  anti-verrou des bats + workflow git. **NON commité au moment d'écrire** (la choréo
+  git est un geste de Mike — le sandbox ne peut pas écrire dans `.git`) :
+  - `server.py` — action cross-pipeline (`SPECIAUX_P`, curateur `.anim`), + `forget_everywhere`
+    câblé dans `_sync_dir` étape 4 ;
+  - `vectors.py` — `delete_all` (+ `test_vectors.py` 34/34) ;
+  - `verifier_visages.py`, `verifier_orphelins.py` + leurs tests (15/15 chacun) ;
+  - `docs/GIT_WORKFLOW.md`, `.gitignore`, et ROADMAP/DECISIONS/ce fichier.
+- **Publier** : `27 - Commit de session.bat` (répondre N, message, push), puis — une
+  fois validé en réel — `28 - Fusionner la branche dans main.bat`.
 
 ### Diagnostic GPU / RAM (08/08, mesuré — pas de bug de device)
 
@@ -143,24 +142,54 @@ libre ~1,4 Go proche du plancher `REEMBED_MIN_RAM_GB=1.5` qui déclenche l'auto-
 Levier sans code : **fermer les apps de fond** pendant un gros run. Sur 4 Go partagés,
 Ollama + vision ne tiennent pas ensemble sur le GPU → `FACE_USE_GPU=False` volontaire.
 
-### Prochain pas (détail et ordre complet dans `ROADMAP.md`)
+### GÉOCODAGE INVERSE `gps_place` — codé le 09/08, À ACTIVER (gestes Mike)
 
-Gestes **humains** à Mike, prêts :
-1. **Confirmer ~100 propositions de visages** dans `/people` (priorité n°1, vérité
-   terrain à 0,8 %, tri clavier prêt).
-2. **Mutz** : sur son groupe de « visages » dans `/people`, cliquer **« Rejeter le
-   groupe »** (réversible ; il reste dans Animaux). Cause = pas de garde humain/animal
-   + `FACE_DET_THRESHOLD=0.50`. Voir **ROADMAP item 2** (action explicite « c'est un
-   animal/une personne » à ajouter + garde SigLIP amont 12b à mesurer).
-3. **Appliquer les lots de renommage** : `/reglages` → « Renommage intelligent »
-   (Générer → Vérifier à blanc → Appliquer un lot ×N → Annuler). Plan = **2114**.
-4. **Redémarrer le serveur** pour activer l'optimisation tagging, puis demander la
-   mesure du gain.
+Tout est écrit et testé en sandbox ; il reste 3 gestes sur la machine de Mike (réseau
+requis pour le seul téléchargement du gazetteer, une fois) :
 
-Prochains **code** utiles (par valeur, cf. ROADMAP) : action cross-pipeline
-personne/animal (item 2) ; garde SigLIP humain/animal 12b (`vision-eval`) ; redesign
-étape B (centre de tâches, registre papier) ; page « Sujets » unifiée ; algo
-(HDBSCAN, AdaFace) ; géocodage inverse des 684 GPS (enrichit renommage + carte).
+1. **Télécharger le gazetteer (une seule fois)** : lancer `18 - Telecharger le gazetteer
+   (geocodage).bat`. Il pose `cities1000.txt` (~13 Mo, GeoNames) dans le dossier du projet.
+2. **Lancer le batch** (dans le `.venv`) : `.venv\Scripts\python.exe enrichir_lieux.py`
+   (aperçu, dry-run — montre les clusters nommés) ; si le plan est bon,
+   `.venv\Scripts\python.exe enrichir_lieux.py --ecrire`. Ça écrit `gps_places.json`
+   (clé→lieu) et ajoute les nouveaux lieux à `lieux.txt` (backup `.bak`, bloc marqué
+   supprimable — **réversible**).
+3. **Regénérer le plan de renommage + redémarrer** : au prochain démarrage, ou via
+   `/reglages` → « Renommage intelligent » → Générer le plan, les noms des photos GPS
+   gagnent leur segment de lieu (ex. `…_bremblens_…`). Le serveur relit `gps_places.json`
+   automatiquement (cache mtime).
+
+Détails d'archi et pourquoi offline : voir ROADMAP item 3. Pièces : `geocode.py` (pur,
+35/35), `enrichir_lieux.py` (23/23), `test_*` associés, `18 - …bat` (ASCII vérifié),
+`server.py` (`gps_places_connus` + `construire_plan(..., gps_places=…)`). **Le serveur
+n'importe pas `geocode`** (lit juste le JSON) → zéro dépendance ajoutée. Non commité au
+moment d'écrire (choréo git = geste Mike) : `geocode.py`, `test_geocode.py`,
+`enrichir_lieux.py`, `test_enrichir_lieux.py`, `18 - Telecharger le gazetteer
+(geocodage).bat`, `server.py`, `ROADMAP.md`, ce fichier. `.gitignore` : penser à ignorer
+`cities1000.txt` et `gps_places.json` (artefacts locaux/générés — voir plus bas).
+
+### Session 08/08 — clôturée (rappel, plus rien à faire)
+
+Committée + poussée + serveur redémarré. Le fix orphelins (`forget_everywhere`) est actif
+(le log de maintenance montre « … entrée(s) de fichiers disparus retirée(s) »). L'action
+cross-pipeline « C'est un animal » / « C'est une personne » est en prod : la valider à
+l'occasion sur le groupe **Mutz** (`/people`) reste utile mais non bloquant. Garde SigLIP
+humain/animal : **REJETÉE** (mesurée, 18 % de faux rejets — ne pas recâbler).
+
+### Gestes de fond, toujours prioritaires (la valeur est dans la DONNÉE)
+
+- **Confirmer ~100 propositions de visages** dans `/people` (priorité n°1, vérité
+  terrain à 0,8 %, tri clavier prêt).
+- **Appliquer les lots de renommage** (`/reglages` → « Renommage intelligent », plan = **2114**).
+- **Mesurer le gain tagging** (débit tag/min) après le redémarrage.
+
+### Prochains code utiles (par valeur, cf. `ROADMAP.md`)
+
+Géocodage inverse : **codé**, reste à activer (bloc ci-dessus). Ensuite : fait `image_type`
+(SigLIP) pour enrichir encore les noms ; afficher le lieu sur les marqueurs de la Carte
+depuis `gps_places.json` ; redesign étape B (centre de tâches, registre papier) ; page
+« Sujets » unifiée ; si l'on revient sur la garde humain/animal, **re-mesurer sur découpes
+SANS marge** ; HDBSCAN / AdaFace en réserve.
 
 Après lecture : dis **« Go »** pour un débrief + prochaines étapes (protocole
 `CLAUDE.md`), ou attaque directement le point le plus utile en proposant un plan

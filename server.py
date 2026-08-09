@@ -2146,6 +2146,12 @@ def _cles_portant(tags):
 # On en tire un vocabulaire de lieux, épuré des noms d'appareils et des dates.
 LIEUX_FICHIER = SCRIPT_DIR / "lieux.txt"
 _LIEUX_CACHE = {"at": 0.0, "index": {}}
+# Géocodage inverse OFFLINE (enrichir_lieux.py) : clé_photo -> libellé de lieu,
+# précalculé contre un gazetteer LOCAL (aucun GPS envoyé à un service tiers). Le
+# serveur ne fait qu'ATTACHER ce fait au renommage ; il ne géocode pas lui-même.
+# Absent tant que le batch n'a pas tourné -> {} (le segment lieu est omis).
+GPS_PLACES_FICHIER = SCRIPT_DIR / "gps_places.json"
+_GPS_PLACES_CACHE = {"mtime": -1.0, "index": {}}
 _LIEUX_BRUIT = re.compile(
     r'^(?:\d+|camera|dcim|photos?|images?|divers|screenshots?|whatsapp'
     r'|samsung|iphone|xiaomi|huawei|pixel|sauvegardes?|export\w*)$', re.I)
@@ -2213,6 +2219,29 @@ def lieux_connus():
         except OSError:
             pass
     _LIEUX_CACHE.update(at=time.time(), index=index)
+    return index
+
+
+def gps_places_connus():
+    """{clé_photo: libellé} du géocodage inverse précalculé (gps_places.json).
+
+    Rechargé quand le fichier change (mtime), sinon servi du cache. Rend {} si le
+    fichier est absent ou illisible — le renommage retombe alors sur le lieu
+    déduit du chemin. Aucun accès réseau, aucun modèle : simple lecture d'un JSON
+    produit hors ligne par enrichir_lieux.py."""
+    try:
+        mtime = GPS_PLACES_FICHIER.stat().st_mtime
+    except OSError:
+        _GPS_PLACES_CACHE.update(mtime=-1.0, index={})
+        return _GPS_PLACES_CACHE["index"]
+    if mtime == _GPS_PLACES_CACHE["mtime"] and _GPS_PLACES_CACHE["index"]:
+        return _GPS_PLACES_CACHE["index"]
+    try:
+        data = json.loads(GPS_PLACES_FICHIER.read_text(encoding='utf-8'))
+        index = {k: v for k, v in data.items() if isinstance(v, str) and v}
+    except (OSError, ValueError, AttributeError):
+        index = {}
+    _GPS_PLACES_CACHE.update(mtime=mtime, index=index)
     return index
 
 
@@ -4891,7 +4920,8 @@ def generer_plan_renommage():
         lieux = None
     entries = [(k, e) for k, e in list(STORE.data.items())
                if isinstance(e, dict) and not e.get('failed')]
-    moves, stats = _pr.construire_plan(entries, lieux=lieux)
+    gps_places = gps_places_connus()   # géocodage inverse offline précalculé
+    moves, stats = _pr.construire_plan(entries, lieux=lieux, gps_places=gps_places)
     for mv in moves:
         mv['new_key'] = _remplacer_nom(mv['key'], mv['new_name'])
     plan = {'moves': moves, 'stats': stats}
