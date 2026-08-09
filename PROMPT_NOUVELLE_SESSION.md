@@ -3,28 +3,32 @@
 > Copie tout le bloc ci-dessous dans une nouvelle conversation Cowork, après
 > avoir connecté le dossier `C:\Prog\Claude\MediaLibrary`.
 >
-> Dernière mise à jour : **10 août 2026 (soir)**. **#3 archive « (Inconnus) » : CODÉ,
-> à valider en réel** (le bloc « PROCHAINE SESSION : #3 » ci-dessous est requalifié en
-> checklist de validation). **+ BUG CURATEUR CORRIGÉ** : nommer un NOUVEAU groupe depuis
-> « À vérifier » ne le sauvegardait pas (fiche `PEOPLE_STORE` jamais créée) — corrigé.
-> **+ bat `0 - Démarrer le serveur.bat`** : tue l'ancienne session (port 8080) puis lance
-> le serveur dans une FENÊTRE SÉPARÉE. **PROCHAIN CHANTIER après validation**, au choix par
-> valeur : `/reglages` en **tour de contrôle** (demande Mike — statut des workers ; item 5),
-> activer le géocodage `gps_place` (gestes Mike), ou item 6 (page « Sujets » unifiée).
+> Dernière mise à jour : **10 août 2026 (soir) — validation en réel.** **#3 archive
+> « (Inconnus) » : ✅ VALIDÉ EN RÉEL** (checklist entière passée via Claude-in-Chrome, serveur
+> tournant avec le nouveau code — voir bloc #3 ci-dessous). **+ BUG CURATEUR : ✅ VALIDÉ EN
+> RÉEL** — saisir un nom neuf depuis « À vérifier » crée bien la fiche `PEOPLE_STORE`
+> (`/api/people/list` 342→343). **+ bat `0 - Démarrer le serveur.bat`** : tue l'ancienne session
+> (port 8080) puis lance le serveur dans une FENÊTRE SÉPARÉE. **PROCHAIN CHANTIER**, au choix par
+> valeur : `/reglages` en **tour de contrôle** (demande Mike — statut des workers ; item 5) —
+> renforcé par le constat perf ci-dessous ; activer le géocodage `gps_place` (gestes Mike) ;
+> ou item 6 (page « Sujets » unifiée).
 >
-> **GESTE MIKE — commit + REDÉMARRER (indispensable : le serveur ne recharge pas à chaud).**
-> Ce redémarrage active d'un coup TOUT le non-commité accumulé : #3 (archive Inconnus),
-> le **fix du bug curateur** (nouveau nom sauvegardé), la purge auto des clés fantômes
-> (`purge_cles_fantomes`, log `🧹 N clé(s) fantôme(s) purgée(s)`), et le fix propositions sans
-> image. Non commité au moment d'écrire : `server.py` (#3 + fix curateur `attribuer_visage` +
-> `purge_cles_fantomes` + `build_suggestions`), `0 - Démarrer le serveur.bat`,
-> `verifier_orphelins.py`, `test_verifier_orphelins.py`, `ROADMAP.md`, ce fichier. bat 28
-> déjà commité/poussé. NB : au 1er lancement du nouveau bat 0, le kill de l'ancienne session
-> se fait sur le port 8080 (LISTENING) — le serveur repart dans sa propre fenêtre.
+> **GESTE MIKE — commit/push si pas encore fait.** Le serveur a été redémarré (le code #3 +
+> fix curateur tourne, validé). Reste éventuellement à **committer/pousser** le non-commité :
+> `server.py` (#3 + fix curateur + `purge_cles_fantomes` + `build_suggestions`),
+> `0 - Démarrer le serveur.bat`, `verifier_orphelins.py`, `test_verifier_orphelins.py`,
+> `ROADMAP.md`, ce fichier. bat 28 déjà commité/poussé.
+>
+> **⚠ LEÇON MÉTHODE Claude-in-Chrome (cette session).** Clics et captures ne marchent QUE si
+> l'onglet Chrome de `/people` est **au premier plan** (onglet caché → rendu gelé, viewport
+> minuscule, **clics ignorés sans erreur**). Vérifier `document.visibilityState` avant de
+> conclure. Les mutations = vrais clics UI ; la vérif d'état = `fetch` GET (fiable). `/people`
+> rend **~11 300 vignettes d'un coup** (2081 groupes + 342 personnes) = vraie cause des
+> lenteurs → argument fort pour l'item 5 (allègement / « centre de tâches »).
 
 ---
 
-## ══ #3 — archive « (Inconnus) » : CODÉ, CHECKLIST DE VALIDATION EN RÉEL ══
+## ══ #3 — archive « (Inconnus) » : ✅ VALIDÉ EN RÉEL (checklist déroulée) ══
 
 **Besoin (mots de Mike).** Beaucoup de visages proposés dans `/people` sont des personnes
 qu'il ne reconnaît pas. Les **archiver sous « (Inconnus) »** pour les sortir de la file
@@ -50,22 +54,28 @@ SANS XMP**. 2) Structure : **clusters SÉPARÉS** sous une vue « Inconnus ».
 - Vérifs faites : `py_compile` vert ; `node --check` vert sur le JS ajouté (carteGroupeP + vue
   Inconnus). Pas de `.bat` touché.
 
-**CHECKLIST à valider en réel (après commit + REDÉMARRAGE), sur `/people` (192.168.0.13:8080,
-Claude-in-Chrome) :**
-1. Sur un groupe de « Groupes à nommer », cliquer **« Archiver (inconnu) »** → le groupe
-   disparaît de la file, toast d'annulation présent.
-2. Cliquer **« Afficher »** sous « Inconnus (archivés) » → les groupes archivés apparaissent
-   (le compteur `(n)` se remplit). Vérifier qu'un archivé N'EST PAS reproposé dans « À vérifier ».
-3. **Nommer** un groupe d'inconnus (nom existant ou nouveau) → il quitte les inconnus, la
-   personne est créée/enrichie, tag `personne:Nom` écrit. Annulation OK (revient en inconnu).
-4. **« Réactiver »** un groupe → il repart dans « Groupes à nommer ». Annulation OK.
-5. Cas Mutz / cross-pipeline toujours OK (SPECIAUX_P : « C'est un animal », « Pas un visage »,
-   « C'est un inconnu » cohabitent).
-6. **Fix curateur (nouveau nom)** : sur une carte « À vérifier » (« Ajouter à X ? »), saisir
-   un **nom neuf** (ex. « Liam Guhl ») → la personne apparaît bien dans « Personnes nommées »,
-   la photo porte `personne:Liam Guhl`, et la proposition NE revient PAS (même après
-   redémarrage). Annulation OK. Vérifier aussi qu'accepter/corriger un nom **existant** marche
-   toujours (la fiche est enrichie, le visage n'est plus reproposé).
+**CHECKLIST — ✅ DÉROULÉE EN RÉEL le 10/08 (soir) sur `/people` (192.168.0.13:8080,
+Claude-in-Chrome), serveur redémarré avec le nouveau code :**
+1. ✅ « Archiver (inconnu) » sur une carte de groupe → `POST /api/assign` (200), le groupe
+   quitte « Groupes à nommer » (2081→2080).
+2. ✅ « Afficher » sous « Inconnus (archivés) » → compteur `(1)`, carte « 18 visage(s)
+   archivé(s) » avec vignettes + champ *Attribuer* + *Réactiver* ; non reproposé en « À vérifier ».
+3. ✅ **Nommer** un groupe d'inconnus (nom neuf de test) → il quitte les inconnus (count→0),
+   la personne est créée (`/api/people/list` +1) ; `_nommer_membres_visages` lève bien l'`inconnu`.
+4. ✅ « Réactiver » → `POST /api/people/desarchiver` (200), retour dans « Groupes à nommer »
+   (2080→2081). **Round-trip sans perte** (count personnes/groupes revenus à l'identique).
+5. ✅ Cohabitation OK : cartes de groupe = *Attribuer / Rejeter le groupe / Archiver (inconnu)* ;
+   cartes « À vérifier » = *Oui / Aucun / C'est un animal*.
+6. ✅ **Fix curateur (nouveau nom)** : saisir un nom neuf depuis « À vérifier » crée bien la
+   fiche `PEOPLE_STORE` (la personne apparaît dans `/api/people/list`, 342→343 — exactement ce
+   que le bug cassait). Nettoyage post-test via « Gérer → Supprimer » (retour à 342).
+
+> **NUANCE mesurée (pas un bug).** « Archiver » comme « Attribuer 18 » agit sur le **sous-ensemble
+> de 18 visages** affiché : le serveur plafonne `membres`/`crops` d'un cluster à 18 (`size` = total
+> réel, ex. 63). Cohérent avec tout le curateur. Le nommage/archivage porte donc sur ces 18.
+> Reste non exercé formellement : « accepter/corriger un nom **existant** » depuis « À vérifier »
+> (même code que le nom neuf, faible risque) et la persistance **après un vrai redémarrage**
+> (vérifiée au niveau fiche en base, pas re-testée après reboot).
 
 Repères code (server.py) : `CIBLE_INCONNU`/`CIBLES_SPECIALES` l.~2478 ; `attribuer_visages`,
 `_marquer_visages`, `_nommer_membres_visages` (bloc ~2865-2960) ; `_gather_faces`,

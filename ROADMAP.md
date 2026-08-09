@@ -6,25 +6,41 @@ est la **carte des priorités** ; le détail vit ailleurs et est référencé :
 dédoublonnage), `docs/AUDIT_EXTERNE_2026.md` (direction tagging), `PROMPT_NOUVELLE_
 SESSION.md` (reprise exacte), et l'historique git (chaque chantier fini y est).
 
-Dernière mise à jour : **10 août 2026 (soir)**. **Chantier #3 — archive « (Inconnus) » :
-CODÉ, à valider en réel.** Côté visages : nouvelle cible `__inconnu__` (champ `inconnu` sur
-la détection, réversible, JAMAIS de XMP), exclue de « Groupes à nommer » et de « À vérifier » ;
-nommer un cluster lève l'archive ; nouvelle vue « Inconnus (archivés) » (clusters séparés,
-seuil min=1) avec re-tag ou « Réactiver » ; endpoints `/api/people/inconnus` (GET) et
-`/api/people/desarchiver` (POST). `server.py` édité en place (py_compile OK, `node --check` OK
-sur le JS ajouté), **écrit sur la machine**. **Reste (Mike) : commit + REDÉMARRER + valider
-en réel** sur `/people` (archiver un groupe → il quitte la file et apparaît sous « Inconnus » ;
-le nommer → il en sort et devient une personne). Précédemment : fix propositions sans image +
-purge clés fantômes (commit+redémarrage encore dus), bat 28 RÉSOLU. Reste aussi ouvert :
+Dernière mise à jour : **10 août 2026 (soir) — validation en réel #3 + fix curateur.**
+**Chantier #3 — archive « (Inconnus) » : ✅ VALIDÉ EN RÉEL (Claude-in-Chrome, serveur
+redémarré).** Déroulé de la checklist sur `/people` : (1) « Archiver (inconnu) » sur une
+carte de groupe → `POST /api/assign` (cible `__inconnu__`), le groupe quitte « Groupes à
+nommer » (2081→2080) ; (2) « Afficher » sous « Inconnus (archivés) (1) » → carte complète
+(vignettes + champ *Attribuer* + *Réactiver*), non reproposée en « À vérifier » ; (3) nommer
+un groupe d'inconnus → il sort des inconnus (count→0) et crée la personne (`/api/people/list`
++1, `_nommer_membres_visages` lève bien l'`inconnu`) ; (4) « Réactiver » → `POST
+/api/people/desarchiver`, retour dans « Groupes à nommer » (2080→2081), **round-trip sans
+perte** ; (5) cohabitation OK (cartes de groupe : *Attribuer / Rejeter le groupe / Archiver
+(inconnu)* ; « À vérifier » : *Oui / Aucun / C'est un animal*). Cible `__inconnu__`, champ
+`inconnu` réversible, JAMAIS de XMP ; endpoints `/api/people/inconnus` (GET) et
+`/api/people/desarchiver` (POST). Nuance mesurée : « Archiver » comme « Attribuer 18 » agit
+sur le **sous-ensemble de 18 visages** affiché (plafond serveur `membres`/`crops`=18 ; `size`
+= total réel) — cohérent avec tout le curateur, **pas un bug**. Précédemment : fix propositions
+sans image + purge clés fantômes (actifs après redémarrage), bat 28 RÉSOLU. Reste ouvert :
 géocodage `gps_place` à activer. Détail dans `PROMPT_NOUVELLE_SESSION.md`.
 
-**BUG CURATEUR CORRIGÉ (10/08 soir).** Nommer un **nouveau** groupe depuis « À vérifier »
-(carte « Ajouter à X ? » → saisir un nom neuf) ne le sauvegardait pas : `attribuer_visage`
-(curateur unitaire) posait seulement le tag XMP, sans créer la **fiche `PEOPLE_STORE`** ni
-inscrire le visage comme référence/assigné — d'où « Liam Guhl » perdu au redémarrage et la
-proposition qui revenait. Corrigé : la branche de nommage délègue à `_nommer_membres_visages`
-(fiche + réf + visage assigné + tag), comme le chemin des groupes ; répare aussi les tags
-déjà posés sans fiche. Réversible. py_compile OK. **À valider en réel après redémarrage.**
+**BUG CURATEUR — ✅ VALIDÉ EN RÉEL (10/08 soir).** Nommer un **nouveau** groupe depuis
+« À vérifier » (carte « Ajouter à X ? » → saisir un nom neuf) ne le sauvegardait pas :
+`attribuer_visage` posait seulement le tag XMP, sans créer la **fiche `PEOPLE_STORE`** ni
+inscrire le visage comme référence/assigné — d'où le nom perdu au redémarrage et la proposition
+qui revenait. Corrigé : la branche de nommage délègue à `_nommer_membres_visages` (fiche + réf
++ visage assigné + tag). **Validé** : saisir un nom neuf depuis « À vérifier » crée bien la
+fiche (`/api/people/list` 342→343, la personne apparaît). Réversible (fiche supprimée via
+« Gérer → Supprimer » en fin de test, retour à 342). py_compile OK.
+
+**⚠ MÉTHODE Claude-in-Chrome (leçon de cette session).** Les clics/captures ne fonctionnent
+QUE si l'onglet Chrome est **au premier plan** (`document.visibilityState==="visible"`). Onglet
+caché/minimisé = rendu gelé (captures en timeout, viewport minuscule) et **clics ignorés
+silencieusement** (aucune requête émise). Toujours vérifier la visibilité avant de conclure
+qu'un bouton est « mort ». Par ailleurs `/people` rend **~11 300 vignettes d'un coup** (2081
+groupes + 342 personnes) → vraie cause des lenteurs, argument fort pour l'allègement (item 5,
+« centre de tâches »). Les mutations passent par de vrais clics UI ; la vérif d'état par
+`fetch` GET (`/api/people/inconnus`, `/api/people/clusters`, `/api/people/list`) est fiable.
 
 **IDÉE UI À VENIR — `/reglages` en « tour de contrôle » (demande Mike 10/08).** Voir d'un
 coup d'œil l'état de l'app et surtout le **statut de tous les workers** (tâches de fond) :
@@ -78,7 +94,11 @@ rendu 100 % parce que la mesure était devenue circulaire (auto-attribution). **
 clavier est prêt (Espace/O = oui, X = non, Z = annuler, lettre = corriger). Option
 code : `1`–`9` pour assigner à une personne connue, `Maj+clic` pour une plage.
 
-> **CHANTIER #3 — archive « (Inconnus) » : CODÉ (10/08 soir), à valider en réel.**
+> **CHANTIER #3 — archive « (Inconnus) » : ✅ VALIDÉ EN RÉEL (10/08 soir, Claude-in-Chrome).**
+> Checklist entière passée : archiver → sort de la file + apparaît sous « Inconnus (archivés) » ;
+> nommer un inconnu → crée la personne + lève l'archive ; « Réactiver » → retour à la file
+> (round-trip sans perte) ; cohabitation des actions spéciales OK. Détail complet en tête de
+> fichier. (Historique de conception ci-dessous.)
 > Défauts confirmés par Mike : archive **réversible en base, SANS XMP** ; **clusters séparés**
 > sous une vue « Inconnus ». Livré (server.py, écrit sur la machine) : cible `__inconnu__`
 > côté visages (champ `inconnu`, miroir du côté animaux) ; exclusion de « Groupes à nommer »
@@ -88,10 +108,10 @@ code : `1`–`9` pour assigner à une personne connue, `Maj+clic` pour une plage
 > `/api/people/desarchiver`. UI `PEOPLE_PAGE` : bouton « Archiver (inconnu) » + entrée
 > `SPECIAUX_P` (sous-ensemble) ; section « Inconnus (archivés) » chargée à la demande
 > (« Afficher »), re-tag par nommage ou « Réactiver ». py_compile + `node --check` verts.
-> **Reste (Mike) : commit + REDÉMARRER + valider en réel.** Vérifs : archiver un groupe le
-> sort de la file et le fait apparaître sous « Inconnus » ; le nommer le sort des inconnus et
-> crée/enrichit la personne ; « Réactiver » le renvoie dans « Groupes à nommer » ; toasts
-> d'annulation OK sur les trois gestes.
+> ✅ **Validé en réel** : archiver sort de la file et fait apparaître sous « Inconnus » ; le
+> nommer le sort des inconnus et crée/enrichit la personne ; « Réactiver » le renvoie dans
+> « Groupes à nommer » ; cohabitation OK. (Nuance : archive/attribution agissent sur le
+> sous-ensemble de 18 visages affiché — cohérent, pas un bug.)
 
 ### 2. Détections d'animaux mal classées en visages — et l'inverse (Mutz)
 
