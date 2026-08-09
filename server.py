@@ -4842,6 +4842,15 @@ td.n, th.n { text-align: right; font-family: var(--f-donnees); }
       <li><button class="b" id="renundo">4 &middot; Annuler le dernier lot</button><span class="mut">Defait le dernier lot applique.</span></li>
     </ol>
     <div class="renmsg" id="ren-msg" role="status" aria-live="polite">Clique &laquo;&nbsp;1 &middot; Generer le plan&nbsp;&raquo; pour commencer.</div>
+
+    <h4 class="subh">Reclassement des animaux mal classes</h4>
+    <p class="mut">Des photos d'animaux (Mutz, Caline&hellip;) portent encore un tag <b>personne:</b> au lieu de <b>animal:</b>, parfois avec une fiche personne en double. Cet outil corrige le prefixe SANS changer le nom, et retire la fiche en double. Entierement reversible. Les tags sans prefixe (l'adjectif &laquo; caline &raquo;) ne sont pas touches.</p>
+    <ol class="stepren">
+      <li><button class="b" id="reclcheck">1 &middot; Apercu (a blanc)</button><span class="mut">Compte les photos <b>personne:</b> a passer en <b>animal:</b> ; ne touche a rien.</span></li>
+      <li><button class="b prim" id="reclapply">2 &middot; Appliquer</button><span class="mut">Reclasse les photos listees + retire les fiches en double. Reversible.</span></li>
+      <li><button class="b" id="reclundo">3 &middot; Annuler le dernier reclassement</button><span class="mut">Remet les tags <b>personne:</b> et restaure les fiches.</span></li>
+    </ol>
+    <div class="renmsg" id="recl-msg" role="status" aria-live="polite">Clique &laquo;&nbsp;1 &middot; Apercu&nbsp;&raquo; pour voir ce qui serait reclasse.</div>
   </div>
 
   <h2>Dedoublonnage &amp; rangement</h2>
@@ -4870,7 +4879,8 @@ function load(){
       card('File tagging', q.tag||0),
       card('File visages', q.faces||0),
       card('File animaux', q.animaux||0),
-      card('Ecritures noms', q.personnes||0)
+      card('Ecritures noms', q.personnes||0),
+      card('Empreintes animaux', s.pets_vec!=null?s.pets_vec:(s.pets_embed!=null?s.pets_embed:'?'))
     ].join('');
     document.getElementById('lib').innerHTML=[
       card('Entrees', c.entrees||0), card('Taguees', c.tagues||0),
@@ -4927,6 +4937,9 @@ document.getElementById('planren').onclick=function(){ act('/api/maint/plan-reno
 document.getElementById('rencheck').onclick=function(){ act('/api/maint/rename-check', null, 'ren-msg'); };
 document.getElementById('renapply').onclick=function(){ act('/api/maint/rename-apply', 'Appliquer un lot de renommage (max 200 fichiers, EN PLACE sur le NAS) ? Reversible via Annuler.', 'ren-msg'); };
 document.getElementById('renundo').onclick=function(){ act('/api/maint/rename-undo', 'Annuler le dernier lot de renommage ?', 'ren-msg'); };
+document.getElementById('reclcheck').onclick=function(){ act('/api/maint/reclass-apercu', null, 'recl-msg'); };
+document.getElementById('reclapply').onclick=function(){ act('/api/maint/reclass-apply', 'Reclasser les photos personne: en animal: pour les noms d animaux connus, et retirer les fiches en double ? Reversible via Annuler.', 'recl-msg'); };
+document.getElementById('reclundo').onclick=function(){ act('/api/maint/reclass-undo', 'Annuler le dernier reclassement ?', 'recl-msg'); };
 load(); setInterval(load, 6000);
 </script>
 </body>
@@ -7089,6 +7102,106 @@ def _enqueue_person_write(key, tag, op='add'):
         pass
 
 
+def reclasser_animaux(dry=True):
+    """Reclasse les photos taguees `personne:Nom` en `animal:Nom` quand Nom est
+    un animal connu (fiche PETS_STORE). PRESERVE le nom (change seulement le
+    prefixe) et retire au passage la fiche `personne` en double d'une fiche
+    animal du meme nom. Ecrit via les primitives existantes (XMP + index, file
+    PERSON_QUEUE, ecrivain unique) ; entierement REVERSIBLE via un journal
+    `docs/undo_reclassement_*.json`.
+
+    Balaye TOUS les noms (generalise, pas seulement Mutz/Caline). Les tags SANS
+    prefixe (ex. l'adjectif « caline ») ne sont jamais touches."""
+    pets = set(PETS_STORE.data.keys())          # cles minuscules
+    par_nom = {}                                 # nl -> {'nom':suffixe, 'keys':set}
+    for key, e in list(STORE.data.items()):
+        if not isinstance(e, dict) or e.get('failed'):
+            continue
+        for kw in (e.get('kw_fr') or []):
+            s = str(kw)
+            if s.lower().startswith('personne:'):
+                suf = s.split(':', 1)[1]
+                if suf.lower() in pets:
+                    par_nom.setdefault(suf.lower(),
+                                       {'nom': suf, 'keys': set()})['keys'].add(key)
+    dup = [pk for pk in PEOPLE_STORE.data.keys() if pk in pets]
+    toutes = set().union(*[d['keys'] for d in par_nom.values()]) if par_nom else set()
+    rapport = {
+        'noms': [{'nom': d['nom'], 'photos': len(d['keys']),
+                  'fiche_double': nl in dup}
+                 for nl, d in sorted(par_nom.items())],
+        'total_photos': len(toutes),
+        'fiches_double': dup,
+    }
+    if dry:
+        return {'ok': True, 'dry': True, **rapport}
+
+    # Rien a convertir : NE PAS creer de journal (sinon un journal vide masque le
+    # vrai lors d'une annulation ulterieure). Idempotent : reappliquer ne fait rien.
+    # (Les fiches en double ne sont retirees qu'avec la conversion de leur nom.)
+    if not par_nom:
+        return {'ok': True, 'dry': False, 'photos': 0,
+                'noms_traites': [], 'fiches_retirees': []}
+
+    journal = {'at': time.time(), 'noms': []}
+    for nl, d in par_nom.items():
+        nom = d['nom']
+        keys = sorted(d['keys'])
+        atag = f"animal:{nom}"
+        for k in keys:                           # 1) ajoute animal:Nom
+            _index_add_person(k, atag)
+            _enqueue_person_write(k, atag, 'add')
+        fiche = PEOPLE_STORE.data.get(nl)        # fiche personne en double (ou None)
+        retires = PEOPLE.delete(nom)             # 2) retire personne:Nom (fichiers+index) + fiche
+        journal['noms'].append({'nom': nom, 'keys': keys,
+                                'fiche': fiche, 'retires': retires})
+    STORE.save()
+    _invalider_groupes_visages()
+    _invalider_groupes_animaux()
+    docs = SCRIPT_DIR / 'docs'
+    docs.mkdir(exist_ok=True)
+    jp = docs / f"undo_reclassement_{int(journal['at'])}.json"
+    jp.write_text(json.dumps(journal, ensure_ascii=False, indent=2), encoding='utf-8')
+    return {'ok': True, 'dry': False, 'journal': jp.name,
+            'photos': sum(len(x['keys']) for x in journal['noms']),
+            'noms_traites': [x['nom'] for x in journal['noms']],
+            'fiches_retirees': dup}
+
+
+def annuler_reclassement():
+    """Annule le DERNIER reclassement : re-`personne:`, retire `animal:` (uniquement
+    ce que ce lot avait pose), restaure les fiches supprimees. Journal renomme .done."""
+    docs = SCRIPT_DIR / 'docs'
+    # Dernier journal NON VIDE et pas encore annule (.json, pas .json.done).
+    jp, journal = None, None
+    for f in sorted(docs.glob('undo_reclassement_*.json'), reverse=True):
+        try:
+            data = json.loads(f.read_text(encoding='utf-8'))
+        except Exception:
+            continue
+        if data.get('noms'):
+            jp, journal = f, data
+            break
+    if jp is None:
+        return {'ok': False, 'error': "Aucun reclassement a annuler."}
+    for x in journal.get('noms', []):
+        nom = x['nom']
+        atag, ptag = f"animal:{nom}", f"personne:{nom}"
+        for k in x.get('keys', []):
+            _index_remove_person(k, atag)
+            _enqueue_person_write(k, atag, 'del')
+            _index_add_person(k, ptag)
+            _enqueue_person_write(k, ptag, 'add')
+        if x.get('fiche') is not None:
+            PEOPLE_STORE.set(nom.lower(), x['fiche'])
+    STORE.save()
+    _invalider_groupes_visages()
+    _invalider_groupes_animaux()
+    jp.rename(jp.with_name(jp.name + '.done'))
+    return {'ok': True, 'photos': sum(len(x.get('keys', [])) for x in journal.get('noms', [])),
+            'fiches_restaurees': sum(1 for x in journal.get('noms', []) if x.get('fiche'))}
+
+
 def reconcile_named_tags():
     """Recovery pérenne : réapplique dans l'index les tags nommés (personne:/
     animal:) pour les photos déjà attribuées à un nom (champ 'faces' des fiches),
@@ -8506,20 +8619,21 @@ function esc(s){return (s||'').replace(/[&<>"]/g,function(c){
 function post(url,obj){return fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},
   body:JSON.stringify(obj||{})}).then(function(r){return r.json();});}
 
+function carteP(p){
+  var d=document.createElement('div'); d.className='pcard';
+  d.innerHTML=(p.crop?'<img loading="lazy" src="'+esc(p.crop)+'">':'<div style="height:90px"></div>')+
+    '<div class="nm">'+esc(p.name)+'</div>'+
+    '<div class="ct">'+p.photos+' photo'+(p.photos>1?'s':'')+'</div>'+
+    '<button class="btn">Gérer</button>';
+  d.onclick=function(){openPerson(p);};
+  return d;
+}
 function loadPeople(){
   fetch('/api/people/list').then(function(r){return r.json();}).then(function(d){
     var ppl=d.people||[]; document.getElementById('pc').textContent=ppl.length?('('+ppl.length+')'):'';
     var el=document.getElementById('people'); el.innerHTML='';
     if(!ppl.length){ el.innerHTML='<div class="msg">Aucune personne nommée pour l\\'instant.</div>'; }
-    ppl.forEach(function(p){
-      var d=document.createElement('div'); d.className='pcard';
-      d.innerHTML=(p.crop?'<img src="'+esc(p.crop)+'">':'<div style="height:90px"></div>')+
-        '<div class="nm">'+esc(p.name)+'</div>'+
-        '<div class="ct">'+p.photos+' photo'+(p.photos>1?'s':'')+'</div>'+
-        '<button class="btn">Gérer</button>';
-      d.onclick=function(){openPerson(p);};
-      el.appendChild(d);
-    });
+    if(ppl.length) renderInBatches(el, ppl, carteP);
   });
 }
 
@@ -8756,6 +8870,36 @@ function carteGroupeP(c){
   maj();
   return el;
 }
+// Rendu incremental : construire les ~2000 groupes (>11 000 vignettes) d'un
+// coup figeait le rendu. On pose un lot de cartes, puis le suivant quand une
+// sentinelle approche du bas de l'ecran (IntersectionObserver, marge 600px).
+// carteGroupeP / carteInconnu restent inchanges ; les cartes sont de vrais
+// noeuds DOM (remove() individuel apres nommage marche toujours). Repli sans
+// IntersectionObserver (navigateurs anciens) : tout rendre.
+function renderInBatches(box, items, makeCard, batch){
+  batch = batch || 24;
+  box.innerHTML='';
+  var i=0, obs=null;
+  var sentinel=document.createElement('div');
+  sentinel.className='batch-sentinel'; sentinel.setAttribute('aria-hidden','true');
+  function paint(){
+    var end=Math.min(i+batch, items.length);
+    var frag=document.createDocumentFragment();
+    for(; i<end; i++){ frag.appendChild(makeCard(items[i])); }
+    if(sentinel.parentNode) box.insertBefore(frag, sentinel); else box.appendChild(frag);
+    if(i>=items.length){ if(obs) obs.disconnect(); sentinel.remove(); }
+  }
+  box.appendChild(sentinel);
+  if('IntersectionObserver' in window){
+    obs=new IntersectionObserver(function(entries){
+      if(entries.some(function(e){return e.isIntersecting;})) paint();
+    }, {rootMargin:'600px'});
+    obs.observe(sentinel);
+    paint();
+  } else {
+    while(i<items.length) paint();
+  }
+}
 function loadClusters(rebuild){
   fetch('/api/people/clusters'+(rebuild?'?rebuild=1':'')).then(function(r){return r.json();}).then(function(d){
     var msg=document.getElementById('clmsg'), box=document.getElementById('clusters');
@@ -8765,7 +8909,7 @@ function loadClusters(rebuild){
     if(!d.clusters.length){ msg.textContent='Aucun groupe. Clique « Regrouper » (le scan des visages doit être avancé).'; box.innerHTML=''; return; }
     msg.textContent='';
     box.innerHTML='';
-    d.clusters.forEach(function(c){ box.appendChild(carteGroupeP(c)); });
+    renderInBatches(box, d.clusters, carteGroupeP);
   });
 }
 
@@ -8789,7 +8933,7 @@ function loadInconnus(rebuild){
       setTimeout(function(){loadInconnus(false);},3000); return; }
     box.innerHTML='';
     if(!d.clusters.length){ box.innerHTML='<span style="color:var(--graphite);padding:6px">Aucun visage archivé.</span>'; return; }
-    d.clusters.forEach(function(c){ box.appendChild(carteInconnu(c)); });
+    renderInBatches(box, d.clusters, carteInconnu);
   });
 }
 function carteInconnu(c){
@@ -10405,6 +10549,14 @@ class Handler(BaseHTTPRequestHandler):
 
         with PENDING_LOCK:
             tagpend = len(PENDING)
+        # Stock d'empreintes animales (DINOv2) dans le magasin de vecteurs :
+        # compte INDEXE (kind='animals'), instantane, lecture seule. Bien plus
+        # parlant que le compteur de session (remis a 0 au demarrage). Repli None
+        # si la base vectorielle n'est pas prete.
+        try:
+            pets_vec = photo_vectors().count('animals')
+        except Exception:
+            pets_vec = None
         body = {
             'now': time.time(),
             'hw': hw_state(),
@@ -10416,6 +10568,13 @@ class Handler(BaseHTTPRequestHandler):
             'counts': {'entrees': len(STORE.data), 'tagues': STORE.tagged_count(),
                        'personnes': len(PEOPLE_STORE.data), 'animaux': len(PETS_STORE.data),
                        'visages': len(FACE_STORE.data)},
+            # Empreintes animales : `pets_vec` = stock reel (magasin de vecteurs) ;
+            # `pets_embed` = calculees depuis le demarrage (activite du worker de
+            # fond) ; `dino_loaded` = modele charge (drapeau, PAS d'import lourd,
+            # cf. invariant 7).
+            'pets_vec': pets_vec,
+            'pets_embed': PET_EMBED_STATE.get('done', 0),
+            'dino_loaded': DINO_MODEL_OBJ is not None,
             'maint': {'auto': MAINTENANCE_AUTO, 'paused': MAINT_PAUSED,
                       'every_s': MAINTENANCE_EVERY, 'autonomy': _m.AUTONOMY,
                       'intervals': _m.INTERVALS, 'state': load('maintenance_state.json') or {},
@@ -10474,6 +10633,28 @@ class Handler(BaseHTTPRequestHandler):
             res = annuler_renommage()
             if res.get('ok'):
                 res['msg'] = f"Annulation : {res['annules']} renommage(s) remis."
+        elif path == '/api/maint/reclass-apercu':
+            res = reclasser_animaux(dry=True)
+            if res.get('ok'):
+                det = ", ".join(f"{n['nom']} ({n['photos']})" for n in res['noms']) or "aucun"
+                res['msg'] = (f"A blanc : {res['total_photos']} photo(s) a reclasser "
+                              f"personne -> animal [{det}] ; "
+                              f"{len(res['fiches_double'])} fiche(s) en double.")
+        elif path == '/api/maint/reclass-apply':
+            res = reclasser_animaux(dry=False)
+            if res.get('ok'):
+                if res['photos'] == 0 and not res.get('fiches_retirees'):
+                    res['msg'] = "Rien a reclasser : tout est deja en animal:."
+                else:
+                    res['msg'] = (f"Reclasse : {res['photos']} photo(s) passees en animal: "
+                                  f"[{', '.join(res['noms_traites']) or 'aucun'}] ; "
+                                  f"{len(res['fiches_retirees'])} fiche(s) en double retiree(s). "
+                                  f"Reversible (Annuler).")
+        elif path == '/api/maint/reclass-undo':
+            res = annuler_reclassement()
+            if res.get('ok'):
+                res['msg'] = (f"Annulation : {res['photos']} photo(s) remises en personne:, "
+                              f"{res['fiches_restaurees']} fiche(s) restauree(s).")
         else:
             self._send(404, b'Not found', 'text/plain')
             return

@@ -75,6 +75,17 @@ courtes et fraîches, on repart des fichiers de suivi. C'est le vrai levier toke
 (statut), `PROMPT_NOUVELLE_SESSION.md` (reprise), `eval/DECISIONS.md` (si une éval a
 tranché). C'est ce qui rend les sessions courtes sûres.
 
+**Nettoyage de fin de session (systématique) :** lancer `29 - Nettoyage de
+session.bat` (ou `python nettoyer_session.py --appliquer`). Deux volets sûrs :
+(1) met en **quarantaine réversible** les répertoires/fichiers de travail
+éphémères de la racine (dossiers `--…`, `__pycache__`, `.fuse_hidden…`, `.pyc`,
+dossiers vides connus) dans `_corbeille_session/AAAA-MM-JJ/` avec `manifest.json`
+— rien n'est supprimé, Mike vide la corbeille quand il est sûr ; (2) **lint de
+cohérence** des `*.md` de suivi (références orphelines, bloat, dates périmées) —
+informatif, à corriger à la main. Liste blanche stricte : `_bat_archive`,
+`recuperees`, `*_thumbs`, `docs`, `ui`, `eval`, `uploads`, `.git`, `.venv` et
+tous les fichiers source/données sont **préservés**.
+
 ## Deux réflexes de méthode
 
 - **Un score parfait est une alarme, pas un succès** — deux bancs de ce projet ne

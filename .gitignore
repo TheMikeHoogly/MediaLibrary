@@ -108,3 +108,8 @@ eval/interet_results.json
 eval/interet_candidats_results.json
 eval/interet_etiquetage.html
 eval/interet_candidats_etiquetage.html
+
+# ─── Corbeille de fin de session (nettoyer_session.py) ───────────────────────
+# Quarantaine réversible des répertoires de travail éphémères. Local, jamais
+# versionné ; à vider à la main quand on est sûr.
+_corbeille_session/

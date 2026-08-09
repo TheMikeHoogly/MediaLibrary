@@ -49,7 +49,7 @@ lignes. `python verifier_bat.py` le contrôle.
 | `CLAUDE.md` | Brief du projet, règles absolues — lu automatiquement par Claude Code |
 | `ROADMAP.md` | Où en est le projet, ce qui reste |
 | `eval/DECISIONS.md` | Journal des évaluations : ce qui a été adopté **et rejeté sur mesure** |
-| `docs/AUDIT_2026.md` | État de l'art, dette technique |
+| `docs/AUDIT_EXTERNE_2026.md` | État de l'art, dette technique |
 | `.claude/skills/` | Trois skills : design system, protocole d'évaluation, chirurgie du monolithe |
 
 ## Une règle de méthode
