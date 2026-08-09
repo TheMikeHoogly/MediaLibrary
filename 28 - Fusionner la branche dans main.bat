@@ -98,7 +98,7 @@ if errorlevel 1 (
   echo   FUSION IMPOSSIBLE EN FAST-FORWARD
   echo ============================================================
   echo   main a avance de son cote : la branche a diverge.
-  echo   Il faut une vraie fusion (merge commit ou rebase), qui
+  echo   Il faut une vraie fusion ^(merge commit ou rebase^), qui
   echo   REECRIT server.py en local -- donc serveur ARRETE d'abord.
   echo.
   echo   Etapes manuelles, serveur arrete :
@@ -142,7 +142,7 @@ echo [2/3] Fast-forward de main sur origin...
 git push origin HEAD:main
 if errorlevel 1 (
   echo Echec du push vers main. main a peut-etre avance entre-temps.
-  echo Relance le script (il refera le fetch et le controle).
+  echo Relance le script ^(il refera le fetch et le controle^).
   pause
   exit /b 1
 )
