@@ -151,8 +151,9 @@ Convergence naturelle avec l'item 2 (action cross-pipeline).
 
 Le géocodage inverse qui enrichit `lieux.txt` est **codé** (cf. item 3) — une fois lancé
 par Mike, `lieux.txt` gagne les communes des 684 GPS et la recherche par lieu les reconnaît.
-Reste à faire partager à la page Carte le vocabulaire de la barre de recherche (et, plus tard,
-afficher le libellé de lieu sur les marqueurs à partir de `gps_places.json`).
+**Marqueurs de la Carte : FAIT (09/08)** — `/api/geo` expose `lieu` (depuis `gps_places.json`)
+et le popup l'affiche (📍, dégradation gracieuse si absent). Reste : faire partager à la page
+Carte le vocabulaire de la barre de recherche.
 
 ### 9. Éval tagging (parké, déjà tranché)
 

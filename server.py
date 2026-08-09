@@ -5222,6 +5222,7 @@ fetch('/api/geo').then(function(r){ return r.json(); }).then(function(d){
       '<a href="' + esc(p.url) + '" target="_blank" rel="noopener">' +
       '<img loading="lazy" src="' + esc(p.url) + '"></a>' +
       '<div class="fn">' + esc(p.name) + '</div>' +
+      (p.lieu ? '<div class="fo">📍 ' + esc(p.lieu) + '</div>' : '') +
       '<div class="fo">📁 <a href="' + esc(p.gurl) + '">' + esc(p.folder) + '</a></div>' +
       (p.desc ? '<div class="de">' + esc(p.desc) + '</div>' : '') +
       '<a class="op" href="' + esc(p.url) + '" target="_blank" rel="noopener">' +
@@ -9420,6 +9421,7 @@ class Handler(BaseHTTPRequestHandler):
     def _serve_geo(self):
         """Liste JSON des photos géolocalisées, pour la vue carte."""
         roots = media_roots()
+        gps_places = gps_places_connus()   # géocodage inverse offline précalculé
         pts = []
         for k, e in list(STORE.data.items()):
             if not isinstance(e, dict) or e.get('failed'):
@@ -9458,6 +9460,7 @@ class Handler(BaseHTTPRequestHandler):
                 'name': Path(k).name, 'folder': folder, 'gurl': gurl,
                 'desc': e.get('desc', ''), 'kw': kw[:8],
                 'taken': _best_time(k, e),
+                'lieu': gps_places.get(k),   # lieu géocodé (None si non calculé)
             })
         body = json.dumps({'points': pts}, ensure_ascii=False).encode()
         self._send(200, body, 'application/json')

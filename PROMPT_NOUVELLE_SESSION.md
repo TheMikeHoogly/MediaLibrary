@@ -185,11 +185,13 @@ humain/animal : **REJETÉE** (mesurée, 18 % de faux rejets — ne pas recâbler
 
 ### Prochains code utiles (par valeur, cf. `ROADMAP.md`)
 
-Géocodage inverse : **codé**, reste à activer (bloc ci-dessus). Ensuite : fait `image_type`
-(SigLIP) pour enrichir encore les noms ; afficher le lieu sur les marqueurs de la Carte
-depuis `gps_places.json` ; redesign étape B (centre de tâches, registre papier) ; page
-« Sujets » unifiée ; si l'on revient sur la garde humain/animal, **re-mesurer sur découpes
-SANS marge** ; HDBSCAN / AdaFace en réserve.
+Géocodage inverse : **codé + carte câblée**, reste à activer (bloc ci-dessus). Le popup de
+la Carte affiche déjà 📍 le lieu dès que `gps_places.json` existe (rien sinon). Ensuite :
+fait `image_type` (SigLIP) pour enrichir encore les noms — mais discipline `vision-eval`
+(protocole pré-enregistré + mesure VRAM AVANT câblage, cf. bancs triage/visages) ; partage
+du vocabulaire de recherche à la Carte ; redesign étape B (centre de tâches, registre
+papier) ; page « Sujets » unifiée ; garde humain/animal seulement si **re-mesure sur
+découpes SANS marge** ; HDBSCAN / AdaFace en réserve.
 
 Après lecture : dis **« Go »** pour un débrief + prochaines étapes (protocole
 `CLAUDE.md`), ou attaque directement le point le plus utile en proposant un plan
