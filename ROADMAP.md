@@ -1,310 +1,90 @@
 # Feuille de route — MediaLibrary
 
-L'état vit dans les fichiers, pas dans l'historique de conversation. Ce fichier
-est la **carte des priorités** ; le détail vit ailleurs et est référencé :
-`eval/DECISIONS.md` (évaluations tranchées), `docs/RANGEMENT_2026.md` (rangement/
-dédoublonnage), `docs/AUDIT_EXTERNE_2026.md` (direction tagging), `PROMPT_NOUVELLE_
-SESSION.md` (reprise exacte), et l'historique git (chaque chantier fini y est).
+L'état vit dans les fichiers, pas dans l'historique. Ce fichier = **carte des
+priorités**. Détail ailleurs : `eval/DECISIONS.md` (décisions tranchées),
+`docs/RANGEMENT_2026.md` (rangement), `docs/AUDIT_EXTERNE_2026.md` (direction
+tagging), `PROMPT_NOUVELLE_SESSION.md` (reprise), et l'historique git (chaque
+chantier fini y est — c'est pourquoi les récits de travaux terminés ne vivent PAS ici).
 
-Dernière mise à jour : **10 août 2026 (soir) — validation en réel #3 + fix curateur.**
-**Chantier #3 — archive « (Inconnus) » : ✅ VALIDÉ EN RÉEL (Claude-in-Chrome, serveur
-redémarré).** Déroulé de la checklist sur `/people` : (1) « Archiver (inconnu) » sur une
-carte de groupe → `POST /api/assign` (cible `__inconnu__`), le groupe quitte « Groupes à
-nommer » (2081→2080) ; (2) « Afficher » sous « Inconnus (archivés) (1) » → carte complète
-(vignettes + champ *Attribuer* + *Réactiver*), non reproposée en « À vérifier » ; (3) nommer
-un groupe d'inconnus → il sort des inconnus (count→0) et crée la personne (`/api/people/list`
-+1, `_nommer_membres_visages` lève bien l'`inconnu`) ; (4) « Réactiver » → `POST
-/api/people/desarchiver`, retour dans « Groupes à nommer » (2080→2081), **round-trip sans
-perte** ; (5) cohabitation OK (cartes de groupe : *Attribuer / Rejeter le groupe / Archiver
-(inconnu)* ; « À vérifier » : *Oui / Aucun / C'est un animal*). Cible `__inconnu__`, champ
-`inconnu` réversible, JAMAIS de XMP ; endpoints `/api/people/inconnus` (GET) et
-`/api/people/desarchiver` (POST). Nuance mesurée : « Archiver » comme « Attribuer 18 » agit
-sur le **sous-ensemble de 18 visages** affiché (plafond serveur `membres`/`crops`=18 ; `size`
-= total réel) — cohérent avec tout le curateur, **pas un bug**. Précédemment : fix propositions
-sans image + purge clés fantômes (actifs après redémarrage), bat 28 RÉSOLU. Reste ouvert :
-géocodage `gps_place` à activer. Détail dans `PROMPT_NOUVELLE_SESSION.md`.
+## État actuel (10 août 2026)
 
-**BUG CURATEUR — ✅ VALIDÉ EN RÉEL (10/08 soir).** Nommer un **nouveau** groupe depuis
-« À vérifier » (carte « Ajouter à X ? » → saisir un nom neuf) ne le sauvegardait pas :
-`attribuer_visage` posait seulement le tag XMP, sans créer la **fiche `PEOPLE_STORE`** ni
-inscrire le visage comme référence/assigné — d'où le nom perdu au redémarrage et la proposition
-qui revenait. Corrigé : la branche de nommage délègue à `_nommer_membres_visages` (fiche + réf
-+ visage assigné + tag). **Validé** : saisir un nom neuf depuis « À vérifier » crée bien la
-fiche (`/api/people/list` 342→343, la personne apparaît). Réversible (fiche supprimée via
-« Gérer → Supprimer » en fin de test, retour à 342). py_compile OK.
+- **#3 archive « Inconnus » + fix curateur (nom neuf) : ✅ VALIDÉS EN RÉEL** (checklist
+  complète via Claude-in-Chrome : archiver → sort de la file + Inconnus ; nommer un
+  inconnu → crée la personne + lève l'archive ; Réactiver → retour, sans perte ; nom
+  neuf depuis « À vérifier » → crée la fiche `PEOPLE_STORE`). Nuance : archiver/attribuer
+  agit sur le sous-ensemble de 18 visages affiché (plafond serveur), cohérent, pas un bug.
+- Branches : `main == origin/main == feat/menage-ui-gpu-0807`. Le serveur tourne la
+  branche de travail. **`git push` / merges = gestes de Mike** (`docs/GIT_WORKFLOW.md`).
+- Éventuellement non commité : `server.py`, `0 - Démarrer le serveur.bat`,
+  `verifier_orphelins.py` (+test), docs. **Ouvert** : géocodage `gps_place` à activer.
 
-**⚠ MÉTHODE Claude-in-Chrome (leçon de cette session).** Les clics/captures ne fonctionnent
-QUE si l'onglet Chrome est **au premier plan** (`document.visibilityState==="visible"`). Onglet
-caché/minimisé = rendu gelé (captures en timeout, viewport minuscule) et **clics ignorés
-silencieusement** (aucune requête émise). Toujours vérifier la visibilité avant de conclure
-qu'un bouton est « mort ». Par ailleurs `/people` rend **~11 300 vignettes d'un coup** (2081
-groupes + 342 personnes) → vraie cause des lenteurs, argument fort pour l'allègement (item 5,
-« centre de tâches »). Les mutations passent par de vrais clics UI ; la vérif d'état par
-`fetch` GET (`/api/people/inconnus`, `/api/people/clusters`, `/api/people/list`) est fiable.
-
-**IDÉE UI À VENIR — `/reglages` en « tour de contrôle » (demande Mike 10/08).** Voir d'un
-coup d'œil l'état de l'app et surtout le **statut de tous les workers** (tâches de fond) :
-tagging (`TAG_QUEUE`), visages (`FACE_QUEUE`), animaux (`ANIMAL_QUEUE`), écriture des noms
-(`PERSON_QUEUE`), ré-embedding (`PET_EMBED_STATE`), maintenance/backup, + device (CPU/GPU),
-RAM/VRAM libre, `system_busy`. Converge avec l'item 5 (« centre de tâches »). Détail item 5.
-
----
-
-## État des branches
-
-- **`main` == `origin/main` == `feat/menage-ui-gpu-0807` == `e6a7564`** (fusion 09/08 soir
-  par `git push origin HEAD:main`, fast-forward). Porte TOUT l'intégré : travail 08/08
-  (cross-pipeline, orphelins, garde SigLIP rejetée), géocodage inverse `gps_place`, carte
-  avec lieu, et le renfort `verifier_bat.py` (contrôle des fins de ligne).
-- La branche `feat/menage-ui-gpu-0807` reste la branche de travail exécutée par le serveur ;
-  elle est maintenant au même niveau que `main`. Prochain chantier = nouveaux commits dessus
-  (ou une branche neuve depuis `main`), puis `git push origin HEAD:main` pour refusionner.
-- `git push` et les merges dans `main` sont des **gestes de Mike** (le sandbox ne pousse
-  pas). La fusion sans checkout local = `git push origin HEAD:main` (contourne le verrou
-  `server.py` ET le `.bat` 28 cassé — cf. `PROMPT_NOUVELLE_SESSION.md`).
-
----
-
-## Fait et vérifié (rappel — ne pas reproposer)
-
-Le détail de chacun est dans git + `eval/DECISIONS.md`.
+## Acquis — ne pas reproposer (détail : git + `DECISIONS.md`)
 
 | Domaine | Acquis |
 |---|---|
-| **Stockage** | Migration SQLite (64 676 entrées) ; embeddings en table BLOB ; `photos.db` local WAL, sauvegarde NAS par snapshot |
-| **GPU** | torch **CUDA** `2.13.0+cu130` + `onnxruntime_gpu` ; `FACE_USE_GPU=False` **volontaire** (VRAM 4 Go prise par Ollama) |
-| **Reconnaissance** | SigLIP 2 (recherche sémantique, 90 % rang-1) ; recherche 3D qui/où/quoi ; animaux 97,4 % rang-1 ; prototypes multiples (personnes) ; vérif d'espèce SigLIP |
-| **Nommage** | Attribution unifiée (sous-ensemble, noms multiples, annulation 10 s) côté personnes ET animaux ; rejet de groupe / « pas un visage » réversibles |
-| **Fichiers** | Gestion `/browse` (renommer/déplacer/supprimer réversible via quarantaine) ; upload de dossiers ; correctif SMB Errno 22 ; `rekey_everywhere` (aucun nom humain perdu) |
-| **Rangement** | Recensement (34 305 fichiers) ; dédoublonnage par contenu **appliqué** (8,4 Go) ; rangement par année **appliqué** ; purge corbeille ; orchestrateur de maintenance dans le serveur |
-| **Renommage** | Cœur + plan + applicateur in-process réversible **prêts** (plan = 2114) — reste le geste humain d'appliquer les lots |
-| **UI** | Design system « chambre noire » (tokens sur les 7 pages, plancher a11y, `verifier_ui_tokens` 0 interdit dur) ; planche contact ; tri clavier du curateur ; centre de contrôle `/reglages` ; bloc renommage numéroté |
-| **Tagging** | `qwen3-vl:2b` (SOTA compact confirmé) ; hybride assertions+image adopté ; **1 seule lecture exiftool/photo** (session 08/08, testé) |
-| **Méthode** | `verifier_bat.py` + hook ASCII ; `eval/DECISIONS.md` ; installateur nouveau PC |
-
----
+| Stockage | SQLite (64 676 entrées), embeddings BLOB, `photos.db` local WAL, backup NAS snapshot |
+| Reconnaissance | SigLIP 2 (sémantique 90 % r1) ; animaux 97,4 % r1 ; prototypes multiples (personnes) ; vérif d'espèce |
+| Nommage | Attribution unifiée (sous-ensemble, multi-noms, annulation 10 s) personnes+animaux ; rejets réversibles ; **archive « Inconnus »** |
+| Fichiers | `/browse` (renommer/déplacer/supprimer réversible) ; upload dossiers ; fix SMB Errno 22 ; `rekey_everywhere` ; purge orphelins/fantômes |
+| Rangement | Dédoublonnage contenu appliqué (8,4 Go) ; rangement par année appliqué ; orchestrateur de maintenance |
+| Renommage | Cœur + plan + applicateur réversibles prêts (plan = 2114) ; géocodage inverse `gps_place` codé |
+| UI | Design system « chambre noire » (tokens, plancher a11y, `verifier_ui_tokens`) ; planche contact ; tri clavier ; `/reglages` |
+| Tagging | `qwen3-vl:2b` ; hybride assertions+image ; 1 lecture exiftool/photo |
+| GPU | torch CUDA `2.13.0+cu130` + `onnxruntime_gpu` ; `FACE_USE_GPU=False` volontaire (4 Go pris par Ollama) |
 
 ## À faire — par ordre de valeur
 
-### 1. Confirmer la vérité terrain humaine (priorité n°1)
-
-91 photos confirmées par un humain sur 12 072 taguées (**0,8 %**). Deux bancs ont
-rendu 100 % parce que la mesure était devenue circulaire (auto-attribution). **Confirmer
-~100 propositions dans `/people` vaut plus que tout changement d'algorithme.** Le tri
-clavier est prêt (Espace/O = oui, X = non, Z = annuler, lettre = corriger). Option
-code : `1`–`9` pour assigner à une personne connue, `Maj+clic` pour une plage.
-
-> **CHANTIER #3 — archive « (Inconnus) » : ✅ VALIDÉ EN RÉEL (10/08 soir, Claude-in-Chrome).**
-> Checklist entière passée : archiver → sort de la file + apparaît sous « Inconnus (archivés) » ;
-> nommer un inconnu → crée la personne + lève l'archive ; « Réactiver » → retour à la file
-> (round-trip sans perte) ; cohabitation des actions spéciales OK. Détail complet en tête de
-> fichier. (Historique de conception ci-dessous.)
-> Défauts confirmés par Mike : archive **réversible en base, SANS XMP** ; **clusters séparés**
-> sous une vue « Inconnus ». Livré (server.py, écrit sur la machine) : cible `__inconnu__`
-> côté visages (champ `inconnu`, miroir du côté animaux) ; exclusion de « Groupes à nommer »
-> (`_gather_faces`) et « À vérifier » (`build_suggestions`) ; **nommer un cluster lève
-> l'archive** (`_nommer_membres_visages`) ; `INCONNU_CACHE` + `build_inconnus()` (seuil min=1,
-> ne cache aucun singleton) ; `desarchiver_visages()` ; endpoints `/api/people/inconnus` +
-> `/api/people/desarchiver`. UI `PEOPLE_PAGE` : bouton « Archiver (inconnu) » + entrée
-> `SPECIAUX_P` (sous-ensemble) ; section « Inconnus (archivés) » chargée à la demande
-> (« Afficher »), re-tag par nommage ou « Réactiver ». py_compile + `node --check` verts.
-> ✅ **Validé en réel** : archiver sort de la file et fait apparaître sous « Inconnus » ; le
-> nommer le sort des inconnus et crée/enrichit la personne ; « Réactiver » le renvoie dans
-> « Groupes à nommer » ; cohabitation OK. (Nuance : archive/attribution agissent sur le
-> sous-ensemble de 18 visages affiché — cohérent, pas un bug.)
-
-### 2. Détections d'animaux mal classées en visages — et l'inverse (Mutz)
-
-**Symptôme observé (08/08) :** le chien **Mutz** (cocker) forme un groupe de 25
-« visages » sur `/people` alors qu'il n'a rien à y faire (il est déjà, correctement,
-dans Animaux). **Cause :** le pipeline visages n'a **aucun garde humain/animal** — il
-accepte toute détection InsightFace de `det_score ≥ FACE_DET_THRESHOLD = 0.50` (seuil
-bas pour capter profils/flous), et une face canine frontale passe.
-
-- **Correction manuelle immédiate — existe déjà** : « Rejeter le groupe »
-  (`__non_group__`) ou « Ce n'est pas un visage » (`__pas_visage__`) sur le groupe
-  `/people`. Réversible. À faire dès maintenant pour Mutz.
-- **Action explicite et symétrique — FAIT (branche courante, à valider en réel).**
-  `/people` : option **« C'est un animal (pas une personne) »** (→ `__pas_visage__`) dans
-  les **trois** surfaces — cartes de groupe (`SPECIAUX_P`) ET curateur de faux-positifs
-  (bouton `.anim`, cas `remove` et `ajout`). `/pets` : miroir
-  **« C'est une personne (pas un animal) »** (→ `__pas_animal__`, `SPECIAUX`). UI seule,
-  aucune modif backend : réutilise les cibles spéciales déjà gérées par
-  `attribuer_visages`/`attribuer_animaux`, réversible via le toast. `py_compile` OK.
-  Reste à observer en réel sur le groupe Mutz. L'option « confirme côté animaux » a été
-  volontairement écartée du périmètre (lien découpe visage ↔ détection YOLO non trivial).
-- **Le vrai fix automatique = item 7 ci-dessous (garde amont 12b)** : une vérification
-  SigLIP « visage humain vs animal/objet » + plancher `det_score` empêcherait le groupe
-  de se former. Mutz est le cas d'école qui justifie de le mesurer et l'activer.
-  Discipline `vision-eval` : ne jamais écarter un vrai visage humain (mesurer les faux
-  rejets, le pic VRAM, décision écrite) avant d'activer.
-
-### 3. Appliquer les lots de renommage (geste humain, prêt)
-
-Flux complet dans `/reglages` → « Renommage intelligent » (bloc numéroté depuis 08/08) :
-Générer le plan → Vérifier à blanc → Appliquer un lot (200, réversible) → répéter →
-Annuler si besoin. Plan actuel = **2114 fichiers**. Reste code **optionnel** : enrichir
-le fait `image_type` (SigLIP) pour des noms plus riches. Le fait **`gps_place` est FAIT**
-(géocodage inverse offline, cf. ci-dessous) — reste à le faire tourner (geste Mike).
-
-**Géocodage inverse `gps_place` — CODÉ (09/08), à activer (geste Mike).**
-Décision d'archi : **offline**, pas de connecteur cloud. Le registre MCP n'offrait que
-TomTom (OAuth par session, cloud) — inadapté à un batch serveur autonome, et discutable côté
-vie privée des GPS familiaux. À la place, un **gazetteer local** GeoNames `cities1000` +
-plus-proche-voisin en **stdlib pure**. Pièces livrées et testées en sandbox :
-`geocode.py` (module pur, 35/35), `test_geocode.py`, `enrichir_lieux.py` (batch : lit
-`photos.db` en **lecture seule**, clusterise les points, géocode les centroïdes, écrit
-`gps_places.json` + ajoute des lieux à `lieux.txt` de façon **réversible**, 23/23),
-`test_enrichir_lieux.py`, `18 - Telecharger le gazetteer (geocodage).bat` (ASCII pur, vérifié).
-Câblage `server.py` minimal : `gps_places_connus()` (cache mtime) alimente
-`construire_plan(..., gps_places=…)` — la plomberie de `plan_renommage`/`renommage_facts`
-existait déjà. **Le serveur n'importe PAS `geocode`** (il ne lit que le JSON) → zéro
-dépendance ajoutée. Bout-en-bout vérifié : un point Bremblens → `…_bremblens_…jpg`.
-**Reste (Mike) :** lancer le bat 18 (téléchargement unique), puis
-`.venv\Scripts\python.exe enrichir_lieux.py` (aperçu) puis `--ecrire`, puis **redémarrer**.
-
-### 4. Valider + merger la branche « ménage » (`feat/menage-ui-gpu-0807`)
-
-- **Renommage UI** : validé en réel. **Bats** : archivés, sûrs.
-- **Optimisation tagging** (1 lecture exiftool/photo) : testée (`test_tagging_meta.py`
-  15/15), **à valider en réel** après un redémarrage — mesurer le débit tag/min
-  avant/après pour chiffrer le gain.
-- Puis `git push` de la branche, et merge dans `main` (une fois le serveur arrêtable).
-
-### 5. Redesign « chambre noire » — étape B (reste)
-
-Étape A (tokenisation) et l'essentiel de l'étape B sont faits. Reste : **centre de
-tâches** remplaçant le bandeau `#pending` (données déjà là : `hw_state()`,
-`system_busy()`, tailles des files) ; **registre papier** sur les cartes de clusters
-toujours visibles (`/people`, `/pets`) — gros changement du flux de nommage, valider en
-réel d'abord ; **numéro de vue** en marge de la planche contact ; porter le **sélecteur
-d'ordre réversible** (fait sur la galerie) aux fiches détail Animaux/Personnes.
-
-> **`/reglages` en « TOUR DE CONTRÔLE » (demande explicite de Mike, 10/08) — priorité UI/UX
-> montante.** Une page où Mike voit *d'un coup d'œil* l'état de l'app et **tout ce qui tourne
-> en fond**. Concrètement, le statut de chaque worker/tâche de fond, en direct :
-> tagging (`tagger_worker` / `TAG_QUEUE`), visages (`FACE_QUEUE`), animaux (`ANIMAL_QUEUE`),
-> écriture des noms dans les fichiers (`person_writer` / `PERSON_QUEUE`), ré-embedding
-> (`reembed_loop` / `PET_EMBED_STATE`), maintenance + backup NAS (`maintenance_loop`),
-> curateur/clusters (build en cours ?). Pour chacun : en cours / au repos, reste-à-faire
-> (taille de file), device (CPU/GPU), dernier passage. Plus l'état matériel : RAM/VRAM libre
-> (`hw_state()`), `system_busy()` (auto-bridage), Ollama résident ou non. Toutes les données
-> existent déjà côté serveur — c'est un travail d'**exposition** (un `/api/etat` agrégé +
-> rendu papier, rafraîchi périodiquement) et de design, sans nouveau pipeline. Respecter
-> `photo-ui` : `--f-donnees` pour tous les nombres, `--veilleuse` = en cours, `--fixateur` =
-> au repos/OK, boutons Pause où c'est déjà possible. C'est le point d'entrée naturel du
-> « centre de tâches » ci-dessus, côté `/reglages` plutôt qu'en bandeau.
-
-### 6. Une seule page « Sujets »
-
-Fusionner Personnes et Animaux en une page unique (mêmes gestes, filtre par type, le
-**lieu** comme 3ᵉ facette). `SubjectStore` est déjà unifié — c'est surtout de l'UI.
-Convergence naturelle avec l'item 2 (action cross-pipeline).
-
-### 7. Reconnaissance — algorithme
-
-- **Garde amont humain/animal (12b)** — **MESURÉ le 08/08 → REJETÉ tel quel.**
-  `verifier_visages.py` + test 15/15 ont tourné : pic VRAM 2707 Mo (OK) mais
-  **18 % de faux rejets** (7/40 écartés = vrais humains endormis/près d'un chat, lus
-  « cat »), scores 0,10–0,15 **chevauchant** les vrais non-humains → aucun seuil global
-  ne sépare. Détail : `eval/DECISIONS.md`. **Ne pas câbler.** Piste la plus prometteuse
-  si on y revient : **re-mesurer sur découpes SANS marge** (la marge 0,3 embarque le chat
-  voisin). En attendant, le remède Mutz est l'**action manuelle** « C'est un animal »
-  livrée (cartes de groupe + curateur `/people` + miroir `/pets`).
-- **Regroupement par densité** (HDBSCAN / Chinese Whispers) au lieu d'un seuil global
-  unique — un seuil ne sert pas à la fois des portraits nets et des profils de 90 px.
-- **AdaFace** sur le chemin de ré-embedding des visages faibles.
-- **Écrire les tags SigLIP** (aujourd'hui seulement proposés, `semantic.py --tags`) —
-  décision à prendre car ils modifieraient les XMP.
-
-> La reconnaissance **animale** est à un bon point d'arrêt (97,4 %, 6 erreurs sur 7 sur
-> la seule paire Inti/Luna). Le gain restant est dans la **donnée** (plus de confirmations),
-> pas dans l'algorithme ni la résolution (mesurés sans effet — `DECISIONS.md`).
-
-### 8. Recherche — carte & lieux
-
-Le géocodage inverse qui enrichit `lieux.txt` est **codé** (cf. item 3) — une fois lancé
-par Mike, `lieux.txt` gagne les communes des 684 GPS et la recherche par lieu les reconnaît.
-**Marqueurs de la Carte : FAIT (09/08)** — `/api/geo` expose `lieu` (depuis `gps_places.json`)
-et le popup l'affiche (📍, dégradation gracieuse si absent). Reste : faire partager à la page
-Carte le vocabulaire de la barre de recherche.
-
-### 9. Éval tagging (parké, déjà tranché)
-
-- Mesurer un V2 « assertions **en contexte, sans impératif de noms** » (version à 4,3 s,
-  jamais notée) + **fusion programmatique** des noms/date/lieu (Knowledge Builder), plutôt
-  que de quémander les noms au LLM (16 % d'obéissance, rejeté).
-- Comparatif de modèles : `gemma4:e2b` (FR natif) vs `qwen3-vl:2b`, via
-  `eval_tagging.py --modele … --variantes V0` — **rejeter tout modèle dont le pic VRAM
-  frôle 4 Go** pendant qu'Ollama est résident.
-
-### 10. Données & finitions
-
-- **Propositions « À vérifier » sans image sur `/people` (diagnostiqué 09/08, fix IMPLÉMENTÉ
-  10/08 — à valider en réel).** Clés fantômes dans `FACE_STORE` : même photo ARZOPA sous une
-  clé correcte (`ads\ARZOPA\…`) ET une clé malformée (`ARZOPA/…`, slash avant, sans racine
-  `ads\`) qui ne se résout pas → `/api/facecrop` 404 → carte sans vignette (vérifié en direct :
-  3/19, toutes ARZOPA). **Fait :** garde-fou dans `build_suggestions()` (`server.py`) — une
-  proposition/auto-attribution `add` dont `_resolve_key(k)` n'est pas un fichier est écartée,
-  **seulement si la racine est joignable** (jamais NAS déconnecté — leçon `verifier_orphelins`).
-  Un seul `is_file()` sur les vrais candidats ; ne touche que des propositions, aucun nom perdu.
-  `py_compile` OK. Et `verifier_orphelins.py` (read-only) distingue désormais une **clé
-  fantôme** (doublon malformé dont un sibling présent partage le basename — purge sans risque)
-  d'un vrai fichier disparu (`basename_cle`/`est_fantome`). **Cause racine traitée (10/08) :**
-  `purge_cles_fantomes()` s'exécute une fois au démarrage de `maintenance_loop` — retire de
-  FACE/ANIMAL_STORE les doublons malformés (via `forget_everywhere`, jamais une clé nommée),
-  détection peu coûteuse (`cles_fantomes_par_collision` ne stat que les basenames en
-  collision). Logique pure testée, `test_verifier_orphelins` 23/23. Effet UI déjà **observé
-  en réel** (19 → 12 propositions, 0 vignette cassée). **Reste (Mike) :** commit + redémarrage
-  → une ligne `🧹 N clé(s) fantôme(s) purgée(s)` confirmera le nettoyage du store.
-- **Purge de suppression incomplète (BUG — diagnostiqué ET corrigé le 08/08).**
-  `_sync_dir` étape 4 ne retirait un fichier disparu que du **TagStore** ; visages/
-  animaux/vecteurs restaient orphelins (cas « ARZOPA »). Diagnostic (`verifier_orphelins.py`,
-  read-only) : **4569 orphelins, 0 nommé** (48 `par_humain`, jugements sur photos
-  disparues, sans objet). Correctif **implémenté** : `vectors.delete_all` (2 formes
-  suffixe+clé nue, test_vectors 34/34), `forget_everywhere` (miroir de
-  `rekey_everywhere`) câblé dans `_sync_dir` étape 4. Noms **préservés par
-  construction** (fiches PEOPLE/PETS keyées par nom, jamais touchées). **Reste
-  (geste Mike)** : committer + **redémarrer** — le `scan_uploads` de démarrage purge
-  le backlog en cascade — puis relancer `verifier_orphelins.py` pour confirmer ~0.
-- **Fiche « Flo »** (3 478 photos, 80 références, 17 exclusions) probablement mal
-  constituée — c'est elle qui rend Florine ambiguë.
-- **Doublons de fiches** entre personnes et animaux.
-- **Édition des réglages depuis `/reglages`** (aujourd'hui lecture seule) : seuils,
-  cadence/autonomie de maintenance, racines — avec garde-fous.
-- **Ingestion** : 2ᵉ passe de récupération des 945 fichiers à en-tête détruit
-  (`17 - Recuperer les images illisibles.bat`) ; remettre `recuperees/` sur le NAS.
-
----
+1. **Vérité terrain humaine (priorité n°1).** ~0,8 % de confirmations humaines (91/12 072).
+   Confirmer ~100 propositions dans `/people` vaut plus que tout changement d'algo. Tri
+   clavier prêt (Espace=oui, X=non, Z=annuler, lettre=corriger).
+2. **`/reglages` en « tour de contrôle » + centre de tâches** (demande Mike). Voir d'un
+   coup d'œil l'état des workers (`TAG_QUEUE`/`FACE_QUEUE`/`ANIMAL_QUEUE`/`PERSON_QUEUE`,
+   `PET_EMBED_STATE`), device, RAM/VRAM (`hw_state()`), `system_busy()`. Données déjà
+   côté serveur → travail d'exposition (`/api/etat` agrégé) + rendu papier. Remplace le
+   bandeau `#pending`.
+3. **Appliquer les lots de renommage** (`/reglages` → Renommage, plan = 2114, lots de 200
+   réversibles) + **activer le géocodage `gps_place`** : lancer `18 - …gazetteer.bat`, puis
+   `enrichir_lieux.py` (aperçu) puis `--ecrire`, puis redémarrer. Gestes Mike.
+4. **Alléger `/people`.** La page rend **~11 300 vignettes d'un coup** (2081 groupes + 342
+   personnes) → lenteurs et figes du rendu. Pagination / virtual scroll / chargement à la
+   demande. Converge avec le centre de tâches (item 2).
+5. **Cross-pipeline (Mutz).** Action manuelle « C'est un animal » (/people) + miroir /pets :
+   livrée. Fix auto (garde amont humain/animal) **REJETÉ** (18 % faux rejets, cf. DECISIONS) ;
+   seule piste = re-mesurer sur découpes SANS marge avant d'y revenir.
+6. **Page « Sujets » unifiée** (Personnes + Animaux, filtre par type, lieu = 3ᵉ facette ;
+   `SubjectStore` déjà unifié — surtout de l'UI).
+7. **Recherche.** SigLIP 2 en langue naturelle (« les étés à Bremblens avec Luna ») ;
+   partager le vocabulaire de la barre de recherche à la page Carte (marqueurs déjà FAITS).
+8. **Reconnaissance — algo.** Clustering par densité (HDBSCAN / Chinese Whispers) au lieu
+   d'un seuil global unique ; AdaFace sur le ré-embedding des visages faibles ; écrire les
+   tags SigLIP (aujourd'hui proposés — décision à prendre car modifie les XMP).
+9. **Perf / archi.** Embeddings visages en INT8 (~4× moins de stockage/SMB, sans perte) ;
+   `GpuArbiter` unique (baux + priorités UI > tagging > visages > chats) remplaçant les 4
+   politiques `*_GPU_MIN_FREE_MB` séparées.
+10. **Extraire les 7 pages HTML → `ui/` + `tokens.css`** (sans build step ; corriger les
+    divergences en passant). À faire avec/après l'allègement de `/people`.
+11. **Éval tagging (parké, déjà cadré).** Mesurer V2 « assertions en contexte, sans
+    impératif de noms » (~4,3 s, jamais notée) + fusion programmatique des noms/date/lieu
+    (Knowledge Builder). Cf. `docs/AUDIT_EXTERNE_2026.md` + `eval/PLAN_assertions_vs_pixels.md`.
+12. **Données / finitions.** Fiche « Flo » mal constituée (rend Florine ambiguë) ; doublons
+    de fiches personnes↔animaux ; édition des réglages depuis `/reglages` (aujourd'hui
+    lecture seule) ; 2ᵉ passe de récupération des 945 illisibles + remettre `recuperees/` sur NAS.
+13. **À évaluer (mesurer avant d'adopter, discipline `vision-eval`).** Florence-2
+    (caption + detection + OCR) comme candidat léger.
 
 ## En réserve — futur, non prioritaire
 
-**Multi-utilisateur / foyer partagé.** Un `owner` par racine (Mike, Flo…), dédoublonnage
-scopé par racine, rangement configurable par racine, outil de renommage de racine,
-puis comptes/droits (le serveur est aujourd'hui ouvert sur le réseau local, sans auth).
-Le multi-racines et l'opt-in du rangement existent déjà. Décidé (02/08) : plus tard.
+Multi-utilisateur (owner par racine, comptes/droits ; décidé « plus tard »).
+Multimodalité images → **vidéo** → **audio**, puis **recherche AI en langage naturel** et
+**exposer le serveur en MCP** (`mcp-builder`). Bibliothèque Figma comme source des composants.
 
-**Multimodalité & recherche AI.** Trajectoire images → **vidéo** → **audio** (dans cet
-ordre). Plusieurs briques incluent déjà les vidéos (rangement, dédoublonnage, renommage,
-vue Dossiers) ; le pipeline IA ne tague encore que les photos. Cap produit : une
-**recherche AI en langage naturel** dans le serveur (« les étés à Bremblens avec Luna »).
-C'est là que la **compression de contexte** et **exposer le serveur en MCP** (`mcp-builder`)
-prendront leur sens. Toute nouvelle abstraction se conçoit en gardant ces modalités en tête.
+## Méthode
 
-**Bibliothèque Figma** comme source de vérité des composants « chambre noire » (optionnel,
-sans build step ni npm).
+1. **Un score parfait est une alarme** — deux bancs ne mesuraient pas ce qu'ils prétendaient.
+2. **Une correction n'est acquise qu'une fois son effet observé en réel** — un proxy n'est
+   pas le juge.
 
----
-
-## Deux réflexes de méthode
-
-1. **Un score parfait est une alarme, pas un succès** — deux bancs de ce projet ne
-   mesuraient pas ce qu'ils prétendaient (l'un circulaire, l'autre inéquitable).
-2. **Une correction n'est acquise qu'une fois son effet observé en réel** — trois
-   diagnostics successifs ont été justes sans traiter la vraie cause. Un proxy
-   automatique n'est pas le juge (la notation humaine a renversé « V2 ≈ V0 »).
-
-Idées déjà **rejetées sur mesure** (ne pas reproposer) : contre-exemples de
-classification, prototypes multiples pour les **animaux**, **MegaDescriptor** (deux fois),
-résolution des découpes, `sqlite-vec`, injection des noms au prompt, détecteur ML de
-triage. Détail chiffré dans `eval/DECISIONS.md`.
+Idées déjà **rejetées sur mesure** (ne pas reproposer) : contre-exemples de classification,
+prototypes multiples pour animaux, MegaDescriptor (2×), résolution des découpes, `sqlite-vec`,
+injection des noms au prompt, détecteur ML de triage, garde amont humain/animal. Détail
+chiffré : `eval/DECISIONS.md`.

@@ -1,163 +1,92 @@
 # MediaLibrary — brief projet
 
-> Projet renommé « MediaLibrary » (ex-« MobileFileTransfer »). Dépôt GitHub
-> privé : `TheMikeHoogly/MediaLibrary`. Le nom du dossier local peut différer,
-> sans effet : tous les chemins du code sont relatifs à `SCRIPT_DIR`.
+> Dépôt GitHub privé `TheMikeHoogly/MediaLibrary` (ex-« MobileFileTransfer »).
+> Le nom du dossier local est sans effet : tous les chemins sont relatifs à `SCRIPT_DIR`.
 
-Ce fichier est lu automatiquement au début de chaque session. Il contient le
-strict nécessaire ; les règles détaillées vivent dans les skills, listées plus bas.
+Fichier lu automatiquement au début de chaque session. Le strict nécessaire ; le
+détail vit dans les skills (`.claude/skills/`) et les docs listés plus bas.
 
-## Ce qu'est ce projet
+## Ce que c'est
 
 Serveur photo local en **Python stdlib pure** (`http.server`), servi au téléphone
-sur le réseau domestique. Il indexe un fonds familial d'environ 30 000 photos
-stocké sur un NAS SMB, et y applique quatre pipelines d'IA locale :
+sur le réseau domestique. Indexe ~30 000 photos familiales sur un NAS SMB et y
+applique quatre pipelines d'IA locale :
 
 | Pipeline | Modèle | Sortie |
 |---|---|---|
-| Tagging | `qwen3-vl:2b` via Ollama | mots-clés FR/EN + description |
-| Visages | InsightFace `buffalo_l` (ArcFace) | détection + embeddings 512-d |
+| Tagging | `qwen3-vl:2b` (Ollama) | mots-clés FR/EN + description |
+| Visages | InsightFace `buffalo_l` | détection + embeddings 512-d |
 | Animaux | YOLO11s | détection d'espèce |
 | Chats nommés | DINOv2 base | embeddings 768-d + regroupement |
 
-Les noms attribués (`personne:Nom`, `animal:Nom`) sont écrits dans les
-**métadonnées XMP des fichiers** via exiftool : le travail survit à l'application.
-
-Matériel : **RTX 3050 Laptop, 4 Go de VRAM**. C'est la contrainte qui filtre
-toutes les décisions techniques.
+Les noms attribués (`personne:Nom`, `animal:Nom`) sont écrits dans les **XMP des
+fichiers** (exiftool) : ils survivent à la base. **Matériel : RTX 3050 Laptop, 4 Go
+VRAM** — la contrainte qui filtre toutes les décisions techniques.
 
 ## Règles absolues
 
-### 1. Les fichiers `.bat` sont en ASCII PUR
-
-`cmd.exe` relit le fichier par **décalage d'octets** après chaque commande. Un
-seul caractère UTF-8 multi-octets désaligne son curseur : il exécute alors des
-fragments de lignes (`'nir'`, `'e.py'`, `'Contenu'`) et **saute silencieusement
-des étapes, y compris des vérifications**.
-
-Interdits dans le contenu, y compris en commentaire `REM` : accents, `«` `»`,
-`─` `═`, `→`, `✓` `✗` `⚠`, emoji. Utiliser `=` et `-` comme séparateurs, `"`
-pour citer, et écrire sans accents (`arrete`, `deja`, `verifie`). Le *nom* du
-fichier peut être accentué ; seul le contenu est relu par le parseur.
-
-Contrôle obligatoire avant livraison — et **lire réellement sa sortie** :
-
-```bash
-python verifier_bat.py
-```
-
-Cette erreur a déjà été commise deux fois. Un hook `PostToolUse` la bloque
-désormais à l'écriture (voir `.claude/settings.json`).
-
-### 2. Les noms attribués par un humain ne se perdent jamais
-
-Toute migration doit les préserver, sur le modèle de `migrate_animal_pipeline()`
-qui relance détection et empreintes mais conserve les noms. Un changement qui
-risque d'en perdre un est faux, quel que soit son gain par ailleurs.
-
-### 3. Zéro dépendance au démarrage
-
-Les imports lourds (`numpy`, `torch`, `insightface`, `ultralytics`) sont
-**paresseux, dans les fonctions**. Le serveur doit démarrer et servir ses pages
-sans eux. Ne jamais les remonter en tête de fichier. Côté client : ni npm, ni
-bundler, ni framework.
-
-### 4. La base SQLite vit en local, jamais sur le NAS
-
-`photos.db` est dans le dossier du script (WAL activé). SQLite sur SMB a un
-verrouillage non fiable et pas de WAL — c'est le scénario de corruption. La
-sauvegarde part sur le NAS par snapshot atomique (`backup_db()` dans
-`maintenance_loop`).
+1. **`.bat` en ASCII PUR.** `cmd.exe` relit le fichier par décalage d'octets ; un
+   seul caractère multi-octets désaligne le curseur et fait sauter des étapes
+   silencieusement. Interdits dans le contenu (même en `REM`) : accents, `« »`,
+   `─ ═ → ✓ ✗ ⚠`, emoji. Écrire sans accents (`arrete`, `deja`). Contrôle avant
+   livraison, et **lire sa sortie** : `python verifier_bat.py`. (Hook `PostToolUse`
+   qui bloque à l'écriture.) Déjà commise 2×.
+2. **Les noms humains ne se perdent jamais.** Toute migration les préserve (modèle
+   `migrate_animal_pipeline()`). Un changement qui risque d'en perdre un est faux,
+   quel que soit son gain.
+3. **Zéro dépendance au démarrage.** Imports lourds (`numpy`, `torch`, `insightface`,
+   `ultralytics`) **paresseux, dans les fonctions**. Côté client : ni npm, ni bundler,
+   ni framework.
+4. **SQLite en local, jamais sur le NAS.** `photos.db` dans le dossier du script (WAL).
+   SQLite sur SMB = corruption. Sauvegarde NAS par snapshot atomique (`backup_db()`).
+   Ne pas ouvrir `photos.db` depuis le sandbox Linux : le serveur est l'écrivain unique
+   — les tests copient la base d'abord.
 
 ## Architecture des fichiers
 
 | Fichier | Rôle |
 |---|---|
-| `server.py` | Monolithe : config, stores, pipelines, workers, routeur, 7 pages HTML inline |
-| `store_sqlite.py` | Persistance SQLite compatible `TagStore` — écriture incrémentale |
-| `vectors.py` | Magasin de vecteurs BLOB + recherche cosinus numpy |
-| `migrate_to_sqlite.py` | JSON → SQLite, vérifié et réversible |
-| `migrate_embeddings.py` | Embeddings hors JSON → table BLOB |
+| `server.py` | Monolithe (~9 400 l.) : config, stores, pipelines, workers, routeur, 7 pages HTML inline |
+| `store_sqlite.py` / `vectors.py` | Persistance SQLite (`TagStore`) / magasin de vecteurs BLOB + cosinus |
 | `ROADMAP.md` | **Où en est le projet, ce qui reste — à relire en début de session** |
-| `eval/DECISIONS.md` | Journal des évaluations : ce qui a été adopté, et ce qui a été rejeté sur mesure |
-| `docs/AUDIT_2026.md` | État de l'art, dette technique, roadmap initiale |
-| `ui/prototype.html` | Direction visuelle « chambre noire » |
+| `PROMPT_NOUVELLE_SESSION.md` | Amorce de reprise (état + prochain pas) |
+| `eval/DECISIONS.md` | Décisions tranchées : adopté / rejeté / parké — pour ne rien re-proposer |
+| `docs/AUDIT_EXTERNE_2026.md` | Direction tagging (LLM = raisonnement sur assertions, pas pixels) |
+| `docs/RANGEMENT_2026.md` | Rangement / dédoublonnage / renommage : état de référence |
+| `docs/GIT_WORKFLOW.md` | Circulation du code sandbox ↔ machine ↔ GitHub |
 
-## Skills du projet — à charger selon la tâche
+## Skills (`.claude/skills/`) — charger selon la tâche
 
-Elles sont dans `.claude/skills/` et se déclenchent sur description. En cas de
-doute, les lire explicitement :
+- **`monolith-surgery`** — avant toute modif de `server.py`. Invariants, navigation par grep.
+- **`photo-ui`** — dès qu'une page/CSS/JS d'interface est touché. Tokens, a11y, zéro-build.
+- **`vision-eval`** — dès qu'on change/compare/teste un modèle ou ajuste un seuil.
 
-- **`photo-ui`** — dès qu'une page, du CSS ou du JS d'interface est touché.
-  Tokens de couleur et de typographie, composants, plancher d'accessibilité,
-  interdiction du build step.
-- **`vision-eval`** — dès qu'il est question de changer, comparer ou tester un
-  modèle, ou d'ajuster un seuil. Impose un jeu de validation issu du corpus
-  réel, une mesure de VRAM et une décision écrite.
-- **`monolith-surgery`** — avant toute modification de `server.py`. Invariants,
-  repères de navigation dans les 7 500 lignes, règle ASCII des `.bat`.
+## Protocole de session (« Go ») et tenue des docs
 
-## Protocole de session (« Go ») et tenue de la roadmap
+L'état vit dans les **fichiers**, pas dans l'historique de conversation : sessions
+courtes et fraîches, on repart des fichiers de suivi. C'est le vrai levier tokens.
 
-Pour réduire le contexte et les tokens, **l'état vit dans les fichiers, pas dans
-l'historique** : on privilégie des sessions courtes et fraîches, et on repart des
-fichiers de suivi. C'est le vrai levier « tokens » côté sessions Claude (pas un
-outil de compression de prompt — voir la note dédiée dans `ROADMAP.md`).
+**Quand Mike écrit « Go » :**
+1. Lire `ROADMAP.md` puis `eval/DECISIONS.md` (+ le doc de chantier pertinent selon le sujet).
+2. Débrief bref (2–3 lignes : où on en est) + prochaines étapes par ordre de valeur.
+3. Attaquer la plus utile (ou faire choisir), plan court avant d'écrire du code.
 
-**Quand Mike écrit « Go » (ou « go ») :**
+**À la fin de chaque échange qui fait avancer :** mettre à jour `ROADMAP.md`
+(statut), `PROMPT_NOUVELLE_SESSION.md` (reprise), `eval/DECISIONS.md` (si une éval a
+tranché). C'est ce qui rend les sessions courtes sûres.
 
-1. Lire `ROADMAP.md`, puis `eval/DECISIONS.md`, puis le doc de chantier pertinent
-   (`docs/RANGEMENT_2026.md`, `docs/AUDIT_EXTERNE_2026.md`) selon le sujet en cours.
-2. Rendre un **débrief bref** : où on en est (2–3 lignes) + la ou les prochaines
-   étapes concrètes, par ordre de valeur.
-3. Attaquer la plus utile (ou faire choisir si plusieurs se valent), en proposant
-   un plan court avant d'écrire du code.
+## Deux réflexes de méthode
 
-**À la fin de chaque échange qui fait avancer le projet, mettre à jour :**
+- **Un score parfait est une alarme, pas un succès** — deux bancs de ce projet ne
+  mesuraient pas ce qu'ils prétendaient (l'un circulaire, l'autre inéquitable).
+- **Une correction n'est acquise qu'une fois son effet observé en réel** — trois
+  diagnostics ont été justes sans traiter la vraie cause ; un proxy n'est pas le juge.
 
-- `ROADMAP.md` — statut des chantiers, ce qui est fait/vérifié, prochain pas.
-- `PROMPT_NOUVELLE_SESSION.md` — pour qu'une session neuve reprenne exactement où
-  l'on s'est arrêté (état, prochain pas, garde-fous).
-- `eval/DECISIONS.md` — si une évaluation a tranché quelque chose.
+## Tester en réel
 
-Ces mises à jour sont le mécanisme qui rend les sessions courtes sûres : rien
-d'important ne doit dépendre de l'historique de conversation.
-
-## Reprendre le projet dans une nouvelle conversation
-
-Tout ce qu'il faut savoir est dans les fichiers, pas dans l'historique. L'ordre
-de lecture :
-
-1. **`ROADMAP.md`** — ce qui est fait, ce qui reste, par ordre de valeur.
-2. **`eval/DECISIONS.md`** — les idées déjà **rejetées sur mesure**. Le relire
-   évite de reproposer MegaDescriptor, les contre-exemples ou `sqlite-vec`,
-   tous écartés chiffres à l'appui.
-3. **`docs/AUDIT_EXTERNE_2026.md`** — la direction en cours (le LLM comme
-   moteur de raisonnement sur des assertions, pas sur les pixels) et le
-   séquencement décidé. Le banc associé : `eval/PLAN_assertions_vs_pixels.md`
-   + `eval_tagging.py`.
-4. Les trois skills de `.claude/skills/` selon la tâche.
-
-Une phrase suffit pour démarrer : « Lis ROADMAP.md et DECISIONS.md, puis
-attaque le point N. »
-
-**Deux réflexes à garder.** Un score parfait est un signal d'alarme, pas un
-succès : deux bancs d'essai de ce projet ne mesuraient pas ce qu'ils
-prétendaient. Et une correction n'est pas acquise tant que son effet n'a pas
-été observé — trois diagnostics successifs ont été justes sans traiter la vraie
-cause.
-
-## État connu du système
-
-- **GPU réparé (corrigé 08/08).** `torch` est bien la build **CUDA**
-  (`2.13.0+cu130`, `cuda = '13.0'`), avec `onnxruntime_gpu` et `torchvision+cu130` ;
-  plus d'orphelin `~orch`. Le GPU **fait** le tagging (Ollama, rafales ~91 %). Mais
-  sur **4 Go partagés**, Ollama résident (~3,5 Go, `keep_alive 30m`) laisse trop peu
-  de VRAM libre : les seuils `*_GPU_MIN_FREE_MB` (visages 1200 / animaux 1600 /
-  DINOv2 1800) ne passent pas quand Ollama occupe la carte → repli CPU pour les
-  pipelines CV. `FACE_USE_GPU=False` est **volontaire** (VRAM prise par Ollama).
-  Le vrai frein du débit de tagging n'est pas le device mais la **RAM** (machine
-  chargée, plancher `REEMBED_MIN_RAM_GB=1.5` proche du libre) et l'**I/O NAS** par
-  photo. (Diagnostic mesuré le 08/08 — voir `PROMPT_NOUVELLE_SESSION.md`.)
-- Migration SQLite : faite et vérifiée (64 676 entrées, 318 personnes, 9 chats).
-- Sortie des embeddings : script prêt, validé sur copie de la base réelle.
+Serveur chez Mike : **192.168.0.13:8080**. Utiliser **Claude-in-Chrome** (naviguer,
+`fetch('/api/…')` GET pour vérifier l'état). Le serveur **ne recharge pas à chaud** :
+une modif de `server.py` n'est active qu'après redémarrage (`0 - Démarrer le serveur.bat`).
+`git push` / merges dans `main` = **gestes de Mike** (cf. `docs/GIT_WORKFLOW.md`).
+⚠ Claude-in-Chrome : les clics/captures ne marchent que si l'onglet est **au premier plan**.
+Matériel : `FACE_USE_GPU=False` **volontaire** (4 Go VRAM pris par Ollama résident).
