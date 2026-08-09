@@ -44,6 +44,19 @@ def controler(chemin):
     if brut.startswith(b'\xef\xbb\xbf'):
         problemes.append("BOM UTF-8 en tete : cmd.exe le prend pour une commande")
 
+    # Fins de ligne : cmd.exe exige CRLF. Un .bat en LF pur (ecrit depuis un
+    # editeur/sandbox Unix) desaligne le parseur sur les blocs multi-lignes
+    # (if (...), choice suivi de if errorlevel) et fait echouer le script avec
+    # "qui etait inattendu". Meme classe de bug que le non-ASCII : silencieux.
+    n_lf = brut.count(b'\n')
+    n_crlf = brut.count(b'\r\n')
+    if n_lf and n_crlf != n_lf:
+        manque = n_lf - n_crlf
+        problemes.append(
+            f"fins de ligne : {manque} ligne(s) en LF au lieu de CRLF"
+            "   -> convertir en CRLF (cmd.exe deraille sur les blocs "
+            "multi-lignes : \"qui etait inattendu\")")
+
     texte = brut.decode('utf-8', errors='replace')
     for num, ligne in enumerate(texte.splitlines(), 1):
         fautifs = sorted({c for c in ligne if ord(c) > 127})
