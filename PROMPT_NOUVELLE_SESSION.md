@@ -47,16 +47,22 @@ Fait ce soir (détail : `ROADMAP.md` + git) :
     ré-embedding **saute** toute photo jugée par un humain ou dont un visage est assigné.
     ⚠ **Geste Mike** : re-rejeter le groupe visages Caline **une fois** après redémarrage
     (les marques déjà effacées ne se restaurent pas seules ; ensuite ça tient).
-- **Tokenisation UI (chantier #8), début** : page `/browse` — les espacements/rayons/tailles
-  qui **égalent déjà un token** pointent vers lui (rendu **identique**, vérifié sur le serveur
-  en marche : `--e-3`=12px, `--r-pill`=999px, etc.). 2 `#4a8c7b` en dur (contour de sélection)
-  → `var(--fixateur)`. Discipline skill respectée : « identique d'abord, redesign séparé ».
+- **Tokenisation UI (chantier #8) — value-preserving TERMINÉ sur les 7 pages.** `/browse` (plus
+  tôt), puis GALLERY/MAP/PEOPLE/PETS/REGLAGES/HTML (suite 10/08). Les espacements/rayons/tailles
+  qui **égalent déjà un token** pointent vers lui (rendu **identique**, prouvé : résolution des
+  tokens + diff = zéro écart ; `getComputedStyle` sur serveur en marche). Divergences design
+  nommées tranchées : GALLERY `.pchip`/`.chip` **fusionnés** ; PEOPLE `#222`→`var(--salle-3)`,
+  `#f0a35b`→`var(--veilleuse)`. `verifier_ui_tokens.py` = 0 interdit dur ; `py_compile` OK.
+  Livré sur disque, **pas commité**, **à activer par redémarrage** + **vérif visuelle** (les 2
+  couleurs /people + la fusion sont à confirmer en réel). `#4A8C7B` Leaflet restent en dur.
 
 **Restart** : le serveur ne recharge pas à chaud. Le tout dernier changement (tokenisation
 `/browse`) s'active au prochain `0 - Démarrer le serveur.bat` — mais il est **visuellement
 identique**, donc sans risque.
 
 **Ouvert (gestes Mike)** :
+- **Redémarrer le serveur** (`0 - …bat`) pour activer le nouveau `server.py` (tokenisation #8),
+  puis laisser un onglet `192.168.0.13:8080/files` au premier plan pour la vérif visuelle.
 - **git-commit de la session** (`27 - …bat`).
 - **Fiche animal Caline POLLUÉE par des photos de chien** (cocker, scores négatifs en tête de
   sa fiche `/pets`) — repéré en réel. Nettoyer via « Corriger » sur sa fiche. (≠ le bug visages.)
@@ -64,24 +70,18 @@ identique**, donc sans risque.
 - **Nettoyer Flo** (Corriger seuil ~0.2 / Nettoyer référence).
 - Lots de renommage + `gps_place` (bat 18 → `enrichir_lieux.py` → `--ecrire` → redémarrer).
 
-## Prochain chantier — les 2 tranches de tokenisation sont approuvées
+## Prochain chantier
 
-1. **Tokenisation UI — terminer le chantier #8 (approuvé « les deux »)** :
-   - **(a) Value-preserving** sur les pages restantes (GALLERY, MAP, PEOPLE, PETS, REGLAGES,
-     HTML) : remplacer les valeurs en dur qui **égalent déjà un token** (12px→`--e-3`, 8px→
-     `--e-2`, 16px→`--e-4`, 0.75rem→`--t-xs`, 0.85rem→`--t-sm`, 999px→`--r-pill`, `#4a8c7b`→
-     `var(--fixateur)` SAUF dans Leaflet qui n'accepte pas `var()`). Mécanique, **rendu identique**
-     (vérifiable hors ligne + `getComputedStyle`). Modèle : voir ce qui a été fait sur `/browse`.
-   - **(b) Passe DESIGN** : caler les valeurs **hors échelle 4px** sur l'échelle, trancher les
-     divergences couleur repérées (**`#222`** gris froid sous-AA et **`#f0a35b`** orange « hésite »
-     dans `/people` → tokeniser, candidat variante `--veilleuse`), et **unifier `.pchip` vs `.chip`**
-     (divergence connue, GALLERY). **Change le rendu → VÉRIFIER VISUELLEMENT** via Claude-in-Chrome
-     (serveur en marche, onglet au premier plan).
-   - ⚠ **Recommandation d'efficacité** : pour chaque page restante, faire **UNE passe combinée**
-     (tokeniser + caler + divergences) AVEC vérification visuelle, plutôt que deux passes sur les
-     mêmes déclarations. La liste des divergences `/browse` + `/people` est dans **ROADMAP #8**.
-   - Outils : `python verifier_ui_tokens.py` (0 interdit dur attendu) ; `getComputedStyle` sur
-     `:root` pour prouver l'équivalence des valeurs.
+0. **Finir la vérif visuelle de la tokenisation #8** (dès le redémarrage) : tour des 6 pages en
+   Claude-in-Chrome, attention particulière à `/people` (2 couleurs changées : fond de vignette
+   `#222`→`--salle-3`, « hésite » `#f0a35b`→`--veilleuse`) et aux chips GALLERY (fusion
+   `.pchip`/`.chip`). Le value-preserving est déjà prouvé identique hors-ligne ; ici on confirme
+   juste que rien n'a cassé et que les 2 couleurs /people plaisent.
+1. **Passe DESIGN ciblée (optionnelle, hors value-preserving — CHANGE le rendu)** : caler les
+   valeurs **hors échelle 4px** (0.8rem, radius 8/10px, px de PETS, etc.) sur l'échelle, page par
+   page, AVEC vérif visuelle. Harmoniser les fonds photo (#000 vs `--salle-3`) entre PEOPLE/PETS
+   si voulu. À faire seulement si Mike veut pousser la cohérence ; le gain est esthétique, le
+   risque = beaucoup de petits décalages → vérifier chaque page.
 2. **Vérité terrain (priorité n°1 hors tokenisation)** : confirmer ~100 propositions dans
    `/people` (page réorganisée + filtrable, tri clavier Espace/X/Z).
 3. **`/sujets`** : ajouter **Lieux** (3ᵉ entité, dépend de `gps_place`) puis **fusion**

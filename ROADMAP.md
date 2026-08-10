@@ -12,6 +12,23 @@ Session 10/08 : gros travail sur `/people` et la **correction des faux positifs*
 par la fiche **Flo** (~6300 photos, très polluée par des profils tagués). Code livré sur le
 disque de Mike et **validé en réel** (serveur redémarré plusieurs fois). Détail : table ci-dessous.
 
+**Suite 10/08 — tokenisation UI #8 TERMINÉE (livrée disque, pas commitée, à activer par
+redémarrage).** Les 6 pages restantes (GALLERY, MAP, PEOPLE, PETS, REGLAGES, HTML) sont passées
+en tokens. Méthode : (1) **value-preserving** — seuls les `padding/margin/gap/border-radius/
+font-size` qui **égalent exactement** un token pointent vers lui (12px→`--e-3`, 999px→`--r-pill`,
+0.85rem→`--t-sm`…) ; **prouvé identique** hors-ligne (résolution des tokens + diff : zéro écart
+sur les 6 blocs `<style>`) et sur le serveur en marche (`getComputedStyle` des tokens = valeurs
+littérales). (2) **Divergences design nommées tranchées** : GALLERY `.pchip`/`.chip` **fusionnés**
+en un seul jeu de sélecteurs groupés (fin de la divergence connue ; rendu inchangé, chips
+personnes sans enfant `.n` → règle inerte) ; PEOPLE `#222` (fond de vignette, gris froid)
+→ `var(--salle-3)` et `#f0a35b` (« hésite avec X ») → `var(--veilleuse)` (incertitude IA,
+contraste ~6.4:1 sur `--salle-3`). Contrôles : `verifier_ui_tokens.py` = **0 interdit dur** ;
+`py_compile` OK. **Reste : vérif visuelle Claude-in-Chrome après redémarrage** (les 2 couleurs
+/people + la fusion changent — ou pas — le rendu ; à confirmer en réel). Non tokenisé
+volontairement : valeurs **hors échelle** (0.8rem, radius 8/10px, px de PETS) et noirs/blancs
+translucides (ombres, overlays, fonds photo, marqueurs Leaflet `#4A8C7B` que l'API refuse en
+`var()`) — passe design ciblée ultérieure, hors périmètre value-preserving.
+
 **Correctif 10/08 (soir) — les corrections de faux positifs n'étaient pas apprises.** Mike
 corrigeait la même image (Phéno→Dévi) 5×, elle revenait. Cause : `exclude` (le rejet humain
 durable) faisait autorité à l'AJOUT, à `find_more` et à `reconcile`, **mais pas** dans le
@@ -98,20 +115,24 @@ les tags resurgis au prochain passage. Vérif logique isolée OK ; à confirmer 
    `GpuArbiter` unique (baux + priorités UI > tagging > visages > chats) remplaçant les 4
    politiques `*_GPU_MIN_FREE_MB` séparées.
 8. **Extraire les 7 pages HTML → `ui/` + `tokens.css`** (sans build step ; corriger les
-   divergences en passant).
-   - **Tokenisation `/browse` (10/08 soir, livrée, pas commitée)** : après les couleurs+police
-     (Étape A), les espacements/rayons/tailles qui **égalent déjà un token** pointent vers lui
-     (12px→`--e-3`, 8px→`--e-2`, 0.75rem→`--t-xs`, 0.85rem→`--t-sm`, 999px→`--r-pill`). Substitutions
-     **à valeur identique** — vérifié : rendu inchangé (tokens résolus = valeurs d'origine sur le
-     serveur en marche). Aussi : 2 `#4a8c7b` en dur (contour de sélection /people+/pets) →
-     `var(--fixateur)`. Note : les `#4A8C7B` des marqueurs **Leaflet** (carte) RESTENT en dur —
-     l'API Leaflet n'accepte pas `var()`.
-   - **Divergences à trancher dans la passe DESIGN séparée** (skill : « identique d'abord ») :
-     valeurs hors échelle 4px dans `/browse` (14/11/10/6/30/22/2px, radius 8px & 10px, 0.9rem,
-     0.78rem, 13px, 36px) à caler sur l'échelle ; `#222` (gris froid, sous-AA) et `#f0a35b`
-     (orange « hésite ») dans `/people` → tokeniser (candidat : variante `--veilleuse`) ;
-     **unifier `.pchip` vs `.chip`** (divergence connue dans GALLERY, citée par la skill).
-     Pages encore à tokeniser : GALLERY, MAP, PEOPLE, PETS, REGLAGES, HTML (couleurs surtout).
+   divergences en passant). **Value-preserving : FAIT sur les 7 pages** (`/browse` le 10/08,
+   puis GALLERY/MAP/PEOPLE/PETS/REGLAGES/HTML en suite 10/08 — cf. « État actuel »). L'extraction
+   physique vers `ui/` (via `bundle.py`) reste à faire ; les tokens y sont déjà tous référencés.
+   - **Modèle value-preserving (appliqué partout)** : les espacements/rayons/tailles qui
+     **égalent déjà un token** pointent vers lui (12px→`--e-3`, 8px→`--e-2`, 16px→`--e-4`,
+     0.75rem→`--t-xs`, 0.85rem→`--t-sm`, 999px→`--r-pill`, radius 6px→`--r-md`, 3px→`--r-sm`).
+     Substitutions **à valeur identique**, prouvées (résolution des tokens + diff = zéro écart ;
+     `getComputedStyle` sur serveur en marche). Ne PAS tokeniser : positions/largeurs/hauteurs,
+     font-sizes en **px** (px ≠ rem, non équivalent), valeurs hors échelle. Les `#4A8C7B` des
+     marqueurs **Leaflet** RESTENT en dur (l'API refuse `var()`).
+   - **Divergences design nommées : TRANCHÉES** — GALLERY `.pchip`/`.chip` fusionnés (sélecteurs
+     groupés) ; PEOPLE `#222`→`var(--salle-3)`, `#f0a35b`→`var(--veilleuse)`. À **confirmer en
+     réel** (vérif visuelle après redémarrage).
+   - **Reste (passe DESIGN ciblée, non faite — hors value-preserving)** : caler les valeurs
+     **hors échelle 4px** (ex. `/browse` 14/11/10/6/30/22/2px, radius 8/10px, 0.9rem, 0.78rem,
+     13px, 36px ; équivalents dans les autres pages) sur l'échelle — **change le rendu, vérif
+     visuelle obligatoire** ; harmoniser les fonds photo (#000 vs `--salle-3`) entre PEOPLE et
+     PETS si voulu.
    - **Méthode recommandée** : pour chaque page restante, UNE passe combinée (value-preserving
      + calage échelle + divergences) AVEC vérif visuelle Claude-in-Chrome, plutôt que 2 passes
      sur les mêmes déclarations. `/browse` a servi de modèle (value-preserving seul, identique).
