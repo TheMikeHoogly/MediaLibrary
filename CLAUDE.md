@@ -73,7 +73,17 @@ courtes et fraîches, on repart des fichiers de suivi. C'est le vrai levier toke
 
 **À la fin de chaque échange qui fait avancer :** mettre à jour `ROADMAP.md`
 (statut), `PROMPT_NOUVELLE_SESSION.md` (reprise), `eval/DECISIONS.md` (si une éval a
-tranché). C'est ce qui rend les sessions courtes sûres.
+tranché). C'est ce qui rend les sessions courtes sûres. **Toujours proposer à Mike un
+titre de commit** (court, français, style git du dépôt) pour la session — le commit et
+`git push` restent des gestes de Mike.
+
+**Préparer une nouvelle discussion (dès que l'échange devient long) — systématique :**
+mettre à jour + **condenser** les docs de suivi sous les seuils du lint (`ROADMAP.md`,
+`PROMPT_NOUVELLE_SESSION.md` : le détail vit dans git, pas dans les docs — c'est le levier
+tokens), vérifier `python nettoyer_session.py` (lint propre attendu), et laisser
+`PROMPT_NOUVELLE_SESSION.md` comme **amorce lean prête à coller**. ⚠ Éviter `git` via
+`device_bash` sur le dossier monté : chaque appel laisse un `.git/index.lock` que la VM ne
+peut pas supprimer et qui bloquerait le commit de Mike.
 
 **Nettoyage de fin de session (systématique) :** lancer `29 - Nettoyage de
 session.bat` (ou `python nettoyer_session.py --appliquer`). Deux volets sûrs :
