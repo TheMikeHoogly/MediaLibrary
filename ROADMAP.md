@@ -34,8 +34,17 @@ retirerait le tag qu'on vient de reposer). `exclude` et l'assignation sont mutue
 jugée par un humain. ⚠ Geste Mike restant : **re-rejeter le groupe Caline une fois** (marques déjà
 effacées). Détail complet : git.
 
-- **Branche** : travaux du 10/08 **PAS encore commités**. Lancer `27 - Commit de session.bat`,
-  puis `28 - Fusionner…` si voulu ; **`git push` = geste de Mike** (`docs/GIT_WORKFLOW.md`).
+**Suite 10/08 — `/sujets` : Lieux = 3ᵉ type d'entité LIVRÉ (2ᵉ tranche).** `places_list()`
+(GPS `gps_places_connus` prioritaire + **repli lieux-dossiers** `lieux_connus`, un seul passage
+en mémoire, zéro accès NAS), branché dans `/api/sujets/list`, 3ᵉ chip « Lieux » + carte badge 📍
+→ `/files?q=<nom>` (galerie filtrée, réutilise `semantic_search`). Logique testée en isolé
+(priorité GPS, pas de double-comptage). **Livré sur disque, PAS commité, à activer par
+redémarrage ; à vérifier en réel.** L'onglet Lieux est utile dès maintenant (dossiers) et
+s'enrichit quand `gps_place` sera activé.
+
+- **Git** : chantiers curation/UI du 10/08 **commités** ; seule la tranche Lieux ci-dessus reste
+  à commiter (`27 - Commit de session.bat`, puis `28 - Fusionner…` si voulu ; **`git push` =
+  geste de Mike**, `docs/GIT_WORKFLOW.md`).
 - **Ouvert (gestes Mike)** :
   - **Nettoyer Flo** : la fiche reste polluée tant qu'un passage n'est pas fait. Ouvrir Flo →
     « Corriger » (seuil ~0.2, monter en surveillant la grille) ou « Nettoyer (référence) »
@@ -79,11 +88,11 @@ effacées). Détail complet : git.
    en place : onglet dans la nav partagée, page LECTURE SEULE (grille unifiée
    personnes+animaux, filtre par nom, bascule Tous/Personnes/Animaux, tri par nb de photos),
    API `/api/sujets/list` (réutilise `people_list`+`pets_list`). Chaque carte ouvre la fiche
-   détail existante via **lien profond** `?name=` (ajouté à `/people` et `/pets`). Livrée,
-   **pas commitée, à activer par redémarrage** ; à vérifier en réel (Claude-in-Chrome).
-   **Reste :** **Lieux = 3ᵉ type d'entité** (dépend de `gps_place`) ; puis **fusion**
-   (faire de `/sujets` l'entrée unique, `/people`+`/pets` en vues spécialisées).
-   `SubjectStore` déjà unifié — surtout de l'UI.
+   détail existante via **lien profond** `?name=` (ajouté à `/people` et `/pets`).
+   **2ᵉ tranche LIVRÉE (10/08) : Lieux = 3ᵉ type d'entité** (`places_list()`, GPS + repli
+   dossiers ; carte 📍 → `/files?q=`). À activer par redémarrage, à vérifier en réel.
+   **Reste : fusion** — faire de `/sujets` l'entrée unique, `/people`+`/pets` en vues
+   spécialisées (nav, libellés). `SubjectStore` déjà unifié — surtout de l'UI.
 5. **Recherche.** SigLIP 2 en langue naturelle (« les étés à Bremblens avec Luna ») ;
    partager le vocabulaire de la barre de recherche à la page Carte (marqueurs déjà FAITS).
 6. **Reconnaissance — algo.** Clustering par densité (HDBSCAN / Chinese Whispers) au lieu

@@ -7507,6 +7507,59 @@ def people_list():
     return out
 
 
+def places_list():
+    """Lieux nommes (3e type de sujet) avec nombre de photos et une vignette.
+
+    Deux sources, fusionnees :
+      1. GEOCODAGE GPS (prioritaire) : gps_places_connus() = {cle: libelle},
+         precalcule hors ligne par enrichir_lieux.py. Vide tant que le gazetteer
+         + enrichir_lieux.py --ecrire n'ont pas tourne : la page reste alors
+         alimentee par le repli ci-dessous.
+      2. REPLI DOSSIERS : lieux_connus() (lieux.txt / heuristique), retrouves par
+         sous-chaine du chemin relatif — EXACTEMENT la logique de _cles_du_lieu,
+         pour que /sujets et la barre de recherche parlent des memes lieux.
+
+    Le GPS prime : une photo deja nommee par GPS n'est pas re-comptee par le
+    chemin. Lecture seule, tout en memoire (index + gps_places.json en cache) :
+    aucun acces NAS -> pas de note_heavy_activity. La vignette (photo pleine
+    resolution, comme la galerie) ne se charge que cote client, en lazy."""
+    roots = media_roots()
+    gps = gps_places_connus()               # {cle: libelle} ; {} si non active
+    agg = {}                                # normalise -> {"name", "keys"(set)}
+    for k, label in gps.items():
+        if k not in STORE.data:             # cle fantome : on ignore
+            continue
+        nk = _sans_accents(label)
+        if not nk:
+            continue
+        agg.setdefault(nk, {"name": label, "keys": set()})["keys"].add(k)
+    gps_keys = set(gps)                      # photos deja attribuees par GPS
+    index = lieux_connus()                  # {normalise: libelle}
+    if index:
+        lieux_norm = [(nk, lbl) for nk, lbl in index.items() if nk]
+        for k in list(STORE.data):
+            if k in gps_keys:               # le GPS prime : pas de double compte
+                continue
+            chemin = _sans_accents(_chemin_relatif(k))
+            for nk, lbl in lieux_norm:
+                if nk in chemin:
+                    agg.setdefault(nk, {"name": lbl, "keys": set()})["keys"].add(k)
+    out = []
+    for a in agg.values():
+        keys = a["keys"]
+        if not keys:
+            continue
+        crop = None
+        for k in keys:                      # premiere photo servable = vignette
+            u = _url_for_key(k, roots)
+            if u:
+                crop = u
+                break
+        out.append({"name": a["name"], "photos": len(keys), "crop": crop})
+    out.sort(key=lambda x: -x["photos"])
+    return out
+
+
 def person_photos(name, limit=2000, order='worst', light=False):
     """Photos taguées personne:Nom, pour révision/correction. Pour chaque photo,
     on identifie le visage qui correspond LE MIEUX à la signature de la personne
@@ -8663,9 +8716,9 @@ SUBJECTS_PAGE = """<!DOCTYPE html>
 <!--APPNAV-->
 <main>
   <h1>Sujets</h1>
-  <p class="intro">Toutes les personnes et les animaux nomm&eacute;s, au m&ecirc;me endroit.
-    Ouvre un sujet pour sa fiche compl&egrave;te (photos, correction, renommage). Les lieux
-    rejoindront cette page une fois le g&eacute;ocodage activ&eacute;.</p>
+  <p class="intro">Toutes les personnes, les animaux et les lieux, au m&ecirc;me endroit.
+    Ouvre une personne ou un animal pour sa fiche compl&egrave;te (photos, correction,
+    renommage) ; un lieu ouvre la galerie filtr&eacute;e sur ce lieu.</p>
   <div class="barre">
     <input id="q" type="search" placeholder="Filtrer par nom&hellip;" autocomplete="off"
       aria-label="Filtrer les sujets par nom">
@@ -8673,6 +8726,7 @@ SUBJECTS_PAGE = """<!DOCTYPE html>
       <button class="chip" data-f="tous" aria-pressed="true">Tous<span class="n" id="n-tous"></span></button>
       <button class="chip" data-f="personne" aria-pressed="false">Personnes<span class="n" id="n-personne"></span></button>
       <button class="chip" data-f="animal" aria-pressed="false">Animaux<span class="n" id="n-animal"></span></button>
+      <button class="chip" data-f="lieu" aria-pressed="false">Lieux<span class="n" id="n-lieu"></span></button>
     </div>
   </div>
   <div class="grille" id="grille"></div>
@@ -8683,16 +8737,22 @@ function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){
   return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
 function _norm(s){return String(s||'').toLowerCase().normalize('NFD').replace(/[\\u0300-\\u036f]/g,'');}
 var ALL=[], FILT='tous';
-function href(s){return (s.type==='animal'?'/pets':'/people')+'?name='+encodeURIComponent(s.name);}
+function href(s){
+  // Personne/animal -> fiche detail (?name=) ; lieu -> galerie filtree (?q=),
+  // qui gere deja le filtrage par lieu (semantic_search / _extraire_lieux).
+  if(s.type==='lieu') return '/files?q='+encodeURIComponent(s.name);
+  return (s.type==='animal'?'/pets':'/people')+'?name='+encodeURIComponent(s.name);
+}
+function typeMot(t){return t==='animal'?'animal':t==='lieu'?'lieu':'personne';}
 function carte(s){
-  var badge=s.type==='animal'?'\\ud83d\\udc3e':'\\ud83d\\udc64';
+  var badge=s.type==='animal'?'\\ud83d\\udc3e':s.type==='lieu'?'\\ud83d\\udccd':'\\ud83d\\udc64';
   var vig=s.crop
     ? '<img loading="lazy" src="'+esc(s.crop)+'" alt="">'
     : '<div class="ph" aria-hidden="true">'+badge+'</div>';
   var a=document.createElement('a');
   a.className='sc'; a.href=href(s);
   a.setAttribute('aria-label', s.name+' — '+s.photos+' photo'+(s.photos>1?'s':'')+
-    ' ('+(s.type==='animal'?'animal':'personne')+')');
+    ' ('+typeMot(s.type)+')');
   a.innerHTML='<div class="vig">'+vig+'<span class="badge" aria-hidden="true">'+badge+'</span></div>'+
     '<div class="meta"><div class="nm">'+esc(s.name)+'</div>'+
     '<div class="ct">'+s.photos+' photo'+(s.photos>1?'s':'')+'</div></div>';
@@ -8725,10 +8785,12 @@ document.getElementById('q').addEventListener('input', rendre);
 fetch('/api/sujets/list').then(function(r){return r.json();}).then(function(d){
   var P=(d.personnes||[]).map(function(x){x.type='personne';return x;});
   var A=(d.animaux||[]).map(function(x){x.type='animal';return x;});
-  ALL=P.concat(A).sort(function(a,b){return (b.photos||0)-(a.photos||0);});
+  var L=(d.lieux||[]).map(function(x){x.type='lieu';return x;});
+  ALL=P.concat(A).concat(L).sort(function(a,b){return (b.photos||0)-(a.photos||0);});
   document.getElementById('n-tous').textContent=ALL.length;
   document.getElementById('n-personne').textContent=P.length;
   document.getElementById('n-animal').textContent=A.length;
+  document.getElementById('n-lieu').textContent=L.length;
   rendre();
 }).catch(function(){
   document.getElementById('msg').textContent='Impossible de charger les sujets. Le serveur n a pas r\\u00e9pondu. R\\u00e9essaie dans un instant.';
@@ -10791,7 +10853,8 @@ class Handler(BaseHTTPRequestHandler):
         # Réutilise les listes existantes (mêmes formes {name, photos, crop}) ;
         # la page les fusionne et les trie. Lecture seule, données en mémoire
         # (aucun accès NAS → pas de note_heavy_activity).
-        body = json.dumps({"personnes": people_list(), "animaux": pets_list()},
+        body = json.dumps({"personnes": people_list(), "animaux": pets_list(),
+                           "lieux": places_list()},
                           ensure_ascii=False).encode()
         self._send(200, body, 'application/json')
 

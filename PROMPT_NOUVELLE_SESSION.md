@@ -17,20 +17,23 @@ serveur Python stdlib pur, pipelines Ollama/InsightFace/YOLO/DINOv2, RTX 3050 4 
 
 ## Où on en est (10/08/2026)
 
-Tout est **git-commité** et validé en réel. Derniers chantiers : curation (faux positifs
-enfin *appris* — `exclude` fait autorité partout), page `/sujets` (lecture seule), et
-**tokenisation UI #8 value-preserving terminée sur les 7 pages** (`.pchip`/`.chip` fusionnés,
-`#222`→`--salle-3` et `#f0a35b`→`--veilleuse` dans `/people`). Détail : `ROADMAP.md` + git.
+Chantiers curation + UI du 10/08 **git-commités** et validés en réel (faux positifs enfin
+*appris* — `exclude` fait autorité partout ; tokenisation UI #8 sur les 7 pages). **Dernier
+en date : `/sujets` gagne les Lieux (3ᵉ type de sujet, `places_list()` GPS + repli dossiers,
+carte 📍 → `/files?q=`) — LIVRÉ sur disque, pas commité, à activer par redémarrage et à
+vérifier en réel.** Détail : `ROADMAP.md` + git.
 
 ## Prochain pas — par valeur
 
+0. **Vérifier `/sujets` Lieux en réel** (après redémarrage) : onglet Lieux, comptes, liens
+   `/files?q=`. Puis commiter la tranche.
 1. **Vérité terrain (priorité n°1)** : confirmer ~100 propositions dans `/people`
    (page filtrable, tri clavier Espace=oui / X=non / Z=annuler).
-2. **Passe DESIGN ciblée (optionnelle)** : caler les valeurs *hors échelle 4px* (0.8rem,
+2. **`/sujets` — fusion** : faire de `/sujets` l'entrée unique, `/people`+`/pets` en vues
+   spécialisées (Lieux déjà livrés).
+3. **Passe DESIGN ciblée (optionnelle)** : caler les valeurs *hors échelle 4px* (0.8rem,
    radius 8/10px, px de PETS) — **CHANGE le rendu**, page par page + vérif visuelle.
-3. **`/sujets`** : ajouter **Lieux** (dépend de `gps_place`) puis fusion (`/sujets` = entrée
-   unique, `/people`+`/pets` en vues spécialisées).
-4. Gestes Mike : lots de renommage + activer `gps_place` ; nettoyer Flo/Caline.
+4. Gestes Mike : lots de renommage + activer `gps_place` (enrichit les Lieux) ; nettoyer Flo/Caline.
 
 ## Rappels opérationnels
 
