@@ -16,28 +16,36 @@ serveur Python stdlib pur, pipelines Ollama/InsightFace/YOLO/DINOv2, RTX 3050 4 
 4. Selon le sujet : `docs/RANGEMENT_2026.md`, `docs/AUDIT_EXTERNE_2026.md`, et les
    skills `.claude/skills/` (`monolith-surgery` avant tout edit de `server.py`).
 
-## Où on en est (9/08/2026)
+## Où on en est (10/08/2026)
 
-Session 9/08 **commitée + fusionnée dans `main`**, serveur redémarré. Tout est validé,
-rien en attente. Acquis de la session (détail : `ROADMAP.md` + git) :
-- **`/people` allégé** — rendu par lots (`renderInBatches`), défilement fluide.
-- **Tour de contrôle `/reglages`** complétée : carte « Empreintes animaux » = stock réel.
-- **Nettoyage de fin de session** — `29 - Nettoyage de session.bat` / `nettoyer_session.py`
-  (quarantaine réversible `_corbeille_session/` + lint `*.md`). **À lancer en fin de chaque
-  session** (au protocole `CLAUDE.md`).
-- **Reclassement `personne:`→`animal:`** dans `/reglages` : Mutz + Caline reclassés, doublon
-  de fiche Caline retiré, vérifié 88/88 sans perte. Réversible ; relancer l'outil (Aperçu →
-  Appliquer) dès qu'un nouveau nom d'animal se retrouve tagué en `personne:`.
+Session 10/08 centrée sur `/people` et la **correction des faux positifs** (fiche Flo,
+~6300 photos, très polluée par des profils tagués). Code **livré sur le disque et validé en
+réel**, mais **PAS encore commité** → lancer `27 - Commit de session.bat` (+ `28 - Fusionner…`
+/ `git push` = gestes Mike). Acquis (détail : `ROADMAP.md` + git) :
+- **`/people` réorganisé** : personnes identifiées + panneau de correction EN TÊTE, files de
+  travail (à vérifier / groupes / inconnus) dessous → plus de saut de scroll au rendu par
+  lots ; **filtre par nom** ; panneau ancré en haut à l'ouverture.
+- **Correction des faux positifs** : « Corriger » et « Nettoyer (référence) » partagent
+  `scoredRemoval` (seuil ajustable, compteur « N sous le seuil », retrait de masse par seuil
+  piloté par les données, rendu par lots) ; grille de références « plus ressemblantes
+  d'abord ». Retrait **sûr** : `untag`→`exclude`, respecté par le curateur auto.
+- **Perf** : scoring vectorisé (`_best_sims_for_tag`) + `media_roots()` calculé une fois →
+  re-score d'une personne à 6338 photos **156 s → quelques s** (diagnostiqué en réel via
+  Claude-in-Chrome).
+- **Indicateur d'activité réseau global** (spinner « Traitement… ») sur les 7 pages.
 
-- **Ouvert (gestes Mike)** : lots de renommage + géocodage `gps_place` (bat 18 →
-  `enrichir_lieux.py` → `--ecrire` → redémarrer) ; `git push` si pas déjà fait.
+- **Ouvert (gestes Mike)** : **nettoyer Flo** (Corriger seuil ~0.2 / Nettoyer référence) ;
+  lots de renommage + `gps_place` (bat 18 → `enrichir_lieux.py` → `--ecrire` → redémarrer) ;
+  commit/push ; nettoyage de fin de session (`29 - …bat`).
 
 ## Prochain chantier — au choix par valeur (cf. ROADMAP)
 
-1. **Vérité terrain (priorité n°1)** : confirmer ~100 propositions dans `/people` (tri
-   clavier Espace/X/Z ; la page est désormais fluide).
-2. Appliquer les lots de renommage + activer `gps_place` (gestes Mike).
-3. Page « Sujets » unifiée (Personnes + Animaux).
+1. **Vérité terrain (priorité n°1)** : confirmer ~100 propositions dans `/people` — la page
+   est maintenant réorganisée + filtrable, la revue est directe.
+2. **Page « Sujets » unifiée — cadrée le 10/08, à reprendre** : surcouche `/sujets` d'abord
+   (coexiste, cartes → détails existants) puis fusion ; Lieux = 3ᵉ type d'entité (dépend de
+   `gps_place`).
+3. Appliquer les lots de renommage + activer `gps_place` (gestes Mike).
 4. Recherche en langue naturelle (SigLIP 2).
 
 ## Rappels opérationnels

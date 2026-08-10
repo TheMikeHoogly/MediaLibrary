@@ -545,52 +545,49 @@ class SubjectStore:
         STORE.save()
         return n
 
-    def photos(self, name, limit=2000):
+    def photos(self, name, limit=2000, order='worst', light=False):
         """Photos taguées <prefix>:Nom, pour révision. On retient le
-        visage/animal qui ressemble LE MIEUX à la signature et on trie du moins
-        au plus ressemblant → les faux positifs remontent en tête."""
-        import numpy as np
+        visage/animal qui ressemble LE MIEUX à la signature.
+
+        order='worst' (défaut) : tri du moins au plus ressemblant (faux positifs
+        en tête, pour la correction) ; coupe à `limit` en cours de route (sous-
+        ensemble arbitraire, suffisant pour corriger).
+        order='best' : SCAN COMPLET puis tri du plus au moins ressemblant, top
+        `limit`. Sert au CHOIX de références (« Nettoyer ») : sur une fiche
+        polluée, seul le haut du classement contient de vraies photos du sujet —
+        un sous-ensemble « pire d'abord » n'en montrerait aucune."""
         tag = f"{self.prefix}:{name}"
         pk = name.lower()
         pe = self.store.data.get(pk)
         cen = self._centroid(pe) if isinstance(pe, dict) else None
+        # Scoring VECTORISE (voir _best_sims_for_tag) : le scan complet est
+        # desormais rapide, meme sous charge. On trie TOUT puis on ne construit
+        # les champs riches (vignette, dossier, date) que pour le top `limit`.
+        scored = _best_sims_for_tag(tag, cen, self.det_store, self.det_field,
+                                    self.filter_nommable)
+        if order == 'best':
+            scored.sort(key=lambda t: (t[2] if t[2] is not None else -2.0),
+                        reverse=True)
+        else:
+            scored.sort(key=lambda t: (t[2] if t[2] is not None else 2.0))
+        scored = scored[:max(1, limit)]
         roots = media_roots()
         out = []
-        for k, e in STORE.data.items():
-            if not _kw_has(e, tag):
-                continue
-            de = self.det_store.data.get(k)
-            items = (de.get(self.det_field) if isinstance(de, dict) else None) or []
-            if self.filter_nommable:
-                cand = [(idx, a) for idx, a in enumerate(items) if _nommable(a)]
-            else:
-                cand = list(enumerate(items))
-            bi = (cand[0][0] if cand else 0)
-            bsim = None
-            if cen is not None and cand:
-                best = -2.0
-                for idx, a in cand:
-                    emb = a.get('emb')
-                    if not emb:
-                        continue
-                    try:
-                        s = float(np.dot(cen, _emb_from_b64(emb)))
-                    except Exception:
-                        continue
-                    if s > best:
-                        best, bi = s, idx
-                if best > -2.0:
-                    bsim = round(best, 3)
-            crop = self._crop(k, bi) if cand else None
-            kw = list(dict.fromkeys((e.get('kw_fr') or []) + (e.get('kw_en') or [])))
-            folder, gurl = _folder_link_for_key(k, roots)
-            out.append({"key": k, "crop_url": crop, "url": _url_for_key(k),
-                        "name": Path(k).name, "sim": bsim, "i": bi,
-                        "taken": _best_time(k, e), "kw": kw,
-                        "folder": folder, "gurl": gurl})
-            if len(out) >= limit:
-                break
-        out.sort(key=lambda x: (x["sim"] if x["sim"] is not None else 2.0))
+        for k, e, sim, bi in scored:
+            crop = self._crop(k, bi) if bi is not None else None
+            rec = {"key": k, "crop_url": crop, "url": _url_for_key(k, roots),
+                   "name": Path(k).name, "sim": sim,
+                   "i": (bi if bi is not None else 0)}
+            # light : on omet dossier / mots-cles / date (inutiles au tri par
+            # seuil) -> charge utile plus legere sur une fiche a milliers de photos.
+            if not light:
+                rec["taken"] = _best_time(k, e)
+                rec["kw"] = list(dict.fromkeys((e.get('kw_fr') or [])
+                                               + (e.get('kw_en') or [])))
+                folder, gurl = _folder_link_for_key(k, roots)
+                rec["folder"] = folder
+                rec["gurl"] = gurl
+            out.append(rec)
         return out
 
     def untag(self, name, keys):
@@ -3145,10 +3142,27 @@ APP_NAV_CSS = """<style id="appnav-css">
 .appnav a.tab.active{color:var(--texte-papier);background:var(--papier);
   box-shadow:0 2px 10px #0007;}
 .appnav .sp{flex:1;}
+/* Indicateur d'activite reseau global : apparait des qu'une requete fetch/POST
+   est en vol (voir le script d'enrobage plus bas). Accent --veilleuse = « en
+   cours / en attente », par le design system. Rassure : « ca travaille, patiente
+   » plutot que « le site a plante ». Coin bas-droit, non intrusif, au-dessus de
+   tout (z-index tres haut) pour rester visible meme sur une modale ou un
+   diaporama. */
+.netbusy{position:fixed;right:14px;bottom:14px;z-index:1000;display:none;
+  align-items:center;gap:9px;padding:9px 15px;border-radius:999px;
+  background:var(--salle-2);border:1px solid var(--veilleuse);color:var(--texte);
+  font:500 13px/1 var(--f-texte);box-shadow:0 6px 22px #000a;}
+.netbusy.on{display:flex;}
+.netbusy__s{width:14px;height:14px;border-radius:50%;
+  border:2px solid var(--veilleuse);border-top-color:transparent;
+  animation:netbusy-spin .7s linear infinite;}
+@keyframes netbusy-spin{to{transform:rotate(360deg);}}
+@media(prefers-reduced-motion:reduce){.netbusy__s{animation:none;}}
 @media(max-width:560px){
   .appnav{gap:2px;padding:8px 8px;}
   .appnav .brand span.t{display:none;}
   .appnav a.tab{padding:7px 10px;font-size:13px;}
+  .netbusy{right:10px;bottom:10px;padding:8px 13px;font-size:12px;}
 }
 </style>"""
 
@@ -3162,11 +3176,35 @@ APP_NAV_HTML = """<nav class="appnav">
   <span class="sp"></span>
   <a class="tab" data-p="/reglages" href="/reglages">&#9881;&#65039; R&eacute;glages</a>
 </nav>
+<div class="netbusy" role="status" aria-live="polite" aria-hidden="true">
+  <span class="netbusy__s" aria-hidden="true"></span><span>Traitement en cours&hellip;</span>
+</div>
 <script>(function(){var p=location.pathname;
   document.querySelectorAll('.appnav a.tab').forEach(function(a){
     var d=a.getAttribute('data-p');
     if(p===d || (d!=='/'&&p.indexOf(d)===0)) a.classList.add('active');
-  });})();</script>"""
+  });})();</script>
+<script>(function(){
+  // Indicateur d'activite reseau : enrobe window.fetch pour compter les requetes
+  // en vol (tous les appels de l'appli passent par fetch, y compris post()). Un
+  // delai de 250 ms evite un clignotement sur les requetes instantanees (ex.
+  // sondages de statut) ; seul un vrai temps d'attente affiche le sablier. Les
+  // vignettes se chargent via <img>, pas fetch -> elles ne le declenchent pas.
+  var pending=0, timer=null;
+  function el(){ return document.querySelector('.netbusy'); }
+  function show(){ var b=el(); if(b){ b.classList.add('on'); b.setAttribute('aria-hidden','false'); } }
+  function hide(){ var b=el(); if(b){ b.classList.remove('on'); b.setAttribute('aria-hidden','true'); } }
+  if(!window.fetch) return;
+  var orig=window.fetch;
+  window.fetch=function(){
+    pending++;
+    if(pending===1){ clearTimeout(timer); timer=setTimeout(show, 250); }
+    function done(){ pending--; if(pending<=0){ pending=0; clearTimeout(timer); hide(); } }
+    return orig.apply(this, arguments).then(
+      function(r){ done(); return r; },
+      function(e){ done(); throw e; });
+  };
+})();</script>"""
 
 
 # ─── Assets UI partages (design system « chambre noire ») ────────────────────
@@ -6691,6 +6729,85 @@ def _emb_from_b64(s):
     return v / n if n else v
 
 
+def _stack_embs(embs):
+    """Décode une liste d'embeddings base64 (float16) en UNE matrice float32
+    normalisée par ligne, en un minimum d'opérations numpy (un seul frombuffer,
+    une seule normalisation). Renvoie None si les tailles sont hétérogènes ou en
+    cas d'échec → l'appelant retombe sur le chemin lent, par élément."""
+    import numpy as np
+    try:
+        raw = [base64.b64decode(s) for s in embs]
+        if not raw:
+            return None
+        w = len(raw[0])
+        if w == 0 or any(len(b) != w for b in raw):
+            return None
+        M = np.frombuffer(b''.join(raw), dtype=np.float16).astype(np.float32)
+        M = M.reshape(len(raw), -1)
+        nrm = np.linalg.norm(M, axis=1, keepdims=True)
+        nrm[nrm == 0] = 1.0
+        return M / nrm
+    except Exception:
+        return None
+
+
+def _best_sims_for_tag(tag, sig, det_store, det_field, filter_nommable=False):
+    """Pour chaque photo taguée `tag`, meilleur score cosinus de ses détections
+    (visages/animaux) contre le vecteur signature `sig`.
+
+    VECTORISÉ : un seul gros produit matriciel au lieu d'un produit par visage.
+    Le scan par-visage bloquait le GIL des milliers de fois en concurrence avec
+    les workers (mesuré : 156 s pour re-scorer une personne à 6338 photos) ; un
+    unique matmul libère le GIL et rend la même opération quasi immédiate. Si le
+    décodage groupé échoue (tailles hétérogènes), repli transparent par élément.
+
+    Renvoie une liste (key, entry, best_sim|None, best_idx|None) dans l'ordre
+    d'insertion de STORE. `sig` None → best_sim None partout."""
+    import numpy as np
+    rows = []          # [k, e, first_idx|None]
+    embs, owner, fidx = [], [], []
+    for k, e in STORE.data.items():
+        if not _kw_has(e, tag):
+            continue
+        de = det_store.data.get(k)
+        items = (de.get(det_field) if isinstance(de, dict) else None) or []
+        if filter_nommable:
+            cand = [(i, a) for i, a in enumerate(items) if _nommable(a)]
+        else:
+            cand = list(enumerate(items))
+        ridx = len(rows)
+        rows.append([k, e, (cand[0][0] if cand else None)])
+        for i, a in cand:
+            emb = a.get('emb')
+            if emb:
+                embs.append(emb)
+                owner.append(ridx)
+                fidx.append(i)
+    best = [-2.0] * len(rows)
+    bidx = [r[2] for r in rows]
+    if embs and sig is not None:
+        sigv = np.asarray(sig, dtype=np.float32)
+        M = _stack_embs(embs)
+        if M is not None and M.shape[1] == sigv.shape[0]:
+            sc = M @ sigv
+            for o, fi, s in zip(owner, fidx, sc):
+                if s > best[o]:
+                    best[o] = float(s)
+                    bidx[o] = fi
+        else:  # repli lent, par élément (dimensions hétérogènes / échec décodage)
+            for s, o, fi in zip(embs, owner, fidx):
+                try:
+                    d = float(np.dot(sigv, _emb_from_b64(s)))
+                except Exception:
+                    continue
+                if d > best[o]:
+                    best[o] = d
+                    bidx[o] = fi
+    return [(rows[i][0], rows[i][1],
+             (round(best[i], 3) if best[i] > -2.0 else None), bidx[i])
+            for i in range(len(rows))]
+
+
 def cluster_faces(vecs, meta, sim_thr, min_size):
     """Regroupement glouton par similarité cosinus (une passe). vecs : liste de
     vecteurs normalisés ; meta : liste (clé, index_visage) parallèle."""
@@ -7340,12 +7457,14 @@ def people_list():
     return out
 
 
-def person_photos(name, limit=2000):
+def person_photos(name, limit=2000, order='worst', light=False):
     """Photos taguées personne:Nom, pour révision/correction. Pour chaque photo,
     on identifie le visage qui correspond LE MIEUX à la signature de la personne
     (pas forcément le visage n°0) et on affiche CE visage. Trié du moins au plus
-    ressemblant → les faux positifs remontent en tête."""
-    return PEOPLE.photos(name, limit)
+    ressemblant (order='worst') → les faux positifs remontent en tête ; ou du
+    plus au moins ressemblant (order='best') pour le choix de références.
+    light=True → charge utile réduite (sans dossier/mots-clés/date)."""
+    return PEOPLE.photos(name, limit, order, light)
 
 
 def person_slideshow_list(name, limit=8000):
@@ -7399,27 +7518,17 @@ def ref_scores(name, ref_keys):
     refs = _ref_embeddings(ref_keys)
     if not refs:
         return []
-    R = np.stack(refs)
+    # mean(R @ emb) == emb · mean(R) : la moyenne sur les references se ramene a
+    # un produit scalaire contre le vecteur moyen -> scoring vectorise (helper).
+    sig = np.stack(refs).mean(axis=0)
     tag = f"personne:{name}"
     ref_set = set(ref_keys)
-    out = []
-    for k, e in STORE.data.items():
-        if not _kw_has(e, tag):
-            continue
-        fe = FACE_STORE.data.get(k)
-        best = -1.0
-        if isinstance(fe, dict):
-            for f in (fe.get('faces') or []):
-                emb = f.get('emb')
-                if emb:
-                    try:
-                        # moyenne sur les références, pour ce visage
-                        best = max(best, float(np.mean(R @ _emb_from_b64(emb))))
-                    except Exception:
-                        pass
-        out.append({"key": k, "sim": round(best, 3), "crop_url": _crop_url(k, 0),
-                    "url": _url_for_key(k), "name": Path(k).name,
-                    "is_ref": k in ref_set})
+    roots = media_roots()   # UNE fois : _url_for_key(k) sans roots le recalculait
+    out = []                # par photo (lecture fichiers + is_dir NAS x milliers).
+    for k, e, sim, _idx in _best_sims_for_tag(tag, sig, FACE_STORE, 'faces'):
+        out.append({"key": k, "sim": (sim if sim is not None else -1.0),
+                    "crop_url": _crop_url(k, 0), "url": _url_for_key(k, roots),
+                    "name": Path(k).name, "is_ref": k in ref_set})
     out.sort(key=lambda x: x["sim"])
     return out
 
@@ -8560,6 +8669,27 @@ input[type=text]:focus, input.qui:focus { border-color: var(--veilleuse); }
   <button class="btn" id="recluster">&#128260; Regrouper</button>
 </div>
 
+<!-- Personnes deja identifiees EN TETE : c'est le point de depart de la revue
+     (voir un nom connu, puis le corriger). Le panneau de correction #panel
+     s'ouvre juste en dessous. Les files de travail (a verifier / groupes /
+     inconnus) sont desormais SOUS ce bloc. Raison : elles se rendent par lots
+     au scroll (renderInBatches) ; en bas, un lot peint TOUJOURS sous la zone de
+     travail, donc il ne pousse jamais le contenu du haut -> plus de saut de
+     position (bug signale). Le filtre garde la liste compacte malgre les ~324
+     fiches, et l'ancre « Aller aux groupes » evite de tout scroller. -->
+<h2 style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">Personnes nommées <span class="c" id="pc"></span>
+  <input type="text" id="pfilter" placeholder="Filtrer par nom&hellip;" autocomplete="off"
+         aria-label="Filtrer les personnes par nom" style="flex:0 1 220px;max-width:220px">
+  <a href="#groupes" class="btn" style="font-size:.72rem;padding:3px 9px;margin-left:auto;text-decoration:none">Aller aux groupes &#8595;</a></h2>
+<div class="people" id="people"></div>
+<div id="panel"></div>
+
+<div class="note">Clique une personne pour voir ses photos et corriger les faux
+  positifs. Fiche polluée (ex. trop de faux positifs apr&egrave;s avoir tagu&eacute; des
+  profils) ? &laquo;&nbsp;&#129529; Nettoyer (r&eacute;f&eacute;rence)&nbsp;&raquo; recalcule sa signature &agrave;
+  partir de 3 &agrave; 6 photos nettes, puis retire d'un coup les photos sous le seuil
+  de ressemblance.</div>
+
 <h2>À vérifier <span class="c" id="curc"></span>
   <button class="btn" id="curref" style="font-size:.72rem;padding:3px 9px;margin-left:6px">&#8635; Rafraîchir</button></h2>
 <div class="msg"><span class="kbd-hint">Raccourcis : <b>Espace</b>/<b>Entr&eacute;e</b> = oui &middot; <b>X</b> = non &middot; <b>Z</b> = annuler &middot; une lettre = corriger le nom</span></div>
@@ -8567,9 +8697,7 @@ input[type=text]:focus, input.qui:focus { border-color: var(--veilleuse); }
 <div class="clus" id="autowrap"></div>
 <div class="clus" id="curbox"></div>
 
-<!-- Files de travail (actionnables) AVANT la liste de reference des 324 nommes,
-     sinon le bouton « Nommer rapidement » est enterre sous les cartes. -->
-<h2>Groupes à nommer <span class="c" id="cc"></span>
+<h2 id="groupes">Groupes à nommer <span class="c" id="cc"></span>
   <button class="btn" id="quickbtn" style="font-size:.72rem;padding:3px 9px;margin-left:6px">&#9889; Nommer rapidement</button></h2>
 <div class="msg" id="clmsg">Chargement&hellip;</div>
 <div class="clus" id="clusters"></div>
@@ -8578,15 +8706,6 @@ input[type=text]:focus, input.qui:focus { border-color: var(--veilleuse); }
   <button class="btn" id="inbtn" style="font-size:.72rem;padding:3px 9px;margin-left:6px">Afficher</button></h2>
 <div class="msg" id="inmsg">Visages mis de c&ocirc;t&eacute; pour un re-tag ult&eacute;rieur. Nommer un groupe le sort des inconnus ; &laquo;&nbsp;R&eacute;activer&nbsp;&raquo; le renvoie dans &laquo;&nbsp;Groupes &agrave; nommer&nbsp;&raquo;.</div>
 <div class="clus" id="inconnus"></div>
-
-<h2>Personnes nommées <span class="c" id="pc"></span></h2>
-<div class="people" id="people"></div>
-<div id="panel"></div>
-
-<div class="note">Regarde une pile de visages : si c'est bien la même personne,
-  tape son nom et clique « Nommer » — toutes ses photos reçoivent le mot-clé
-  « personne:Nom ». Ensuite, sur une personne nommée, « Chercher d'autres photos »
-  te propose des visages ressemblants à valider un par un.</div>
 
 <div id="pslide">
   <img id="ps-img" alt="">
@@ -8628,12 +8747,22 @@ function carteP(p){
   d.onclick=function(){openPerson(p);};
   return d;
 }
+// Liste complete gardee en memoire : le filtre re-rend un SOUS-ENSEMBLE sans
+// refrapper le serveur. Filtre insensible casse ET accents (normalize NFD).
+var ALL_PEOPLE=[];
+function _norm(s){ return (s||'').toLowerCase().normalize('NFD').replace(/[\\u0300-\\u036f]/g,''); }
+function renderPeople(){
+  var q=_norm(document.getElementById('pfilter').value.trim());
+  var list=q?ALL_PEOPLE.filter(function(p){return _norm(p.name).indexOf(q)>=0;}):ALL_PEOPLE;
+  var el=document.getElementById('people'); el.innerHTML='';
+  if(!list.length){ el.innerHTML='<div class="msg">'+(q?'Aucune personne ne correspond au filtre.':'Aucune personne nommée pour l\\'instant.')+'</div>'; return; }
+  renderInBatches(el, list, carteP);
+}
 function loadPeople(){
   fetch('/api/people/list').then(function(r){return r.json();}).then(function(d){
-    var ppl=d.people||[]; document.getElementById('pc').textContent=ppl.length?('('+ppl.length+')'):'';
-    var el=document.getElementById('people'); el.innerHTML='';
-    if(!ppl.length){ el.innerHTML='<div class="msg">Aucune personne nommée pour l\\'instant.</div>'; }
-    if(ppl.length) renderInBatches(el, ppl, carteP);
+    ALL_PEOPLE=d.people||[];
+    document.getElementById('pc').textContent=ALL_PEOPLE.length?('('+ALL_PEOPLE.length+')'):'';
+    renderPeople();
   });
 }
 
@@ -8670,19 +8799,73 @@ function openPerson(p){
     if(!confirm('Supprimer « '+p.name+' » et retirer son nom de toutes ses photos ?'))return;
     post('/api/people/delete',{name:p.name}).then(function(r){ panel.innerHTML=''; loadPeople(); });
   };
-  panel.scrollIntoView({behavior:'smooth',block:'nearest'});
+  panel.scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+// Carte photo cochable (label + case + vignette + score). Construite en noeuds
+// DOM (pas de innerHTML) : compatible rendu par lots renderInBatches, et pas de
+// souci d'echappement. `checked` = etat initial de la case.
+function _photoCard(f, checked){
+  var lab=document.createElement('label'); lab.className='prop';
+  var cb=document.createElement('input'); cb.type='checkbox'; cb.checked=!!checked;
+  cb.setAttribute('data-k', f.key); if(f.sim!=null) cb.setAttribute('data-s', f.sim);
+  var a=document.createElement('a'); a.href=f.url||'#'; a.target='_blank'; a.rel='noopener';
+  a.addEventListener('click', function(e){ e.stopPropagation(); });
+  var img=document.createElement('img'); img.loading='lazy'; img.src=f.crop_url||f.url;
+  a.appendChild(img); lab.appendChild(cb); lab.appendChild(a);
+  if(f.sim!=null){ var s=document.createElement('span'); s.className='s'; s.textContent=f.sim; lab.appendChild(s); }
+  return lab;
+}
+
+// Vue partagee « retirer par seuil » : liste triee du moins au plus
+// ressemblant, seuil ajustable, compteur en direct, retrait de masse PILOTE PAR
+// LES DONNEES (fiable meme si la grille n'est peinte que par lots). Utilisee par
+// « Nettoyer (reference) » (signature propre) et « Corriger » (signature
+// actuelle). `container` = element ou tout est rendu ; `note` = entete optionnel.
+function scoredRemoval(container, name, ph, defThr, noteHtml){
+  container.innerHTML=(noteHtml||'')+
+    '<div class="msg" style="color:var(--graphite)">'+ph.length+
+    ' photo(s), du moins au plus ressemblant. Seuil '+
+    '<input type="number" id="thr" value="'+defThr+'" step="0.05" min="0" max="1" style="width:74px"> '+
+    '&rarr; <b id="belowc">0</b> sous le seuil (cochées ci-dessous, décoche pour épargner).</div>'+
+    '<div class="grid" id="cgrid"></div>'+
+    '<button class="btn warn" id="rm" style="margin-top:8px">Retirer &laquo; '+esc(name)+' &raquo; des photos sous le seuil</button>';
+  var cg=container.querySelector('#cgrid');
+  function below(){ var t=parseFloat(container.querySelector('#thr').value)||0;
+    return ph.filter(function(f){ return (f.sim!=null?f.sim:1)<t; }); }
+  function refresh(){ var b=below(); container.querySelector('#belowc').textContent=b.length;
+    renderInBatches(cg, b, function(f){ return _photoCard(f, true); }); }
+  container.querySelector('#thr').addEventListener('input', refresh);
+  container.querySelector('#rm').onclick=function(){
+    // Cartes peintes : on respecte leur case (decochee = epargnee). Cartes non
+    // encore peintes (rendu par lots) : incluses par defaut.
+    var painted={}; cg.querySelectorAll('input').forEach(function(c){ painted[c.getAttribute('data-k')]=c.checked; });
+    var keys=[]; below().forEach(function(f){ if(!(f.key in painted) || painted[f.key]) keys.push(f.key); });
+    if(!keys.length) return;
+    if(!confirm('Retirer « '+name+' » de '+keys.length+' photo(s) sous le seuil ?\\nCes photos ne seront plus re-proposées automatiquement.')) return;
+    var btn=container.querySelector('#rm'); btn.disabled=true; btn.textContent='Retrait en cours…';
+    post('/api/people/untag',{name:name,keys:keys}).then(function(r){
+      container.innerHTML='<div class="msg">&#10003; '+r.removed+' photo(s) retir&eacute;e(s). Elles n\\'apparaissent plus et ne seront pas re-taggu&eacute;es.</div>'; loadPeople();
+    });
+  };
+  refresh();
 }
 
 function cleanPerson(name,box){
-  box.innerHTML='<div class="msg">Choisis <b>3 à 6</b> photos <b>nettes et variées</b> de '+esc(name)+
-    ' comme référence (clique dessus) — plus il y en a, plus c\\'est précis — puis « Analyser ».</div>'+
-    '<div class="grid" id="refgrid"></div>'+
+  box.innerHTML='<div class="msg">Choisis <b>3 à 6</b> photos <b>nettes et de face</b> de '+esc(name)+
+    ' comme référence (clique dessus) — ci-dessous, ses photos <b>les plus ressemblantes d\\'abord</b>, donc les vraies. Elles redéfinissent sa signature « propre », sans les profils. Puis « Analyser ».</div>'+
+    '<div class="grid" id="refgrid"><div class="msg">Chargement des photos les plus ressemblantes&hellip;</div></div>'+
     '<button class="btn prim" id="anz" style="margin-top:8px">Analyser avec cette référence</button>'+
     '<div id="clean-res"></div>';
   var sel={};
-  fetch('/api/people/photos?name='+encodeURIComponent(name)).then(function(r){return r.json();}).then(function(d){
-    var g=document.getElementById('refgrid');
-    (d.photos||[]).forEach(function(f){
+  // order=best : les photos les PLUS ressemblantes d'abord. Sur une fiche
+  // polluee, un echantillon « pire d'abord » ne montrerait que des faux
+  // positifs -> impossible d'y choisir une vraie photo de reference.
+  fetch('/api/people/photos?name='+encodeURIComponent(name)+'&limit=80&order=best').then(function(r){return r.json();}).then(function(d){
+    var g=document.getElementById('refgrid'); g.innerHTML='';
+    var photos=d.photos||[];
+    if(!photos.length){ g.innerHTML='<div class="msg">Aucune photo &agrave; afficher.</div>'; return; }
+    photos.forEach(function(f){
       var img=f.crop_url||f.url; var el=document.createElement('div'); el.className='prop';
       el.innerHTML='<img loading="lazy" src="'+esc(img)+'">';
       el.onclick=function(){
@@ -8691,67 +8874,42 @@ function cleanPerson(name,box){
       };
       g.appendChild(el);
     });
+  }).catch(function(){
+    document.getElementById('refgrid').innerHTML='<div class="msg">Impossible de charger l\\'&eacute;chantillon. R&eacute;essaie.</div>';
   });
   document.getElementById('anz').onclick=function(){
     var refs=Object.keys(sel);
     if(!refs.length){ alert('Choisis au moins une photo de référence.'); return; }
-    var res=document.getElementById('clean-res'); res.innerHTML='<div class="msg">Analyse&hellip;</div>';
+    var res=document.getElementById('clean-res');
+    res.innerHTML='<div class="msg" style="display:flex;align-items:center;gap:8px">'+
+      '<span class="netbusy__s"></span><span>Analyse de <b>'+esc(name)+'</b> en cours&hellip; on re-score '+
+      '<b>toutes</b> ses photos avec la nouvelle référence. Le sablier en bas à droite confirme que ça travaille.</span></div>';
+    res.scrollIntoView({behavior:'smooth',block:'center'});
     post('/api/people/setref',{name:name,ref_keys:refs}).then(function(){
       return post('/api/people/refscore',{name:name,ref_keys:refs});
     }).then(function(d){
-      var ph=d.photos||[];
-      var html='<div style="margin:8px 0 6px;font-size:.8rem;color:#9db8d8">'+ph.length+
-        ' photo(s), du moins au plus ressemblant. Seuil : '+
-        '<input type="number" id="thr" value="0.35" step="0.05" min="0" max="1" style="width:70px"> '+
-        '<button class="btn" id="chk">Cocher sous le seuil</button></div><div class="grid" id="cgrid">';
-      ph.forEach(function(f){
-        html+='<label class="prop"><input type="checkbox" data-k="'+esc(f.key)+'" data-s="'+f.sim+'">'+
-          '<a href="'+esc(f.url)+'" target="_blank" rel="noopener" onclick="event.stopPropagation()">'+
-          '<img loading="lazy" src="'+esc(f.crop_url||f.url)+'"></a><span class="s">'+f.sim+'</span></label>';
-      });
-      html+='</div><button class="btn warn" id="rm" style="margin-top:8px">Retirer « '+esc(name)+' » des photos cochées</button>';
-      res.innerHTML=html;
-      document.getElementById('chk').onclick=function(){
-        var t=parseFloat(document.getElementById('thr').value);
-        res.querySelectorAll('#cgrid input').forEach(function(c){ c.checked=parseFloat(c.getAttribute('data-s'))<t; });
-      };
-      document.getElementById('rm').onclick=function(){
-        var keys=[]; res.querySelectorAll('#cgrid input:checked').forEach(function(c){keys.push(c.getAttribute('data-k'));});
-        if(!keys.length) return;
-        post('/api/people/untag',{name:name,keys:keys}).then(function(r){
-          res.innerHTML='<div class="msg">✓ '+r.removed+' faux positif(s) retiré(s).</div>'; loadPeople();
-        });
-      };
-      document.getElementById('chk').click();
+      scoredRemoval(res, name, (d.photos||[]), 0.35, null);
+    }).catch(function(e){
+      res.innerHTML='<div class="msg">Échec de l\\'analyse : '+esc(String((e&&e.message)||e))+'. R&eacute;essaie.</div>';
     });
   };
 }
 
 function correctPhotos(name,box){
-  box.innerHTML='<div class="msg">Chargement des photos&hellip;</div>';
-  fetch('/api/people/photos?name='+encodeURIComponent(name)).then(function(r){return r.json();}).then(function(d){
+  box.innerHTML='<div class="msg" style="display:flex;align-items:center;gap:8px"><span class="netbusy__s"></span>'+
+    '<span>Chargement et scoring de <b>toutes</b> les photos de '+esc(name)+'&hellip;</span></div>';
+  // On charge TOUTE la fiche (le scoring est vectorise -> rapide), en mode leger
+  // (pas de dossier/mots-cles : inutiles ici), pour que le tri par seuil couvre
+  // l'ensemble, pas seulement un sous-ensemble.
+  fetch('/api/people/photos?name='+encodeURIComponent(name)+'&limit=50000&light=1').then(function(r){return r.json();}).then(function(d){
     var ph=d.photos||[];
     if(!ph.length){ box.innerHTML='<div class="msg">Aucune photo.</div>'; return; }
-    var html='<div style="margin:8px 0 6px;font-size:.8rem;color:#9db8d8">'+ph.length+
-      ' photo(s) taguées « '+esc(name)+' », <b>triées du moins au plus ressemblant</b> (visage réellement reconnu, score affiché). '+
-      'Les faux positifs sont donc en tête : coche ceux qui ne sont PAS '+esc(name)+', puis retire :</div><div class="grid">';
-    ph.forEach(function(f){
-      var img=f.crop_url||f.url;
-      html+='<label class="prop"><input type="checkbox" data-k="'+esc(f.key)+'">'+
-        '<a href="'+esc(f.url)+'" target="_blank" rel="noopener" onclick="event.stopPropagation()">'+
-        '<img loading="lazy" src="'+esc(img)+'"></a>'+
-        (f.sim!=null?'<span class="s">'+f.sim+'</span>':'')+'</label>';
-    });
-    html+='</div><button class="btn warn" style="margin-top:8px">Retirer « '+esc(name)+' » des photos cochées</button>';
-    box.innerHTML=html;
-    box.querySelector('button').onclick=function(){
-      var keys=[]; box.querySelectorAll('input:checked').forEach(function(c){keys.push(c.getAttribute('data-k'));});
-      if(!keys.length){ return; }
-      post('/api/people/untag',{name:name,keys:keys}).then(function(r){
-        box.innerHTML='<div class="msg">✓ Nom retiré de '+r.removed+' photo(s).</div>';
-        loadPeople();
-      });
-    };
+    var note='<div class="msg">Scores selon la signature <b>actuelle</b> de '+esc(name)+
+      ' (encore polluée). Règle le seuil pour cocher d\\'un coup les faux positifs sous ce score, puis retire. '+
+      'Pour une séparation plus fine, &laquo; &#129529; Nettoyer (r&eacute;f&eacute;rence) &raquo; recalcule d\\'abord une signature propre.</div>';
+    scoredRemoval(box, name, ph, 0.2, note);
+  }).catch(function(e){
+    box.innerHTML='<div class="msg">Échec du chargement : '+esc(String((e&&e.message)||e))+'. R&eacute;essaie.</div>';
   });
 }
 
@@ -8760,7 +8918,7 @@ function findMore(name,box){
   post('/api/people/find',{name:name}).then(function(d){
     var pr=d.proposals||[];
     if(!pr.length){ box.innerHTML='<div class="msg">Aucune nouvelle photo trouvée.</div>'; return; }
-    var html='<div style="margin:8px 0 6px;font-size:.8rem;color:#9db8d8">'+pr.length+
+    var html='<div style="margin:8px 0 6px;font-size:.8rem;color:var(--graphite)">'+pr.length+
       ' proposition(s) — décoche les erreurs :</div><div class="grid">';
     pr.forEach(function(f,i){
       html+='<label class="prop"><input type="checkbox" checked data-k="'+esc(f.key)+'">'+
@@ -9090,7 +9248,7 @@ function loadCurator(rebuild){
     var auto=d.auto||[], aw=document.getElementById('autowrap');
     if(!auto.length){ aw.innerHTML=''; }
     else{
-      var ah='<div class="cl"><div style="font-size:.82rem;color:#9db8d8;margin-bottom:6px">🤖 Ajoutés automatiquement récemment ('+auto.length+') — vérifie, annule (✗) en cas d\\'erreur :</div><div class="grid">';
+      var ah='<div class="cl"><div style="font-size:.82rem;color:var(--graphite);margin-bottom:6px">🤖 Ajoutés automatiquement récemment ('+auto.length+') — vérifie, annule (✗) en cas d\\'erreur :</div><div class="grid">';
       auto.forEach(function(a){
         ah+='<label class="prop" style="cursor:default"><a href="'+esc(a.url)+'" target="_blank" rel="noopener"><img loading="lazy" src="'+esc(a.crop_url)+'"></a>'+
           '<span class="s">'+esc(a.person)+' '+a.sim+'</span>'+
@@ -9123,7 +9281,7 @@ function loadCurator(rebuild){
         // corriger vers le bon nom. Clavier : Espace/O = garder, X = retirer.
         var labelR='<b>Faux positif ?</b> visage tagué <b>'+esc(s.person)+'</b> — score '+s.sim;
         html='<div class="row" style="align-items:center">'+crop+
-          '<a href="'+esc(s.url)+'" target="_blank" rel="noopener" class="sz" style="text-decoration:none;color:#9db8d8">'+labelR+'</a>'+
+          '<a href="'+esc(s.url)+'" target="_blank" rel="noopener" class="sz" style="text-decoration:none;color:var(--graphite)">'+labelR+'</a>'+
           '<button class="btn prim">✓ Oui, c’est '+esc(s.person)+'</button>'+
           '<button class="btn warn">✗ Retirer le tag</button>'+
           '<input class="qui" placeholder="ou : c’est…" autocomplete="off">'+
@@ -9138,7 +9296,7 @@ function loadCurator(rebuild){
              '</b> ('+s.rival_sim+', écart '+s.margin+')</span>') : '';
         var label='<b>Ajouter à '+esc(s.person)+' ?</b> — score '+s.sim+doute;
         html='<div class="row" style="align-items:center">'+crop+
-          '<a href="'+esc(s.url)+'" target="_blank" rel="noopener" class="sz" style="text-decoration:none;color:#9db8d8">'+label+'</a>'+
+          '<a href="'+esc(s.url)+'" target="_blank" rel="noopener" class="sz" style="text-decoration:none;color:var(--graphite)">'+label+'</a>'+
           '<button class="btn prim">✓ Oui, '+esc(s.person)+'</button>'+
           '<input class="qui" placeholder="ou : c’est…" autocomplete="off">'+
           '<button class="btn">✗ Aucun</button>'+
@@ -9350,6 +9508,7 @@ document.getElementById('qn-skip').onclick=function(){ qnIdx++; qnShow(); };
 document.getElementById('qn-close').onclick=function(){ document.getElementById('quickname').classList.remove('open'); loadClusters(false); };
 document.getElementById('qn-input').addEventListener('keydown',function(e){ if(e.key==='Enter') qnName(); });
 
+document.getElementById('pfilter').addEventListener('input', renderPeople);
 loadPeople();
 loadClusters(false);
 loadCurator(false);
@@ -10404,7 +10563,20 @@ class Handler(BaseHTTPRequestHandler):
         note_heavy_activity()   # ouverture d'un détail → le backfill cède le NAS
         q = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
         name = (q.get('name') or [''])[0]
-        body = json.dumps({"photos": person_photos(name)},
+        # `limit` optionnel : « Nettoyer (reference) » ne charge qu'un petit
+        # echantillon pour CHOISIR des references (60 photos ~ instantane), au
+        # lieu des 2000 par defaut — sinon, sur une personne a 6000 photos, la
+        # grille restait vide longtemps (« il ne se passe rien »).
+        try:
+            limit = int((q.get('limit') or ['2000'])[0])
+        except ValueError:
+            limit = 2000
+        limit = max(1, min(50000, limit))
+        order = (q.get('order') or ['worst'])[0]
+        if order not in ('worst', 'best'):
+            order = 'worst'
+        light = (q.get('light') or ['0'])[0] in ('1', 'true')
+        body = json.dumps({"photos": person_photos(name, limit, order, light)},
                           ensure_ascii=False).encode()
         self._send(200, body, 'application/json')
 
