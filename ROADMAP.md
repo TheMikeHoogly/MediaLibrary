@@ -12,6 +12,33 @@ Session 10/08 : gros travail sur `/people` et la **correction des faux positifs*
 par la fiche **Flo** (~6300 photos, très polluée par des profils tagués). Code livré sur le
 disque de Mike et **validé en réel** (serveur redémarré plusieurs fois). Détail : table ci-dessous.
 
+**Correctif 10/08 (soir) — les corrections de faux positifs n'étaient pas apprises.** Mike
+corrigeait la même image (Phéno→Dévi) 5×, elle revenait. Cause : `exclude` (le rejet humain
+durable) faisait autorité à l'AJOUT, à `find_more` et à `reconcile`, **mais pas** dans le
+générateur de cartes « faux positif » (`build_suggestions` REMOVE) ni dans `reimport_name_tags`.
+Dès que le tag erroné resurgissait (ré-import XMP quand l'écriture de retrait a échoué sur le
+NAS, rescan d'un fichier modifié, clé en double via les 2 racines d'upload), la carte revenait.
+**Fix livré (server.py, pas encore commité ; relu par un agent de revue)** : (1) le générateur
+REMOVE ignore les photos exclues **et auto-guérit** (retire le tag resurgi + `del` XMP, journalise
+`🩹`) ; (2) `reimport_name_tags` n'importe plus un tag présent dans l'`exclude` de la personne ;
+(3) réversibilité (cas « je change d'avis ») : une **attribution positive** à une personne
+**lève l'exclusion** de ces photos dans `_nommer_membres_visages` (sinon l'auto-guérison
+retirerait le tag qu'on vient de reposer). `exclude` et l'assignation sont mutuellement exclusifs.
+
+**Deux correctifs de curation supplémentaires (10/08 soir, livrés, pas commités) :**
+- **Nouvelle personne invisible** : `assigner()` (champ « c'est… » d'une carte faux positif)
+  retirait la carte mais ne rafraîchissait pas « Personnes identifiées » → la fiche créée
+  n'apparaissait qu'après rechargement. Ajout de `loadPeople()` + invalidation du cache de noms.
+- **Caline (chatte) revenait sans cesse comme personne** — VRAIE cause trouvée : `reembed_one_batch()`
+  fait `e['faces'] = detect_faces(...)`, ce qui **écrasait la liste `faces` et effaçait les
+  marquages humains** (pas_visage/non_group/inconnu/par_humain) sur les visages faibles — or les
+  découpes de chat sont faibles. Fix : le ré-embedding **saute** toute photo qu'un humain a jugée
+  ou dont un visage est assigné (préserve marques + références (clé,i)). Même classe que le bug
+  faux positif : un traitement de fond jetait un jugement humain. ⚠ Les marques déjà effacées :
+  **re-rejeter le groupe Caline une dernière fois** après redémarrage — ça tiendra ensuite.
+**À activer : redémarrer le serveur** (pas de hot-reload) ; le curateur nettoiera tout seul
+les tags resurgis au prochain passage. Vérif logique isolée OK ; à confirmer en réel.
+
 - **Branche** : travaux du 10/08 **PAS encore commités**. Lancer `27 - Commit de session.bat`,
   puis `28 - Fusionner…` si voulu ; **`git push` = geste de Mike** (`docs/GIT_WORKFLOW.md`).
 - **Ouvert (gestes Mike)** :
@@ -34,7 +61,7 @@ disque de Mike et **validé en réel** (serveur redémarré plusieurs fois). Dé
 | Rangement | Dédoublonnage contenu appliqué (8,4 Go) ; rangement par année appliqué ; orchestrateur de maintenance |
 | Renommage | Cœur + plan + applicateur réversibles prêts (plan = 2114) ; géocodage inverse `gps_place` codé |
 | UI | Design system « chambre noire » (tokens, plancher a11y, `verifier_ui_tokens`) ; planche contact ; tri clavier ; `/reglages` tour de contrôle ; **`/people` réorganisé (10/08)** : personnes identifiées + panneau de correction EN TÊTE, files de travail dessous → fin du saut de scroll ; **filtre par nom** ; **indicateur d'activité réseau global** (spinner « Traitement… », enrobage `fetch` dans la nav partagée, 7 pages) |
-| Correction | **Faux positifs (10/08)** : « Corriger » et « Nettoyer (référence) » partagent `scoredRemoval` (seuil ajustable, compteur live « N sous le seuil », retrait de masse **piloté par les données**, rendu par lots) ; grille de réf. triée « plus ressemblantes d'abord » (`order=best`). Retrait **SÛR** : `untag`→`exclude`, et le curateur auto **saute `exclude`** (jamais re-taggué) |
+| Correction | **Faux positifs (10/08)** : « Corriger » et « Nettoyer (référence) » partagent `scoredRemoval` (seuil ajustable, compteur live « N sous le seuil », retrait de masse **piloté par les données**, rendu par lots) ; grille de réf. triée « plus ressemblantes d'abord » (`order=best`). Retrait **SÛR** : `untag`→`exclude`, et le curateur auto **saute `exclude`** (jamais re-taggué). **`exclude` fait désormais autorité PARTOUT** (générateur REMOVE + `reimport_name_tags` corrigés le 10/08 soir ; auto-guérison des tags resurgis) |
 | Perf | **Scoring vectorisé (10/08)** : `_stack_embs` + `_best_sims_for_tag` (un matmul au lieu de ~12000 produits par visage) ; `media_roots()` calculé UNE fois (au lieu de 6338×) → re-score d'une personne à 6338 photos **156 s → quelques s**. `SubjectStore.photos()` a un mode `light` |
 | Tagging | `qwen3-vl:2b` ; hybride assertions+image ; 1 lecture exiftool/photo |
 | GPU | torch CUDA `2.13.0+cu130` + `onnxruntime_gpu` ; `FACE_USE_GPU=False` volontaire (4 Go pris par Ollama) |
@@ -53,9 +80,14 @@ disque de Mike et **validé en réel** (serveur redémarré plusieurs fois). Dé
    (Mutz+Caline faits, réversible). Fix **auto** amont humain/animal **REJETÉ** (18 % faux
    rejets, cf. DECISIONS) ; seule piste restante = re-mesurer sur découpes SANS marge avant
    d'y revenir. Relancer l'outil quand un nouveau nom d'animal se retrouve en `personne:`.
-4. **Page « Sujets » unifiée — cadrée le 10/08, à reprendre.** Surcouche `/sujets` d'abord
-   (coexiste avec `/people` et `/pets` ; cartes → vues détail existantes) puis fusion ;
-   **Lieux = 3ᵉ type d'entité** à côté de Personnes/Animaux (dépend de `gps_place`).
+4. **Page « Sujets » unifiée — 1ʳᵉ tranche LIVRÉE le 10/08 (soir).** Surcouche `/sujets`
+   en place : onglet dans la nav partagée, page LECTURE SEULE (grille unifiée
+   personnes+animaux, filtre par nom, bascule Tous/Personnes/Animaux, tri par nb de photos),
+   API `/api/sujets/list` (réutilise `people_list`+`pets_list`). Chaque carte ouvre la fiche
+   détail existante via **lien profond** `?name=` (ajouté à `/people` et `/pets`). Livrée,
+   **pas commitée, à activer par redémarrage** ; à vérifier en réel (Claude-in-Chrome).
+   **Reste :** **Lieux = 3ᵉ type d'entité** (dépend de `gps_place`) ; puis **fusion**
+   (faire de `/sujets` l'entrée unique, `/people`+`/pets` en vues spécialisées).
    `SubjectStore` déjà unifié — surtout de l'UI.
 5. **Recherche.** SigLIP 2 en langue naturelle (« les étés à Bremblens avec Luna ») ;
    partager le vocabulaire de la barre de recherche à la page Carte (marqueurs déjà FAITS).
@@ -67,6 +99,22 @@ disque de Mike et **validé en réel** (serveur redémarré plusieurs fois). Dé
    politiques `*_GPU_MIN_FREE_MB` séparées.
 8. **Extraire les 7 pages HTML → `ui/` + `tokens.css`** (sans build step ; corriger les
    divergences en passant).
+   - **Tokenisation `/browse` (10/08 soir, livrée, pas commitée)** : après les couleurs+police
+     (Étape A), les espacements/rayons/tailles qui **égalent déjà un token** pointent vers lui
+     (12px→`--e-3`, 8px→`--e-2`, 0.75rem→`--t-xs`, 0.85rem→`--t-sm`, 999px→`--r-pill`). Substitutions
+     **à valeur identique** — vérifié : rendu inchangé (tokens résolus = valeurs d'origine sur le
+     serveur en marche). Aussi : 2 `#4a8c7b` en dur (contour de sélection /people+/pets) →
+     `var(--fixateur)`. Note : les `#4A8C7B` des marqueurs **Leaflet** (carte) RESTENT en dur —
+     l'API Leaflet n'accepte pas `var()`.
+   - **Divergences à trancher dans la passe DESIGN séparée** (skill : « identique d'abord ») :
+     valeurs hors échelle 4px dans `/browse` (14/11/10/6/30/22/2px, radius 8px & 10px, 0.9rem,
+     0.78rem, 13px, 36px) à caler sur l'échelle ; `#222` (gris froid, sous-AA) et `#f0a35b`
+     (orange « hésite ») dans `/people` → tokeniser (candidat : variante `--veilleuse`) ;
+     **unifier `.pchip` vs `.chip`** (divergence connue dans GALLERY, citée par la skill).
+     Pages encore à tokeniser : GALLERY, MAP, PEOPLE, PETS, REGLAGES, HTML (couleurs surtout).
+   - **Méthode recommandée** : pour chaque page restante, UNE passe combinée (value-preserving
+     + calage échelle + divergences) AVEC vérif visuelle Claude-in-Chrome, plutôt que 2 passes
+     sur les mêmes déclarations. `/browse` a servi de modèle (value-preserving seul, identique).
 9. **Éval tagging (parké, déjà cadré).** Mesurer V2 « assertions en contexte, sans
    impératif de noms » (~4,3 s, jamais notée) + fusion programmatique des noms/date/lieu
    (Knowledge Builder). Cf. `docs/AUDIT_EXTERNE_2026.md` + `eval/PLAN_assertions_vs_pixels.md`.

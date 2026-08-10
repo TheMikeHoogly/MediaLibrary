@@ -2909,6 +2909,15 @@ def _nommer_membres_visages(membres, nom):
     # la signature suit la personne qui vieillit.
     pe["refs"] = (refs + (pe.get("refs") or []))[:80]
     pe["faces"] = _merge_assigned(pe.get("faces"), membres)
+    # Une attribution POSITIVE lève une éventuelle exclusion humaine antérieure sur
+    # ces mêmes photos : `exclude` (« pas cette personne ») et l'assignation sont
+    # mutuellement exclusifs. Sans ça, l'auto-guérison du curateur — qui honore
+    # `exclude` — retirerait aussitôt le tag qu'on vient de poser (cas « je change
+    # d'avis »). Réversible : `avant` (copie de la fiche) est restauré par defaire().
+    mkeys = set(k for (k, _i) in membres)
+    excl0 = pe.get("exclude") or []
+    if any(x in mkeys for x in excl0):
+        pe["exclude"] = [x for x in excl0 if x not in mkeys]
     PEOPLE_STORE.set(pk, pe)
 
     ajoutees = []
@@ -3171,6 +3180,7 @@ APP_NAV_HTML = """<nav class="appnav">
   <a class="tab" data-p="/files" href="/files">&#128247; Galerie</a>
   <a class="tab" data-p="/browse" href="/browse">&#128193; Dossiers</a>
   <a class="tab" data-p="/map" href="/map">&#128506;&#65039; Carte</a>
+  <a class="tab" data-p="/sujets" href="/sujets">&#128450;&#65039; Sujets</a>
   <a class="tab" data-p="/people" href="/people">&#128101; Personnes</a>
   <a class="tab" data-p="/pets" href="/pets">&#128062; Animaux</a>
   <span class="sp"></span>
@@ -4659,8 +4669,12 @@ BROWSE_PAGE = """<!DOCTYPE html>
 <title>Explorateur</title>
 <style>
 /* Etape A tokenisation (chambre noire) : couleurs + police remplacees par les
-   tokens de ui/tokens.css. Structure, espacements et rayons inchanges (layout
-   identique). Interdits retires : bleu iOS #0a84ff, gris neutre #555 sous-AA. */
+   tokens de ui/tokens.css. Interdits retires : bleu iOS #0a84ff, gris neutre #555.
+   Etape B : espacements/rayons/tailles qui EGALENT deja un token pointent vers lui
+   (16px->--e-4, 12px->--e-3, 8px->--e-2, 0.75rem->--t-xs, 0.85rem->--t-sm,
+   999px->--r-pill). Substitutions a valeur identique : rendu inchange. Les valeurs
+   hors echelle (14/11/10/6/30/22px, 0.9rem, radius 8/10px...) restent en dur -> a
+   caler sur l'echelle dans la passe design SEPAREE (skill : identique d'abord). */
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: var(--f-texte);
        background: var(--salle); color: var(--texte); min-height: 100vh; }
@@ -4669,38 +4683,38 @@ body { font-family: var(--f-texte);
 .back { color: var(--texte); text-decoration: none; font-size: 0.9rem; }
 .crumbs { color: var(--graphite); font-size: 0.9rem; }
 .crumbs a { color: var(--texte); text-decoration: none; }
-.list { max-width: 720px; margin: 0 auto; padding: 12px; }
-.row { display: flex; align-items: center; gap: 12px; padding: 11px 14px;
+.list { max-width: 720px; margin: 0 auto; padding: var(--e-3); }
+.row { display: flex; align-items: center; gap: var(--e-3); padding: 11px 14px;
        background: var(--salle-2); border-radius: 10px; margin-bottom: 6px;
        text-decoration: none; color: var(--texte); font-size: 0.9rem; }
 .row:active { background: var(--salle-3); }
 .row .ic { flex-shrink: 0; }
 .row .nm { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.row .sz { color: var(--graphite); font-size: 0.75rem; flex-shrink: 0; }
+.row .sz { color: var(--graphite); font-size: var(--t-xs); flex-shrink: 0; }
 .row.dir .nm { color: var(--texte); }
 .empty { color: var(--graphite); text-align: center; padding: 30px; }
 /* Etape B — gestion de fichiers : rangees selectionnables + barre d'actions sur
    PAPIER (surface « decider »). Cibles 44px, primaire = fixateur, suppr = encre. */
-.row .lk { display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0;
+.row .lk { display: flex; align-items: center; gap: var(--e-3); flex: 1; min-width: 0;
            text-decoration: none; color: inherit; }
 .row .sel { width: 22px; height: 22px; flex-shrink: 0; accent-color: var(--fixateur); cursor: pointer; }
 .row.marked { outline: 2px solid var(--veilleuse); outline-offset: -2px; }
-.actbar { position: sticky; bottom: 8px; margin: 10px auto 0; max-width: 720px;
-          display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
+.actbar { position: sticky; bottom: var(--e-2); margin: 10px auto 0; max-width: 720px;
+          display: flex; gap: var(--e-2); align-items: center; flex-wrap: wrap;
           background: var(--papier); color: var(--texte-papier);
           border: 1px solid var(--papier-2); border-radius: var(--r-md);
           padding: 10px 12px; box-shadow: 0 6px 30px #000a; }
 .actbar .cnt { font-family: var(--f-donnees); font-size: 0.78rem; margin-right: auto; }
 .actbar .b { min-height: var(--touch); padding: 0 14px; border-radius: 8px;
              border: 1px solid var(--graphite-p); background: transparent;
-             color: var(--texte-papier); font: 500 0.85rem var(--f-texte); cursor: pointer; }
+             color: var(--texte-papier); font: 500 var(--t-sm) var(--f-texte); cursor: pointer; }
 .actbar .b:disabled { opacity: 0.4; cursor: default; }
 .actbar .b.prim { background: var(--fixateur); border-color: var(--fixateur); color: #fff; }
 .actbar .b.del { border-color: var(--encre); color: var(--encre); }
-.fxtoast { position: sticky; bottom: 8px; margin: 8px auto 0; max-width: 560px;
-           display: flex; gap: 12px; align-items: center; background: var(--salle-3);
-           border: var(--trait); border-radius: 999px; padding: 10px 10px 10px 18px; font-size: 13px; }
-.fxtoast .b { min-height: 36px; padding: 0 12px; border-radius: 999px; border: var(--trait);
+.fxtoast { position: sticky; bottom: var(--e-2); margin: var(--e-2) auto 0; max-width: 560px;
+           display: flex; gap: var(--e-3); align-items: center; background: var(--salle-3);
+           border: var(--trait); border-radius: var(--r-pill); padding: 10px 10px 10px 18px; font-size: 13px; }
+.fxtoast .b { min-height: 36px; padding: 0 var(--e-3); border-radius: var(--r-pill); border: var(--trait);
               background: var(--salle-2); color: var(--texte); cursor: pointer; }
 </style>
 </head>
@@ -6659,10 +6673,26 @@ def reembed_one_batch():
     ms = reembed_resolution()
     n = 0
     changed = False
+    # Visages déjà attribués à une personne : la ré-détection change l'ordre/le
+    # nombre de `faces`, ce qui casserait les références (clé,i) des fiches.
+    assigned_keys = {k for (k, _i) in _assigned_face_set(PEOPLE_STORE)}
     for k, e in list(FACE_STORE.data.items()):
         if not isinstance(e, dict) or e.get('failed') or e.get('reemb'):
             continue
         faces = e.get('faces') or []
+        # INVARIANT « ne jamais perdre un jugement humain ». `detect_faces` REMPLACE
+        # la liste `faces` (ordre et nombre peuvent changer) : ré-embarquer une photo
+        # qu'un humain a déjà jugée effacerait ses marquages (pas_visage / non_group /
+        # inconnu / par_humain) et casserait les références des fiches nommées. On la
+        # saute donc définitivement (reemb=1). C'ÉTAIT la cause du « Caline (chatte)
+        # revient sans cesse comme personne » : ses découpes de chat, marquées
+        # « animal », sont faibles → étaient ré-embarquées → démarquées → re-cluster.
+        if k in assigned_keys or any(
+                f.get('par_humain') or f.get('pas_visage')
+                or f.get('non_group') or f.get('inconnu') for f in faces):
+            e['reemb'] = 1
+            changed = True
+            continue
         if not any(_face_is_poor(f) for f in faces):
             e['reemb'] = 1          # rien à améliorer → on marque
             changed = True
@@ -7368,6 +7398,16 @@ def reimport_name_tags():
         todo.append((k, p))
     if not todo:
         return
+    # Exclusions humaines : tag_minuscule -> set(clés) rejetées à la main. Ré-importer
+    # un mot-clé depuis le FICHIER ne doit jamais ressusciter une correction (le
+    # fichier peut encore porter l'ancien tag si l'écriture XMP de retrait a échoué
+    # sur le NAS). Sans ce garde, le curateur re-proposait aussitôt le faux positif.
+    excl_par_tag = {}
+    for _store, _prefix in ((PEOPLE_STORE, 'personne'), (PETS_STORE, 'animal')):
+        for _pk, _pe in _store.data.items():
+            if isinstance(_pe, dict):
+                for _kx in (_pe.get('exclude') or []):
+                    excl_par_tag.setdefault(f"{_prefix}:{_pk}", set()).add(_kx)
     print(f"  🔖 Vérification des tags nommés dans {len(todo)} fichier(s) (fond)…")
     added = 0
     for i in range(0, len(todo), 60):
@@ -7390,6 +7430,8 @@ def reimport_name_tags():
                     for t in m[0]:
                         tl = str(t).lower()
                         if (tl.startswith('personne:') or tl.startswith('animal:')) and tl not in low:
+                            if k in excl_par_tag.get(tl, ()):
+                                continue     # correction humaine : ne pas ré-importer
                             kw.append(t)
                             low.add(tl)
                             added += 1
@@ -7844,6 +7886,7 @@ def build_suggestions():
                 PEOPLE_STORE.save()
             # REMOVE : photo taguée mais loin de la signature (faux positif)
             rm_seen = set()
+            fp_healed = 0        # tags erronés re-retirés (exclusion humaine ré-appliquée)
             for k, se in list(STORE.data.items()):
                 if not isinstance(se, dict):
                     continue
@@ -7867,6 +7910,20 @@ def build_suggestions():
                     p = persons[pidx[nm]]
                     if k in p["confirmed"]:
                         continue
+                    # Correction humaine FAISANT AUTORITÉ. Une photo EXCLUE d'une
+                    # personne (rejet « faux positif ? » ou correction vers un autre
+                    # nom) ne doit JAMAIS être re-signalée. `exclude` était honoré à
+                    # l'AJOUT (plus haut) mais PAS ici : dès que le tag erroné
+                    # resurgissait (ré-import XMP, rescan d'un fichier modifié, clé en
+                    # double), la même carte revenait — d'où « je corrige et ça revient
+                    # sans fin ». On ré-applique la décision : retirer le tag, ne rien
+                    # proposer. Idempotent (une passe ne fait rien si le tag est déjà
+                    # parti) ; le nom Dévi posé par la correction n'est pas touché.
+                    if k in p["exclude"]:
+                        if _index_remove_person(k, f"personne:{nm}"):
+                            _enqueue_person_write(k, f"personne:{nm}", 'del')
+                            fp_healed += 1
+                        continue
                     # meilleur visage de la photo POUR CETTE personne.
                     # MÊME score que le chemin d'ajout : le maximum sur les
                     # facettes. Scorer l'ajout et le retrait différemment
@@ -7884,6 +7941,10 @@ def build_suggestions():
                             items.append({"type": "remove", "person": nm, "key": k, "i": bi,
                                           "sim": round(bestsim, 3), "crop_url": _crop_url(k, bi),
                                           "url": _url_for_key(k), "strong": bestsim < CUR_FP_STRONG})
+            if fp_healed:
+                STORE.save()
+                print(f"  🩹 Faux positifs : {fp_healed} tag(s) erroné(s) re-retiré(s) "
+                      "(exclusion humaine ré-appliquée)")
             # MERGE : deux signatures très proches
             for a in range(len(persons)):
                 for b in range(a + 1, len(persons)):
@@ -8149,6 +8210,9 @@ function loadNamed(){
       c.onclick=function(){ openCat(p.name); };
       el.appendChild(c);
     });
+    // Lien profond depuis /sujets : ?name=X ouvre directement la fiche.
+    try{ var _n=new URLSearchParams(location.search).get('name');
+      if(_n && pets.some(function(p){return p.name===_n;})){ openCat(_n); } }catch(e){}
   });
 }
 
@@ -8536,6 +8600,132 @@ bgLoad();
 </html>"""
 
 
+SUBJECTS_PAGE = """<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sujets</title>
+<style>
+  /* Surcouche « Sujets » (ROADMAP #4) : vue unifiee, LECTURE SEULE, des
+     personnes ET animaux nommes. Coexiste avec /people et /pets ; chaque carte
+     ouvre la fiche detail existante (?name=). Lieux = 3e type d'entite, a
+     ajouter quand gps_place sera actif. Tout en tokens « chambre noire ». */
+  body{font-family:var(--f-texte);margin:0;background:var(--salle);color:var(--texte);}
+  main{padding:var(--e-6) var(--e-4) 90px;max-width:1200px;margin:0 auto;}
+  h1{font:600 var(--t-xl)/1.1 var(--f-affichage);letter-spacing:-.01em;margin:0 0 var(--e-2);}
+  .intro{color:var(--graphite);font-size:var(--t-sm);line-height:1.5;
+    margin:0 0 var(--e-6);max-width:62ch;}
+  .barre{display:flex;gap:var(--e-3);align-items:center;flex-wrap:wrap;margin-bottom:var(--e-6);}
+  .barre input{flex:1;min-width:220px;min-height:var(--touch);padding:0 var(--e-4);
+    font:var(--t-md)/1 var(--f-texte);background:var(--salle-3);color:var(--texte);
+    border:var(--trait);border-radius:var(--r-md);}
+  .barre input::placeholder{color:var(--graphite);}
+  .filtres{display:flex;gap:var(--e-2);}
+  .chip{min-height:36px;padding:0 var(--e-4);border-radius:var(--r-pill);border:var(--trait);
+    background:var(--salle-3);color:var(--graphite);cursor:pointer;
+    font:500 var(--t-sm)/1 var(--f-texte);}
+  .chip .n{font-family:var(--f-donnees);font-size:var(--t-xs);opacity:.7;margin-left:6px;}
+  .chip[aria-pressed="true"]{background:var(--fixateur);border-color:var(--fixateur);color:#fff;}
+  .chip[aria-pressed="true"] .n{opacity:.85;}
+  .grille{display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(clamp(120px,20vw,180px),1fr));
+    gap:var(--e-4);}
+  .sc{display:flex;flex-direction:column;background:var(--salle-3);border:var(--trait);
+    border-radius:var(--r-md);overflow:hidden;text-decoration:none;color:var(--texte);}
+  .sc .vig{aspect-ratio:1;background:var(--salle-2);position:relative;overflow:hidden;}
+  .sc .vig img{width:100%;height:100%;object-fit:cover;display:block;}
+  .sc .vig .ph{width:100%;height:100%;display:flex;align-items:center;
+    justify-content:center;font-size:2rem;color:var(--graphite);}
+  .sc .badge{position:absolute;top:var(--e-2);left:var(--e-2);background:#000a;
+    color:var(--texte);border-radius:var(--r-pill);padding:2px 8px;font-size:var(--t-xs);}
+  .sc .meta{padding:var(--e-3);}
+  .sc .nm{font:600 var(--t-md)/1.2 var(--f-affichage);letter-spacing:-.01em;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .sc .ct{font-family:var(--f-donnees);font-size:var(--t-xs);color:var(--graphite);margin-top:2px;}
+  .msg{color:var(--graphite);padding:var(--e-8) 0;text-align:center;}
+  @media(hover:hover){.sc:hover{border-color:var(--papier-2);}}
+</style>
+</head>
+<body>
+<!--APPNAV-->
+<main>
+  <h1>Sujets</h1>
+  <p class="intro">Toutes les personnes et les animaux nomm&eacute;s, au m&ecirc;me endroit.
+    Ouvre un sujet pour sa fiche compl&egrave;te (photos, correction, renommage). Les lieux
+    rejoindront cette page une fois le g&eacute;ocodage activ&eacute;.</p>
+  <div class="barre">
+    <input id="q" type="search" placeholder="Filtrer par nom&hellip;" autocomplete="off"
+      aria-label="Filtrer les sujets par nom">
+    <div class="filtres" role="group" aria-label="Type de sujet">
+      <button class="chip" data-f="tous" aria-pressed="true">Tous<span class="n" id="n-tous"></span></button>
+      <button class="chip" data-f="personne" aria-pressed="false">Personnes<span class="n" id="n-personne"></span></button>
+      <button class="chip" data-f="animal" aria-pressed="false">Animaux<span class="n" id="n-animal"></span></button>
+    </div>
+  </div>
+  <div class="grille" id="grille"></div>
+  <div class="msg" id="msg">Chargement&hellip;</div>
+</main>
+<script>
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){
+  return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+function _norm(s){return String(s||'').toLowerCase().normalize('NFD').replace(/[\\u0300-\\u036f]/g,'');}
+var ALL=[], FILT='tous';
+function href(s){return (s.type==='animal'?'/pets':'/people')+'?name='+encodeURIComponent(s.name);}
+function carte(s){
+  var badge=s.type==='animal'?'\\ud83d\\udc3e':'\\ud83d\\udc64';
+  var vig=s.crop
+    ? '<img loading="lazy" src="'+esc(s.crop)+'" alt="">'
+    : '<div class="ph" aria-hidden="true">'+badge+'</div>';
+  var a=document.createElement('a');
+  a.className='sc'; a.href=href(s);
+  a.setAttribute('aria-label', s.name+' — '+s.photos+' photo'+(s.photos>1?'s':'')+
+    ' ('+(s.type==='animal'?'animal':'personne')+')');
+  a.innerHTML='<div class="vig">'+vig+'<span class="badge" aria-hidden="true">'+badge+'</span></div>'+
+    '<div class="meta"><div class="nm">'+esc(s.name)+'</div>'+
+    '<div class="ct">'+s.photos+' photo'+(s.photos>1?'s':'')+'</div></div>';
+  return a;
+}
+function rendre(){
+  var q=_norm(document.getElementById('q').value.trim());
+  var list=ALL.filter(function(s){
+    if(FILT!=='tous' && s.type!==FILT) return false;
+    if(q && _norm(s.name).indexOf(q)<0) return false;
+    return true;
+  });
+  var g=document.getElementById('grille'), m=document.getElementById('msg');
+  g.innerHTML='';
+  if(!list.length){ m.textContent=ALL.length?'Aucun sujet ne correspond au filtre.':'Aucun sujet nomm\\u00e9 pour le moment.'; return; }
+  m.textContent='';
+  var frag=document.createDocumentFragment();
+  list.forEach(function(s){ frag.appendChild(carte(s)); });
+  g.appendChild(frag);
+}
+document.querySelectorAll('.chip').forEach(function(c){
+  c.onclick=function(){
+    FILT=c.getAttribute('data-f');
+    document.querySelectorAll('.chip').forEach(function(x){
+      x.setAttribute('aria-pressed', x===c?'true':'false'); });
+    rendre();
+  };
+});
+document.getElementById('q').addEventListener('input', rendre);
+fetch('/api/sujets/list').then(function(r){return r.json();}).then(function(d){
+  var P=(d.personnes||[]).map(function(x){x.type='personne';return x;});
+  var A=(d.animaux||[]).map(function(x){x.type='animal';return x;});
+  ALL=P.concat(A).sort(function(a,b){return (b.photos||0)-(a.photos||0);});
+  document.getElementById('n-tous').textContent=ALL.length;
+  document.getElementById('n-personne').textContent=P.length;
+  document.getElementById('n-animal').textContent=A.length;
+  rendre();
+}).catch(function(){
+  document.getElementById('msg').textContent='Impossible de charger les sujets. Le serveur n a pas r\\u00e9pondu. R\\u00e9essaie dans un instant.';
+});
+</script>
+</body>
+</html>"""
+
+
 PEOPLE_PAGE = """<!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -8763,6 +8953,13 @@ function loadPeople(){
     ALL_PEOPLE=d.people||[];
     document.getElementById('pc').textContent=ALL_PEOPLE.length?('('+ALL_PEOPLE.length+')'):'';
     renderPeople();
+    // Lien profond depuis /sujets : ?name=X ouvre directement la fiche.
+    try{ var _n=new URLSearchParams(location.search).get('name');
+      if(_n){ var _nl=_n.toLowerCase();
+        var _p=ALL_PEOPLE.filter(function(x){return String(x.name).toLowerCase()===_nl;})[0];
+        if(_p){ openPerson(_p);
+          var _pn=document.getElementById('panel');
+          if(_pn){ try{ _pn.scrollIntoView({block:'start'}); }catch(e){} } } } }catch(e){}
   });
 }
 
@@ -8974,7 +9171,7 @@ function carteGroupeP(c){
     b.innerHTML='<img loading="lazy" src="'+esc(u)+'" alt="">';
     function paint(){ b.setAttribute('aria-pressed',sel[i]?'true':'false');
       b.style.opacity=sel[i]?'1':'.35';
-      b.style.outline=sel[i]?'2px solid #4a8c7b':'none'; b.style.outlineOffset='-2px'; }
+      b.style.outline=sel[i]?'2px solid var(--fixateur)':'none'; b.style.outlineOffset='-2px'; }
     b.onclick=function(){ sel[i]=!sel[i]; paint(); maj(); };
     paint(); zone.appendChild(b);
   });
@@ -9112,7 +9309,7 @@ function carteInconnu(c){
     b.innerHTML='<img loading="lazy" src="'+esc(u)+'" alt="">';
     function paint(){ b.setAttribute('aria-pressed',sel[i]?'true':'false');
       b.style.opacity=sel[i]?'1':'.35';
-      b.style.outline=sel[i]?'2px solid #4a8c7b':'none'; b.style.outlineOffset='-2px'; }
+      b.style.outline=sel[i]?'2px solid var(--fixateur)':'none'; b.style.outlineOffset='-2px'; }
     b.onclick=function(){ sel[i]=!sel[i]; paint(); };
     paint(); zone.appendChild(b);
   });
@@ -9208,6 +9405,11 @@ function assigner(s, el, cible){
       if(!r.ok){ toastP(r.erreur||'Echec de l attribution.'); return; }  // erreur visible, plus de silence
       toastP(r.libelle||'fait', r.jeton);
       el.remove();
+      // Rafraîchit la liste « Personnes identifiées » : une attribution (surtout
+      // vers un NOUVEAU nom depuis une carte « faux positif ? ») crée/complète une
+      // fiche qui, sans ça, n'apparaissait qu'après un rechargement manuel.
+      if(typeof loadPeople==='function') loadPeople();
+      try{ NOMS_P=null; }catch(e){}   // invalide le cache d'autocomplétion des noms
     }).catch(function(){ toastP('Le serveur n a pas repondu. Reessaie dans un instant.'); });
 }
 function propose2(champ, zone, s, el){
@@ -9572,6 +9774,12 @@ class Handler(BaseHTTPRequestHandler):
 
         elif path == '/api/animals/status':
             self._serve_animals_status()
+
+        elif path == '/sujets':
+            self._serve_sujets()
+
+        elif path == '/api/sujets/list':
+            self._serve_sujets_list()
 
         elif path == '/pets':
             self._serve_pets()
@@ -10557,6 +10765,18 @@ class Handler(BaseHTTPRequestHandler):
 
     def _serve_people_list(self):
         body = json.dumps({"people": people_list()}, ensure_ascii=False).encode()
+        self._send(200, body, 'application/json')
+
+    # ─── Surcouche « Sujets » : vue unifiée personnes + animaux (ROADMAP #4) ───
+    def _serve_sujets(self):
+        self._send_html(SUBJECTS_PAGE)
+
+    def _serve_sujets_list(self):
+        # Réutilise les listes existantes (mêmes formes {name, photos, crop}) ;
+        # la page les fusionne et les trie. Lecture seule, données en mémoire
+        # (aucun accès NAS → pas de note_heavy_activity).
+        body = json.dumps({"personnes": people_list(), "animaux": pets_list()},
+                          ensure_ascii=False).encode()
         self._send(200, body, 'application/json')
 
     def _serve_person_photos(self):
