@@ -25,8 +25,9 @@ Tout le 11/08 est **vérifié en réel**, mais **PAS commité** (`27 - Commit de
   Personnes/Animaux retirés de la nav, Sujets actif sur `/people`/`/pets`, rangée « Files de
   travail ») ; **passe DESIGN PEOPLE+PETS** (~128 valeurs hors échelle → tokens, lint 0 interdit).
 
-⚠ `/pets` signale « moteur d'empreintes absent (**installe timm**) », empreintes 0, vignettes
-groupes vides : le `.venv` du serveur a perdu `timm` — geste Mike.
+**Fausse alerte timm (résolue)** : `timm` est bien installé ; le bandeau `/pets` confondait
+« moteur pas encore chargé (paresseux) » avec « absent ». Fix du bandeau livré (11/08 soir,
+PAS commité), actif au prochain redémarrage.
 
 ## Prochain pas — par valeur
 
@@ -34,8 +35,8 @@ groupes vides : le `.venv` du serveur a perdu `timm` — geste Mike.
    (page filtrable, tri clavier Espace=oui / X=non / Z=annuler).
 2. **Passe DESIGN — pages restantes** : GALLERY/BROWSE/MAP/HTML/FACES (mêmes mappings que
    PEOPLE/PETS, page par page + vérif visuelle) ; puis extraction physique vers `ui/` (`bundle.py`).
-3. Gestes Mike : commit de session ; `pip install timm` (`.venv`) ; lots de renommage +
-   activer `gps_place` ; nettoyer Flo/Caline.
+3. Gestes Mike : commiter le fix bandeau `/pets` (session 11/08 commitée à part ça) ;
+   lots de renommage + activer `gps_place` ; nettoyer Flo/Caline.
 
 ## Rappels opérationnels
 

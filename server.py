@@ -8333,7 +8333,12 @@ function loadStatus(){
       +' &middot; chats d&eacute;tect&eacute;s <b>'+(d.cats||0)+'</b>'
       +' &middot; empreintes calcul&eacute;es <b>'+(d.embedded||0)+'</b>'
       +' &middot; en attente '+d.pending
-      +(d.dino?'':' &middot; <span class="warn">moteur d empreintes absent (installe timm)</span>');
+      // Le moteur DINOv2 se charge PARESSEUSEMENT (au premier besoin) : tant
+      // qu'aucune erreur n'est remontee, son absence juste apres un redemarrage
+      // est normale — ne pas crier « installe timm » a tort (faux positif vecu).
+      +(d.dino_error?' &middot; <span class="warn">moteur d empreintes en erreur : '
+          +String(d.dino_error).replace(/[&<>"]/g,'')+' (relance &laquo; 10 - Installer nommage des chats.bat &raquo;)</span>'
+        :(d.dino?'':' &middot; moteur d empreintes en veille (charg&eacute; au premier besoin)'));
   });
 }
 

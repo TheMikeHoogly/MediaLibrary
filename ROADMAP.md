@@ -25,9 +25,11 @@ chantier fini y est — c'est pourquoi les récits de travaux terminés ne viven
    px/rem → `--t-*`, radius 4–14px → `--r-sm`/`--r-md`, espacements → échelle 4px ;
    `verifier_ui_tokens` : 0 interdit). Reste : GALLERY/BROWSE/MAP/HTML/FACES (cf. #8).
 
-⚠ **Vu sur `/pets` (préexistant)** : « moteur d'empreintes absent (installe timm) »,
-empreintes calculées 0, vignettes des « Groupes à identifier » vides — le venv du serveur
-semble avoir perdu `timm`. Geste Mike : réinstaller (`pip install timm` dans `.venv`).
+**Fausse alerte timm (résolue le 11/08 au soir)** : le bandeau `/pets` « moteur d'empreintes
+absent (installe timm) » criait à tort — `timm` 1.0.27 est bien dans le `.venv` (torch cu130
+intact) ; DINOv2 se charge **paresseusement** et l'UI confondait « pas encore chargé » avec
+« absent ». Fix livré (bandeau : erreur réelle en rouge via `dino_error`, sinon mention neutre
+« en veille ») — actif au prochain redémarrage, à commiter.
 
 ## État antérieur (10 août 2026) — commité, détail dans git
 
@@ -46,8 +48,7 @@ Lieux = 3ᵉ type d'entité (`places_list()`, GPS + repli dossiers, carte 📍 �
   - **Nettoyer Flo** : la fiche reste polluée tant qu'un passage n'est pas fait. Ouvrir Flo →
     « Corriger » (seuil ~0.2, monter en surveillant la grille) ou « Nettoyer (référence) »
     pour une séparation fine. Retrait **sûr** (cf. Acquis « exclude »).
-  - Toujours en attente : appliquer les lots de renommage + activer `gps_place` (cf. « À faire ») ;
-    réinstaller `timm` dans le `.venv` du serveur (cf. ⚠ ci-dessus).
+  - Toujours en attente : appliquer les lots de renommage + activer `gps_place` (cf. « À faire »).
 
 ## Acquis — ne pas reproposer (détail : git + `DECISIONS.md`)
 
