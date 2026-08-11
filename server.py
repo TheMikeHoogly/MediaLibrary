@@ -2244,8 +2244,9 @@ def lieux_connus():
                       'juillet', 'aout', 'septembre', 'octobre', 'novembre',
                       'decembre', 'best', 'divers', 'anni', 'appart'}
         compte = Counter()
+        roots = media_roots()          # 1× (cf. _chemin_relatif) : premier lancement seulement
         for k in list(STORE.data):
-            parts = _chemin_relatif(k).replace('/', '\\').split('\\')
+            parts = _chemin_relatif(k, roots).replace('/', '\\').split('\\')
             for p in parts[:-1]:
                 lieu = _lieu_plausible(p)
                 if not lieu:
@@ -2311,16 +2312,21 @@ def _extraire_lieux(requete):
     return trouves, ' '.join(original.split())
 
 
-def _chemin_relatif(k):
+def _chemin_relatif(k, roots=None):
     """Chemin PRIVÉ de sa racine média.
 
     Indispensable : le NAS s'appelle « NAS-Bremblens », donc chercher le lieu
     « Bremblens » dans le chemin complet remonte les 30 682 photos. Le nom du
     serveur n'est pas un lieu photographié.
+
+    `roots` : passer media_roots() DÉJÀ calculé quand on appelle en boucle sur
+    tout l'index. Sinon chaque appel relit les fichiers de config ET fait des
+    is_dir() (stats SMB sur le NAS) — 64k appels bloquent l'API plusieurs
+    minutes (place_list / _cles_du_lieu). Défaut None = comportement d'origine.
     """
     s = str(k)
     bas = s.lower().replace('/', '\\')
-    for _lbl, racine in media_roots():
+    for _lbl, racine in (roots if roots is not None else media_roots()):
         r = str(racine).lower().replace('/', '\\').rstrip('\\')
         if bas.startswith(r):
             return s[len(r):]
@@ -2330,9 +2336,10 @@ def _chemin_relatif(k):
 def _cles_du_lieu(lieux):
     """Clés dont le chemin, sous la racine média, contient tous ces lieux."""
     besoin = [_sans_accents(l) for l in lieux]
+    roots = media_roots()          # 1× : sinon _chemin_relatif relit config + stats NAS par clé
     out = set()
     for k in list(STORE.data):
-        chemin = _sans_accents(_chemin_relatif(k))
+        chemin = _sans_accents(_chemin_relatif(k, roots))
         if all(b in chemin for b in besoin):
             out.add(k)
     return out
@@ -2771,11 +2778,53 @@ def attribuer_visage(cle, i, cible, personne_proposee=""):
         # et, si l'utilisateur re-confirme le même nom depuis « faux positif ? »,
         # enregistre la confirmation (plus jamais signalé).
         confirme = bool(personne_proposee) and nom.lower() == personne_proposee.lower()
+        # CORRECTION vers un nom que la photo PORTE DÉJÀ (ex. photo taguée à la fois
+        # « Mathilde » — le bon — ET « Flo » — le faux positif). Il faut RETIRER le
+        # tag erroné (personne_proposee) et l'exclure, EXACTEMENT comme la branche
+        # « pas encore tagué » plus bas. Sans ça, ce branchement ré-affirmait juste
+        # le bon nom sans retirer le mauvais → le faux positif revenait à chaque
+        # passe. Bug observé : « je corrige vers le bon nom et ça revient sans fin. »
+        corrige = bool(personne_proposee) and nom.lower() != personne_proposee.lower()
+        pk = (personne_proposee or "").lower()
+        tag_ancien = f"personne:{personne_proposee}"
+        retire_ancien = False
+        if corrige:
+            pe = PEOPLE_STORE.data.get(pk)
+            if isinstance(pe, dict):
+                excl = list(pe.get('exclude') or [])
+                if cle not in excl:
+                    excl.append(cle)
+                    pe['exclude'] = excl
+                    PEOPLE_STORE.set(pk, pe)
+            if _kw_has(se, tag_ancien):
+                _index_remove_person(cle, tag_ancien)
+                _enqueue_person_write(cle, tag_ancien, 'del')
+                retire_ancien = True
+            _suggest_remove(lambda s: s.get('type') == 'remove'
+                            and s.get('person') == personne_proposee
+                            and s.get('key') == cle)
+            STORE.save()
         res0 = _nommer_membres_visages([(cle, int(i or 0))], nom)
         if confirme:
             _person_add_set(nom, 'confirmed', cle)
             _suggest_remove(lambda s: s.get('type') == 'remove'
                             and s.get('person') == nom and s.get('key') == cle)
+        if corrige:
+            def defaire0():
+                if res0.get('jeton'):
+                    annuler(res0['jeton'])
+                if retire_ancien:
+                    _index_add_person(cle, tag_ancien)
+                    _enqueue_person_write(cle, tag_ancien, 'add')
+                    STORE.save()
+                pe2 = PEOPLE_STORE.data.get(pk)
+                if isinstance(pe2, dict):
+                    pe2['exclude'] = [x for x in (pe2.get('exclude') or []) if x != cle]
+                    PEOPLE_STORE.set(pk, pe2)
+            jeton0 = _empiler_annulation(
+                f"{personne_proposee} retiré, {nom} conservé", defaire0)
+            return {"ok": True, "n": res0.get("n", 0), "jeton": jeton0, "corrige": True,
+                    "libelle": f"→ {nom} (corrigé depuis {personne_proposee})"}
         return {"ok": True, "n": res0.get("n", 0), "jeton": res0.get("jeton"),
                 "libelle": (f"confirmé : {nom}" if confirme else f"→ {nom}")}
     # Si l'utilisateur corrige vers un AUTRE nom, la proposition initiale
@@ -3749,6 +3798,7 @@ __FOLDERS__
   var REC = __REC__;
   var HASSUBS = __HASSUBS__;
   var DIRQ = __DIRQ__;
+  var SEARCHQ = __SEARCHQ__;   // requete si /files?q= (page de resultats globale), sinon ''
   var MOTIFS = __MOTIFS__;
   var sorted = FILES.slice();
   var visible = FILES.slice();
@@ -4652,6 +4702,23 @@ __FOLDERS__
     document.getElementById('geocount').textContent = '';
     updateSelInfo(); applyFilter();
   };
+
+  // Page de resultats globale (/files?q=..., depuis un Lieu de /sujets ou un
+  // marqueur de Carte) : le serveur a deja rempli la grille avec le resultat
+  // de la recherche, dans l'ordre de pertinence. On se met en mode IA — pas de
+  // filtre par mot-cle, tri par pertinence — pour que la barre reflete la
+  // requete et qu'affiner reste possible. iaResultats = tout FILES (chaque
+  // photo passe le test d'appartenance), rang = position renvoyee par le serveur.
+  if (SEARCHQ) {
+    qInput.value = SEARCHQ;
+    modeIA = true;
+    btnIA.className = 'tb active';
+    btnIA.setAttribute('aria-pressed', 'true');
+    qInput.placeholder = 'Décris la photo…';
+    iaResultats = {};
+    FILES.forEach(function(f, i) { iaResultats[f.key] = i; });
+    applyFilter();
+  }
 
   // lancement auto du diaporama après redirection récursive
   var pl = new URLSearchParams(location.search).get('play');
@@ -7540,7 +7607,7 @@ def places_list():
         for k in list(STORE.data):
             if k in gps_keys:               # le GPS prime : pas de double compte
                 continue
-            chemin = _sans_accents(_chemin_relatif(k))
+            chemin = _sans_accents(_chemin_relatif(k, roots))
             for nk, lbl in lieux_norm:
                 if nk in chemin:
                     agg.setdefault(nk, {"name": lbl, "keys": set()})["keys"].add(k)
@@ -8130,9 +8197,15 @@ PETS_PAGE = """<!DOCTYPE html>
   .group{background:var(--salle-3);border:var(--trait);border-radius:14px;padding:14px;}
   .group .sz{font-size:12px;color:var(--graphite);margin-bottom:10px;}
   .thumbs{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:var(--e-3);}
-  .thumbs img{width:58px;height:58px;object-fit:cover;border-radius:8px;background:#000;}
-  .group .nmrow{display:flex;gap:var(--e-2);}
-  .group input{flex:1;padding:var(--e-2) 10px;background:#0000004d;color:var(--texte);
+  .thumbs img{width:58px;height:58px;object-fit:cover;border-radius:8px;background:var(--salle-3);}
+  /* Rangee de nommage : miroir du .cl .row cote Personnes. flex-wrap + min-width:0
+     pour que, dans une carte etroite de la grille (280px), les boutons ne debordent
+     PAS a droite (bug : « Rejeter le groupe » masque par la cellule voisine, visible
+     seulement sur la derniere carte). Champ pleine largeur, boutons dessous, cibles 44px. */
+  .group .nmrow{display:flex;gap:var(--e-2);flex-wrap:wrap;align-items:center;}
+  .group .nmrow>*{min-width:0;}
+  .group .nmrow .btn{flex:1 1 auto;min-height:44px;}
+  .group input{flex:1 1 100%;min-height:44px;padding:var(--e-2) 10px;background:var(--salle-3);color:var(--texte);
     border:var(--trait);border-radius:9px;font-size:14px;outline:none;}
   .group input:focus{border-color:var(--veilleuse);}
   .muted{color:var(--graphite);font-size:14px;}
@@ -8341,7 +8414,8 @@ function carteGroupe(c){
     '<div class="thumbs"></div>'+
     '<div class="nmrow"><input placeholder="C’est… (« Inti, Luna » si les deux)" autocomplete="off">'+
     '<button class="btn primary">Attribuer</button>'+
-    '<button class="btn danger rejeter">Rejeter le groupe</button></div>'+
+    '<button class="btn danger rejeter">Rejeter le groupe</button>'+
+    '<button class="btn archiver" title="Sortir ce groupe de la file, à re-tagger plus tard">Archiver (inconnu)</button></div>'+
     '<div class="props" style="margin-top:6px"></div>';
   var zone=card.querySelector('.thumbs');
   (c.crops||[]).forEach(function(u,i){
@@ -8357,6 +8431,7 @@ function carteGroupe(c){
   });
   var inp=card.querySelector('input'), btn=card.querySelector('button.primary');
   var rej=card.querySelector('.rejeter');
+  var arch=card.querySelector('.archiver');
   var props=card.querySelector('.props');
   function choisis(){ return membres.filter(function(_m,i){return sel[i];}); }
   function maj(){ btn.textContent='Attribuer '+choisis().length; }
@@ -8368,14 +8443,14 @@ function carteGroupe(c){
     // par une virgule ou un « + ». Les deux tags sont posés.
     if(typeof cible==='string' && /[,+]/.test(cible))
       cible=cible.split(/\s*[,+]\s*/).filter(Boolean);
-    btn.disabled=true; rej.disabled=true;
+    btn.disabled=true; rej.disabled=true; if(arch) arch.disabled=true;
     post('/api/assign',{genre:'animal',membres:m,cible:cible}).then(function(r){
-      btn.disabled=false; rej.disabled=false;
+      btn.disabled=false; rej.disabled=false; if(arch) arch.disabled=false;
       if(!r.ok){ props.textContent=r.erreur||'échec'; return; }
       toast(r.libelle||'fait', r.jeton);
       if(m.length>=membres.length){ card.remove(); } else { loadClusters(true); }
       loadNamed(); loadStatus();
-    }).catch(function(){ btn.disabled=false; rej.disabled=false;
+    }).catch(function(){ btn.disabled=false; rej.disabled=false; if(arch) arch.disabled=false;
       props.textContent='Le serveur n a pas repondu. Reessaie dans un instant.'; });
   }
   function listeProps(){
@@ -8406,6 +8481,9 @@ function carteGroupe(c){
   // Rejeter le groupe entier : vrais animaux mais cluster non nommable
   // (nuques, profils). Réversible via le toast d'annulation. Miroir des visages.
   rej.onclick=function(){ envoyer('__non_group__', true); };
+  // Archiver (inconnu) : vrai animal mais pas un des miens. Miroir du bouton
+  // cote Personnes ; le backend gere deja __inconnu__ pour genre:animal (SPECIAUX).
+  if(arch) arch.onclick=function(){ envoyer('__inconnu__', true); };
   maj();
   return card;
 }
@@ -10151,6 +10229,14 @@ class Handler(BaseHTTPRequestHandler):
         # « rebut », jamais une auto-selection : un simple outil de confort.
         motif = (q.get('motif') or [''])[0].strip()
 
+        # Recherche globale : /files?q=... SANS dossier. La grille devient le
+        # resultat de semantic_search (lieux + noms + sens), pas le contenu d'un
+        # dossier. Sans ca, un lien Lieu (/sujets) ou un marqueur de Carte ouvre
+        # une galerie VIDE : le dossier Uploads est vide, et le filtre IA cote
+        # client ne fait qu'intersecter les photos deja chargees.
+        qparam = (q.get('q') or [''])[0].strip()
+        search_mode = bool(qparam) and not dirparam and not sel and not motif
+
         if dirparam:
             roots = media_roots()
             parts = dirparam.split('/', 1)
@@ -10236,6 +10322,8 @@ class Handler(BaseHTTPRequestHandler):
             lv = f'/browse/{idx}/' + urllib.parse.quote(sub) if sub else f'/browse/{idx}'
             fparts.append(f'<a class="fchip up" href="{lv}">&#128196; Liste</a>')
         folders_html = ('<div class="folders">' + ''.join(fparts) + '</div>') if fparts else ''
+        if search_mode:
+            folders_html = ''   # une page de resultats n'a pas de sous-dossiers
         is_uploads = folder in (UPLOAD_DIR, UPLOAD_DIR.resolve())
         roots_g = media_roots()
         file_data = []
@@ -10315,6 +10403,44 @@ class Handler(BaseHTTPRequestHandler):
                     'gurl': gurl,
                 })
 
+        # Recherche globale (/files?q=...) : on REMPLACE la grille par le resultat
+        # de semantic_search, dans l'ordre de pertinence renvoye. Meme forme
+        # d'objet que la branche `sel` (donc rendu client inchange). Lecture seule,
+        # index en memoire ; note_heavy_activity car semantic_search peut lire les
+        # vecteurs. Cap a 1500 : couvre les gros lieux (Bremblens ~1141) sans
+        # exploser le rendu (vignettes en lazy-load).
+        if search_mode:
+            note_heavy_activity()
+            roots_cache = media_roots()
+            file_data = []
+            try:
+                resultats_q = semantic_search(qparam, 1500)
+            except Exception:                                 # noqa: BLE001
+                resultats_q = []
+            for k, _score in resultats_q:
+                e = STORE.get(k) or {}
+                if e.get('failed'):
+                    continue
+                url = _url_for_key(k, roots_cache)
+                if not url:
+                    continue
+                kws = list(dict.fromkeys(
+                    (e.get('kw_fr') or []) + (e.get('kw_en') or [])))
+                folder_lbl, gurl = _folder_link_for_key(k, roots_cache)
+                file_data.append({
+                    'name': Path(k).name,
+                    'key': k,
+                    'url': url,
+                    'size': human_size(e.get('size') or 0),
+                    'mtime': e.get('mtime') or 0,
+                    'taken': _best_time(k, e),
+                    'kw': kws,
+                    'gps': e.get('gps'),
+                    'desc': e.get('desc', ''),
+                    'folder': folder_lbl,
+                    'gurl': gurl,
+                })
+
         # Comptes par motif sur la vue courante, puis filtre eventuel. Import
         # PARESSEUX : interet est pur (re/pathlib), aucun modele ni deps ML au
         # chargement — le serveur demarre sans torch/cv2 (invariant zero-dep).
@@ -10342,6 +10468,7 @@ class Handler(BaseHTTPRequestHandler):
                 .replace('__REC__', '1' if rec else '0')
                 .replace('__HASSUBS__', '1' if subdirs else '0')
                 .replace('__DIRQ__', json.dumps(dirparam))
+                .replace('__SEARCHQ__', json.dumps(qparam if search_mode else ''))
                 .replace('__TAGDATA__', json.dumps(
                     {'counts': top_tags, 'sel': sel, 'mode': tmode},
                     ensure_ascii=False)))

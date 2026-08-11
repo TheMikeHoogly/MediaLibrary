@@ -6,7 +6,18 @@ priorités**. Détail ailleurs : `eval/DECISIONS.md` (décisions tranchées),
 tagging), `PROMPT_NOUVELLE_SESSION.md` (reprise), et l'historique git (chaque
 chantier fini y est — c'est pourquoi les récits de travaux terminés ne vivent PAS ici).
 
-## État actuel (10 août 2026)
+## État actuel (11 août 2026)
+
+**Session 11/08** (dans `server.py`, commit de session en cours) : Lieux **vérifiés en réel**
+(25 lieux, 0,8 s) ; **uniformisation clusters Personnes/Animaux** (fix débordement « Rejeter le
+groupe » + bouton « Archiver (inconnu) ») ; **fix perf `/sujets`** (`_chemin_relatif(k, roots)` :
+plus de `media_roots()`/stats SMB par clé → >45 s bloqué à 0,8 s) ; **page de résultats globale
+`/files?q=`** (le serveur remplit la grille avec `semantic_search`, mode IA client — les cartes
+Lieux ouvrent enfin leurs photos) ; **fix racine faux positifs** : `attribuer_visage`, la branche
+« photo déjà taguée avec le bon nom » ne retirait pas le tag ERRONÉ → le FP revenait à chaque
+correction. Corrigé (retrait + exclusion, réversible), à vérifier en réel. File nettoyée en direct.
+
+## État antérieur (10 août 2026)
 
 Session 10/08 : gros travail sur `/people` et la **correction des faux positifs**, déclenché
 par la fiche **Flo** (~6300 photos, très polluée par des profils tagués). Code livré sur le
