@@ -8,42 +8,36 @@ chantier fini y est — c'est pourquoi les récits de travaux terminés ne viven
 
 ## État actuel (11 août 2026)
 
-**Session 11/08 (matin)** (dans `server.py`) : Lieux **vérifiés en réel** (25 lieux, 0,8 s) ;
-**uniformisation clusters Personnes/Animaux** (fix débordement « Rejeter le groupe » + bouton
-« Archiver (inconnu) ») ; **fix perf `/sujets`** (`_chemin_relatif(k, roots)` : plus de
-`media_roots()`/stats SMB par clé → >45 s bloqué à 0,8 s) ; **page de résultats globale
-`/files?q=`** (grille remplie par `semantic_search`) ; **fix racine faux positifs**
-(`attribuer_visage`, branche « déjà tagué » : retrait + exclusion, réversible). File nettoyée en direct.
+**Sessions 11/08 matin + après-midi : commitées et fusionnées** (tout vérifié en réel,
+détail dans git) : Lieux (25, 0,8 s) ; fixes clusters ; perf `/sujets` (>45 s → 0,8 s) ;
+page `/files?q=` ; fix racine faux positifs confirmé (rebuild curateur → 0 carte) ;
+**fusion `/sujets`** (entrée unique de la nav) ; passe DESIGN PEOPLE+PETS ; fix bandeau
+timm `/pets` (fausse alerte : `timm` présent, chargement paresseux — mention neutre
+« en veille », actif au prochain redémarrage).
 
-**Session 11/08 (après-midi)** — trois chantiers, tous **vérifiés en réel**, PAS commités :
-1. **Fix FP confirmé** : rebuild complet du curateur forcé → **0 carte « faux positif »**,
-   aucun des 5 FP corrigés ne revient (avant le fix ils resurgissaient à chaque passe).
-2. **Fusion `/sujets` LIVRÉE** : entrée unique — onglets Personnes/Animaux retirés de la nav,
-   onglet Sujets actif sur `/people`/`/pets` (vues spécialisées), rangée « Files de travail »
-   sur `/sujets`. Rien d'autre ne bouge (fiches `?name=`, files, API intactes).
-3. **Passe DESIGN PEOPLE+PETS LIVRÉE** (~128 valeurs hors échelle → tokens : font-sizes
-   px/rem → `--t-*`, radius 4–14px → `--r-sm`/`--r-md`, espacements → échelle 4px ;
-   `verifier_ui_tokens` : 0 interdit). Reste : GALLERY/BROWSE/MAP/HTML/FACES (cf. #8).
-
-**Fausse alerte timm (résolue le 11/08 au soir)** : le bandeau `/pets` « moteur d'empreintes
-absent (installe timm) » criait à tort — `timm` 1.0.27 est bien dans le `.venv` (torch cu130
-intact) ; DINOv2 se charge **paresseusement** et l'UI confondait « pas encore chargé » avec
-« absent ». Fix livré (bandeau : erreur réelle en rouge via `dino_error`, sinon mention neutre
-« en veille ») — actif au prochain redémarrage, à commiter.
+**Session 11/08 (soir)** — deux volets, **livrés mais PAS vérifiés en réel** (redémarrage en
+attente) ni commités :
+1. **Recherche sur la Carte** (ROADMAP #5) : champ « Rechercher (noms, lieux, sens)… » sur
+   `/map`, même vocabulaire hybride que la galerie (`/api/search`, plafond `n` aligné à 1500) ;
+   le filtre recompose marqueurs/compteur et **se compose avec la zone et le diaporama**
+   (jointure par `url`, commune à `/api/geo` et `/api/search`). Placeholder d'accueil aligné.
+2. **Passe DESIGN terminée sur les 5 pages restantes** (MAP/GALLERY/HTML/BROWSE/FACES,
+   mêmes mappings que PEOPLE/PETS) + divergences tranchées (chips galerie alignés sur le
+   canon `min-height:32px` ; les 6 `outline:none` restants purgés — plancher `base.css`).
+   Lint tokens : 0 interdit, 0 avertissement sur les 11 constantes.
+3. **Éval INT8 (vision-eval) : REJETÉ** — cf. `eval/DECISIONS.md` + `eval/eval_int8_vectors.py`
+   (mesure sur copie réelle, 130 576 vecteurs ; la base est déjà en f16 et locale ; recall@10
+   sémantique 0,9685 réfute « sans perte »).
 
 ## État antérieur (10 août 2026) — commité, détail dans git
 
-Session 10/08 (tout **validé en réel**) : refonte `/people` + outillage **faux positifs**
-(déclencheur : fiche Flo polluée) ; tokenisation UI value-preserving sur les 7 pages ;
-**`exclude` fait autorité partout** (générateur REMOVE + `reimport_name_tags`) avec
-**auto-guérison** `🩹` des tags resurgis et levée d'exclusion sur attribution positive ;
-deux correctifs de curation (rafraîchissement « c'est… » ; le ré-embedding **saute** les
-photos jugées par un humain — ⚠ geste Mike restant : re-rejeter le groupe Caline une fois) ;
-Lieux = 3ᵉ type d'entité (`places_list()`, GPS + repli dossiers, carte 📍 → `/files?q=`).
+Refonte `/people` + outillage **faux positifs** ; tokenisation value-preserving 7 pages ;
+**`exclude` fait autorité partout** + auto-guérison `🩹` ; le ré-embedding saute les photos
+jugées par un humain (⚠ geste Mike : re-rejeter le groupe Caline une fois) ; Lieux = 3ᵉ type
+d'entité.
 
-- **Git** : Lieux commité (`fd1f805`) ; **restent à commiter** les chantiers du 11/08
-  (matin + après-midi : fixes, fusion `/sujets`, design PEOPLE+PETS) — `27 - Commit de
-  session.bat`, puis `28 - Fusionner…` si voulu ; **`git push` = geste de Mike**.
+- **Git** : tout est commité/fusionné jusqu'à l'après-midi du 11/08 ; **reste à commiter la
+  session du soir** (après vérif) — `27 - Commit de session.bat` ; **`git push` = geste de Mike**.
 - **Ouvert (gestes Mike)** :
   - **Nettoyer Flo** : la fiche reste polluée tant qu'un passage n'est pas fait. Ouvrir Flo →
     « Corriger » (seuil ~0.2, monter en surveillant la grille) ou « Nettoyer (référence) »
@@ -84,14 +78,15 @@ Lieux = 3ᵉ type d'entité (`places_list()`, GPS + repli dossiers, carte 📍 �
    réel : surcouche lecture seule (10/08), Lieux 3ᵉ type d'entité (10–11/08), **fusion**
    (11/08 : `/sujets` entrée unique de la nav, `/people`+`/pets` vues spécialisées,
    rangée « Files de travail »). Plus rien à faire ici.
-5. **Recherche.** SigLIP 2 en langue naturelle (« les étés à Bremblens avec Luna ») ;
-   partager le vocabulaire de la barre de recherche à la page Carte (marqueurs déjà FAITS).
+5. **Recherche — livrée, à VÉRIFIER en réel (11/08 soir).** Vocabulaire hybride (noms + lieux
+   + sens) partagé à la page Carte ; « les étés à Bremblens avec Luna » couvert par
+   `semantic_search`. Reste après vérif : rien de cadré.
 6. **Reconnaissance — algo.** Clustering par densité (HDBSCAN / Chinese Whispers) au lieu
    d'un seuil global unique ; AdaFace sur le ré-embedding des visages faibles ; écrire les
    tags SigLIP (aujourd'hui proposés — décision à prendre car modifie les XMP).
-7. **Perf / archi.** Embeddings visages en INT8 (~4× moins de stockage/SMB, sans perte) ;
-   `GpuArbiter` unique (baux + priorités UI > tagging > visages > chats) remplaçant les 4
-   politiques `*_GPU_MIN_FREE_MB` séparées.
+7. **Perf / archi.** `GpuArbiter` unique (baux + priorités UI > tagging > visages > chats)
+   remplaçant les 4 politiques `*_GPU_MIN_FREE_MB` séparées — session dédiée.
+   *(INT8 des embeddings : REJETÉ le 11/08, cf. `DECISIONS.md` — ne pas reproposer.)*
 8. **Extraire les 7 pages HTML → `ui/` + `tokens.css`** (sans build step). **Value-preserving :
    FAIT sur les 7 pages** (commité, vérifié en réel) — les espacements/rayons/tailles qui
    **égalent déjà un token** pointent vers lui (12px→`--e-3`, 999px→`--r-pill`, 0.85rem→`--t-sm`,
@@ -99,13 +94,10 @@ Lieux = 3ᵉ type d'entité (`places_list()`, GPS + repli dossiers, carte 📍 �
    Non tokenisé : positions/tailles, font-sizes **px** (≠ rem), valeurs hors échelle ; `#4A8C7B`
    Leaflet reste en dur (API refuse `var()`). Divergences nommées tranchées : GALLERY `.pchip`/
    `.chip` fusionnés ; PEOPLE `#222`→`--salle-3`, `#f0a35b`→`--veilleuse`.
+   - **Passe DESIGN : FAITE sur les 7 pages** — PEOPLE+PETS (11/08 après-midi, vérifiée en
+     réel), MAP/GALLERY/HTML/BROWSE/FACES (11/08 soir, **à vérifier au redémarrage**).
+     Fonds photo #000 et overlays translucides conservés (tolérés, hors palette).
    - **Reste** : extraction physique vers `ui/` (via `bundle.py`) — tokens déjà tous référencés.
-     **Passe DESIGN ciblée : FAITE sur PEOPLE+PETS (11/08, vérifiée en réel)** ; reste
-     GALLERY/BROWSE/MAP/HTML/FACES (0.8rem, radius 8/10px, gaps 5–14px — mêmes mappings).
-     Fonds photo #000 conservés (tolérés, hors palette).
-   - **Méthode recommandée** : pour chaque page restante, UNE passe combinée (value-preserving
-     + calage échelle + divergences) AVEC vérif visuelle Claude-in-Chrome, plutôt que 2 passes
-     sur les mêmes déclarations. `/browse` a servi de modèle (value-preserving seul, identique).
 9. **Éval tagging (parké, déjà cadré).** Mesurer V2 « assertions en contexte, sans
    impératif de noms » (~4,3 s, jamais notée) + fusion programmatique des noms/date/lieu
    (Knowledge Builder). Cf. `docs/AUDIT_EXTERNE_2026.md` + `eval/PLAN_assertions_vs_pixels.md`.

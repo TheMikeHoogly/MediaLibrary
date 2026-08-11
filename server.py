@@ -3320,8 +3320,13 @@ HTML_PAGE = """<!DOCTYPE html>
 <style>
   /* Etape A tokenisation « chambre noire » : couleurs/police en dur -> tokens.
      Bouton d'envoi = papier (principal neutre) ; barre de progression =
-     veilleuse (travail en cours) ; etats ok/err = fixateur/encre. Structure
-     et espacements inchanges. */
+     veilleuse (travail en cours) ; etats ok/err = fixateur/encre.
+     Passe DESIGN (11/08) : valeurs hors echelle calees sur les tokens, memes
+     mappings que les autres pages (0.9/1rem -> --t-md, 1.1rem -> --t-lg,
+     1.6rem -> --t-xl, radius 8-14px -> --r-md ou --r-pill (piste de
+     progression), espacements -> echelle 4px). outline:none RETIRE (plancher
+     base.css). Radius 20px des grandes cartes d'envoi et tailles d'icones
+     (2/3rem) conserves : signature de la page, hors gamme des tokens. */
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
     font-family: var(--f-texte);
@@ -3333,30 +3338,30 @@ HTML_PAGE = """<!DOCTYPE html>
     align-items: center;
     padding: var(--e-6) var(--e-4) 40px;
   }
-  h1 { font-size: 1.6rem; margin-bottom: 6px; text-align: center; }
-  .subtitle { color: var(--graphite); font-size: 0.9rem; margin-bottom: var(--e-8); text-align: center; }
+  h1 { font-size: var(--t-xl); margin-bottom: var(--e-2); text-align: center; }
+  .subtitle { color: var(--graphite); font-size: var(--t-md); margin-bottom: var(--e-8); text-align: center; }
 
   .pick-btn {
     display: block;
     width: 100%;
     max-width: 480px;
-    padding: 40px 20px;
+    padding: 40px var(--e-6);
     background: var(--salle-3);
     border: 2px dashed var(--graphite);
     border-radius: 20px;
     text-align: center;
     cursor: pointer;
     color: var(--texte);
-    font-size: 1rem;
+    font-size: var(--t-md);
   }
   .pick-btn:active { background: var(--salle-2); }
-  .pick-btn--dossier { margin-top: var(--e-3); padding: 22px 20px; }
+  .pick-btn--dossier { margin-top: var(--e-3); padding: var(--e-6) var(--e-6); }
   .pick-icon { font-size: 3rem; margin-bottom: var(--e-3); }
   .pick-btn--dossier .pick-icon { font-size: 2rem; margin-bottom: var(--e-2); }
-  .pick-label { font-size: 1.1rem; font-weight: 600; margin-bottom: 6px; }
+  .pick-label { font-size: var(--t-lg); font-weight: 600; margin-bottom: var(--e-2); }
   .pick-hint { color: var(--graphite); font-size: var(--t-sm); }
 
-  .summary { width: 100%; max-width: 480px; margin-top: 14px; font-size: 0.9rem;
+  .summary { width: 100%; max-width: 480px; margin-top: var(--e-4); font-size: var(--t-md);
              color: var(--graphite); font-variant-numeric: tabular-nums; }
   .summary b { color: var(--texte); }
 
@@ -3379,43 +3384,43 @@ HTML_PAGE = """<!DOCTYPE html>
     background: var(--papier);
     color: var(--texte-papier);
     border: none;
-    border-radius: 14px;
-    font-size: 1.1rem;
+    border-radius: var(--r-md);
+    font-size: var(--t-lg);
     font-weight: 600;
     cursor: pointer;
   }
   .btn:active { opacity: 0.85; }
   .btn:disabled { background: var(--salle-3); color: var(--graphite); cursor: default; }
 
-  #status { width: 100%; max-width: 480px; margin-top: 20px; font-size: 0.9rem; }
+  #status { width: 100%; max-width: 480px; margin-top: var(--e-6); font-size: var(--t-md); }
   .file-item {
-    display: flex; align-items: center; gap: 10px;
-    padding: 10px 14px; background: var(--salle-3); border-radius: 10px; margin-bottom: var(--e-2);
+    display: flex; align-items: center; gap: var(--e-3);
+    padding: var(--e-3) var(--e-4); background: var(--salle-3); border-radius: var(--r-md); margin-bottom: var(--e-2);
   }
-  .file-item .name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.9rem; }
+  .file-item .name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--t-md); }
   .file-item .state { flex-shrink: 0; font-size: var(--t-sm); }
   .state.ok { color: var(--fixateur); }
   .state.err { color: var(--encre); }
   .state.pending { color: var(--graphite); }
 
-  .progress-bar-wrap { width: 100%; max-width: 480px; margin-top: var(--e-4); background: var(--salle-3); border-radius: 8px; height: 8px; display: none; }
-  .progress-bar { height: 100%; border-radius: 8px; background: var(--veilleuse); width: 0%; transition: width 0.2s; }
+  .progress-bar-wrap { width: 100%; max-width: 480px; margin-top: var(--e-4); background: var(--salle-3); border-radius: var(--r-pill); height: 8px; display: none; }
+  .progress-bar { height: 100%; border-radius: var(--r-pill); background: var(--veilleuse); width: 0%; transition: width 0.2s; }
 
-  .gallery-link { margin-top: 20px; color: var(--texte); text-decoration: none; font-size: 0.9rem; }
+  .gallery-link { margin-top: var(--e-6); color: var(--texte); text-decoration: none; font-size: var(--t-md); }
 
-  .search-row { display: flex; gap: var(--e-2); width: 100%; max-width: 480px; margin-top: 28px; }
-  .search-row input { flex: 1; padding: var(--e-3) 14px; border-radius: 12px; border: var(--trait);
-                      background: var(--salle-3); color: var(--texte); font-size: 1rem; outline: none; }
+  .search-row { display: flex; gap: var(--e-2); width: 100%; max-width: 480px; margin-top: var(--e-8); }
+  .search-row input { flex: 1; padding: var(--e-3) var(--e-4); border-radius: var(--r-md); border: var(--trait);
+                      background: var(--salle-3); color: var(--texte); font-size: var(--t-md); }
   .search-row input:focus { border-color: var(--veilleuse); }
-  .search-row button { padding: var(--e-3) 18px; border-radius: 12px; border: none;
-                       background: var(--salle-3); color: var(--texte); font-size: 1rem; cursor: pointer; }
+  .search-row button { padding: var(--e-3) var(--e-4); border-radius: var(--r-md); border: none;
+                       background: var(--salle-3); color: var(--texte); font-size: var(--t-md); cursor: pointer; }
 </style>
 </head>
 <body>
 <!--APPNAV-->
 
 <h1>Envoyer des photos</h1>
-<p style="color:var(--graphite);font-size:0.75rem;margin-bottom:4px">v10 &middot; tagging IA</p>
+<p style="color:var(--graphite);font-size:var(--t-xs);margin-bottom:var(--e-1)">v10 &middot; tagging IA</p>
 <p class="subtitle">Meme reseau WiFi &middot; Aucune inscription requise</p>
 
 <input type="file" id="fileInput" multiple accept="image/*,video/*" style="display:none">
@@ -3444,7 +3449,8 @@ HTML_PAGE = """<!DOCTYPE html>
 <div id="status"></div>
 
 <div class="search-row">
-  <input type="search" id="searchInput" placeholder="Rechercher par mots-cl&eacute;s (plage, famille&hellip;)">
+  <input type="search" id="searchInput" placeholder="Rechercher (noms, lieux, sens&hellip;)"
+         aria-label="Rechercher des photos (noms, lieux, sens de l'image)">
   <button id="searchBtn">&#128269;</button>
 </div>
 
@@ -3562,49 +3568,56 @@ GALLERY_PAGE = """<!DOCTYPE html>
    pointent vers lui (12px->--e-3, 8px->--e-2, 16px->--e-4, 0.75rem->--t-xs,
    0.85rem->--t-sm, 999px->--r-pill) — rendu identique, valeurs calculees
    prouvees. .pchip et .chip fusionnes en un seul jeu (fin de la divergence
-   connue : ils etaient deux forks identiques). Valeurs hors echelle (0.8rem,
-   radius 8/10px) laissees pour la passe design ciblee. */
+   connue : ils etaient deux forks identiques).
+   Passe DESIGN (11/08) : valeurs hors echelle calees sur les tokens, memes
+   mappings que PEOPLE/PETS/MAP (0.8-0.82rem/13px -> --t-sm, 0.65-0.7rem ->
+   --t-xs, 0.9rem -> --t-md, 1.1rem -> --t-lg, radius 8/10px -> --r-md,
+   gaps/paddings -> echelle 4px : 5px -> --e-1, 6/7px -> --e-2, 10px -> --e-3,
+   14/18px -> --e-4). Divergences tranchees : outline:none de #q RETIRE (le
+   plancher base.css fournit l'anneau focus) ; .pchip/.chip alignes sur le chip
+   canonique (min-height 32px, comme .mchip). Tailles fixes (180px, 300px,
+   positions) non tokenisees. */
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: var(--f-texte);
         background: var(--salle); color: var(--texte); min-height: 100vh; }
 /* -- filtres personnes + geo -- */
-.selbar { display: flex; align-items: center; gap: 6px; padding: var(--e-2) var(--e-4);
+.selbar { display: flex; align-items: center; gap: var(--e-2); padding: var(--e-2) var(--e-4);
           background: var(--salle-2); border-bottom: var(--trait); flex-wrap: wrap; }
 .selbar .lbl { color: var(--graphite); font-size: var(--t-xs); margin-right: 2px; }
 /* .pchip + .chip : jeu unique, selecteurs groupes (rendu inchange). */
-.pchip, .chip { padding: 5px var(--e-3); border-radius: var(--r-pill); border: var(--trait);
-         background: var(--salle-3); color: var(--graphite); font-size: 0.8rem; cursor: pointer;
+.pchip, .chip { min-height: 32px; padding: var(--e-1) var(--e-3); border-radius: var(--r-pill); border: var(--trait);
+         background: var(--salle-3); color: var(--graphite); font-size: var(--t-sm); cursor: pointer;
          user-select: none; }
 .pchip.on, .chip.on { background: var(--fixateur); border-color: var(--fixateur); color: #fff; }
-.pchip .n, .chip .n { color: var(--graphite); font-size: 0.7rem; margin-left: var(--e-1); font-family: var(--f-donnees); }
+.pchip .n, .chip .n { color: var(--graphite); font-size: var(--t-xs); margin-left: var(--e-1); font-family: var(--f-donnees); }
 .pchip.on .n, .chip.on .n { color: #fff; }
-.geobtn { padding: 5px var(--e-3); border-radius: 8px; border: var(--trait);
-          background: var(--salle-3); color: var(--texte); font-size: 0.8rem; cursor: pointer; }
+.geobtn { padding: var(--e-1) var(--e-3); border-radius: var(--r-md); border: var(--trait);
+          background: var(--salle-3); color: var(--texte); font-size: var(--t-sm); cursor: pointer; }
 .geobtn.on { background: var(--fixateur); border-color: var(--fixateur); color: #fff; }
-#geopanel { display: none; padding: 10px var(--e-4); background: var(--salle);
+#geopanel { display: none; padding: var(--e-3) var(--e-4); background: var(--salle);
             border-bottom: var(--trait); }
 #geopanel.open { display: block; }
-#geomap { height: 300px; border-radius: 10px; overflow: hidden; background: var(--salle-3); }
-.georow { display: flex; align-items: center; gap: 10px; margin-top: var(--e-2); flex-wrap: wrap; }
+#geomap { height: 300px; border-radius: var(--r-md); overflow: hidden; background: var(--salle-3); }
+.georow { display: flex; align-items: center; gap: var(--e-3); margin-top: var(--e-2); flex-wrap: wrap; }
 .georow input[type=range] { flex: 1; min-width: 140px; accent-color: var(--fixateur); }
 .georow .cnt { color: var(--graphite); font-size: var(--t-sm); font-family: var(--f-donnees); }
-.georow button { padding: 6px var(--e-3); border-radius: 8px; border: var(--trait);
-                 background: var(--salle-3); color: var(--texte); font-size: 0.82rem; cursor: pointer; }
+.georow button { padding: var(--e-2) var(--e-3); border-radius: var(--r-md); border: var(--trait);
+                 background: var(--salle-3); color: var(--texte); font-size: var(--t-sm); cursor: pointer; }
 .georow button.prim { background: var(--papier); border-color: var(--papier); color: var(--texte-papier); }
 
 /* -- toolbar -- */
-.bar { display: flex; align-items: center; gap: 10px; padding: 14px var(--e-4);
+.bar { display: flex; align-items: center; gap: var(--e-3); padding: var(--e-4);
         background: var(--salle-2); border-bottom: var(--trait); flex-wrap: wrap; }
-.back { color: var(--texte); text-decoration: none; font-size: 0.9rem; margin-right: auto; }
-.btn-group { display: flex; gap: 6px; }
-.tb { padding: 7px 14px; border: var(--trait); border-radius: 8px;
+.back { color: var(--texte); text-decoration: none; font-size: var(--t-md); margin-right: auto; }
+.btn-group { display: flex; gap: var(--e-2); }
+.tb { padding: var(--e-2) var(--e-4); border: var(--trait); border-radius: var(--r-md);
        background: var(--salle-3); color: var(--texte); font-size: var(--t-sm); cursor: pointer; }
 .tb.active { background: var(--fixateur); border-color: var(--fixateur); color: #fff; }
 .tb.demo { background: var(--salle-3); border-color: var(--graphite); }
 .tb.demo.on { background: var(--fixateur); border-color: var(--fixateur); color: #fff; }
-.count { color: var(--graphite); font-size: 0.8rem; font-family: var(--f-donnees); }
-#q { padding: 7px var(--e-3); border-radius: 8px; border: var(--trait);
-     background: var(--salle-3); color: var(--texte); font-size: var(--t-sm); width: 180px; outline: none; }
+.count { color: var(--graphite); font-size: var(--t-sm); font-family: var(--f-donnees); }
+#q { padding: var(--e-2) var(--e-3); border-radius: var(--r-md); border: var(--trait);
+     background: var(--salle-3); color: var(--texte); font-size: var(--t-sm); width: 180px; }
 #q:focus { border-color: var(--veilleuse); }
 
 /* ── bandeau IA ── */
@@ -3613,18 +3626,18 @@ body { font-family: var(--f-texte);
 #pending a { color: var(--veilleuse); }
 
 /* -- barre de tags -- */
-.tagbar { display: flex; align-items: center; gap: 6px; padding: 10px var(--e-4);
+.tagbar { display: flex; align-items: center; gap: var(--e-2); padding: var(--e-3) var(--e-4);
           background: var(--salle-2); border-bottom: var(--trait); flex-wrap: wrap; }
 .chip.mode { background: var(--salle-3); border-color: var(--graphite); color: var(--texte); }
 .chip.clear { background: transparent; border-color: var(--encre); color: var(--encre); display: none; }
 .tagbar-label { color: var(--graphite); font-size: var(--t-xs); margin-right: var(--e-1); }
-.tagchips { display: flex; flex-wrap: wrap; gap: 6px; width: 100%; margin-top: var(--e-2); }
+.tagchips { display: flex; flex-wrap: wrap; gap: var(--e-2); width: 100%; margin-top: var(--e-2); }
 .tagchips.hidden { display: none; }
 
 /* -- barre de dossiers -- */
-.folders { display: flex; flex-wrap: wrap; gap: 6px; padding: 10px var(--e-4);
+.folders { display: flex; flex-wrap: wrap; gap: var(--e-2); padding: var(--e-3) var(--e-4);
            background: var(--salle-2); border-bottom: var(--trait); }
-.fchip { padding: 6px var(--e-3); border-radius: 8px; background: var(--salle-3); color: var(--texte);
+.fchip { padding: var(--e-2) var(--e-3); border-radius: var(--r-md); background: var(--salle-3); color: var(--texte);
          text-decoration: none; font-size: var(--t-sm); border: var(--trait); }
 .fchip.up { background: var(--salle-3); border-color: var(--graphite); color: var(--graphite); }
 
@@ -3642,7 +3655,7 @@ body { font-family: var(--f-texte);
              opacity: 0; transition: opacity 0.3s, transform 0.2s; }
 .cell img.loaded { opacity: 1; }
 .cell:hover img { transform: scale(1.05); }
-.caption { padding: 5px 7px 6px; font-size: 0.65rem; line-height: 1.25; color: var(--graphite);
+.caption { padding: var(--e-1) var(--e-2) var(--e-2); font-size: var(--t-xs); line-height: 1.25; color: var(--graphite);
            min-height: 2.3em; display: -webkit-box; -webkit-line-clamp: 2;
            -webkit-box-orient: vertical; overflow: hidden; }
 .caption.empty { color: var(--graphite); font-style: italic; }
@@ -3652,67 +3665,67 @@ body { font-family: var(--f-texte);
        z-index: 100; flex-direction: column; }
 #lb.open { display: flex; }
 #lb-img { flex: 1; object-fit: contain; width: 100%; min-height: 0; }
-#lb-meta { background: var(--salle-2); padding: 10px var(--e-4) 0; }
-#lb-tags { font-size: 0.9rem; color: var(--texte); line-height: 1.4; }
+#lb-meta { background: var(--salle-2); padding: var(--e-3) var(--e-4) 0; }
+#lb-tags { font-size: var(--t-md); color: var(--texte); line-height: 1.4; }
 #lb-tags.none { color: var(--graphite); font-style: italic; }
-#lb-desc { font-size: 0.8rem; color: var(--graphite); margin-top: 3px; font-style: italic; }
-#lb-bar { background: var(--salle-2); padding: 10px var(--e-4); display: flex;
+#lb-desc { font-size: var(--t-sm); color: var(--graphite); margin-top: var(--e-1); font-style: italic; }
+#lb-bar { background: var(--salle-2); padding: var(--e-3) var(--e-4); display: flex;
            align-items: center; gap: var(--e-3); flex-shrink: 0; }
 #lb-name { flex: 1; font-size: var(--t-sm); color: var(--graphite);
             overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-#lb-close { color: #fff; background: var(--salle-3); border: none; border-radius: 8px;
-             padding: 6px 14px; cursor: pointer; font-size: 0.9rem; }
+#lb-close { color: #fff; background: var(--salle-3); border: none; border-radius: var(--r-md);
+             padding: var(--e-2) var(--e-4); cursor: pointer; font-size: var(--t-md); }
 #lb-prev, #lb-next { color: #fff; background: var(--salle-3); border: none;
-                      border-radius: 8px; padding: 6px var(--e-3); cursor: pointer; font-size: 1.1rem; }
+                      border-radius: var(--r-md); padding: var(--e-2) var(--e-3); cursor: pointer; font-size: var(--t-lg); }
 
 /* -- slideshow -- */
 #ss { display: none; position: fixed; inset: 0; background: #000;
        z-index: 200; flex-direction: column; }
 #ss.open { display: flex; }
 #ss-img { flex: 1; object-fit: contain; width: 100%; min-height: 0; }
-#ss-footer { background: var(--salle); padding: 10px var(--e-4); flex-shrink: 0; }
-#ss-name { font-size: var(--t-sm); color: var(--graphite); text-align: center; margin-bottom: 6px;
+#ss-footer { background: var(--salle); padding: var(--e-3) var(--e-4); flex-shrink: 0; }
+#ss-name { font-size: var(--t-sm); color: var(--graphite); text-align: center; margin-bottom: var(--e-2);
             white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 #ss-folderwrap { text-align: center; margin-bottom: var(--e-2); }
 #ss-folder { display: inline-block; color: var(--texte); background: var(--salle-3);
-            border: var(--trait); border-radius: 8px; padding: 5px var(--e-3);
-            font-size: 0.82rem; text-decoration: none; max-width: 80vw;
+            border: var(--trait); border-radius: var(--r-md); padding: var(--e-1) var(--e-3);
+            font-size: var(--t-sm); text-decoration: none; max-width: 80vw;
             overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 #ss-folder:hover { background: var(--salle-2); }
 #ss-folder.hidden { display: none; }
 #ss-track { height: 4px; background: var(--salle-3); border-radius: 2px; overflow: hidden; }
 #ss-fill { height: 100%; background: var(--veilleuse); width: 0%; transition: width linear; }
 #ss-stop { position: absolute; top: 14px; right: 14px; background: rgba(0,0,0,0.6);
-            color: #fff; border: var(--trait); border-radius: 8px;
-            padding: 6px 14px; cursor: pointer; font-size: var(--t-sm); z-index: 201; }
+            color: #fff; border: var(--trait); border-radius: var(--r-md);
+            padding: var(--e-2) var(--e-4); cursor: pointer; font-size: var(--t-sm); z-index: 201; }
 
 /* -- barre de filtre par motif (point 21) : regroupe la vue par regle. Actif =
    fixateur (choix humain), coherent avec les chips personnes/tags. -- */
-.motifbar { display: none; align-items: center; gap: 6px; padding: var(--e-2) var(--e-4);
+.motifbar { display: none; align-items: center; gap: var(--e-2); padding: var(--e-2) var(--e-4);
             background: var(--salle-2); border-bottom: var(--trait); flex-wrap: wrap; }
 .motifbar.show { display: flex; }
 .motifbar .lbl { color: var(--graphite); font-size: var(--t-xs); margin-right: 2px; }
-.mchip { min-height: 32px; padding: 5px var(--e-3); border-radius: var(--r-pill); border: var(--trait);
-         background: var(--salle-3); color: var(--graphite); font-size: 0.8rem;
+.mchip { min-height: 32px; padding: var(--e-1) var(--e-3); border-radius: var(--r-pill); border: var(--trait);
+         background: var(--salle-3); color: var(--graphite); font-size: var(--t-sm);
          cursor: pointer; text-decoration: none; }
 .mchip.on { background: var(--fixateur); border-color: var(--fixateur); color: #fff; }
-.mchip .n { font-family: var(--f-donnees); font-size: 0.7rem; margin-left: var(--e-1); opacity: 0.75; }
+.mchip .n { font-family: var(--f-donnees); font-size: var(--t-xs); margin-left: var(--e-1); opacity: 0.75; }
 .mchip.on .n { opacity: 1; }
 
 /* -- bouton supprimer dans la visionneuse : destructif = encre, cible 44px -- */
-#lb-del { min-height: var(--touch); padding: 0 14px; border-radius: 8px;
+#lb-del { min-height: var(--touch); padding: 0 var(--e-4); border-radius: var(--r-md);
           background: transparent; border: 1px solid var(--encre); color: var(--encre);
-          cursor: pointer; font-size: 0.9rem; }
+          cursor: pointer; font-size: var(--t-md); }
 #lb-del:hover { background: var(--encre); color: #fff; }
 
 /* -- toast d'annulation 10s (meme registre que /browse et /people) -- */
 .gtoast { position: fixed; left: 50%; bottom: var(--e-4); transform: translateX(-50%);
           z-index: 300; display: none; gap: var(--e-3); align-items: center;
           max-width: 90vw; background: var(--salle-3); border: var(--trait);
-          border-radius: var(--r-pill); padding: 10px 10px 10px 18px; font-size: 13px;
+          border-radius: var(--r-pill); padding: var(--e-3) var(--e-3) var(--e-3) var(--e-4); font-size: var(--t-sm);
           color: var(--texte); box-shadow: 0 8px 24px #0008; }
 .gtoast.show { display: flex; }
-.gtoast .b { min-height: 36px; padding: 0 14px; border-radius: var(--r-pill); border: var(--trait);
+.gtoast .b { min-height: 36px; padding: 0 var(--e-4); border-radius: var(--r-pill); border: var(--trait);
              background: var(--salle-2); color: var(--texte); cursor: pointer; }
 </style>
 </head>
@@ -3756,7 +3769,7 @@ __FOLDERS__
     <button class="prim" id="geoapply">Appliquer</button>
     <button id="geoclear">Effacer</button>
   </div>
-  <div class="lbl" style="margin-top:6px">Clique un point sur la carte pour définir le centre, règle le rayon, puis « Appliquer ».</div>
+  <div class="lbl" style="margin-top:var(--e-2)">Clique un point sur la carte pour définir le centre, règle le rayon, puis « Appliquer ».</div>
 </div>
 
 <div class="grid" id="grid"></div>
@@ -4744,40 +4757,42 @@ BROWSE_PAGE = """<!DOCTYPE html>
    tokens de ui/tokens.css. Interdits retires : bleu iOS #0a84ff, gris neutre #555.
    Etape B : espacements/rayons/tailles qui EGALENT deja un token pointent vers lui
    (16px->--e-4, 12px->--e-3, 8px->--e-2, 0.75rem->--t-xs, 0.85rem->--t-sm,
-   999px->--r-pill). Substitutions a valeur identique : rendu inchange. Les valeurs
-   hors echelle (14/11/10/6/30/22px, 0.9rem, radius 8/10px...) restent en dur -> a
-   caler sur l'echelle dans la passe design SEPAREE (skill : identique d'abord). */
+   999px->--r-pill). Substitutions a valeur identique : rendu inchange.
+   Passe DESIGN (11/08) : valeurs hors echelle calees sur les tokens, memes
+   mappings que les autres pages (0.9rem -> --t-md, 0.78rem/13px -> --t-sm avec
+   --t-xs pour les compteurs de donnees, radius 8/10px -> --r-md, espacements ->
+   echelle 4px). Tailles fixes (22px des cases a cocher) non tokenisees. */
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: var(--f-texte);
        background: var(--salle); color: var(--texte); min-height: 100vh; }
-.bar { display: flex; gap: 14px; align-items: center; padding: 14px 16px;
+.bar { display: flex; gap: var(--e-4); align-items: center; padding: var(--e-4);
        background: var(--salle-2); border-bottom: var(--trait); flex-wrap: wrap; }
-.back { color: var(--texte); text-decoration: none; font-size: 0.9rem; }
-.crumbs { color: var(--graphite); font-size: 0.9rem; }
+.back { color: var(--texte); text-decoration: none; font-size: var(--t-md); }
+.crumbs { color: var(--graphite); font-size: var(--t-md); }
 .crumbs a { color: var(--texte); text-decoration: none; }
 .list { max-width: 720px; margin: 0 auto; padding: var(--e-3); }
-.row { display: flex; align-items: center; gap: var(--e-3); padding: 11px 14px;
-       background: var(--salle-2); border-radius: 10px; margin-bottom: 6px;
-       text-decoration: none; color: var(--texte); font-size: 0.9rem; }
+.row { display: flex; align-items: center; gap: var(--e-3); padding: var(--e-3) var(--e-4);
+       background: var(--salle-2); border-radius: var(--r-md); margin-bottom: var(--e-2);
+       text-decoration: none; color: var(--texte); font-size: var(--t-md); }
 .row:active { background: var(--salle-3); }
 .row .ic { flex-shrink: 0; }
 .row .nm { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .row .sz { color: var(--graphite); font-size: var(--t-xs); flex-shrink: 0; }
 .row.dir .nm { color: var(--texte); }
-.empty { color: var(--graphite); text-align: center; padding: 30px; }
+.empty { color: var(--graphite); text-align: center; padding: var(--e-8); }
 /* Etape B — gestion de fichiers : rangees selectionnables + barre d'actions sur
    PAPIER (surface « decider »). Cibles 44px, primaire = fixateur, suppr = encre. */
 .row .lk { display: flex; align-items: center; gap: var(--e-3); flex: 1; min-width: 0;
            text-decoration: none; color: inherit; }
 .row .sel { width: 22px; height: 22px; flex-shrink: 0; accent-color: var(--fixateur); cursor: pointer; }
 .row.marked { outline: 2px solid var(--veilleuse); outline-offset: -2px; }
-.actbar { position: sticky; bottom: var(--e-2); margin: 10px auto 0; max-width: 720px;
+.actbar { position: sticky; bottom: var(--e-2); margin: var(--e-3) auto 0; max-width: 720px;
           display: flex; gap: var(--e-2); align-items: center; flex-wrap: wrap;
           background: var(--papier); color: var(--texte-papier);
           border: 1px solid var(--papier-2); border-radius: var(--r-md);
-          padding: 10px 12px; box-shadow: 0 6px 30px #000a; }
-.actbar .cnt { font-family: var(--f-donnees); font-size: 0.78rem; margin-right: auto; }
-.actbar .b { min-height: var(--touch); padding: 0 14px; border-radius: 8px;
+          padding: var(--e-3); box-shadow: 0 6px 30px #000a; }
+.actbar .cnt { font-family: var(--f-donnees); font-size: var(--t-xs); margin-right: auto; }
+.actbar .b { min-height: var(--touch); padding: 0 var(--e-4); border-radius: var(--r-md);
              border: 1px solid var(--graphite-p); background: transparent;
              color: var(--texte-papier); font: 500 var(--t-sm) var(--f-texte); cursor: pointer; }
 .actbar .b:disabled { opacity: 0.4; cursor: default; }
@@ -4785,7 +4800,7 @@ body { font-family: var(--f-texte);
 .actbar .b.del { border-color: var(--encre); color: var(--encre); }
 .fxtoast { position: sticky; bottom: var(--e-2); margin: var(--e-2) auto 0; max-width: 560px;
            display: flex; gap: var(--e-3); align-items: center; background: var(--salle-3);
-           border: var(--trait); border-radius: var(--r-pill); padding: 10px 10px 10px 18px; font-size: 13px; }
+           border: var(--trait); border-radius: var(--r-pill); padding: var(--e-3) var(--e-3) var(--e-3) var(--e-4); font-size: var(--t-sm); }
 .fxtoast .b { min-height: 36px; padding: 0 var(--e-3); border-radius: var(--r-pill); border: var(--trait);
               background: var(--salle-2); color: var(--texte); cursor: pointer; }
 </style>
@@ -5337,40 +5352,50 @@ MAP_PAGE = """<!DOCTYPE html>
    Etape B (10/08) : espacements/rayons/tailles qui EGALENT un token pointent
    vers lui (rendu identique). #4a8c7b des cercles/halo Leaflet (script) RESTE
    en dur : l'API Leaflet n'accepte pas var(). Blancs/noirs translucides de la
-   visionneuse plein ecran laisses tels quels (overlays, hors palette tokens). */
+   visionneuse plein ecran laisses tels quels (overlays, hors palette tokens).
+   Passe DESIGN (11/08) : valeurs hors echelle calees sur les tokens, memes
+   mappings que PEOPLE/PETS (0.8-0.82rem -> --t-sm, 0.78rem -> --t-xs,
+   0.9/1rem -> --t-md, radius 8px -> --r-md, gaps/paddings -> echelle 4px).
+   Positions et tailles fixes (130px, 220px, top/right, 34%) non tokenisees.
+   Recherche (11/08) : meme vocabulaire que la galerie (noms + lieux + sens,
+   /api/search) ; le champ filtre les marqueurs, la zone/diaporama composent. */
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: var(--f-texte);
        background: var(--salle); color: var(--texte);
        height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
-.bar { display: flex; align-items: center; gap: 10px; padding: var(--e-3) var(--e-4);
+.bar { display: flex; align-items: center; gap: var(--e-3); padding: var(--e-3) var(--e-4);
        background: var(--salle-2); border-bottom: var(--trait); flex-wrap: wrap; flex: 0 0 auto; }
-.bar a { color: var(--texte); text-decoration: none; font-size: 0.9rem; }
+.bar a { color: var(--texte); text-decoration: none; font-size: var(--t-md); }
 .bar .sp { margin-left: auto; }
-.count { color: var(--graphite); font-size: 0.8rem; }
-.tb { padding: 6px var(--e-3); border: var(--trait); border-radius: 8px;
+.count { color: var(--graphite); font-size: var(--t-sm); }
+.tb { padding: var(--e-2) var(--e-3); border: var(--trait); border-radius: var(--r-md);
       background: var(--salle-3); color: var(--texte); font-size: var(--t-sm); cursor: pointer; }
+#q { flex: 0 1 240px; min-width: 130px; padding: var(--e-2) var(--e-3); border: var(--trait);
+     border-radius: var(--r-pill); background: var(--salle-3); color: var(--texte);
+     font-size: var(--t-sm); font-family: inherit; }
+#q::placeholder { color: var(--graphite); }
 #map { flex: 1 1 auto; min-height: 0; background: var(--salle-3); }
 #empty { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-         max-width: 420px; padding: 20px; text-align: center; color: var(--graphite); display: none; }
-.leaflet-popup-content { margin: var(--e-2) 10px; }
+         max-width: 420px; padding: var(--e-6); text-align: center; color: var(--graphite); display: none; }
+.leaflet-popup-content { margin: var(--e-2) var(--e-3); }
 .pop img { width: 220px; max-width: 60vw; height: auto; border-radius: var(--r-md);
            display: block; background: var(--salle-3); }
-.pop .fn { font-size: 0.82rem; color: var(--texte-papier); margin-top: 6px; word-break: break-word; }
-.pop .fo { font-size: 0.78rem; margin-top: 3px; }
+.pop .fn { font-size: var(--t-sm); color: var(--texte-papier); margin-top: var(--e-2); word-break: break-word; }
+.pop .fo { font-size: var(--t-xs); margin-top: var(--e-1); }
 .pop .fo a { color: var(--texte-papier); text-decoration: none; }
-.pop .de { font-size: var(--t-xs); color: var(--graphite-p); margin-top: 3px; font-style: italic; }
-.pop .op { display: inline-block; margin-top: 6px; font-size: 0.78rem; color: var(--texte-papier);
+.pop .de { font-size: var(--t-xs); color: var(--graphite-p); margin-top: var(--e-1); font-style: italic; }
+.pop .op { display: inline-block; margin-top: var(--e-2); font-size: var(--t-xs); color: var(--texte-papier);
            text-decoration: none; }
 /* -- zone + diaporama -- */
 .tb.active { background: var(--fixateur); color: #fff; border-color: transparent; }
 #zctrls { display: flex; align-items: center; gap: var(--e-2); flex-wrap: wrap; }
 #zctrls.hidden { display: none; }
 #zrad { width: 130px; accent-color: var(--fixateur); }
-#zinfo { font-size: 0.8rem; color: var(--graphite); min-width: 118px; }
-#zcount { font-size: 0.8rem; color: var(--texte); font-weight: 600; }
+#zinfo { font-size: var(--t-sm); color: var(--graphite); min-width: 118px; }
+#zcount { font-size: var(--t-sm); color: var(--texte); font-weight: 600; }
 #zhint { position: fixed; bottom: 26px; left: 50%; transform: translateX(-50%); z-index: 500;
-  background: rgba(20,18,15,.9); border: var(--trait); color: var(--texte); padding: 7px 14px;
-  border-radius: var(--r-pill); font-size: 0.82rem; display: none; }
+  background: rgba(20,18,15,.9); border: var(--trait); color: var(--texte); padding: var(--e-2) var(--e-4);
+  border-radius: var(--r-pill); font-size: var(--t-sm); display: none; }
 .zcircle-mk { filter: drop-shadow(0 0 4px var(--fixateur)); }
 #show { position: fixed; inset: 0; background: #000; display: none; z-index: 1000; }
 #show.on { display: block; }
@@ -5379,12 +5404,12 @@ body { font-family: var(--f-texte);
   z-index: 3; line-height: 1; text-shadow: 0 1px 4px #000; }
 #show .nav { position: absolute; top: 0; bottom: 0; width: 34%; z-index: 1; cursor: pointer; }
 #show .nav.l { left: 0; } #show .nav.r { right: 0; }
-#show .meta { position: absolute; left: 0; right: 0; bottom: 0; z-index: 2; padding: 14px 18px;
+#show .meta { position: absolute; left: 0; right: 0; bottom: 0; z-index: 2; padding: var(--e-4);
   background: linear-gradient(transparent, #000d); color: var(--texte); font-size: var(--t-sm);
-  display: flex; gap: 10px; align-items: center; }
+  display: flex; gap: var(--e-3); align-items: center; }
 #show .meta .sp { flex: 1; }
-#show .cbtn { background: #ffffff1a; border: 1px solid #ffffff40; color: #fff; border-radius: 8px;
-  padding: 6px var(--e-3); cursor: pointer; font-size: 1rem; }
+#show .cbtn { background: #ffffff1a; border: 1px solid #ffffff40; color: #fff; border-radius: var(--r-md);
+  padding: var(--e-2) var(--e-3); cursor: pointer; font-size: var(--t-md); }
 #show .cbtn:hover { background: #ffffff30; }
 #show #show-name { color: var(--graphite); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 40vw; }
 </style>
@@ -5392,6 +5417,8 @@ body { font-family: var(--f-texte);
 <body>
 <!--APPNAV-->
 <div class="bar">
+  <input type="search" id="q" placeholder="Rechercher (noms, lieux, sens)&hellip;"
+         aria-label="Rechercher des photos sur la carte (noms, lieux, sens de l'image)">
   <span class="count" id="cnt">Chargement&hellip;</span>
   <button class="tb" id="zone">&#128205; D&eacute;finir une zone</button>
   <span id="zctrls" class="hidden">
@@ -5445,7 +5472,9 @@ map.addLayer(cluster);
 setTimeout(function(){ map.invalidateSize(); }, 150);
 window.addEventListener('resize', function(){ map.invalidateSize(); });
 var bounds = null;
-var PTS = [];
+var ALL = [];        // toutes les photos géolocalisées
+var PTS = [];        // sous-ensemble affiché (filtre de recherche appliqué)
+var FILTER_Q = '';   // requête active, '' = pas de filtre
 
 function esc(s) {
   return (s || '').replace(/[&<>"]/g, function(c) {
@@ -5453,13 +5482,12 @@ function esc(s) {
   });
 }
 
-fetch('/api/geo').then(function(r){ return r.json(); }).then(function(d){
-  var pts = d.points || [];
+// Rendu (ré)appliqué à chaque changement de filtre. La zone et le diaporama
+// travaillent sur PTS : ils composent donc naturellement avec la recherche
+// (« Luna à Bremblens » puis zone puis diaporama).
+function render(pts){
   PTS = pts;
-  document.getElementById('cnt').textContent =
-    pts.length + ' photo' + (pts.length > 1 ? 's' : '') + ' géolocalisée' +
-    (pts.length > 1 ? 's' : '');
-  if (!pts.length) { document.getElementById('empty').style.display = 'block'; return; }
+  cluster.clearLayers();
   var latlngs = [];
   pts.forEach(function(p){
     var m = L.marker([p.lat, p.lon]);
@@ -5476,8 +5504,23 @@ fetch('/api/geo').then(function(r){ return r.json(); }).then(function(d){
     cluster.addLayer(m);
     latlngs.push([p.lat, p.lon]);
   });
-  bounds = L.latLngBounds(latlngs);
-  map.fitBounds(bounds, { padding: [40, 40] });
+  bounds = latlngs.length ? L.latLngBounds(latlngs) : null;
+  if (bounds) map.fitBounds(bounds, { padding: [40, 40] });
+  var s = pts.length > 1 ? 's' : '';
+  document.getElementById('cnt').textContent = FILTER_Q
+    ? pts.length + ' / ' + ALL.length + ' photo' + s + ' — « ' + FILTER_Q + ' »'
+    : pts.length + ' photo' + s + ' géolocalisée' + s;
+  recompute();   // la zone éventuelle recompte sur le sous-ensemble affiché
+}
+
+fetch('/api/geo').then(function(r){ return r.json(); }).then(function(d){
+  ALL = d.points || [];
+  if (!ALL.length) {
+    document.getElementById('cnt').textContent = '0 photo géolocalisée';
+    document.getElementById('empty').style.display = 'block';
+    return;
+  }
+  render(ALL);
 }).catch(function(e){
   document.getElementById('cnt').textContent = 'Erreur de chargement';
 });
@@ -5485,6 +5528,31 @@ fetch('/api/geo').then(function(r){ return r.json(); }).then(function(d){
 document.getElementById('fit').onclick = function(){
   if (bounds) map.fitBounds(bounds, { padding: [40, 40] });
 };
+
+/* ===== Recherche : même vocabulaire que la galerie (noms + lieux + sens) =====
+   /api/search rend les mêmes urls que /api/geo (_url_for_key) : on filtre les
+   marqueurs par appartenance, sans dupliquer la logique côté client. */
+var qEl = document.getElementById('q');
+function doSearch(){
+  var q = qEl.value.trim();
+  if (!q){ FILTER_Q = ''; render(ALL); return; }
+  fetch('/api/search?q=' + encodeURIComponent(q) + '&n=1500')
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      var urls = {};
+      (d.results || []).forEach(function(x){ urls[x.url] = 1; });
+      FILTER_Q = q;
+      render(ALL.filter(function(p){ return urls[p.url]; }));
+    })
+    .catch(function(){
+      document.getElementById('cnt').textContent = 'Recherche indisponible';
+    });
+}
+qEl.addEventListener('keydown', function(e){
+  if (e.key === 'Enter') doSearch();
+  else if (e.key === 'Escape'){ qEl.value = ''; doSearch(); }
+});
+qEl.addEventListener('search', doSearch);   // croix native du champ type=search
 
 /* ===== Zone : point + rayon (clic-glissé, souris + tactile) ===== */
 var zoneOn = false, center = null, circle = null, cmark = null, inZone = [], drawing = false;
@@ -8207,7 +8275,7 @@ PETS_PAGE = """<!DOCTYPE html>
   .group .nmrow>*{min-width:0;}
   .group .nmrow .btn{flex:1 1 auto;min-height:44px;}
   .group input{flex:1 1 100%;min-height:44px;padding:var(--e-2) var(--e-3);background:var(--salle-3);color:var(--texte);
-    border:var(--trait);border-radius:var(--r-md);font-size:var(--t-sm);outline:none;}
+    border:var(--trait);border-radius:var(--r-md);font-size:var(--t-sm);}
   .group input:focus{border-color:var(--veilleuse);}
   .muted{color:var(--graphite);font-size:var(--t-sm);}
   /* détail */
@@ -8219,7 +8287,7 @@ PETS_PAGE = """<!DOCTYPE html>
      peu lisible ; on force fond sombre + texte contraste (tokens photo-ui). */
   #d-mode{background:var(--salle-3);color:var(--texte);border:var(--trait);
     border-radius:var(--r-md);padding:var(--e-2) var(--e-3);font-size:var(--t-sm);cursor:pointer;}
-  #d-mode:focus{border-color:var(--veilleuse);outline:none;}
+  #d-mode:focus{border-color:var(--veilleuse);}
   #d-mode option{background:var(--salle-2);color:var(--texte);}
   .hint{color:var(--graphite);font-size:var(--t-sm);margin:var(--e-2) 0 var(--e-4);line-height:1.5;}
   .photos{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:var(--e-3);}
@@ -8640,28 +8708,31 @@ FACES_PAGE = """<!DOCTYPE html>
 <style>
 /* Etape A tokenisation « chambre noire ». Grille de visages = planche contact
    (cellules --salle-3). Score de detection = donnee (texte vif). Avertissement
-   moteur = encre. Structure/espacements inchanges. */
+   moteur = encre.
+   Passe DESIGN (11/08) : valeurs restantes calees sur les tokens, memes
+   mappings que les autres pages (0.9rem -> --t-md, 0.8/0.85rem -> --t-sm,
+   0.68rem -> --t-xs, radius 8px -> --r-md, espacements -> echelle 4px). */
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: var(--f-texte);
        background: var(--salle); color: var(--texte); }
-.bar { display: flex; align-items: center; gap: 10px; padding: 12px 16px;
+.bar { display: flex; align-items: center; gap: var(--e-3); padding: var(--e-3) var(--e-4);
        background: var(--salle-2); border-bottom: var(--trait); flex-wrap: wrap; }
-.bar a { color: var(--texte); text-decoration: none; font-size: 0.9rem; }
+.bar a { color: var(--texte); text-decoration: none; font-size: var(--t-md); }
 .bar .sp { margin-left: auto; }
-#stat { padding: 12px 16px; background: var(--salle-2); border-bottom: var(--trait);
-        color: var(--graphite); font-size: 0.85rem; line-height: 1.5; }
+#stat { padding: var(--e-3) var(--e-4); background: var(--salle-2); border-bottom: var(--trait);
+        color: var(--graphite); font-size: var(--t-sm); line-height: 1.5; }
 #stat b { color: var(--texte); }
 .warn { color: var(--encre); }
 .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-        gap: 8px; padding: 12px; }
-.face { background: var(--salle-3); border-radius: 8px; overflow: hidden; }
+        gap: var(--e-2); padding: var(--e-3); }
+.face { background: var(--salle-3); border-radius: var(--r-md); overflow: hidden; }
 .face a { display: block; }
 .face img { width: 100%; aspect-ratio: 1; object-fit: cover; display: block;
             background: var(--salle-3); }
-.face .m { padding: 4px 6px 6px; font-size: 0.68rem; color: var(--graphite);
+.face .m { padding: var(--e-1) var(--e-2) var(--e-2); font-size: var(--t-xs); color: var(--graphite);
            white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .face .sc { color: var(--texte); font-family: var(--f-donnees); }
-.note { padding: 0 16px 20px; color: var(--graphite); font-size: 0.8rem; line-height: 1.5; }
+.note { padding: 0 var(--e-4) var(--e-6); color: var(--graphite); font-size: var(--t-sm); line-height: 1.5; }
 </style>
 </head>
 <body>
@@ -8964,7 +9035,7 @@ button { font-family: inherit; }
 /* Cible aussi .qui : un des inputs .qui n'a pas d'attribut type, donc
    input[type=text] seul le ratait -> champ blanc par defaut (bug reel). */
 input[type=text], input.qui { padding: var(--e-2) var(--e-3); border-radius: var(--r-md); border: var(--trait);
-                   background: var(--salle-3); color: var(--texte); font-size: var(--t-sm); outline: none; }
+                   background: var(--salle-3); color: var(--texte); font-size: var(--t-sm); }
 input[type=text]:focus, input.qui:focus { border-color: var(--veilleuse); }
 .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(90px,1fr));
         gap: var(--e-1); }
@@ -9022,7 +9093,7 @@ input[type=text]:focus, input.qui:focus { border-color: var(--veilleuse); }
 .qn-faces img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: var(--r-md); background: var(--papier-2); }
 #qn-actions { display: flex; gap: var(--e-2); align-items: center; flex-wrap: wrap; }
 #qn-input { flex: 1; min-width: 200px; padding: var(--e-2) var(--e-3); border-radius: var(--r-md);
-            border: 1px solid var(--papier-2); background: #fff; color: var(--texte-papier); font-size: var(--t-md); outline: none; }
+            border: 1px solid var(--papier-2); background: #fff; color: var(--texte-papier); font-size: var(--t-md); }
 #qn-input:focus { border-color: var(--veilleuse); }
 /* Controles sur papier : boutons a contour, primaire = fixateur (confirmer). */
 .qn-card .btn { background: transparent; border-color: var(--graphite-p); color: var(--texte-papier); }
@@ -10561,7 +10632,10 @@ class Handler(BaseHTTPRequestHandler):
         """Texte libre → photos, par similarité dans l'espace SigLIP 2."""
         qs = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
         requete = (qs.get('q', [''])[0] or '').strip()
-        limite = min(int(qs.get('n', ['80'])[0] or 80), 400)
+        # Plafond aligné sur la page de résultats /files?q= (1500) : la carte
+        # filtre ses marqueurs par le même vocabulaire et a besoin de la même
+        # couverture. Le défaut reste 80 (autocomplétion / usages légers).
+        limite = min(int(qs.get('n', ['80'])[0] or 80), 1500)
         if not requete:
             self._send(200, json.dumps({'results': []}).encode(),
                        'application/json')

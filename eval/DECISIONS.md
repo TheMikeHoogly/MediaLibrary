@@ -44,6 +44,7 @@
 | Détection auto du flou comme flag | **REJETÉ** (03/08) | Flou rare et risqué à signaler ; au mieux clé de tri, jamais un flag. |
 | Cap triage retenu | **ADOPTÉ** (03/08) | Vue groupée par règle + suppression individuelle réversible ; rebut subtil laissé à l'humain. |
 | `sqlite-vec` pour la recherche vectorielle | **REJETÉ** | Recherche cosinus numpy sur BLOB suffit ; dépendance évitée (zéro-dépendance). |
+| Embeddings stockés en INT8 (au lieu de f16) | **REJETÉ** (11/08) | Gain réel ×2 seulement (base déjà f16, et locale — pas de SMB) : 159→80 Mo ; recall@10 sémantique 0,9685 (« sans perte » réfuté), bascules de seuil 0,0004–0,0062 %, et perte de la garantie « identique au bit près » de `vectors.py`. Mesure : `eval/eval_int8_vectors.py` (130 576 vecteurs réels). |
 
 ## Méthode (invariants à ne pas réapprendre)
 

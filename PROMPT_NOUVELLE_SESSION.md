@@ -15,28 +15,29 @@ serveur Python stdlib pur, pipelines Ollama/InsightFace/YOLO/DINOv2, RTX 3050 4 
 4. Selon le sujet : `docs/RANGEMENT_2026.md`, `docs/AUDIT_EXTERNE_2026.md` ; skills
    `monolith-surgery` (avant tout edit de `server.py`), `photo-ui` (dès qu'on touche l'UI).
 
-## Où on en est (11/08/2026, fin de journée)
+## Où on en est (11/08/2026, soir)
 
-Tout le 11/08 est **vérifié en réel**, mais **PAS commité** (`27 - Commit de session.bat`) :
-- **Matin** : Lieux vérifiés (25, 0,8 s ; commit `fd1f805`) ; fixes clusters, perf `/sujets`
-  (>45 s → 0,8 s), page résultats `/files?q=` ; **fix racine faux positifs** (`attribuer_visage`).
-- **Après-midi** : **fix FP confirmé en réel** (rebuild complet du curateur → 0 carte, aucun
-  des 5 FP corrigés ne revient) ; **fusion `/sujets`** (entrée unique : onglets
-  Personnes/Animaux retirés de la nav, Sujets actif sur `/people`/`/pets`, rangée « Files de
-  travail ») ; **passe DESIGN PEOPLE+PETS** (~128 valeurs hors échelle → tokens, lint 0 interdit).
+Matin + après-midi du 11/08 : **commités et fusionnés** (fixes clusters/perf/FP, fusion
+`/sujets`, design PEOPLE+PETS, fix bandeau timm `/pets`) — détail dans git.
 
-**Fausse alerte timm (résolue)** : `timm` est bien installé ; le bandeau `/pets` confondait
-« moteur pas encore chargé (paresseux) » avec « absent ». Fix du bandeau livré (11/08 soir,
-PAS commité), actif au prochain redémarrage.
+**Session du soir — livrée sur disque, PAS vérifiée en réel, PAS commitée** (le serveur
+n'avait pas été redémarré) :
+- **Recherche sur la Carte** : champ « noms, lieux, sens » sur `/map` (vocabulaire
+  `/api/search` partagé, plafond `n` 1500) ; filtre composable avec zone/diaporama.
+- **Passe DESIGN terminée sur les 5 pages restantes** (MAP/GALLERY/HTML/BROWSE/FACES)
+  + `outline:none` purgés partout. Lint tokens : 0 interdit, 0 avertissement.
+- **Éval INT8 : REJETÉ** (consigné `eval/DECISIONS.md`, script `eval/eval_int8_vectors.py`).
 
 ## Prochain pas — par valeur
 
-1. **Vérité terrain (priorité n°1)** : confirmer ~100 propositions dans `/people`
+1. **Redémarrer puis VÉRIFIER en réel** la fournée du soir : `/map` (recherche « Luna »,
+   « Bremblens », composition avec zone/diaporama), `/files`, `/`, `/browse`, `/faces`
+   (rendu tokens), bandeau `/pets` (mention neutre « en veille », pas d'alerte rouge).
+   Puis commiter (`27 - Commit de session.bat`).
+2. **Vérité terrain (priorité n°1)** : confirmer ~100 propositions dans `/people`
    (page filtrable, tri clavier Espace=oui / X=non / Z=annuler).
-2. **Passe DESIGN — pages restantes** : GALLERY/BROWSE/MAP/HTML/FACES (mêmes mappings que
-   PEOPLE/PETS, page par page + vérif visuelle) ; puis extraction physique vers `ui/` (`bundle.py`).
-3. Gestes Mike : commiter le fix bandeau `/pets` (session 11/08 commitée à part ça) ;
-   lots de renommage + activer `gps_place` ; nettoyer Flo/Caline.
+3. Gestes Mike : lots de renommage + activer `gps_place` ; nettoyer Flo/Caline.
+   Ensuite : extraction physique `ui/` (`bundle.py`) ; `GpuArbiter` (session dédiée).
 
 ## Rappels opérationnels
 
