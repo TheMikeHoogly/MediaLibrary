@@ -8,62 +8,46 @@ chantier fini y est — c'est pourquoi les récits de travaux terminés ne viven
 
 ## État actuel (11 août 2026)
 
-**Session 11/08** (dans `server.py`, commit de session en cours) : Lieux **vérifiés en réel**
-(25 lieux, 0,8 s) ; **uniformisation clusters Personnes/Animaux** (fix débordement « Rejeter le
-groupe » + bouton « Archiver (inconnu) ») ; **fix perf `/sujets`** (`_chemin_relatif(k, roots)` :
-plus de `media_roots()`/stats SMB par clé → >45 s bloqué à 0,8 s) ; **page de résultats globale
-`/files?q=`** (le serveur remplit la grille avec `semantic_search`, mode IA client — les cartes
-Lieux ouvrent enfin leurs photos) ; **fix racine faux positifs** : `attribuer_visage`, la branche
-« photo déjà taguée avec le bon nom » ne retirait pas le tag ERRONÉ → le FP revenait à chaque
-correction. Corrigé (retrait + exclusion, réversible), à vérifier en réel. File nettoyée en direct.
+**Session 11/08 (matin)** (dans `server.py`) : Lieux **vérifiés en réel** (25 lieux, 0,8 s) ;
+**uniformisation clusters Personnes/Animaux** (fix débordement « Rejeter le groupe » + bouton
+« Archiver (inconnu) ») ; **fix perf `/sujets`** (`_chemin_relatif(k, roots)` : plus de
+`media_roots()`/stats SMB par clé → >45 s bloqué à 0,8 s) ; **page de résultats globale
+`/files?q=`** (grille remplie par `semantic_search`) ; **fix racine faux positifs**
+(`attribuer_visage`, branche « déjà tagué » : retrait + exclusion, réversible). File nettoyée en direct.
 
-## État antérieur (10 août 2026)
+**Session 11/08 (après-midi)** — trois chantiers, tous **vérifiés en réel**, PAS commités :
+1. **Fix FP confirmé** : rebuild complet du curateur forcé → **0 carte « faux positif »**,
+   aucun des 5 FP corrigés ne revient (avant le fix ils resurgissaient à chaque passe).
+2. **Fusion `/sujets` LIVRÉE** : entrée unique — onglets Personnes/Animaux retirés de la nav,
+   onglet Sujets actif sur `/people`/`/pets` (vues spécialisées), rangée « Files de travail »
+   sur `/sujets`. Rien d'autre ne bouge (fiches `?name=`, files, API intactes).
+3. **Passe DESIGN PEOPLE+PETS LIVRÉE** (~128 valeurs hors échelle → tokens : font-sizes
+   px/rem → `--t-*`, radius 4–14px → `--r-sm`/`--r-md`, espacements → échelle 4px ;
+   `verifier_ui_tokens` : 0 interdit). Reste : GALLERY/BROWSE/MAP/HTML/FACES (cf. #8).
 
-Session 10/08 : gros travail sur `/people` et la **correction des faux positifs**, déclenché
-par la fiche **Flo** (~6300 photos, très polluée par des profils tagués). Code livré sur le
-disque de Mike et **validé en réel** (serveur redémarré plusieurs fois). Détail : table ci-dessous.
+⚠ **Vu sur `/pets` (préexistant)** : « moteur d'empreintes absent (installe timm) »,
+empreintes calculées 0, vignettes des « Groupes à identifier » vides — le venv du serveur
+semble avoir perdu `timm`. Geste Mike : réinstaller (`pip install timm` dans `.venv`).
 
-**Suite 10/08 — tokenisation UI #8 value-preserving TERMINÉE sur les 7 pages** (commitée,
-**vérifiée en réel**). Détail : Acquis « UI » + item #8 ci-dessous.
+## État antérieur (10 août 2026) — commité, détail dans git
 
-**Correctif 10/08 (soir) — les corrections de faux positifs n'étaient pas apprises.** Mike
-corrigeait la même image (Phéno→Dévi) 5×, elle revenait. Cause : `exclude` (le rejet humain
-durable) faisait autorité à l'AJOUT, à `find_more` et à `reconcile`, **mais pas** dans le
-générateur de cartes « faux positif » (`build_suggestions` REMOVE) ni dans `reimport_name_tags`.
-Dès que le tag erroné resurgissait (ré-import XMP quand l'écriture de retrait a échoué sur le
-NAS, rescan d'un fichier modifié, clé en double via les 2 racines d'upload), la carte revenait.
-**Fix livré (server.py, pas encore commité ; relu par un agent de revue)** : (1) le générateur
-REMOVE ignore les photos exclues **et auto-guérit** (retire le tag resurgi + `del` XMP, journalise
-`🩹`) ; (2) `reimport_name_tags` n'importe plus un tag présent dans l'`exclude` de la personne ;
-(3) réversibilité (cas « je change d'avis ») : une **attribution positive** à une personne
-**lève l'exclusion** de ces photos dans `_nommer_membres_visages` (sinon l'auto-guérison
-retirerait le tag qu'on vient de reposer). `exclude` et l'assignation sont mutuellement exclusifs.
+Session 10/08 (tout **validé en réel**) : refonte `/people` + outillage **faux positifs**
+(déclencheur : fiche Flo polluée) ; tokenisation UI value-preserving sur les 7 pages ;
+**`exclude` fait autorité partout** (générateur REMOVE + `reimport_name_tags`) avec
+**auto-guérison** `🩹` des tags resurgis et levée d'exclusion sur attribution positive ;
+deux correctifs de curation (rafraîchissement « c'est… » ; le ré-embedding **saute** les
+photos jugées par un humain — ⚠ geste Mike restant : re-rejeter le groupe Caline une fois) ;
+Lieux = 3ᵉ type d'entité (`places_list()`, GPS + repli dossiers, carte 📍 → `/files?q=`).
 
-**Deux correctifs de curation (10/08 soir) :** (1) nouvelle personne invisible depuis « c'est… »
-→ `loadPeople()` + invalidation cache noms ; (2) **Caline revenait comme personne** — `reembed_one_batch()`
-écrasait les marquages humains sur visages faibles ; fix : le ré-embedding **saute** toute photo
-jugée par un humain. ⚠ Geste Mike restant : **re-rejeter le groupe Caline une fois** (marques déjà
-effacées). Détail complet : git.
-
-**Suite 10/08 — `/sujets` : Lieux = 3ᵉ type d'entité LIVRÉ (2ᵉ tranche).** `places_list()`
-(GPS `gps_places_connus` prioritaire + **repli lieux-dossiers** `lieux_connus`, un seul passage
-en mémoire, zéro accès NAS), branché dans `/api/sujets/list`, 3ᵉ chip « Lieux » + carte badge 📍
-→ `/files?q=<nom>` (galerie filtrée, réutilise `semantic_search`). Logique testée en isolé
-(priorité GPS, pas de double-comptage). **Livré sur disque, PAS commité, à activer par
-redémarrage ; à vérifier en réel.** L'onglet Lieux est utile dès maintenant (dossiers) et
-s'enrichit quand `gps_place` sera activé.
-
-- **Git** : chantiers curation/UI du 10/08 **commités** ; seule la tranche Lieux ci-dessus reste
-  à commiter (`27 - Commit de session.bat`, puis `28 - Fusionner…` si voulu ; **`git push` =
-  geste de Mike**, `docs/GIT_WORKFLOW.md`).
+- **Git** : Lieux commité (`fd1f805`) ; **restent à commiter** les chantiers du 11/08
+  (matin + après-midi : fixes, fusion `/sujets`, design PEOPLE+PETS) — `27 - Commit de
+  session.bat`, puis `28 - Fusionner…` si voulu ; **`git push` = geste de Mike**.
 - **Ouvert (gestes Mike)** :
   - **Nettoyer Flo** : la fiche reste polluée tant qu'un passage n'est pas fait. Ouvrir Flo →
     « Corriger » (seuil ~0.2, monter en surveillant la grille) ou « Nettoyer (référence) »
     pour une séparation fine. Retrait **sûr** (cf. Acquis « exclude »).
-  - Toujours en attente : appliquer les lots de renommage + activer `gps_place` (cf. « À faire »).
-- **Chantier EN PAUSE** : page « Sujets » unifiée — **cadrée** (surcouche `/sujets` d'abord
-  puis fusion ; **Lieux = 3ᵉ type d'entité** à côté de Personnes/Animaux) mais **pas commencée**
-  en code (priorité donnée aux urgences Flo). Reprendre là (cf. « À faire » n°4).
+  - Toujours en attente : appliquer les lots de renommage + activer `gps_place` (cf. « À faire ») ;
+    réinstaller `timm` dans le `.venv` du serveur (cf. ⚠ ci-dessus).
 
 ## Acquis — ne pas reproposer (détail : git + `DECISIONS.md`)
 
@@ -95,15 +79,10 @@ s'enrichit quand `gps_place` sera activé.
    (Mutz+Caline faits, réversible). Fix **auto** amont humain/animal **REJETÉ** (18 % faux
    rejets, cf. DECISIONS) ; seule piste restante = re-mesurer sur découpes SANS marge avant
    d'y revenir. Relancer l'outil quand un nouveau nom d'animal se retrouve en `personne:`.
-4. **Page « Sujets » unifiée — 1ʳᵉ tranche LIVRÉE le 10/08 (soir).** Surcouche `/sujets`
-   en place : onglet dans la nav partagée, page LECTURE SEULE (grille unifiée
-   personnes+animaux, filtre par nom, bascule Tous/Personnes/Animaux, tri par nb de photos),
-   API `/api/sujets/list` (réutilise `people_list`+`pets_list`). Chaque carte ouvre la fiche
-   détail existante via **lien profond** `?name=` (ajouté à `/people` et `/pets`).
-   **2ᵉ tranche LIVRÉE (10/08) : Lieux = 3ᵉ type d'entité** (`places_list()`, GPS + repli
-   dossiers ; carte 📍 → `/files?q=`). À activer par redémarrage, à vérifier en réel.
-   **Reste : fusion** — faire de `/sujets` l'entrée unique, `/people`+`/pets` en vues
-   spécialisées (nav, libellés). `SubjectStore` déjà unifié — surtout de l'UI.
+4. **Page « Sujets » unifiée — TERMINÉE (11/08).** Les 3 tranches livrées et vérifiées en
+   réel : surcouche lecture seule (10/08), Lieux 3ᵉ type d'entité (10–11/08), **fusion**
+   (11/08 : `/sujets` entrée unique de la nav, `/people`+`/pets` vues spécialisées,
+   rangée « Files de travail »). Plus rien à faire ici.
 5. **Recherche.** SigLIP 2 en langue naturelle (« les étés à Bremblens avec Luna ») ;
    partager le vocabulaire de la barre de recherche à la page Carte (marqueurs déjà FAITS).
 6. **Reconnaissance — algo.** Clustering par densité (HDBSCAN / Chinese Whispers) au lieu
@@ -120,9 +99,9 @@ s'enrichit quand `gps_place` sera activé.
    Leaflet reste en dur (API refuse `var()`). Divergences nommées tranchées : GALLERY `.pchip`/
    `.chip` fusionnés ; PEOPLE `#222`→`--salle-3`, `#f0a35b`→`--veilleuse`.
    - **Reste** : extraction physique vers `ui/` (via `bundle.py`) — tokens déjà tous référencés.
-     **Passe DESIGN ciblée** (hors value-preserving, CHANGE le rendu → vérif visuelle) : caler les
-     valeurs hors échelle 4px (0.8rem, radius 8/10px, px de PETS…) ; harmoniser fonds photo
-     (#000 vs `--salle-3`) PEOPLE/PETS si voulu.
+     **Passe DESIGN ciblée : FAITE sur PEOPLE+PETS (11/08, vérifiée en réel)** ; reste
+     GALLERY/BROWSE/MAP/HTML/FACES (0.8rem, radius 8/10px, gaps 5–14px — mêmes mappings).
+     Fonds photo #000 conservés (tolérés, hors palette).
    - **Méthode recommandée** : pour chaque page restante, UNE passe combinée (value-preserving
      + calage échelle + divergences) AVEC vérif visuelle Claude-in-Chrome, plutôt que 2 passes
      sur les mêmes déclarations. `/browse` a servi de modèle (value-preserving seul, identique).

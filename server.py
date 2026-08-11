@@ -3230,8 +3230,6 @@ APP_NAV_HTML = """<nav class="appnav">
   <a class="tab" data-p="/browse" href="/browse">&#128193; Dossiers</a>
   <a class="tab" data-p="/map" href="/map">&#128506;&#65039; Carte</a>
   <a class="tab" data-p="/sujets" href="/sujets">&#128450;&#65039; Sujets</a>
-  <a class="tab" data-p="/people" href="/people">&#128101; Personnes</a>
-  <a class="tab" data-p="/pets" href="/pets">&#128062; Animaux</a>
   <span class="sp"></span>
   <a class="tab" data-p="/reglages" href="/reglages">&#9881;&#65039; R&eacute;glages</a>
 </nav>
@@ -3239,6 +3237,9 @@ APP_NAV_HTML = """<nav class="appnav">
   <span class="netbusy__s" aria-hidden="true"></span><span>Traitement en cours&hellip;</span>
 </div>
 <script>(function(){var p=location.pathname;
+  // Fusion « Sujets » (ROADMAP #4) : /people et /pets sont des vues
+  // specialisees de Sujets — l'onglet Sujets reste allume quand on y est.
+  if(p.indexOf('/people')===0 || p.indexOf('/pets')===0) p='/sujets';
   document.querySelectorAll('.appnav a.tab').forEach(function(a){
     var d=a.getAttribute('data-p');
     if(p===d || (d!=='/'&&p.indexOf(d)===0)) a.classList.add('active');
@@ -8166,38 +8167,38 @@ PETS_PAGE = """<!DOCTYPE html>
      tokens --t-*). Noirs/blancs translucides (fonds photo #000, ombres, overlays)
      laisses : hors palette de tokens, non interdits. */
   body{font-family:var(--f-texte);margin:0;background:var(--salle);color:var(--texte);}
-  main{padding:18px 20px 90px;max-width:1200px;margin:0 auto;}
-  .strip{display:flex;align-items:center;gap:14px;flex-wrap:wrap;font-size:13px;
+  main{padding:var(--e-6) var(--e-4) 90px;max-width:1200px;margin:0 auto;}
+  .strip{display:flex;align-items:center;gap:var(--e-4);flex-wrap:wrap;font-size:var(--t-sm);
     color:var(--graphite);background:var(--salle-3);border:var(--trait);
-    border-radius:var(--radius,12px);padding:var(--e-3) var(--e-4);margin-bottom:22px;}
+    border-radius:var(--r-md);padding:var(--e-3) var(--e-4);margin-bottom:var(--e-6);}
   .strip b{color:var(--texte);}
   .strip .warn{color:var(--veilleuse);}
-  h2{font-size:14px;text-transform:uppercase;letter-spacing:.6px;color:var(--graphite);
-    margin:26px 0 14px;font-weight:600;}
-  .row{display:flex;align-items:center;gap:10px;}
+  h2{font-size:var(--t-sm);text-transform:uppercase;letter-spacing:.6px;color:var(--graphite);
+    margin:var(--e-6) 0 var(--e-4);font-weight:600;}
+  .row{display:flex;align-items:center;gap:var(--e-3);}
   .sp{flex:1;}
-  .btn{padding:var(--e-2) 14px;border-radius:10px;border:var(--trait);
-    background:#ffffff0d;color:var(--texte);cursor:pointer;font-size:13px;font-weight:500;
+  .btn{padding:var(--e-2) var(--e-4);border-radius:var(--r-md);border:var(--trait);
+    background:#ffffff0d;color:var(--texte);cursor:pointer;font-size:var(--t-sm);font-weight:500;
     transition:background .15s;}
   .btn:hover{background:#ffffff1a;}
   .btn.primary{background:var(--papier);
     border:none;color:var(--texte-papier);box-shadow:0 2px 10px #0006;}
   .btn.danger{color:var(--encre);border-color:var(--encre);}
   .btn:disabled{opacity:.5;cursor:default;}
-  .cats{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:14px;}
-  .cat{background:var(--salle-3);border:var(--trait);border-radius:14px;
+  .cats{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:var(--e-4);}
+  .cat{background:var(--salle-3);border:var(--trait);border-radius:var(--r-md);
     padding:var(--e-3);cursor:pointer;text-align:center;transition:transform .12s,border-color .15s;}
   .cat:hover{transform:translateY(-3px);border-color:var(--graphite);}
-  .cat .av{width:96px;height:96px;border-radius:50%;object-fit:cover;background:#000;margin:2px auto 10px;
+  .cat .av{width:96px;height:96px;border-radius:50%;object-fit:cover;background:#000;margin:var(--e-1) auto var(--e-3);
     display:block;box-shadow:0 4px 14px #0008;}
   .cat .av.ph{background:#000 url('data:image/svg+xml;utf8,<svg xmlns=\\'http://www.w3.org/2000/svg\\' width=\\'40\\' height=\\'40\\'><text y=\\'32\\' font-size=\\'32\\'>🐱</text></svg>') center/40px no-repeat;}
-  .cat .nm{font-weight:600;font-size:16px;}
-  .cat .ct{color:var(--graphite);font-size:12px;margin-top:2px;}
+  .cat .nm{font-weight:600;font-size:var(--t-md);}
+  .cat .ct{color:var(--graphite);font-size:var(--t-xs);margin-top:2px;}
   .groups{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:var(--e-4);}
-  .group{background:var(--salle-3);border:var(--trait);border-radius:14px;padding:14px;}
-  .group .sz{font-size:12px;color:var(--graphite);margin-bottom:10px;}
-  .thumbs{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:var(--e-3);}
-  .thumbs img{width:58px;height:58px;object-fit:cover;border-radius:8px;background:var(--salle-3);}
+  .group{background:var(--salle-3);border:var(--trait);border-radius:var(--r-md);padding:var(--e-4);}
+  .group .sz{font-size:var(--t-xs);color:var(--graphite);margin-bottom:var(--e-3);}
+  .thumbs{display:flex;flex-wrap:wrap;gap:var(--e-1);margin-bottom:var(--e-3);}
+  .thumbs img{width:58px;height:58px;object-fit:cover;border-radius:var(--r-md);background:var(--salle-3);}
   /* Rangee de nommage : miroir du .cl .row cote Personnes. flex-wrap + min-width:0
      pour que, dans une carte etroite de la grille (280px), les boutons ne debordent
      PAS a droite (bug : « Rejeter le groupe » masque par la cellule voisine, visible
@@ -8205,54 +8206,54 @@ PETS_PAGE = """<!DOCTYPE html>
   .group .nmrow{display:flex;gap:var(--e-2);flex-wrap:wrap;align-items:center;}
   .group .nmrow>*{min-width:0;}
   .group .nmrow .btn{flex:1 1 auto;min-height:44px;}
-  .group input{flex:1 1 100%;min-height:44px;padding:var(--e-2) 10px;background:var(--salle-3);color:var(--texte);
-    border:var(--trait);border-radius:9px;font-size:14px;outline:none;}
+  .group input{flex:1 1 100%;min-height:44px;padding:var(--e-2) var(--e-3);background:var(--salle-3);color:var(--texte);
+    border:var(--trait);border-radius:var(--r-md);font-size:var(--t-sm);outline:none;}
   .group input:focus{border-color:var(--veilleuse);}
-  .muted{color:var(--graphite);font-size:14px;}
+  .muted{color:var(--graphite);font-size:var(--t-sm);}
   /* détail */
   #detail{display:none;}
-  .dhead{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:6px;}
-  .dhead .title{font-size:26px;font-weight:700;}
-  .dhead .ct{color:var(--graphite);font-size:14px;}
+  .dhead{display:flex;align-items:center;gap:var(--e-4);flex-wrap:wrap;margin-bottom:var(--e-2);}
+  .dhead .title{font-size:var(--t-xl);font-weight:700;}
+  .dhead .ct{color:var(--graphite);font-size:var(--t-sm);}
   /* menu de mode du diaporama : le rendu natif des <option> heritait un gris
      peu lisible ; on force fond sombre + texte contraste (tokens photo-ui). */
   #d-mode{background:var(--salle-3);color:var(--texte);border:var(--trait);
-    border-radius:9px;padding:var(--e-2) 10px;font-size:14px;cursor:pointer;}
+    border-radius:var(--r-md);padding:var(--e-2) var(--e-3);font-size:var(--t-sm);cursor:pointer;}
   #d-mode:focus{border-color:var(--veilleuse);outline:none;}
   #d-mode option{background:var(--salle-2);color:var(--texte);}
-  .hint{color:var(--graphite);font-size:13px;margin:6px 0 18px;line-height:1.5;}
-  .photos{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px;}
-  .ph{position:relative;border-radius:11px;overflow:hidden;cursor:pointer;aspect-ratio:1;
+  .hint{color:var(--graphite);font-size:var(--t-sm);margin:var(--e-2) 0 var(--e-4);line-height:1.5;}
+  .photos{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:var(--e-3);}
+  .ph{position:relative;border-radius:var(--r-md);overflow:hidden;cursor:pointer;aspect-ratio:1;
     background:#000;border:2px solid transparent;transition:border-color .12s;}
   .ph img{width:100%;height:100%;object-fit:cover;display:block;}
-  .ph .sim{position:absolute;left:6px;bottom:6px;font-size:11px;padding:2px 6px;border-radius:var(--r-md);
+  .ph .sim{position:absolute;left:6px;bottom:6px;font-size:var(--t-xs);padding:2px 6px;border-radius:var(--r-md);
     background:#000a;color:var(--texte);font-weight:600;font-family:var(--f-donnees);}
-  .ph .zoom{position:absolute;top:5px;right:5px;width:26px;height:26px;border-radius:7px;
-    background:#000a;color:#fff;border:none;cursor:pointer;font-size:14px;line-height:26px;padding:0;}
+  .ph .zoom{position:absolute;top:5px;right:5px;width:26px;height:26px;border-radius:var(--r-md);
+    background:#000a;color:#fff;border:none;cursor:pointer;font-size:var(--t-sm);line-height:26px;padding:0;}
   .ph.sel{border-color:var(--encre);}
   .ph.sel::after{content:'\\2713';position:absolute;top:5px;left:5px;width:22px;height:22px;
-    border-radius:50%;background:var(--encre);color:#fff;font-weight:700;text-align:center;line-height:22px;font-size:13px;}
+    border-radius:50%;background:var(--encre);color:#fff;font-weight:700;text-align:center;line-height:22px;font-size:var(--t-sm);}
   #selbar{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);display:none;
-    align-items:center;gap:14px;background:rgba(20,18,15,.93);border:var(--trait);
-    border-radius:var(--r-pill);padding:10px 18px;box-shadow:0 8px 30px #000a;z-index:60;backdrop-filter:blur(8px);}
+    align-items:center;gap:var(--e-4);background:rgba(20,18,15,.93);border:var(--trait);
+    border-radius:var(--r-pill);padding:var(--e-3) var(--e-4);box-shadow:0 8px 30px #000a;z-index:60;backdrop-filter:blur(8px);}
   #selbar b{color:var(--encre);}
   #lightbox{position:fixed;inset:0;background:#000e;display:none;align-items:center;justify-content:center;
-    z-index:80;padding:20px;}
-  #lightbox img{max-width:96vw;max-height:92vh;border-radius:10px;box-shadow:0 10px 50px #000;}
-  #lightbox .x{position:absolute;top:16px;right:22px;font-size:34px;color:#fff;cursor:pointer;line-height:1;}
+    z-index:80;padding:var(--e-6);}
+  #lightbox img{max-width:96vw;max-height:92vh;border-radius:var(--r-md);box-shadow:0 10px 50px #000;}
+  #lightbox .x{position:absolute;top:16px;right:22px;font-size:var(--t-xl);color:#fff;cursor:pointer;line-height:1;}
   /* diaporama plein ecran */
   #pshow{position:fixed;inset:0;background:#000;display:none;z-index:90;}
   #pshow.on{display:block;}
   #pshow img{position:absolute;inset:0;margin:auto;max-width:100%;max-height:100%;object-fit:contain;}
-  #pshow .x{position:absolute;top:12px;right:18px;font-size:34px;color:#fff;cursor:pointer;z-index:3;line-height:1;text-shadow:0 1px 4px #000;}
+  #pshow .x{position:absolute;top:12px;right:18px;font-size:var(--t-xl);color:#fff;cursor:pointer;z-index:3;line-height:1;text-shadow:0 1px 4px #000;}
   #pshow .pnav{position:absolute;top:0;bottom:0;width:34%;z-index:1;cursor:pointer;}
   #pshow .pnav.l{left:0;} #pshow .pnav.r{right:0;}
-  #pshow .pmeta{position:absolute;left:0;right:0;bottom:0;z-index:2;padding:14px 18px;
-    background:linear-gradient(transparent,#000d);color:var(--texte);font-size:14px;display:flex;gap:10px;align-items:center;}
-  #pshow .pcbtn{background:#ffffff1a;border:1px solid #ffffff40;color:#fff;border-radius:8px;padding:6px var(--e-3);cursor:pointer;font-size:16px;}
+  #pshow .pmeta{position:absolute;left:0;right:0;bottom:0;z-index:2;padding:var(--e-4);
+    background:linear-gradient(transparent,#000d);color:var(--texte);font-size:var(--t-sm);display:flex;gap:var(--e-3);align-items:center;}
+  #pshow .pcbtn{background:#ffffff1a;border:1px solid #ffffff40;color:#fff;border-radius:var(--r-md);padding:6px var(--e-3);cursor:pointer;font-size:var(--t-md);}
   #pshow #pshow-name{color:var(--graphite);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:40vw;}
-  #pshow #pshow-folder{color:var(--texte);background:var(--salle-3);border:var(--trait);border-radius:8px;
-    padding:5px var(--e-3);font-size:13px;text-decoration:none;white-space:nowrap;max-width:32vw;
+  #pshow #pshow-folder{color:var(--texte);background:var(--salle-3);border:var(--trait);border-radius:var(--r-md);
+    padding:var(--e-1) var(--e-3);font-size:var(--t-sm);text-decoration:none;white-space:nowrap;max-width:32vw;
     overflow:hidden;text-overflow:ellipsis;}
   #pshow #pshow-folder:hover{background:var(--salle-2);}
   #pshow #pshow-folder.hidden{display:none;}
@@ -8392,8 +8393,8 @@ function toast(msg, jeton){
   if(!t){ t=document.createElement('div'); t.id='toast';
     t.style.cssText='position:sticky;bottom:12px;margin:12px auto 0;max-width:520px;'+
       'display:flex;align-items:center;gap:12px;background:var(--salle-3);'+
-      'border:var(--trait);border-radius:999px;padding:10px 10px 10px 18px;'+
-      'font-size:13px;z-index:60;box-shadow:0 8px 30px #000a';
+      'border:var(--trait);border-radius:999px;padding:var(--e-3) var(--e-3) var(--e-3) var(--e-4);'+
+      'font-size:var(--t-sm);z-index:60;box-shadow:0 8px 30px #000a';
     document.querySelector('main').appendChild(t); }
   t.innerHTML='<span style="flex:1"></span>';
   t.firstChild.textContent=msg;
@@ -8750,10 +8751,11 @@ SUBJECTS_PAGE = """<!DOCTYPE html>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Sujets</title>
 <style>
-  /* Surcouche « Sujets » (ROADMAP #4) : vue unifiee, LECTURE SEULE, des
-     personnes ET animaux nommes. Coexiste avec /people et /pets ; chaque carte
-     ouvre la fiche detail existante (?name=). Lieux = 3e type d'entite, a
-     ajouter quand gps_place sera actif. Tout en tokens « chambre noire ». */
+  /* « Sujets » (ROADMAP #4) : ENTREE UNIQUE des entites nommees (personnes,
+     animaux, lieux) depuis la fusion — les onglets Personnes/Animaux ont quitte
+     la nav ; /people et /pets restent des vues specialisees (files de travail,
+     correction), atteintes par la rangee « Files de travail » ci-dessous ou par
+     les cartes (?name=). Tout en tokens « chambre noire ». */
   body{font-family:var(--f-texte);margin:0;background:var(--salle);color:var(--texte);}
   main{padding:var(--e-6) var(--e-4) 90px;max-width:1200px;margin:0 auto;}
   h1{font:600 var(--t-xl)/1.1 var(--f-affichage);letter-spacing:-.01em;margin:0 0 var(--e-2);}
@@ -8787,7 +8789,15 @@ SUBJECTS_PAGE = """<!DOCTYPE html>
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .sc .ct{font-family:var(--f-donnees);font-size:var(--t-xs);color:var(--graphite);margin-top:2px;}
   .msg{color:var(--graphite);padding:var(--e-8) 0;text-align:center;}
-  @media(hover:hover){.sc:hover{border-color:var(--papier-2);}}
+  /* Files de travail : liens de navigation (pas des chips-bascules) vers les
+     vues specialisees /people et /pets, seules entrees restantes depuis la nav. */
+  .travail{display:flex;gap:var(--e-2);align-items:center;flex-wrap:wrap;
+    margin:calc(-1 * var(--e-3)) 0 var(--e-6);color:var(--graphite);font-size:var(--t-sm);}
+  .travail a{display:inline-flex;align-items:center;gap:var(--e-2);min-height:var(--touch);
+    padding:0 var(--e-4);border:var(--trait);border-radius:var(--r-md);
+    background:var(--salle-3);color:var(--texte);text-decoration:none;
+    font:500 var(--t-sm)/1 var(--f-texte);}
+  @media(hover:hover){.sc:hover,.travail a:hover{border-color:var(--papier-2);}}
 </style>
 </head>
 <body>
@@ -8796,7 +8806,8 @@ SUBJECTS_PAGE = """<!DOCTYPE html>
   <h1>Sujets</h1>
   <p class="intro">Toutes les personnes, les animaux et les lieux, au m&ecirc;me endroit.
     Ouvre une personne ou un animal pour sa fiche compl&egrave;te (photos, correction,
-    renommage) ; un lieu ouvre la galerie filtr&eacute;e sur ce lieu.</p>
+    renommage) ; un lieu ouvre la galerie filtr&eacute;e sur ce lieu. Les files de
+    travail (&agrave; v&eacute;rifier, groupes &agrave; nommer) vivent dans Personnes et Animaux.</p>
   <div class="barre">
     <input id="q" type="search" placeholder="Filtrer par nom&hellip;" autocomplete="off"
       aria-label="Filtrer les sujets par nom">
@@ -8806,6 +8817,11 @@ SUBJECTS_PAGE = """<!DOCTYPE html>
       <button class="chip" data-f="animal" aria-pressed="false">Animaux<span class="n" id="n-animal"></span></button>
       <button class="chip" data-f="lieu" aria-pressed="false">Lieux<span class="n" id="n-lieu"></span></button>
     </div>
+  </div>
+  <div class="travail">
+    <span>Files de travail&nbsp;:</span>
+    <a href="/people">&#128101; Personnes</a>
+    <a href="/pets">&#128062; Animaux</a>
   </div>
   <div class="grille" id="grille"></div>
   <div class="msg" id="msg">Chargement&hellip;</div>
@@ -8897,39 +8913,39 @@ PEOPLE_PAGE = """<!DOCTYPE html>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: var(--f-texte);
        background: var(--salle); color: var(--texte); }
-.bar { display: flex; align-items: center; gap: 10px; padding: var(--e-3) var(--e-4);
+.bar { display: flex; align-items: center; gap: var(--e-3); padding: var(--e-3) var(--e-4);
        background: var(--salle-2); border-bottom: var(--trait); flex-wrap: wrap; }
-.bar a { color: var(--texte); text-decoration: none; font-size: 0.9rem; }
+.bar a { color: var(--texte); text-decoration: none; font-size: var(--t-md); }
 .bar .sp { margin-left: auto; }
-h2 { font-size: 1rem; padding: var(--e-4) var(--e-4) 6px; color: var(--texte); }
-h2 .c { color: var(--graphite); font-size: 0.8rem; font-weight: normal; }
-.msg { padding: 6px var(--e-4); color: var(--graphite); font-size: var(--t-sm); }
+h2 { font-size: var(--t-md); padding: var(--e-4) var(--e-4) 6px; color: var(--texte); }
+h2 .c { color: var(--graphite); font-size: var(--t-sm); font-weight: normal; }
+.msg { padding: var(--e-2) var(--e-4); color: var(--graphite); font-size: var(--t-sm); }
 button { font-family: inherit; }
-.btn { padding: 7px 14px; border: var(--trait); border-radius: 8px;
+.btn { padding: var(--e-2) var(--e-4); border: var(--trait); border-radius: var(--r-md);
        background: var(--salle-3); color: var(--texte); font-size: var(--t-sm); cursor: pointer; }
 .btn.prim { background: var(--papier); border-color: var(--papier); color: var(--texte-papier); }
-.people { display: flex; flex-wrap: wrap; gap: 10px; padding: 6px var(--e-4) 10px; }
-.pcard { background: var(--salle-3); border: var(--trait); border-radius: 10px;
-         padding: 10px; width: 150px; text-align: center; }
+.people { display: flex; flex-wrap: wrap; gap: var(--e-3); padding: var(--e-2) var(--e-4) var(--e-3); }
+.pcard { background: var(--salle-3); border: var(--trait); border-radius: var(--r-md);
+         padding: var(--e-3); width: 150px; text-align: center; }
 .pcard img { width: 90px; height: 90px; object-fit: cover; border-radius: 50%;
              background: var(--salle-3); }
-.pcard .nm { margin-top: 6px; font-weight: 600; font-size: 0.9rem; }
-.pcard .ct { color: var(--graphite); font-size: var(--t-xs); margin-bottom: 6px; }
+.pcard .nm { margin-top: var(--e-2); font-weight: 600; font-size: var(--t-md); }
+.pcard .ct { color: var(--graphite); font-size: var(--t-xs); margin-bottom: var(--e-2); }
 .clus { padding: var(--e-2) var(--e-4); }
-.cl { background: var(--salle-3); border: var(--trait); border-radius: 10px;
-      padding: 10px; margin-bottom: 10px; }
+.cl { background: var(--salle-3); border: var(--trait); border-radius: var(--r-md);
+      padding: var(--e-3); margin-bottom: var(--e-3); }
 /* Tri au clavier : la carte « en cours de decision » porte l'anneau veilleuse. */
 .cl.active { outline: 2px solid var(--veilleuse); outline-offset: 2px; }
-.kbd-hint { color: var(--graphite); font-size: 0.72rem; font-family: var(--f-donnees); }
+.kbd-hint { color: var(--graphite); font-size: var(--t-xs); font-family: var(--f-donnees); }
 .kbd-hint b { color: var(--texte); font-weight: 600; }
-.cl .faces { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: var(--e-2); }
+.cl .faces { display: flex; flex-wrap: wrap; gap: var(--e-1); margin-bottom: var(--e-2); }
 .cl .faces img { width: 66px; height: 66px; object-fit: cover; border-radius: var(--r-md);
                  background: var(--salle-3); }
 .cl .row { display: flex; gap: var(--e-2); align-items: center; flex-wrap: wrap; }
 /* 12a — la rangee d'actions ne doit jamais deborder : enfants qui retrecissent,
    champ elastique, et repli vertical (actions pleine largeur) sous 900px. */
 .cl .row > * { min-width: 0; }
-.cl .row .sz { color: var(--graphite); font-size: 0.8rem; flex: 1 1 12rem; margin-right: auto;
+.cl .row .sz { color: var(--graphite); font-size: var(--t-sm); flex: 1 1 12rem; margin-right: auto;
                overflow-wrap: anywhere; }
 .cl .row .qui { flex: 1 1 150px; min-width: 120px; }
 .cl .row input[type=text] { flex: 1 1 12rem; }
@@ -8942,26 +8958,26 @@ button { font-family: inherit; }
 }
 /* Cible aussi .qui : un des inputs .qui n'a pas d'attribut type, donc
    input[type=text] seul le ratait -> champ blanc par defaut (bug reel). */
-input[type=text], input.qui { padding: 7px 10px; border-radius: 8px; border: var(--trait);
+input[type=text], input.qui { padding: var(--e-2) var(--e-3); border-radius: var(--r-md); border: var(--trait);
                    background: var(--salle-3); color: var(--texte); font-size: var(--t-sm); outline: none; }
 input[type=text]:focus, input.qui:focus { border-color: var(--veilleuse); }
 .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(90px,1fr));
-        gap: 6px; }
+        gap: var(--e-1); }
 .prop { position: relative; }
 .prop img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: var(--r-md);
             background: var(--salle-3); display: block; }
 .prop input { position: absolute; top: 4px; left: 4px; width: 18px; height: 18px; }
-.prop .s { position: absolute; bottom: 2px; right: 4px; font-size: 0.62rem; font-family: var(--f-donnees);
+.prop .s { position: absolute; bottom: 2px; right: 4px; font-size: var(--t-xs); font-family: var(--f-donnees);
            color: var(--texte); background: rgba(0,0,0,.55); padding: 0 3px; border-radius: var(--r-sm); }
-.note { padding: 6px var(--e-4) var(--e-6); color: var(--graphite); font-size: 0.8rem; line-height: 1.5; }
-#panel { margin: 0 var(--e-4) 10px; }
-#panel .box { background: var(--salle-3); border: var(--trait); border-radius: 10px;
+.note { padding: var(--e-2) var(--e-4) var(--e-6); color: var(--graphite); font-size: var(--t-sm); line-height: 1.5; }
+#panel { margin: 0 var(--e-4) var(--e-3); }
+#panel .box { background: var(--salle-3); border: var(--trait); border-radius: var(--r-md);
               padding: var(--e-3); }
 #panel h3 { font-size: var(--t-md); margin-bottom: var(--e-1); }
 #panel .acts { display: flex; gap: var(--e-2); flex-wrap: wrap; margin: var(--e-2) 0; }
 .btn.warn { background: transparent; border-color: var(--encre); color: var(--encre); }
 .prop .x { position: absolute; top: 3px; right: 4px; background: var(--encre);
-           color: #fff; border: none; border-radius: 4px; font-size: 0.7rem;
+           color: #fff; border: none; border-radius: var(--r-sm); font-size: var(--t-xs);
            padding: 1px 5px; cursor: pointer; }
 .pcard { cursor: pointer; }
 /* ── diaporama d'une personne ── */
@@ -8969,12 +8985,12 @@ input[type=text]:focus, input.qui:focus { border-color: var(--veilleuse); }
           flex-direction: column; }
 #pslide.open { display: flex; }
 #ps-img { flex: 1; min-height: 0; width: 100%; object-fit: contain; }
-#ps-bar { display: flex; align-items: center; gap: 10px; padding: 10px var(--e-4);
+#ps-bar { display: flex; align-items: center; gap: var(--e-3); padding: var(--e-3) var(--e-4);
           background: var(--salle); }
 #ps-cap { flex: 1; color: var(--graphite); font-size: var(--t-sm); overflow: hidden;
           text-overflow: ellipsis; white-space: nowrap; }
 #ps-folder { color: var(--texte); background: var(--salle-3); border: var(--trait);
-             border-radius: 8px; padding: 6px var(--e-3); font-size: var(--t-sm);
+             border-radius: var(--r-md); padding: 6px var(--e-3); font-size: var(--t-sm);
              text-decoration: none; white-space: nowrap; flex-shrink: 0;
              max-width: 40vw; overflow: hidden; text-overflow: ellipsis; }
 #ps-folder:hover { background: var(--salle-2); }
@@ -8983,7 +8999,7 @@ input[type=text]:focus, input.qui:focus { border-color: var(--veilleuse); }
            width: 38vw; max-width: 420px; accent-color: var(--veilleuse); cursor: pointer;
            background: rgba(0,0,0,0.35); border-radius: var(--r-md); }
 #ps-bar button { background: var(--salle-3); color: #fff; border: var(--trait);
-                 border-radius: 8px; padding: 6px 14px; font-size: 1rem; cursor: pointer; }
+                 border-radius: var(--r-md); padding: var(--e-2) var(--e-4); font-size: var(--t-md); cursor: pointer; }
 /* ── nommer rapidement ── */
 #quickname { display: none; position: fixed; inset: 0; z-index: 600;
              background: rgba(0,0,0,.85); padding: 20px; overflow: auto; }
@@ -8995,12 +9011,12 @@ input[type=text]:focus, input.qui:focus { border-color: var(--veilleuse); }
            color: var(--texte-papier); border: 1px solid var(--papier-2);
            border-radius: var(--r-md); padding: var(--e-4);
            box-shadow: 0 1px 0 var(--papier-2), 0 12px 40px #000a; }
-.qn-h { font-size: 1rem; color: var(--texte-papier); margin-bottom: 10px; }
+.qn-h { font-size: var(--t-md); color: var(--texte-papier); margin-bottom: var(--e-3); }
 .qn-faces { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px,1fr));
-            gap: 6px; margin-bottom: var(--e-3); }
-.qn-faces img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 8px; background: var(--papier-2); }
+            gap: var(--e-1); margin-bottom: var(--e-3); }
+.qn-faces img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: var(--r-md); background: var(--papier-2); }
 #qn-actions { display: flex; gap: var(--e-2); align-items: center; flex-wrap: wrap; }
-#qn-input { flex: 1; min-width: 200px; padding: 9px var(--e-3); border-radius: 8px;
+#qn-input { flex: 1; min-width: 200px; padding: var(--e-2) var(--e-3); border-radius: var(--r-md);
             border: 1px solid var(--papier-2); background: #fff; color: var(--texte-papier); font-size: var(--t-md); outline: none; }
 #qn-input:focus { border-color: var(--veilleuse); }
 /* Controles sur papier : boutons a contour, primaire = fixateur (confirmer). */
@@ -9023,10 +9039,10 @@ input[type=text]:focus, input.qui:focus { border-color: var(--veilleuse); }
      travail, donc il ne pousse jamais le contenu du haut -> plus de saut de
      position (bug signale). Le filtre garde la liste compacte malgre les ~324
      fiches, et l'ancre « Aller aux groupes » evite de tout scroller. -->
-<h2 style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">Personnes nommées <span class="c" id="pc"></span>
+<h2 style="display:flex;align-items:center;gap:var(--e-2);flex-wrap:wrap">Personnes nommées <span class="c" id="pc"></span>
   <input type="text" id="pfilter" placeholder="Filtrer par nom&hellip;" autocomplete="off"
          aria-label="Filtrer les personnes par nom" style="flex:0 1 220px;max-width:220px">
-  <a href="#groupes" class="btn" style="font-size:.72rem;padding:3px 9px;margin-left:auto;text-decoration:none">Aller aux groupes &#8595;</a></h2>
+  <a href="#groupes" class="btn" style="font-size:var(--t-xs);padding:var(--e-1) var(--e-2);margin-left:auto;text-decoration:none">Aller aux groupes &#8595;</a></h2>
 <div class="people" id="people"></div>
 <div id="panel"></div>
 
@@ -9037,19 +9053,19 @@ input[type=text]:focus, input.qui:focus { border-color: var(--veilleuse); }
   de ressemblance.</div>
 
 <h2>À vérifier <span class="c" id="curc"></span>
-  <button class="btn" id="curref" style="font-size:.72rem;padding:3px 9px;margin-left:6px">&#8635; Rafraîchir</button></h2>
+  <button class="btn" id="curref" style="font-size:var(--t-xs);padding:var(--e-1) var(--e-2);margin-left:var(--e-2)">&#8635; Rafraîchir</button></h2>
 <div class="msg"><span class="kbd-hint">Raccourcis : <b>Espace</b>/<b>Entr&eacute;e</b> = oui &middot; <b>X</b> = non &middot; <b>Z</b> = annuler &middot; une lettre = corriger le nom</span></div>
 <div class="msg" id="curmsg">Chargement&hellip;</div>
 <div class="clus" id="autowrap"></div>
 <div class="clus" id="curbox"></div>
 
 <h2 id="groupes">Groupes à nommer <span class="c" id="cc"></span>
-  <button class="btn" id="quickbtn" style="font-size:.72rem;padding:3px 9px;margin-left:6px">&#9889; Nommer rapidement</button></h2>
+  <button class="btn" id="quickbtn" style="font-size:var(--t-xs);padding:var(--e-1) var(--e-2);margin-left:var(--e-2)">&#9889; Nommer rapidement</button></h2>
 <div class="msg" id="clmsg">Chargement&hellip;</div>
 <div class="clus" id="clusters"></div>
 
 <h2>Inconnus (archiv&eacute;s) <span class="c" id="inc"></span>
-  <button class="btn" id="inbtn" style="font-size:.72rem;padding:3px 9px;margin-left:6px">Afficher</button></h2>
+  <button class="btn" id="inbtn" style="font-size:var(--t-xs);padding:var(--e-1) var(--e-2);margin-left:var(--e-2)">Afficher</button></h2>
 <div class="msg" id="inmsg">Visages mis de c&ocirc;t&eacute; pour un re-tag ult&eacute;rieur. Nommer un groupe le sort des inconnus ; &laquo;&nbsp;R&eacute;activer&nbsp;&raquo; le renvoie dans &laquo;&nbsp;Groupes &agrave; nommer&nbsp;&raquo;.</div>
 <div class="clus" id="inconnus"></div>
 
@@ -9121,7 +9137,7 @@ function loadPeople(){
 
 function openPerson(p){
   var panel=document.getElementById('panel');
-  panel.innerHTML='<div class="box"><h3>'+esc(p.name)+' <span style="color:var(--graphite);font-weight:normal;font-size:.8rem">'+
+  panel.innerHTML='<div class="box"><h3>'+esc(p.name)+' <span style="color:var(--graphite);font-weight:normal;font-size:var(--t-sm)">'+
     p.photos+' photo'+(p.photos>1?'s':'')+'</span></h3>'+
     '<div class="acts">'+
     '<button class="btn prim" id="a-ss">▶ Chronologique</button>'+
@@ -9234,7 +9250,7 @@ function cleanPerson(name,box){
     var refs=Object.keys(sel);
     if(!refs.length){ alert('Choisis au moins une photo de référence.'); return; }
     var res=document.getElementById('clean-res');
-    res.innerHTML='<div class="msg" style="display:flex;align-items:center;gap:8px">'+
+    res.innerHTML='<div class="msg" style="display:flex;align-items:center;gap:var(--e-2)">'+
       '<span class="netbusy__s"></span><span>Analyse de <b>'+esc(name)+'</b> en cours&hellip; on re-score '+
       '<b>toutes</b> ses photos avec la nouvelle référence. Le sablier en bas à droite confirme que ça travaille.</span></div>';
     res.scrollIntoView({behavior:'smooth',block:'center'});
@@ -9249,7 +9265,7 @@ function cleanPerson(name,box){
 }
 
 function correctPhotos(name,box){
-  box.innerHTML='<div class="msg" style="display:flex;align-items:center;gap:8px"><span class="netbusy__s"></span>'+
+  box.innerHTML='<div class="msg" style="display:flex;align-items:center;gap:var(--e-2)"><span class="netbusy__s"></span>'+
     '<span>Chargement et scoring de <b>toutes</b> les photos de '+esc(name)+'&hellip;</span></div>';
   // On charge TOUTE la fiche (le scoring est vectorise -> rapide), en mode leger
   // (pas de dossier/mots-cles : inutiles ici), pour que le tri par seuil couvre
@@ -9271,7 +9287,7 @@ function findMore(name,box){
   post('/api/people/find',{name:name}).then(function(d){
     var pr=d.proposals||[];
     if(!pr.length){ box.innerHTML='<div class="msg">Aucune nouvelle photo trouvée.</div>'; return; }
-    var html='<div style="margin:8px 0 6px;font-size:.8rem;color:var(--graphite)">'+pr.length+
+    var html='<div style="margin:var(--e-2) 0;font-size:var(--t-sm);color:var(--graphite)">'+pr.length+
       ' proposition(s) — décoche les erreurs :</div><div class="grid">';
     pr.forEach(function(f,i){
       html+='<label class="prop"><input type="checkbox" checked data-k="'+esc(f.key)+'">'+
@@ -9312,7 +9328,7 @@ function carteGroupeP(c){
   var el=document.createElement('div'); el.className='cl';
   var membres=c.membres||[];
   var sel=membres.map(function(){return true;});
-  el.innerHTML='<div class="sz" style="color:var(--graphite);font-size:.8rem;margin-bottom:6px">'+c.size+
+  el.innerHTML='<div class="sz" style="color:var(--graphite);font-size:var(--t-sm);margin-bottom:var(--e-2)">'+c.size+
       ' visage(s) <span style="color:var(--graphite)">— clique une vignette pour la désélectionner</span></div>'+
     '<div class="faces"></div>'+
     '<div class="row"><input type="text" class="qui" placeholder="C’est… (nom de la personne)" autocomplete="off">'+
@@ -9440,10 +9456,10 @@ function loadInconnus(rebuild){
   fetch('/api/people/inconnus'+(rebuild?'?rebuild=1':'')).then(function(r){return r.json();}).then(function(d){
     var box=document.getElementById('inconnus');
     document.getElementById('inc').textContent=d.count?('('+d.count+')'):'';
-    if(d.building){ box.innerHTML='<span style="color:var(--graphite);padding:6px">Regroupement des inconnus…</span>';
+    if(d.building){ box.innerHTML='<span style="color:var(--graphite);padding:var(--e-2)">Regroupement des inconnus…</span>';
       setTimeout(function(){loadInconnus(false);},3000); return; }
     box.innerHTML='';
-    if(!d.clusters.length){ box.innerHTML='<span style="color:var(--graphite);padding:6px">Aucun visage archivé.</span>'; return; }
+    if(!d.clusters.length){ box.innerHTML='<span style="color:var(--graphite);padding:var(--e-2)">Aucun visage archivé.</span>'; return; }
     renderInBatches(box, d.clusters, carteInconnu);
   });
 }
@@ -9451,7 +9467,7 @@ function carteInconnu(c){
   var el=document.createElement('div'); el.className='cl';
   var membres=c.membres||[];
   var sel=membres.map(function(){return true;});
-  el.innerHTML='<div class="sz" style="color:var(--graphite);font-size:.8rem;margin-bottom:6px">'+c.size+
+  el.innerHTML='<div class="sz" style="color:var(--graphite);font-size:var(--t-sm);margin-bottom:var(--e-2)">'+c.size+
       ' visage(s) archivé(s) <span style="color:var(--graphite)">— nomme le groupe pour l’identifier, ou réactive-le</span></div>'+
     '<div class="faces"></div>'+
     '<div class="row"><input type="text" class="qui" placeholder="C’est… (nom de la personne)" autocomplete="off">'+
@@ -9521,7 +9537,7 @@ document.getElementById('inbtn').onclick=function(){
   var box=document.getElementById('inconnus'), b=document.getElementById('inbtn');
   if(INCONNU_SHOWN){ INCONNU_SHOWN=false; box.innerHTML=''; document.getElementById('inc').textContent=''; b.textContent='Afficher'; return; }
   INCONNU_SHOWN=true; b.textContent='Masquer';
-  box.innerHTML='<span style="color:var(--graphite);padding:6px">Regroupement des inconnus…</span>';
+  box.innerHTML='<span style="color:var(--graphite);padding:var(--e-2)">Regroupement des inconnus…</span>';
   loadInconnus(true);
 };
 
@@ -9544,7 +9560,7 @@ function toastP(msg, jeton, apres){
     t.setAttribute('role','status'); t.setAttribute('aria-live','polite');
     t.style.cssText='position:sticky;bottom:12px;margin:12px auto 0;max-width:520px;display:flex;'+
       'align-items:center;gap:12px;background:var(--salle-3);border:var(--trait);border-radius:999px;'+
-      'padding:10px 10px 10px 18px;font-size:13px;z-index:60';
+      'padding:var(--e-3) var(--e-3) var(--e-3) var(--e-4);font-size:var(--t-sm);z-index:60';
     document.body.appendChild(t); }
   t.innerHTML='<span style="flex:1"></span>'; t.firstChild.textContent=msg;
   if(jeton){ var b=document.createElement('button'); b.className='btn'; b.textContent='Annuler';
@@ -9606,7 +9622,7 @@ function loadCurator(rebuild){
     var auto=d.auto||[], aw=document.getElementById('autowrap');
     if(!auto.length){ aw.innerHTML=''; }
     else{
-      var ah='<div class="cl"><div style="font-size:.82rem;color:var(--graphite);margin-bottom:6px">🤖 Ajoutés automatiquement récemment ('+auto.length+') — vérifie, annule (✗) en cas d\\'erreur :</div><div class="grid">';
+      var ah='<div class="cl"><div style="font-size:var(--t-sm);color:var(--graphite);margin-bottom:var(--e-2)">🤖 Ajoutés automatiquement récemment ('+auto.length+') — vérifie, annule (✗) en cas d\\'erreur :</div><div class="grid">';
       auto.forEach(function(a){
         ah+='<label class="prop" style="cursor:default"><a href="'+esc(a.url)+'" target="_blank" rel="noopener"><img loading="lazy" src="'+esc(a.crop_url)+'"></a>'+
           '<span class="s">'+esc(a.person)+' '+a.sim+'</span>'+
@@ -9628,7 +9644,7 @@ function loadCurator(rebuild){
     box.innerHTML='';
     items.forEach(function(s){
       var el=document.createElement('div'); el.className='cl'; var html='';
-      var crop='<img loading="lazy" src="'+esc(s.crop_url)+'" style="width:80px;height:80px;object-fit:cover;border-radius:8px;background:var(--salle-3)">';
+      var crop='<img loading="lazy" src="'+esc(s.crop_url)+'" style="width:80px;height:80px;object-fit:cover;border-radius:var(--r-md);background:var(--salle-3)">';
       if(s.type==='merge'){
         html='<div class="row"><span class="sz">Même personne ? <b>'+esc(s.a)+'</b> et <b>'+esc(s.b)+'</b> (sim '+s.sim+')</span>'+
           '<button class="btn prim">✓ Fusionner</button><button class="btn">✗ Différents</button></div>';
