@@ -2,11 +2,25 @@
 
 L'état vit dans les fichiers, pas dans l'historique. Ce fichier = **carte des
 priorités**. Détail ailleurs : `eval/DECISIONS.md` (décisions tranchées),
-`docs/RANGEMENT_2026.md` (rangement), `docs/AUDIT_EXTERNE_2026.md` (direction
-tagging), `PROMPT_NOUVELLE_SESSION.md` (reprise), et l'historique git (chaque
-chantier fini y est — c'est pourquoi les récits de travaux terminés ne vivent PAS ici).
+`docs/AUDIT_INTERNE_2026-08.md` (triple audit 11/08 : incohérences I1–I17,
+optimisations O1–O15, angles morts A–F), `docs/RANGEMENT_2026.md`,
+`docs/AUDIT_EXTERNE_2026.md`, `PROMPT_NOUVELLE_SESSION.md` (reprise), et git
+(chaque chantier fini y est — les récits de travaux terminés ne vivent PAS ici).
 
 ## État actuel (11 août 2026)
+
+**Session 11/08 (nuit) — GpuArbiter : LIVRÉ et VÉRIFIÉ EN RÉEL, reste à COMMITER.**
+L'`ArbitreGPU` (existant mais jamais branché — sa sonde lisait une clé inexistante) est
+câblé aux **5** politiques GPU (visages 1200, SigLIP 1400, YOLO 1600, DINO 1800 ; Ollama
+hors bail = priorité de fait, contrat historique). Baux **persistants** (la résidence
+consomme, pas l'inférence), `confirmer` (matérialisation, pas de double compte), `rendre`
+sur chaque échec de montage ; priorités semantique > visages > animaux > empreintes_chats
+avec **éviction** (descente CPU, jamais d'interruption d'une inférence en vol) ; `menage()`
+anti-débordement. Diff relu 2× par agent (1 BLOQUANT + 4 SÉRIEUX corrigés). **Vérifié après
+redémarrage** via `GET /api/search/status` → `etat['gpu']` : bail `semantique` accordé et
+matérialisé (SigLIP sur cuda), 1811 Mo libres, prios en place, 0 refus/éviction ; recherche
+OK. Tests : +11 vérifications ArbitreGPU dans `test_ordonnanceur.py` → **27/27**.
+**Triple audit du projet mené dans la foulée** → `docs/AUDIT_INTERNE_2026-08.md`.
 
 **Sessions 11/08 matin + après-midi : commitées et fusionnées** (tout vérifié en réel,
 détail dans git) : Lieux (25, 0,8 s) ; fixes clusters ; perf `/sujets` (>45 s → 0,8 s) ;
@@ -15,19 +29,11 @@ page `/files?q=` ; fix racine faux positifs confirmé (rebuild curateur → 0 ca
 timm `/pets` (fausse alerte : `timm` présent, chargement paresseux — mention neutre
 « en veille », actif au prochain redémarrage).
 
-**Session 11/08 (soir)** — deux volets, **livrés mais PAS vérifiés en réel** (redémarrage en
-attente) ni commités :
-1. **Recherche sur la Carte** (ROADMAP #5) : champ « Rechercher (noms, lieux, sens)… » sur
-   `/map`, même vocabulaire hybride que la galerie (`/api/search`, plafond `n` aligné à 1500) ;
-   le filtre recompose marqueurs/compteur et **se compose avec la zone et le diaporama**
-   (jointure par `url`, commune à `/api/geo` et `/api/search`). Placeholder d'accueil aligné.
-2. **Passe DESIGN terminée sur les 5 pages restantes** (MAP/GALLERY/HTML/BROWSE/FACES,
-   mêmes mappings que PEOPLE/PETS) + divergences tranchées (chips galerie alignés sur le
-   canon `min-height:32px` ; les 6 `outline:none` restants purgés — plancher `base.css`).
-   Lint tokens : 0 interdit, 0 avertissement sur les 11 constantes.
-3. **Éval INT8 (vision-eval) : REJETÉ** — cf. `eval/DECISIONS.md` + `eval/eval_int8_vectors.py`
-   (mesure sur copie réelle, 130 576 vecteurs ; la base est déjà en f16 et locale ; recall@10
-   sémantique 0,9685 réfute « sans perte »).
+**Session 11/08 (soir) : commitée (`ea4aa00`), vérifiée en réel** — recherche sur la Carte
+(vocabulaire hybride partagé, composition zone×recherche×diaporama vérifiée ; « Bremblens »
+→ 0 marqueur = normal tant que `gps_place` n'est pas activé) ; passe DESIGN des 5 pages
+restantes vérifiée (tokens résolus, chips 32px, plancher focus-visible) ; éval INT8 REJETÉE
+(cf. `eval/DECISIONS.md`). Détail dans git.
 
 ## État antérieur (10 août 2026) — commité, détail dans git
 
@@ -36,8 +42,8 @@ Refonte `/people` + outillage **faux positifs** ; tokenisation value-preserving 
 jugées par un humain (⚠ geste Mike : re-rejeter le groupe Caline une fois) ; Lieux = 3ᵉ type
 d'entité.
 
-- **Git** : tout est commité/fusionné jusqu'à l'après-midi du 11/08 ; **reste à commiter la
-  session du soir** (après vérif) — `27 - Commit de session.bat` ; **`git push` = geste de Mike**.
+- **Git** : tout est commité jusqu'à `ea4aa00` ; **reste à commiter la session GpuArbiter
+  + audit** (vérifiée ✓) — `27 - Commit de session.bat` ; **`git push` = geste de Mike**.
 - **Ouvert (gestes Mike)** :
   - **Nettoyer Flo** : la fiche reste polluée tant qu'un passage n'est pas fait. Ouvrir Flo →
     « Corriger » (seuil ~0.2, monter en surveillant la grille) ou « Nettoyer (référence) »
@@ -61,62 +67,68 @@ d'entité.
 | GPU | torch CUDA `2.13.0+cu130` + `onnxruntime_gpu` ; `FACE_USE_GPU=False` volontaire (4 Go pris par Ollama) |
 | Hygiène | Nettoyage de session **réversible** (`_corbeille_session/` + lint `*.md`, `29 - …bat`), au protocole de `CLAUDE.md` |
 
-## À faire — par ordre de valeur
+## À faire — par ordre de valeur (réordonné au triple audit du 11/08)
 
-1. **Vérité terrain humaine (priorité n°1).** ~0,8 % de confirmations humaines (91/12 072).
-   Confirmer ~100 propositions dans `/people` vaut plus que tout changement d'algo. Tri
-   clavier prêt (Espace=oui, X=non, Z=annuler, lettre=corriger). `/people` réorganisé +
-   filtre par nom (10/08) → la revue en volume est désormais directe et confortable.
-2. **Appliquer les lots de renommage** (`/reglages` → Renommage, plan = 2114, lots de 200
-   réversibles) + **activer le géocodage `gps_place`** : lancer `18 - …gazetteer.bat`, puis
-   `enrichir_lieux.py` (aperçu) puis `--ecrire`, puis redémarrer. Gestes Mike.
-3. **Cross-pipeline (Mutz/Caline)** — outil de reclassement `personne:`→`animal:` **livré**
-   (Mutz+Caline faits, réversible). Fix **auto** amont humain/animal **REJETÉ** (18 % faux
-   rejets, cf. DECISIONS) ; seule piste restante = re-mesurer sur découpes SANS marge avant
-   d'y revenir. Relancer l'outil quand un nouveau nom d'animal se retrouve en `personne:`.
-4. **Page « Sujets » unifiée — TERMINÉE (11/08).** Les 3 tranches livrées et vérifiées en
-   réel : surcouche lecture seule (10/08), Lieux 3ᵉ type d'entité (10–11/08), **fusion**
-   (11/08 : `/sujets` entrée unique de la nav, `/people`+`/pets` vues spécialisées,
-   rangée « Files de travail »). Plus rien à faire ici.
-5. **Recherche — livrée, à VÉRIFIER en réel (11/08 soir).** Vocabulaire hybride (noms + lieux
-   + sens) partagé à la page Carte ; « les étés à Bremblens avec Luna » couvert par
-   `semantic_search`. Reste après vérif : rien de cadré.
-6. **Reconnaissance — algo.** Clustering par densité (HDBSCAN / Chinese Whispers) au lieu
-   d'un seuil global unique ; AdaFace sur le ré-embedding des visages faibles ; écrire les
-   tags SigLIP (aujourd'hui proposés — décision à prendre car modifie les XMP).
-7. **Perf / archi.** `GpuArbiter` unique (baux + priorités UI > tagging > visages > chats)
-   remplaçant les 4 politiques `*_GPU_MIN_FREE_MB` séparées — session dédiée.
-   *(INT8 des embeddings : REJETÉ le 11/08, cf. `DECISIONS.md` — ne pas reproposer.)*
-8. **Extraire les 7 pages HTML → `ui/` + `tokens.css`** (sans build step). **Value-preserving :
-   FAIT sur les 7 pages** (commité, vérifié en réel) — les espacements/rayons/tailles qui
-   **égalent déjà un token** pointent vers lui (12px→`--e-3`, 999px→`--r-pill`, 0.85rem→`--t-sm`,
-   6px→`--r-md`…), prouvé identique (résolution tokens + diff = zéro écart ; `getComputedStyle`).
-   Non tokenisé : positions/tailles, font-sizes **px** (≠ rem), valeurs hors échelle ; `#4A8C7B`
-   Leaflet reste en dur (API refuse `var()`). Divergences nommées tranchées : GALLERY `.pchip`/
-   `.chip` fusionnés ; PEOPLE `#222`→`--salle-3`, `#f0a35b`→`--veilleuse`.
-   - **Passe DESIGN : FAITE sur les 7 pages** — PEOPLE+PETS (11/08 après-midi, vérifiée en
-     réel), MAP/GALLERY/HTML/BROWSE/FACES (11/08 soir, **à vérifier au redémarrage**).
-     Fonds photo #000 et overlays translucides conservés (tolérés, hors palette).
-   - **Reste** : extraction physique vers `ui/` (via `bundle.py`) — tokens déjà tous référencés.
-9. **Éval tagging (parké, déjà cadré).** Mesurer V2 « assertions en contexte, sans
-   impératif de noms » (~4,3 s, jamais notée) + fusion programmatique des noms/date/lieu
-   (Knowledge Builder). Cf. `docs/AUDIT_EXTERNE_2026.md` + `eval/PLAN_assertions_vs_pixels.md`.
-10. **Données / finitions.** **Flo** : outillage de nettoyage livré (10/08) ; le passage
-    lui-même = geste Mike (Corriger / Nettoyer référence). Édition des réglages depuis
-    `/reglages` (aujourd'hui lecture seule) ; 2ᵉ passe de récupération des 945 illisibles +
-    remettre `recuperees/` sur NAS. *(Doublon de fiche Caline : réglé le 9/08.)*
-11. **À évaluer (mesurer avant d'adopter, discipline `vision-eval`).** Florence-2
-    (caption + detection + OCR) comme candidat léger.
+1. **Vérité terrain humaine (priorité n°1).** ~0,8 % de confirmations (91/12 072).
+   Confirmer ~100 propositions dans `/people` vaut plus que tout changement d'algo (tri
+   clavier + filtre par nom prêts). **Instrumenter le geste** : file de confirmation triée
+   par **marge** entre 1ᵉʳ et 2ᵉ prototype (incertitude du modèle — jamais le score absolu,
+   circularité) ; métrique = confirmations/minute et erreurs découvertes, pas l'accord
+   modèle-humain.
+2. **Assurance-vie de la vérité terrain (angle mort majeur — audit A).** Les jugements
+   humains ne vivent que dans `photos.db`, snapshot jamais restauré ni vérifié, même site.
+   → Tâche `backup_verify` (integrity_check + restauration à blanc + comptage confirmed/
+   exclude) + **export JSONL append-only** des jugements sur NAS (copiable hors site).
+3. **Éval tagging V2 — AVANT les lots de renommage** (le jeu figé de 150 photos est keyé
+   par chemin ; renommer d'abord invaliderait le banc — mode de panne déjà documenté).
+   Protocole prêt : `eval/PLAN_assertions_vs_pixels.md`. Si V2 confirme → **câbler le
+   Knowledge Builder** (ADOPTÉ le 31/07, jamais câblé) + créer la **version de pipeline
+   tagging** manquante (audit D).
+4. **Gestes Mike, dans cet ordre** : nettoyer Flo (outillage livré) ; **après I2+O10**
+   (re-clé `gps_places.json` + index `vectors(k)` — sinon libellés orphelins et scans
+   ×850 k lignes/lot) : activer `gps_place` (`18 - …gazetteer.bat` → `enrichir_lieux.py`
+   → `--ecrire` → redémarrer) ; **après l'éval V2** : lots de renommage (plan = 2114).
+5. **Correctifs d'audit** (détail : `docs/AUDIT_INTERNE_2026-08.md`). Prioritaires :
+   I1 (workers visages/animaux hors ordonnanceur — la promesse « un seul travail lourd »
+   ne les couvre pas), I2+O10 (prérequis du point 4), O1 (`/api/thumb` : vignettes de
+   grille = originaux pleine résolution, −98 % d'octets NAS, meilleur ratio du lot),
+   O2 (`_send_file` : Range + streaming), O3 (cache `media_roots`), O4 (écritures vectors
+   sous `STORE.lock`), O5 (try/except `maintenance_loop` — un crash silencieux tue scan
+   ET backup), O6 (recherche bloquée par le lot d'encodage). Puis I5–I8, O7–O13.
+6. **Navigation par similarité** : `/api/similar?key=` (cosinus sur `photo_vectors()`
+   existant, bouton « semblables » dans la visionneuse) ; puis **doublons proches bridés**
+   (>0,98 + même journée → quarantaine réversible, 50 paires jugées par Mike avant tout
+   geste) ; rangée « même jour, autres années » en galerie (requête date, zéro IA).
+7. **Extraction `ui/` — décision nette à prendre** : session dédiée `bundle.py` ou parcage
+   explicite (item zombie depuis plusieurs sessions ; tout le préparatoire est fait et
+   vérifié, détail dans git).
+8. **Cross-pipeline (Mutz/Caline)** — outil livré, réversible. Fix auto REJETÉ (18 % faux
+   rejets) ; seule piste restante : re-mesurer sur découpes SANS marge. Relancer l'outil
+   si un nouveau nom d'animal apparaît en `personne:`.
+9. **Reconnaissance — algo (BARRIÈRE : vérité terrain ≥ ~5 %).** HDBSCAN/Chinese Whispers
+   inévaluables aujourd'hui (étalon circulaire à 0,8 %) ; AdaFace idem ; écrire les tags
+   SigLIP = décision de mutation XMP, exige la version de pipeline tagging (point 3).
+10. **Données / finitions.** Édition des réglages depuis `/reglages` ; 2ᵉ passe des 945
+    illisibles + remettre `recuperees/` sur NAS ; `docs/journaux/` gitignoré + purge des
+    undo appliqués > 30 j (I12).
+11. **À évaluer (discipline `vision-eval`).** Florence-2 (caption+detection+OCR) léger.
 
 ### Résiduels faible valeur (ne pas prioriser)
 - `/reglages` : bouton **Pause globale** des workers (aujourd'hui : pause maintenance seule) ;
   retrait de l'ancien bandeau `#pending` (l'état vit maintenant dans `/reglages`).
+- `/pets` : « empreintes calculées » = compteur mémoire depuis le démarrage (`PET_EMBED_STATE`),
+  affiche 0 après redémarrage — libellé à préciser (« depuis le démarrage ») un jour.
 
 ## En réserve — futur, non prioritaire
 
 Multi-utilisateur (owner par racine, comptes/droits ; décidé « plus tard »).
 Multimodalité images → **vidéo** → **audio**, puis **recherche AI en langage naturel** et
-**exposer le serveur en MCP** (`mcp-builder`). Bibliothèque Figma comme source des composants.
+**exposer le serveur en MCP** (`mcp-builder` ; prérequis naturel : Knowledge Builder).
+Bibliothèque Figma comme source des composants. **Vision (audit 11/08)** : une mémoire
+familiale **à provenance** — chaque fait affiché (nom, lieu, tag) porte sa source et son
+statut humain ; deux tests de vérité : « PC mort lundi, tout revit vendredi » et « aucun
+fait affirmé sans provenance ». Récits LLM automatiques : écartés (hallucination sur
+souvenirs) — la rangée « même jour » sans IA suffit.
 
 ## Méthode
 

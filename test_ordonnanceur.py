@@ -192,10 +192,91 @@ def t_sonde_en_panne():
             not a.demander("x", 100) and a.libre_mb() == 0.0)
 
 
+def t_confirmer_materialise():
+    # Apres montage, la sonde voit l'usage reel : soustraire encore le bail
+    # serait un double compte. confirmer() doit aussi rafraichir la sonde
+    # fraiche (une fois, pas a chaque appel).
+    mesure = {"v": 2000}
+    frais = {"n": 0}
+
+    def sonde():
+        return mesure["v"]
+
+    def sonde_f():
+        frais["n"] += 1
+        return mesure["v"]
+
+    a = ArbitreGPU(sonde, reserve_mb=192, sonde_fraiche=sonde_f)
+    a.demander("x", 1000)
+    verifie("bail promis soustrait", a.libre_mb() == 2000 - 1000 - 192)
+    mesure["v"] = 900                 # le modele est monte, la sonde le voit
+    a.confirmer("x")
+    verifie("bail materialise plus soustrait", a.libre_mb() == 900 - 192)
+    a.confirmer("x")
+    a.confirmer("x")
+    verifie("une seule sonde fraiche malgre 3 confirmer", frais["n"] == 1)
+
+
+def t_eviction_par_priorite():
+    mesure = {"v": 2000}
+    liberations = []
+
+    def lib_bas():
+        liberations.append("bas")
+        mesure["v"] = 2000            # descente CPU : la VRAM revient
+        return True
+
+    a = ArbitreGPU(lambda: mesure["v"], reserve_mb=192,
+                   sonde_fraiche=lambda: mesure["v"])
+    a.enregistrer("haut", prio=3)
+    a.enregistrer("bas", prio=0, liberer=lib_bas)
+    a.demander("bas", 1700)
+    a.confirmer("bas")
+    mesure["v"] = 100                 # le modele bas occupe la place
+    verifie("la demande prioritaire evince le bail inferieur",
+            a.demander("haut", 1400) and liberations == ["bas"])
+    verifie("le bail evince a disparu", "bas" not in a.etat()["baux"])
+    verifie("l'eviction est comptee", a.etat()["evictions"] == {"bas": 1})
+
+
+def t_eviction_refusee_en_vol():
+    # Un liberateur qui renvoie False (inference en cours) n'est jamais
+    # force : la demande echoue proprement.
+    a = ArbitreGPU(lambda: 300, reserve_mb=192)
+    a.enregistrer("haut", prio=3)
+    a.enregistrer("bas", prio=0, liberer=lambda: False)
+    a.baux["bas"] = {"mb": 1700, "materialise": True}
+    verifie("liberateur en vol -> refus, pas d'interruption",
+            not a.demander("haut", 1400) and "bas" in a.etat()["baux"])
+    verifie("le refus est compte", a.etat()["refus"].get("haut") == 1)
+
+
+def t_menage_plancher():
+    # Pression VRAM reelle (Ollama monte) -> eviction du bail materialise le
+    # moins prioritaire ; fausse alerte du cache -> aucune eviction ; `sauf`
+    # protege l'appelant (son verrou pipeline est tenu).
+    mesure = {"cache": 100, "frais": 1000}
+    lib = []
+    a = ArbitreGPU(lambda: mesure["cache"], reserve_mb=192,
+                   sonde_fraiche=lambda: mesure["frais"])
+    a.enregistrer("x", prio=1, liberer=lambda: lib.append("x") or True)
+    a.baux["x"] = {"mb": 1000, "materialise": True}
+    a.menage()
+    verifie("fausse alerte du cache -> pas d'eviction", lib == [])
+    mesure["frais"] = 100             # pression confirmee
+    a.menage(sauf="x")
+    verifie("sauf protege l'appelant", lib == [] and "x" in a.etat()["baux"])
+    a.menage()
+    verifie("pression confirmee -> eviction", lib == ["x"]
+            and "x" not in a.etat()["baux"])
+
+
 def main():
     for t in (t_exclusion_mutuelle, t_pas_de_famine, t_poids_respectes,
               t_delai_expire, t_travail_bloque, t_arbitre_vram,
-              t_arbitre_concurrent, t_sonde_en_panne):
+              t_arbitre_concurrent, t_sonde_en_panne,
+              t_confirmer_materialise, t_eviction_par_priorite,
+              t_eviction_refusee_en_vol, t_menage_plancher):
         try:
             t()
         except Exception as e:                                # noqa: BLE001

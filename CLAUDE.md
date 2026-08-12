@@ -10,7 +10,7 @@ détail vit dans les skills (`.claude/skills/`) et les docs listés plus bas.
 
 Serveur photo local en **Python stdlib pure** (`http.server`), servi au téléphone
 sur le réseau domestique. Indexe ~30 000 photos familiales sur un NAS SMB et y
-applique quatre pipelines d'IA locale :
+applique cinq pipelines d'IA locale :
 
 | Pipeline | Modèle | Sortie |
 |---|---|---|
@@ -18,6 +18,7 @@ applique quatre pipelines d'IA locale :
 | Visages | InsightFace `buffalo_l` | détection + embeddings 512-d |
 | Animaux | YOLO11s | détection d'espèce |
 | Chats nommés | DINOv2 base | embeddings 768-d + regroupement |
+| Recherche sémantique | SigLIP 2 (`semantic.py`) | embeddings image/texte + tags vocabulaire |
 
 Les noms attribués (`personne:Nom`, `animal:Nom`) sont écrits dans les **XMP des
 fichiers** (exiftool) : ils survivent à la base. **Matériel : RTX 3050 Laptop, 4 Go
@@ -46,7 +47,7 @@ VRAM** — la contrainte qui filtre toutes les décisions techniques.
 
 | Fichier | Rôle |
 |---|---|
-| `server.py` | Monolithe (~9 400 l.) : config, stores, pipelines, workers, routeur, 7 pages HTML inline |
+| `server.py` | Monolithe (~12 000 l.) : config, stores, pipelines, workers, routeur, 9 pages HTML inline (7 historiques + `/reglages` + `/sujets`) |
 | `store_sqlite.py` / `vectors.py` | Persistance SQLite (`TagStore`) / magasin de vecteurs BLOB + cosinus |
 | `ROADMAP.md` | **Où en est le projet, ce qui reste — à relire en début de session** |
 | `PROMPT_NOUVELLE_SESSION.md` | Amorce de reprise (état + prochain pas) |

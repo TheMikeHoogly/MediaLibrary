@@ -1915,10 +1915,30 @@ POIDS_FOND = {
     'reembed': 1.0,        # travail d'entretien, peut attendre
 }
 CRENEAU_MAX = 90.0         # s : au-delà, le travail est réputé bloqué
+def _vram_libre_sonde(force=False):
+    """Mo de VRAM réellement libres (0 sans GPU). Sonde de l'arbitre — corrige
+    au passage l'ancienne lambda qui lisait une clé inexistante (`gpu_free_mb`
+    au lieu de `gpu.vram_free_mb`) et renvoyait toujours 0."""
+    g = hw_state(force).get('gpu') or {}
+    return g.get('vram_free_mb', 0)
+
+
 try:
     from ordonnanceur import ArbitreGPU, Ordonnanceur
     ORDO = Ordonnanceur(POIDS_FOND)
-    GPU = ArbitreGPU(lambda: (hw_state().get('gpu_free_mb') or 0))
+    GPU = ArbitreGPU(_vram_libre_sonde,
+                     sonde_fraiche=lambda: _vram_libre_sonde(True))
+    # Priorités des baux VRAM (plus grand = prioritaire) : la recherche/tags
+    # SigLIP sert l'UI, les visages passent avant les chats. Ollama (tagging)
+    # reste HORS bail : processus externe, la sonde voit sa consommation, il
+    # a donc de fait la priorité absolue — c'est le contrat historique
+    # « le tagging garde la priorité sur le GPU », conservé tel quel.
+    # Les libérateurs (descente CPU pour éviction) sont enregistrés plus bas,
+    # à côté de chaque pipeline.
+    GPU.enregistrer('semantique', prio=3)
+    GPU.enregistrer('visages', prio=2)
+    GPU.enregistrer('animaux', prio=1)
+    GPU.enregistrer('empreintes_chats', prio=0)
 except ImportError:                     # module absent → comportement d'avant
     ORDO = GPU = None
 
@@ -1953,8 +1973,20 @@ SEMANTIC_LOCK = threading.Lock()
 
 
 def _semantic_mod():
-    """Import paresseux : jamais au démarrage (invariant zéro dépendance)."""
+    """Import paresseux : jamais au démarrage (invariant zéro dépendance).
+    Branche l'arbitre GPU au premier import (idempotent) : la décision
+    CPU/GPU de SigLIP passe alors par les baux au lieu de sa sonde privée.
+    En usage CLI autonome (sans injection), semantic.py garde son seuil."""
     import semantic
+    if GPU is not None and getattr(semantic, '_ARBITRE', None) is None:
+        try:
+            semantic.set_arbitre(
+                lambda: GPU.demander('semantique',
+                                     semantic.SIGLIP_GPU_MIN_FREE_MB),
+                lambda: GPU.confirmer('semantique'),
+                lambda: GPU.rendre('semantique'))
+        except Exception:
+            pass
     return semantic
 
 
@@ -5725,12 +5757,14 @@ FACE_PROVIDER = ""         # 'GPU' / 'CPU' effectivement utilisé
 _HW_CACHE = {"at": 0.0, "data": None}
 
 
-def hw_state():
+def hw_state(force=False):
     """Sonde le matériel : CPU, RAM (via psutil si présent), GPU/VRAM (via
-    nvidia-smi). Résultat mis en cache ~8 s. Permet au serveur de s'adapter à
-    la machine (et de se ré-adapter si le matériel change)."""
+    nvidia-smi). Résultat mis en cache ~8 s (`force=True` court-circuite le
+    cache — nécessaire à l'arbitre GPU juste après une éviction, sinon la
+    mesure périmée ne voit pas la VRAM rendue). Permet au serveur de
+    s'adapter à la machine (et de se ré-adapter si le matériel change)."""
     now = time.time()
-    if _HW_CACHE["data"] is not None and now - _HW_CACHE["at"] < 8:
+    if not force and _HW_CACHE["data"] is not None and now - _HW_CACHE["at"] < 8:
         return _HW_CACHE["data"]
     d = {"cpu_count": os.cpu_count() or 1, "cpu_percent": None,
          "ram_total_gb": None, "ram_avail_gb": None, "gpu": None, "psutil": False}
@@ -5947,15 +5981,61 @@ def get_face_app_gpu():
     return FACE_APP_GPU
 
 
+FACE_DEV_LOCK = threading.Lock()   # tenu pendant l'inférence GPU visages
+
+
+def _liberer_gpu_visages():
+    """Éviction : jette la session InsightFace GPU (une session onnxruntime ne
+    migre pas, on la détruit ; elle se reconstruira au prochain bail accordé).
+    False si une inférence est en vol — on n'interrompt jamais un calcul."""
+    global FACE_APP_GPU, FACE_GPU_INIT
+    if not FACE_DEV_LOCK.acquire(blocking=False):
+        return False
+    try:
+        if FACE_APP_GPU is not None:
+            FACE_APP_GPU = None
+            FACE_GPU_INIT = False      # ré-init possible au prochain bail
+            try:
+                import gc
+                gc.collect()           # libère la session ORT (et sa VRAM)
+            except Exception:
+                pass
+            try:
+                import torch
+                torch.cuda.empty_cache()
+            except Exception:
+                pass
+        return True
+    finally:
+        FACE_DEV_LOCK.release()
+
+
 def pick_app():
-    """Choisit CPU ou GPU pour l'analyse des visages selon la VRAM libre. GPU
-    seulement s'il reste assez de VRAM (Ollama au repos) → tagging prioritaire."""
+    """Choisit CPU ou GPU pour l'analyse des visages. La décision passe par
+    l'arbitre (bail 'visages') quand il existe : un seul point de vérité sur
+    la VRAM, Ollama (hors bail) garde de fait la priorité. Sans arbitre :
+    l'ancienne sonde directe."""
     if FACE_GPU_ENABLE:
-        g = hw_state().get("gpu")
-        if g and g.get("vram_free_mb", 0) >= FACE_GPU_MIN_FREE_MB:
-            a = get_face_app_gpu()
-            if a is not None:
-                return a, "GPU"
+        if GPU is not None:
+            GPU.menage(sauf='visages')
+            ok = GPU.demander('visages', FACE_GPU_MIN_FREE_MB)
+        else:
+            g = hw_state().get("gpu")
+            ok = bool(g and g.get("vram_free_mb", 0) >= FACE_GPU_MIN_FREE_MB)
+        if ok:
+            # L'init (plusieurs secondes de session ORT) se fait SOUS le
+            # verrou : sinon le libérateur d'éviction voit FACE_APP_GPU=None
+            # pendant l'init, « réussit » sans rien libérer, et la session
+            # finit résidente sans bail (600 Mo zombies). Le verrou ferme
+            # aussi la course check-then-act sur FACE_GPU_INIT (double init).
+            with FACE_DEV_LOCK:
+                a = get_face_app_gpu()
+                if a is not None:
+                    if GPU is not None:
+                        GPU.confirmer('visages')
+                    return a, "GPU"
+                if GPU is not None:    # init GPU ratée → on rend le bail
+                    GPU.rendre('visages')
     return get_face_app(), "CPU"
 
 
@@ -5971,7 +6051,22 @@ def detect_faces(path, max_side=None):
     FACE_LAST_ENGINE = eng
     arr, scale = _load_bgr(path, max_side)
     out = []
-    for f in app.get(arr):
+    if eng == "GPU":
+        # Le verrou signale « inférence en vol » au libérateur d'éviction :
+        # la session GPU ne peut pas être détruite sous nos pieds. Si une
+        # éviction est passée entre pick_app et ici, la session référencée
+        # n'est plus la session courante → on bascule sur CPU plutôt que de
+        # calculer sur une session dont l'arbitre a déjà « rendu » la VRAM.
+        with FACE_DEV_LOCK:
+            if FACE_APP_GPU is not app:
+                app, eng = get_face_app(), "CPU"
+                FACE_LAST_ENGINE = eng
+                if app is None:
+                    raise RuntimeError("moteur visages indisponible")
+            faces = app.get(arr)
+    else:
+        faces = app.get(arr)
+    for f in faces:
         score = float(getattr(f, 'det_score', 0.0))
         if score < FACE_DET_THRESHOLD:
             continue
@@ -5985,6 +6080,10 @@ def detect_faces(path, max_side=None):
             "emb": base64.b64encode(emb.astype('float16').tobytes()).decode(),
         })
     return out
+
+
+if GPU is not None:
+    GPU.enregistrer('visages', liberer=_liberer_gpu_visages)
 
 
 def enqueue_face(name):
@@ -6101,11 +6200,16 @@ def get_yolo():
     return YOLO_MODEL
 
 
-def _pick_gpu_device(enable, min_free_mb, fallback='cpu'):
+def _pick_gpu_device(enable, min_free_mb, fallback='cpu', nom=None):
     """Renvoie 'cuda' si le GPU a assez de VRAM libre (Ollama au repos), sinon
-    'cpu'. hw_state() est mis en cache ~8 s → décision stable, pas de va-et-vient."""
+    'cpu'. Avec l'arbitre (`nom` fourni) : la décision passe par un bail —
+    un seul point de vérité, plus de sondes concurrentes qui se croient
+    seules. Sans arbitre : sonde directe, hw_state() en cache ~8 s."""
     if not enable:
         return fallback
+    if GPU is not None and nom:
+        GPU.menage(sauf=nom)
+        return 'cuda' if GPU.demander(nom, min_free_mb) else fallback
     try:
         g = hw_state().get("gpu")
         if g and g.get("vram_free_mb", 0) >= min_free_mb:
@@ -6116,6 +6220,34 @@ def _pick_gpu_device(enable, min_free_mb, fallback='cpu'):
 
 
 ANIMAL_LAST_DEVICE = "cpu"
+ANIMAL_DEV_LOCK = threading.Lock()   # tenu pendant predict → éviction sûre
+
+
+def _liberer_gpu_animaux():
+    """Éviction : descend YOLO sur CPU. False si une détection est en vol."""
+    global ANIMAL_LAST_DEVICE
+    if not ANIMAL_DEV_LOCK.acquire(blocking=False):
+        return False
+    try:
+        m = YOLO_MODEL
+        if m is not None and ANIMAL_LAST_DEVICE == 'cuda':
+            try:
+                m.to('cpu')
+            except Exception:
+                return False
+            try:
+                import torch
+                torch.cuda.empty_cache()
+            except Exception:
+                pass
+        ANIMAL_LAST_DEVICE = 'cpu'
+        return True
+    finally:
+        ANIMAL_DEV_LOCK.release()
+
+
+if GPU is not None:
+    GPU.enregistrer('animaux', liberer=_liberer_gpu_animaux)
 
 
 def detect_animals(path, max_side=None):
@@ -6129,19 +6261,31 @@ def detect_animals(path, max_side=None):
     if max_side is None:
         max_side = ANIMAL_MAX_SIDE
     arr, scale = _load_bgr(path, max_side)   # numpy BGR, comme pour les visages
-    dev = _pick_gpu_device(ANIMAL_GPU_ENABLE, ANIMAL_GPU_MIN_FREE_MB, ANIMAL_DEVICE)
-    ANIMAL_LAST_DEVICE = dev
     out = []
-    try:
-        results = model.predict(arr, conf=ANIMAL_DET_THRESHOLD,
-                                classes=list(ANIMAL_CLASSES.keys()),
-                                device=dev, verbose=False)
-    except Exception:
-        # repli CPU si le GPU refuse (VRAM insuffisante, driver…)
-        ANIMAL_LAST_DEVICE = 'cpu'
-        results = model.predict(arr, conf=ANIMAL_DET_THRESHOLD,
-                                classes=list(ANIMAL_CLASSES.keys()),
-                                device='cpu', verbose=False)
+    # Le verrou signale « détection en vol » au libérateur d'éviction. La
+    # décision est prise SOUS le verrou : hors verrou, une éviction pouvait
+    # passer entre la décision et le predict — YOLO remontait alors en VRAM
+    # sans bail (invisible, inévincable) pendant que le bénéficiaire de
+    # l'éviction montait dans l'espace « libéré ». Sûr : les libérateurs font
+    # un acquire non-bloquant, ils échouent proprement pendant qu'on décide.
+    with ANIMAL_DEV_LOCK:
+        dev = _pick_gpu_device(ANIMAL_GPU_ENABLE, ANIMAL_GPU_MIN_FREE_MB,
+                               ANIMAL_DEVICE, nom='animaux')
+        ANIMAL_LAST_DEVICE = dev
+        try:
+            results = model.predict(arr, conf=ANIMAL_DET_THRESHOLD,
+                                    classes=list(ANIMAL_CLASSES.keys()),
+                                    device=dev, verbose=False)
+            if dev == 'cuda' and GPU is not None:
+                GPU.confirmer('animaux')   # le modèle réside désormais en VRAM
+        except Exception:
+            # repli CPU si le GPU refuse (VRAM insuffisante, driver…)
+            ANIMAL_LAST_DEVICE = 'cpu'
+            if dev == 'cuda' and GPU is not None:
+                GPU.rendre('animaux')
+            results = model.predict(arr, conf=ANIMAL_DET_THRESHOLD,
+                                    classes=list(ANIMAL_CLASSES.keys()),
+                                    device='cpu', verbose=False)
     for r in results:
         boxes = getattr(r, 'boxes', None)
         if boxes is None:
@@ -6280,8 +6424,38 @@ def get_dino():
     return DINO_MODEL_OBJ, DINO_TF
 
 
+PET_DEV_LOCK = threading.Lock()    # tenu pendant migration+forward DINOv2
+
+
 def _dino_target_device():
-    return _pick_gpu_device(PET_GPU_ENABLE, PET_GPU_MIN_FREE_MB, DINO_DEVICE)
+    return _pick_gpu_device(PET_GPU_ENABLE, PET_GPU_MIN_FREE_MB, DINO_DEVICE,
+                            nom='empreintes_chats')
+
+
+def _liberer_gpu_dino():
+    """Éviction : descend DINOv2 sur CPU. False si un embedding est en vol."""
+    global DINO_CUR_DEVICE
+    if not PET_DEV_LOCK.acquire(blocking=False):
+        return False
+    try:
+        if DINO_MODEL_OBJ is not None and DINO_CUR_DEVICE == 'cuda':
+            try:
+                DINO_MODEL_OBJ.to('cpu')
+            except Exception:
+                return False
+            try:
+                import torch
+                torch.cuda.empty_cache()
+            except Exception:
+                pass
+        DINO_CUR_DEVICE = 'cpu'
+        return True
+    finally:
+        PET_DEV_LOCK.release()
+
+
+if GPU is not None:
+    GPU.enregistrer('empreintes_chats', liberer=_liberer_gpu_dino)
 
 
 def _embed_pil(im_crop):
@@ -6292,33 +6466,45 @@ def _embed_pil(im_crop):
     if model is None:
         return None
     import torch, numpy as np
-    dev = _dino_target_device()
-    if dev != DINO_CUR_DEVICE:
-        try:
-            model.to(dev)
-            DINO_CUR_DEVICE = dev
-        except Exception:
-            dev = DINO_CUR_DEVICE     # échec (VRAM ?) → on reste où on est
-    x = tf(im_crop.convert("RGB")).unsqueeze(0)
-    try:
-        x = x.to(DINO_CUR_DEVICE)
-    except Exception:
-        pass
-    try:
-        with torch.no_grad():
-            feat = model(x)
-    except Exception:
-        # repli CPU si le GPU refuse en cours de route
-        if DINO_CUR_DEVICE != 'cpu':
+    # Le verrou couvre migration + forward : le libérateur d'éviction ne peut
+    # pas descendre le modèle pendant qu'on calcule dessus.
+    with PET_DEV_LOCK:
+        dev = _dino_target_device()
+        if dev != DINO_CUR_DEVICE:
             try:
-                model.to('cpu')
-                DINO_CUR_DEVICE = 'cpu'
-                with torch.no_grad():
-                    feat = model(x.to('cpu'))
+                model.to(dev)
+                DINO_CUR_DEVICE = dev
+                if GPU is not None:
+                    if dev == 'cuda':
+                        GPU.confirmer('empreintes_chats')
+                    else:
+                        GPU.rendre('empreintes_chats')
             except Exception:
+                if dev == 'cuda' and GPU is not None:
+                    GPU.rendre('empreintes_chats')   # bail promis, non monté
+                dev = DINO_CUR_DEVICE     # échec (VRAM ?) → on reste où on est
+        x = tf(im_crop.convert("RGB")).unsqueeze(0)
+        try:
+            x = x.to(DINO_CUR_DEVICE)
+        except Exception:
+            pass
+        try:
+            with torch.no_grad():
+                feat = model(x)
+        except Exception:
+            # repli CPU si le GPU refuse en cours de route
+            if DINO_CUR_DEVICE != 'cpu':
+                try:
+                    model.to('cpu')
+                    DINO_CUR_DEVICE = 'cpu'
+                    if GPU is not None:
+                        GPU.rendre('empreintes_chats')
+                    with torch.no_grad():
+                        feat = model(x.to('cpu'))
+                except Exception:
+                    return None
+            else:
                 return None
-        else:
-            return None
     v = feat[0].float().cpu().numpy()
     nn = float(np.linalg.norm(v))
     return v / nn if nn else v

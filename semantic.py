@@ -120,6 +120,24 @@ KIND = "photo"                          # espace de vecteurs dans la table
 _ETAT = {"modele": None, "preproc": None, "tokenizer": None,
          "device": None, "erreur": ""}
 
+# Arbitre GPU optionnel, injecte par le serveur (set_arbitre). Quand il est
+# present, la decision CPU/GPU passe par un bail de VRAM (un seul point de
+# verite cote serveur) au lieu de la sonde privee ci-dessous. En usage CLI
+# autonome, rien n'est injecte : le seuil SIGLIP_GPU_MIN_FREE_MB s'applique
+# comme avant. Zero dependance : deux callables, rien de plus.
+_ARBITRE = None   # (demander() -> bool, confirmer() -> None, rendre() -> None)
+
+
+def set_arbitre(demander, confirmer=None, rendre=None):
+    """Branche l'arbitre de VRAM du serveur. `demander` renvoie True si un
+    bail est accorde ; `confirmer` signale que le modele est monte ; `rendre`
+    restitue le bail quand le montage echoue — sans lui, un bail accorde puis
+    jamais monte resterait soustrait de la VRAM jusqu'au redemarrage (famine),
+    et le cache de demander() renverrait 'cuda' pour toujours (re-OOM a chaque
+    lot au lieu du repli CPU)."""
+    global _ARBITRE
+    _ARBITRE = (demander, confirmer or (lambda: None), rendre or (lambda: None))
+
 # Journal des images refusees. Sans lui, un lot qui ne produit aucun vecteur
 # est indiscernable d'un lot lent : c'est ce qui a rendu le blocage de
 # l'encodage si difficile a localiser.
@@ -140,6 +158,11 @@ def _vram_libre_mb():
 
 def _device_cible():
     libre = _vram_libre_mb()
+    if _ARBITRE is not None:
+        try:
+            return ("cuda" if _ARBITRE[0]() else "cpu"), libre
+        except Exception:                                    # noqa: BLE001
+            pass                       # arbitre en panne → sonde privee
     if libre >= SIGLIP_GPU_MIN_FREE_MB:
         return "cuda", libre
     return "cpu", libre
@@ -159,6 +182,16 @@ def encodeur(forcer_device=None):
             f"{e}. Lance \"14 - Installer la recherche semantique.bat\".")
         return None, None, None, None
     device = forcer_device or _device_cible()[0]
+
+    def _rendre_bail():
+        # Restitue le bail 'semantique' si on l'avait obtenu (jamais lors d'un
+        # forcer_device : aucun bail n'a ete demande dans ce cas).
+        if device == "cuda" and _ARBITRE is not None and not forcer_device:
+            try:
+                _ARBITRE[2]()
+            except Exception:                                # noqa: BLE001
+                pass
+
     try:
         modele, _, preproc = open_clip.create_model_and_transforms(
             f"hf-hub:timm/{MODELE}.{POIDS}") if MODELE.startswith("hf-hub") \
@@ -166,16 +199,30 @@ def encodeur(forcer_device=None):
         tokenizer = open_clip.get_tokenizer(MODELE)
     except Exception as e:                                   # noqa: BLE001
         _ETAT["erreur"] = f"chargement de {MODELE}/{POIDS} impossible : {e}"
+        _rendre_bail()
         return None, None, None, None
-    modele = modele.to(device).eval()
-    if device == "cuda":
-        # Les poids font 1,5 Go en float32. Sur une carte de 4 Go partagee
-        # avec Ollama et InsightFace, le float16 n'est pas un raffinement :
-        # c'est ce qui rend la cohabitation possible. La perte de precision
-        # est negligeable pour une recherche par similarite cosinus.
-        modele = modele.half()
+    try:
+        modele = modele.to(device).eval()
+        if device == "cuda":
+            # Les poids font 1,5 Go en float32. Sur une carte de 4 Go partagee
+            # avec Ollama et InsightFace, le float16 n'est pas un raffinement :
+            # c'est ce qui rend la cohabitation possible. La perte de precision
+            # est negligeable pour une recherche par similarite cosinus.
+            modele = modele.half()
+    except Exception:                                        # noqa: BLE001
+        # Montage GPU rate (OOM au .to : le pic fp32 depasse la VRAM libre) →
+        # bail rendu, repli CPU. Sans ce rendu, 1400 Mo fantomes resteraient
+        # soustraits et demander() repondrait 'cuda' pour toujours (re-OOM).
+        _rendre_bail()
+        device = "cpu"
+        modele = modele.to(device).eval()
     _ETAT.update(modele=modele, preproc=preproc, tokenizer=tokenizer,
                  device=device, demi=(device == "cuda"), erreur="")
+    if device == "cuda" and _ARBITRE is not None:
+        try:
+            _ARBITRE[1]()              # bail materialise : la sonde le voit
+        except Exception:                                    # noqa: BLE001
+            pass
     return modele, preproc, tokenizer, device
 
 

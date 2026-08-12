@@ -115,40 +115,114 @@ class Ordonnanceur:
 
 
 class ArbitreGPU:
-    """Baux de VRAM : un seul point de verite sur ce qui est reserve."""
+    """Baux de VRAM avec priorites et eviction : un seul point de verite.
 
-    def __init__(self, sonde_libre_mb, total_mb=4096, reserve_mb=192):
+    Un bail couvre la RESIDENCE d'un modele sur le GPU, pas une inference :
+    c'est la residence qui consomme la VRAM. Cycle de vie :
+
+        demander(nom, mb)   -> bail promis (soustrait de la mesure)
+        <monter le modele>
+        confirmer(nom)      -> la sonde voit desormais l'usage reel ; on
+                               cesse de soustraire (sinon compte double)
+        <... le modele vit sur le GPU ...>
+        rendre(nom)         -> le modele est redescendu (ou dechu)
+
+    Priorites : une demande refusee EVINCE les baux strictement moins
+    prioritaires (leur `liberer()` descend le modele sur CPU et renvoie
+    True ; False = inference en vol, on ne l'interrompt jamais).
+
+    `menage()` est le garde-fou du pire echec (debordement silencieux en
+    RAM, vitesse divisee par 3 sans erreur) : si la VRAM reellement libre
+    passe sous un plancher — typiquement Ollama qui vient de monter — on
+    evince le bail materialise le moins prioritaire.
+    """
+
+    def __init__(self, sonde_libre_mb, total_mb=4096, reserve_mb=192,
+                 sonde_fraiche=None):
         self.sonde = sonde_libre_mb       # callable -> Mo reellement libres
+        self.sonde_f = sonde_fraiche or sonde_libre_mb   # variante sans cache
         self.total_mb = total_mb
         self.reserve_mb = reserve_mb      # marge jamais allouee
-        self.baux = {}                    # nom -> Mo
+        self.baux = {}                    # nom -> {"mb": x, "materialise": bool}
+        self.prios = {}                   # nom -> int (plus grand = prioritaire)
+        self.liberateurs = {}             # nom -> callable() -> bool
         self.lock = threading.RLock()
         self.refus = {}
+        self.evictions = {}
 
-    def libre_mb(self):
-        """Mo disponibles : mesure reelle MOINS ce que nos baux ont promis.
+    def enregistrer(self, nom, prio=None, liberer=None):
+        """Declare la priorite et/ou le liberateur d'un pipeline. Idempotent ;
+        un argument None laisse la valeur existante intacte."""
+        with self.lock:
+            if prio is not None:
+                self.prios[nom] = prio
+            if liberer is not None:
+                self.liberateurs[nom] = liberer
+
+    def _libre_mb(self, frais=False):
+        """Mo disponibles : mesure reelle MOINS les baux promis non encore
+        materialises (un bail materialise est deja visible dans la mesure —
+        le soustraire encore le compterait deux fois).
 
         Sans cette soustraction, deux pipelines sondant en meme temps voient
         tous deux la memoire libre et s'accordent chacun un bail : c'est le
         scenario de debordement.
         """
         with self.lock:
-            promis = sum(self.baux.values())
+            promis = sum(b["mb"] for b in self.baux.values()
+                         if not b["materialise"])
         try:
-            mesure = float(self.sonde() or 0)
+            mesure = float((self.sonde_f if frais else self.sonde)() or 0)
         except Exception:                                     # noqa: BLE001
             return 0.0
         return max(0.0, mesure - promis - self.reserve_mb)
+
+    def libre_mb(self):
+        return self._libre_mb()
 
     def demander(self, nom, besoin_mb):
         with self.lock:
             if nom in self.baux:
                 return True
-            if self.libre_mb() >= besoin_mb:
-                self.baux[nom] = besoin_mb
+            if self._libre_mb() >= besoin_mb:
+                self.baux[nom] = {"mb": besoin_mb, "materialise": False}
                 return True
+            # Eviction : baux strictement moins prioritaires, en commencant
+            # par le moins prioritaire. La sonde fraiche est necessaire apres
+            # une descente CPU (la mesure en cache ne la voit pas encore).
+            ma_prio = self.prios.get(nom, 0)
+            victimes = sorted(
+                [v for v in self.baux
+                 if self.prios.get(v, 0) < ma_prio and v in self.liberateurs],
+                key=lambda v: self.prios.get(v, 0))
+            for v in victimes:
+                try:
+                    if not self.liberateurs[v]():
+                        continue          # en vol : on n'interrompt pas
+                except Exception:                             # noqa: BLE001
+                    continue
+                self.baux.pop(v, None)
+                self.evictions[v] = self.evictions.get(v, 0) + 1
+                if self._libre_mb(frais=True) >= besoin_mb:
+                    self.baux[nom] = {"mb": besoin_mb, "materialise": False}
+                    return True
             self.refus[nom] = self.refus.get(nom, 0) + 1
             return False
+
+    def confirmer(self, nom):
+        """A appeler une fois le modele monte : son usage est desormais dans
+        la mesure de la sonde, on cesse de le soustraire. La sonde FRAICHE est
+        rafraichie d'abord — sinon, pendant la duree du cache (~8 s), la
+        mesure perimee d'avant montage + bail non soustrait = fenetre de
+        double allocation, precisement le debordement qu'on veut empecher."""
+        with self.lock:
+            if nom not in self.baux or self.baux[nom]["materialise"]:
+                return                  # deja materialise : ne pas re-sonder
+            try:
+                self.sonde_f()          # un nvidia-smi par montage : negligeable
+            except Exception:                                 # noqa: BLE001
+                pass
+            self.baux[nom]["materialise"] = True
 
     def rendre(self, nom):
         with self.lock:
@@ -163,7 +237,45 @@ class ArbitreGPU:
             if ok:
                 self.rendre(nom)
 
+    def menage(self, plancher_mb=256, sauf=None):
+        """Evince le bail materialise le moins prioritaire si la VRAM
+        reellement libre est sous le plancher (voir docstring de classe).
+        `sauf` : bail de l'appelant, jamais choisi comme victime (son propre
+        verrou pipeline est tenu — un try-lock echouerait et l'eviction
+        glisserait vers un bail PLUS prioritaire, inversion indesirable).
+        Pre-filtre sur la mesure en cache (menage est appele a chaque photo),
+        confirmation sur mesure fraiche avant d'agir — sinon une pression
+        transitoire evince tous les baux en cascade pendant les ~8 s du cache."""
+        with self.lock:
+            try:
+                mesure = float(self.sonde() or 0)
+            except Exception:                                 # noqa: BLE001
+                return
+            if mesure >= plancher_mb:
+                return
+            try:
+                mesure = float(self.sonde_f() or 0)
+            except Exception:                                 # noqa: BLE001
+                return
+            if mesure >= plancher_mb:
+                return
+            victimes = sorted(
+                [v for v, b in self.baux.items()
+                 if b["materialise"] and v in self.liberateurs and v != sauf],
+                key=lambda v: self.prios.get(v, 0))
+            for v in victimes:
+                try:
+                    if self.liberateurs[v]():
+                        self.baux.pop(v, None)
+                        self.evictions[v] = self.evictions.get(v, 0) + 1
+                        return
+                except Exception:                             # noqa: BLE001
+                    continue
+
     def etat(self):
         with self.lock:
-            return {"baux": dict(self.baux), "libre_mb": round(self.libre_mb()),
-                    "refus": dict(self.refus)}
+            return {"baux": {n: dict(b) for n, b in self.baux.items()},
+                    "prios": dict(self.prios),
+                    "libre_mb": round(self._libre_mb()),
+                    "refus": dict(self.refus),
+                    "evictions": dict(self.evictions)}
