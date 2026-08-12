@@ -10076,10 +10076,13 @@ document.getElementById('curref').onclick=function(){ document.getElementById('c
 // ── Tri au clavier (sert la priorite n1 : confirmer vite ~100 propositions).
 //    La carte « active » (la 1re de « A verifier ») porte l'anneau veilleuse ;
 //    les touches agissent dessus tant qu'on ne tape pas dans un champ. ──
-function curMark(){
+function curMark(scroll){
+  // scroll UNIQUEMENT pendant le tri clavier (enchainer les cartes). Jamais au
+  // chargement : un scrollIntoView tardif (fetch async) arrachait la vue vers
+  // la file et cachait le panneau « Gerer » / lien profond ?name= (bug 12/08).
   var rows=document.querySelectorAll('#curbox > .cl');
   rows.forEach(function(r,i){ r.classList.toggle('active', i===0); });
-  if(rows[0]){ try{ rows[0].scrollIntoView({block:'center'}); }catch(e){} }
+  if(scroll && rows[0]){ try{ rows[0].scrollIntoView({block:'center'}); }catch(e){} }
 }
 function curUndo(){
   var b=document.querySelector('#toastp button'); if(b){ b.click(); return; }
@@ -10092,9 +10095,9 @@ document.addEventListener('keydown', function(e){
   var row=document.querySelector('#curbox > .cl.active'); if(!row) return;
   var bs=row.querySelectorAll('button');
   if(e.key===' '||e.key==='Enter'||e.key==='o'||e.key==='O'){
-    e.preventDefault(); if(bs[0]) bs[0].click(); setTimeout(curMark,150);
+    e.preventDefault(); if(bs[0]) bs[0].click(); setTimeout(function(){curMark(true);},150);
   } else if(e.key==='x'||e.key==='X'||e.key==='Delete'){
-    e.preventDefault(); if(bs[1]) bs[1].click(); setTimeout(curMark,150);
+    e.preventDefault(); if(bs[1]) bs[1].click(); setTimeout(function(){curMark(true);},150);
   } else if(e.key==='z'||e.key==='Z'){
     e.preventDefault(); curUndo();
   } else if(/^[a-zA-Z]$/.test(e.key)){

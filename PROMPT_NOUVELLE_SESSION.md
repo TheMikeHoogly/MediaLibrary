@@ -22,11 +22,11 @@ RTX 3050 4 Go arbitrée par baux/priorités/éviction).
 - Commité jusqu'à `15e3204` (branche `feat/verite-terrain-marge`) : Arbitre GPU
   (`72d1946`), instrumentation vérité terrain (`a9a7d8b`, vérifiée en réel) + fix
   purge (`15e3204`). Triple audit → `docs/AUDIT_INTERNE_2026-08.md`.
-- **12/08 — régression « Gérer » (/people) : CORRIGÉE, à commiter (bat 27) +
-  redémarrer, puis vérif en réel.** Cause : grille peinte par lots au scroll,
-  `#panel` placé après → cible de scroll mouvante, panneau ouvert hors écran.
-  Fix : `#panel` avant la grille + `scroll-margin-top`. Vérif : cliquer « Gérer »
-  sur une carte en BAS de la grille → le panneau doit apparaître en haut, visible.
+- **12/08 — régression « Gérer » (/people) : 2 causes.** (1) `#panel` après la
+  grille par lots (cible mouvante) → panneau AVANT la grille : **vérifié en réel**.
+  (2) `curMark()` scrollait vers la file au chargement (cascade de lots, lien
+  profond caché) → scroll au tri clavier seulement : **à commiter (bat 27) +
+  redémarrer.** Vérif : `/people?name=Val` → le panneau doit rester visible en haut.
 
 ## Prochain pas — par valeur (détail : ROADMAP « À faire »)
 

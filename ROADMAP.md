@@ -14,13 +14,13 @@ optimisations O1–O15, angles morts A–F), `docs/RANGEMENT_2026.md`,
 geste → ligne append-only `journal_jugements.jsonl` (gitignoré) ; compteur de séance
 dans /people. Détail dans git.
 
-**Session 12/08 (suite) — régression « Gérer » : DIAGNOSTIQUÉE + CORRIGÉE, à commiter
-(bat 27) + redémarrer, vérif en réel ensuite.** Cause prouvée au mouchard (clic reçu,
-zéro erreur JS) : la grille des personnes se peint par lots au scroll (`renderInBatches`,
-sentinelle 600px) et `#panel` était placé APRÈS elle → sa position reculait à chaque lot,
-le `scrollIntoView` chassait une cible mouvante ; le panneau s'ouvrait ~2 600 px sous
-l'écran (« plus rien ne se passe »). Fix : `#panel` AVANT la grille (position stable)
-+ `scroll-margin-top:72px` (nav sticky). Validé en direct par mutation DOM sur le serveur.
+**Session 12/08 (suite) — régression « Gérer » : DEUX causes, corrigées.** (1) `#panel`
+placé APRÈS la grille peinte par lots → cible de scroll mouvante, panneau ouvert hors
+écran ; fix : `#panel` AVANT la grille + `scroll-margin-top` — **commité, VÉRIFIÉ EN
+RÉEL** (clic profond → panneau visible en haut). (2) `curMark()` (instrumentation 12/08)
+scrollait vers la file « À vérifier » au chargement, déclenchant une cascade de lots qui
+échouait la vue au milieu de la grille (lien profond `?name=` caché) ; fix : scroll
+seulement au tri clavier — **à commiter (bat 27) + redémarrer, vérif ensuite.**
 
 **Session 11/08 (nuit) — GpuArbiter : COMMITÉ (`72d1946`), vérifié en réel.** Les 5
 politiques GPU sous baux/priorités/éviction, tests 27/27 (`test_ordonnanceur.py`) ;
