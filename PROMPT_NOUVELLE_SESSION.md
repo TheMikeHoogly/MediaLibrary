@@ -19,25 +19,23 @@ RTX 3050 4 Go arbitrée par baux/priorités/éviction).
 
 ## Où on en est (12/08/2026)
 
-- 11/08 : **commité** jusqu'à `72d1946` (Arbitre GPU — vérifié en réel, tests 27/27,
-  détail dans git). **Triple audit** → `docs/AUDIT_INTERNE_2026-08.md` ; ROADMAP réordonnée.
-- **⚠ Régression signalée (12/08)** : depuis la fusion `/sujets`, « Gérer » n'offre
-  plus les options d'optimisation habituelles → ROADMAP point 2.
-- **12/08 — instrumentation vérité terrain : LIVRÉE, À VÉRIFIER EN RÉEL après
-  redémarrage.** File « À vérifier » triée par **marge** (jamais le score absolu) ;
-  chaque geste → `journal_jugements.jsonl` (append-only, local, gitignoré) avec
-  verdict confirmation/erreur_decouverte ; compteur de séance dans `/people`
-  (jugements · /min · erreurs). Tests isolés OK ; à vérifier : ordre de la file,
-  ligne « Séance : … », lignes du JSONL. Puis commiter.
+- Commité jusqu'à `15e3204` (branche `feat/verite-terrain-marge`) : Arbitre GPU
+  (`72d1946`), instrumentation vérité terrain (`a9a7d8b`, vérifiée en réel) + fix
+  purge (`15e3204`). Triple audit → `docs/AUDIT_INTERNE_2026-08.md`.
+- **12/08 — régression « Gérer » (/people) : CORRIGÉE, à commiter (bat 27) +
+  redémarrer, puis vérif en réel.** Cause : grille peinte par lots au scroll,
+  `#panel` placé après → cible de scroll mouvante, panneau ouvert hors écran.
+  Fix : `#panel` avant la grille + `scroll-margin-top`. Vérif : cliquer « Gérer »
+  sur une carte en BAS de la grille → le panneau doit apparaître en haut, visible.
 
 ## Prochain pas — par valeur (détail : ROADMAP « À faire »)
 
 1. **Vérité terrain** (geste Mike, outillage prêt) : confirmer ~100 propositions
    dans `/people` (Espace=oui, X=non, Z=annuler) — la file présente d'abord les
    cas les plus incertains ; le compteur de séance mesure le rythme.
-2. **`/sujets` guichet unique** : corriger la régression « Gérer », puis réunir
-   toutes les fonctions de gestion (personne/animal/lieu) dans `/sujets` + onglet
-   **« Classification »** (groupes à nommer, faux positifs, … par type) — ROADMAP pt 2.
+2. **`/sujets` guichet unique** : réunir toutes les fonctions de gestion
+   (personne/animal/lieu) dans `/sujets` + onglet **« Classification »** (groupes à
+   nommer, faux positifs, … par type) — ROADMAP pt 2 (régression « Gérer » : corrigée).
 3. **Assurance-vie de la vérité terrain** : tâche `backup_verify` + export NAS des
    jugements (`journal_jugements.jsonl` existe déjà — le copier hors site).
    Session courte, stdlib pur, angle mort majeur de l'audit.

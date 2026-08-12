@@ -9303,7 +9303,9 @@ input[type=text]:focus, input.qui:focus { border-color: var(--veilleuse); }
 .prop .s { position: absolute; bottom: 2px; right: 4px; font-size: var(--t-xs); font-family: var(--f-donnees);
            color: var(--texte); background: rgba(0,0,0,.55); padding: 0 3px; border-radius: var(--r-sm); }
 .note { padding: var(--e-2) var(--e-4) var(--e-6); color: var(--graphite); font-size: var(--t-sm); line-height: 1.5; }
-#panel { margin: 0 var(--e-4) var(--e-3); }
+/* scroll-margin : la nav sticky (z50) ne doit pas recouvrir le haut du panneau
+   quand scrollIntoView l'amene en haut de l'ecran. */
+#panel { margin: 0 var(--e-4) var(--e-3); scroll-margin-top: 72px; }
 #panel .box { background: var(--salle-3); border: var(--trait); border-radius: var(--r-md);
               padding: var(--e-3); }
 #panel h3 { font-size: var(--t-md); margin-bottom: var(--e-1); }
@@ -9365,19 +9367,22 @@ input[type=text]:focus, input.qui:focus { border-color: var(--veilleuse); }
 </div>
 
 <!-- Personnes deja identifiees EN TETE : c'est le point de depart de la revue
-     (voir un nom connu, puis le corriger). Le panneau de correction #panel
-     s'ouvre juste en dessous. Les files de travail (a verifier / groupes /
-     inconnus) sont desormais SOUS ce bloc. Raison : elles se rendent par lots
-     au scroll (renderInBatches) ; en bas, un lot peint TOUJOURS sous la zone de
-     travail, donc il ne pousse jamais le contenu du haut -> plus de saut de
-     position (bug signale). Le filtre garde la liste compacte malgre les ~324
-     fiches, et l'ancre « Aller aux groupes » evite de tout scroller. -->
+     (voir un nom connu, puis le corriger). Le panneau de correction #panel est
+     place AVANT la grille : la grille se peint par lots au scroll
+     (renderInBatches), donc tout element place APRES elle recule a chaque lot —
+     le scrollIntoView de « Gerer » chassait une cible mouvante et n'atterrissait
+     jamais (regression signalee 12/08 : « plus rien ne se passe »). Avant la
+     grille, la position du panneau est stable ; les lots se peignent dessous.
+     Les files de travail (a verifier / groupes / inconnus) restent SOUS ce
+     bloc, pour la meme raison (un lot peint toujours sous la zone de travail).
+     Le filtre garde la liste compacte malgre les ~324 fiches, et l'ancre
+     « Aller aux groupes » evite de tout scroller. -->
 <h2 style="display:flex;align-items:center;gap:var(--e-2);flex-wrap:wrap">Personnes nommées <span class="c" id="pc"></span>
   <input type="text" id="pfilter" placeholder="Filtrer par nom&hellip;" autocomplete="off"
          aria-label="Filtrer les personnes par nom" style="flex:0 1 220px;max-width:220px">
   <a href="#groupes" class="btn" style="font-size:var(--t-xs);padding:var(--e-1) var(--e-2);margin-left:auto;text-decoration:none">Aller aux groupes &#8595;</a></h2>
-<div class="people" id="people"></div>
 <div id="panel"></div>
+<div class="people" id="people"></div>
 
 <div class="note">Clique une personne pour voir ses photos et corriger les faux
   positifs. Fiche polluée (ex. trop de faux positifs apr&egrave;s avoir tagu&eacute; des

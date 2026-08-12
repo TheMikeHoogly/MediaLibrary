@@ -9,21 +9,22 @@ optimisations O1–O15, angles morts A–F), `docs/RANGEMENT_2026.md`,
 
 ## État actuel (12 août 2026)
 
-**Session 12/08 — instrumentation vérité terrain : COMMITÉE (`a9a7d8b`), VÉRIFIÉE EN
-RÉEL.** File triée : faux positifs flagrants d'abord, puis ajouts par marge croissante
-avec la 2e personne (jamais le score absolu). Chaque geste (resolve + `/api/assign`
-unitaire) → ligne append-only `journal_jugements.jsonl` (local, gitignoré), verdict
-confirmation/erreur_decouverte ; compteur de séance dans /people (n · /min · erreurs).
-Vérifié : tri ✓, « Séance » ✓, JSONL ✓. La vérif a débusqué+corrigé : carte jugée via
-`/api/assign` non purgée du cache (réapparaissait au rechargement) → purge immédiate.
-**Fix à commiter (`SESSION_COMMIT.txt` prêt, bat 27) + redémarrer avant la passe.**
+**Session 12/08 — instrumentation vérité terrain : COMMITÉE (`a9a7d8b` + fix purge
+`15e3204`), VÉRIFIÉE EN RÉEL.** File triée par marge (jamais le score absolu) ; chaque
+geste → ligne append-only `journal_jugements.jsonl` (gitignoré) ; compteur de séance
+dans /people. Détail dans git.
+
+**Session 12/08 (suite) — régression « Gérer » : DIAGNOSTIQUÉE + CORRIGÉE, à commiter
+(bat 27) + redémarrer, vérif en réel ensuite.** Cause prouvée au mouchard (clic reçu,
+zéro erreur JS) : la grille des personnes se peint par lots au scroll (`renderInBatches`,
+sentinelle 600px) et `#panel` était placé APRÈS elle → sa position reculait à chaque lot,
+le `scrollIntoView` chassait une cible mouvante ; le panneau s'ouvrait ~2 600 px sous
+l'écran (« plus rien ne se passe »). Fix : `#panel` AVANT la grille (position stable)
++ `scroll-margin-top:72px` (nav sticky). Validé en direct par mutation DOM sur le serveur.
 
 **Session 11/08 (nuit) — GpuArbiter : COMMITÉ (`72d1946`), vérifié en réel.** Les 5
 politiques GPU sous baux/priorités/éviction, tests 27/27 (`test_ordonnanceur.py`) ;
 détail dans git. **Triple audit mené dans la foulée** → `docs/AUDIT_INTERNE_2026-08.md`.
-
-**⚠ Régression signalée (12/08) :** depuis la fusion `/sujets`, le bouton **« Gérer »**
-n'offre plus les options d'optimisation habituelles (panneau de correction). → point 2.
 
 **Sessions 11/08 matin + après-midi : commitées et fusionnées** (tout vérifié en réel,
 détail dans git) : Lieux (25, 0,8 s) ; fixes clusters ; perf `/sujets` (>45 s → 0,8 s) ;
@@ -45,9 +46,9 @@ Refonte `/people` + outillage **faux positifs** ; tokenisation value-preserving 
 jugées par un humain (⚠ geste Mike : re-rejeter le groupe Caline une fois) ; Lieux = 3ᵉ type
 d'entité.
 
-- **Git** : tout est commité jusqu'à `72d1946` (Arbitre GPU) ; **reste à commiter la
-  session 12/08** (file par marge + journal) — `27 - Commit de session.bat` ;
-  **`git push` = geste de Mike**.
+- **Git** : tout est commité jusqu'à `15e3204` (branche `feat/verite-terrain-marge`) ;
+  **reste à commiter le fix « Gérer »** — `27 - Commit de session.bat` ;
+  **`git push` / merge dans `main` = gestes de Mike**.
 - **Ouvert (gestes Mike)** :
   - **Nettoyer Flo** : la fiche reste polluée tant qu'un passage n'est pas fait. Ouvrir Flo →
     « Corriger » (seuil ~0.2, monter en surveillant la grille) ou « Nettoyer (référence) »
@@ -78,12 +79,11 @@ d'entité.
    de séance — cf. État actuel). Reste le **geste Mike** : confirmer ~100 propositions
    dans `/people` (tri clavier + filtre par nom prêts) ; la métrique qui compte =
    confirmations/minute et erreurs découvertes, pas l'accord modèle-humain.
-2. **`/sujets` guichet unique (régression 12/08 à corriger d'abord).** Depuis la fusion,
-   « Gérer » n'ouvre plus les options d'optimisation habituelles (Corriger, Nettoyer
-   (référence), renommer, …). Corriger la régression, puis aller au bout de la fusion :
-   **toutes** les fonctions de gestion d'une personne, d'un animal ou d'un lieu réunies
-   dans `/sujets`, + un onglet **« Classification »** (groupes à nommer, faux positifs, …)
-   séparant clairement personnes / animaux / lieux. (Skills : `photo-ui`, `monolith-surgery`.)
+2. **`/sujets` guichet unique.** La régression « Gérer » est corrigée (cf. État actuel ;
+   vérif en réel après redémarrage). Reste : aller au bout de la fusion — **toutes** les
+   fonctions de gestion d'une personne, d'un animal ou d'un lieu réunies dans `/sujets`,
+   + un onglet **« Classification »** (groupes à nommer, faux positifs, …) séparant
+   clairement personnes / animaux / lieux. (Skills : `photo-ui`, `monolith-surgery`.)
 3. **Assurance-vie de la vérité terrain (angle mort majeur — audit A).** Les jugements
    humains ne vivent que dans `photos.db`, snapshot jamais restauré ni vérifié, même site.
    → Tâche `backup_verify` (integrity_check + restauration à blanc + comptage confirmed/
