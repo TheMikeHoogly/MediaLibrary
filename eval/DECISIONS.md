@@ -34,7 +34,7 @@
 | Injecter les noms dans le prompt | **REJETÉ** (31/07) | Modèle ignore le nom 84 % du temps ; coût ×2,6, VRAM au plafond. Le LLM décrit, n'affirme pas l'identité. |
 | V2 — hybride assertions + image | **ADOPTÉ (principe)** (31/07) | Préféré par l'humain 2 contre 1. |
 | Noms/date/lieu par fusion programmatique (Knowledge Builder), pas via prompt | **ADOPTÉ** (31/07) | Faits structurés en post-traitement déterministe ; débloque la provenance. |
-| V2 « assertions en contexte, sans impératif de noms » (~4,3 s) | **PARKÉ / à mesurer** | Jamais notée (écrasée) ; hypothèse : qualité conservée sans surcoût. |
+| V2 « assertions en contexte, sans impératif de noms » | **ADOPTÉ** (12/08) | Aveugle A/B vs V0, 40 photos, notes via `/eval` : préférée **25–15** (écart ≥ 5 : ok), hallucinations 6 vs 4 (jugées contre la photo, n faible) ; **4,26 s/photo** vs 5,4 (V0) et 11,1 (V2 impérative), JSON malformé 0,7 %. Réponses réutilisées de `tagging_results.v2avant.json` — zéro GPU. C'est la **variante de prod** : les noms passent par le Knowledge Builder (fusion programmatique), jamais par le prompt. |
 
 ## Triage / stockage / rebut
 

@@ -11288,6 +11288,9 @@ class Handler(BaseHTTPRequestHandler):
         elif path == '/api/maint/status':
             self._serve_maint_status()
 
+        elif path == '/eval':
+            self._serve_eval_page()
+
         elif path == '/browse' or path.startswith('/browse/'):
             self._serve_browse(path)
 
@@ -11385,6 +11388,9 @@ class Handler(BaseHTTPRequestHandler):
             return
         if path.startswith('/api/curator/'):
             self._do_curator_post(path)
+            return
+        if path == '/eval/notes':
+            self._do_eval_notes()
             return
         if self.path != '/upload':
             self._send(404, b'Not found', 'text/plain')
@@ -13014,6 +13020,61 @@ class Handler(BaseHTTPRequestHandler):
                 .replace('__CTX__', json.dumps({"idx": idx, "sub": sub}))
                 .replace('__ROWS__', '\n'.join(rows) or '<p class="empty">Dossier vide</p>'))
         self._send_html(page)
+
+    # ── Éval en cours : notation à l'aveugle, atteignable en VPN ─────────────
+    # Le banc (eval_tagging.py, hors serveur) génère eval/rating_v2sans.html ;
+    # ces deux routes ne font que SERVIR cette page et RECEVOIR les notes,
+    # pour pouvoir juger à distance sans geste fichier sur la machine.
+    # Fichiers FIXES sous eval/ : aucun chemin ne vient du client, donc
+    # aucune traversée possible.
+
+    def _serve_eval_page(self):
+        """GET /eval — sert eval/rating_v2sans.html telle quelle. Relue à
+        chaque requête (pas de cache : elle change entre deux runs d'éval).
+        Disque local, pas le NAS — pas de note_heavy_activity()."""
+        f = SCRIPT_DIR / 'eval' / 'rating_v2sans.html'
+        try:
+            body = f.read_bytes()
+        except OSError:
+            self._send(404, "Aucune éval en cours "
+                       "(eval/rating_v2sans.html absent).".encode(),
+                       'text/plain; charset=utf-8')
+            return
+        self._send(200, body, 'text/html; charset=utf-8')
+
+    def _do_eval_notes(self):
+        """POST /eval/notes — reçoit le JSON de la page /eval et l'écrit dans
+        eval/notes_v2sans.json, atomiquement (tmp + os.replace, disque local,
+        modèle TagStore._save). Taille bornée (les notes font ~2 Ko ; on coupe
+        à 1 Mo) et JSON validé : un corps illisible ne remplace jamais des
+        notes déjà déposées."""
+        try:
+            n = int(self.headers.get('Content-Length', 0))
+        except (TypeError, ValueError):
+            n = 0
+        if not 0 < n <= 1_000_000:
+            self._send(400, b'Taille invalide', 'text/plain; charset=utf-8')
+            return
+        try:
+            notes = json.loads(self.rfile.read(n))
+        except Exception:
+            notes = None
+        if not isinstance(notes, dict) or not notes:
+            self._send(400, b'JSON invalide', 'text/plain; charset=utf-8')
+            return
+        dest = SCRIPT_DIR / 'eval' / 'notes_v2sans.json'
+        tmp = dest.with_name(dest.name + '.tmp')
+        try:
+            tmp.write_text(json.dumps(notes, ensure_ascii=False, indent=1),
+                           encoding='utf-8')
+            os.replace(tmp, dest)
+        except OSError as e:
+            self._send(500, f"Écriture impossible : {e}".encode(),
+                       'text/plain; charset=utf-8')
+            return
+        print(f"  📝 Notes d'éval reçues → {dest.name} ({len(notes)} cartes)")
+        self._send(200, json.dumps({"ok": True, "cartes": len(notes)}).encode(),
+                   'application/json')
 
     def _serve_media(self, url_path):
         """Sert un fichier depuis une racine de media_roots(), confiné."""

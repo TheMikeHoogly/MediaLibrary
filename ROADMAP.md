@@ -6,17 +6,17 @@ session, choses à observer) dans `PROMPT_NOUVELLE_SESSION.md`. Audits :
 `docs/AUDIT_INTERNE_2026-08.md` (I1–I17, O1–O15, A–F),
 `docs/AUDIT_EXTERNE_2026.md`, `docs/RANGEMENT_2026.md`.
 
-## État (12/08/2026)
+## État (12/08/2026, session 7)
 
-**Git sain** (vérifié) : `HEAD = main = origin/main = b4149ce`, tout est
-commité, fusionné ET poussé ; `git branch --no-merged main` est **vide**. Le
-protocole bats 27 → 28 fonctionne — rien à rattraper. Livré récemment (détail :
-git) : files « À vérifier » personnes + animaux dans
-`/sujets?vue=classification` ; audit O6 (encodage SigLIP par sous-lots de 4,
-`SEMANTIC_LOCK` rendu entre deux) — **effet non observé**, pas encore un
-acquis ; assurance-vie de la vérité terrain (`backup_verify` + export
-`journal_jugements.jsonl`) — **dont l'échéance était cassée : corrigée en
-session 6** (voir « À faire » n°2).
+**Session 7 à commiter** (bats 27 → 28, `SESSION_COMMIT.txt` prêt) : route
+`GET /eval` + `POST /eval/notes` (notation à distance via VPN — **utilisée en
+réel par Mike le soir même**). **Observé en réel** : « Sauvegarde vérifiée :
+ok » (premier tour après redémarrage, integrity ok, 292 confirmés +
+1 496 exclusions relus dans le snapshot, journal exporté) — le fix mtime de la
+session 6 est un **acquis**. **Éval tagging V2 tranchée** : variante « sans
+impératif » ADOPTÉE (25–15 vs V0 ; détail `eval/DECISIONS.md`) → Knowledge
+Builder et lots de renommage débloqués. Reste non observé : effet O6
+(`pending = 0` — déposer ~30 photos neuves pour le voir).
 
 ## À faire — par ordre de valeur (réordonné au triple audit du 11/08)
 
@@ -32,18 +32,21 @@ session 6** (voir « À faire » n°2).
    Seule conséquence mécanique : le point 9 (algo) reste parqué — c'est un
    ordre de travaux, pas une dette.
 2. **Observer en réel ce qui est livré** (modes opératoires :
-   `PROMPT_NOUVELLE_SESSION.md`) : « Sauvegarde vérifiée : ok » (le plus
-   important — jamais observé à ce jour), O6, seek vidéo mobile, test du Z.
-3. **Éval tagging V2 — AVANT tout lot de renommage** (le banc de 150 photos est
-   keyé par chemin ; renommer d'abord l'invaliderait). Protocole :
-   `eval/PLAN_assertions_vs_pixels.md`. Si V2 confirme → câbler le **Knowledge
-   Builder** (ADOPTÉ 31/07, jamais câblé) + créer la **version de pipeline
-   tagging** manquante (audit D).
+   `PROMPT_NOUVELLE_SESSION.md`) : O6 (déposer ~30 photos neuves), seek vidéo
+   mobile, test du Z. « Sauvegarde vérifiée » : **observée ok le 12/08** —
+   sortie de la liste.
+3. **Câbler le Knowledge Builder** (ADOPTÉ 31/07, jamais câblé) + créer la
+   **version de pipeline tagging** manquante (audit D). Le prompt de prod est
+   la V2 « sans impératif » (**éval tranchée le 12/08**, 25–15 vs V0, 4,26
+   s/photo — `eval/DECISIONS.md`) ; les noms se fusionnent en post-traitement,
+   jamais via le prompt.
 4. **Gestes Mike, dans cet ordre** : nettoyer Flo (5 909 photos sur sa fiche,
    outillage livré : « Corriger » seuil ~0.2 ou « Nettoyer (référence) ») ;
    re-rejeter le groupe Caline une fois ; activer `gps_place`
    (`18 - …gazetteer.bat` → `enrichir_lieux.py` → `--ecrire` → redémarrer) ;
-   **après l'éval V2** : lots de renommage (plan = 2114).
+   lots de renommage **débloqués** (éval V2 faite ; plan = 2114). NB : après
+   renommage, le banc `eval/tagging_v1.json` (keyé par chemin) devient
+   partiellement caduc — attendu, décision déjà écrite.
 5. **Correctifs d'audit restants** : I4–I8, O7–O9, O11–O15 (dont purge de
    `photo_thumbs/` — le cache croît sans borne ; il est **gitignoré depuis le
    12/08**, il ne pollue plus `git status`). Résidu O1 : la section Lieux de

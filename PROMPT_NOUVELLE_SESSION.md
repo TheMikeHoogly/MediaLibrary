@@ -7,42 +7,31 @@
 Tu reprends **MediaLibrary**. Lis `ROADMAP.md` puis `eval/DECISIONS.md`, débrief
 en 2–3 lignes, puis on attaque.
 
-## Où on en est (12/08/2026, fin de session 6)
+## Où on en est (12/08/2026, fin de session 7)
 
-- **Git sain** : `HEAD = main = origin/main` — tout commité, fusionné, poussé ;
-  aucune branche non fusionnée. Le protocole bats 27 → 28 tient. Le **bat 30**
-  supprime les étiquettes de branches déjà fusionnées (22 traînaient).
-- Vérifié en réel : files Classification garnies (18 personnes, 120 animaux),
-  `/api/thumb` 200 (52 Ko vs 4,7 Mo), Range 206.
-- **Session 6 — à commiter + redémarrer** : correctif de l'échéance de
-  sauvegarde (ci-dessous), `photo_thumbs/` gitignoré, bat 30.
-- **Non observé** : effet O6 (`pending = 0`, aucun arriéré → la contention ne
-  peut pas se reproduire ; il faut déposer ~30 photos neuves pour la revoir).
-
-## Le vrai risque du moment : la sauvegarde ne partait pas
-
-`backup_verify` n'avait jamais tourné, et la cause n'était pas la vérification :
-**l'échéance du backup était un compteur de tours** (`cycle % 12`), variable
-locale remise à zéro à chaque démarrage. Il fallait donc **1 h de serveur
-ininterrompu** — or il n'y a pas de hot-reload : chaque modif de `server.py`
-impose un redémarrage, plusieurs par heure les jours de développement. La base
-pouvait n'être **jamais** sauvegardée précisément les jours où des jugements
-humains sont produits. Corrigé : l'échéance se lit sur le **mtime du snapshot**
-(`_backup_du()`) — sans état, insensible aux redémarrages, et une sauvegarde en
-retard part dès le premier tour qui suit le démarrage.
-
-**À observer (réflexe n°2)** : après redémarrage, `/reglages` → la carte
-« Sauvegarde vérifiée » doit passer à **ok en quelques minutes**. Si elle reste
-« jamais », c'est l'URI UNC de `backup_verify` qui coince (jamais vue passer sur
-Windows) — le message est dans la console du serveur.
+- **Sauvegarde vérifiée : OBSERVÉE ok en réel** (premier tour après
+  redémarrage : integrity ok, 292 confirmés + 1 496 exclusions relus dans le
+  snapshot, journal exporté). Le fix mtime de la session 6 est un **acquis** —
+  ce point sort des réflexes de reprise.
+- **Éval tagging V2 tranchée** : « assertions en contexte, sans impératif de
+  noms » **ADOPTÉE** (aveugle A/B : 25–15 vs V0 ; 4,26 s/photo, plus rapide
+  que V0 ; hallucinations 6 vs 4). Zéro GPU dépensé — réponses relues de
+  `tagging_results.v2avant.json`. Détail : `eval/DECISIONS.md`.
+- **Livré session 7** : `GET /eval` + `POST /eval/notes` (notation à distance
+  via VPN, écriture atomique, fichiers fixes — pas de traversée). **Utilisé en
+  réel** par Mike hors de chez lui le soir même.
+- **À commiter** : `SESSION_COMMIT.txt` prêt (`feat/eval-a-distance`) →
+  bat 27, puis bat 28 (le serveur tourne déjà sur le code patché).
 
 ## Prochain pas — par valeur
 
-1. **Commiter + redémarrer**, puis guetter « Sauvegarde vérifiée : ok ».
-2. **Éval tagging V2** avant tout lot de renommage
-   (`eval/PLAN_assertions_vs_pixels.md`) ; si confirmée → Knowledge Builder.
-3. **Correctifs d'audit restants** (I4–I8, O7–O9, O11–O15) et gestes Mike :
-   nettoyer Flo (5 909 photos sur sa fiche), `gps_place`. Ordre : `ROADMAP.md`.
-4. **Jugement dans Classification** : au fil de l'eau, sans en faire un
-   préalable — cf. cadrage du point 1 de la roadmap (la limite est la
-   connaissance des visages, pas l'outil ; Flo nommera le reste).
+1. **Câbler le Knowledge Builder + version de pipeline tagging**
+   (`TAGGING_PIPELINE_VERSION`, modèle `ANIMAL_PIPELINE_VERSION`) : le prompt
+   de prod est la V2 sans impératif ; noms/date/lieu fusionnés en
+   post-traitement déterministe, jamais via le prompt. C'est LE déblocage que
+   l'éval attendait.
+2. **Lots de renommage débloqués** (gestes Mike, plan = 2114, 4 étapes dans
+   `/reglages`).
+3. **Observer** : O6 (déposer ~30 photos neuves), seek vidéo mobile, test du Z.
+4. **Correctifs d'audit** I4–I8, O7–O9, O11–O15 ; nettoyer Flo ; `gps_place`.
+   Ordre : `ROADMAP.md`.

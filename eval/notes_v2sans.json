@@ -1,0 +1,179 @@
+{
+ "0": {
+  "best": "B",
+  "halluc": []
+ },
+ "1": {
+  "best": "B",
+  "halluc": [
+   "A",
+   "B"
+  ]
+ },
+ "2": {
+  "best": "A",
+  "halluc": []
+ },
+ "3": {
+  "best": "B",
+  "halluc": []
+ },
+ "4": {
+  "best": "B",
+  "halluc": []
+ },
+ "5": {
+  "best": "B",
+  "halluc": []
+ },
+ "6": {
+  "best": "B",
+  "halluc": []
+ },
+ "7": {
+  "best": "B",
+  "halluc": []
+ },
+ "8": {
+  "best": "B",
+  "halluc": []
+ },
+ "9": {
+  "best": "A",
+  "halluc": [
+   "A",
+   "B"
+  ]
+ },
+ "10": {
+  "best": "A",
+  "halluc": []
+ },
+ "11": {
+  "best": "A",
+  "halluc": []
+ },
+ "12": {
+  "best": "A",
+  "halluc": []
+ },
+ "13": {
+  "best": "B",
+  "halluc": []
+ },
+ "14": {
+  "best": "B",
+  "halluc": [
+   "B"
+  ]
+ },
+ "15": {
+  "best": "A",
+  "halluc": []
+ },
+ "16": {
+  "best": "B",
+  "halluc": [
+   "A"
+  ]
+ },
+ "17": {
+  "best": "B",
+  "halluc": []
+ },
+ "18": {
+  "best": "A",
+  "halluc": []
+ },
+ "19": {
+  "best": "A",
+  "halluc": [
+   "A",
+   "B"
+  ]
+ },
+ "20": {
+  "best": "B",
+  "halluc": []
+ },
+ "21": {
+  "best": "A",
+  "halluc": []
+ },
+ "22": {
+  "best": "A",
+  "halluc": []
+ },
+ "23": {
+  "best": "A",
+  "halluc": []
+ },
+ "24": {
+  "best": "A",
+  "halluc": []
+ },
+ "25": {
+  "best": "A",
+  "halluc": []
+ },
+ "26": {
+  "best": "A",
+  "halluc": []
+ },
+ "27": {
+  "best": "A",
+  "halluc": []
+ },
+ "28": {
+  "best": "B",
+  "halluc": []
+ },
+ "29": {
+  "best": "B",
+  "halluc": [
+   "B"
+  ]
+ },
+ "30": {
+  "best": "B",
+  "halluc": []
+ },
+ "31": {
+  "best": "A",
+  "halluc": []
+ },
+ "32": {
+  "best": "A",
+  "halluc": []
+ },
+ "33": {
+  "best": "B",
+  "halluc": []
+ },
+ "34": {
+  "best": "A",
+  "halluc": []
+ },
+ "35": {
+  "best": "A",
+  "halluc": []
+ },
+ "36": {
+  "best": "A",
+  "halluc": []
+ },
+ "37": {
+  "best": "B",
+  "halluc": []
+ },
+ "38": {
+  "best": "B",
+  "halluc": []
+ },
+ "39": {
+  "best": "A",
+  "halluc": [
+   "B"
+  ]
+ }
+}
