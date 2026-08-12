@@ -23,6 +23,13 @@ photos.db-shm
 animal_thumbs/
 face_thumbs/
 uploads/
+# Cache des vignettes /api/thumb (audit O1, 12/08) : dérivé, régénérable, et il
+# croît sans borne tant que la purge O15 n'est pas faite. Oublié à sa création :
+# il polluait `git status` d'un fichier par photo consultée.
+photo_thumbs/
+
+# Archive manuelle des anciens docs (ménage du 12/08) : locale, jamais versionnée.
+OLD/
 
 # Images récupérées après le crash disque : ce sont des photos personnelles
 recuperees/

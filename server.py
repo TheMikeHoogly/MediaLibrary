@@ -336,7 +336,7 @@ class TagStore:
 # Retour arrière : supprimer photos.db (+ -wal/-shm) → retour au JSON.
 DB_DIR = SCRIPT_DIR                     # disque local, JAMAIS le NAS
 DB_BACKUP = DATA_DIR / "photos.db.bak"  # snapshot sauvegardé par le NAS
-DB_BACKUP_EVERY = 12                    # cycles de maintenance (12 × 5 min = 1 h)
+DB_BACKUP_INTERVAL = 3600               # s entre deux sauvegardes de la base
 try:
     from store_sqlite import open_store as _open_store
 except ImportError:                     # module absent → comportement historique
@@ -3298,12 +3298,13 @@ def maintenance_loop():
         # Sauvegarde de la base locale vers le NAS (~1x/heure), HORS du try du
         # scan : un scan qui échoue durablement (NAS listable mais dossier en
         # panne…) ne doit pas priver le backup — c'est lui qui protège les
-        # noms. `cycle` compte les tours (pas les succès) pour la même raison.
-        # backup_db() attrape déjà toutes ses exceptions. Snapshot cohérent
-        # même pendant l'écriture, renommé atomiquement à l'arrivée : le
-        # travail humain reste sur un volume sauvegardé, sans SQLite sur SMB.
+        # noms. backup_db() attrape déjà toutes ses exceptions. Snapshot
+        # cohérent même pendant l'écriture, renommé atomiquement à l'arrivée :
+        # le travail humain reste sur un volume sauvegardé, sans SQLite sur SMB.
+        # L'échéance se lit sur le FICHIER, pas sur un compteur de tours :
+        # voir _backup_du() — le compteur ne survivait pas au redémarrage.
         cycle += 1
-        if cycle % DB_BACKUP_EVERY == 0:
+        if _backup_du():
             backup_db()
         time.sleep(SCAN_INTERVAL)
 
@@ -3374,6 +3375,28 @@ def maintenance_orchestrator():
         except Exception as e:
             print(f"  ⚠ maintenance : {e}")
         time.sleep(MAINTENANCE_EVERY)
+
+
+def _backup_du():
+    """La sauvegarde est-elle DUE ? L'échéance se lit sur le mtime du snapshot.
+
+    Mode de panne corrigé le 12/08 : l'échéance était un compteur de tours
+    (`cycle % 12`), variable LOCALE de maintenance_loop, donc remise à zéro à
+    chaque démarrage. Le backup exigeait ainsi 1 h de fonctionnement d'affilée
+    — or il n'y a pas de hot-reload : toute modif de server.py impose un
+    redémarrage, et une journée de développement en compte plusieurs par
+    heure. Résultat : la base pouvait n'être JAMAIS sauvegardée les jours de
+    travail, c'est-à-dire exactement les jours où des jugements humains sont
+    produits. `backup_verify` n'ayant jamais tourné, rien ne le signalait.
+
+    Le fichier porte lui-même sa date : aucun état à maintenir, un redémarrage
+    ne remet plus le compteur à zéro, et une sauvegarde en retard part au
+    premier tour qui suit le démarrage. Absent ou NAS injoignable : on tente
+    (backup_db attrape ses propres erreurs)."""
+    try:
+        return (time.time() - DB_BACKUP.stat().st_mtime) >= DB_BACKUP_INTERVAL
+    except OSError:
+        return True
 
 
 def backup_db():
