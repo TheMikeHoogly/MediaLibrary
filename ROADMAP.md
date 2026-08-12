@@ -9,18 +9,29 @@ optimisations O1–O15, angles morts A–F), `docs/RANGEMENT_2026.md`,
 
 ## État actuel (12 août 2026)
 
-**Session 12/08 — instrumentation vérité terrain : COMMITÉE (`a9a7d8b` + fix purge
-`15e3204`), VÉRIFIÉE EN RÉEL.** File triée par marge (jamais le score absolu) ; chaque
-geste → ligne append-only `journal_jugements.jsonl` (gitignoré) ; compteur de séance
-dans /people. Détail dans git.
+**Session 12/08 (3) — correctifs d'audit + assurance-vie + Sujets guichet unique :
+LIVRÉE, À COMMITER (bat 27) + redémarrer + VÉRIFIER EN RÉEL.** Trois volets :
+(a) **Correctifs d'audit** : I1 (workers visages/animaux sous `creneau()`), I2
+(gps_places.json suit rekey/forget, copy-on-write + flush atomique), O1 (`/api/thumb`
+512/1600 px, cache disque + mtime, confiné, fallback 302 → original ; clients
+galerie/carte/diaporamas), O2 (`_send_file` streaming 1 Mo + Range → seek vidéo),
+O3 (cache `media_roots` TTL 8 s / rebuild 60 s), O4 (écritures vecteurs sous
+`STORE.lock`), O5 (boucle maintenance blindée, backup hors du try du scan), O10
+(index `ix_vectors_k`). (b) **Assurance-vie (audit A)** : `backup_verify()` après
+chaque backup (restauration à blanc du snapshot NAS, integrity_check + comptage
+confirmed/exclude vs vivant, URI SQLite compatible UNC) + `export_jugements()`
+(journal → NAS, atomique) ; cartes « Dernier scan » et « Sauvegarde vérifiée »
+dans /reglages. (c) **/sujets guichet unique** : sous-nav Sujets partagée
+(Annuaire · Personnes · Animaux · Classification) sur /sujets /people /pets +
+**onglet Classification** (compteurs vivants par type, liens profonds ancrés
+#verifier/#groupes/#inconnus avec re-visée anti-cible-mouvante). Diff relu par
+agent adversarial, correctifs appliqués (confinement thumb, URI UNC, fallbacks).
+**Vérifs en réel attendues** : voir « Gestes Mike » ci-dessous.
 
-**Session 12/08 (suite) — régression « Gérer » : DEUX causes, corrigées.** (1) `#panel`
-placé APRÈS la grille peinte par lots → cible de scroll mouvante, panneau ouvert hors
-écran ; fix : `#panel` AVANT la grille + `scroll-margin-top` — **commité, VÉRIFIÉ EN
-RÉEL** (clic profond → panneau visible en haut). (2) `curMark()` (instrumentation 12/08)
-scrollait vers la file « À vérifier » au chargement, déclenchant une cascade de lots qui
-échouait la vue au milieu de la grille (lien profond `?name=` caché) ; fix : scroll
-seulement au tri clavier — **à commiter (bat 27) + redémarrer, vérif ensuite.**
+**Sessions 12/08 (1–2) — commitées (`a9a7d8b`…`d9eda80`), VÉRIFIÉES EN RÉEL** :
+instrumentation vérité terrain (file par marge, journal des jugements, compteur de
+séance) ; régression « Gérer » corrigée (2 causes : `#panel` avant la grille +
+`curMark` sans scroll au chargement). Détail dans git.
 
 **Session 11/08 (nuit) — GpuArbiter : COMMITÉ (`72d1946`), vérifié en réel.** Les 5
 politiques GPU sous baux/priorités/éviction, tests 27/27 (`test_ordonnanceur.py`) ;
@@ -46,14 +57,19 @@ Refonte `/people` + outillage **faux positifs** ; tokenisation value-preserving 
 jugées par un humain (⚠ geste Mike : re-rejeter le groupe Caline une fois) ; Lieux = 3ᵉ type
 d'entité.
 
-- **Git** : tout est commité jusqu'à `15e3204` (branche `feat/verite-terrain-marge`) ;
-  **reste à commiter le fix « Gérer »** — `27 - Commit de session.bat` ;
+- **Git** : commité jusqu'à `d9eda80` (branche `feat/verite-terrain-marge`) ;
+  **reste à commiter la session (3)** — `27 - Commit de session.bat` ;
   **`git push` / merge dans `main` = gestes de Mike**.
 - **Ouvert (gestes Mike)** :
-  - **Nettoyer Flo** : la fiche reste polluée tant qu'un passage n'est pas fait. Ouvrir Flo →
-    « Corriger » (seuil ~0.2, monter en surveillant la grille) ou « Nettoyer (référence) »
-    pour une séparation fine. Retrait **sûr** (cf. Acquis « exclude »).
-  - Toujours en attente : appliquer les lots de renommage + activer `gps_place` (cf. « À faire »).
+  - **Vérifier en réel la session (3)** après redémarrage : grille galerie rapide
+    (onglet Réseau : `/api/thumb` 200, plus d'originaux) ; seek vidéo mobile ;
+    `/sujets?vue=classification` (compteurs + liens profonds) ; après le prochain
+    backup horaire, carte « Sauvegarde vérifiée » = ok dans /reglages (⚠ jamais
+    observée sur Windows : l'URI UNC doit être vue passer UNE fois — réflexe n°2).
+  - **Nettoyer Flo** : ouvrir Flo → « Corriger » (seuil ~0.2) ou « Nettoyer
+    (référence) ». Retrait **sûr** (cf. Acquis « exclude »).
+  - Toujours en attente : lots de renommage (après éval V2) + activer `gps_place`
+    (I2+O10 faits — plus de préalable technique, vérif en réel d'abord).
 
 ## Acquis — ne pas reproposer (détail : git + `DECISIONS.md`)
 
@@ -71,6 +87,9 @@ d'entité.
 | Tagging | `qwen3-vl:2b` ; hybride assertions+image ; 1 lecture exiftool/photo |
 | GPU | torch CUDA `2.13.0+cu130` + `onnxruntime_gpu` ; `FACE_USE_GPU=False` volontaire (4 Go pris par Ollama) |
 | Hygiène | Nettoyage de session **réversible** (`_corbeille_session/` + lint `*.md`, `29 - …bat`) ; **commit guidé** : `SESSION_COMMIT.txt` (branche+titre proposés par le bat 27) — protocole `CLAUDE.md` |
+| Perf serveur | **(12/08)** `/api/thumb` (vignettes 512/1600, −98 % octets NAS), `_send_file` Range+streaming, cache `media_roots`, index `ix_vectors_k`, écritures vecteurs sous lock, workers sous ordonnanceur |
+| Robustesse | **(12/08)** `backup_verify` (restauration à blanc + comptage jugements) + export `journal_jugements.jsonl` → NAS ; boucle maintenance blindée ; gps_places suit rekey/forget |
+| Sujets | **(12/08)** Sous-nav partagée (Annuaire · Personnes · Animaux · Classification) + onglet **Classification** (compteurs vivants, liens profonds ancrés vers /people et /pets) |
 
 ## À faire — par ordre de valeur (réordonné au triple audit du 11/08)
 
@@ -79,31 +98,25 @@ d'entité.
    de séance — cf. État actuel). Reste le **geste Mike** : confirmer ~100 propositions
    dans `/people` (tri clavier + filtre par nom prêts) ; la métrique qui compte =
    confirmations/minute et erreurs découvertes, pas l'accord modèle-humain.
-2. **`/sujets` guichet unique.** La régression « Gérer » est corrigée (cf. État actuel ;
-   vérif en réel après redémarrage). Reste : aller au bout de la fusion — **toutes** les
-   fonctions de gestion d'une personne, d'un animal ou d'un lieu réunies dans `/sujets`,
-   + un onglet **« Classification »** (groupes à nommer, faux positifs, …) séparant
-   clairement personnes / animaux / lieux. (Skills : `photo-ui`, `monolith-surgery`.)
-3. **Assurance-vie de la vérité terrain (angle mort majeur — audit A).** Les jugements
-   humains ne vivent que dans `photos.db`, snapshot jamais restauré ni vérifié, même site.
-   → Tâche `backup_verify` (integrity_check + restauration à blanc + comptage confirmed/
-   exclude) + **export JSONL append-only** des jugements sur NAS (copiable hors site).
+2. **`/sujets` guichet unique — navigation + Classification LIVRÉES (12/08, vérif en
+   réel attendue).** Reste (si le besoin se confirme à l'usage) : fusion physique des
+   fonctions de gestion dans `/sujets` même (aujourd'hui : sous-nav unifiée + onglet
+   Classification qui route vers les ancres de /people et /pets).
+3. ~~Assurance-vie de la vérité terrain~~ **LIVRÉE (12/08)** — `backup_verify` +
+   `export_jugements` à chaque backup horaire ; reste la **vérif en réel** (une carte
+   « Sauvegarde vérifiée : ok » observée dans /reglages sur la machine Windows).
 4. **Éval tagging V2 — AVANT les lots de renommage** (le jeu figé de 150 photos est keyé
    par chemin ; renommer d'abord invaliderait le banc — mode de panne déjà documenté).
    Protocole prêt : `eval/PLAN_assertions_vs_pixels.md`. Si V2 confirme → **câbler le
    Knowledge Builder** (ADOPTÉ le 31/07, jamais câblé) + créer la **version de pipeline
    tagging** manquante (audit D).
-5. **Gestes Mike, dans cet ordre** : nettoyer Flo (outillage livré) ; **après I2+O10**
-   (re-clé `gps_places.json` + index `vectors(k)` — sinon libellés orphelins et scans
-   ×850 k lignes/lot) : activer `gps_place` (`18 - …gazetteer.bat` → `enrichir_lieux.py`
-   → `--ecrire` → redémarrer) ; **après l'éval V2** : lots de renommage (plan = 2114).
-6. **Correctifs d'audit** (détail : `docs/AUDIT_INTERNE_2026-08.md`). Prioritaires :
-   I1 (workers visages/animaux hors ordonnanceur — la promesse « un seul travail lourd »
-   ne les couvre pas), I2+O10 (prérequis du point 5), O1 (`/api/thumb` : vignettes de
-   grille = originaux pleine résolution, −98 % d'octets NAS, meilleur ratio du lot),
-   O2 (`_send_file` : Range + streaming), O3 (cache `media_roots`), O4 (écritures vectors
-   sous `STORE.lock`), O5 (try/except `maintenance_loop` — un crash silencieux tue scan
-   ET backup), O6 (recherche bloquée par le lot d'encodage). Puis I5–I8, O7–O13.
+5. **Gestes Mike, dans cet ordre** : nettoyer Flo (outillage livré) ; activer
+   `gps_place` (I2+O10 faits ; `18 - …gazetteer.bat` → `enrichir_lieux.py` →
+   `--ecrire` → redémarrer) ; **après l'éval V2** : lots de renommage (plan = 2114).
+6. **Correctifs d'audit — I1, I2, O1–O5, O10 FAITS (12/08).** Restent (détail :
+   `docs/AUDIT_INTERNE_2026-08.md`) : O6 (recherche bloquée par le lot d'encodage,
+   sous-lots de 4), puis I4–I8, O7–O9, O11–O15 (dont purge de `photo_thumbs/`
+   avec O15 — le cache vignettes croît sans borne).
 7. **Navigation par similarité** : `/api/similar?key=` (cosinus sur `photo_vectors()`
    existant, bouton « semblables » dans la visionneuse) ; puis **doublons proches bridés**
    (>0,98 + même journée → quarantaine réversible, 50 paires jugées par Mike avant tout

@@ -91,6 +91,12 @@ class VectorStore:
                            )""")
         self.cx.execute("CREATE UNIQUE INDEX IF NOT EXISTS ix_vectors_kind_k "
                         "ON vectors(kind, k)")
+        # Index sur k SEUL (audit O10) : rekey_prefix_all/delete_all filtrent
+        # « k>=? AND k<? » sans kind — l'index (kind,k) ne sert alors à rien et
+        # chaque photo renommée balayait les ~130 000 lignes deux fois. Avec le
+        # plan de 2114 renommages : ~850 k lignes lues par lot. Coût : ~quelques
+        # Mo, création unique au démarrage.
+        self.cx.execute("CREATE INDEX IF NOT EXISTS ix_vectors_k ON vectors(k)")
 
     def _reconstruire_sans_rowid(self):
         """Reprend une table `vectors` créée en WITHOUT ROWID (schéma v1)."""
@@ -105,6 +111,7 @@ class VectorStore:
             cx.execute("DROP TABLE vectors")
             cx.execute("ALTER TABLE vectors_v2 RENAME TO vectors")
             cx.execute("CREATE UNIQUE INDEX ix_vectors_kind_k ON vectors(kind, k)")
+            cx.execute("CREATE INDEX ix_vectors_k ON vectors(k)")
             cx.execute("COMMIT")
         except Exception:
             cx.execute("ROLLBACK")

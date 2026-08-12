@@ -156,6 +156,7 @@ ANIMAL_PIPELINE_VERSION = "yolo11s|det0.30|dinov2_base"
 ANIMAL_CLASSES = {14: 'bird', 15: 'cat', 16: 'dog', 17: 'horse',
                   18: 'sheep', 19: 'cow'}
 ANIMAL_THUMB_DIR = SCRIPT_DIR / "animal_thumbs"   # cache disque des découpes (Phase 2)
+PHOTO_THUMB_DIR = SCRIPT_DIR / "photo_thumbs"     # cache disque des vignettes (audit O1)
 
 # ─── Reconnaissance des chats — Phase 2 : nommage individuel (embeddings) ───
 # Chaque chat détecté est transformé en vecteur (DINOv2) → regroupement →
@@ -1482,8 +1483,41 @@ def load_browse_dirs():
     return _load_dirs_file(BROWSE_DIRS_FILE)
 
 
+# Cache de media_roots() (audit O3) : chaque appel relisait les deux fichiers
+# de config ET statait chaque dossier sur SMB — NAS débranché, toute l'UI gelait
+# sur des timeouts en cascade. TTL court (8 s) : dans la fenêtre, zéro stat.
+# Au-delà : si les fichiers de config n'ont pas bougé (stat LOCAL, pas cher),
+# on garde la liste, avec un rebuild complet toutes les 60 s quand même — un
+# dossier NAS revenu en ligne réapparaît ainsi sans toucher la config.
+_MEDIA_ROOTS_CACHE = {"at": 0.0, "built_at": 0.0, "sig": None, "roots": None}
+MEDIA_ROOTS_TTL = 8.0          # s sans AUCUNE vérification
+MEDIA_ROOTS_REBUILD = 60.0     # s entre deux rebuilds complets (stats SMB)
+
+
+def _media_roots_sig():
+    """Signature (mtime, taille) des deux fichiers de config — stats locaux."""
+    sig = []
+    for f in (TAG_DIRS_FILE, BROWSE_DIRS_FILE):
+        try:
+            st = f.stat()
+            sig.append((int(st.st_mtime), st.st_size))
+        except OSError:
+            sig.append((0, 0))
+    return tuple(sig)
+
+
 def media_roots():
-    """Racines navigables : Uploads + dossiers tagués + dossiers à explorer."""
+    """Racines navigables : Uploads + dossiers tagués + dossiers à explorer.
+    Mise en cache (voir _MEDIA_ROOTS_CACHE) : les appelants reçoivent la même
+    liste partagée — elle ne doit jamais être mutée en place."""
+    now = time.time()
+    c = _MEDIA_ROOTS_CACHE
+    if c["roots"] is not None and now - c["at"] < MEDIA_ROOTS_TTL:
+        return c["roots"]
+    if (c["roots"] is not None and now - c["built_at"] < MEDIA_ROOTS_REBUILD
+            and _media_roots_sig() == c["sig"]):
+        c["at"] = now
+        return c["roots"]
     roots = [("Uploads", UPLOAD_DIR)]
     seen = {str(UPLOAD_DIR).lower()}
     for d in load_extra_dirs() + load_browse_dirs():
@@ -1492,6 +1526,7 @@ def media_roots():
             continue
         seen.add(k)
         roots.append((d.name or str(d), d))
+    c.update(at=now, built_at=now, sig=_media_roots_sig(), roots=roots)
     return roots
 
 
@@ -1794,6 +1829,7 @@ def _sync_dir(label, cur, own_keys, first=False, deep=False):
             STORE.save()
             for _st in (FACE_STORE, PEOPLE_STORE, ANIMAL_STORE, PETS_STORE):
                 _st.save()
+            gps_places_save()   # 7e magasin (audit I2), differe par save=False
             print(f"  🔀 {label} : {moved} déplacement(s)/renommage(s) détecté(s)"
                   f" — index + détections + empreintes re-clés sans re-tagging")
 
@@ -2005,9 +2041,10 @@ def photo_vectors():
 def rekey_everywhere(old, new, mtime=None, save=True):
     """Point de re-clé UNIQUE pour un déplacement/renommage `old` → `new`.
 
-    L'état d'une photo est réparti sur SIX magasins keyés par le chemin : le
-    store `tags` (STORE), les quatre stores de sujets (FACE/PEOPLE/ANIMAL/PETS)
-    et le magasin de vecteurs sémantique (`photo_vectors()`). Re-clé le seul
+    L'état d'une photo est réparti sur SEPT magasins keyés par le chemin : le
+    store `tags` (STORE), les quatre stores de sujets (FACE/PEOPLE/ANIMAL/PETS),
+    le magasin de vecteurs sémantique (`photo_vectors()`) et les libellés de
+    géocodage `gps_places.json` (audit I2). Re-clé le seul
     store `tags` — ce que faisait le scan jusqu'ici — laisse les détections
     visages/animaux et l'embedding sémantique sous l'ANCIENNE clé : orphelins,
     purgés au scan suivant. Le nom humain (`personne:`/`animal:`) vit dans les
@@ -2030,7 +2067,7 @@ def rekey_everywhere(old, new, mtime=None, save=True):
     faux/0). `save=False` diffère TOUTES les sauvegardes au batch appelant :
     dans ce cas, l'appelant DOIT ensuite sauver STORE et les quatre stores de
     sujets (le sémantique, sur la connexion de STORE, est commité par
-    `STORE.save()`).
+    `STORE.save()`), plus `gps_places_save()` (7ᵉ magasin, audit I2).
 
     Renvoie True si l'entrée `tags` a été re-clée, False sinon.
     """
@@ -2043,9 +2080,20 @@ def rekey_everywhere(old, new, mtime=None, save=True):
             st.rekey(old, new, mtime=mtime)
         except Exception as e:
             print(f"  ⚠ re-clé {getattr(st, 'path', st)} {old!r}→{new!r} : {e}")
+    # 7ᵉ magasin keyé par chemin (audit I2) : les libellés de géocodage.
+    # `save` suit le même différé que les stores (flush au batch appelant).
+    try:
+        gps_places_rekey(old, new, save=save)
+    except Exception as e:                                   # noqa: BLE001
+        print(f"  ⚠ re-clé gps_places {old!r}→{new!r} : {e}")
     if hasattr(STORE, 'cx'):
         try:
-            photo_vectors().rekey_prefix_all(old, new)
+            # Sous STORE.lock (audit O4) : rekey_prefix_all fait son propre
+            # BEGIN IMMEDIATE sur la connexion PARTAGÉE — croisé avec un
+            # _ecrire() concurrent, c'est « transaction within transaction »
+            # ou des lignes emportées par le ROLLBACK de l'autre.
+            with STORE.lock:
+                photo_vectors().rekey_prefix_all(old, new)
         except Exception as e:
             print(f"  ⚠ re-clé sémantique {old!r}→{new!r} : {e}")
     if save:
@@ -2085,11 +2133,19 @@ def forget_everywhere(keys):
             st.remove_many(keys)
         except Exception as e:                               # noqa: BLE001
             print(f"  ⚠ oubli {getattr(st, 'path', st)} : {e}")
+    # 7e magasin keye par chemin (audit I2) : libelles de geocodage.
+    try:
+        gps_places_forget(keys)
+    except Exception as e:                                   # noqa: BLE001
+        print(f"  ⚠ oubli gps_places : {e}")
     if hasattr(STORE, 'cx'):
         try:
+            # Sous STORE.lock (audit O4) : delete_all transactionne sur la
+            # connexion partagée — même risque de croisement que rekey.
             pv = photo_vectors()
-            for k in keys:
-                pv.delete_all(k)
+            with STORE.lock:
+                for k in keys:
+                    pv.delete_all(k)
         except Exception as e:                               # noqa: BLE001
             print(f"  ⚠ oubli vecteur semantique : {e}")
     return n
@@ -2312,6 +2368,10 @@ def gps_places_connus():
     fichier est absent ou illisible — le renommage retombe alors sur le lieu
     déduit du chemin. Aucun accès réseau, aucun modèle : simple lecture d'un JSON
     produit hors ligne par enrichir_lieux.py."""
+    # Mutations en attente (re-clé/oubli différés d'un batch, audit I2) : ne
+    # pas les écraser par une relecture du disque avant leur flush.
+    if _GPS_PLACES_CACHE.get("dirty"):
+        return _GPS_PLACES_CACHE["index"]
     try:
         mtime = GPS_PLACES_FICHIER.stat().st_mtime
     except OSError:
@@ -2326,6 +2386,78 @@ def gps_places_connus():
         index = {}
     _GPS_PLACES_CACHE.update(mtime=mtime, index=index)
     return index
+
+
+# ── gps_places.json suit les re-clés et les oublis (audit I2) ────────────────
+# C'était le 7ᵉ magasin keyé par chemin, IGNORÉ de rekey_everywhere et
+# forget_everywhere : activer gps_place puis renommer 2114 fichiers aurait
+# orphaniné tous les libellés. Modèle : mutation du cache en mémoire (marqué
+# dirty), flush atomique (tmp + os.replace) — immédiat pour un geste isolé,
+# différé au batch pour les lots (gps_places_save aux côtés de STORE.save).
+# No-op tant que le fichier n'existe pas (gps_place inactif).
+
+_GPS_PLACES_LOCK = threading.Lock()   # sérialise les MUTATIONS (pas la lecture)
+
+
+def gps_places_rekey(old, new, save=True):
+    """Suit un renommage `old` → `new` dans gps_places.json. Renvoie True si
+    un libellé a été déplacé.
+
+    COPY-ON-WRITE : les lecteurs (places_list, _serve_geo…) itèrent l'index
+    du cache SANS verrou ni copie — muter l'objet partagé en place ferait un
+    « dictionary changed size during iteration » en plein lot de renommage.
+    On mute donc une COPIE puis on remplace l'objet du cache (atomique)."""
+    with _GPS_PLACES_LOCK:
+        index = gps_places_connus()
+        if old not in index:
+            return False
+        index = dict(index)
+        index[new] = index.pop(old)
+        _GPS_PLACES_CACHE["index"] = index
+        _GPS_PLACES_CACHE["dirty"] = True
+    if save:
+        gps_places_save()
+    return True
+
+
+def gps_places_forget(keys, save=True):
+    """Retire les libellés des photos disparues. Renvoie le nombre retiré.
+    Copy-on-write, comme gps_places_rekey."""
+    with _GPS_PLACES_LOCK:
+        index = dict(gps_places_connus())
+        n = 0
+        for k in keys:
+            if index.pop(k, None) is not None:
+                n += 1
+        if n:
+            _GPS_PLACES_CACHE["index"] = index
+            _GPS_PLACES_CACHE["dirty"] = True
+    if n and save:
+        gps_places_save()
+    return n
+
+
+def gps_places_save():
+    """Flush atomique du cache muté vers gps_places.json. No-op si propre.
+
+    NOTE : réécrit le fichier depuis l'index FILTRÉ de gps_places_connus
+    (valeurs str non vides uniquement — le format qu'écrit enrichir_lieux.py
+    aujourd'hui). Si enrichir_lieux.py enrichit un jour son format, adapter
+    le filtre AVANT, sinon les entrées d'un autre type seraient perdues au
+    premier renommage."""
+    with _GPS_PLACES_LOCK:
+        if not _GPS_PLACES_CACHE.get("dirty"):
+            return
+        tmp = GPS_PLACES_FICHIER.with_suffix('.json.tmp')
+        try:
+            tmp.write_text(json.dumps(_GPS_PLACES_CACHE["index"],
+                                      ensure_ascii=False, indent=0),
+                           encoding='utf-8')
+            os.replace(tmp, GPS_PLACES_FICHIER)
+            _GPS_PLACES_CACHE["dirty"] = False
+            _GPS_PLACES_CACHE["mtime"] = GPS_PLACES_FICHIER.stat().st_mtime
+        except OSError as e:
+            print(f"  ⚠ Écriture de gps_places.json impossible : {e}")
 
 
 def _extraire_lieux(requete):
@@ -2492,11 +2624,14 @@ def _semantique_un_lot(sem, vs):
         SEMANTIC_STATE["device"] = sem._ETAT.get("device") or ""
     import base64
     import numpy as np
-    vs.put_many_b64(sem.KIND,
-                    [(chemins[str(p)],
-                      base64.b64encode(
-                          v.astype(np.float16).tobytes()).decode())
-                     for p, v in res], ver=sem.VERSION)
+    lot = [(chemins[str(p)],
+            base64.b64encode(v.astype(np.float16).tobytes()).decode())
+           for p, v in res]
+    # Sous STORE.lock (audit O4) : put_many_b64 écrit sur la connexion
+    # partagée ; croisé avec un _ecrire() d'un autre thread, les vecteurs
+    # pouvaient être emportés par son ROLLBACK.
+    with STORE.lock:
+        vs.put_many_b64(sem.KIND, lot, ver=sem.VERSION)
     SEMANTIC_STATE["done"] += len(res)
     # Une image présente mais qu'aucun vecteur ne suit (illisible, format non
     # décodé, EXIF cassé) est écartée elle aussi : elle bloquerait autant.
@@ -3080,6 +3215,16 @@ def attribuer_visages(membres, cible):
             "libelle": " ; ".join(r["libelle"] for r in resultats)}
 
 
+# État observable de la boucle de scan/backup (audit O5) : « dernier scan à
+# HH:MM » dans /reglages — un crash silencieux devient visible.
+MAINT_LOOP_STATE = {"dernier_scan": 0.0, "derniere_erreur": "", "erreur_at": 0.0}
+# Vérification de la sauvegarde (audit A, « assurance-vie ») : résultat de la
+# dernière restauration à blanc du snapshot NAS. Voir backup_verify().
+BACKUP_VERIFY_STATE = {"at": 0.0, "ok": None, "integrity": "", "detail": "",
+                       "confirmes": None, "exclusions": None,
+                       "jugements_exportes": 0.0}
+
+
 def maintenance_loop():
     """ExifTool + scan initial, puis re-scan toutes les 5 minutes."""
     global EXIFTOOL
@@ -3103,16 +3248,28 @@ def maintenance_loop():
     first = True
     cycle = 0
     while True:
-        # scan approfondi ~1x/heure : détecte aussi les fichiers modifiés
-        deep = (cycle % 12 == 6)
-        scan_uploads(first, deep)
-        retro_write_metadata()
-        first = False
+        # try/except (audit O5) : la première exception non prévue tuait la
+        # boucle SILENCIEUSEMENT — plus de scan NI de backup jusqu'au
+        # redémarrage. On journalise, on affiche dans /reglages, on continue.
+        try:
+            # scan approfondi ~1x/heure : détecte aussi les fichiers modifiés
+            deep = (cycle % 12 == 6)
+            scan_uploads(first, deep)
+            retro_write_metadata()
+            first = False
+            MAINT_LOOP_STATE["dernier_scan"] = time.time()
+        except Exception as e:                                # noqa: BLE001
+            MAINT_LOOP_STATE["derniere_erreur"] = str(e)[:200]
+            MAINT_LOOP_STATE["erreur_at"] = time.time()
+            print(f"  ⚠ Boucle de maintenance : {e} — la boucle continue")
+        # Sauvegarde de la base locale vers le NAS (~1x/heure), HORS du try du
+        # scan : un scan qui échoue durablement (NAS listable mais dossier en
+        # panne…) ne doit pas priver le backup — c'est lui qui protège les
+        # noms. `cycle` compte les tours (pas les succès) pour la même raison.
+        # backup_db() attrape déjà toutes ses exceptions. Snapshot cohérent
+        # même pendant l'écriture, renommé atomiquement à l'arrivée : le
+        # travail humain reste sur un volume sauvegardé, sans SQLite sur SMB.
         cycle += 1
-        # Sauvegarde de la base locale vers le NAS (~1x/heure). Snapshot
-        # cohérent même pendant l'écriture, renommé atomiquement à l'arrivée :
-        # le travail humain (noms de personnes et de chats) reste sur un volume
-        # sauvegardé, sans faire tourner SQLite sur SMB.
         if cycle % DB_BACKUP_EVERY == 0:
             backup_db()
         time.sleep(SCAN_INTERVAL)
@@ -3199,8 +3356,115 @@ def backup_db():
                 st.save()
         if STORE.backup_to(DB_BACKUP):
             print(f"  💾 Sauvegarde de la base → {DB_BACKUP}")
+            # Assurance-vie (audit A) : un snapshot jamais relu n'est pas une
+            # sauvegarde. Restauration à blanc + comptage des jugements, puis
+            # export du journal des jugements — le tout best-effort.
+            backup_verify()
+            export_jugements()
     except Exception as e:                                  # noqa: BLE001
         print(f"  ⚠ Sauvegarde de la base impossible : {e}")
+
+
+def _compte_jugements_live():
+    """(confirmés, exclusions) actuellement en mémoire (PEOPLE + PETS)."""
+    conf = excl = 0
+    for st in (PEOPLE_STORE, PETS_STORE):
+        for e in list(st.data.values()):
+            if isinstance(e, dict):
+                conf += len(e.get('confirmed') or [])
+                excl += len(e.get('exclude') or [])
+    return conf, excl
+
+
+def backup_verify():
+    """Restauration à blanc du snapshot NAS (audit A — « assurance-vie »).
+
+    L'actif le plus coûteux à reproduire (les jugements humains : confirmés,
+    exclusions) ne vivait que dans photos.db, sauvegardé par une copie JAMAIS
+    relue. Ici, après chaque backup : ouverture du snapshot NAS en lecture
+    seule immuable (aucun verrou SMB — le mode immutable ne pose pas de
+    verrou), PRAGMA integrity_check (relit toutes les pages : c'est la
+    restauration à blanc), puis comptage des jugements humains dans les
+    tables people/pets, comparé au vivant. Résultat dans BACKUP_VERIFY_STATE
+    (affiché par /reglages). Best-effort : ne fait jamais échouer le backup."""
+    import sqlite3 as _sq
+    # ok : True = vérifié sain ; False = snapshot SUSPECT (integrity_check
+    # non-ok) ; None = vérification impossible (à distinguer d'une alerte —
+    # un échec d'ouverture n'incrimine pas la sauvegarde).
+    res = {"at": time.time(), "ok": None, "integrity": "", "detail": "",
+           "confirmes": None, "exclusions": None}
+    try:
+        # URI SQLite : PAS Path.as_uri() — sur un chemin UNC Windows
+        # (\\nas\share\...), as_uri() met le serveur en AUTORITÉ d'URI, que
+        # SQLite refuse (« invalid uri authority »). Forme acceptée : autorité
+        # VIDE puis chemin commençant par //serveur/share → file:////nas/...
+        raw = str(DB_BACKUP.resolve())
+        if raw.startswith('\\\\'):
+            upath = '//' + raw.lstrip('\\').replace('\\', '/')
+        else:
+            upath = raw.replace('\\', '/')
+            if not upath.startswith('/'):
+                upath = '/' + upath
+        uri = ('file://' + urllib.parse.quote(upath, safe='/:')
+               + '?mode=ro&immutable=1')
+        cx = _sq.connect(uri, uri=True, timeout=30.0)
+        try:
+            res["integrity"] = str(cx.execute(
+                "PRAGMA integrity_check").fetchone()[0])
+            conf = excl = 0
+            for table in ("people", "pets"):
+                try:
+                    for (v,) in cx.execute(f'SELECT v FROM "{table}"'):
+                        try:
+                            e = json.loads(v)
+                        except (ValueError, TypeError):
+                            continue
+                        conf += len(e.get('confirmed') or [])
+                        excl += len(e.get('exclude') or [])
+                except _sq.Error as e:
+                    res["detail"] = f"table {table} illisible : {e}"
+            res["confirmes"], res["exclusions"] = conf, excl
+        finally:
+            cx.close()
+        vconf, vexcl = _compte_jugements_live()
+        res["ok"] = (res["integrity"] == "ok")
+        if not res["ok"]:
+            res["detail"] = f"integrity_check : {res['integrity'][:120]}"
+            print(f"  ⚠ Sauvegarde NAS SUSPECTE — {res['detail']}")
+        elif conf < vconf or excl < vexcl:
+            # Normal si des jugements sont arrivés depuis le VACUUM ; anormal
+            # si l'écart persiste de backup en backup.
+            res["detail"] = (f"snapshot en retard : {vconf - conf} confirmation(s), "
+                             f"{vexcl - excl} exclusion(s) de moins que le vivant")
+        print(f"  ✔ Sauvegarde vérifiée (restauration à blanc) : integrity="
+              f"{res['integrity'][:20]}, {conf} confirmé(s), {excl} exclusion(s)")
+    except Exception as e:                                  # noqa: BLE001
+        res["ok"] = None            # indéterminé — pas une alerte « suspecte »
+        res["detail"] = str(e)[:200]
+        print(f"  ⚠ Vérification de la sauvegarde impossible : {e}")
+    BACKUP_VERIFY_STATE.update(res)
+
+
+def export_jugements():
+    """Copie du journal des jugements humains vers le NAS (hors du PC).
+
+    journal_jugements.jsonl est append-only et LOCAL (comme photos.db) ; sans
+    copie, un disque mort emporte l'historique des gestes. Copie entière +
+    renommage atomique côté NAS : jamais de fichier à moitié écrit. Le fichier
+    NAS est ensuite copiable hors site avec le reste du volume sauvegardé."""
+    try:
+        if not JUGEMENTS_PATH.exists():
+            return False
+        cible = DB_BACKUP.parent / JUGEMENTS_PATH.name
+        tmp = cible.with_suffix(cible.suffix + '.tmp')
+        cible.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(JUGEMENTS_PATH, tmp)
+        os.replace(tmp, cible)
+        BACKUP_VERIFY_STATE["jugements_exportes"] = time.time()
+        return True
+    except OSError as e:
+        print(f"  ⚠ Export du journal des jugements impossible : {e}")
+        return False
 
 
 # ────────────────────────── Pages HTML ──────────────────────────
@@ -3296,6 +3560,43 @@ APP_NAV_HTML = """<nav class="appnav">
       function(r){ done(); return r; },
       function(e){ done(); throw e; });
   };
+})();</script>"""
+
+
+# Sous-navigation « Sujets » (ROADMAP #2 : guichet unique). UNE source, injectée
+# par _send_html là où le gabarit contient <!--SUJETSNAV--> (/sujets, /people,
+# /pets) : l'annuaire, les vues spécialisées et l'onglet Classification se
+# présentent comme les facettes d'un même guichet. Onglet actif = pastille
+# papier (même convention que l'appnav : « vous êtes ici », jamais un accent).
+SUJETS_NAV_HTML = """<style id="sujetsnav-css">
+.sujnav{display:flex;gap:var(--e-2);align-items:center;flex-wrap:wrap;
+  padding:var(--e-2) var(--e-4);border-bottom:var(--trait);
+  background:var(--salle-2);font-family:var(--f-texte);}
+.sujnav .lbl{color:var(--graphite);font-size:var(--t-xs);
+  text-transform:uppercase;letter-spacing:.06em;margin-right:var(--e-1);}
+.sujnav a{display:inline-flex;align-items:center;gap:6px;min-height:36px;
+  padding:0 var(--e-3);border-radius:var(--r-pill);color:var(--graphite);
+  text-decoration:none;font:500 var(--t-sm)/1 var(--f-texte);white-space:nowrap;}
+.sujnav a:hover{color:var(--texte);background:#ffffff10;}
+.sujnav a.active{color:var(--texte-papier);background:var(--papier);}
+.sujnav a .n{font-family:var(--f-donnees);font-size:var(--t-xs);opacity:.75;}
+</style>
+<nav class="sujnav" aria-label="Sections Sujets">
+  <span class="lbl">Sujets</span>
+  <a data-s="/sujets" href="/sujets">Annuaire</a>
+  <a data-s="/people" href="/people">&#128101; Personnes</a>
+  <a data-s="/pets" href="/pets">&#128062; Animaux</a>
+  <a data-s="classif" href="/sujets?vue=classification">&#128203; Classification</a>
+</nav>
+<script>(function(){
+  var p=location.pathname;
+  var vue=new URLSearchParams(location.search).get('vue');
+  var cur = p.indexOf('/people')===0 ? '/people'
+          : p.indexOf('/pets')===0   ? '/pets'
+          : (vue==='classification'  ? 'classif' : '/sujets');
+  document.querySelectorAll('.sujnav a').forEach(function(a){
+    if(a.getAttribute('data-s')===cur) a.classList.add('active');
+  });
 })();</script>"""
 
 
@@ -4087,6 +4388,16 @@ __FOLDERS__
     renderGrid();
   }
 
+  // ── vignettes serveur (audit O1) ──
+  // La grille chargeait les ORIGINAUX (2-6 Mo/case lus sur le NAS) ; /api/thumb
+  // sert un JPEG 512 px (grille) ou 1600 px (diaporama) avec cache disque, et
+  // REDIRIGE vers l'original quand il ne sait pas (vidéo, format exotique) —
+  // aucun cas particulier ici. La visionneuse (lightbox) garde l'original.
+  function thumbUrl(f, s) {
+    if (!f || !f.key) return f ? f.url : '';
+    return '/api/thumb?key=' + encodeURIComponent(f.key) + '&s=' + (s || 512);
+  }
+
   // ── grid ──
   function renderGrid() {
     var grid = document.getElementById('grid');
@@ -4101,7 +4412,13 @@ __FOLDERS__
             img.src = img.dataset.src;
             img.onload = function() { img.classList.add('loaded'); };
             img.onerror = function() {
-              // vignette illisible : on masque la case
+              // vignette serveur KO (clé qui ne résout pas, cas rares) :
+              // retenter UNE fois avec l'original avant de masquer la case.
+              var fb = img.dataset.fb;
+              if (fb && img.src.indexOf('/api/thumb') >= 0) {
+                img.src = fb;
+                return;
+              }
               var c = img.closest('.cell');
               if (c) c.style.display = 'none';
             };
@@ -4116,8 +4433,8 @@ __FOLDERS__
       var cell = document.createElement('div');
       cell.className = 'cell';
       var cap = f.desc || '';
-      cell.innerHTML = '<div class="ph"><img data-src="' + f.url
-                     + '" alt="" title="' + esc(f.name) + '"></div>'
+      cell.innerHTML = '<div class="ph"><img data-src="' + thumbUrl(f, 512)
+                     + '" data-fb="' + esc(f.url) + '" alt="" title="' + esc(f.name) + '"></div>'
                      + '<div class="caption' + (cap ? '' : ' empty') + '">'
                      + (cap ? esc(cap) : 'pas encore analysée') + '</div>';
       cell.onclick = function() { openLb(i); };
@@ -4313,13 +4630,15 @@ __FOLDERS__
   function rndShow(item) {
     var img = document.getElementById('ss-img');
     img.style.opacity = 0;
-    img.src = item.url;
+    img.src = thumbUrl(item, 1600);
     img.onload = function() {
       rndErr = 0;
       img.style.transition = 'opacity 0.5s';
       img.style.opacity = 1;
     };
     img.onerror = function() {
+      // vignette serveur KO : retenter une fois l'original avant de passer
+      if (item.url && img.src.indexOf('/api/thumb') >= 0) { img.src = item.url; return; }
       // image endommagée : on passe à la suivante sans l'afficher
       rndErr++;
       if (rndErr < 10) setTimeout(rndNext, 400);
@@ -4446,12 +4765,14 @@ __FOLDERS__
     var f = visible[ssOrder[ssIdx]];
     var img = document.getElementById('ss-img');
     img.style.opacity = 0;
-    img.src = f.url;
+    img.src = thumbUrl(f, 1600);
     img.onload = function() {
       img.style.transition = 'opacity 0.5s';
       img.style.opacity = 1;
     };
     img.onerror = function() {
+      // vignette serveur KO : retenter une fois l'original avant de passer
+      if (f.url && img.src.indexOf('/api/thumb') >= 0) { img.src = f.url; return; }
       if (!ssPaused) setTimeout(function() { ssMove(1); }, 300);
     };
     document.getElementById('ss-name').textContent = (ssPaused ? '⏸ ' : '') + f.name;
@@ -5053,6 +5374,28 @@ function load(){
       card('Ecritures noms', q.personnes||0),
       card('Empreintes animaux', s.pets_vec!=null?s.pets_vec:(s.pets_embed!=null?s.pets_embed:'?'))
     ].join('');
+    // Boucle scan/backup (audit O5) : un crash silencieux devient visible ici.
+    var bo=s.boucle||{}, bv=s.backup_verify||{};
+    function heure(t){ if(!t) return 'jamais'; return new Date(t*1000).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}); }
+    var scanTxt=heure(bo.dernier_scan);
+    if(bo.derniere_erreur && (bo.erreur_at||0)>=(bo.dernier_scan||0)) scanTxt='\\u26a0 erreur';
+    var scanTv=bo.derniere_erreur?('Derniere erreur ('+heure(bo.erreur_at)+') : '+bo.derniere_erreur):'Scan + sauvegarde NAS';
+    // Verification de sauvegarde (assurance-vie de la verite terrain, audit A).
+    // ok=true : verifiee saine ; ok=false : integrity_check NON ok (alerte) ;
+    // ok=null : verification impossible (ne PAS incriminer la sauvegarde).
+    var bvTxt = !bv.at ? 'jamais'
+      : bv.ok===true ? 'ok '+heure(bv.at)
+      : bv.ok===false ? '\\u26a0 suspecte'
+      : 'verif. impossible';
+    var bvTv = bv.at
+      ? ('Restauration a blanc : '+(bv.confirmes!=null?bv.confirmes+' confirmes, '+bv.exclusions+' exclusions':'?')
+         +(bv.detail?' \\u00b7 '+bv.detail:'')
+         +(bv.jugements_exportes?' \\u00b7 jugements exportes '+heure(bv.jugements_exportes):''))
+      : 'Apres la 1re sauvegarde horaire';
+    document.getElementById('live').innerHTML+=[
+      '<div class="card"><div class="k">Dernier scan</div><div class="v">'+esc(scanTxt)+'</div><div class="tv">'+esc(scanTv)+'</div></div>',
+      '<div class="card"><div class="k">Sauvegarde verifiee</div><div class="v">'+esc(bvTxt)+'</div><div class="tv">'+esc(bvTv)+'</div></div>'
+    ].join('');
     document.getElementById('lib').innerHTML=[
       card('Entrees', c.entrees||0), card('Taguees', c.tagues||0),
       card('Personnes', c.personnes||0), card('Animaux', c.animaux||0),
@@ -5298,6 +5641,7 @@ def appliquer_renommage(limite=None, dry=True):
         STORE.save()
         for st in (FACE_STORE, PEOPLE_STORE, ANIMAL_STORE, PETS_STORE):
             st.save()
+        gps_places_save()   # 7e magasin (audit I2), differe par save=False
         ts = time.strftime('%Y%m%d_%H%M%S')
         try:
             (SCRIPT_DIR / 'docs' / f'undo_renommage_{ts}.json').write_text(
@@ -5340,6 +5684,7 @@ def annuler_renommage(journal_path=None):
         STORE.save()
         for st in (FACE_STORE, PEOPLE_STORE, ANIMAL_STORE, PETS_STORE):
             st.save()
+        gps_places_save()   # 7e magasin (audit I2), differe par save=False
         try:
             jp.rename(jp.with_name(jp.stem + '.annule.json'))
         except OSError:
@@ -5505,6 +5850,14 @@ setTimeout(function(){ map.invalidateSize(); }, 150);
 window.addEventListener('resize', function(){ map.invalidateSize(); });
 var bounds = null;
 var ALL = [];        // toutes les photos géolocalisées
+
+// Vignettes serveur (audit O1) : les popups et le diaporama de zone chargeaient
+// les ORIGINAUX (2-6 Mo/photo sur le NAS). /api/thumb redirige vers l'original
+// s'il ne sait pas produire la vignette — aucun cas particulier ici.
+function mapThumb(p, s){
+  if (!p || !p.key) return p ? p.url : '';
+  return '/api/thumb?key=' + encodeURIComponent(p.key) + '&s=' + (s || 512);
+}
 var PTS = [];        // sous-ensemble affiché (filtre de recherche appliqué)
 var FILTER_Q = '';   // requête active, '' = pas de filtre
 
@@ -5525,7 +5878,7 @@ function render(pts){
     var m = L.marker([p.lat, p.lon]);
     var html = '<div class="pop">' +
       '<a href="' + esc(p.url) + '" target="_blank" rel="noopener">' +
-      '<img loading="lazy" src="' + esc(p.url) + '"></a>' +
+      '<img loading="lazy" src="' + esc(mapThumb(p, 512)) + '"></a>' +
       '<div class="fn">' + esc(p.name) + '</div>' +
       (p.lieu ? '<div class="fo">📍 ' + esc(p.lieu) + '</div>' : '') +
       '<div class="fo">📁 <a href="' + esc(p.gurl) + '">' + esc(p.folder) + '</a></div>' +
@@ -5714,7 +6067,7 @@ function showStart(list){
 }
 function showRender(){
   var p = SHOW.list[SHOW.i];
-  document.getElementById('show-img').src = p.url;
+  document.getElementById('show-img').src = mapThumb(p, 1600);
   document.getElementById('show-pos').textContent = (SHOW.i+1) + ' / ' + SHOW.list.length;
   document.getElementById('show-name').textContent = p.name;
 }
@@ -6111,7 +6464,16 @@ def face_worker():
             if (not path.exists() or _is_hidden_path(path)
                     or FACE_STORE.has(name)):
                 continue
-            faces = detect_faces(path)
+            # Sous l'ordonnanceur (audit I1) : POIDS_FOND déclare `visages`
+            # mais la boucle consommait sa file sans garde — la promesse
+            # « un seul travail lourd à la fois » ne couvrait pas la boucle
+            # la plus lourde, et ORDO.etat() affichait `visages: 0` à jamais.
+            # Pas de tour disponible → la photo repart en file (finally).
+            with creneau('visages', timeout=180) as ok:
+                if not ok:
+                    requeue = True
+                    continue
+                faces = detect_faces(path)
             FACE_STORE.set(name, {"faces": faces, "n": len(faces),
                                   "at": time.time()})
             io_retries.pop(name, None)
@@ -6327,7 +6689,12 @@ def animal_worker():
             if (not path.exists() or _is_hidden_path(path)
                     or ANIMAL_STORE.has(name)):
                 continue
-            animals = detect_animals(path)
+            # Sous l'ordonnanceur (audit I1) — même raison que face_worker.
+            with creneau('animaux', timeout=180) as ok:
+                if not ok:
+                    requeue = True
+                    continue
+                animals = detect_animals(path)
             ANIMAL_STORE.set(name, {"animals": animals, "n": len(animals),
                                     "at": time.time()})
             io_retries.pop(name, None)
@@ -8501,6 +8868,8 @@ PETS_PAGE = """<!DOCTYPE html>
   h2{font-size:var(--t-sm);text-transform:uppercase;letter-spacing:.6px;color:var(--graphite);
     margin:var(--e-6) 0 var(--e-4);font-weight:600;}
   .row{display:flex;align-items:center;gap:var(--e-3);}
+  /* ancre du lien profond /pets#groupes (onglet Classification de /sujets) */
+  #groupes{scroll-margin-top:118px;}
   .sp{flex:1;}
   .btn{padding:var(--e-2) var(--e-4);border-radius:var(--r-md);border:var(--trait);
     background:#ffffff0d;color:var(--texte);cursor:pointer;font-size:var(--t-sm);font-weight:500;
@@ -8586,6 +8955,7 @@ PETS_PAGE = """<!DOCTYPE html>
 </head>
 <body>
 <!--APPNAV-->
+<!--SUJETSNAV-->
 <main>
   <!-- VUE D'ENSEMBLE -->
   <section id="overview">
@@ -8594,7 +8964,7 @@ PETS_PAGE = """<!DOCTYPE html>
     <div class="row"><h2 style="margin:0">Animaux</h2><span class="sp"></span></div>
     <div class="cats" id="named"><span class="muted">Aucun chat nomm&eacute; pour le moment.</span></div>
 
-    <div class="row" style="margin-top:8px"><h2 style="margin:0">Groupes &agrave; identifier</h2>
+    <div class="row" style="margin-top:8px"><h2 id="groupes" style="margin:0">Groupes &agrave; identifier</h2>
       <span class="sp"></span>
       <button class="btn" id="recalc">&#8635; Recalculer</button></div>
     <div class="groups" id="clusters"><span class="muted">Chargement des groupes&hellip;</span></div>
@@ -8891,7 +9261,9 @@ document.getElementById('d-play').onclick=function(){
 var PSHOW={list:[],i:0,timer:null,playing:false};
 function pshowStart(list){ if(!list.length) return; PSHOW.list=list; PSHOW.i=0; PSHOW.playing=true;
   document.getElementById('pshow').classList.add('on'); document.getElementById('pshow-pp').innerHTML='&#9208;'; pshowRender(); pshowTick(); }
-function pshowRender(){ var p=PSHOW.list[PSHOW.i]; document.getElementById('pshow-img').src=p.url;
+function pshowRender(){ var p=PSHOW.list[PSHOW.i];
+  // Vignettes serveur (audit O1) : 1600 px au lieu de l'original NAS.
+  document.getElementById('pshow-img').src=p.key?'/api/thumb?key='+encodeURIComponent(p.key)+'&s=1600':p.url;
   document.getElementById('pshow-pos').textContent=(PSHOW.i+1)+' / '+PSHOW.list.length;
   document.getElementById('pshow-name').textContent=p.name||'';
   var pf=document.getElementById('pshow-folder');
@@ -8951,6 +9323,22 @@ document.getElementById('recalc').onclick=function(){ post('/api/pets/recluster'
 
 loadStatus(); loadNamed(); loadClusters(false);
 setInterval(function(){ if(!CUR) loadStatus(); },15000);
+// Lien profond /pets#groupes (onglet Classification) : la grille des chats
+// nommés au-dessus se peint en async — cible mouvante. Re-viser 2,5 s,
+// stop à la première interaction (même remède que /people).
+(function(){
+  if((location.hash||'')!=='#groupes') return;
+  var stop=false, t0=Date.now();
+  ['wheel','touchstart','keydown','mousedown'].forEach(function(ev){
+    window.addEventListener(ev, function(){ stop=true; }, {passive:true, once:true});
+  });
+  (function vise(){
+    if(stop) return;
+    var el=document.getElementById('groupes');
+    if(el) el.scrollIntoView({block:'start'});
+    if(Date.now()-t0<2500) setTimeout(vise, 400);
+  })();
+})();
 </script>
 </body>
 </html>"""
@@ -9122,25 +9510,35 @@ SUBJECTS_PAGE = """<!DOCTYPE html>
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .sc .ct{font-family:var(--f-donnees);font-size:var(--t-xs);color:var(--graphite);margin-top:2px;}
   .msg{color:var(--graphite);padding:var(--e-8) 0;text-align:center;}
-  /* Files de travail : liens de navigation (pas des chips-bascules) vers les
-     vues specialisees /people et /pets, seules entrees restantes depuis la nav. */
-  .travail{display:flex;gap:var(--e-2);align-items:center;flex-wrap:wrap;
-    margin:calc(-1 * var(--e-3)) 0 var(--e-6);color:var(--graphite);font-size:var(--t-sm);}
-  .travail a{display:inline-flex;align-items:center;gap:var(--e-2);min-height:var(--touch);
-    padding:0 var(--e-4);border:var(--trait);border-radius:var(--r-md);
-    background:var(--salle-3);color:var(--texte);text-decoration:none;
-    font:500 var(--t-sm)/1 var(--f-texte);}
-  @media(hover:hover){.sc:hover,.travail a:hover{border-color:var(--papier-2);}}
+  /* Onglet Classification : cartes de files de travail. Compteur en monospace
+     (--f-donnees, plancher photo-ui : une mesure se compare) ; > 0 = veilleuse
+     (travail en attente), 0 = graphite. Toute la carte est cliquable (cible
+     >= 44 px), c'est un lien de navigation (<a>), pas un bouton. */
+  .ctype h2{font:600 var(--t-lg)/1.2 var(--f-affichage);letter-spacing:-.01em;
+    margin:var(--e-6) 0 var(--e-3);}
+  .cgrid{display:grid;gap:var(--e-3);
+    grid-template-columns:repeat(auto-fill,minmax(240px,1fr));}
+  .qc{display:flex;flex-direction:column;gap:var(--e-1);min-height:var(--touch);
+    padding:var(--e-4);background:var(--salle-3);border:var(--trait);
+    border-radius:var(--r-md);color:var(--texte);text-decoration:none;}
+  .qc .k{font:500 var(--t-md)/1.2 var(--f-texte);}
+  .qc .n{font:600 var(--t-xl)/1.1 var(--f-donnees);color:var(--graphite);}
+  .qc.attente .n{color:var(--veilleuse);}
+  .qc .tv{color:var(--graphite);font-size:var(--t-sm);line-height:1.4;}
+  @media(hover:hover){.sc:hover,.qc:hover{border-color:var(--papier-2);}}
 </style>
 </head>
 <body>
 <!--APPNAV-->
+<!--SUJETSNAV-->
 <main>
   <h1>Sujets</h1>
+  <div id="vue-annuaire">
   <p class="intro">Toutes les personnes, les animaux et les lieux, au m&ecirc;me endroit.
     Ouvre une personne ou un animal pour sa fiche compl&egrave;te (photos, correction,
-    renommage) ; un lieu ouvre la galerie filtr&eacute;e sur ce lieu. Les files de
-    travail (&agrave; v&eacute;rifier, groupes &agrave; nommer) vivent dans Personnes et Animaux.</p>
+    renommage) ; un lieu ouvre la galerie filtr&eacute;e sur ce lieu. Le travail en
+    attente (&agrave; v&eacute;rifier, groupes &agrave; nommer) vit dans l&rsquo;onglet
+    <a href="/sujets?vue=classification" style="color:var(--texte)">Classification</a>.</p>
   <div class="barre">
     <input id="q" type="search" placeholder="Filtrer par nom&hellip;" autocomplete="off"
       aria-label="Filtrer les sujets par nom">
@@ -9151,13 +9549,30 @@ SUBJECTS_PAGE = """<!DOCTYPE html>
       <button class="chip" data-f="lieu" aria-pressed="false">Lieux<span class="n" id="n-lieu"></span></button>
     </div>
   </div>
-  <div class="travail">
-    <span>Files de travail&nbsp;:</span>
-    <a href="/people">&#128101; Personnes</a>
-    <a href="/pets">&#128062; Animaux</a>
-  </div>
   <div class="grille" id="grille"></div>
   <div class="msg" id="msg">Chargement&hellip;</div>
+  </div>
+
+  <!-- Onglet Classification (ROADMAP #2) : le travail en attente, trie par
+       type. Compteurs vivants sur les APIs existantes ; chaque carte ouvre la
+       section correspondante de la vue specialisee (lien profond ancre). -->
+  <div id="vue-classif" hidden>
+  <p class="intro">Le travail de classification en attente, s&eacute;par&eacute; par type.
+    Les compteurs se mettent &agrave; jour &agrave; l&rsquo;ouverture ; une carte ouvre
+    directement la bonne section.</p>
+  <section class="ctype" aria-labelledby="ct-p">
+    <h2 id="ct-p">&#128100; Personnes</h2>
+    <div class="cgrid" id="c-personnes"></div>
+  </section>
+  <section class="ctype" aria-labelledby="ct-a">
+    <h2 id="ct-a">&#128062; Animaux</h2>
+    <div class="cgrid" id="c-animaux"></div>
+  </section>
+  <section class="ctype" aria-labelledby="ct-l">
+    <h2 id="ct-l">&#128205; Lieux</h2>
+    <div class="cgrid" id="c-lieux"></div>
+  </section>
+  </div>
 </main>
 <script>
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){
@@ -9209,6 +9624,66 @@ document.querySelectorAll('.chip').forEach(function(c){
   };
 });
 document.getElementById('q').addEventListener('input', rendre);
+
+// ── Bascule Annuaire / Classification (?vue=classification) ──
+var VUE=(new URLSearchParams(location.search).get('vue')==='classification')?'classif':'annuaire';
+if(VUE==='classif'){
+  document.getElementById('vue-annuaire').hidden=true;
+  document.getElementById('vue-classif').hidden=false;
+  chargerClassif();
+}
+// Pré-sélection d'un type dans l'annuaire (?type=lieu depuis Classification).
+var TYPEQ=new URLSearchParams(location.search).get('type');
+if(VUE==='annuaire' && ['personne','animal','lieu'].indexOf(TYPEQ)>=0){
+  FILT=TYPEQ;
+  document.querySelectorAll('.chip').forEach(function(x){
+    x.setAttribute('aria-pressed', x.getAttribute('data-f')===TYPEQ?'true':'false'); });
+}
+
+function qcarte(cible, opts){
+  // Carte de file de travail : lien vers la section de la vue specialisee.
+  var a=document.createElement('a');
+  a.className='qc'; a.href=opts.href;
+  a.innerHTML='<span class="k">'+esc(opts.titre)+'</span>'+
+    '<span class="n">&hellip;</span>'+
+    '<span class="tv">'+esc(opts.desc)+'</span>';
+  document.getElementById(cible).appendChild(a);
+  return a;
+}
+function qmaj(a, n, building, extra, neutre){
+  var el=a.querySelector('.n');
+  el.textContent = building ? 'calcul\\u2026' : String(n);
+  // veilleuse = « travail en attente » ; un simple compte (lieux) reste neutre
+  a.classList.toggle('attente', !neutre && !building && n>0);
+  if(extra){ var tv=a.querySelector('.tv'); tv.textContent=tv.textContent+' \\u00b7 '+extra; }
+}
+function chargerClassif(){
+  var cVerif=qcarte('c-personnes',{titre:'\\u00c0 v\\u00e9rifier', href:'/people#verifier',
+    desc:'Propositions tri\\u00e9es par incertitude (marge). Espace = oui, X = non, Z = annuler.'});
+  var cGrp=qcarte('c-personnes',{titre:'Groupes \\u00e0 nommer', href:'/people#groupes',
+    desc:'Visages regroup\\u00e9s automatiquement, en attente d\\u2019un nom.'});
+  var cInc=qcarte('c-personnes',{titre:'Inconnus (archiv\\u00e9s)', href:'/people#inconnus',
+    desc:'Visages mis de c\\u00f4t\\u00e9 \\u2014 r\\u00e9activables pour un re-tri.'});
+  var cPets=qcarte('c-animaux',{titre:'Groupes \\u00e0 identifier', href:'/pets#groupes',
+    desc:'Chats d\\u00e9tect\\u00e9s regroup\\u00e9s par ressemblance, \\u00e0 nommer.'});
+  var cLieux=qcarte('c-lieux',{titre:'Lieux nomm\\u00e9s', href:'/sujets?type=lieu',
+    desc:'Lieux reconnus (lieux.txt + dossiers). Le g\\u00e9ocodage GPS (gps_place) s\\u2019active depuis R\\u00e9glages.'});
+  function j(u){ return fetch(u).then(function(r){ return r.json(); }); }
+  j('/api/curator/list').then(function(d){
+    var st=d.stats||{};
+    qmaj(cVerif, d.count||0, d.building,
+         st.n?('s\\u00e9ance : '+st.n+' jugement(s)'+(st.par_minute?', '+st.par_minute+'/min':'')):null);
+  }).catch(function(){ qmaj(cVerif,'?',false); });
+  j('/api/people/clusters').then(function(d){ qmaj(cGrp, d.count||0, d.building); })
+    .catch(function(){ qmaj(cGrp,'?',false); });
+  j('/api/people/inconnus').then(function(d){ qmaj(cInc, d.count||0, d.building); })
+    .catch(function(){ qmaj(cInc,'?',false); });
+  j('/api/pets/clusters').then(function(d){ qmaj(cPets, (d.clusters||[]).length||d.count||0, d.building); })
+    .catch(function(){ qmaj(cPets,'?',false); });
+  j('/api/sujets/list').then(function(d){ qmaj(cLieux, (d.lieux||[]).length, false, null, true); })
+    .catch(function(){ qmaj(cLieux,'?',false, null, true); });
+}
+
 fetch('/api/sujets/list').then(function(r){return r.json();}).then(function(d){
   var P=(d.personnes||[]).map(function(x){x.type='personne';return x;});
   var A=(d.animaux||[]).map(function(x){x.type='animal';return x;});
@@ -9306,6 +9781,9 @@ input[type=text]:focus, input.qui:focus { border-color: var(--veilleuse); }
 /* scroll-margin : la nav sticky (z50) ne doit pas recouvrir le haut du panneau
    quand scrollIntoView l'amene en haut de l'ecran. */
 #panel { margin: 0 var(--e-4) var(--e-3); scroll-margin-top: 72px; }
+/* ancres des files de travail (liens profonds depuis /sujets Classification) :
+   meme protection contre la nav sticky (+ sous-nav Sujets). */
+#verifier, #groupes, #inconnus { scroll-margin-top: 118px; }
 #panel .box { background: var(--salle-3); border: var(--trait); border-radius: var(--r-md);
               padding: var(--e-3); }
 #panel h3 { font-size: var(--t-md); margin-bottom: var(--e-1); }
@@ -9361,6 +9839,7 @@ input[type=text]:focus, input.qui:focus { border-color: var(--veilleuse); }
 </head>
 <body>
 <!--APPNAV-->
+<!--SUJETSNAV-->
 <div class="bar">
   <span class="sp"></span>
   <button class="btn" id="recluster">&#128260; Regrouper</button>
@@ -9390,7 +9869,7 @@ input[type=text]:focus, input.qui:focus { border-color: var(--veilleuse); }
   partir de 3 &agrave; 6 photos nettes, puis retire d'un coup les photos sous le seuil
   de ressemblance.</div>
 
-<h2>À vérifier <span class="c" id="curc"></span>
+<h2 id="verifier">À vérifier <span class="c" id="curc"></span>
   <button class="btn" id="curref" style="font-size:var(--t-xs);padding:var(--e-1) var(--e-2);margin-left:var(--e-2)">&#8635; Rafraîchir</button></h2>
 <div class="msg"><span class="kbd-hint">Raccourcis : <b>Espace</b>/<b>Entr&eacute;e</b> = oui &middot; <b>X</b> = non &middot; <b>Z</b> = annuler &middot; une lettre = corriger le nom</span></div>
 <div class="msg" id="curstats" hidden><span class="kbd-hint" id="curstats-txt"></span></div>
@@ -9403,7 +9882,7 @@ input[type=text]:focus, input.qui:focus { border-color: var(--veilleuse); }
 <div class="msg" id="clmsg">Chargement&hellip;</div>
 <div class="clus" id="clusters"></div>
 
-<h2>Inconnus (archiv&eacute;s) <span class="c" id="inc"></span>
+<h2 id="inconnus">Inconnus (archiv&eacute;s) <span class="c" id="inc"></span>
   <button class="btn" id="inbtn" style="font-size:var(--t-xs);padding:var(--e-1) var(--e-2);margin-left:var(--e-2)">Afficher</button></h2>
 <div class="msg" id="inmsg">Visages mis de c&ocirc;t&eacute; pour un re-tag ult&eacute;rieur. Nommer un groupe le sort des inconnus ; &laquo;&nbsp;R&eacute;activer&nbsp;&raquo; le renvoie dans &laquo;&nbsp;Groupes &agrave; nommer&nbsp;&raquo;.</div>
 <div class="clus" id="inconnus"></div>
@@ -10164,9 +10643,11 @@ function psShow(){
   if(psSeekTimer){ clearTimeout(psSeekTimer); psSeekTimer=null; }
   if(!psPhotos.length) return;
   var f=psPhotos[psOrder[psIdx]];
-  document.getElementById('ps-img').src=f.url;
+  // Vignettes serveur (audit O1) : 1600 px suffit au plein écran, l'original
+  // (2-6 Mo NAS) n'est plus lu ; /api/thumb redirige s'il ne sait pas.
+  document.getElementById('ps-img').src=f.key?'/api/thumb?key='+encodeURIComponent(f.key)+'&s=1600':f.url;
   psRenderMeta();
-  var nx=psPhotos[psOrder[(psIdx+1)%psOrder.length]]; if(nx){ var pr=new Image(); pr.src=nx.url; }
+  var nx=psPhotos[psOrder[(psIdx+1)%psOrder.length]]; if(nx){ var pr=new Image(); pr.src=nx.key?'/api/thumb?key='+encodeURIComponent(nx.key)+'&s=1600':nx.url; }
   if(!psPaused) psTimer=setTimeout(function(){ psNext(1); }, psDur);
 }
 function psNext(d){ if(!psOrder.length) return; psIdx=(psIdx+d+psOrder.length)%psOrder.length; psShow(); }
@@ -10267,6 +10748,25 @@ function bgLoad(){
 }
 setInterval(bgLoad, 1000);
 bgLoad();
+// Liens profonds des sections de travail (onglet Classification de /sujets) :
+// la grille des personnes se peint PAR LOTS au-dessus de ces ancres — cible de
+// scroll mouvante (même mode de panne que la régression « Gérer » du 12/08).
+// Remède : re-viser l'ancre pendant 2,5 s, en s'arrêtant dès que l'utilisateur
+// interagit (molette, toucher, clavier).
+(function(){
+  var h=(location.hash||'').replace('#','');
+  if(['verifier','groupes','inconnus'].indexOf(h)<0) return;
+  var stop=false, t0=Date.now();
+  ['wheel','touchstart','keydown','mousedown'].forEach(function(ev){
+    window.addEventListener(ev, function(){ stop=true; }, {passive:true, once:true});
+  });
+  (function vise(){
+    if(stop) return;
+    var el=document.getElementById(h);
+    if(el) el.scrollIntoView({block:'start'});
+    if(Date.now()-t0<2500) setTimeout(vise, 400);
+  })();
+})();
 </script>
 </body>
 </html>"""
@@ -10342,6 +10842,9 @@ class Handler(BaseHTTPRequestHandler):
 
         elif path == '/api/facecrop':
             self._serve_facecrop()
+
+        elif path == '/api/thumb':
+            self._serve_thumb()
 
         elif path == '/people':
             self._serve_people()
@@ -10885,7 +11388,7 @@ class Handler(BaseHTTPRequestHandler):
             kw = list(dict.fromkeys(
                 (e.get('kw_fr') or []) + (e.get('kw_en') or [])))
             pts.append({
-                'url': url, 'lat': lat, 'lon': lon,
+                'url': url, 'key': k, 'lat': lat, 'lon': lon,
                 'name': Path(k).name, 'folder': folder, 'gurl': gurl,
                 'desc': e.get('desc', ''), 'kw': kw[:8],
                 'taken': _best_time(k, e),
@@ -11334,6 +11837,90 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(data)
 
+    def _serve_thumb(self):
+        """Vignette JPEG d'une photo (audit O1), avec CACHE DISQUE local.
+
+        Les grilles (galerie, carte, diaporamas) chargeaient les ORIGINAUX
+        pleine résolution : 2–6 Mo lus sur le NAS par case affichée. Ici :
+        JPEG 512 px (grille) ou 1600 px (diaporama/plein écran), généré une
+        seule fois — ≈ −98 % d'octets NAS en navigation. Même motif que
+        `_serve_facecrop`. Si la vignette est impossible (vidéo, HEIC non
+        décodé, PIL absent), REDIRIGE vers l'original : le client ne gère
+        aucun cas particulier."""
+        note_heavy_activity()
+        q = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
+        key = (q.get('key') or [''])[0]
+        s = (q.get('s') or ['512'])[0]
+        s = 1600 if s == '1600' else 512      # deux tailles, pas d'arbitraire
+        if not key:
+            self._send(404, b'Not found', 'text/plain')
+            return
+        # CONFINEMENT — même exigence que /media et /uploads : la clé doit
+        # résoudre sous une racine servable (_url_for_key → None sinon).
+        # Sans ce garde, une clé absolue arbitraire ferait vignetter
+        # n'importe quelle image du disque via _resolve_key.
+        url = _url_for_key(key)
+        if url is None:
+            self._send(404, b'Not found', 'text/plain')
+            return
+
+        def _fallback():
+            self.send_response(302)
+            self.send_header('Location', url)
+            self.end_headers()
+
+        if not PIL_OK:
+            _fallback()
+            return
+        path = _resolve_key(key)
+        if path.suffix.lower() not in IMAGE_EXT:
+            _fallback()
+            return
+        import hashlib
+        # mtime (de l'index, en mémoire — pas de stat NAS) dans la clé de
+        # cache : un fichier modifié ou une clé recyclée ne sert jamais une
+        # vignette périmée. Les anciennes vignettes orphelines restent sur
+        # disque (purge maintenance : à traiter avec O15).
+        e = STORE.get(key)
+        mt = e.get('mtime') if isinstance(e, dict) else None
+        ck = hashlib.md5(f"{key}|{s}|{mt}".encode('utf-8', 'replace')).hexdigest()
+        cache_file = PHOTO_THUMB_DIR / (ck + ".jpg")
+        data = None
+        try:
+            if cache_file.is_file():
+                data = cache_file.read_bytes()
+        except OSError:
+            data = None
+        if data is None:
+            try:
+                if not path.is_file():
+                    # clé qui ne résout pas en fichier (ex. nom nu d'un
+                    # sous-dossier Uploads) : laisser l'URL servable trancher.
+                    _fallback()
+                    return
+                with Image.open(path) as im:
+                    im = ImageOps.exif_transpose(im).convert("RGB")
+                    im.thumbnail((s, s))
+                    buf = io.BytesIO()
+                    im.save(buf, "JPEG", quality=82)
+                    data = buf.getvalue()
+                try:
+                    PHOTO_THUMB_DIR.mkdir(parents=True, exist_ok=True)
+                    cache_file.write_bytes(data)
+                except OSError:
+                    pass
+            except Exception:
+                # original illisible par PIL (format exotique) : l'original
+                # lui-même reste peut-être affichable par le navigateur.
+                _fallback()
+                return
+        self.send_response(200)
+        self.send_header('Content-Type', 'image/jpeg')
+        self.send_header('Content-Length', str(len(data)))
+        self.send_header('Cache-Control', 'max-age=86400')
+        self.end_headers()
+        self.wfile.write(data)
+
     def _serve_people(self):
         self._send_html(PEOPLE_PAGE)
 
@@ -11595,6 +12182,10 @@ class Handler(BaseHTTPRequestHandler):
             'pets_vec': pets_vec,
             'pets_embed': PET_EMBED_STATE.get('done', 0),
             'dino_loaded': DINO_MODEL_OBJ is not None,
+            # Boucle scan/backup (audit O5) + vérification de sauvegarde et
+            # export des jugements (audit A) : rendus visibles dans /reglages.
+            'boucle': dict(MAINT_LOOP_STATE),
+            'backup_verify': dict(BACKUP_VERIFY_STATE),
             'maint': {'auto': MAINTENANCE_AUTO, 'paused': MAINT_PAUSED,
                       'every_s': MAINTENANCE_EVERY, 'autonomy': _m.AUTONOMY,
                       'intervals': _m.INTERVALS, 'state': load('maintenance_state.json') or {},
@@ -12007,6 +12598,12 @@ class Handler(BaseHTTPRequestHandler):
         self._send_file(filepath)
 
     def _send_file(self, filepath):
+        """Streaming par blocs + Range (audit O2). Avant : read_bytes() —
+        un .mp4 de 500 Mo = 500 Mo de RAM PAR REQUÊTE, et sans Accept-Ranges
+        le téléphone ne pouvait pas chercher dans une vidéo (le navigateur
+        exige des réponses 206 pour le seek). Range géré : « bytes=a-b »,
+        « bytes=a- » et « bytes=-n » ; malformé → 200 complet (toléré par la
+        norme), hors bornes → 416."""
         ext = filepath.suffix.lower()
         mime_map = {
             '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png',
@@ -12014,13 +12611,44 @@ class Handler(BaseHTTPRequestHandler):
             '.mp4': 'video/mp4', '.mov': 'video/quicktime', '.avi': 'video/x-msvideo',
         }
         mime = mime_map.get(ext, 'application/octet-stream')
-        data = filepath.read_bytes()
-        self.send_response(200)
+        try:
+            size = filepath.stat().st_size
+        except OSError:
+            self._send(404, b'Not found', 'text/plain')
+            return
+        start, end, partial = 0, size - 1, False
+        rng = self.headers.get('Range', '')
+        m = re.match(r'bytes=(\d*)-(\d*)$', rng.strip()) if rng else None
+        if m and (m.group(1) or m.group(2)):
+            if m.group(1):
+                start = int(m.group(1))
+                if m.group(2):
+                    end = min(int(m.group(2)), size - 1)
+            else:                       # « bytes=-n » : les n derniers octets
+                start = max(0, size - int(m.group(2)))
+            if start >= size or start > end:
+                self.send_response(416)
+                self.send_header('Content-Range', f'bytes */{size}')
+                self.end_headers()
+                return
+            partial = True
+        self.send_response(206 if partial else 200)
         self.send_header('Content-Type', mime)
-        self.send_header('Content-Length', str(len(data)))
+        self.send_header('Accept-Ranges', 'bytes')
+        self.send_header('Content-Length', str(end - start + 1))
+        if partial:
+            self.send_header('Content-Range', f'bytes {start}-{end}/{size}')
         self.send_header('Content-Disposition', f'inline; filename="{filepath.name}"')
         self.end_headers()
-        self.wfile.write(data)
+        with open(filepath, 'rb') as f:
+            f.seek(start)
+            reste = end - start + 1
+            while reste > 0:
+                bloc = f.read(min(1024 * 1024, reste))
+                if not bloc:
+                    break
+                self.wfile.write(bloc)
+                reste -= len(bloc)
 
     def _send_html(self, html_str):
         # Barre de navigation + thème partagés : injectés là où le gabarit
@@ -12036,6 +12664,9 @@ class Handler(BaseHTTPRequestHandler):
                 html_str = html_str.replace('</head>', shared + '</head>', 1)
         if '<!--APPNAV-->' in html_str:
             html_str = html_str.replace('<!--APPNAV-->', APP_NAV_HTML)
+        # Sous-navigation Sujets (guichet unique) : /sujets, /people, /pets.
+        if '<!--SUJETSNAV-->' in html_str:
+            html_str = html_str.replace('<!--SUJETSNAV-->', SUJETS_NAV_HTML)
         data = html_str.encode('utf-8')
         self.send_response(200)
         self.send_header('Content-Type', 'text/html; charset=utf-8')
