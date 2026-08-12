@@ -11177,6 +11177,13 @@ class Handler(BaseHTTPRequestHandler):
                                    "verdict": verdict, "person": d.get('propose'),
                                    "cible": cible, "key": d.get('cle'),
                                    "sim": d.get('sim'), "margin": d.get('marge')})
+                # Une carte jugée sort de la file TOUT DE SUITE (comme le chemin
+                # resolve). Sans ça, seule la reconstruction suivante la purgeait
+                # et elle réapparaissait au rechargement de la page — le mode de
+                # panne « je corrige et ça revient ». Observé en réel le 12/08.
+                _suggest_remove(lambda s: s.get('key') == d.get('cle')
+                                and s.get('person') == d.get('propose')
+                                and s.get('type') in ('add', 'remove'))
                 res["stats"] = _stats_seance()
         except Exception:                                     # noqa: BLE001
             pass

@@ -9,13 +9,14 @@ optimisations O1–O15, angles morts A–F), `docs/RANGEMENT_2026.md`,
 
 ## État actuel (12 août 2026)
 
-**Session 12/08 — file « À vérifier » par MARGE + journal des jugements : LIVRÉ,
-reste à VÉRIFIER EN RÉEL (redémarrage requis) puis COMMITER.** Tri : faux positifs
-flagrants d'abord, puis ajouts par marge croissante avec la 2e personne (jamais le
-score absolu). Chaque geste de la file (resolve + /api/assign unitaire) → une ligne
-append-only `journal_jugements.jsonl` (local, gitignoré) avec verdict confirmation/
-erreur_decouverte ; compteur de séance dans /people (n · /min · erreurs, pause 5 min).
-Tests isolés OK. À vérifier en réel : ordre de la file, ligne « Séance », JSONL.
+**Session 12/08 — instrumentation vérité terrain : COMMITÉE (`a9a7d8b`), VÉRIFIÉE EN
+RÉEL.** File triée : faux positifs flagrants d'abord, puis ajouts par marge croissante
+avec la 2e personne (jamais le score absolu). Chaque geste (resolve + `/api/assign`
+unitaire) → ligne append-only `journal_jugements.jsonl` (local, gitignoré), verdict
+confirmation/erreur_decouverte ; compteur de séance dans /people (n · /min · erreurs).
+Vérifié : tri ✓, « Séance » ✓, JSONL ✓. La vérif a débusqué+corrigé : carte jugée via
+`/api/assign` non purgée du cache (réapparaissait au rechargement) → purge immédiate.
+**Fix à commiter (`SESSION_COMMIT.txt` prêt, bat 27) + redémarrer avant la passe.**
 
 **Session 11/08 (nuit) — GpuArbiter : COMMITÉ (`72d1946`), vérifié en réel.** Les 5
 politiques GPU sous baux/priorités/éviction, tests 27/27 (`test_ordonnanceur.py`) ;
