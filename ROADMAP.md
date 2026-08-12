@@ -9,8 +9,31 @@ optimisations O1–O15, angles morts A–F), `docs/RANGEMENT_2026.md`,
 
 ## État actuel (12 août 2026)
 
+**Session 12/08 (4) — files « À vérifier » sous Classification + file ANIMAUX
+créée : LIVRÉE, À COMMITER (bat 27) + redémarrer + VÉRIFIER EN RÉEL.**
+La file de vérification quitte `/people` : elle se juge maintenant **dans
+`/sujets?vue=classification`**, à côté d'une **file animaux créée en miroir**
+(`build_cat_suggestions()`, `GET /api/pets/curator/list`, journal
+`CAT_AUTO_LOG` des rattachements auto annulables, jugements animaux
+instrumentés dans `_do_assign` — même journal, même compteur de séance).
+Tri clavier **unifié** (personnes d'abord, puis animaux : Espace/X/Z/lettre).
+`/people` et `/pets` gardent fiches, correction, groupes, inconnus, et pointent
+vers Classification. **3 correctifs issus de la relecture adversariale** :
+(a) `par_humain` posé par un nommage d'animal est désormais **annulable**
+(sinon accepter-puis-annuler faisait disparaître la proposition pour toujours —
+`par_humain` n'était lu par personne avant cette file) ; (b) garde
+**anti-course** `_note_juge`/`_juges_depuis` sur les DEUX files : une
+reconstruction démarrée avant un jugement ne réinjecte plus la carte jugée
+(reste du mode de panne « je corrige et ça revient ») ; (c) garde **clés
+fantômes** côté animaux (plus de carte sans vignette). Plus : verrou
+« une carte ne se juge qu'une fois » (deux Espace rapides = un seul jugement).
+Vérifs : `python`+`node --check` sur les 10 pages, `verifier_ui_tokens.py`
+(0 interdit dur), parcours clavier complet simulé (jsdom) sur les deux files.
+
 **Session 12/08 (3) — correctifs d'audit + assurance-vie + Sujets guichet unique :
-LIVRÉE, À COMMITER (bat 27) + redémarrer + VÉRIFIER EN RÉEL.** Trois volets :
+COMMITÉE (`e17ac2d`, branche `feat/audit-assurance-sujets`), VÉRIF EN RÉEL PARTIELLE**
+(`/sujets?vue=classification`, sous-nav, cartes /reglages : présentes ; `/api/thumb`,
+seek vidéo et « Sauvegarde vérifiée : ok » restent à observer). Trois volets :
 (a) **Correctifs d'audit** : I1 (workers visages/animaux sous `creneau()`), I2
 (gps_places.json suit rekey/forget, copy-on-write + flush atomique), O1 (`/api/thumb`
 512/1600 px, cache disque + mtime, confiné, fallback 302 → original ; clients
@@ -57,15 +80,22 @@ Refonte `/people` + outillage **faux positifs** ; tokenisation value-preserving 
 jugées par un humain (⚠ geste Mike : re-rejeter le groupe Caline une fois) ; Lieux = 3ᵉ type
 d'entité.
 
-- **Git** : commité jusqu'à `d9eda80` (branche `feat/verite-terrain-marge`) ;
-  **reste à commiter la session (3)** — `27 - Commit de session.bat` ;
+- **Git** : commité jusqu'à `e17ac2d` (branche `feat/audit-assurance-sujets`) ;
+  **reste à commiter la session (4)** — `27 - Commit de session.bat` ;
   **`git push` / merge dans `main` = gestes de Mike**.
 - **Ouvert (gestes Mike)** :
+  - **Redémarrer, puis vérifier en réel la session (4)** : `/sujets?vue=classification`
+    → les deux files « À vérifier » (personnes ET animaux) s'affichent et se
+    jugent au clavier ; la file animaux propose bien quelque chose (sinon
+    `↻ Rafraîchir` : la 1re construction est asynchrone) ; annuler (Z) une
+    acceptation d'animal doit **faire revenir la carte** après rafraîchissement
+    (c'est le correctif (a)) ; `/people` et `/pets` n'ont plus de file mais un
+    lien vers Classification.
   - **Vérifier en réel la session (3)** après redémarrage : grille galerie rapide
     (onglet Réseau : `/api/thumb` 200, plus d'originaux) ; seek vidéo mobile ;
-    `/sujets?vue=classification` (compteurs + liens profonds) ; après le prochain
-    backup horaire, carte « Sauvegarde vérifiée » = ok dans /reglages (⚠ jamais
-    observée sur Windows : l'URI UNC doit être vue passer UNE fois — réflexe n°2).
+    après le prochain backup horaire, carte « Sauvegarde vérifiée » = ok dans
+    /reglages (⚠ jamais observée sur Windows : l'URI UNC doit être vue passer
+    UNE fois — réflexe n°2).
   - **Nettoyer Flo** : ouvrir Flo → « Corriger » (seuil ~0.2) ou « Nettoyer
     (référence) ». Retrait **sûr** (cf. Acquis « exclude »).
   - Toujours en attente : lots de renommage (après éval V2) + activer `gps_place`
@@ -90,18 +120,21 @@ d'entité.
 | Perf serveur | **(12/08)** `/api/thumb` (vignettes 512/1600, −98 % octets NAS), `_send_file` Range+streaming, cache `media_roots`, index `ix_vectors_k`, écritures vecteurs sous lock, workers sous ordonnanceur |
 | Robustesse | **(12/08)** `backup_verify` (restauration à blanc + comptage jugements) + export `journal_jugements.jsonl` → NAS ; boucle maintenance blindée ; gps_places suit rekey/forget |
 | Sujets | **(12/08)** Sous-nav partagée (Annuaire · Personnes · Animaux · Classification) + onglet **Classification** (compteurs vivants, liens profonds ancrés vers /people et /pets) |
+| Vérification | **(12/08, session 4)** Les files « À vérifier » vivent DANS Classification, personnes **et animaux** (miroir : mêmes cartes, même clavier, même journal/compteur de séance). Curateur animaux = `build_cat_suggestions()` (zone d'incertitude entre `PET_MATCH_SIM` et `CAT_AUTO_SIM`/`CAT_AUTO_MARGIN`, tri par marge), bande « ajoutés automatiquement » annulable. Garde anti-course `_note_juge` sur les 2 files ; `par_humain` (animaux) annulable ; une carte ne se juge qu'une fois |
 
 ## À faire — par ordre de valeur (réordonné au triple audit du 11/08)
 
 1. **Vérité terrain humaine (priorité n°1).** ~0,8 % de confirmations (91/12 072).
    L'instrumentation est LIVRÉE (12/08 : file par marge, journal des jugements, compteur
-   de séance — cf. État actuel). Reste le **geste Mike** : confirmer ~100 propositions
-   dans `/people` (tri clavier + filtre par nom prêts) ; la métrique qui compte =
+   de séance ; session 4 : guichet unique de jugement, personnes + animaux — cf. État
+   actuel). Reste le **geste Mike** : confirmer ~100 propositions dans
+   `/sujets?vue=classification` (tri clavier) ; la métrique qui compte =
    confirmations/minute et erreurs découvertes, pas l'accord modèle-humain.
-2. **`/sujets` guichet unique — navigation + Classification LIVRÉES (12/08, vérif en
-   réel attendue).** Reste (si le besoin se confirme à l'usage) : fusion physique des
-   fonctions de gestion dans `/sujets` même (aujourd'hui : sous-nav unifiée + onglet
-   Classification qui route vers les ancres de /people et /pets).
+2. **`/sujets` guichet unique — navigation, Classification ET jugement LIVRÉS
+   (12/08, sessions 3–4 ; vérif en réel attendue).** Le travail de vérification se fait
+   maintenant dans `/sujets` même. Reste (si le besoin se confirme à l'usage) : y amener
+   aussi les groupes à nommer / inconnus (aujourd'hui : cartes qui routent vers les
+   ancres de /people et /pets).
 3. ~~Assurance-vie de la vérité terrain~~ **LIVRÉE (12/08)** — `backup_verify` +
    `export_jugements` à chaque backup horaire ; reste la **vérif en réel** (une carte
    « Sauvegarde vérifiée : ok » observée dans /reglages sur la machine Windows).

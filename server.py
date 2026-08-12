@@ -2808,6 +2808,7 @@ def _nommer_membres_animaux(membres, nom):
     tag = f"animal:{nom}"
     refs, especes = [], {}
     reactives = []
+    marques = []          # détections où CE nommage a posé `par_humain`
     for (k, i) in membres:
         ae = ANIMAL_STORE.data.get(k)
         animaux = (ae.get('animals') if isinstance(ae, dict) else None) or []
@@ -2824,6 +2825,14 @@ def _nommer_membres_animaux(membres, nom):
             if a.get('suspect') or a.get('inconnu'):
                 reactives.append((k, i, a.pop('suspect', None),
                                   a.pop('inconnu', None)))
+            # `par_humain` est désormais LU par build_cat_suggestions (garde-fou
+            # « une décision humaine n'est jamais re-questionnée »). Il doit donc
+            # être annulable comme le reste : sans ça, accepter puis ANNULER
+            # retirait bien le tag mais faisait disparaître la proposition de la
+            # file POUR TOUJOURS (fuite inoffensive tant que personne ne le
+            # lisait — devenue perte de donnée visible avec la file animaux).
+            if not a.get('par_humain'):
+                marques.append((k, i))
             a['par_humain'] = True
     espece = max(especes, key=especes.get) if especes else 'cat'
 
@@ -2862,6 +2871,10 @@ def _nommer_membres_animaux(membres, nom):
                     animaux[i]['suspect'] = sus
                 if inc:
                     animaux[i]['inconnu'] = inc
+        for k, i in marques:          # ne retire QUE ce que ce nommage a posé
+            ae = ANIMAL_STORE.data.get(k)
+            animaux = (ae.get('animals') if isinstance(ae, dict) else None) or []
+            if i < len(animaux):
                 animaux[i].pop('par_humain', None)
         ANIMAL_STORE.save()
         for k in ajoutees:
@@ -7230,6 +7243,51 @@ def rederive_pet_refs():
         time.sleep(120 if (did or pending) else 600)
 
 
+# ── Curateur animaux (onglet Classification de /sujets) ──
+# Miroir du curateur des personnes : les rattachements auto restent silencieux
+# et conservateurs (_cat_auto_pass), mais ils sont désormais JOURNALISÉS
+# (bande « ajoutés automatiquement », annulable), et les cas proches du seuil
+# deviennent des propositions « Ajouter à X ? » à juger — file par MARGE
+# croissante, jamais par score absolu (même règle anti-circularité).
+CAT_AUTO_LOG_MAX = 500
+CAT_AUTO_LOG = []             # journal réversible des rattachements auto (récent)
+CAT_CUR_MAX_SUGGEST = 120     # plafond de la file animaux
+CAT_SUGGEST_CACHE = {"at": 0.0, "building": False, "items": []}
+CAT_SUGGEST_LOCK = threading.Lock()
+
+# Course entre un jugement et une reconstruction de file. Purger le cache au
+# moment du jugement (fait) ne suffit pas : une passe DÉMARRÉE AVANT le geste
+# écrase ensuite le cache avec une liste calculée sans lui, et la carte jugée
+# réapparaît — le mode de panne « je corrige et ça revient », observé le 12/08.
+# On garde donc une trace horodatée des cartes jugées ; toute reconstruction
+# écarte celles jugées APRÈS son démarrage. Vaut pour les deux files.
+JUGES_RECENTS = []            # [(ts, clé)], borné
+JUGES_LOCK = threading.Lock()
+
+
+def _note_juge(key):
+    """Mémorise qu'une carte portant cette clé vient d'être jugée."""
+    if not key:
+        return
+    with JUGES_LOCK:
+        JUGES_RECENTS.append((time.time(), str(key)))
+        if len(JUGES_RECENTS) > 400:
+            del JUGES_RECENTS[:-400]
+
+
+def _juges_depuis(t0):
+    """Clés jugées depuis l'instant t0 (démarrage d'une reconstruction)."""
+    with JUGES_LOCK:
+        return {k for ts, k in JUGES_RECENTS if ts >= t0}
+
+
+def _cat_suggest_remove(pred):
+    """Retire du cache les suggestions animaux correspondant au prédicat."""
+    with CAT_SUGGEST_LOCK:
+        CAT_SUGGEST_CACHE["items"] = [s for s in CAT_SUGGEST_CACHE["items"]
+                                      if not pred(s)]
+
+
 def _cat_auto_pass():
     """Une passe d'auto-attribution des chats : rattache les chats détectés qui
     correspondent TRÈS clairement à un chat nommé (seuil élevé + marge nette avec
@@ -7252,7 +7310,7 @@ def _cat_auto_pass():
         if not isinstance(e, dict) or e.get('failed'):
             continue
         se = STORE.data.get(k)
-        for a in (e.get('animals') or []):
+        for ai, a in enumerate(e.get('animals') or []):
             if not _nommable(a) or not a.get('emb'):
                 continue
             try:
@@ -7275,6 +7333,15 @@ def _cat_auto_pass():
                     if _index_add_person(k, tag):
                         _enqueue_person_write(k, tag)
                         added += 1
+                        # Journal réversible (bande « ajoutés automatiquement »
+                        # de l'onglet Classification, comme pour les personnes).
+                        CAT_AUTO_LOG.append({
+                            "animal": nm, "key": k, "i": int(ai),
+                            "sim": round(bs, 3),
+                            "crop_url": _animal_crop_url(k, ai),
+                            "url": _url_for_key(k), "at": time.time()})
+                        if len(CAT_AUTO_LOG) > CAT_AUTO_LOG_MAX:
+                            del CAT_AUTO_LOG[:-CAT_AUTO_LOG_MAX]
             break   # un seul chat représentatif par photo suffit
     if added:
         STORE.save()
@@ -7284,20 +7351,122 @@ def _cat_auto_pass():
 
 def cat_curator_loop():
     """Auto-attribution des chats en tâche de fond (équivalent du curateur des
-    personnes). Tourne pendant l'absence pour récupérer les chats tout seul."""
+    personnes). Tourne pendant l'absence pour récupérer les chats tout seul.
+    Reconstruit aussi la file « À vérifier » animaux après chaque passe."""
     time.sleep(180)
-    if not CAT_AUTO_ENABLE:
-        return
     while True:
         try:
             if ANIMAL_QUEUE.empty() and not ui_recent():
-                n = _cat_auto_pass()
+                n = _cat_auto_pass() if CAT_AUTO_ENABLE else 0
+                build_cat_suggestions()
                 time.sleep(200 if n else 600)
             else:
                 time.sleep(60)
         except Exception as e:
             print(f"  ⚠ Auto-attribution chats : {e}")
             time.sleep(120)
+
+
+def build_cat_suggestions():
+    """File « À vérifier » des animaux (onglet Classification de /sujets).
+
+    Propose les chats détectés qui ressemblent à un chat nommé (score ≥
+    PET_MATCH_SIM) mais que l'auto-attribution NE prendra PAS toute seule
+    (score < CAT_AUTO_SIM ou marge < CAT_AUTO_MARGIN) : exactement la zone
+    d'incertitude où le jugement humain informe le plus. Tri par MARGE
+    croissante, jamais par score absolu (anti-circularité, comme le curateur
+    des personnes). Lecture seule : aucun tag posé ici — accepter/rejeter
+    passe par /api/assign (undo + journal des jugements)."""
+    with CAT_SUGGEST_LOCK:
+        if CAT_SUGGEST_CACHE["building"]:
+            return
+        CAT_SUGGEST_CACHE["building"] = True
+    t0 = time.time()
+    try:
+        import numpy as np
+        # Garde-fou « clés fantômes » (même leçon que build_suggestions) : une
+        # clé qui ne résout vers aucun fichier produit une carte sans vignette
+        # (/api/animalcrop → 404). On l'écarte, mais SEULEMENT si sa racine est
+        # joignable — jamais quand le NAS est déconnecté (sinon tout le corpus
+        # passerait pour disparu).
+        def _racine_ok(p):
+            try:
+                return Path(p).exists()
+            except OSError:
+                return False
+        _up_ok = _racine_ok(UPLOAD_DIR)
+        pets = []
+        for pk, pe in list(PETS_STORE.data.items()):
+            if not isinstance(pe, dict):
+                continue
+            nm = pe.get('name')
+            cen = cat_centroid(pe)
+            if not nm or cen is None:
+                continue
+            pets.append((nm, cen, set(pe.get('exclude') or [])))
+        items = []
+        if pets:
+            C = np.stack([c for _n, c, _x in pets])
+            for k, e in list(ANIMAL_STORE.data.items()):
+                if not isinstance(e, dict) or e.get('failed'):
+                    continue
+                se = STORE.data.get(k)
+                for ai, a in enumerate(e.get('animals') or []):
+                    # par_humain : détection déjà jugée par un humain — plus
+                    # jamais re-questionnée (même garde-fou que la vérif d'espèce).
+                    if not _nommable(a) or not a.get('emb') or a.get('par_humain'):
+                        continue
+                    try:
+                        v = _emb_from_b64(a['emb'])
+                        if v.shape[0] != C.shape[1]:
+                            continue
+                        sims = C @ v
+                    except Exception:
+                        continue
+                    order = np.argsort(sims)[::-1]
+                    best = int(order[0])
+                    bs = float(sims[best])
+                    second = float(sims[int(order[1])]) if len(order) > 1 else -1.0
+                    nm, _c, excl = pets[best]
+                    marge = bs - second
+                    if bs < PET_MATCH_SIM or k in excl:
+                        break
+                    # Ce que l'auto-attribution prendra toute seule n'est pas
+                    # une question à poser.
+                    if CAT_AUTO_ENABLE and bs >= CAT_AUTO_SIM and marge >= CAT_AUTO_MARGIN:
+                        break
+                    if se is not None and _kw_has(se, f"animal:{nm}"):
+                        break
+                    # Clé fantôme : un seul is_file() local, sur les vrais
+                    # candidats uniquement (pas sur tout le corpus).
+                    _rp = _resolve_key(k)
+                    _root_ok = _racine_ok(Path(_rp.anchor)) if _rp.is_absolute() else _up_ok
+                    if _root_ok:
+                        try:
+                            if not _rp.is_file():
+                                break
+                        except OSError:
+                            pass
+                    rival = pets[int(order[1])][0] if len(order) > 1 else ""
+                    items.append({"type": "add", "genre": "animal", "animal": nm,
+                                  "key": k, "i": int(ai), "sim": round(bs, 3),
+                                  "margin": round(marge, 3), "rival": rival,
+                                  "rival_sim": round(second, 3),
+                                  "crop_url": _animal_crop_url(k, ai),
+                                  "url": _url_for_key(k)})
+                    break   # un seul chat représentatif par photo suffit
+        items.sort(key=lambda x: x.get("margin", 9.9))
+        items = items[:CAT_CUR_MAX_SUGGEST]
+        # Cartes jugées PENDANT cette passe : elles ne doivent pas revenir.
+        recents = _juges_depuis(t0)
+        if recents:
+            items = [s for s in items if s.get("key") not in recents]
+        with CAT_SUGGEST_LOCK:
+            CAT_SUGGEST_CACHE["items"] = items
+            CAT_SUGGEST_CACHE["at"] = time.time()
+    finally:
+        with CAT_SUGGEST_LOCK:
+            CAT_SUGGEST_CACHE["building"] = False
 
 
 def cat_centroid(pe):
@@ -8558,6 +8727,7 @@ def build_suggestions():
         if SUGGEST_CACHE["building"]:
             return
         SUGGEST_CACHE["building"] = True
+    t0 = time.time()
     try:
         import numpy as np
         persons = []
@@ -8779,6 +8949,12 @@ def build_suggestions():
 
         items.sort(key=_cle_tri)
         items = items[:CUR_MAX_SUGGEST]
+        # Cartes jugées PENDANT cette passe : purger le cache au moment du geste
+        # ne suffit pas si la reconstruction avait démarré avant (elle écrase
+        # avec une liste d'avant le jugement). Voir _note_juge.
+        recents = _juges_depuis(t0)
+        if recents:
+            items = [s for s in items if s.get("key") not in recents]
         with SUGGEST_LOCK:
             SUGGEST_CACHE["items"] = items
             SUGGEST_CACHE["at"] = time.time()
@@ -8960,6 +9136,13 @@ PETS_PAGE = """<!DOCTYPE html>
   <!-- VUE D'ENSEMBLE -->
   <section id="overview">
     <div class="strip" id="strip">Chargement&hellip;</div>
+
+    <!-- Harmonisation avec /people (12/08) : la file « A verifier » des animaux
+         vit dans /sujets?vue=classification, a cote de celle des personnes. -->
+    <p class="muted" style="margin:0 0 var(--e-3)">Les propositions &agrave; v&eacute;rifier
+      (chats reconnus mais incertains, rattachements automatiques &agrave; annuler) se jugent
+      dans <a href="/sujets?vue=classification#verifier-animaux" style="color:var(--texte)">Sujets
+      &rsaquo; Classification</a>, avec celles des personnes.</p>
 
     <div class="row"><h2 style="margin:0">Animaux</h2><span class="sp"></span></div>
     <div class="cats" id="named"><span class="muted">Aucun chat nomm&eacute; pour le moment.</span></div>
@@ -9526,6 +9709,63 @@ SUBJECTS_PAGE = """<!DOCTYPE html>
   .qc.attente .n{color:var(--veilleuse);}
   .qc .tv{color:var(--graphite);font-size:var(--t-sm);line-height:1.4;}
   @media(hover:hover){.sc:hover,.qc:hover{border-color:var(--papier-2);}}
+  /* Files « À vérifier » incarnées ICI (déplacées de /people, harmonisées
+     avec les animaux) : mêmes classes que sur /people (.cl, .row, .qui,
+     bande auto .grid/.prop) pour garder un seul vocabulaire visuel. */
+  .ctype h3{display:flex;align-items:center;gap:var(--e-2);flex-wrap:wrap;
+    font:600 var(--t-md)/1.2 var(--f-affichage);letter-spacing:-.01em;
+    margin:var(--e-4) 0 var(--e-2);}
+  .ctype h3 .c{color:var(--graphite);font-family:var(--f-donnees);
+    font-size:var(--t-sm);font-weight:normal;}
+  .qmsg{color:var(--graphite);font-size:var(--t-sm);margin:0 0 var(--e-2);}
+  .kbd-hint{color:var(--graphite);font-size:var(--t-xs);font-family:var(--f-donnees);}
+  .kbd-hint b{color:var(--texte);font-weight:600;}
+  .btn{min-height:var(--touch);padding:var(--e-2) var(--e-4);border:var(--trait);
+    border-radius:var(--r-md);background:var(--salle-3);color:var(--texte);
+    font:500 var(--t-sm)/1 var(--f-texte);cursor:pointer;}
+  .btn.prim{background:var(--papier);border-color:var(--papier);color:var(--texte-papier);}
+  .btn.warn{background:transparent;border-color:var(--encre);color:var(--encre);}
+  .ctype h3 .btn{min-height:0;font-size:var(--t-xs);padding:var(--e-1) var(--e-2);}
+  .cl{background:var(--salle-3);border:var(--trait);border-radius:var(--r-md);
+    padding:var(--e-3);margin-bottom:var(--e-3);}
+  /* Tri au clavier : la carte « en cours de décision » porte l'anneau veilleuse. */
+  .cl.active{outline:2px solid var(--veilleuse);outline-offset:2px;}
+  .cl .row{display:flex;gap:var(--e-2);align-items:center;flex-wrap:wrap;}
+  .cl .row > *{min-width:0;}
+  .cl .row .sz{color:var(--graphite);font-size:var(--t-sm);flex:1 1 12rem;
+    margin-right:auto;overflow-wrap:anywhere;}
+  .cl .row .qui{flex:1 1 150px;min-width:120px;}
+  .cl .row .btn,.cl .row .qui{min-height:44px;}
+  @media(max-width:900px){
+    .cl .row{align-items:stretch;}
+    .cl .row .sz{flex-basis:100%;}
+    .cl .row .btn,.cl .row .qui{flex-basis:100%;width:100%;}
+    .cl .row > img{align-self:flex-start;}
+  }
+  input.qui{padding:var(--e-2) var(--e-3);border-radius:var(--r-md);
+    border:var(--trait);background:var(--salle-3);color:var(--texte);
+    font-size:var(--t-sm);font-family:var(--f-texte);}
+  input.qui:focus{border-color:var(--veilleuse);}
+  .cl .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));
+    gap:var(--e-1);}
+  .prop{position:relative;}
+  .prop img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:var(--r-md);
+    background:var(--salle-3);display:block;}
+  .prop .s{position:absolute;bottom:2px;right:4px;font-size:var(--t-xs);
+    font-family:var(--f-donnees);color:var(--texte);background:rgba(0,0,0,.55);
+    padding:0 3px;border-radius:var(--r-sm);}
+  .prop .x{position:absolute;top:3px;right:4px;background:var(--encre);color:#fff;
+    border:none;border-radius:var(--r-sm);font-size:var(--t-xs);padding:1px 5px;
+    cursor:pointer;}
+  .ctype .cgrid{margin-top:var(--e-3);}
+  .btn:focus-visible,input.qui:focus-visible,.qc:focus-visible,.sc:focus-visible{
+    outline:2px solid var(--veilleuse);outline-offset:2px;}
+  /* Ancres des files : la nav (app + sous-nav Sujets, sticky) ne doit pas
+     recouvrir le titre quand scrollIntoView l'amene en haut. */
+  #verifier,#verifier-animaux{scroll-margin-top:118px;}
+  @media(prefers-reduced-motion:reduce){
+    *,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important;}
+  }
 </style>
 </head>
 <body>
@@ -9553,19 +9793,32 @@ SUBJECTS_PAGE = """<!DOCTYPE html>
   <div class="msg" id="msg">Chargement&hellip;</div>
   </div>
 
-  <!-- Onglet Classification (ROADMAP #2) : le travail en attente, trie par
-       type. Compteurs vivants sur les APIs existantes ; chaque carte ouvre la
-       section correspondante de la vue specialisee (lien profond ancre). -->
+  <!-- Onglet Classification : GUICHET UNIQUE du travail en attente. Les files
+       « À vérifier » (personnes ET animaux, harmonisées) se jugent ICI —
+       déplacées de /people le 12/08 ; les cartes restantes ouvrent les vues
+       spécialisées (groupes, inconnus) par lien profond ancré. -->
   <div id="vue-classif" hidden>
   <p class="intro">Le travail de classification en attente, s&eacute;par&eacute; par type.
-    Les compteurs se mettent &agrave; jour &agrave; l&rsquo;ouverture ; une carte ouvre
-    directement la bonne section.</p>
+    Les propositions &laquo;&nbsp;&Agrave; v&eacute;rifier&nbsp;&raquo; se jugent ici m&ecirc;me
+    (personnes et animaux) ; les cartes ouvrent directement la bonne section.</p>
+  <div class="qmsg"><span class="kbd-hint">Raccourcis : <b>Espace</b>/<b>Entr&eacute;e</b> = oui &middot; <b>X</b> = non &middot; <b>Z</b> = annuler &middot; une lettre = corriger le nom</span></div>
+  <div class="qmsg" id="curstats" hidden><span class="kbd-hint" id="curstats-txt"></span></div>
   <section class="ctype" aria-labelledby="ct-p">
     <h2 id="ct-p">&#128100; Personnes</h2>
+    <h3 id="verifier">&Agrave; v&eacute;rifier <span class="c" id="curc"></span>
+      <button class="btn" id="curref">&#8635; Rafra&icirc;chir</button></h3>
+    <div class="qmsg" id="curmsg">Chargement&hellip;</div>
+    <div id="autowrap"></div>
+    <div id="curbox"></div>
     <div class="cgrid" id="c-personnes"></div>
   </section>
   <section class="ctype" aria-labelledby="ct-a">
     <h2 id="ct-a">&#128062; Animaux</h2>
+    <h3 id="verifier-animaux">&Agrave; v&eacute;rifier <span class="c" id="petcurc"></span>
+      <button class="btn" id="petcurref">&#8635; Rafra&icirc;chir</button></h3>
+    <div class="qmsg" id="petcurmsg">Chargement&hellip;</div>
+    <div id="petautowrap"></div>
+    <div id="petcurbox"></div>
     <div class="cgrid" id="c-animaux"></div>
   </section>
   <section class="ctype" aria-labelledby="ct-l">
@@ -9658,8 +9911,6 @@ function qmaj(a, n, building, extra, neutre){
   if(extra){ var tv=a.querySelector('.tv'); tv.textContent=tv.textContent+' \\u00b7 '+extra; }
 }
 function chargerClassif(){
-  var cVerif=qcarte('c-personnes',{titre:'\\u00c0 v\\u00e9rifier', href:'/people#verifier',
-    desc:'Propositions tri\\u00e9es par incertitude (marge). Espace = oui, X = non, Z = annuler.'});
   var cGrp=qcarte('c-personnes',{titre:'Groupes \\u00e0 nommer', href:'/people#groupes',
     desc:'Visages regroup\\u00e9s automatiquement, en attente d\\u2019un nom.'});
   var cInc=qcarte('c-personnes',{titre:'Inconnus (archiv\\u00e9s)', href:'/people#inconnus',
@@ -9669,11 +9920,6 @@ function chargerClassif(){
   var cLieux=qcarte('c-lieux',{titre:'Lieux nomm\\u00e9s', href:'/sujets?type=lieu',
     desc:'Lieux reconnus (lieux.txt + dossiers). Le g\\u00e9ocodage GPS (gps_place) s\\u2019active depuis R\\u00e9glages.'});
   function j(u){ return fetch(u).then(function(r){ return r.json(); }); }
-  j('/api/curator/list').then(function(d){
-    var st=d.stats||{};
-    qmaj(cVerif, d.count||0, d.building,
-         st.n?('s\\u00e9ance : '+st.n+' jugement(s)'+(st.par_minute?', '+st.par_minute+'/min':'')):null);
-  }).catch(function(){ qmaj(cVerif,'?',false); });
   j('/api/people/clusters').then(function(d){ qmaj(cGrp, d.count||0, d.building); })
     .catch(function(){ qmaj(cGrp,'?',false); });
   j('/api/people/inconnus').then(function(d){ qmaj(cInc, d.count||0, d.building); })
@@ -9682,7 +9928,312 @@ function chargerClassif(){
     .catch(function(){ qmaj(cPets,'?',false); });
   j('/api/sujets/list').then(function(d){ qmaj(cLieux, (d.lieux||[]).length, false, null, true); })
     .catch(function(){ qmaj(cLieux,'?',false, null, true); });
+  loadCurator(false);
+  loadPetCurator(false);
 }
+
+// ── Files « À vérifier » — DÉPLACÉES de /people, harmonisées animaux (12/08).
+//    Personnes : merge/remove/add via /api/curator + /api/assign (genre visage).
+//    Animaux : add via /api/assign (genre animal) — « Aucun » = __inconnu__,
+//    « Pas un animal » = __pas_animal__, tout est réversible (undo) et
+//    journalisé (compteur de séance commun aux deux files). ──
+function post(url,obj){return fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},
+  body:JSON.stringify(obj||{})}).then(function(r){return r.json();});}
+var NOMS_CACHE={};
+function nomsDe(genre){
+  // Cache de la PROMESSE (anti-tempête de /api/names, leçon /pets du 11/08).
+  if(NOMS_CACHE[genre]) return NOMS_CACHE[genre];
+  NOMS_CACHE[genre]=fetch('/api/names?genre='+genre).then(function(r){return r.json();})
+    .then(function(d){ return d.noms||[]; })
+    .catch(function(){ NOMS_CACHE[genre]=null; return []; });
+  return NOMS_CACHE[genre];
+}
+function toastP(msg, jeton, apres){
+  var t=document.getElementById('toastp');
+  if(!t){ t=document.createElement('div'); t.id='toastp';
+    t.setAttribute('role','status'); t.setAttribute('aria-live','polite');
+    t.style.cssText='position:fixed;left:50%;bottom:18px;transform:translateX(-50%);display:flex;'+
+      'align-items:center;gap:12px;background:var(--salle-3);border:var(--trait);border-radius:999px;'+
+      'padding:var(--e-3) var(--e-3) var(--e-3) var(--e-4);font-size:var(--t-sm);z-index:60';
+    document.body.appendChild(t); }
+  t.innerHTML='<span style="flex:1"></span>'; t.firstChild.textContent=msg;
+  if(jeton){ var b=document.createElement('button'); b.className='btn'; b.textContent='Annuler';
+    b.onclick=function(){ post('/api/undo',{jeton:jeton}).then(function(){ t.remove();
+        if(apres){ apres(); } else { loadCurator(true); loadPetCurator(true); } }); };
+    t.appendChild(b); }
+  clearTimeout(t._m); t._m=setTimeout(function(){ t.remove(); },10000);
+}
+// Compteur de séance : rythme et erreurs découvertes, calculés côté serveur
+// (journal des jugements — COMMUN personnes + animaux). Masqué sans geste récent.
+function majStats(st){
+  var w=document.getElementById('curstats'), t=document.getElementById('curstats-txt');
+  if(!w||!t) return;
+  if(!st||!st.n){ w.hidden=true; return; }
+  var s='S\\u00e9ance : <b>'+st.n+'</b> jugement'+(st.n>1?'s':'');
+  if(st.par_minute!=null) s+=' \\u00b7 <b>'+String(st.par_minute).replace('.',',')+'</b>/min';
+  s+=' \\u00b7 <b>'+st.erreurs+'</b> erreur'+(st.erreurs>1?'s':'')+' d\\u00e9couverte'+(st.erreurs>1?'s':'');
+  t.innerHTML=s; w.hidden=false;
+}
+function curCount(){
+  var n=document.querySelectorAll('#curbox > .cl').length;
+  document.getElementById('curc').textContent=n?('('+n+')'):'';
+  if(!n) document.getElementById('curmsg').textContent='Rien \\u00e0 v\\u00e9rifier pour le moment.';
+}
+function petCount(){
+  var n=document.querySelectorAll('#petcurbox > .cl').length;
+  document.getElementById('petcurc').textContent=n?('('+n+')'):'';
+  if(!n) document.getElementById('petcurmsg').textContent='Rien \\u00e0 v\\u00e9rifier pour le moment.';
+}
+// Une carte ne se juge QU'UNE fois : le retrait n'a lieu qu'au retour du
+// serveur, et deux pressions rapides d'Espace (plus rapides que l'aller-retour)
+// envoyaient deux jugements pour la même photo. Verrou local, relâché en cas
+// d'échec pour que le geste reste rejouable.
+function _prend(el){ if(el._jug) return false; el._jug=true; el.style.opacity=.5; return true; }
+function _rend(el){ el._jug=false; el.style.opacity=''; }
+function assigner(s, el, cible){
+  if(!_prend(el)) return;
+  post('/api/assign',{genre:'visage',cle:s.key,i:s.i,cible:cible,propose:s.person,
+                      sim:s.sim,marge:s.margin})
+    .then(function(r){
+      if(!r.ok){ _rend(el); toastP(r.erreur||'Echec de l attribution.'); return; }
+      if(r.stats) majStats(r.stats);
+      toastP(r.libelle||'fait', r.jeton, function(){ loadCurator(true); });
+      el.remove(); NOMS_CACHE['personne']=null; curCount(); curMark();
+    }).catch(function(){ _rend(el); toastP('Le serveur n a pas repondu. Reessaie dans un instant.'); });
+}
+function assignerA(s, el, cible){
+  if(!_prend(el)) return;
+  post('/api/assign',{genre:'animal',membres:[[s.key,s.i]],cible:cible,propose:s.animal,
+                      sim:s.sim,marge:s.margin})
+    .then(function(r){
+      if(!r.ok){ _rend(el); toastP(r.erreur||'Echec de l attribution.'); return; }
+      if(r.stats) majStats(r.stats);
+      toastP(r.libelle||'fait', r.jeton, function(){ loadPetCurator(true); });
+      el.remove(); NOMS_CACHE['animal']=null; petCount(); curMark();
+    }).catch(function(){ _rend(el); toastP('Le serveur n a pas repondu. Reessaie dans un instant.'); });
+}
+function propose2(champ, zone, genre, agir){
+  var t=champ.value.trim().toLowerCase();
+  nomsDe(genre).then(function(noms){
+    zone.innerHTML='';
+    noms.filter(function(p){return !t||p.nom.toLowerCase().indexOf(t)===0;})
+      .slice(0,4).forEach(function(p){
+        var b=document.createElement('button'); b.className='btn';
+        b.style.cssText='margin:2px 4px 0 0;font-size:12.5px';
+        b.textContent=p.nom+' \\u00b7 '+p.n;
+        b.onclick=function(){ agir(p.nom); };
+        zone.appendChild(b); });
+    if(t && !noms.some(function(p){return p.nom.toLowerCase()===t;})){
+      var nb=document.createElement('button'); nb.className='btn';
+      nb.style.cssText='margin:2px 4px 0 0;font-size:12.5px';
+      nb.textContent='Nouveau : '+champ.value.trim();
+      nb.onclick=function(){ agir(champ.value.trim()); };
+      zone.appendChild(nb); }
+  });
+}
+function curResolve(action, sug, el){
+  if(!_prend(el)) return;
+  post('/api/curator/resolve',{action:action,sug:sug}).then(function(r){
+    if(r&&r.stats) majStats(r.stats);
+    el.remove(); curCount(); curMark();
+  }).catch(function(){ _rend(el); toastP('Le serveur n a pas repondu. Reessaie dans un instant.'); });
+}
+function loadCurator(rebuild){
+  fetch('/api/curator/list'+(rebuild?'?rebuild=1':'')).then(function(r){return r.json();}).then(function(d){
+    var msg=document.getElementById('curmsg'), box=document.getElementById('curbox');
+    majStats(d.stats||null);
+    if(d.building){ msg.textContent='Analyse des visages en cours\\u2026'; box.innerHTML=''; setTimeout(function(){loadCurator(false);},4000); return; }
+    var auto=d.auto||[], aw=document.getElementById('autowrap');
+    if(!auto.length){ aw.innerHTML=''; }
+    else{
+      var ah='<div class="cl"><div style="font-size:var(--t-sm);color:var(--graphite);margin-bottom:var(--e-2)">\\ud83e\\udd16 Ajout\\u00e9s automatiquement r\\u00e9cemment ('+auto.length+') \\u2014 v\\u00e9rifie, annule (\\u2717) en cas d\\u2019erreur :</div><div class="grid">';
+      auto.forEach(function(a){
+        ah+='<label class="prop" style="cursor:default"><a href="'+esc(a.url)+'" target="_blank" rel="noopener"><img loading="lazy" src="'+esc(a.crop_url)+'" alt=""></a>'+
+          '<span class="s">'+esc(a.person)+' '+a.sim+'</span>'+
+          '<button class="x" title="Annuler" data-p="'+esc(a.person)+'" data-k="'+esc(a.key)+'">\\u2717</button></label>';
+      });
+      ah+='</div></div>'; aw.innerHTML=ah;
+      aw.querySelectorAll('button.x').forEach(function(b){
+        b.onclick=function(){
+          var p=b.getAttribute('data-p'), k=b.getAttribute('data-k'), cell=b.closest('.prop');
+          cell.style.opacity=.4;
+          post('/api/people/untag',{name:p,keys:[k]}).then(function(){ cell.remove(); });
+        };
+      });
+    }
+    var items=d.items||[];
+    document.getElementById('curc').textContent=items.length?('('+items.length+')'):'';
+    if(!items.length){ msg.textContent=auto.length?'':'Rien \\u00e0 v\\u00e9rifier pour le moment.'; box.innerHTML=''; curMark(); return; }
+    msg.textContent='';
+    box.innerHTML='';
+    items.forEach(function(s){
+      var el=document.createElement('div'); el.className='cl'; var html='';
+      var crop='<img loading="lazy" src="'+esc(s.crop_url)+'" style="width:80px;height:80px;object-fit:cover;border-radius:var(--r-md);background:var(--salle-3)" alt="">';
+      if(s.type==='merge'){
+        html='<div class="row"><span class="sz">M\\u00eame personne ? <b>'+esc(s.a)+'</b> et <b>'+esc(s.b)+'</b> (sim '+s.sim+')</span>'+
+          '<button class="btn prim">\\u2713 Fusionner</button><button class="btn">\\u2717 Diff\\u00e9rents</button></div>';
+      } else if(s.type==='remove'){
+        var labelR='<b>Faux positif ?</b> visage tagu\\u00e9 <b>'+esc(s.person)+'</b> \\u2014 score '+s.sim;
+        html='<div class="row" style="align-items:center">'+crop+
+          '<a href="'+esc(s.url)+'" target="_blank" rel="noopener" class="sz" style="text-decoration:none;color:var(--graphite)">'+labelR+'</a>'+
+          '<button class="btn prim">\\u2713 Oui, c\\u2019est '+esc(s.person)+'</button>'+
+          '<button class="btn warn">\\u2717 Retirer le tag</button>'+
+          '<input class="qui" placeholder="ou : c\\u2019est\\u2026" autocomplete="off">'+
+          '<button class="btn">Pas un visage</button>'+
+          '<button class="btn anim">C\\u2019est un animal</button></div>'+
+          '<div class="props2" style="margin-top:6px"></div>';
+      } else {
+        var doute=s.rival
+          ? (' <span style="color:var(--veilleuse)">\\u00b7 h\\u00e9site avec <b>'+esc(s.rival)+
+             '</b> ('+s.rival_sim+', \\u00e9cart '+s.margin+')</span>') : '';
+        var label='<b>Ajouter \\u00e0 '+esc(s.person)+' ?</b> \\u2014 score '+s.sim+doute;
+        html='<div class="row" style="align-items:center">'+crop+
+          '<a href="'+esc(s.url)+'" target="_blank" rel="noopener" class="sz" style="text-decoration:none;color:var(--graphite)">'+label+'</a>'+
+          '<button class="btn prim">\\u2713 Oui, '+esc(s.person)+'</button>'+
+          '<input class="qui" placeholder="ou : c\\u2019est\\u2026" autocomplete="off">'+
+          '<button class="btn">\\u2717 Aucun</button>'+
+          '<button class="btn anim">C\\u2019est un animal</button></div>'+
+          '<div class="props2" style="margin-top:6px"></div>';
+      }
+      el.innerHTML=html;
+      var b=el.querySelectorAll('button');
+      if(s.type==='merge'){
+        b[0].onclick=function(){curResolve('accept',s,el);};
+        b[1].onclick=function(){curResolve('reject',s,el);};
+      } else if(s.type==='remove'){
+        b[0].onclick=function(){ curResolve('reject',s,el); };
+        b[1].onclick=function(){ curResolve('accept',s,el); };
+        b[2].onclick=function(){ assigner(s, el, '__pas_visage__'); };
+        var baR=el.querySelector('.anim');
+        if(baR) baR.onclick=function(){ assigner(s, el, '__pas_visage__'); };
+        var qr=el.querySelector('.qui'), prr=el.querySelector('.props2');
+        if(qr){
+          qr.addEventListener('input',function(){ propose2(qr,prr,'personne',function(nom){ assigner(s,el,nom); }); });
+          qr.addEventListener('keydown',function(e){
+            if(e.key==='Enter'&&qr.value.trim()) assigner(s,el,qr.value.trim()); });
+        }
+      } else {
+        b[0].onclick=function(){curResolve('accept',s,el);};
+        b[1].onclick=function(){ assigner(s, el, '__pas_visage__'); };
+        var baA=el.querySelector('.anim');
+        if(baA) baA.onclick=function(){ assigner(s, el, '__pas_visage__'); };
+        var q=el.querySelector('.qui'), pr=el.querySelector('.props2');
+        if(q){
+          q.addEventListener('input',function(){ propose2(q,pr,'personne',function(nom){ assigner(s,el,nom); }); });
+          q.addEventListener('keydown',function(e){
+            if(e.key==='Enter'&&q.value.trim()) assigner(s,el,q.value.trim()); });
+        }
+      }
+      box.appendChild(el);
+    });
+    curMark();
+  }).catch(function(){});
+}
+function loadPetCurator(rebuild){
+  fetch('/api/pets/curator/list'+(rebuild?'?rebuild=1':'')).then(function(r){return r.json();}).then(function(d){
+    var msg=document.getElementById('petcurmsg'), box=document.getElementById('petcurbox');
+    majStats(d.stats||null);
+    if(d.building){ msg.textContent='Analyse des chats en cours\\u2026'; box.innerHTML=''; setTimeout(function(){loadPetCurator(false);},4000); return; }
+    var auto=d.auto||[], aw=document.getElementById('petautowrap');
+    if(!auto.length){ aw.innerHTML=''; }
+    else{
+      var ah='<div class="cl"><div style="font-size:var(--t-sm);color:var(--graphite);margin-bottom:var(--e-2)">\\ud83e\\udd16 Ajout\\u00e9s automatiquement r\\u00e9cemment ('+auto.length+') \\u2014 v\\u00e9rifie, annule (\\u2717) en cas d\\u2019erreur :</div><div class="grid">';
+      auto.forEach(function(a){
+        ah+='<label class="prop" style="cursor:default"><a href="'+esc(a.url)+'" target="_blank" rel="noopener"><img loading="lazy" src="'+esc(a.crop_url)+'" alt=""></a>'+
+          '<span class="s">'+esc(a.animal)+' '+a.sim+'</span>'+
+          '<button class="x" title="Annuler" data-p="'+esc(a.animal)+'" data-k="'+esc(a.key)+'">\\u2717</button></label>';
+      });
+      ah+='</div></div>'; aw.innerHTML=ah;
+      aw.querySelectorAll('button.x').forEach(function(b){
+        b.onclick=function(){
+          var p=b.getAttribute('data-p'), k=b.getAttribute('data-k'), cell=b.closest('.prop');
+          cell.style.opacity=.4;
+          post('/api/pets/untag',{name:p,keys:[k]}).then(function(){ cell.remove(); });
+        };
+      });
+    }
+    var items=d.items||[];
+    document.getElementById('petcurc').textContent=items.length?('('+items.length+')'):'';
+    if(!items.length){ msg.textContent=auto.length?'':'Rien \\u00e0 v\\u00e9rifier pour le moment.'; box.innerHTML=''; curMark(); return; }
+    msg.textContent='';
+    box.innerHTML='';
+    items.forEach(function(s){
+      var el=document.createElement('div'); el.className='cl';
+      var crop='<img loading="lazy" src="'+esc(s.crop_url)+'" style="width:80px;height:80px;object-fit:cover;border-radius:var(--r-md);background:var(--salle-3)" alt="">';
+      var doute=s.rival
+        ? (' <span style="color:var(--veilleuse)">\\u00b7 h\\u00e9site avec <b>'+esc(s.rival)+
+           '</b> ('+s.rival_sim+', \\u00e9cart '+s.margin+')</span>') : '';
+      var label='<b>Ajouter \\u00e0 '+esc(s.animal)+' ?</b> \\u2014 score '+s.sim+doute;
+      el.innerHTML='<div class="row" style="align-items:center">'+crop+
+        '<a href="'+esc(s.url)+'" target="_blank" rel="noopener" class="sz" style="text-decoration:none;color:var(--graphite)">'+label+'</a>'+
+        '<button class="btn prim">\\u2713 Oui, '+esc(s.animal)+'</button>'+
+        '<input class="qui" placeholder="ou : c\\u2019est\\u2026" autocomplete="off">'+
+        '<button class="btn">\\u2717 Aucun</button>'+
+        '<button class="btn">Pas un animal</button></div>'+
+        '<div class="props2" style="margin-top:6px"></div>';
+      var b=el.querySelectorAll('button');
+      b[0].onclick=function(){ assignerA(s, el, s.animal); };
+      b[1].onclick=function(){ assignerA(s, el, '__inconnu__'); };
+      b[2].onclick=function(){ assignerA(s, el, '__pas_animal__'); };
+      var q=el.querySelector('.qui'), pr=el.querySelector('.props2');
+      q.addEventListener('input',function(){ propose2(q,pr,'animal',function(nom){ assignerA(s,el,nom); }); });
+      q.addEventListener('keydown',function(e){
+        if(e.key==='Enter'&&q.value.trim()) assignerA(s,el,q.value.trim()); });
+      box.appendChild(el);
+    });
+    curMark();
+  }).catch(function(){});
+}
+// ── Tri au clavier UNIFIÉ : la 1re carte (personnes d'abord, puis animaux)
+//    porte l'anneau veilleuse ; les touches agissent dessus. ──
+function curMark(scroll){
+  var rows=document.querySelectorAll('#curbox > .cl, #petcurbox > .cl');
+  rows.forEach(function(r,i){ r.classList.toggle('active', i===0); });
+  if(scroll && rows[0]){ try{ rows[0].scrollIntoView({block:'center'}); }catch(e){} }
+}
+function curUndo(){
+  var b=document.querySelector('#toastp button'); if(b){ b.click(); return; }
+  fetch('/api/undo',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'})
+    .then(function(){ loadCurator(true); loadPetCurator(true); }).catch(function(){});
+}
+document.addEventListener('keydown', function(e){
+  if(VUE!=='classif') return;
+  var tag=(e.target.tagName||'').toLowerCase();
+  if(tag==='input'||tag==='textarea'||tag==='select'){ if(e.key==='Escape') e.target.blur(); return; }
+  var row=document.querySelector('#curbox > .cl.active, #petcurbox > .cl.active'); if(!row) return;
+  var bs=row.querySelectorAll('button');
+  if(e.key===' '||e.key==='Enter'||e.key==='o'||e.key==='O'){
+    e.preventDefault(); if(bs[0]) bs[0].click(); setTimeout(function(){curMark(true);},150);
+  } else if(e.key==='x'||e.key==='X'||e.key==='Delete'){
+    e.preventDefault(); if(bs[1]) bs[1].click(); setTimeout(function(){curMark(true);},150);
+  } else if(e.key==='z'||e.key==='Z'){
+    e.preventDefault(); curUndo();
+  } else if(/^[a-zA-Z]$/.test(e.key)){
+    var inp=row.querySelector('.qui');
+    if(inp){ e.preventDefault(); inp.focus(); inp.value+=e.key; inp.dispatchEvent(new Event('input')); }
+  }
+});
+document.getElementById('curref').onclick=function(){ document.getElementById('curmsg').textContent='Analyse demand\\u00e9e\\u2026'; loadCurator(true); };
+document.getElementById('petcurref').onclick=function(){ document.getElementById('petcurmsg').textContent='Analyse demand\\u00e9e\\u2026'; loadPetCurator(true); };
+
+// Lien profond vers une file (#verifier / #verifier-animaux) : les cartes se
+// peignent APRES le fetch, donc la cible bouge — meme mode de panne que la
+// regression « Gerer » du 12/08. Remede identique : re-viser 2,5 s, en
+// s'arretant des que l'utilisateur interagit.
+(function(){
+  var h=(location.hash||'').replace('#','');
+  if(['verifier','verifier-animaux'].indexOf(h)<0) return;
+  var stop=false, t0=Date.now();
+  ['wheel','touchstart','keydown','mousedown'].forEach(function(ev){
+    window.addEventListener(ev, function(){ stop=true; }, {passive:true, once:true});
+  });
+  (function vise(){
+    if(stop) return;
+    var el=document.getElementById(h);
+    if(el) el.scrollIntoView({block:'start'});
+    if(Date.now()-t0<2500) setTimeout(vise, 400);
+  })();
+})();
 
 fetch('/api/sujets/list').then(function(r){return r.json();}).then(function(d){
   var P=(d.personnes||[]).map(function(x){x.type='personne';return x;});
@@ -9783,7 +10334,7 @@ input[type=text]:focus, input.qui:focus { border-color: var(--veilleuse); }
 #panel { margin: 0 var(--e-4) var(--e-3); scroll-margin-top: 72px; }
 /* ancres des files de travail (liens profonds depuis /sujets Classification) :
    meme protection contre la nav sticky (+ sous-nav Sujets). */
-#verifier, #groupes, #inconnus { scroll-margin-top: 118px; }
+#groupes, #inconnus { scroll-margin-top: 118px; }
 #panel .box { background: var(--salle-3); border: var(--trait); border-radius: var(--r-md);
               padding: var(--e-3); }
 #panel h3 { font-size: var(--t-md); margin-bottom: var(--e-1); }
@@ -9852,8 +10403,9 @@ input[type=text]:focus, input.qui:focus { border-color: var(--veilleuse); }
      le scrollIntoView de « Gerer » chassait une cible mouvante et n'atterrissait
      jamais (regression signalee 12/08 : « plus rien ne se passe »). Avant la
      grille, la position du panneau est stable ; les lots se peignent dessous.
-     Les files de travail (a verifier / groupes / inconnus) restent SOUS ce
-     bloc, pour la meme raison (un lot peint toujours sous la zone de travail).
+     Les files de travail (groupes / inconnus) restent SOUS ce bloc, pour la
+     meme raison (un lot peint toujours sous la zone de travail). La file
+     « A verifier » a migre vers /sujets?vue=classification (12/08).
      Le filtre garde la liste compacte malgre les ~324 fiches, et l'ancre
      « Aller aux groupes » evite de tout scroller. -->
 <h2 style="display:flex;align-items:center;gap:var(--e-2);flex-wrap:wrap">Personnes nommées <span class="c" id="pc"></span>
@@ -9869,13 +10421,14 @@ input[type=text]:focus, input.qui:focus { border-color: var(--veilleuse); }
   partir de 3 &agrave; 6 photos nettes, puis retire d'un coup les photos sous le seuil
   de ressemblance.</div>
 
-<h2 id="verifier">À vérifier <span class="c" id="curc"></span>
-  <button class="btn" id="curref" style="font-size:var(--t-xs);padding:var(--e-1) var(--e-2);margin-left:var(--e-2)">&#8635; Rafraîchir</button></h2>
-<div class="msg"><span class="kbd-hint">Raccourcis : <b>Espace</b>/<b>Entr&eacute;e</b> = oui &middot; <b>X</b> = non &middot; <b>Z</b> = annuler &middot; une lettre = corriger le nom</span></div>
-<div class="msg" id="curstats" hidden><span class="kbd-hint" id="curstats-txt"></span></div>
-<div class="msg" id="curmsg">Chargement&hellip;</div>
-<div class="clus" id="autowrap"></div>
-<div class="clus" id="curbox"></div>
+<!-- La file « À vérifier » a QUITTÉ cette page (12/08) : elle vit maintenant
+     dans /sujets?vue=classification, aux côtés de celle des animaux — un seul
+     endroit où juger, un seul compteur de séance. Cette page garde ce qui lui
+     est propre : fiches, correction, groupes, inconnus. -->
+<div class="note">Les propositions &agrave; v&eacute;rifier (visages incertains, faux positifs,
+  fusions) se jugent d&eacute;sormais dans
+  <a href="/sujets?vue=classification#verifier" style="color:var(--texte)">Sujets &rsaquo; Classification</a>,
+  avec celles des animaux.</div>
 
 <h2 id="groupes">Groupes à nommer <span class="c" id="cc"></span>
   <button class="btn" id="quickbtn" style="font-size:var(--t-xs);padding:var(--e-1) var(--e-2);margin-left:var(--e-2)">&#9889; Nommer rapidement</button></h2>
@@ -10384,207 +10937,10 @@ function toastP(msg, jeton, apres){
   if(jeton){ var b=document.createElement('button'); b.className='btn'; b.textContent='Annuler';
     b.onclick=function(){ fetch('/api/undo',{method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({jeton:jeton})}).then(function(){ t.remove();
-        if(apres){ apres(); } else { loadCurator(true); } }); };
+        if(apres){ apres(); } }); };
     t.appendChild(b); }
   clearTimeout(t._m); t._m=setTimeout(function(){ t.remove(); },10000);
 }
-function assigner(s, el, cible){
-  fetch('/api/assign',{method:'POST',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({genre:'visage',cle:s.key,i:s.i,cible:cible,propose:s.person,
-                         sim:s.sim,marge:s.margin})})
-    .then(function(r){return r.json();}).then(function(r){
-      if(!r.ok){ toastP(r.erreur||'Echec de l attribution.'); return; }  // erreur visible, plus de silence
-      if(r.stats) majStats(r.stats);
-      toastP(r.libelle||'fait', r.jeton);
-      el.remove();
-      // Rafraîchit la liste « Personnes identifiées » : une attribution (surtout
-      // vers un NOUVEAU nom depuis une carte « faux positif ? ») crée/complète une
-      // fiche qui, sans ça, n'apparaissait qu'après un rechargement manuel.
-      if(typeof loadPeople==='function') loadPeople();
-      try{ NOMS_P=null; }catch(e){}   // invalide le cache d'autocomplétion des noms
-    }).catch(function(){ toastP('Le serveur n a pas repondu. Reessaie dans un instant.'); });
-}
-function propose2(champ, zone, s, el){
-  var t=champ.value.trim().toLowerCase();
-  nomsPersonnes().then(function(noms){
-    zone.innerHTML='';
-    noms.filter(function(p){return !t||p.nom.toLowerCase().indexOf(t)===0;})
-      .slice(0,4).forEach(function(p){
-        var b=document.createElement('button'); b.className='btn';
-        b.style.cssText='margin:2px 4px 0 0;font-size:12.5px';
-        b.textContent=p.nom+' · '+p.n;
-        b.onclick=function(){ assigner(s,el,p.nom); };
-        zone.appendChild(b); });
-    if(t && !noms.some(function(p){return p.nom.toLowerCase()===t;})){
-      var nb=document.createElement('button'); nb.className='btn';
-      nb.style.cssText='margin:2px 4px 0 0;font-size:12.5px';
-      nb.textContent='Nouveau : '+champ.value.trim();
-      nb.onclick=function(){ assigner(s,el,champ.value.trim()); };
-      zone.appendChild(nb); }
-  });
-}
-
-// Compteur de séance : rythme et erreurs découvertes, calculés côté serveur
-// (journal des jugements). Masqué tant qu'aucun geste récent (< 5 min).
-function majStats(st){
-  var w=document.getElementById('curstats'), t=document.getElementById('curstats-txt');
-  if(!w||!t) return;
-  if(!st||!st.n){ w.hidden=true; return; }
-  var s='Séance : <b>'+st.n+'</b> jugement'+(st.n>1?'s':'');
-  if(st.par_minute!=null) s+=' · <b>'+String(st.par_minute).replace('.',',')+'</b>/min';
-  s+=' · <b>'+st.erreurs+'</b> erreur'+(st.erreurs>1?'s':'')+' découverte'+(st.erreurs>1?'s':'');
-  t.innerHTML=s; w.hidden=false;
-}
-function curResolve(action, sug, el){
-  el.style.opacity=.4;
-  post('/api/curator/resolve',{action:action,sug:sug}).then(function(r){
-    if(r&&r.stats) majStats(r.stats);
-    el.remove(); loadPeople();
-    var box=document.getElementById('curbox');
-    var n=box.children.length;
-    document.getElementById('curc').textContent=n?('('+n+')'):'';
-    if(!n) document.getElementById('curmsg').textContent='Rien à vérifier pour le moment.';
-  });
-}
-function loadCurator(rebuild){
-  fetch('/api/curator/list'+(rebuild?'?rebuild=1':'')).then(function(r){return r.json();}).then(function(d){
-    var msg=document.getElementById('curmsg'), box=document.getElementById('curbox');
-    majStats(d.stats||null);
-    if(d.building){ msg.textContent='Analyse des visages en cours…'; box.innerHTML=''; setTimeout(function(){loadCurator(false);},4000); return; }
-    // bande « ajoutés automatiquement » (réversible)
-    var auto=d.auto||[], aw=document.getElementById('autowrap');
-    if(!auto.length){ aw.innerHTML=''; }
-    else{
-      var ah='<div class="cl"><div style="font-size:var(--t-sm);color:var(--graphite);margin-bottom:var(--e-2)">🤖 Ajoutés automatiquement récemment ('+auto.length+') — vérifie, annule (✗) en cas d\\'erreur :</div><div class="grid">';
-      auto.forEach(function(a){
-        ah+='<label class="prop" style="cursor:default"><a href="'+esc(a.url)+'" target="_blank" rel="noopener"><img loading="lazy" src="'+esc(a.crop_url)+'"></a>'+
-          '<span class="s">'+esc(a.person)+' '+a.sim+'</span>'+
-          '<button class="x" title="Annuler" data-p="'+esc(a.person)+'" data-k="'+esc(a.key)+'">✗</button></label>';
-      });
-      ah+='</div></div>'; aw.innerHTML=ah;
-      aw.querySelectorAll('button.x').forEach(function(b){
-        b.onclick=function(){
-          var p=b.getAttribute('data-p'), k=b.getAttribute('data-k'), cell=b.closest('.prop');
-          cell.style.opacity=.4;
-          post('/api/people/untag',{name:p,keys:[k]}).then(function(){ cell.remove(); loadPeople(); });
-        };
-      });
-    }
-    var items=d.items||[];
-    document.getElementById('curc').textContent=items.length?('('+items.length+')'):'';
-    if(!items.length){ msg.textContent=auto.length?'':'Rien à vérifier pour le moment.'; box.innerHTML=''; return; }
-    msg.textContent='';
-    box.innerHTML='';
-    items.forEach(function(s){
-      var el=document.createElement('div'); el.className='cl'; var html='';
-      var crop='<img loading="lazy" src="'+esc(s.crop_url)+'" style="width:80px;height:80px;object-fit:cover;border-radius:var(--r-md);background:var(--salle-3)">';
-      if(s.type==='merge'){
-        html='<div class="row"><span class="sz">Même personne ? <b>'+esc(s.a)+'</b> et <b>'+esc(s.b)+'</b> (sim '+s.sim+')</span>'+
-          '<button class="btn prim">✓ Fusionner</button><button class="btn">✗ Différents</button></div>';
-      } else if(s.type==='remove'){
-        // « Faux positif ? » : la photo EST taguée X mais le visage ressemble
-        // peu à X. Trois réponses claires : garder (ce n'est PAS un faux
-        // positif → on confirme, plus jamais reproposé), retirer le tag, ou
-        // corriger vers le bon nom. Clavier : Espace/O = garder, X = retirer.
-        var labelR='<b>Faux positif ?</b> visage tagué <b>'+esc(s.person)+'</b> — score '+s.sim;
-        html='<div class="row" style="align-items:center">'+crop+
-          '<a href="'+esc(s.url)+'" target="_blank" rel="noopener" class="sz" style="text-decoration:none;color:var(--graphite)">'+labelR+'</a>'+
-          '<button class="btn prim">✓ Oui, c’est '+esc(s.person)+'</button>'+
-          '<button class="btn warn">✗ Retirer le tag</button>'+
-          '<input class="qui" placeholder="ou : c’est…" autocomplete="off">'+
-          '<button class="btn">Pas un visage</button>'+
-          '<button class="btn anim">C’est un animal</button></div>'+
-          '<div class="props2" style="margin-top:6px"></div>';
-      } else {
-        // Ajout proposé. Pourquoi la question est posée : le rattachement auto
-        // n'a PAS eu lieu parce qu'une autre personne obtient un score proche.
-        var doute=s.rival
-          ? (' <span style="color:var(--veilleuse)">· hésite avec <b>'+esc(s.rival)+
-             '</b> ('+s.rival_sim+', écart '+s.margin+')</span>') : '';
-        var label='<b>Ajouter à '+esc(s.person)+' ?</b> — score '+s.sim+doute;
-        html='<div class="row" style="align-items:center">'+crop+
-          '<a href="'+esc(s.url)+'" target="_blank" rel="noopener" class="sz" style="text-decoration:none;color:var(--graphite)">'+label+'</a>'+
-          '<button class="btn prim">✓ Oui, '+esc(s.person)+'</button>'+
-          '<input class="qui" placeholder="ou : c’est…" autocomplete="off">'+
-          '<button class="btn">✗ Aucun</button>'+
-          '<button class="btn anim">C’est un animal</button></div>'+
-          '<div class="props2" style="margin-top:6px"></div>';
-      }
-      el.innerHTML=html;
-      var b=el.querySelectorAll('button');
-      if(s.type==='merge'){
-        b[0].onclick=function(){curResolve('accept',s,el);};
-        b[1].onclick=function(){curResolve('reject',s,el);};
-      } else if(s.type==='remove'){
-        // b[0] Garder = curator_reject : « c'est bien elle », enregistré comme
-        // confirmé → plus jamais reproposé (+ enrichit la signature). b[1]
-        // Retirer = curator_accept (untag). b[2] Pas un visage = écarte + untag.
-        b[0].onclick=function(){ curResolve('reject',s,el); };
-        b[1].onclick=function(){ curResolve('accept',s,el); };
-        b[2].onclick=function(){ assigner(s, el, '__pas_visage__'); };
-        // « C'est un animal » : meme cible que « Pas un visage » (__pas_visage__,
-        // ecarte du pipeline visages, reversible) mais intention explicite (Mutz).
-        var baR=el.querySelector('.anim');
-        if(baR) baR.onclick=function(){ assigner(s, el, '__pas_visage__'); };
-        var qr=el.querySelector('.qui'), prr=el.querySelector('.props2');
-        if(qr){
-          qr.addEventListener('input',function(){ propose2(qr,prr,s,el); });
-          qr.addEventListener('keydown',function(e){
-            if(e.key==='Enter'&&qr.value.trim()) assigner(s,el,qr.value.trim()); });
-        }
-      } else {
-        // Ajout : accepter, CORRIGER vers un autre nom, ou écarter (pas un visage).
-        b[0].onclick=function(){curResolve('accept',s,el);};
-        b[1].onclick=function(){ assigner(s, el, '__pas_visage__'); };
-        var baA=el.querySelector('.anim');
-        if(baA) baA.onclick=function(){ assigner(s, el, '__pas_visage__'); };
-        var q=el.querySelector('.qui'), pr=el.querySelector('.props2');
-        if(q){
-          q.addEventListener('input',function(){ propose2(q,pr,s,el); });
-          q.addEventListener('keydown',function(e){
-            if(e.key==='Enter'&&q.value.trim()) assigner(s,el,q.value.trim()); });
-        }
-      }
-      box.appendChild(el);
-    });
-    curMark();
-  }).catch(function(){});
-}
-document.getElementById('curref').onclick=function(){ document.getElementById('curmsg').textContent='Analyse demandée…'; loadCurator(true); };
-
-// ── Tri au clavier (sert la priorite n1 : confirmer vite ~100 propositions).
-//    La carte « active » (la 1re de « A verifier ») porte l'anneau veilleuse ;
-//    les touches agissent dessus tant qu'on ne tape pas dans un champ. ──
-function curMark(scroll){
-  // scroll UNIQUEMENT pendant le tri clavier (enchainer les cartes). Jamais au
-  // chargement : un scrollIntoView tardif (fetch async) arrachait la vue vers
-  // la file et cachait le panneau « Gerer » / lien profond ?name= (bug 12/08).
-  var rows=document.querySelectorAll('#curbox > .cl');
-  rows.forEach(function(r,i){ r.classList.toggle('active', i===0); });
-  if(scroll && rows[0]){ try{ rows[0].scrollIntoView({block:'center'}); }catch(e){} }
-}
-function curUndo(){
-  var b=document.querySelector('#toastp button'); if(b){ b.click(); return; }
-  fetch('/api/undo',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'})
-    .then(function(){ loadCurator(true); loadPeople(); }).catch(function(){});
-}
-document.addEventListener('keydown', function(e){
-  var tag=(e.target.tagName||'').toLowerCase();
-  if(tag==='input'||tag==='textarea'||tag==='select'){ if(e.key==='Escape') e.target.blur(); return; }
-  var row=document.querySelector('#curbox > .cl.active'); if(!row) return;
-  var bs=row.querySelectorAll('button');
-  if(e.key===' '||e.key==='Enter'||e.key==='o'||e.key==='O'){
-    e.preventDefault(); if(bs[0]) bs[0].click(); setTimeout(function(){curMark(true);},150);
-  } else if(e.key==='x'||e.key==='X'||e.key==='Delete'){
-    e.preventDefault(); if(bs[1]) bs[1].click(); setTimeout(function(){curMark(true);},150);
-  } else if(e.key==='z'||e.key==='Z'){
-    e.preventDefault(); curUndo();
-  } else if(/^[a-zA-Z]$/.test(e.key)){
-    var inp=row.querySelector('.qui');
-    if(inp){ e.preventDefault(); inp.focus(); inp.value+=e.key; inp.dispatchEvent(new Event('input')); }
-  }
-});
-
 // ── diaporama des photos d'une personne (à la suite / aléatoire) ──
 var psPhotos=[], psOrder=[], psIdx=0, psName='', psTimer=null, psPaused=false, psDur=6000, psMode='seq';
 function psApplyOrder(mode){
@@ -10723,7 +11079,6 @@ document.getElementById('qn-input').addEventListener('keydown',function(e){ if(e
 document.getElementById('pfilter').addEventListener('input', renderPeople);
 loadPeople();
 loadClusters(false);
-loadCurator(false);
 
 // ── chargement de fond progressif des vignettes (sans attendre le scroll) ──
 var _lq=[], _lqActive=0, _LQ_CONC=4;
@@ -10755,7 +11110,7 @@ bgLoad();
 // interagit (molette, toucher, clavier).
 (function(){
   var h=(location.hash||'').replace('#','');
-  if(['verifier','groupes','inconnus'].indexOf(h)<0) return;
+  if(['groupes','inconnus'].indexOf(h)<0) return;
   var stop=false, t0=Date.now();
   ['wheel','touchstart','keydown','mousedown'].forEach(function(ev){
     window.addEventListener(ev, function(){ stop=true; }, {passive:true, once:true});
@@ -10866,6 +11221,8 @@ class Handler(BaseHTTPRequestHandler):
 
         elif path == '/api/curator/list':
             self._serve_curator_list()
+        elif path == '/api/pets/curator/list':
+            self._serve_pets_curator_list()
 
         elif path == '/api/status':
             self._serve_status()
@@ -11695,6 +12052,34 @@ class Handler(BaseHTTPRequestHandler):
                 _suggest_remove(lambda s: s.get('key') == d.get('cle')
                                 and s.get('person') == d.get('propose')
                                 and s.get('type') in ('add', 'remove'))
+                _note_juge(d.get('cle'))
+                res["stats"] = _stats_seance()
+            # Même instrumentation pour une suggestion UNITAIRE d'animal (file
+            # « À vérifier » de l'onglet Classification) : un seul membre +
+            # animal proposé = jugement humain. Les attributions par groupes
+            # (plusieurs membres, pas de « propose ») n'en sont pas.
+            elif (genre == 'animal' and d.get('propose')
+                    and len(d.get('membres') or []) == 1
+                    and isinstance(res, dict) and res.get('ok')):
+                cible_n = str(cible).strip().lower() if isinstance(cible, str) else ''
+                prop_n = str(d.get('propose')).strip().lower()
+                if cible_n == CIBLE_PAS_ANIMAL:
+                    verdict, geste = 'erreur_decouverte', 'pas_animal'
+                elif cible_n == CIBLE_INCONNU:
+                    verdict, geste = 'erreur_decouverte', 'aucun_animal'
+                elif cible_n == prop_n:
+                    verdict, geste = 'confirmation', 'confirme_nom'
+                else:
+                    verdict, geste = 'erreur_decouverte', 'corrige_nom'
+                _k0 = str((d.get('membres') or [[None, 0]])[0][0])
+                _journal_jugement({"source": "curator_animal", "geste": geste,
+                                   "verdict": verdict, "animal": d.get('propose'),
+                                   "cible": cible, "key": _k0,
+                                   "sim": d.get('sim'), "margin": d.get('marge')})
+                # La carte jugée sort de la file TOUT DE SUITE (même remède que
+                # côté visages : sinon elle réapparaît au rechargement).
+                _cat_suggest_remove(lambda s: s.get('key') == _k0)
+                _note_juge(_k0)
                 res["stats"] = _stats_seance()
         except Exception:                                     # noqa: BLE001
             pass
@@ -12025,6 +12410,27 @@ class Handler(BaseHTTPRequestHandler):
                           ensure_ascii=False).encode()
         self._send(200, body, 'application/json')
 
+    def _serve_pets_curator_list(self):
+        """File « À vérifier » des animaux + bande des rattachements auto
+        récents (annulables). Même forme de réponse que /api/curator/list."""
+        q = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
+        rebuild = (q.get('rebuild') or ['0'])[0] == '1'
+        with CAT_SUGGEST_LOCK:
+            building = CAT_SUGGEST_CACHE["building"]
+            has = bool(CAT_SUGGEST_CACHE["items"])
+            at = CAT_SUGGEST_CACHE["at"]
+        if (rebuild or (not has and at == 0)) and not building:
+            threading.Thread(target=build_cat_suggestions, daemon=True).start()
+            building = True
+        with CAT_SUGGEST_LOCK:
+            items = list(CAT_SUGGEST_CACHE["items"])
+        auto = list(reversed(CAT_AUTO_LOG[-60:]))
+        body = json.dumps({"building": building, "at": at,
+                           "count": len(items), "items": items, "auto": auto,
+                           "stats": _stats_seance()},
+                          ensure_ascii=False).encode()
+        self._send(200, body, 'application/json')
+
     def _do_curator_post(self, path):
         if path != '/api/curator/resolve':
             self._send(404, b'Not found', 'text/plain')
@@ -12046,6 +12452,7 @@ class Handler(BaseHTTPRequestHandler):
             # add/remove : même personne + même photo
             return s.get('person') == sug.get('person') and s.get('key') == sug.get('key')
         _suggest_remove(same)
+        _note_juge(sug.get('key'))
         # Instrumentation du geste : chaque résolution est un jugement humain.
         # add+accept / remove+reject = confirmation ; add+reject / remove+accept
         # = erreur du modèle découverte ; merge = ni l'un ni l'autre.

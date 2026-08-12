@@ -17,33 +17,37 @@ RTX 3050 4 Go arbitrée par baux/priorités/éviction).
 5. Selon le sujet : skills `monolith-surgery` (avant tout edit de `server.py`),
    `photo-ui` (dès qu'on touche l'UI).
 
-## Où on en est (12/08/2026, session 3)
+## Où on en est (12/08/2026, session 4)
 
-- Commité jusqu'à `d9eda80` (branche `feat/verite-terrain-marge`) : vérité
-  terrain instrumentée + fix « Gérer » (2 causes), tout vérifié en réel.
-- **Session (3) LIVRÉE, à commiter (bat 27) + redémarrer + vérifier en réel** :
-  - Correctifs d'audit **I1, I2, O1–O5, O10** (thumb 512/1600 + Range/streaming +
-    cache media_roots + index vectors(k) + locks + workers sous ordonnanceur).
-  - **Assurance-vie (audit A)** : `backup_verify()` + `export_jugements()` à
-    chaque backup horaire ; cartes « Dernier scan » / « Sauvegarde vérifiée »
-    dans /reglages. ⚠ Jamais observée sur Windows (URI SQLite UNC) — réflexe
-    n°2 : la voir passer UNE fois.
-  - **/sujets guichet unique** : sous-nav partagée + onglet **Classification**
-    (`/sujets?vue=classification`, compteurs + liens ancrés #verifier/#groupes/
-    #inconnus). Diff relu par agent adversarial, correctifs appliqués.
+- Commité jusqu'à `e17ac2d` (branche `feat/audit-assurance-sujets`) : correctifs
+  d'audit **I1, I2, O1–O5, O10**, **assurance-vie** (`backup_verify()` +
+  `export_jugements()` à chaque backup horaire), **/sujets guichet unique**
+  (sous-nav + onglet Classification).
+- **Session (4) LIVRÉE, à commiter (bat 27) + redémarrer + vérifier en réel** :
+  - Les files **« À vérifier » ont quitté `/people`** : elles se jugent dans
+    `/sujets?vue=classification`, avec une **file ANIMAUX créée en miroir**
+    (`build_cat_suggestions()`, `GET /api/pets/curator/list`, bande « ajoutés
+    automatiquement » annulable, jugements animaux dans le même journal).
+    Clavier unifié : Espace = oui, X = non, Z = annuler, une lettre = corriger.
+  - 3 correctifs de relecture adversariale : `par_humain` (animaux) **annulable** ;
+    garde **anti-course** `_note_juge`/`_juges_depuis` sur les deux files ; garde
+    **clés fantômes** côté animaux. + verrou « une carte ne se juge qu'une fois ».
 
 ## Prochain pas — par valeur (détail : ROADMAP « À faire »)
 
-1. **Vérifier en réel la session (3)** : grille galerie via `/api/thumb` (onglet
-   Réseau), seek vidéo, `/sujets?vue=classification`, carte « Sauvegarde
-   vérifiée : ok » après le prochain backup horaire.
-2. **Vérité terrain** (geste Mike, outillage prêt) : confirmer ~100 propositions
-   dans `/people` (Espace=oui, X=non, Z=annuler) — compteur de séance affiché.
-3. **Éval tagging V2 AVANT lots de renommage** (banc keyé par chemin). Protocole :
+1. **Vérifier en réel la session (4)** : les deux files s'affichent et se jugent
+   dans Classification ; annuler (Z) une acceptation d'animal doit faire REVENIR
+   la carte après rafraîchissement.
+2. **Vérifier en réel la session (3)** : galerie via `/api/thumb` (onglet
+   Réseau), seek vidéo, carte « Sauvegarde vérifiée : ok » après le prochain
+   backup horaire (⚠ jamais observée sur Windows — URI UNC).
+3. **Vérité terrain** (geste Mike, outillage prêt) : confirmer ~100 propositions
+   dans `/sujets?vue=classification` — compteur de séance affiché.
+4. **Éval tagging V2 AVANT lots de renommage** (banc keyé par chemin). Protocole :
    `eval/PLAN_assertions_vs_pixels.md`. Si V2 confirme → câbler Knowledge Builder.
-4. **Correctifs d'audit restants** : O6 (recherche vs lot d'encodage), puis
+5. **Correctifs d'audit restants** : O6 (recherche vs lot d'encodage), puis
    I4–I8, O7–O9, O11–O15 (dont purge `photo_thumbs/`).
-5. Gestes Mike : nettoyer Flo ; activer `gps_place` (plus de préalable technique).
+6. Gestes Mike : nettoyer Flo ; activer `gps_place` (plus de préalable technique).
 
 ## Rappels opérationnels
 
