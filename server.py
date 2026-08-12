@@ -2096,6 +2096,15 @@ def scan_uploads(first=False, deep=False):
     _sync_dir("Uploads", cur, own, first, deep)
 
     # ── dossiers supplémentaires (dossiers_a_taguer.txt), récursif ──
+    # Un dossier à taguer peut ENGLOBER la racine Uploads (ex. la racine Photos
+    # contient _Uploads) : ses fichiers sont alors vus deux fois — clé relative
+    # par le circuit upload, clé ABSOLUE par ce scan → double entrée et double
+    # tagging (observé le 12/08 : 19 photos uploadées indexées 2×). L'arbre
+    # Uploads appartient au scan ci-dessus (clé relative) : on l'exclut ici par
+    # préfixe (_pkey, comparaison de chaînes — pas de resolve() par fichier sur
+    # le NAS). Les entrées absolues déjà créées deviennent orphelines au scan
+    # suivant → purge en cascade par forget_everywhere (étape 4 de _sync_dir).
+    up_pref = _pkey(UPLOAD_DIR) + '/'
     for d in load_extra_dirs(verbose=first):
         if first:
             print(f"  🔍 Énumération de {d} — peut prendre plusieurs minutes "
@@ -2103,7 +2112,8 @@ def scan_uploads(first=False, deep=False):
         try:
             files = [p for p in d.rglob('*')
                      if p.is_file() and p.suffix.lower() in IMAGE_EXT
-                     and not _is_hidden_path(p.relative_to(d))]
+                     and not _is_hidden_path(p.relative_to(d))
+                     and not _pkey(p).startswith(up_pref)]
         except OSError as e:
             print(f"  ⚠ Scan de {d} impossible : {e}")
             continue

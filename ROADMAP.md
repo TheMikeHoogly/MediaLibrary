@@ -77,7 +77,9 @@ Reste non observé : v2ctx en réel (redémarrage requis) et effet O6
     (b) lieux : le texte sous chaque image d'un dossier lieu passe en tooltip
     (gain de place dans la grille) ; (c) harmoniser les possibilités
     d'affichage visages/lieux/animaux — le maximum de fonctionnalités pour
-    tous, **sauf** l'effacement d'image, réservé à l'onglet Classification.
+    tous, **sauf** l'effacement d'image, réservé à l'onglet Classification ;
+    (d) zoom/redimensionnement des images aux doigts (pinch) et à la souris
+    (molette) dans les démos et l'affichage plein écran.
 12. **À évaluer (discipline `vision-eval`)** : Florence-2 léger.
 
 ### Résiduels faible valeur (ne pas prioriser)
