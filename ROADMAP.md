@@ -72,7 +72,13 @@ Reste non observé : v2ctx en réel (redémarrage requis) et effet O6
 10. **Données / finitions** : édition des réglages depuis `/reglages` ; 2ᵉ passe
     des 945 illisibles + `recuperees/` → NAS ; `docs/journaux/` gitignoré +
     purge des undo appliqués > 30 j (I12).
-11. **À évaluer (discipline `vision-eval`)** : Florence-2 léger.
+11. **UI — harmonisation des vues (demandé 12/08, skill `photo-ui`)** :
+    (a) personnes : clic sur l'image d'une personne → lancer sa démo aléatoire ;
+    (b) lieux : le texte sous chaque image d'un dossier lieu passe en tooltip
+    (gain de place dans la grille) ; (c) harmoniser les possibilités
+    d'affichage visages/lieux/animaux — le maximum de fonctionnalités pour
+    tous, **sauf** l'effacement d'image, réservé à l'onglet Classification.
+12. **À évaluer (discipline `vision-eval`)** : Florence-2 léger.
 
 ### Résiduels faible valeur (ne pas prioriser)
 `/reglages` : Pause globale des workers ; retrait de l'ancien bandeau
