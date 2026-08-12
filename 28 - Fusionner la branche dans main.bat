@@ -28,16 +28,16 @@ if errorlevel 1 (
 )
 
 REM --- Verrou git perime (.git\index.lock) ---
-REM   Un client git (GitKraken Desktop) ouvert sur le depot, ou un process git
-REM   plante, laisse un .lock qui bloque les operations git.
+REM   Un client git graphique ouvert sur le depot, ou un process git plante,
+REM   laisse un .lock qui bloque les operations git.
 set "GITLOCK="
 if exist ".git\index.lock" set "GITLOCK=1"
 if exist ".git\HEAD.lock" set "GITLOCK=1"
 if not defined GITLOCK goto :apres_verrou
 echo ATTENTION : un verrou git est present dans .git (index.lock ou HEAD.lock).
-echo   Cause habituelle : GitKraken Desktop ouvert sur ce depot,
+echo   Cause habituelle : un client git graphique ouvert sur ce depot,
 echo   ou un process git precedent qui a plante.
-echo   Ferme GitKraken Desktop s'il est ouvert sur ce depot avant de continuer.
+echo   Ferme ce client s'il est ouvert sur ce depot avant de continuer.
 echo.
 choice /c ON /n /m "Supprimer ce verrou et continuer ? (O = oui / N = annuler) : "
 if errorlevel 2 (
@@ -59,6 +59,7 @@ echo.
 
 for /f "delims=" %%b in ('git branch --show-current') do set "BRANCH=%%b"
 echo Branche courante : !BRANCH!
+for /f "delims=" %%c in ('git log -1 --oneline') do echo Dernier commit   : %%c
 echo.
 
 if "!BRANCH!"=="main" (
@@ -161,10 +162,13 @@ echo ============================================================
 echo   FUSION REUSSIE
 echo ============================================================
 echo   !BRANCH! est mergee dans main (local et distant).
-echo   Tu peux continuer a travailler sur !BRANCH!, ou en creer
-echo   une nouvelle depuis main pour le prochain chantier.
 echo.
-echo   Branche terminee ? Pour la supprimer (optionnel) :
+echo   PROCHAINES ACTIONS :
+echo   - Prochain chantier : Claude proposera la branche et le
+echo     titre via SESSION_COMMIT.txt ^(lu par le bat 27^).
+echo     A la main : git checkout -b feat/mon-chantier
+echo     ^(depuis ici : la branche est au niveau de main^)
+echo   - Branche terminee ? Pour la supprimer ^(optionnel^) :
 echo     git push origin --delete !BRANCH!
 echo     git branch -d !BRANCH!   ^(bascule d'abord ailleurs^)
 echo.

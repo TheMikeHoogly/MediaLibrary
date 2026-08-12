@@ -7,20 +7,22 @@ optimisations O1–O15, angles morts A–F), `docs/RANGEMENT_2026.md`,
 `docs/AUDIT_EXTERNE_2026.md`, `PROMPT_NOUVELLE_SESSION.md` (reprise), et git
 (chaque chantier fini y est — les récits de travaux terminés ne vivent PAS ici).
 
-## État actuel (11 août 2026)
+## État actuel (12 août 2026)
 
-**Session 11/08 (nuit) — GpuArbiter : LIVRÉ et VÉRIFIÉ EN RÉEL, reste à COMMITER.**
-L'`ArbitreGPU` (existant mais jamais branché — sa sonde lisait une clé inexistante) est
-câblé aux **5** politiques GPU (visages 1200, SigLIP 1400, YOLO 1600, DINO 1800 ; Ollama
-hors bail = priorité de fait, contrat historique). Baux **persistants** (la résidence
-consomme, pas l'inférence), `confirmer` (matérialisation, pas de double compte), `rendre`
-sur chaque échec de montage ; priorités semantique > visages > animaux > empreintes_chats
-avec **éviction** (descente CPU, jamais d'interruption d'une inférence en vol) ; `menage()`
-anti-débordement. Diff relu 2× par agent (1 BLOQUANT + 4 SÉRIEUX corrigés). **Vérifié après
-redémarrage** via `GET /api/search/status` → `etat['gpu']` : bail `semantique` accordé et
-matérialisé (SigLIP sur cuda), 1811 Mo libres, prios en place, 0 refus/éviction ; recherche
-OK. Tests : +11 vérifications ArbitreGPU dans `test_ordonnanceur.py` → **27/27**.
-**Triple audit du projet mené dans la foulée** → `docs/AUDIT_INTERNE_2026-08.md`.
+**Session 12/08 — file « À vérifier » par MARGE + journal des jugements : LIVRÉ,
+reste à VÉRIFIER EN RÉEL (redémarrage requis) puis COMMITER.** Tri : faux positifs
+flagrants d'abord, puis ajouts par marge croissante avec la 2e personne (jamais le
+score absolu). Chaque geste de la file (resolve + /api/assign unitaire) → une ligne
+append-only `journal_jugements.jsonl` (local, gitignoré) avec verdict confirmation/
+erreur_decouverte ; compteur de séance dans /people (n · /min · erreurs, pause 5 min).
+Tests isolés OK. À vérifier en réel : ordre de la file, ligne « Séance », JSONL.
+
+**Session 11/08 (nuit) — GpuArbiter : COMMITÉ (`72d1946`), vérifié en réel.** Les 5
+politiques GPU sous baux/priorités/éviction, tests 27/27 (`test_ordonnanceur.py`) ;
+détail dans git. **Triple audit mené dans la foulée** → `docs/AUDIT_INTERNE_2026-08.md`.
+
+**⚠ Régression signalée (12/08) :** depuis la fusion `/sujets`, le bouton **« Gérer »**
+n'offre plus les options d'optimisation habituelles (panneau de correction). → point 2.
 
 **Sessions 11/08 matin + après-midi : commitées et fusionnées** (tout vérifié en réel,
 détail dans git) : Lieux (25, 0,8 s) ; fixes clusters ; perf `/sujets` (>45 s → 0,8 s) ;
@@ -42,8 +44,9 @@ Refonte `/people` + outillage **faux positifs** ; tokenisation value-preserving 
 jugées par un humain (⚠ geste Mike : re-rejeter le groupe Caline une fois) ; Lieux = 3ᵉ type
 d'entité.
 
-- **Git** : tout est commité jusqu'à `ea4aa00` ; **reste à commiter la session GpuArbiter
-  + audit** (vérifiée ✓) — `27 - Commit de session.bat` ; **`git push` = geste de Mike**.
+- **Git** : tout est commité jusqu'à `72d1946` (Arbitre GPU) ; **reste à commiter la
+  session 12/08** (file par marge + journal) — `27 - Commit de session.bat` ;
+  **`git push` = geste de Mike**.
 - **Ouvert (gestes Mike)** :
   - **Nettoyer Flo** : la fiche reste polluée tant qu'un passage n'est pas fait. Ouvrir Flo →
     « Corriger » (seuil ~0.2, monter en surveillant la grille) ou « Nettoyer (référence) »
@@ -65,53 +68,58 @@ d'entité.
 | Perf | **Scoring vectorisé (10/08)** : matmul unique + `media_roots()` calculé 1× → re-score 6338 photos **156 s → quelques s** ; `SubjectStore.photos()` mode `light` (détail : git) |
 | Tagging | `qwen3-vl:2b` ; hybride assertions+image ; 1 lecture exiftool/photo |
 | GPU | torch CUDA `2.13.0+cu130` + `onnxruntime_gpu` ; `FACE_USE_GPU=False` volontaire (4 Go pris par Ollama) |
-| Hygiène | Nettoyage de session **réversible** (`_corbeille_session/` + lint `*.md`, `29 - …bat`), au protocole de `CLAUDE.md` |
+| Hygiène | Nettoyage de session **réversible** (`_corbeille_session/` + lint `*.md`, `29 - …bat`) ; **commit guidé** : `SESSION_COMMIT.txt` (branche+titre proposés par le bat 27) — protocole `CLAUDE.md` |
 
 ## À faire — par ordre de valeur (réordonné au triple audit du 11/08)
 
 1. **Vérité terrain humaine (priorité n°1).** ~0,8 % de confirmations (91/12 072).
-   Confirmer ~100 propositions dans `/people` vaut plus que tout changement d'algo (tri
-   clavier + filtre par nom prêts). **Instrumenter le geste** : file de confirmation triée
-   par **marge** entre 1ᵉʳ et 2ᵉ prototype (incertitude du modèle — jamais le score absolu,
-   circularité) ; métrique = confirmations/minute et erreurs découvertes, pas l'accord
-   modèle-humain.
-2. **Assurance-vie de la vérité terrain (angle mort majeur — audit A).** Les jugements
+   L'instrumentation est LIVRÉE (12/08 : file par marge, journal des jugements, compteur
+   de séance — cf. État actuel). Reste le **geste Mike** : confirmer ~100 propositions
+   dans `/people` (tri clavier + filtre par nom prêts) ; la métrique qui compte =
+   confirmations/minute et erreurs découvertes, pas l'accord modèle-humain.
+2. **`/sujets` guichet unique (régression 12/08 à corriger d'abord).** Depuis la fusion,
+   « Gérer » n'ouvre plus les options d'optimisation habituelles (Corriger, Nettoyer
+   (référence), renommer, …). Corriger la régression, puis aller au bout de la fusion :
+   **toutes** les fonctions de gestion d'une personne, d'un animal ou d'un lieu réunies
+   dans `/sujets`, + un onglet **« Classification »** (groupes à nommer, faux positifs, …)
+   séparant clairement personnes / animaux / lieux. (Skills : `photo-ui`, `monolith-surgery`.)
+3. **Assurance-vie de la vérité terrain (angle mort majeur — audit A).** Les jugements
    humains ne vivent que dans `photos.db`, snapshot jamais restauré ni vérifié, même site.
    → Tâche `backup_verify` (integrity_check + restauration à blanc + comptage confirmed/
    exclude) + **export JSONL append-only** des jugements sur NAS (copiable hors site).
-3. **Éval tagging V2 — AVANT les lots de renommage** (le jeu figé de 150 photos est keyé
+4. **Éval tagging V2 — AVANT les lots de renommage** (le jeu figé de 150 photos est keyé
    par chemin ; renommer d'abord invaliderait le banc — mode de panne déjà documenté).
    Protocole prêt : `eval/PLAN_assertions_vs_pixels.md`. Si V2 confirme → **câbler le
    Knowledge Builder** (ADOPTÉ le 31/07, jamais câblé) + créer la **version de pipeline
    tagging** manquante (audit D).
-4. **Gestes Mike, dans cet ordre** : nettoyer Flo (outillage livré) ; **après I2+O10**
+5. **Gestes Mike, dans cet ordre** : nettoyer Flo (outillage livré) ; **après I2+O10**
    (re-clé `gps_places.json` + index `vectors(k)` — sinon libellés orphelins et scans
    ×850 k lignes/lot) : activer `gps_place` (`18 - …gazetteer.bat` → `enrichir_lieux.py`
    → `--ecrire` → redémarrer) ; **après l'éval V2** : lots de renommage (plan = 2114).
-5. **Correctifs d'audit** (détail : `docs/AUDIT_INTERNE_2026-08.md`). Prioritaires :
+6. **Correctifs d'audit** (détail : `docs/AUDIT_INTERNE_2026-08.md`). Prioritaires :
    I1 (workers visages/animaux hors ordonnanceur — la promesse « un seul travail lourd »
-   ne les couvre pas), I2+O10 (prérequis du point 4), O1 (`/api/thumb` : vignettes de
+   ne les couvre pas), I2+O10 (prérequis du point 5), O1 (`/api/thumb` : vignettes de
    grille = originaux pleine résolution, −98 % d'octets NAS, meilleur ratio du lot),
    O2 (`_send_file` : Range + streaming), O3 (cache `media_roots`), O4 (écritures vectors
    sous `STORE.lock`), O5 (try/except `maintenance_loop` — un crash silencieux tue scan
    ET backup), O6 (recherche bloquée par le lot d'encodage). Puis I5–I8, O7–O13.
-6. **Navigation par similarité** : `/api/similar?key=` (cosinus sur `photo_vectors()`
+7. **Navigation par similarité** : `/api/similar?key=` (cosinus sur `photo_vectors()`
    existant, bouton « semblables » dans la visionneuse) ; puis **doublons proches bridés**
    (>0,98 + même journée → quarantaine réversible, 50 paires jugées par Mike avant tout
    geste) ; rangée « même jour, autres années » en galerie (requête date, zéro IA).
-7. **Extraction `ui/` — décision nette à prendre** : session dédiée `bundle.py` ou parcage
+8. **Extraction `ui/` — décision nette à prendre** : session dédiée `bundle.py` ou parcage
    explicite (item zombie depuis plusieurs sessions ; tout le préparatoire est fait et
    vérifié, détail dans git).
-8. **Cross-pipeline (Mutz/Caline)** — outil livré, réversible. Fix auto REJETÉ (18 % faux
+9. **Cross-pipeline (Mutz/Caline)** — outil livré, réversible. Fix auto REJETÉ (18 % faux
    rejets) ; seule piste restante : re-mesurer sur découpes SANS marge. Relancer l'outil
    si un nouveau nom d'animal apparaît en `personne:`.
-9. **Reconnaissance — algo (BARRIÈRE : vérité terrain ≥ ~5 %).** HDBSCAN/Chinese Whispers
+10. **Reconnaissance — algo (BARRIÈRE : vérité terrain ≥ ~5 %).** HDBSCAN/Chinese Whispers
    inévaluables aujourd'hui (étalon circulaire à 0,8 %) ; AdaFace idem ; écrire les tags
-   SigLIP = décision de mutation XMP, exige la version de pipeline tagging (point 3).
-10. **Données / finitions.** Édition des réglages depuis `/reglages` ; 2ᵉ passe des 945
+   SigLIP = décision de mutation XMP, exige la version de pipeline tagging (point 4).
+11. **Données / finitions.** Édition des réglages depuis `/reglages` ; 2ᵉ passe des 945
     illisibles + remettre `recuperees/` sur NAS ; `docs/journaux/` gitignoré + purge des
     undo appliqués > 30 j (I12).
-11. **À évaluer (discipline `vision-eval`).** Florence-2 (caption+detection+OCR) léger.
+12. **À évaluer (discipline `vision-eval`).** Florence-2 (caption+detection+OCR) léger.
 
 ### Résiduels faible valeur (ne pas prioriser)
 - `/reglages` : bouton **Pause globale** des workers (aujourd'hui : pause maintenance seule) ;

@@ -43,18 +43,33 @@ git checkout nom-de-ta-branche
 Puis relancer le serveur.
 
 ## Gestes courants
-- **Commit de session** : `27 - Commit de session.bat` (add + commit + push la branche ;
-  propose de créer une branche au 1er commit). `28` vient après, quand c'est validé.
-- **Nouveau chantier** : `git fetch origin && git checkout main && git pull && git checkout -b feat/…`.
+- **Commit de session** : `27 - Commit de session.bat` (add + commit + push la branche).
+  `28` vient après, quand c'est validé en réel.
+- **Nouveau chantier** : juste après un `28` réussi, `git checkout -b feat/…` depuis la
+  branche courante (elle est au niveau de `main`). Sinon : `git fetch origin &&
+  git checkout main && git pull && git checkout -b feat/…` (serveur arrêté pour ce checkout).
 - **État** : `git branch -vv` ; `git log --oneline main..HEAD` ; `git status -sb`.
 
+## Propositions par défaut (`SESSION_COMMIT.txt`)
+En fin de session, Claude écrit `SESSION_COMMIT.txt` à la racine (ASCII, sans guillemets
+ni `!`) :
+```
+branche=feat/mon-chantier
+titre=Mon titre de commit
+```
+Le `.bat 27` le lit et propose : bascule sur `branche` (créée si besoin, O/N) et `titre`
+comme message par défaut (**Entrée = accepter**). Le fichier est supprimé une fois le
+commit fait (proposition consommée). Local, gitignoré ; s'il est absent, le bat pose les
+questions manuellement comme avant.
+
 ## Verrou `.git/index.lock`
-Symptôme : `Unable to create '.../.git/index.lock'`. Cause habituelle : GitKraken Desktop
-ouvert sur le dépôt, ou un git planté. Les bats 27/28 le détectent et proposent de le
-supprimer (fermer GitKraken d'abord). À la main : `del "…\.git\index.lock"`. S'il
+Symptôme : `Unable to create '.../.git/index.lock'`. Cause habituelle : un client git
+graphique ouvert sur le dépôt, ou un git planté. Les bats 27/28 le détectent et proposent
+de le supprimer (fermer le client d'abord). À la main : `del "…\.git\index.lock"`. S'il
 réapparaît, un client git tourne encore : ferme-le.
 
-## GitKraken (optionnel)
-Le connecteur MCP GitKraken permettrait à Claude d'ouvrir/fusionner les PR lui-même, mais
-il refuse encore l'auth `context=mcp`. En attendant, Claude prépare tout et donne les
-commandes ; le `.bat 28` fait la fusion sans GitKraken.
+## Rôle de Claude vis-à-vis de git
+Claude **n'exécute aucune commande ni outil git** (ni plugin/MCP, ni `device_bash` — cf.
+`CLAUDE.md`) : il prépare tout et donne les commandes ; les bats 27/28 font commit et
+fusion. Pour connaître l'état du dépôt (dernier commit, branche), Claude lit
+`.git/logs/HEAD` en lecture seule (staging).

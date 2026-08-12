@@ -8037,6 +8037,60 @@ AUTO_LOG = []                 # journal réversible des ajouts automatiques (ré
 SUGGEST_CACHE = {"at": 0.0, "building": False, "items": []}
 SUGGEST_LOCK = threading.Lock()
 
+# ── Journal des jugements humains (instrumenter le geste de vérité terrain) ──
+# Chaque décision prise dans la file « À vérifier » (accepter, rejeter,
+# corriger, « pas un visage ») est datée et append-only : une ligne JSON par
+# geste dans journal_jugements.jsonl (LOCAL, comme photos.db — jamais le NAS).
+# Sert deux métriques honnêtes : jugements/minute et erreurs découvertes —
+# jamais l'accord modèle-humain (circulaire). L'export/sauvegarde hors site des
+# jugements est un chantier séparé (ROADMAP « assurance-vie »).
+JUGEMENTS_PATH = SCRIPT_DIR / "journal_jugements.jsonl"
+JUGEMENTS_LOCK = threading.Lock()
+JUGEMENTS_RECENTS = []        # miroir mémoire (séance en cours) pour les stats
+JUGEMENTS_PAUSE = 300         # > 5 min sans geste = nouvelle séance
+
+
+def _journal_jugement(evt):
+    """Consigne un jugement humain (journal fichier + miroir mémoire).
+
+    Best-effort : une panne d'écriture ne fait jamais échouer le geste."""
+    evt = dict(evt)
+    evt["ts"] = round(time.time(), 3)
+    with JUGEMENTS_LOCK:
+        JUGEMENTS_RECENTS.append(evt)
+        if len(JUGEMENTS_RECENTS) > 2000:
+            del JUGEMENTS_RECENTS[:-2000]
+        try:
+            with open(JUGEMENTS_PATH, 'a', encoding='utf-8') as f:
+                f.write(json.dumps(evt, ensure_ascii=False) + "\n")
+        except OSError as e:
+            print(f"  ⚠ Journal des jugements : {e}")
+
+
+def _stats_seance():
+    """Métriques de la séance en cours (jugements/minute, erreurs découvertes).
+
+    Séance = suite de jugements séparés de moins de JUGEMENTS_PAUSE secondes,
+    finissant maintenant. Le rythme n'est affiché qu'après 30 s de recul."""
+    now = time.time()
+    with JUGEMENTS_LOCK:
+        sel = []
+        fin = now
+        for evt in reversed(JUGEMENTS_RECENTS):
+            if fin - evt["ts"] > JUGEMENTS_PAUSE:
+                break
+            sel.append(evt)
+            fin = evt["ts"]
+    if not sel:
+        return {"n": 0}
+    n = len(sel)
+    conf = sum(1 for e in sel if e.get("verdict") == 'confirmation')
+    err = sum(1 for e in sel if e.get("verdict") == 'erreur_decouverte')
+    duree = max(0.0, sel[0]["ts"] - sel[-1]["ts"])   # sel est en ordre inverse
+    par_min = round(n / (duree / 60.0), 1) if duree >= 30 else None
+    return {"n": n, "confirmations": conf, "erreurs": err,
+            "duree_s": int(duree), "par_minute": par_min}
+
 
 def _refs_vecteurs(pe):
     vs = []
@@ -8337,9 +8391,26 @@ def build_suggestions():
                     if s >= CUR_MERGE_SIM:
                         items.append({"type": "merge", "a": names[a], "b": names[b],
                                       "sim": round(s, 3), "strong": True})
+        # Tri de la file (priorité n°1 du ROADMAP : instrumenter le geste).
+        # - remove d'abord : chaque faux positif retiré est une erreur corrigée ;
+        #   score CROISSANT (le plus flagrant en tête).
+        # - add ensuite, par MARGE CROISSANTE avec la 2e personne (incertitude
+        #   du modèle). JAMAIS par score absolu : trier par score ferait juger
+        #   d'abord ce que le modèle croit déjà savoir (circularité) ; la marge
+        #   place le jugement humain là où il informe le plus.
         order = {"remove": 0, "merge": 1, "add": 2}
-        items.sort(key=lambda x: (order.get(x["type"], 3),
-                                  0 if x.get("strong") else 1, -x.get("sim", 0)))
+
+        def _cle_tri(x):
+            t = x["type"]
+            if t == "remove":
+                fin = x.get("sim", 0.0)        # plus bas = plus flagrant
+            elif t == "add":
+                fin = x.get("margin", 9.9)     # plus serré = plus incertain
+            else:
+                fin = -x.get("sim", 0.0)       # merge : les plus proches d'abord
+            return (order.get(t, 3), fin)
+
+        items.sort(key=_cle_tri)
         items = items[:CUR_MAX_SUGGEST]
         with SUGGEST_LOCK:
             SUGGEST_CACHE["items"] = items
@@ -9317,6 +9388,7 @@ input[type=text]:focus, input.qui:focus { border-color: var(--veilleuse); }
 <h2>À vérifier <span class="c" id="curc"></span>
   <button class="btn" id="curref" style="font-size:var(--t-xs);padding:var(--e-1) var(--e-2);margin-left:var(--e-2)">&#8635; Rafraîchir</button></h2>
 <div class="msg"><span class="kbd-hint">Raccourcis : <b>Espace</b>/<b>Entr&eacute;e</b> = oui &middot; <b>X</b> = non &middot; <b>Z</b> = annuler &middot; une lettre = corriger le nom</span></div>
+<div class="msg" id="curstats" hidden><span class="kbd-hint" id="curstats-txt"></span></div>
 <div class="msg" id="curmsg">Chargement&hellip;</div>
 <div class="clus" id="autowrap"></div>
 <div class="clus" id="curbox"></div>
@@ -9834,9 +9906,11 @@ function toastP(msg, jeton, apres){
 }
 function assigner(s, el, cible){
   fetch('/api/assign',{method:'POST',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({genre:'visage',cle:s.key,i:s.i,cible:cible,propose:s.person})})
+    body:JSON.stringify({genre:'visage',cle:s.key,i:s.i,cible:cible,propose:s.person,
+                         sim:s.sim,marge:s.margin})})
     .then(function(r){return r.json();}).then(function(r){
       if(!r.ok){ toastP(r.erreur||'Echec de l attribution.'); return; }  // erreur visible, plus de silence
+      if(r.stats) majStats(r.stats);
       toastP(r.libelle||'fait', r.jeton);
       el.remove();
       // Rafraîchit la liste « Personnes identifiées » : une attribution (surtout
@@ -9866,9 +9940,21 @@ function propose2(champ, zone, s, el){
   });
 }
 
+// Compteur de séance : rythme et erreurs découvertes, calculés côté serveur
+// (journal des jugements). Masqué tant qu'aucun geste récent (< 5 min).
+function majStats(st){
+  var w=document.getElementById('curstats'), t=document.getElementById('curstats-txt');
+  if(!w||!t) return;
+  if(!st||!st.n){ w.hidden=true; return; }
+  var s='Séance : <b>'+st.n+'</b> jugement'+(st.n>1?'s':'');
+  if(st.par_minute!=null) s+=' · <b>'+String(st.par_minute).replace('.',',')+'</b>/min';
+  s+=' · <b>'+st.erreurs+'</b> erreur'+(st.erreurs>1?'s':'')+' découverte'+(st.erreurs>1?'s':'');
+  t.innerHTML=s; w.hidden=false;
+}
 function curResolve(action, sug, el){
   el.style.opacity=.4;
-  post('/api/curator/resolve',{action:action,sug:sug}).then(function(){
+  post('/api/curator/resolve',{action:action,sug:sug}).then(function(r){
+    if(r&&r.stats) majStats(r.stats);
     el.remove(); loadPeople();
     var box=document.getElementById('curbox');
     var n=box.children.length;
@@ -9879,6 +9965,7 @@ function curResolve(action, sug, el){
 function loadCurator(rebuild){
   fetch('/api/curator/list'+(rebuild?'?rebuild=1':'')).then(function(r){return r.json();}).then(function(d){
     var msg=document.getElementById('curmsg'), box=document.getElementById('curbox');
+    majStats(d.stats||null);
     if(d.building){ msg.textContent='Analyse des visages en cours…'; box.innerHTML=''; setTimeout(function(){loadCurator(false);},4000); return; }
     // bande « ajoutés automatiquement » (réversible)
     var auto=d.auto||[], aw=document.getElementById('autowrap');
@@ -11071,6 +11158,28 @@ class Handler(BaseHTTPRequestHandler):
                 res = {"ok": False, "erreur": "genre inconnu"}
         except Exception as e:                                # noqa: BLE001
             res = {"ok": False, "erreur": str(e)[:200]}
+        # Instrumentation : une attribution UNITAIRE de visage avec personne
+        # proposée vient d'une carte de la file « À vérifier » → jugement humain
+        # (confirmation du nom, correction vers un autre nom, ou « pas un
+        # visage »). Les attributions par groupes (« membres ») n'en sont pas.
+        try:
+            if (genre == 'visage' and not d.get('membres') and d.get('propose')
+                    and isinstance(res, dict) and res.get('ok')):
+                cible_n = str(cible).strip().lower()
+                prop_n = str(d.get('propose')).strip().lower()
+                if cible_n == '__pas_visage__':
+                    verdict, geste = 'erreur_decouverte', 'pas_visage'
+                elif cible_n == prop_n:
+                    verdict, geste = 'confirmation', 'confirme_nom'
+                else:
+                    verdict, geste = 'erreur_decouverte', 'corrige_nom'
+                _journal_jugement({"source": "assign", "geste": geste,
+                                   "verdict": verdict, "person": d.get('propose'),
+                                   "cible": cible, "key": d.get('cle'),
+                                   "sim": d.get('sim'), "margin": d.get('marge')})
+                res["stats"] = _stats_seance()
+        except Exception:                                     # noqa: BLE001
+            pass
         self._send(200, json.dumps(res, ensure_ascii=False).encode(),
                    'application/json')
 
@@ -11309,7 +11418,8 @@ class Handler(BaseHTTPRequestHandler):
             items = list(SUGGEST_CACHE["items"])
         auto = list(reversed(AUTO_LOG[-60:]))   # ajouts automatiques récents (réversibles)
         body = json.dumps({"building": building, "at": at,
-                           "count": len(items), "items": items, "auto": auto},
+                           "count": len(items), "items": items, "auto": auto,
+                           "stats": _stats_seance()},
                           ensure_ascii=False).encode()
         self._send(200, body, 'application/json')
 
@@ -11334,7 +11444,23 @@ class Handler(BaseHTTPRequestHandler):
             # add/remove : même personne + même photo
             return s.get('person') == sug.get('person') and s.get('key') == sug.get('key')
         _suggest_remove(same)
-        self._send(200, json.dumps({"ok": ok}).encode(), 'application/json')
+        # Instrumentation du geste : chaque résolution est un jugement humain.
+        # add+accept / remove+reject = confirmation ; add+reject / remove+accept
+        # = erreur du modèle découverte ; merge = ni l'un ni l'autre.
+        if ok:
+            t = sug.get("type")
+            if t == "add":
+                verdict = 'confirmation' if action == 'accept' else 'erreur_decouverte'
+            elif t == "remove":
+                verdict = 'erreur_decouverte' if action == 'accept' else 'confirmation'
+            else:
+                verdict = 'fusion' if action == 'accept' else 'refus_fusion'
+            _journal_jugement({"source": "curator", "geste": f"{t}_{action}",
+                               "verdict": verdict, "person": sug.get("person"),
+                               "key": sug.get("key"), "sim": sug.get("sim"),
+                               "margin": sug.get("margin")})
+        self._send(200, json.dumps({"ok": ok, "stats": _stats_seance()}).encode(),
+                   'application/json')
 
     def _do_people_post(self, path):
         data = self._read_json_body()

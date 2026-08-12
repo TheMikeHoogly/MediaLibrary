@@ -1,7 +1,16 @@
 @echo off
 REM ============================================================
 REM   Commit de session - MediaLibrary
-REM   Automatise : branche (optionnelle) + add -A + commit + push.
+REM   Automatise : branche + add -A + commit + push.
+REM
+REM   Lit SESSION_COMMIT.txt (prepare par Claude en fin de
+REM   session) et propose par defaut la branche et le titre.
+REM   Entree = accepter la proposition. Sans ce fichier, le
+REM   script pose les questions comme avant.
+REM   Format du fichier (ASCII, sans guillemets ni "!") :
+REM     branche=feat/mon-chantier
+REM     titre=Mon titre de commit
+REM
 REM   ASCII PUR obligatoire (voir CLAUDE.md / verifier_bat.py).
 REM ============================================================
 setlocal enabledelayedexpansion
@@ -20,16 +29,16 @@ if errorlevel 1 (
 )
 
 REM --- Verrou git perime (.git\index.lock) ---
-REM   Deja rencontre 2x : un client git (GitKraken Desktop) ouvert sur le
-REM   depot, ou un process git plante, laisse un .lock qui bloque tout commit.
+REM   Deja rencontre : un client git graphique ouvert sur le depot, ou un
+REM   process git plante, laisse un .lock qui bloque tout commit.
 set "GITLOCK="
 if exist ".git\index.lock" set "GITLOCK=1"
 if exist ".git\HEAD.lock" set "GITLOCK=1"
 if not defined GITLOCK goto :apres_verrou
 echo ATTENTION : un verrou git est present dans .git (index.lock ou HEAD.lock).
-echo   Cause habituelle : GitKraken Desktop ouvert sur ce depot,
+echo   Cause habituelle : un client git graphique ouvert sur ce depot,
 echo   ou un process git precedent qui a plante.
-echo   Ferme GitKraken Desktop s'il est ouvert sur ce depot avant de continuer.
+echo   Ferme ce client s'il est ouvert sur ce depot avant de continuer.
 echo.
 choice /c ON /n /m "Supprimer ce verrou et continuer ? (O = oui / N = annuler) : "
 if errorlevel 2 (
@@ -50,14 +59,43 @@ echo.
 :apres_verrou
 
 for /f "delims=" %%b in ('git branch --show-current') do set "BRANCH=%%b"
-echo Branche courante : !BRANCH!
+
+REM --- Propositions de la session (SESSION_COMMIT.txt) ---
+set "SUG_BRANCHE="
+set "SUG_TITRE="
+if exist "SESSION_COMMIT.txt" (
+  for /f "usebackq eol=# tokens=1* delims==" %%a in ("SESSION_COMMIT.txt") do (
+    if /i "%%a"=="branche" set "SUG_BRANCHE=%%b"
+    if /i "%%a"=="titre" set "SUG_TITRE=%%b"
+  )
+)
+
+echo Branche courante  : !BRANCH!
+if defined SUG_BRANCHE echo Branche proposee  : !SUG_BRANCHE!
+if defined SUG_TITRE echo Titre propose     : !SUG_TITRE!
 echo.
 echo Etat du depot :
 git status -s
 echo.
 
-REM --- Branche (optionnel) ---
-REM La plupart du temps : repondre N pour commiter sur la branche courante.
+REM --- Branche ---
+if not defined SUG_BRANCHE goto :branche_manuelle
+if /i "!SUG_BRANCHE!"=="!BRANCH!" goto :apres_branche
+choice /c ON /n /m "Basculer sur la branche proposee !SUG_BRANCHE! ? (O = oui / N = rester sur !BRANCH!) : "
+if errorlevel 2 goto :branche_manuelle
+git checkout -b "!SUG_BRANCHE!" 2>nul
+if not errorlevel 1 goto :branche_ok
+git checkout "!SUG_BRANCHE!"
+if errorlevel 1 (
+  echo Echec de bascule sur !SUG_BRANCHE!. Abandon.
+  pause
+  exit /b 1
+)
+:branche_ok
+set "BRANCH=!SUG_BRANCHE!"
+goto :apres_branche
+
+:branche_manuelle
 choice /c ON /n /m "Creer une NOUVELLE branche ? (O = oui / N = rester sur !BRANCH!) : "
 if errorlevel 2 goto :apres_branche
 set "NEWBR="
@@ -77,7 +115,12 @@ set "BRANCH=!NEWBR!"
 
 REM --- Message de commit ---
 set "MSG="
-set /p "MSG=Message de commit : "
+if defined SUG_TITRE (
+  set /p "MSG=Message de commit [Entree = titre propose] : "
+  if "!MSG!"=="" set "MSG=!SUG_TITRE!"
+) else (
+  set /p "MSG=Message de commit : "
+)
 if "!MSG!"=="" (
   echo Message vide. Abandon, rien n'a ete commite.
   pause
@@ -92,6 +135,9 @@ if errorlevel 1 (
   pause
   exit /b 1
 )
+
+REM La proposition est consommee : elle ne doit pas etre reproposee.
+if exist "SESSION_COMMIT.txt" del /q "SESSION_COMMIT.txt"
 
 echo.
 echo Commit fait sur la branche !BRANCH!.
@@ -109,11 +155,13 @@ if errorlevel 1 (
 :rappel
 echo.
 echo ------------------------------------------------------------
-echo   RAPPEL fin de session :
-echo   - ROADMAP.md et PROMPT_NOUVELLE_SESSION.md a jour ?
-echo     ^(Claude les prepare pour la prochaine session.^)
+echo   PROCHAINES ACTIONS :
+echo   - Code valide en reel ? Fusionner dans main :
+echo     "28 - Fusionner la branche dans main.bat"
 echo   - Redemarrer le serveur si le code a change :
 echo     "0 - Demarrer le serveur.bat"
+echo   - ROADMAP.md et PROMPT_NOUVELLE_SESSION.md a jour ?
+echo     ^(Claude les prepare pour la prochaine session.^)
 echo ------------------------------------------------------------
 echo.
 pause

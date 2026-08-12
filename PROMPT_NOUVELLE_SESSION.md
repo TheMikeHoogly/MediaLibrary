@@ -17,32 +17,35 @@ RTX 3050 4 Go arbitrée par baux/priorités/éviction).
 5. Selon le sujet : skills `monolith-surgery` (avant tout edit de `server.py`),
    `photo-ui` (dès qu'on touche l'UI).
 
-## Où on en est (11/08/2026, fin de nuit)
+## Où on en est (12/08/2026)
 
-- Matin+après-midi+soir du 11/08 : **commités** jusqu'à `ea4aa00` (fusion `/sujets`,
-  recherche Carte, passe DESIGN 7 pages — tout vérifié en réel). Détail dans git.
-- **Session nuit — GpuArbiter : livré, VÉRIFIÉ en réel** (bail `semantique` matérialisé,
-  SigLIP sur cuda, 0 refus ; `GET /api/search/status` → `etat['gpu']`), tests 27/27
-  (+11 vérifications ArbitreGPU). **À commiter si pas encore fait.**
-- **Triple audit du projet** (incohérences / optimisations / stratégie) →
-  `docs/AUDIT_INTERNE_2026-08.md` ; ROADMAP réordonnée en conséquence.
+- 11/08 : **commité** jusqu'à `72d1946` (Arbitre GPU — vérifié en réel, tests 27/27,
+  détail dans git). **Triple audit** → `docs/AUDIT_INTERNE_2026-08.md` ; ROADMAP réordonnée.
+- **⚠ Régression signalée (12/08)** : depuis la fusion `/sujets`, « Gérer » n'offre
+  plus les options d'optimisation habituelles → ROADMAP point 2.
+- **12/08 — instrumentation vérité terrain : LIVRÉE, À VÉRIFIER EN RÉEL après
+  redémarrage.** File « À vérifier » triée par **marge** (jamais le score absolu) ;
+  chaque geste → `journal_jugements.jsonl` (append-only, local, gitignoré) avec
+  verdict confirmation/erreur_decouverte ; compteur de séance dans `/people`
+  (jugements · /min · erreurs). Tests isolés OK ; à vérifier : ordre de la file,
+  ligne « Séance : … », lignes du JSONL. Puis commiter.
 
 ## Prochain pas — par valeur (détail : ROADMAP « À faire »)
 
-1. **Vérité terrain** (geste Mike) : confirmer ~100 propositions dans `/people`
-   (Espace=oui, X=non, Z=annuler). Chantier code associé : tri par **marge**
-   d'incertitude (jamais le score absolu — circularité).
-2. **Assurance-vie de la vérité terrain** : tâche `backup_verify` (integrity_check +
-   restauration à blanc + comptage confirmed/exclude) + export JSONL append-only des
-   jugements humains. Session courte, stdlib pur, angle mort majeur de l'audit.
-3. **Correctifs d'audit prioritaires** (une session) : I1 (workers visages/animaux hors
-   ordonnanceur), I2+O10 (`gps_places.json` dans `rekey_everywhere` + index `vectors(k)`
-   — PRÉREQUIS des gestes gps_place/renommage), O3 (cache `media_roots`), O5 (try/except
-   `maintenance_loop`), O4 (écritures vectors sous `STORE.lock`).
-4. **Éval tagging V2 AVANT lots de renommage** (le banc de 150 photos est keyé par
-   chemin). Protocole prêt : `eval/PLAN_assertions_vs_pixels.md`.
-5. Gros gain UX quand tu veux une session perf : **O1 `/api/thumb`** (vignettes de
-   grille : −98 % d'octets NAS).
+1. **Vérité terrain** (geste Mike, outillage prêt) : confirmer ~100 propositions
+   dans `/people` (Espace=oui, X=non, Z=annuler) — la file présente d'abord les
+   cas les plus incertains ; le compteur de séance mesure le rythme.
+2. **`/sujets` guichet unique** : corriger la régression « Gérer », puis réunir
+   toutes les fonctions de gestion (personne/animal/lieu) dans `/sujets` + onglet
+   **« Classification »** (groupes à nommer, faux positifs, … par type) — ROADMAP pt 2.
+3. **Assurance-vie de la vérité terrain** : tâche `backup_verify` + export NAS des
+   jugements (`journal_jugements.jsonl` existe déjà — le copier hors site).
+   Session courte, stdlib pur, angle mort majeur de l'audit.
+4. **Correctifs d'audit prioritaires** (une session) : I1 (workers hors ordonnanceur),
+   I2+O10 (`gps_places.json` dans `rekey_everywhere` + index `vectors(k)` — PRÉREQUIS
+   des gestes gps_place/renommage), O3, O4, O5.
+5. **Éval tagging V2 AVANT lots de renommage** (banc keyé par chemin). Protocole prêt :
+   `eval/PLAN_assertions_vs_pixels.md`. Session perf quand tu veux : **O1 `/api/thumb`**.
 
 ## Rappels opérationnels
 

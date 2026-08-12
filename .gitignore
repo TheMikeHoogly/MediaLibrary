@@ -27,6 +27,10 @@ uploads/
 # Images récupérées après le crash disque : ce sont des photos personnelles
 recuperees/
 
+# Journal append-only des jugements humains de la file « À vérifier » : noms et
+# chemins réels — local. Sa copie hors site = chantier « assurance-vie ».
+journal_jugements.jsonl
+
 # ─── Évaluation ──────────────────────────────────────────────────────────────
 # Les DÉCISIONS sont versionnées, les données brutes non : elles contiennent
 # des visages et des chemins réels.
@@ -62,6 +66,10 @@ cities1000.zip
 # Sortie du géocodage inverse : {clé_photo -> lieu}, générée par enrichir_lieux.py
 # (contient des chemins réels de photos de famille) — locale, régénérable.
 gps_places.json
+
+# Proposition de commit de la session (branche + titre), écrite par Claude et
+# consommée par « 27 - Commit de session.bat » : éphémère, locale.
+SESSION_COMMIT.txt
 
 # ─── Configuration locale : chemins privés et jetons ─────────────────────────
 data_dir.txt
