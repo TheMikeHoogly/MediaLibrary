@@ -1997,6 +1997,7 @@ def creneau(nom, timeout=120.0):
 # bibliothèque, le serveur démarre et fonctionne comme avant.
 SEMANTIC_ENABLE = True
 SEMANTIC_BATCH = 16            # photos encodées par passe
+SEMANTIC_SUBBATCH = 4          # sous-lot : le verrou est rendu entre deux (audit O6)
 SEMANTIC_IDLE_SLEEP = 90       # s d'attente quand tout est encodé
 SEMANTIC_BUSY_SLEEP = 45       # s d'attente quand la machine est occupée
 SEMANTIC_PACE = 1.0            # s entre deux lots (laisse respirer le NAS)
@@ -2611,17 +2612,33 @@ def _semantique_un_lot(sem, vs):
     # tâche pendant des minutes — c'est ce qui la bloquait au démarrage.
     # On prend simplement les clés suivantes ; encoder_images() ignore déjà
     # les images illisibles, et tout ce qui ne rend pas de vecteur est écarté.
-    chemins, candidats = {}, []
+    chemins = {}
     for k in reste[:SEMANTIC_BATCH]:
         chemins[str(_resolve_key(k))] = k
-        candidats.append(k)
     if not chemins:
         return 0
     SEMANTIC_STATE["etape"] = f"encodage de {len(chemins)} photo(s)"
     SEMANTIC_STATE["actif"] = True
-    with SEMANTIC_LOCK:
-        res = sem.encoder_images(list(chemins))
-        SEMANTIC_STATE["device"] = sem._ETAT.get("device") or ""
+    # Audit O6 : le verrou n'est plus tenu sur le lot ENTIER (16 photos =
+    # 10–30 s CPU) mais par SOUS-LOT : une recherche — qui ne prend le verrou
+    # que le temps d'encoder sa requête texte — s'intercale entre deux
+    # sous-lots au lieu d'attendre la fin du lot. Entre deux sous-lots, si
+    # l'UI vient de parler, on S'ARRÊTE là : les vecteurs déjà produits sont
+    # écrits, le reste du lot repassera au tour suivant. Seules les clés
+    # réellement TENTÉES peuvent être écartées (une clé non tentée n'a rien
+    # prouvé de son illisibilité).
+    tous = list(chemins)
+    res, tentes = [], []
+    for i in range(0, len(tous), SEMANTIC_SUBBATCH):
+        sous = tous[i:i + SEMANTIC_SUBBATCH]
+        with SEMANTIC_LOCK:
+            res.extend(sem.encoder_images(sous))
+            SEMANTIC_STATE["device"] = sem._ETAT.get("device") or ""
+        tentes.extend(sous)
+        if i + SEMANTIC_SUBBATCH < len(tous) and ui_recent():
+            SEMANTIC_STATE["etape"] = (
+                f"lot interrompu (UI active) : {len(tentes)}/{len(tous)}")
+            break
     import base64
     import numpy as np
     lot = [(chemins[str(p)],
@@ -2635,8 +2652,11 @@ def _semantique_un_lot(sem, vs):
     SEMANTIC_STATE["done"] += len(res)
     # Une image présente mais qu'aucun vecteur ne suit (illisible, format non
     # décodé, EXIF cassé) est écartée elle aussi : elle bloquerait autant.
+    # Uniquement parmi les clés TENTÉES (O6 : un lot interrompu par l'UI ne
+    # doit pas écarter des photos jamais passées à l'encodeur).
     obtenus = {chemins[str(p)] for p, _v in res}
-    for k in candidats:
+    for p in tentes:
+        k = chemins[p]
         if k not in obtenus:
             SEMANTIC_SKIP.add(k)
     return len(res)
