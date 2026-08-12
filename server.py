@@ -216,6 +216,23 @@ PET_EMBED_BATCH = 8             # découpes embarquées par lot (backfill)
 
 IMAGE_EXT = {'.jpg', '.jpeg', '.png', '.gif', '.webp', '.heic', '.heif', '.bmp', '.tiff', '.tif'}
 
+# Version du pipeline de TAGGING (audit D), sur le modèle d'ANIMAL_PIPELINE_VERSION :
+# modèle Ollama | variante de prompt | version de fusion (Knowledge Builder).
+# Changer l'un des trois OBLIGE à bumper la chaîne — sinon des descriptions issues
+# de prompts différents cohabitent silencieusement dans l'index. Chaque nouvelle
+# entrée est estampillée ('pipe') ; les entrées antérieures comptent comme « v0 »
+# (visible dans /reglages). PAS de re-tagging automatique au bump : ~43 000
+# entrées × 4,3 s ≈ 51 h GPU — c'est une décision explicite (ROADMAP), contrairement
+# aux embeddings animaux où le mélange de versions serait mathématiquement faux.
+# - v2ctx = « assertions en contexte, sans impératif de noms », ADOPTÉE 12/08
+#   (aveugle A/B 25-15 vs V0 — eval/DECISIONS.md). Prompt : tagging_meta.prompt_tagging.
+# - kb1   = Knowledge Builder : faits noms/date/lieu structurés et sourcés en
+#   post-traitement déterministe (tagging_meta.faits_structures), jamais via le prompt.
+TAGGING_PIPELINE_VERSION = "qwen3-vl:2b|v2ctx|kb1"
+
+# PROMPT V0 (image seule, anglais) : n'est PLUS le prompt de production depuis la
+# version v2ctx ci-dessus. Conservé comme référence du banc d'éval (eval_tagging.py
+# le lit via s.PROMPT) et comme repli si ollama_generate est appelé sans prompt.
 PROMPT = (
     'Analyze this photo. Return ONLY strict JSON, no other text:\n'
     '{"keywords_en": ["..."], "keywords_fr": ["..."], "description_fr": "..."}\n'
@@ -926,28 +943,37 @@ def read_gps(paths, progress=False):
 
 
 def read_meta_and_gps(path):
-    """Lit en UN SEUL appel exiftool les mots-clés/description existants ET le
-    GPS d'un fichier. Fusionne `read_existing_metadata` + `read_gps` pour le
-    worker de tagging : une lecture NAS et un process exiftool de moins par
-    photo, pendant que le GPU attend l'I/O. Le GPS est inchangé par l'écriture
-    des mots-clés (`write_metadata` ne touche que Keywords/Description), donc
-    lire avant l'écriture donne la même valeur qu'après.
+    """Lit en UN SEUL appel exiftool les mots-clés/description existants, le
+    GPS ET la date de prise de vue d'un fichier. Fusionne
+    `read_existing_metadata` + `read_gps` + `read_dates` pour le worker de
+    tagging : une lecture NAS et un process exiftool de moins par photo. Le GPS
+    est inchangé par l'écriture des mots-clés (`write_metadata` ne touche que
+    Keywords/Description), donc lire avant l'écriture donne la même valeur
+    qu'après. Appelé AVANT le VLM depuis la version v2ctx : les faits lus
+    partent dans le prompt (Knowledge Builder amont).
 
-    Retourne (kw_list|None, desc, gps[lat,lon]|None). Le parsing pur (testé) vit
-    dans `tagging_meta.parse_meta_gps_item`."""
+    Retourne (kw_list|None, desc, gps|None, taken_epoch|None, ok). `ok` est
+    True seulement si exiftool a VRAIMENT lu le fichier : il distingue « lu,
+    rien trouvé » (gps/taken absents pour de bon → l'entrée peut le mémoriser)
+    d'un échec transitoire (NAS, timeout → ne PAS écrire gps/taken None, sinon
+    les backfills sautent la photo pour toujours). Le parsing pur (testé) vit
+    dans `tagging_meta.parse_meta_gps_taken_item`."""
     if not EXIFTOOL:
-        return None, "", None
+        return None, "", None, None, False
     import tagging_meta
     args = ["-json", "-n", "-q", "-m", "-fast2",
             "-charset", "filename=UTF8",
             "-XMP-dc:Subject", "-IPTC:Keywords", "-XMP-dc:Description",
-            "-Composite:GPSLatitude", "-Composite:GPSLongitude", str(path)]
+            "-Composite:GPSLatitude", "-Composite:GPSLongitude",
+            "-DateTimeOriginal", "-CreateDate", "-ModifyDate", str(path)]
     try:
         r = _run_exiftool(args)
         items = json.loads(r.stdout or "[]")
-        return tagging_meta.parse_meta_gps_item(items[0]) if items else (None, "", None)
+        if items:
+            return tagging_meta.parse_meta_gps_taken_item(items[0]) + (True,)
+        return None, "", None, None, False
     except Exception:
-        return None, "", None
+        return None, "", None, None, False
 
 
 def _merge_named_tags(kw_fr, existing_kw):
@@ -956,6 +982,132 @@ def _merge_named_tags(kw_fr, existing_kw):
     logique pure testée (`tagging_meta.merge_named_tags`)."""
     import tagging_meta
     return tagging_meta.merge_named_tags(kw_fr, existing_kw)
+
+
+def _noms_attendus(key):
+    """Tags nommés attendus/retirés sur une photo d'après les sources EN
+    MÉMOIRE : fiches personnes/animaux (champs 'faces' et 'exclude', comme
+    reconcile_named_tags) et entrée d'index courante. Aucune I/O.
+
+    Sert de re-fusion juste avant l'écriture du worker de tagging : depuis que
+    la lecture exiftool passe AVANT le VLM (v2ctx), la fenêtre lecture→écriture
+    couvre tout l'appel Ollama (secondes, jusqu'à 600 s). Deux courses couvertes,
+    dans les deux sens : un nom ATTRIBUÉ pendant l'appel serait écrasé par la
+    fusion depuis des mots-clés périmés (invariant : jamais perdre un nom
+    humain) ; un nom RETIRÉ pendant l'appel serait ressuscité par cette même
+    fusion (exclude = autorité, partout).
+
+    Renvoie (tags_attendus, tags_exclus_lower)."""
+    tags, exclus = [], set()
+    try:
+        for store, prefix in ((PEOPLE_STORE, 'personne'), (PETS_STORE, 'animal')):
+            for pe in list(store.data.values()):
+                if not isinstance(pe, dict) or not pe.get('name'):
+                    continue
+                tag = f"{prefix}:{pe['name']}"
+                if key in set(pe.get('exclude') or []):
+                    exclus.add(tag.lower())
+                    continue
+                for kf in (pe.get('faces') or []):
+                    if (isinstance(kf, (list, tuple)) and len(kf) == 2
+                            and kf[0] == key):
+                        tags.append(tag)
+                        break
+        e = STORE.data.get(key)
+        if isinstance(e, dict):
+            for t in (e.get('kw_fr') or []):
+                tl = str(t).lower()
+                if ((tl.startswith('personne:') or tl.startswith('animal:'))
+                        and tl not in exclus):
+                    tags.append(t)
+    except Exception:
+        pass
+    return tags, exclus
+
+
+def _lieu_pour_cle(k):
+    """Lieu connu d'une photo, pour le Knowledge Builder : géocodage inverse
+    précalculé (gps_places.json, si gps_place est activé) d'abord, sinon lieu
+    déduit du chemin (lieux_connus + _lieu_plausible — même logique que le
+    renommage). Renvoie (libellé, source) ou (None, None). Aucun accès NAS,
+    aucun modèle : lectures de caches en mémoire."""
+    try:
+        g = gps_places_connus().get(k)
+        if g:
+            return g, 'gps'
+    except Exception:
+        pass
+    try:
+        lx = lieux_connus()
+    except Exception:
+        lx = {}
+    if lx:
+        try:
+            parts = _chemin_relatif(k).replace('/', '\\').split('\\')[:-1]
+        except Exception:
+            parts = list(Path(k).parts)[:-1]
+        for p in reversed(parts):
+            lieu = _lieu_plausible(p)
+            if not lieu:
+                continue
+            for cand in [lieu] + [m for m in lieu.split() if len(m) >= 5]:
+                if _sans_accents(cand) in lx:
+                    return lx[_sans_accents(cand)], 'chemin'
+    return None, None
+
+
+def _assertions_pour(key, existing_kw, taken):
+    """Knowledge Builder AMONT : assemble les faits déjà connus sur une photo
+    AVANT l'appel au VLM (prompt v2ctx). Zéro calcul GPU, zéro lecture NAS :
+    tout vient des mots-clés déjà lus dans le fichier (`existing_kw`), de
+    l'ANIMAL_STORE, des caches lieux et de la date EXIF (`taken`) — avec repli
+    nom de fichier puis année du dossier, SANS repli mtime (une date fausse
+    affirmée au modèle est une graine d'hallucination, pas un fait).
+
+    Renvoie le dict d'assertions attendu par tagging_meta.bloc_assertions /
+    prompt_tagging / faits_structures (sources incluses, pour la provenance)."""
+    import tagging_meta
+    persons, animals = tagging_meta.noms_depuis_kw(existing_kw)
+    especes = []
+    try:
+        ae = ANIMAL_STORE.data.get(key)
+        if isinstance(ae, dict):
+            especes = sorted({a.get('species') for a in (ae.get('animals') or [])
+                              if a.get('species')})
+    except Exception:
+        pass
+    lieu, lieu_src = _lieu_pour_cle(key)
+    date_txt = date_src = None
+    if taken:
+        date_txt, date_src = tagging_meta.format_date_fr(taken), 'exif'
+    else:
+        fn = _fname_time(Path(key).name)
+        if fn:
+            date_txt, date_src = tagging_meta.format_date_fr(fn), 'nom du fichier'
+        else:
+            py = _path_year(key)
+            if py:
+                date_txt, date_src = str(time.localtime(py).tm_year), 'annee du dossier'
+    plain = [t for t in (existing_kw or [])
+             if not (str(t).lower().startswith('personne:')
+                     or str(t).lower().startswith('animal:'))]
+    return {'key': key, 'persons': persons, 'animals': animals,
+            'species': especes, 'lieu': lieu, 'lieu_src': lieu_src,
+            'date': date_txt, 'date_src': date_src, 'tags_fr': plain[:12],
+            'noms_src': 'xmp'}
+
+
+def _tagging_pipe_counts():
+    """Répartition des entrées taguées par version de pipeline (audit D) : les
+    entrées antérieures à l'estampillage comptent comme « v0 ». Rendu visible
+    dans /reglages — plus jamais d'index mixte silencieux. Lecture seule sur
+    une copie instantanée du dict (pas de lock nécessaire)."""
+    c = {}
+    for e in list(STORE.data.values()):
+        if isinstance(e, dict) and not e.get('failed'):
+            v = e.get('pipe') or 'v0'
+            c[v] = c.get(v, 0) + 1
+    return c
 
 
 def backfill_gps():
@@ -1170,10 +1322,12 @@ def image_to_b64(path):
     return base64.b64encode(path.read_bytes()).decode()
 
 
-def ollama_generate(b64):
+def ollama_generate(b64, prompt=None):
+    """Appelle le VLM. `prompt` = prompt contextualisé par photo (v2ctx, bâti
+    par tagging_meta.prompt_tagging) ; à défaut, repli sur le PROMPT V0."""
     payload = {
         "model": MODEL,
-        "prompt": PROMPT,
+        "prompt": prompt or PROMPT,
         "images": [b64],
         "stream": False,
         "format": "json",
@@ -1278,25 +1432,51 @@ def tagger_worker():
             print(f"  🏷  Analyse IA : {name}")
             t0 = time.time()
             b64 = image_to_b64(path)
-            raw = ollama_generate(b64)
+            # Knowledge Builder AMONT : la lecture exiftool (mots-clés existants
+            # + GPS + date, toujours UN seul appel) passe AVANT le VLM — les
+            # faits connus (noms XMP, espèce, lieu, date) partent DANS le prompt
+            # v2ctx « assertions en contexte, sans impératif de noms »
+            # (ADOPTÉE 12/08, eval/DECISIONS.md).
+            import tagging_meta
+            existing_kw, gps, taken, meta_ok = None, None, None, False
+            try:
+                existing_kw, _exdesc, gps, taken, meta_ok = read_meta_and_gps(path)
+            except Exception:
+                pass
+            faits = _assertions_pour(name, existing_kw, taken)
+            raw = ollama_generate(b64, tagging_meta.prompt_tagging(faits))
             kw_fr, kw_en, desc = parse_tags(raw)
-            # UNE seule lecture exiftool pour les mots-clés existants ET le GPS
-            # (au lieu de deux appels séparés) : une lecture NAS et un process
-            # de moins par photo, pendant que le GPU attend l'I/O.
             # PÉRENNITÉ : ne jamais perdre les tags nommés (personne:/animal:)
             # déjà écrits dans le fichier — un ré-tagging IA les ré-intègre au
-            # lieu de les écraser (logique pure testée : tagging_meta).
-            try:
-                existing_kw, _exdesc, gps = read_meta_and_gps(path)
-                kw_fr = _merge_named_tags(kw_fr, existing_kw)
-            except Exception:
-                gps = None
+            # lieu de les écraser (logique pure testée : tagging_meta). C'est la
+            # SEULE voie des noms vers la sortie : jamais via le prompt. La
+            # re-fusion depuis les fiches/index EN MÉMOIRE (_noms_attendus)
+            # couvre les deux courses pendant l'appel Ollama : nom attribué
+            # (sinon écrasé) et nom retiré (sinon ressuscité — exclude gagne).
+            attendus, exclus = _noms_attendus(name)
+            if exclus and existing_kw:
+                existing_kw = [t for t in existing_kw
+                               if str(t).lower() not in exclus]
+            kw_fr = _merge_named_tags(kw_fr, existing_kw)
+            kw_fr = _merge_named_tags(kw_fr, attendus)
             merged = list(dict.fromkeys(kw_fr + kw_en))
             in_file = write_metadata(path, merged, desc)
             size, mtime = _stat_of(path)   # après écriture des métadonnées
             entry = {"kw_fr": kw_fr, "kw_en": kw_en, "desc": desc,
                      "in_file": in_file, "at": time.time(),
-                     "size": size, "mtime": mtime, "gps": gps if gps else None}
+                     "size": size, "mtime": mtime,
+                     "pipe": TAGGING_PIPELINE_VERSION}
+            if meta_ok:
+                # « lu, absent » se mémorise (les backfills n'y reviendront
+                # pas) ; un échec transitoire laisse les clés absentes → les
+                # backfills GPS/dates retenteront plus tard.
+                entry["gps"] = gps if gps else None
+                entry["taken"] = taken if taken else None
+            # Knowledge Builder AVAL : faits structurés et sourcés (provenance),
+            # fusion déterministe — jamais issus du texte du LLM.
+            fs = tagging_meta.faits_structures(faits)
+            if fs:
+                entry["faits"] = fs
             if not in_file:
                 entry["write_fails"] = 1
             STORE.set(name, entry)
@@ -5482,6 +5662,8 @@ function load(){
     var cf=s.config||{}, rows='';
     rows+='<tr><td>Modele tagging</td><td>'+esc(cf.MODEL||'?')+'</td></tr>';
     rows+='<tr><td>Pipeline animaux</td><td>'+esc(cf.ANIMAL_PIPELINE_VERSION||'?')+'</td></tr>';
+    var tp=cf.tagging_pipe||{}, tps=Object.keys(tp).sort().map(function(k){return esc(k)+' : '+tp[k];}).join(' \\u00b7 ');
+    rows+='<tr><td>Pipeline tagging</td><td>'+esc(cf.TAGGING_PIPELINE_VERSION||'?')+(tps?'<br><span class="mut">'+tps+'</span>':'')+'</td></tr>';
     rows+='<tr><td>Seuil match visages</td><td>'+esc(cf.FACE_MATCH_SIM)+'</td></tr>';
     rows+='<tr><td>Seuil match animaux</td><td>'+esc(cf.PET_MATCH_SIM)+'</td></tr>';
     rows+='<tr><td>Dossier Uploads</td><td>'+esc(cf.UPLOAD_DIR||'')+'</td></tr>';
@@ -12654,6 +12836,8 @@ class Handler(BaseHTTPRequestHandler):
                 'conflits': len(pa.get('conflits') or []),
                 'par_annee': pa.get('par_annee') or {}})(load('plan_rangement_annee.json') or {}),
             'config': {'MODEL': MODEL, 'ANIMAL_PIPELINE_VERSION': ANIMAL_PIPELINE_VERSION,
+                       'TAGGING_PIPELINE_VERSION': TAGGING_PIPELINE_VERSION,
+                       'tagging_pipe': _tagging_pipe_counts(),
                        'UPLOAD_DIR': str(UPLOAD_DIR),
                        'racines': [[label, str(r)] for label, r in media_roots()],
                        'FACE_MATCH_SIM': FACE_MATCH_SIM, 'PET_MATCH_SIM': PET_MATCH_SIM},
