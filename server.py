@@ -2740,6 +2740,30 @@ def semantic_search(requete, limite=80):
     return vs.search(sem.KIND, q, limite=limite)
 
 
+def similar_by_key(cle, limite=80):
+    """Photos proches d'une photo donnée — cosinus dans l'espace SigLIP.
+
+    AUCUN encodage : le vecteur de la photo est déjà en base, la requête se
+    résume à « décoder un BLOB puis classer » — zéro GPU, zéro accès NAS.
+    C'est ce qui rend la navigation « semblables » gratuite : chaque résultat
+    peut à son tour servir de requête, de proche en proche.
+
+    Renvoie None si la photo n'a pas (encore) de vecteur : photo fraîchement
+    déposée (l'encodeur de fond n'est pas passé) ou écartée (`failed`) — deux
+    situations que l'appelant doit distinguer d'un résultat vide.
+    """
+    sem = _semantic_mod()          # import léger ; source unique de KIND
+    vs = photo_vectors()
+    b64 = vs.get_b64(sem.KIND, cle)
+    if not b64:
+        return None
+    import numpy as np
+    q = np.frombuffer(base64.b64decode(b64), dtype=np.float16).astype(np.float32)
+    # limite+1 : la photo elle-même sort en tête (cosinus 1.0), on l'écarte.
+    res = vs.search(sem.KIND, q, limite=limite + 1)
+    return [(k, s) for k, s in res if k != cle][:limite]
+
+
 def semantic_loop():
     """Encode les photos en tâche de fond, en cédant la place à l'UI."""
     if not SEMANTIC_ENABLE:
@@ -4254,6 +4278,11 @@ body { font-family: var(--f-texte);
             overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 #lb-close { color: #fff; background: var(--salle-3); border: none; border-radius: var(--r-md);
              padding: var(--e-2) var(--e-4); cursor: pointer; font-size: var(--t-md); }
+/* -- semblables : navigation, pas une action -- neutre, cible 44px -- */
+#lb-sim { min-height: var(--touch); padding: 0 var(--e-4); border-radius: var(--r-md);
+          background: var(--salle-3); border: var(--trait); color: var(--texte);
+          cursor: pointer; font-size: var(--t-md); }
+#lb-sim:hover { background: var(--salle-2); }
 #lb-prev, #lb-next { color: #fff; background: var(--salle-3); border: none;
                       border-radius: var(--r-md); padding: var(--e-2) var(--e-3); cursor: pointer; font-size: var(--t-lg); }
 
@@ -4364,6 +4393,7 @@ __FOLDERS__
     <button id="lb-prev">&#8592;</button>
     <span id="lb-name"></span>
     <button id="lb-next">&#8594;</button>
+    <button id="lb-sim" aria-label="Voir les photos semblables">&#128269; Semblables</button>
     <button id="lb-del" aria-label="Supprimer cette photo">&#128465;&#65039; Supprimer</button>
     <button id="lb-close">Fermer</button>
   </div>
@@ -4718,6 +4748,13 @@ __FOLDERS__
 
   document.getElementById('lb').addEventListener('click', function(e) {
     if (e.target === this) closeLb();
+  });
+
+  // « Semblables » : navigation (page /files?sim=), pas un filtre client --
+  // les résultats couvrent TOUTE la photothèque, pas le dossier courant.
+  document.getElementById('lb-sim').addEventListener('click', function() {
+    var f = visible[lbIdx];
+    if (f && f.key) location.href = '/files?sim=' + encodeURIComponent(f.key);
   });
 
   // 5 bandes verticales : seules les bandes des bords (20%) naviguent
@@ -11420,6 +11457,8 @@ class Handler(BaseHTTPRequestHandler):
 
         elif path == '/api/search':
             self._serve_semantic_search()
+        elif path == '/api/similar':
+            self._serve_similar()
 
         elif path == '/api/search/status':
             self._serve_semantic_status()
@@ -11710,6 +11749,13 @@ class Handler(BaseHTTPRequestHandler):
         # client ne fait qu'intersecter les photos deja chargees.
         qparam = (q.get('q') or [''])[0].strip()
         search_mode = bool(qparam) and not dirparam and not sel and not motif
+        # Page « semblables » : /files?sim=<clé>. Même mécanique que ?q= —
+        # la grille devient un résultat classé — mais la requête est une PHOTO
+        # (son vecteur déjà en base), pas un texte. Navigation de proche en
+        # proche : chaque résultat offre à son tour son bouton « Semblables ».
+        simparam = (q.get('sim') or [''])[0].strip()
+        sim_mode = (bool(simparam) and not search_mode
+                    and not dirparam and not sel and not motif)
 
         if dirparam:
             roots = media_roots()
@@ -11798,6 +11844,14 @@ class Handler(BaseHTTPRequestHandler):
         folders_html = ('<div class="folders">' + ''.join(fparts) + '</div>') if fparts else ''
         if search_mode:
             folders_html = ''   # une page de resultats n'a pas de sous-dossiers
+        if sim_mode:
+            # Bandeau : d'où vient la page + retour. Le nom suffit ; la photo
+            # de référence arrive de toute façon en tête d'aucun résultat
+            # (elle est écartée) et son dossier reste à un clic.
+            folders_html = ('<div class="folders">'
+                            '<span class="fchip">&#128269; Semblables à '
+                            + html.escape(Path(simparam).name) + '</span>'
+                            '</div>')
         is_uploads = folder in (UPLOAD_DIR, UPLOAD_DIR.resolve())
         roots_g = media_roots()
         file_data = []
@@ -11883,12 +11937,28 @@ class Handler(BaseHTTPRequestHandler):
         # index en memoire ; note_heavy_activity car semantic_search peut lire les
         # vecteurs. Cap a 1500 : couvre les gros lieux (Bremblens ~1141) sans
         # exploser le rendu (vignettes en lazy-load).
-        if search_mode:
+        if search_mode or sim_mode:
             note_heavy_activity()
             roots_cache = media_roots()
             file_data = []
             try:
-                resultats_q = semantic_search(qparam, 1500)
+                if sim_mode:
+                    # 200 : aligné sur la recherche IA côté client (n=200) —
+                    # au-delà, la pertinence cosinus ne veut plus dire
+                    # grand-chose et la planche devient du bruit.
+                    resultats_q = similar_by_key(simparam, 200)
+                    if resultats_q is None:
+                        # Pas encore de vecteur : photo fraîchement déposée ou
+                        # écartée. État vide RÉDIGÉ (plancher photo-ui n° 7).
+                        folders_html = ('<div class="folders">'
+                                        '<span class="fchip">Cette photo n\'a '
+                                        'pas encore été analysée : son vecteur '
+                                        'sera calculé en tâche de fond, '
+                                        'réessayer dans quelques minutes.'
+                                        '</span></div>')
+                        resultats_q = []
+                else:
+                    resultats_q = semantic_search(qparam, 1500)
             except Exception:                                 # noqa: BLE001
                 resultats_q = []
             for k, _score in resultats_q:
@@ -12047,6 +12117,49 @@ class Handler(BaseHTTPRequestHandler):
             {'results': sortie, 'q': requete,
              'noms': [n.split(':', 1)[1] for n in noms],
              'lieux': lieux, 'reste': reste},
+            ensure_ascii=False).encode(), 'application/json')
+
+    def _serve_similar(self):
+        """Photo → photos proches (cosinus sur le vecteur DÉJÀ en base).
+
+        Même forme de sortie que /api/search (`results` : key/score/url/name/
+        desc/kw) pour que tout consommateur de l'un lise l'autre — y compris
+        le futur serveur MCP lecture (feuille de route, point 13).
+        `encodee:false` distingue « pas encore de vecteur » d'un vrai vide.
+        """
+        qs = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
+        cle = (qs.get('key', [''])[0] or '').strip()
+        limite = min(int(qs.get('n', ['80'])[0] or 80), 500)
+        if not cle:
+            self._send(200, json.dumps({'results': []}).encode(),
+                       'application/json')
+            return
+        try:
+            resultats = similar_by_key(cle, limite)
+        except Exception as e:                                # noqa: BLE001
+            self._send(200, json.dumps(
+                {'results': [], 'error': str(e)[:200]},
+                ensure_ascii=False).encode(), 'application/json')
+            return
+        if resultats is None:
+            self._send(200, json.dumps(
+                {'results': [], 'encodee': False, 'key': cle},
+                ensure_ascii=False).encode(), 'application/json')
+            return
+        note_heavy_activity()
+        roots = media_roots()
+        sortie = []
+        for k, score in resultats:
+            e = STORE.data.get(k) or {}
+            sortie.append({
+                'key': k, 'score': round(score, 4),
+                'url': _url_for_key(k, roots),
+                'name': Path(k).name,
+                'desc': e.get('desc', ''),
+                'kw': (e.get('kw_fr') or e.get('kw_en') or [])[:8],
+            })
+        self._send(200, json.dumps(
+            {'results': sortie, 'encodee': True, 'key': cle},
             ensure_ascii=False).encode(), 'application/json')
 
     def _serve_semantic_status(self):
