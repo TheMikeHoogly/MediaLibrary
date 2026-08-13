@@ -6,68 +6,73 @@ session, choses à observer) dans `PROMPT_NOUVELLE_SESSION.md`. Audits :
 `docs/AUDIT_INTERNE_2026-08.md` (I1–I17, O1–O15, A–F),
 `docs/AUDIT_EXTERNE_2026.md`, `docs/RANGEMENT_2026.md`.
 
-## État (13/08/2026, session 10)
+## État (13/08/2026, session 12)
 
-**Deux livraisons observées bonnes en réel, dans l'ordre.** (1) Purge des
-doublons : total = **43 067 pile** (43 086 − 19), plus aucune clé absolue
-`\\NAS…\_Uploads` (file « À vérifier » incluse). (2) **Navigation par
-similarité VALIDÉE en réel (13/08)** : bouton « Semblables » de la lightbox →
-page de résultats, navigation de proche en proche. `feat/similar` **committée
-et fusionnée** (bat 27/28/29 passés, `_tmp_obs/` supprimé). Reste un test
-d'occasion : au prochain upload téléphone, une photo = UNE entrée.
+**Résidu O1 : soldé et OBSERVÉ BON en réel** — `/sujets` section Lieux,
+25 cartes sur 25 en `/api/thumb`, **1 007 Ko et 315 ms pour les 25** (contre
+~60 Mo d'originaux). `fix/lieux-thumb` committée et fusionnée. Avant :
+purge des doublons (43 067 pile) et bouton « Semblables », observés bons
+aussi. Reste un test d'occasion : au prochain upload téléphone, une photo =
+UNE entrée.
 
-**Session 11 à commiter** (`SESSION_COMMIT.txt` prêt, `fix/lieux-thumb`) :
-**résidu O1 confirmé PUIS corrigé** — la section Lieux de `/sujets` était la
-dernière grille à charger des originaux (mesuré sur le serveur en marche :
-25 cartes via `/media/…`, 0 via `/api/thumb`). `places_list()` rend désormais
-`/api/thumb?key=…&s=512`. Mesuré sur une clé de lieu réelle (antislashs +
-espaces) : **41 Ko contre 2 435 Ko, −98 %** — soit ~60 Mo de NAS épargnés à
-chaque ouverture de `/sujets`. Veille v2ctx inchangée (n=2 : astre/objet,
-date en prose).
+**Session 12 — TROIS tâches de fond mortes en silence depuis toujours**
+(`fix/backfills-silencieux`, à commiter). Parti pour le chantier 6a, on a
+mesuré la matière première : **12 407 photos (29 %) sans date au jour près**,
+**42 060 entrées sur 43 067 jamais lues**. Cause (`diagnostic_dates.py`) :
+garde `if not EXIFTOOL: return` placée AVANT le `sleep`, alors que `EXIFTOOL`
+est affecté par `maintenance_loop` lancé dans le même souffle — `backfill_dates`,
+`backfill_gps` et surtout `reimport_name_tags` (rapatriement des noms XMP,
+invariant n° 2 : **jamais** tournée, aucun `namechk`) renonçaient en
+microsecondes, à chaque démarrage. Corrigé + trois garde-fous nés de la
+relecture : aucune écriture pour un fichier dont ExifTool n'a pas parlé ; la
+date de SCAN ne passe plus pour la prise de vue ; passes sérialisées
+(dates → noms → GPS) et comptes rendus dans `/reglages`. **Rien n'est observé
+en réel : tout se joue au prochain bat 0** — premier démarrage long.
 
 ## À faire — par ordre de valeur (réordonné au triple audit du 11/08)
 
 1. **Vérité terrain humaine — au fil de l'eau, ce n'est PAS un blocage.**
    ~0,8 % de confirmations (91/12 072) ; instrumentation livrée, files garnies
    (18 personnes + 120 animaux). **Cadrage tranché par Mike (12/08)** : le
-   stock n'est limité ni par l'outillage ni par la volonté, mais par la
-   **connaissance** — beaucoup de groupes portent des visages que Mike ne sait
-   pas nommer, et **Flo les nommera** quand l'outil sera à ~90 %. **300
-   personnes sont déjà reconnues** : l'essentiel du travail humain est fait.
-   On juge donc **quand l'occasion se présente**, et on avance ailleurs
-   entre-temps. Métrique = erreurs découvertes, pas l'accord modèle-humain.
-   Seule conséquence mécanique : le point 9 (algo) reste parqué — c'est un
-   ordre de travaux, pas une dette.
+   stock est limité par la **connaissance**, pas par l'outillage ni la volonté
+   — beaucoup de groupes portent des visages que Mike ne sait pas nommer, et
+   **Flo les nommera** quand l'outil sera à ~90 %. **300 personnes déjà
+   reconnues** : l'essentiel du travail humain est fait. On juge donc **quand
+   l'occasion se présente**. Métrique = erreurs découvertes, pas l'accord
+   modèle-humain. Conséquence : le point 9 (algo) reste parqué — ordre de
+   travaux, pas dette.
 2. **Observer en réel ce qui est livré** : v2ctx/Knowledge Builder **fait ✔**,
-   purge des 19 doublons **fait ✔**, bouton « Semblables » **fait ✔** (13/08) ;
-   reste : vignettes Lieux (session 11, après redémarrage), re-upload = une
-   entrée, seek vidéo mobile, test du Z. Veille v2ctx sur un lot plus grand :
-   identifications astre/objet, fuite de la date en prose — tout geste de
-   prompt passe par `vision-eval`.
+   purge des 19 doublons **fait ✔**, bouton « Semblables » **fait ✔**,
+   vignettes Lieux **fait ✔** (13/08) ; **à observer en tête de la prochaine
+   session : les trois tâches de fond réparées** (`/reglages` → trois cartes ;
+   puis relancer `diagnostic_dates.py` : les 12 407 sans date doivent
+   s'effondrer, `taken absent` tomber près de 0, et `namechk` exister). Reste :
+   re-upload = une entrée, seek vidéo mobile, test du Z. Veille v2ctx sur un
+   lot plus grand : identifications astre/objet, fuite de la date en prose —
+   tout geste de prompt passe par `vision-eval`.
 3. **Knowledge Builder + version de pipeline : CÂBLÉS (s8) et OBSERVÉS (s9)** —
    suite naturelle : composition d'affichage date · lieu · noms depuis `faits`
    (choix tranché : structuré d'abord, affichage plus tard) ; re-tagging
    opt-in des entrées v0 si la qualité observée le justifie (~51 h GPU,
    jamais automatique).
-4. **Gestes Mike, dans cet ordre** : nettoyer Flo (5 909 photos sur sa fiche,
-   outillage livré : « Corriger » seuil ~0.2 ou « Nettoyer (référence) ») ;
-   re-rejeter le groupe Caline une fois ; activer `gps_place`
-   (`18 - …gazetteer.bat` → `enrichir_lieux.py` → `--ecrire` → redémarrer) ;
-   lots de renommage **débloqués** (éval V2 faite ; plan = 2114). NB : après
-   renommage, le banc `eval/tagging_v1.json` (keyé par chemin) devient
-   partiellement caduc — attendu, décision déjà écrite.
-5. **Correctifs d'audit restants** : I4–I8, O7–O9, O11–O15 (dont purge de
-   `photo_thumbs/` — le cache croît sans borne ; il est **gitignoré depuis le
-   12/08**, il ne pollue plus `git status`). **Résidu O1 : SOLDÉ (s11)** —
-   Lieux de `/sujets` passé à `/api/thumb`, −98 % mesuré ; O1 est désormais
-   clos partout. Le wagon naturel de O15 (purge du cache `photo_thumbs/`)
-   gagne en poids maintenant que toutes les grilles l'alimentent.
+4. **Gestes Mike, dans cet ordre** : nettoyer Flo (5 909 photos ; « Corriger »
+   seuil ~0.2 ou « Nettoyer (référence) ») ; re-rejeter Caline une fois ;
+   activer `gps_place` (`18 - …gazetteer.bat` → `enrichir_lieux.py` →
+   `--ecrire` → redémarrer) — profite du backfill GPS enfin réparé ; lots de
+   renommage **débloqués** (plan = 2114 ; le banc `eval/tagging_v1.json`, keyé
+   par chemin, en deviendra partiellement caduc — attendu).
+5. **Correctifs d'audit restants** : I4–I8, O7–O9, O11–O15. **O1 clos
+   partout** (s11, observé s12). O15 (purge de `photo_thumbs/`, cache sans
+   borne, gitignoré depuis le 12/08) gagne en poids : toutes les grilles
+   l'alimentent désormais.
 6. **Navigation par similarité** : `/api/similar` + page `/files?sim=` +
    bouton « Semblables » **livrés et OBSERVÉS BONS (13/08)** ; restent :
    doublons proches bridés (>0,98 + même journée → quarantaine réversible,
-   50 paires jugées par Mike avant tout geste) ; rangée « même jour, autres
-   années » (requête date, zéro IA). Les deux tranches restantes réutilisent
-   `similar_by_key` tel quel — aucune brique nouvelle à écrire.
+   50 paires jugées avant tout geste) ; rangée « même jour, autres années »
+   — **bloquée tant que le backfill des dates n'est pas observé** : sur la base
+   d'aujourd'hui elle rassemblerait des milliers de photos sous un 1er janvier
+   qui n'a jamais existé. À bâtir sur les dates PRÉCISES uniquement, jamais sur
+   le repli « année du dossier ». Aucune brique nouvelle (`similar_by_key`).
 7. **Extraction `ui/` — décision nette à prendre** : session dédiée `bundle.py`
    ou parcage explicite (item zombie ; préparatoire fait et vérifié, détail git).
 8. **Cross-pipeline (Mutz/Caline)** : outil livré, réversible. Fix auto REJETÉ
@@ -91,33 +96,26 @@ date en prose).
     (molette) dans les démos et l'affichage plein écran ; (e) wagons résiduels
     rattachés le 12/08 : retrait de l'ancien bandeau `#pending`, libellé
     `/pets` « empreintes calculées » (affiche 0 après redémarrage).
-12. **Assurance-vie : restauration à blanc (PROMU de la Réserve le 12/08).**
-    Le test de la vision « PC mort lundi, tout revit vendredi » : restaurer
-    depuis le snapshot NAS sur une machine/un dossier vierge, chronométrer,
-    noter chaque manque (dont copie hors-site de `journal_jugements.jsonl`,
-    aujourd'hui locale et gitignorée). Faible effort, grande valeur : tant que
-    ce drill n'a pas tourné une fois, la sauvegarde « vérifiée » n'est qu'une
-    promesse.
-13. **Serveur exposé en MCP, lecture seule d'abord (PROMU — son prérequis
-    « Knowledge Builder » est soldé et observé le 12/08).** Exposer recherche
-    (sémantique + tags), fiches personnes/animaux et `faits` sourcés comme
-    outils MCP locaux (JSON-RPC stdio, zéro dépendance — skill `mcp-builder`).
-    Interroger la bibliothèque depuis une conversation Claude = premier fruit
-    concret de la provenance. Écriture (nommer, corriger) : plus tard,
-    seulement après usage réel en lecture.
-14. **Recherche IA locale intelligente et contextuelle (demandé 12/08).**
-    Le champ de recherche (« filtrer par nom ») comprend une demande en
-    langage naturel et la décompose. Ordre de construction : (a) d'abord le
-    **déterministe** — parser la requête en filtres structurés depuis ce qui
-    existe déjà (noms = fiches, dates, lieux = `gps_place`/`faits`, tags,
-    reste → recherche sémantique SigLIP) : zéro GPU, couvre l'essentiel ;
-    (b) ensuite seulement, **escalade ponctuelle** vers un modèle plus
-    intelligent chargé à la demande (bail GpuArbiter, VRAM 4 Go — le modèle
-    est déchargé après) ou itérations multiples selon la complexité de la
-    demande. Choix du modèle et seuil d'escalade = éval `vision-eval` (jamais
-    câblé sans mesure). Synergie : mêmes briques que le serveur MCP (13) —
-    l'un sert l'humain dans l'UI, l'autre sert Claude en conversation.
-15. **À évaluer (discipline `vision-eval`)** : Florence-2 léger.
+12. **Assurance-vie : restauration à blanc (PROMU 12/08).** Le test « PC mort
+    lundi, tout revit vendredi » : restaurer le snapshot NAS sur un dossier
+    vierge, chronométrer, noter chaque manque (dont la copie hors-site de
+    `journal_jugements.jsonl`, aujourd'hui locale et gitignorée). Tant que ce
+    drill n'a pas tourné une fois, la sauvegarde « vérifiée » est une promesse.
+13. **Serveur exposé en MCP, lecture seule d'abord (PROMU 12/08, prérequis
+    soldé).** Recherche (sémantique + tags), fiches personnes/animaux et
+    `faits` sourcés en outils MCP locaux (JSON-RPC stdio, zéro dépendance —
+    skill `mcp-builder`) : interroger la bibliothèque depuis une conversation
+    Claude, premier fruit concret de la provenance. Écriture : plus tard, après
+    usage réel en lecture.
+14. **Recherche IA locale contextuelle (demandé 12/08).** Le champ de
+    recherche comprend une demande en langage naturel et la décompose. Ordre :
+    (a) **déterministe** d'abord — parser en filtres structurés depuis
+    l'existant (noms = fiches, dates, lieux = `gps_place`/`faits`, tags, reste
+    → SigLIP) : zéro GPU, couvre l'essentiel ; (b) ensuite seulement,
+    **escalade ponctuelle** vers un modèle chargé à la demande (bail
+    GpuArbiter, 4 Go, déchargé après). Modèle et seuil = éval `vision-eval`,
+    jamais câblé sans mesure. Mêmes briques que le MCP (13).
+15. **À évaluer (`vision-eval`)** : Florence-2 léger.
 
 ### Résiduels faible valeur (ne pas prioriser)
 Vidé le 12/08 : les trois résiduels sont rattachés en wagons aux chantiers 10
@@ -151,6 +149,11 @@ Vidé le 12/08 : les trois résiduels sont rattachés en wagons aux chantiers 10
   et sourcés (`faits`), noms JAMAIS via le prompt (fusion `_noms_attendus`,
   exclude = autorité) ; `TAGGING_PIPELINE_VERSION` estampillée (`pipe`) ;
   1 lecture exiftool/photo (élargie à la date de prise de vue).
+- **Observabilité** : boucle scan/backup (O5), `backup_verify`, et depuis le
+  13/08 les **trois tâches de fond EXIF** (dates, noms, GPS) — état, avancement
+  et « fichiers muets » dans `/reglages`. Leçon acquise : *un travail de fond
+  qui ne rend pas de comptes finit par ne plus travailler du tout*, et personne
+  ne le voit. Trois l'ont fait pendant des mois.
 - **Hygiène** : nettoyage de session réversible (bat 29) ; commit guidé
   `SESSION_COMMIT.txt` (bat 27) ; fusion fast-forward sans checkout, serveur
   allumé (bat 28) ; **suppression des branches déjà fusionnées (bat 30)** —

@@ -46,6 +46,14 @@
 | `sqlite-vec` pour la recherche vectorielle | **REJETÉ** | Recherche cosinus numpy sur BLOB suffit ; dépendance évitée (zéro-dépendance). |
 | Embeddings stockés en INT8 (au lieu de f16) | **REJETÉ** (11/08) | Gain réel ×2 seulement (base déjà f16, et locale — pas de SMB) : 159→80 Mo ; recall@10 sémantique 0,9685 (« sans perte » réfuté), bascules de seuil 0,0004–0,0062 %, et perte de la garantie « identique au bit près » de `vectors.py`. Mesure : `eval/eval_int8_vectors.py` (130 576 vecteurs réels). |
 
+## Dates de prise de vue
+
+| Idée / piste | Verdict | Raison |
+|---|---|---|
+| Aplatir DateTimeOriginal / CreateDate / ModifyDate en un seul `min()` | **REJETÉ** (13/08) | `ModifyDate` seul est souvent la date du SCAN d'un vieux tirage : un 1995 numérisé en 2005 partait en 2005 dans toute vue chronologique. Les champs restent séparés (`champs_dates_item`). |
+| `ModifyDate` seul cru si son année figure parmi celles du CHEMIN | **ADOPTÉ** (13/08) | Attrape le scan sans rien inventer : en cas de contradiction on rend `None`, la photo garde son repli « année du dossier » (statu quo). Comparé à l'ENSEMBLE des années, jamais au seul `min` — un dossier « Photos 2005-2010\2008\ » faisait sinon reculer la photo de 3 ans (défaut trouvé en relecture). Portée : n'attrape PAS un scanner qui remplit `DateTimeOriginal`. |
+| Écrire `None` (« lu, rien trouvé ») pour tout un lot ExifTool | **REJETÉ** (13/08) | Un lot raté (NAS muet, timeout) est indiscernable d'un lot vide : écrire `None` condamne la photo pour toujours (les backfills sautent les entrées qui portent la clé). On n'écrit que pour les fichiers dont ExifTool a parlé (`valeurs_a_ecrire`), et les « muets » sont comptés dans `/reglages`. Vaut aussi pour `namechk` (noms). |
+
 ## Méthode (invariants à ne pas réapprendre)
 
 - **Circularité de l'auto-évaluation** : un système qui apprend de ses décisions contamine
@@ -62,3 +70,7 @@
   alerte si >15 % des clés ne résolvent plus.
 - **Ordre imposé (`vision-eval`)** : hypothèse + protocole *avant* de mesurer, puis mesurer,
   décider, et seulement ensuite câbler. Exiger un écart minimal (≥ 5 photos) avant un vainqueur.
+- **Mesurer la matière première avant de bâtir dessus** (13/08) : le chantier « même jour »
+  supposait des dates au jour près ; 29 % de la photothèque n'en avait aucune, et la cause était
+  un bug de démarrage vieux de plusieurs mois. Une heure de mesure a valu plus que la
+  fonctionnalité prévue. **Un travail de fond silencieux est un travail de fond suspect.**

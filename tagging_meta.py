@@ -89,19 +89,6 @@ def parse_exif_dt(s):
         return None
 
 
-def parse_meta_gps_taken_item(item):
-    """`parse_meta_gps_item` + date de prise de vue EXIF, toujours en UN item
-    exiftool (donc UNE lecture NAS). La date retenue est la plus ANCIENNE de
-    DateTimeOriginal/CreateDate/ModifyDate, comme `server.read_dates` (evite
-    les dates de modification faussees par le tagging).
-
-    Renvoie (kw_list|None, desc, gps|None, taken_epoch|None)."""
-    kw, desc, gps = parse_meta_gps_item(item)
-    ts = [v for v in (parse_exif_dt(item.get(f))
-                      for f in ("DateTimeOriginal", "CreateDate", "ModifyDate")) if v]
-    return kw, desc, gps, (min(ts) if ts else None)
-
-
 def merge_named_tags(kw_fr, existing_kw):
     """Reintegre dans `kw_fr` les tags nommes (personne:/animal:) presents dans
     `existing_kw` mais absents de `kw_fr`, pour ne JAMAIS perdre un nom attribue
@@ -235,3 +222,86 @@ def faits_structures(a):
     if a.get('date'):
         F.append({'t': 'date', 'v': a['date'], 'src': a.get('date_src') or 'exif'})
     return F
+
+
+# ─────────────────── Backfills : que peut-on ecrire, et quand ? ───────────────
+
+def valeurs_a_ecrire(lot, lues, vus):
+    """Decide ce qu'un backfill (dates, GPS) a le DROIT d'ecrire apres un lot.
+
+    Le piege : un lot rate (NAS qui ne repond pas, ExifTool en timeout) rend un
+    resultat VIDE, impossible a distinguer de « lu, rien trouve ». Ecrire None
+    dans ce cas condamne la photo POUR TOUJOURS -- les backfills sautent les
+    entrees qui portent deja la cle. Des milliers de photos perdraient leur
+    date sur un simple hoquet du reseau.
+
+    La regle est celle que `server.read_meta_and_gps` applique deja pour le
+    tagging : on n'ecrit que pour les fichiers dont ExifTool a VRAIMENT parle.
+    Un fichier absent de sa reponse n'est pas decide -- il sera represente au
+    prochain demarrage.
+
+    `lot`  : [(cle_index, cle_fichier)] du lot envoye a ExifTool
+    `lues` : {cle_fichier: valeur} pour les fichiers ou une valeur a ete trouvee
+    `vus`  : {cle_fichier} des fichiers sur lesquels ExifTool s'est prononce
+
+    Renvoie {cle_index: valeur|None} -- None = « lu, rien trouve », a memoriser.
+    """
+    return {ci: lues.get(cf) for ci, cf in lot if cf in vus}
+
+
+def champs_dates_item(item):
+    """Separe, dans UN item JSON d'exiftool, la date de PRISE DE VUE de la date
+    d'ECRITURE du fichier. Source unique des noms de champs EXIF pour les deux
+    appelants (`server.read_dates` par lots, `server.read_meta_and_gps` a
+    l'unite) : les aplatir chacun de son cote finirait par les faire diverger.
+
+    Renvoie {'o': epoch|None (DateTimeOriginal/CreateDate, la plus ancienne),
+             'm': epoch|None (ModifyDate)}.
+    """
+    item = item or {}
+    orig = [v for v in (parse_exif_dt(item.get(f))
+                        for f in ("DateTimeOriginal", "CreateDate")) if v]
+    return {'o': min(orig) if orig else None,
+            'm': parse_exif_dt(item.get("ModifyDate"))}
+
+
+def date_fiable(champs, annees_chemin=()):
+    """Quelle date EXIF meritent d'etre CRUE, pour une photo rangee sous une
+    annee donnee ?
+
+    Le piege des photos SCANNEES : un tirage de 1995 numerise en 2005 ne porte
+    souvent qu'un `ModifyDate` = la date du SCAN. La croire ferait sortir la
+    photo de 1995 dans toute vue chronologique -- une regression silencieuse
+    sur la partie la plus ancienne, et la plus precieuse, de la phototheque.
+
+    Regle :
+    - `DateTimeOriginal` / `CreateDate` = instant de PRISE DE VUE -> crus, sans
+      condition (c'est ce que l'appareil a inscrit au declenchement).
+    - `ModifyDate` seul = date de derniere ECRITURE du fichier -> cru uniquement
+      si son annee figure parmi celles du CHEMIN. Sinon on rend None : la photo
+      garde son repli « annee du dossier », c'est-a-dire le statu quo, jamais
+      une date inventee.
+    - Aucune annee dans le chemin -> rien a contredire, `ModifyDate` est cru.
+
+    On compare a l'ENSEMBLE des annees du chemin, jamais a la seule plus
+    ancienne : un dossier peut porter une plage (« Photos 2005-2010\\2008\\… »)
+    et l'egalite stricte avec 2005 ferait reculer la photo de trois ans.
+
+    Portee du garde-fou : il attrape le scanner qui n'ecrit QUE `ModifyDate`.
+    Celui qui remplit `DateTimeOriginal` avec la date du scan passe au travers
+    -- comportement inchange, et indiscernable d'une vraie prise de vue.
+
+    `champs` : {'o': epoch|None (origine), 'm': epoch|None (modification)}
+    `annees_chemin` : ensemble d'entiers (vide = chemin sans annee)
+    Renvoie un epoch, ou None (= lu, aucune date digne de foi).
+    """
+    o = champs.get('o') if isinstance(champs, dict) else None
+    if o:
+        return o
+    m = champs.get('m') if isinstance(champs, dict) else None
+    if not m or not annees_chemin:
+        return m or None
+    try:
+        return m if time.localtime(m).tm_year in set(annees_chemin) else None
+    except (ValueError, OSError, OverflowError):
+        return None

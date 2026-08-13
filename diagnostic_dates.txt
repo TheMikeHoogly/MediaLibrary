@@ -1,0 +1,64 @@
+=== Dates de prise de vue : d'ou viennent-elles ? ===
+Entrees lues : 43067  (dont 989 illisibles, exclues)
+
+  annee |     n |   EXIF |    nom | ni l'un ni l'autre | 'taken' absent | 'taken' null
+    ?   | 12083 |     18 |  10330 |               1753 |          12065 |            0
+   1990 |    12 |      0 |      1 |                 11 |             12 |            0
+   1991 |    13 |      0 |      8 |                  5 |             13 |            0
+   1992 |    10 |      0 |      1 |                  9 |             10 |            0
+   1993 |    13 |      0 |      0 |                 13 |             13 |            0
+   1994 |    18 |      0 |      0 |                 18 |             18 |            0
+   1995 |    44 |      0 |      0 |                 44 |             44 |            0
+   1996 |    42 |      0 |      0 |                 42 |             42 |            0
+   1997 |   110 |      0 |      5 |                105 |            110 |            0
+   1998 |   141 |      0 |      8 |                133 |            141 |            0
+   1999 |   130 |      0 |     10 |                120 |            130 |            0
+   2000 |   352 |      0 |      9 |                343 |            352 |            0
+   2001 |   810 |      0 |      4 |                806 |            810 |            0
+   2002 |   650 |      0 |      3 |                647 |            650 |            0
+   2003 |   399 |      0 |      6 |                393 |            399 |            0
+   2004 |  1324 |      0 |     12 |               1312 |           1324 |            0
+   2005 |   106 |      0 |      0 |                106 |            106 |            0
+   2006 |    62 |      0 |      0 |                 62 |             62 |            0
+   2007 |   771 |      0 |      0 |                771 |            771 |            0
+   2008 |   855 |      0 |      0 |                855 |            855 |            0
+   2009 |   397 |      0 |      0 |                397 |            397 |            0
+   2010 |  2223 |      0 |     72 |               2151 |           2223 |            0
+   2011 |   234 |      0 |     22 |                212 |            234 |            0
+   2012 |     5 |      0 |      5 |                  0 |              5 |            0
+   2013 |   149 |      0 |    149 |                  0 |            149 |            0
+   2014 |   236 |      0 |    236 |                  0 |            236 |            0
+   2015 |  1398 |      0 |   1009 |                389 |           1398 |            0
+   2016 |  1601 |      0 |    421 |               1180 |           1601 |            0
+   2017 |  1638 |      0 |   1611 |                 27 |           1638 |            0
+   2018 |  1911 |      0 |   1748 |                163 |           1911 |            0
+   2019 |   700 |      0 |    614 |                 86 |            700 |            0
+   2020 |  1135 |      0 |   1135 |                  0 |           1135 |            0
+   2021 |  1479 |      0 |   1479 |                  0 |           1479 |            0
+   2022 |  2205 |      0 |   2151 |                 54 |           2205 |            0
+   2023 |  2142 |      0 |   2142 |                  0 |           2142 |            0
+   2024 |  2216 |      0 |   2216 |                  0 |           2216 |            0
+   2025 |  2540 |      0 |   2392 |                148 |           2540 |            0
+   2026 |  1924 |      0 |   1872 |                 52 |           1924 |            0
+
+TOTAL : 18 avec date EXIF en base, 29671 datees par leur nom,
+        12407 sans aucune date au jour pres sur 42078 (29 %).
+        'taken' absent de l'entree : 42060  (= le backfill n'est jamais passe dessus)
+        'taken' a null : 0  (= ExifTool est passe et n'a rien trouve)
+
+LECTURE : backfill INACHEVE — beaucoup d'entrees n'ont jamais ete lues.
+
+=== Relecture ExifTool de 30 fichiers reels (sur 5000 sans date) ===
+  avec une date EXIF sur le disque : 27
+  sans aucune date EXIF            : 3
+  fichiers non lus (absents ?)     : 0
+    + PICT1028.JPG : {'DateTimeOriginal': '2005:06:19 14:49:06', 'CreateDate': '2005:06:19 14:49:06', 'ModifyDate': '2005:06:19 14:49:06'}
+    + Poster02.png : {'ModifyDate': '2007:12:24 16:59:12'}
+    + DSCN0181.JPG : {'DateTimeOriginal': '2007:07:22 20:26:06', 'CreateDate': '2007:07:22 20:26:06', 'ModifyDate': '2007:07:22 20:26:06'}
+    + DSCN0429.JPG : {'DateTimeOriginal': '2007:08:05 16:14:20', 'CreateDate': '2007:08:05 16:14:20', 'ModifyDate': '2007:08:05 16:14:20'}
+    + DSCN0711.JPG : {'DateTimeOriginal': '2007:11:19 00:24:38', 'CreateDate': '2007:11:19 00:24:38', 'ModifyDate': '2007:11:19 00:24:38'}
+    + DSC00255.JPG : {'DateTimeOriginal': '2008:02:16 02:34:11', 'CreateDate': '2008:02:16 02:34:11', 'ModifyDate': '2008:02:16 02:34:11'}
+    + DSC00409.JPG : {'DateTimeOriginal': '2008:05:06 19:19:43', 'CreateDate': '2008:05:06 19:19:43', 'ModifyDate': '2008:05:13 22:50:19'}
+    + DSC00496.JPG : {'DateTimeOriginal': '2008:08:02 12:26:35', 'CreateDate': '2008:08:02 12:26:35', 'ModifyDate': '2008:08:02 12:26:35'}
+
+VERDICT : cause B — des dates EXIF existent sur le disque et ne sont PAS dans l'index. Le backfill est a reparer : le reparer rend leur date a des milliers de photos.

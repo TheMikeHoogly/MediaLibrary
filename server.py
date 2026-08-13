@@ -883,10 +883,16 @@ def _norm_import_kw(k):
 
 
 def read_existing_metadata(paths, progress=False):
-    """Lit les mots-clés déjà présents (fichiers tagués par un autre logiciel)."""
-    result = {}
+    """Lit les mots-clés déjà présents (fichiers tagués par un autre logiciel).
+
+    Renvoie ({clé: (mots-clés, description)}, {clés VUES}). `vus` est vital ici :
+    c'est cette lecture qui rapatrie les noms humains écrits dans les fichiers
+    (`reimport_name_tags`). Confondre « lu, aucun mot-clé » avec « ExifTool n'a
+    rien dit » ferait marquer la photo comme vérifiée alors qu'elle ne l'a pas
+    été — et un nom présent dans le XMP ne serait PLUS JAMAIS repris."""
+    result, vus = {}, set()
     if not EXIFTOOL or not paths:
-        return result
+        return result, vus
     for i in range(0, len(paths), 40):
         if progress and i and i % 800 == 0:
             print(f"    … {i}/{len(paths)} fichiers lus")
@@ -899,6 +905,7 @@ def read_existing_metadata(paths, progress=False):
             r = _run_exiftool(args, timeout=600)
             for item in json.loads(r.stdout or "[]"):
                 key = _pkey(item.get("SourceFile", ""))
+                vus.add(key)
                 kw = item.get("Subject") or item.get("Keywords") or []
                 if isinstance(kw, str):
                     kw = [kw]
@@ -910,17 +917,24 @@ def read_existing_metadata(paths, progress=False):
                                    str(desc).strip())
         except Exception:
             pass
-    return result
+    return result, vus
 
 
 def read_gps(paths, progress=False):
     """Lit les coordonnées GPS (lat, lon) des fichiers via ExifTool.
-    Retourne {clé_index: [lat, lon]} ; les fichiers sans GPS sont absents.
+    Retourne ({clé_index: [lat, lon]}, {clés VUES}) ; les fichiers sans GPS sont
+    absents du premier dictionnaire mais présents dans le second.
     -n = valeurs numériques ; le groupe Composite applique déjà le signe
-    N/S et E/W, on obtient donc des degrés décimaux signés."""
-    result = {}
+    N/S et E/W, on obtient donc des degrés décimaux signés.
+
+    `vus` = fichiers sur lesquels ExifTool s'est VRAIMENT prononcé. Sans cette
+    distinction, un lot raté (NAS muet, timeout) est indiscernable de « lu,
+    rien trouvé » et le backfill écrit None partout — condamnant les photos
+    pour toujours. Même garde-fou que `read_meta_and_gps` (voir
+    `tagging_meta.valeurs_a_ecrire`)."""
+    result, vus = {}, set()
     if not EXIFTOOL or not paths:
-        return result
+        return result, vus
     for i in range(0, len(paths), 60):
         if progress and i and i % 1200 == 0:
             print(f"    … GPS {i}/{len(paths)} fichiers lus")
@@ -933,16 +947,17 @@ def read_gps(paths, progress=False):
             r = _run_exiftool(args, timeout=600)
             for item in json.loads(r.stdout or "[]"):
                 key = _pkey(item.get("SourceFile", ""))
+                vus.add(key)
                 lat, lon = item.get("GPSLatitude"), item.get("GPSLongitude")
                 if isinstance(lat, (int, float)) and isinstance(lon, (int, float)):
                     if -90 <= lat <= 90 and -180 <= lon <= 180 and (lat or lon):
                         result[key] = [round(float(lat), 6), round(float(lon), 6)]
         except Exception:
             pass
-    return result
+    return result, vus
 
 
-def read_meta_and_gps(path):
+def read_meta_and_gps(path, cle=None):
     """Lit en UN SEUL appel exiftool les mots-clés/description existants, le
     GPS ET la date de prise de vue d'un fichier. Fusionne
     `read_existing_metadata` + `read_gps` + `read_dates` pour le worker de
@@ -952,12 +967,16 @@ def read_meta_and_gps(path):
     qu'après. Appelé AVANT le VLM depuis la version v2ctx : les faits lus
     partent dans le prompt (Knowledge Builder amont).
 
+    `cle` : la clé d'index de la photo, sur laquelle porte l'arbitrage de la
+    date (voir plus bas). À défaut, le chemin sert de repli.
+
     Retourne (kw_list|None, desc, gps|None, taken_epoch|None, ok). `ok` est
     True seulement si exiftool a VRAIMENT lu le fichier : il distingue « lu,
     rien trouvé » (gps/taken absents pour de bon → l'entrée peut le mémoriser)
     d'un échec transitoire (NAS, timeout → ne PAS écrire gps/taken None, sinon
     les backfills sautent la photo pour toujours). Le parsing pur (testé) vit
-    dans `tagging_meta.parse_meta_gps_taken_item`."""
+    dans `tagging_meta` (`parse_meta_gps_item` + `champs_dates_item` +
+    `date_fiable`)."""
     if not EXIFTOOL:
         return None, "", None, None, False
     import tagging_meta
@@ -970,7 +989,20 @@ def read_meta_and_gps(path):
         r = _run_exiftool(args)
         items = json.loads(r.stdout or "[]")
         if items:
-            return tagging_meta.parse_meta_gps_taken_item(items[0]) + (True,)
+            kw, desc, gps = tagging_meta.parse_meta_gps_item(items[0])
+            # MÊME arbitrage que le backfill par lots : la date du scan d'un
+            # vieux tirage n'est pas sa date de prise de vue. Sans cela, une
+            # photo recevrait une date différente selon le chemin de code qui
+            # l'a touchée — tagging ou backfill.
+            # L'arbitrage porte sur la CLÉ D'INDEX, pas sur le chemin absolu :
+            # c'est elle que `_best_time`/`_path_year` regardent ensuite. Pour
+            # une photo d'Uploads (clé = nom nu), juger sur le chemin absolu
+            # ferait intervenir une année du dossier d'installation — et la
+            # même photo recevrait deux dates selon le chemin de code.
+            taken = tagging_meta.date_fiable(
+                tagging_meta.champs_dates_item(items[0]),
+                _path_years(cle if cle is not None else str(path)))
+            return kw, desc, gps, taken, True
         return None, "", None, None, False
     except Exception:
         return None, "", None, None, False
@@ -1110,44 +1142,169 @@ def _tagging_pipe_counts():
     return c
 
 
+# État des deux backfills (dates, GPS). Ils sont morts EN SILENCE à chaque
+# démarrage pendant des mois (voir `_attendre_exiftool`) : 42 060 entrées sur
+# 43 067 n'avaient jamais été lues, sans qu'aucun écran ne le dise. Un travail
+# de fond qui ne rend pas de comptes finit par ne plus travailler du tout —
+# même leçon que la boucle de maintenance (audit O5) et que `backup_verify`.
+# Rendu dans /reglages.
+# `muets` : fichiers d'un lot dont ExifTool n'a rien dit (timeout, NAS qui
+# décroche). Ils ne sont PAS décidés — c'est voulu — mais ils repasseront à
+# chaque démarrage : sans ce compteur, une boucle perpétuelle sur un lot
+# pathologique se déguiserait en « terminé ».
+BACKFILL_STATE = {
+    "dates": {"etat": "au demarrage", "todo": 0, "faits": 0, "trouves": 0,
+              "muets": 0, "fini_at": 0.0, "erreur": ""},
+    "gps": {"etat": "au demarrage", "todo": 0, "faits": 0, "trouves": 0,
+            "muets": 0, "fini_at": 0.0, "erreur": ""},
+    "noms": {"etat": "au demarrage", "todo": 0, "faits": 0, "trouves": 0,
+             "muets": 0, "fini_at": 0.0, "erreur": ""},
+}
+
+
+def _backfill(nom, fn):
+    """Lance un backfill en rendant compte de sa mort éventuelle.
+
+    Un thread daemon qui lève une exception disparaît sans un mot : c'est le
+    deuxième moyen (après le renoncement à ExifTool) pour que ce travail cesse
+    en silence. Ici l'échec devient un état lisible dans /reglages."""
+    try:
+        fn()
+    except Exception as e:                                    # noqa: BLE001
+        BACKFILL_STATE[nom]["etat"] = "erreur"
+        BACKFILL_STATE[nom]["erreur"] = str(e)[:200]
+        print(f"  ⚠ Backfill {nom} interrompu : {e}")
+    except BaseException as e:                                # noqa: BLE001
+        # Laisser l'état à « en cours » ferait attendre les autres tâches
+        # jusqu'à leur plafond de 6 h. On note, puis on laisse remonter.
+        BACKFILL_STATE[nom]["etat"] = "erreur"
+        BACKFILL_STATE[nom]["erreur"] = type(e).__name__
+        raise
+
+
+def _attendre_exiftool(quoi, delai=1800):
+    """Attend qu'ExifTool soit prêt, au lieu de renoncer tout de suite.
+
+    LE BUG (13/08/2026) : `EXIFTOOL` est affecté par `maintenance_loop`, lancé
+    dans le même souffle que les backfills. Ceux-ci testaient `if not EXIFTOOL:
+    return` AVANT leur `time.sleep()` — donc quelques microsecondes après le
+    démarrage, alors que `ensure_exiftool()` (which + rglob, parfois un
+    téléchargement) n'avait pas encore rendu la main. Les deux tâches se
+    terminaient instantanément, sans un mot, à CHAQUE démarrage depuis
+    toujours. Coût observé : 12 407 photos sans aucune date au jour près
+    (29 % de la photothèque) alors que 27 fichiers sur 30 en portent une dans
+    leur EXIF — mesuré par `diagnostic_dates.py`.
+
+    Le délai couvre le PIRE cas d'`ensure_exiftool()` : première installation,
+    ExifTool absent du PATH, téléchargement lent (ver.txt + jusqu'à trois URL
+    à 600 s de timeout). Abandonner plus tôt condamnerait la session entière
+    alors que l'outil finit par arriver.
+
+    Renvoie True si ExifTool est disponible dans le délai imparti."""
+    fin = time.time() + delai
+    while time.time() < fin:
+        if EXIFTOOL:
+            return True
+        time.sleep(1)
+    BACKFILL_STATE[quoi]["etat"] = "ExifTool indisponible"
+    print(f"  ⚠ Backfill {quoi} : ExifTool toujours indisponible après "
+          f"{delai} s — tâche abandonnée pour cette session.")
+    return False
+
+
+# États depuis lesquels une tâche va encore lire le NAS — donc pour lesquels
+# une autre doit patienter. « en attente des … » en fait partie : sans lui, la
+# passe des noms doublerait le GPS pendant que celui-ci attend son tour.
+ETATS_EN_COURS = ("au demarrage", "en attente des dates", "inventaire",
+                  "en cours")
+
+
+def _attendre_backfill(autre, delai=6 * 3600, moi=None):
+    """Attend qu'un autre backfill ait fini son passage sur le NAS.
+
+    Les deux tâches lisent les MÊMES ~42 000 fichiers : les lancer ensemble
+    double la charge du NAS pour rien et se paie sur la navigation. Les dates
+    passent d'abord — c'est ce qui manque à la chronologie ; le GPS suit."""
+    fin = time.time() + delai
+    while time.time() < fin:
+        if BACKFILL_STATE[autre]["etat"] not in ETATS_EN_COURS:
+            return
+        time.sleep(10)
+    # Dépassement : on part quand même (mieux vaut deux passages simultanés
+    # qu'un travail jamais fait), mais on le DIT — et pas seulement dans une
+    # console que personne ne relit : /reglages doit le montrer, sinon la
+    # sérialisation semblerait tenue alors qu'elle a cédé.
+    if moi:
+        BACKFILL_STATE[moi]["erreur"] = (
+            f"attente de « {autre} » dépassée — lancé en parallèle")
+    print(f"  ℹ Backfill : attente de « {autre} » dépassée ({delai // 3600} h) "
+          f"— démarrage en parallèle.")
+
+
 def backfill_gps():
     """Complète l'index en lisant le GPS des photos déjà taguées qui n'ont
     pas encore de champ 'gps'. Tourne une fois au démarrage, en tâche de
     fond, par lots. Marque gps=None quand aucune coordonnée n'est présente
-    pour ne pas relire le fichier au prochain démarrage."""
-    if not EXIFTOOL:
-        return
+    pour ne pas relire le fichier au prochain démarrage — mais seulement pour
+    les fichiers dont ExifTool a vraiment parlé (`tagging_meta.valeurs_a_ecrire`)."""
+    import tagging_meta
+    etat = BACKFILL_STATE["gps"]
     time.sleep(8)  # laisse le serveur démarrer avant de solliciter le NAS
+    if not _attendre_exiftool("gps"):
+        return
+    # Dernier servi, volontairement : la carte attend, les noms non. L'ordre
+    # est dates -> noms -> GPS, du plus structurant au plus accessoire.
+    etat["etat"] = "en attente des dates"
+    _attendre_backfill("dates", moi="gps")
+    _attendre_backfill("noms", moi="gps")
+    etat["etat"] = "inventaire"
     todo = []  # (clé_index, chemin)
-    for k, e in list(STORE.data.items()):
+    for n, (k, e) in enumerate(list(STORE.data.items())):
         if not isinstance(e, dict) or e.get('failed') or 'gps' in e:
             continue
         p = _resolve_key(k)
         if p.suffix.lower() not in IMAGE_EXT:
             continue
+        # L'inventaire fait un stat() par photo SUR LE NAS : à 42 000 entrées
+        # il dure des minutes et l'UI passe d'abord (invariant « l'UI cède la
+        # priorité au NAS » — il ne valait que pour la boucle de lecture).
+        if n % 200 == 0:
+            while ui_recent():
+                time.sleep(3)
         try:
             if p.exists():
                 todo.append((k, p))
         except OSError:
             continue
+    etat["todo"] = len(todo)
     if not todo:
+        etat["etat"] = "rien a lire"
         return
     print(f"  🗺  Backfill GPS : {len(todo)} photos à lire…")
+    etat["etat"] = "en cours"
     found = 0
     for i in range(0, len(todo), 60):
+        while ui_recent():
+            time.sleep(3)
         batch = todo[i:i + 60]
-        gps = read_gps([p for _k, p in batch])
+        gps, vus = read_gps([p for _k, p in batch])
+        a_ecrire = tagging_meta.valeurs_a_ecrire(
+            [(k, _pkey(p)) for k, p in batch], gps, vus)
+        etat["muets"] += len(batch) - len(a_ecrire)
         with STORE.lock:
-            for k, p in batch:
+            for k, g in a_ecrire.items():
                 e = STORE.data.get(k)
                 if not isinstance(e, dict):
                     continue
-                g = gps.get(_pkey(p))
                 e['gps'] = g if g else None
                 if g:
                     found += 1
             STORE._save()
+        etat["faits"] = min(i + 60, len(todo))
+        etat["trouves"] = found
         time.sleep(0.2)  # ménage le NAS/CPU
+    etat["etat"] = "termine"
+    etat["fini_at"] = time.time()
     print(f"  ✓ Backfill GPS terminé : {found} photos géolocalisées")
 
 
@@ -1186,16 +1343,33 @@ def _fname_time(name):
         return None
 
 
+def _path_years(key):
+    """TOUTES les années (19xx/20xx) portées par le CHEMIN, en entiers.
+
+    L'ensemble, pas seulement la plus ancienne : un dossier peut porter une
+    PLAGE (« Photos 2005-2010\\2008\\… ») et exiger l'égalité avec le seul
+    minimum ferait reculer la photo de trois ans. Sert de garde-fou aux dates
+    EXIF des photos scannées (`tagging_meta.date_fiable`)."""
+    return {int(y) for y in re.findall(r'(?<!\d)(19\d{2}|20\d{2})(?!\d)', str(key))
+            if 1990 <= int(y) <= 2100}
+
+
+def _path_year_num(key):
+    """Année la plus ancienne du chemin, en entier (0 si aucune) — le repli
+    chronologique historique."""
+    yrs = _path_years(key)
+    return min(yrs) if yrs else 0
+
+
 def _path_year(key):
     """Année (19xx/20xx) trouvée dans le CHEMIN (dossiers datés « …\\2016\\… »).
     Repli approximatif quand ni EXIF ni nom de fichier n'ont de date. Renvoie un
     timestamp au 1er janvier de la plus ancienne année trouvée, ou 0."""
-    yrs = [int(y) for y in re.findall(r'(?<!\d)(19\d{2}|20\d{2})(?!\d)', str(key))
-           if 1990 <= int(y) <= 2100]
-    if not yrs:
+    an = _path_year_num(key)
+    if not an:
         return 0
     try:
-        return time.mktime((min(yrs), 1, 1, 12, 0, 0, 0, 0, -1))
+        return time.mktime((an, 1, 1, 12, 0, 0, 0, 0, -1))
     except (ValueError, OverflowError):
         return 0
 
@@ -1226,11 +1400,22 @@ def _best_time(key, e):
 
 
 def read_dates(paths, progress=False):
-    """Lit les dates de prise de vue via ExifTool. Renvoie {clé: epoch} = la plus
-    ancienne des dates EXIF (DateTimeOriginal / CreateDate / ModifyDate)."""
-    result = {}
+    """Lit les dates de prise de vue via ExifTool. Renvoie
+    ({clé: {'o': epoch|None, 'm': epoch|None}}, {clés VUES}).
+
+    Les champs restent SÉPARÉS : `o` = prise de vue (DateTimeOriginal /
+    CreateDate, la plus ancienne des deux), `m` = dernière écriture du fichier
+    (ModifyDate). Les aplatir en un seul `min()` ferait passer la date de SCAN
+    d'un tirage de 1995 pour sa date de prise de vue. L'arbitrage vit dans
+    `tagging_meta.date_fiable` (pur, testé).
+
+    `vus` : voir `read_gps`. Un fichier absent de la réponse d'ExifTool n'est
+    PAS décidé — il sera représenté au prochain démarrage plutôt que marqué
+    « sans date » à tort."""
+    import tagging_meta
+    result, vus = {}, set()
     if not EXIFTOOL or not paths:
-        return result
+        return result, vus
     for i in range(0, len(paths), 60):
         if progress and i and i % 1200 == 0:
             print(f"    … dates {i}/{len(paths)} fichiers lus")
@@ -1242,41 +1427,49 @@ def read_dates(paths, progress=False):
             r = _run_exiftool(args, timeout=600)
             for item in json.loads(r.stdout or "[]"):
                 key = _pkey(item.get("SourceFile", ""))
-                ts = []
-                for f in ("DateTimeOriginal", "CreateDate", "ModifyDate"):
-                    v = _parse_exif_dt(item.get(f))
-                    if v:
-                        ts.append(v)
-                if ts:
-                    result[key] = min(ts)
+                vus.add(key)
+                champs = tagging_meta.champs_dates_item(item)
+                if champs['o'] or champs['m']:
+                    result[key] = champs
         except Exception:
             pass
-    return result
+    return result, vus
 
 
 def backfill_dates():
     """Complète l'index avec la date de prise de vue EXIF ('taken') des photos
     qui ne l'ont pas encore. Tâche de fond, par lots, une fois au démarrage.
     Marque taken=None quand aucune date EXIF n'est présente (le nom de fichier et
-    le mtime servent alors de repli via _best_time)."""
-    if not EXIFTOOL:
+    le mtime servent alors de repli via _best_time) — mais UNIQUEMENT pour les
+    fichiers dont ExifTool a vraiment parlé, sans quoi un lot raté condamnerait
+    ces photos pour toujours (`tagging_meta.valeurs_a_ecrire`)."""
+    import tagging_meta
+    etat = BACKFILL_STATE["dates"]
+    time.sleep(10)  # laisse le serveur démarrer ; le GPS attend CE passage-ci
+    if not _attendre_exiftool("dates"):
         return
-    time.sleep(20)  # après le backfill GPS
+    etat["etat"] = "inventaire"
     todo = []
-    for k, e in list(STORE.data.items()):
+    for n, (k, e) in enumerate(list(STORE.data.items())):
         if not isinstance(e, dict) or e.get('failed') or 'taken' in e:
             continue
         p = _resolve_key(k)
         if p.suffix.lower() not in IMAGE_EXT:
             continue
+        if n % 200 == 0:            # voir backfill_gps : l'UI passe d'abord
+            while ui_recent():
+                time.sleep(3)
         try:
             if p.exists():
                 todo.append((k, p))
         except OSError:
             continue
+    etat["todo"] = len(todo)
     if not todo:
+        etat["etat"] = "rien a lire"
         return
     print(f"  📅 Backfill dates de prise de vue : {len(todo)} photos à lire…")
+    etat["etat"] = "en cours"
     found = 0
     for i in range(0, len(todo), 60):
         # cède le NAS seulement quand TU navigues (lecture EXIF = I/O léger, ok en
@@ -1285,20 +1478,35 @@ def backfill_dates():
         while ui_recent():
             time.sleep(3)
         batch = todo[i:i + 60]
-        dates = read_dates([p for _k, p in batch])
+        bruts, vus = read_dates([p for _k, p in batch])
+        # Arbitrage par photo : la date du SCAN d'un vieux tirage ne doit pas
+        # passer pour sa date de prise de vue (tagging_meta.date_fiable).
+        dates = {}
+        for _k, _p in batch:
+            _pk = _pkey(_p)
+            _d = tagging_meta.date_fiable(bruts.get(_pk) or {},
+                                          _path_years(_k))
+            if _d:
+                dates[_pk] = _d
+        a_ecrire = tagging_meta.valeurs_a_ecrire(
+            [(k, _pkey(p)) for k, p in batch], dates, vus)
+        etat["muets"] += len(batch) - len(a_ecrire)
         with STORE.lock:
-            for k, p in batch:
+            for k, dt in a_ecrire.items():
                 e = STORE.data.get(k)
                 if not isinstance(e, dict):
                     continue
-                dt = dates.get(_pkey(p))
                 e['taken'] = dt if dt else None
                 if dt:
                     found += 1
             if (i // 60) % 10 == 0:      # sauvegarde tous les ~10 lots seulement
                 STORE._save()
+        etat["faits"] = min(i + 60, len(todo))
+        etat["trouves"] = found
         time.sleep(0.2)
     STORE.save()
+    etat["etat"] = "termine"
+    etat["fini_at"] = time.time()
     print(f"  ✓ Backfill dates terminé : {found} dates de prise de vue lues")
 
 
@@ -1440,7 +1648,8 @@ def tagger_worker():
             import tagging_meta
             existing_kw, gps, taken, meta_ok = None, None, None, False
             try:
-                existing_kw, _exdesc, gps, taken, meta_ok = read_meta_and_gps(path)
+                existing_kw, _exdesc, gps, taken, meta_ok = read_meta_and_gps(
+                    path, cle=name)
             except Exception:
                 pass
             faits = _assertions_pour(name, existing_kw, taken)
@@ -2018,7 +2227,10 @@ def _sync_dir(label, cur, own_keys, first=False, deep=False):
         if first and len(unknown) > 200:
             print(f"  🔍 Lecture des métadonnées existantes de {len(unknown)} "
                   f"fichier(s) (par lots de 40, patience)…")
-        existing = read_existing_metadata([cur[k] for k in unknown], progress=first)
+        # `vus` inutile ici : une lecture ratée renvoie simplement la photo à la
+        # file de tagging IA — rien n'est perdu, rien n'est marqué.
+        existing, _vus = read_existing_metadata([cur[k] for k in unknown],
+                                                progress=first)
         n_import = n_queue = 0
         for k in unknown:
             p = cur[k]
@@ -5675,9 +5887,28 @@ function load(){
          +(bv.detail?' \\u00b7 '+bv.detail:'')
          +(bv.jugements_exportes?' \\u00b7 jugements exportes '+heure(bv.jugements_exportes):''))
       : 'Apres la 1re sauvegarde horaire';
+    // Lecture des dates/GPS dans les fichiers : la tache mourait au demarrage
+    // sans rien dire (12 407 photos sans date au jour pres). Elle rend
+    // desormais des comptes ici.
+    var bf=s.backfill||{};
+    function bfCard(titre, o){
+      o=o||{};
+      var v = o.etat==='en cours' ? (o.faits||0)+' / '+(o.todo||0)
+            : o.etat==='termine'  ? (o.trouves||0)+' lues'
+            : (o.etat||'?');
+      var muets = o.muets ? (' \\u00b7 \\u26a0 '+o.muets+' fichiers muets (a relire au prochain demarrage)') : '';
+      var tv = o.erreur ? ('\\u26a0 '+o.erreur)
+             : o.etat==='termine' ? ('Termine a '+heure(o.fini_at)+' \\u00b7 '+(o.todo||0)+' fichiers relus'+muets)
+             : o.etat==='en cours' ? ((o.trouves||0)+' trouvees jusqu\\'ici'+muets)
+             : 'Lecture ExifTool en tache de fond';
+      return '<div class="card"><div class="k">'+esc(titre)+'</div><div class="v">'+esc(v)+'</div><div class="tv">'+esc(tv)+'</div></div>';
+    }
     document.getElementById('live').innerHTML+=[
       '<div class="card"><div class="k">Dernier scan</div><div class="v">'+esc(scanTxt)+'</div><div class="tv">'+esc(scanTv)+'</div></div>',
-      '<div class="card"><div class="k">Sauvegarde verifiee</div><div class="v">'+esc(bvTxt)+'</div><div class="tv">'+esc(bvTv)+'</div></div>'
+      '<div class="card"><div class="k">Sauvegarde verifiee</div><div class="v">'+esc(bvTxt)+'</div><div class="tv">'+esc(bvTv)+'</div></div>',
+      bfCard('Dates de prise de vue', bf.dates),
+      bfCard('Coordonnees GPS', bf.gps),
+      bfCard('Noms relus dans les fichiers', bf.noms)
     ].join('');
     document.getElementById('lib').innerHTML=[
       card('Entrees', c.entrees||0), card('Taguees', c.tagues||0),
@@ -8522,20 +8753,36 @@ def reimport_name_tags():
     """Recovery pérenne, source de vérité = les FICHIERS : relit les mots-clés
     des photos et réintègre dans l'index tout tag personne:/animal: qui y
     manque (effacé par un ré-tagging). Une seule passe (marque 'namechk'),
-    throttlée et polie avec le NAS. Récupère aussi les noms tagués « à la main »."""
-    if not EXIFTOOL:
-        return
+    throttlée et polie avec le NAS. Récupère aussi les noms tagués « à la main ».
+
+    MÊME BUG DE COURSE que les backfills, corrigé le 13/08 : la garde
+    `if not EXIFTOOL` était AVANT le sleep, donc cette passe mourait elle aussi
+    en silence à chaque démarrage — alors qu'elle sert l'invariant le plus
+    sacré du projet (aucun nom humain perdu). Aucune entrée ne portait
+    'namechk' : elle n'a jamais tourné."""
+    etat = BACKFILL_STATE["noms"]
     time.sleep(45)
+    if not _attendre_exiftool("noms"):
+        return
+    etat["etat"] = "en attente des dates"
+    _attendre_backfill("dates", moi="noms")   # un seul balayage du NAS à la fois
+    etat["etat"] = "inventaire"
     todo = []
-    for k, e in list(STORE.data.items()):
+    for n, (k, e) in enumerate(list(STORE.data.items())):
         if not isinstance(e, dict) or e.get('failed') or e.get('namechk'):
             continue
         p = _resolve_key(k)
         if p.suffix.lower() not in IMAGE_EXT:
             continue
+        if n % 200 == 0:
+            while ui_recent():
+                time.sleep(3)
         todo.append((k, p))
+    etat["todo"] = len(todo)
     if not todo:
+        etat["etat"] = "rien a lire"
         return
+    etat["etat"] = "en cours"
     # Exclusions humaines : tag_minuscule -> set(clés) rejetées à la main. Ré-importer
     # un mot-clé depuis le FICHIER ne doit jamais ressusciter une correction (le
     # fichier peut encore porter l'ancien tag si l'écriture XMP de retrait a échoué
@@ -8553,13 +8800,20 @@ def reimport_name_tags():
             time.sleep(3)
         batch = todo[i:i + 60]
         try:
-            meta = read_existing_metadata([p for _k, p in batch])
+            meta, vus = read_existing_metadata([p for _k, p in batch])
         except Exception:
-            meta = {}
+            meta, vus = {}, set()
+        etat["muets"] += sum(1 for _k, p in batch if _pkey(p) not in vus)
         with STORE.lock:
             for k, p in batch:
                 e = STORE.data.get(k)
                 if not isinstance(e, dict):
+                    continue
+                if _pkey(p) not in vus:
+                    # ExifTool n'a rien dit de ce fichier (NAS muet, timeout) :
+                    # surtout NE PAS poser 'namechk'. Le marquer « vérifié »
+                    # sans l'avoir lu enterrerait pour toujours les noms que son
+                    # XMP contient peut-être — l'invariant sacré du projet.
                     continue
                 m = meta.get(_pkey(p))
                 if m:
@@ -8577,8 +8831,12 @@ def reimport_name_tags():
                 e['namechk'] = 1
             if (i // 60) % 10 == 0:      # sauvegarde tous les ~10 lots
                 STORE._save()
+        etat["faits"] = min(i + 60, len(todo))
+        etat["trouves"] = added
         time.sleep(0.1)
     STORE.save()
+    etat["etat"] = "termine"
+    etat["fini_at"] = time.time()
     print(f"  ✓ Tags nommés vérifiés : {added} tag(s) récupéré(s) depuis les fichiers")
 
 
@@ -12958,6 +13216,9 @@ class Handler(BaseHTTPRequestHandler):
             # export des jugements (audit A) : rendus visibles dans /reglages.
             'boucle': dict(MAINT_LOOP_STATE),
             'backup_verify': dict(BACKUP_VERIFY_STATE),
+            # Backfills EXIF (dates, GPS) : morts en silence pendant des mois,
+            # desormais observables (bug du 13/08, cf. _attendre_exiftool).
+            'backfill': {k: dict(v) for k, v in BACKFILL_STATE.items()},
             'maint': {'auto': MAINTENANCE_AUTO, 'paused': MAINT_PAUSED,
                       'every_s': MAINTENANCE_EVERY, 'autonomy': _m.AUTONOMY,
                       'intervals': _m.INTERVALS, 'state': load('maintenance_state.json') or {},
@@ -13532,10 +13793,13 @@ if __name__ == '__main__':
 
     threading.Thread(target=tagger_worker, daemon=True).start()
     threading.Thread(target=maintenance_loop, daemon=True).start()
-    threading.Thread(target=backfill_gps, daemon=True).start()
-    threading.Thread(target=backfill_dates, daemon=True).start()
+    threading.Thread(target=_backfill, args=('gps', backfill_gps),
+                     daemon=True).start()
+    threading.Thread(target=_backfill, args=('dates', backfill_dates),
+                     daemon=True).start()
     threading.Thread(target=reconcile_named_tags, daemon=True).start()
-    threading.Thread(target=reimport_name_tags, daemon=True).start()
+    threading.Thread(target=_backfill, args=('noms', reimport_name_tags),
+                     daemon=True).start()
     threading.Thread(target=face_worker, daemon=True).start()
     threading.Thread(target=face_scan_loop, daemon=True).start()
     threading.Thread(target=animal_worker, daemon=True).start()

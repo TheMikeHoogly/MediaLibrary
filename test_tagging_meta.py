@@ -82,25 +82,6 @@ def test_merge_named():
     return ok
 
 
-def test_parse_taken():
-    ok = True
-    # La plus ANCIENNE des dates EXIF gagne (evite la date de modification)
-    kw, desc, gps, taken = tm.parse_meta_gps_taken_item({
-        "Subject": ["chat"],
-        "DateTimeOriginal": "2018:12:11 23:01:48",
-        "ModifyDate": "2026:08:12 10:00:00"})
-    ok &= _check(taken == tm.parse_exif_dt("2018:12:11 23:01:48"),
-                 "taken = plus ancienne des dates EXIF")
-    ok &= _check(kw == ["chat"], "kw inchanges par l'ajout de la date")
-
-    # Pas de date -> None ; annee aberrante rejetee
-    _, _, _, t2 = tm.parse_meta_gps_taken_item({"Subject": "x"})
-    ok &= _check(t2 is None, "aucune date EXIF -> None")
-    ok &= _check(tm.parse_exif_dt("1889:01:01 00:00:00") is None,
-                 "annee aberrante rejetee")
-    return ok
-
-
 def test_format_date():
     ok = True
     ep = tm.parse_exif_dt("2018:12:11 23:01:48")
@@ -172,13 +153,103 @@ def test_faits_structures():
     return ok
 
 
+def test_valeurs_a_ecrire():
+    """Le garde-fou anti-empoisonnement des backfills.
+
+    Un lot rate doit rester SANS effet : sinon un hoquet du NAS marque des
+    milliers de photos « pas de date », definitivement (l'entree porte alors la
+    cle, et le backfill ne la represente plus jamais).
+    """
+    ok = True
+    lot = [("cle/a.jpg", "A"), ("cle/b.jpg", "B"), ("cle/c.jpg", "C")]
+
+    # Cas nominal : ExifTool a parle des trois, deux ont une date
+    v = tm.valeurs_a_ecrire(lot, {"A": 111, "C": 333}, {"A", "B", "C"})
+    ok &= _check(v == {"cle/a.jpg": 111, "cle/b.jpg": None, "cle/c.jpg": 333},
+                 "valeurs trouvees ecrites, 'lu sans date' memorise a None")
+
+    # Lot entierement rate (NAS muet) : AUCUNE ecriture, tout sera represente
+    ok &= _check(tm.valeurs_a_ecrire(lot, {}, set()) == {},
+                 "lot rate -> aucune ecriture (pas d'empoisonnement)")
+
+    # Lot partiel : seuls les fichiers vus sont decides
+    v = tm.valeurs_a_ecrire(lot, {"A": 111}, {"A"})
+    ok &= _check(v == {"cle/a.jpg": 111},
+                 "lot partiel -> les fichiers muets restent a representer")
+
+    # Une valeur trouvee pour un fichier dont ExifTool n'a pas parle est
+    # ignoree : `vus` fait autorite, pas `lues`.
+    ok &= _check(tm.valeurs_a_ecrire(lot, {"B": 222}, set()) == {},
+                 "`vus` fait autorite sur `lues`")
+
+    # Le GPS passe par la meme porte (valeur = liste, pas un nombre)
+    v = tm.valeurs_a_ecrire([("k", "K")], {"K": [46.5, 6.6]}, {"K"})
+    ok &= _check(v == {"k": [46.5, 6.6]}, "meme regle pour le GPS")
+    return ok
+
+
+def test_date_fiable():
+    """Le garde-fou des photos SCANNEES.
+
+    Un tirage de 1995 numerise en 2005 ne porte souvent qu'un ModifyDate = la
+    date du scan. Le croire ferait sortir la photo de 1995 dans toute vue
+    chronologique : regression silencieuse sur la partie la plus ancienne de
+    la phototheque.
+    """
+    ok = True
+    prise = tm.parse_exif_dt("1995:07:04 10:00:00")
+    scan = tm.parse_exif_dt("2005:03:02 09:00:00")
+
+    ok &= _check(tm.date_fiable({'o': prise, 'm': scan}, {1995}) == prise,
+                 "DateTimeOriginal l'emporte sur ModifyDate")
+    ok &= _check(tm.date_fiable({'o': None, 'm': scan}, {1995}) is None,
+                 "scan de 2005 dans un dossier 1995 -> refuse (repli annee)")
+    ok &= _check(tm.date_fiable({'o': None, 'm': scan}, {2005}) == scan,
+                 "ModifyDate cru quand l'annee concorde")
+    ok &= _check(tm.date_fiable({'o': None, 'm': scan}, set()) == scan,
+                 "aucune annee dans le chemin -> rien a contredire")
+    ok &= _check(tm.date_fiable({'o': None, 'm': None}, {2005}) is None,
+                 "aucune date -> None")
+    ok &= _check(tm.date_fiable({}, set()) is None, "champs vides -> None")
+
+    # Une date de prise de vue qui contredit le dossier reste CRUE : l'appareil
+    # sait mieux que le rangement (photo classee dans le mauvais dossier).
+    ok &= _check(tm.date_fiable({'o': prise, 'm': None}, {2010}) == prise,
+                 "DateTimeOriginal cru meme s'il contredit le dossier")
+
+    # REGRESSION (relecture du 13/08) : un dossier qui porte une PLAGE
+    # (« Photos 2005-2010\\2008\\… ») donne plusieurs annees. Comparer a la
+    # seule plus ancienne refusait la date et faisait RECULER la photo de
+    # trois ans dans toute vue chronologique.
+    m2008 = tm.parse_exif_dt("2008:07:04 15:00:00")
+    ok &= _check(tm.date_fiable({'o': None, 'm': m2008}, {2005, 2008, 2010}) == m2008,
+                 "annee presente dans une plage de dossier -> acceptee")
+    ok &= _check(tm.date_fiable({'o': None, 'm': m2008}, {1995, 1999}) is None,
+                 "annee absente de toutes celles du chemin -> refusee")
+    return ok
+
+
+def test_champs_dates_item():
+    ok = True
+    c = tm.champs_dates_item({"DateTimeOriginal": "2018:12:11 23:01:48",
+                              "CreateDate": "2018:12:11 23:01:50",
+                              "ModifyDate": "2026:08:12 10:00:00"})
+    ok &= _check(c['o'] == tm.parse_exif_dt("2018:12:11 23:01:48"),
+                 "o = la plus ancienne de DateTimeOriginal/CreateDate")
+    ok &= _check(c['m'] == tm.parse_exif_dt("2026:08:12 10:00:00"),
+                 "m = ModifyDate, JAMAIS fondu dans o")
+    c = tm.champs_dates_item({"ModifyDate": "2005:03:02 09:00:00"})
+    ok &= _check(c['o'] is None and c['m'], "scan : o vide, m seul")
+    ok &= _check(tm.champs_dates_item(None) == {'o': None, 'm': None},
+                 "item None gere")
+    return ok
+
+
 if __name__ == "__main__":
     print("== parse_meta_gps_item ==")
     a = test_parse()
     print("== merge_named_tags ==")
     b = test_merge_named()
-    print("== parse_meta_gps_taken_item ==")
-    c = test_parse_taken()
     print("== format_date_fr ==")
     d = test_format_date()
     print("== noms_depuis_kw ==")
@@ -187,8 +258,14 @@ if __name__ == "__main__":
     f = test_prompt()
     print("== faits_structures (provenance) ==")
     g = test_faits_structures()
+    print("== valeurs_a_ecrire (garde-fou des backfills) ==")
+    h = test_valeurs_a_ecrire()
+    print("== champs_dates_item (prise de vue vs ecriture) ==")
+    i = test_champs_dates_item()
+    print("== date_fiable (garde-fou des photos scannees) ==")
+    jj = test_date_fiable()
     print()
-    if all([a, b, c, d, e, f, g]):
+    if all([a, b, d, e, f, g, h, i, jj]):
         print("TOUS LES TESTS PASSENT")
         raise SystemExit(0)
     print("DES TESTS ONT ECHOUE")
