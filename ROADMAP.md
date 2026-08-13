@@ -6,20 +6,24 @@ session, choses à observer) dans `PROMPT_NOUVELLE_SESSION.md`. Audits :
 `docs/AUDIT_INTERNE_2026-08.md` (I1–I17, O1–O15, A–F),
 `docs/AUDIT_EXTERNE_2026.md`, `docs/RANGEMENT_2026.md`.
 
-## État (12/08/2026, session 10)
+## État (13/08/2026, session 10)
 
-**Purge des doublons OBSERVÉE BONNE en réel (12/08)** : après bat 27 + bat 0,
-total = **43 067 pile** (43 086 − 19), plus aucune clé absolue
-`\\NAS…\_Uploads` (file « À vérifier » incluse) → **bat 28 débloqué**
-(fusionne `fix/scan-uploads-doublon`, qui embarque `feat/knowledge-builder`).
-Reste un test d'occasion : au prochain upload téléphone, une photo = UNE
-entrée. **Session 10 à commiter** (`SESSION_COMMIT.txt` prêt, `feat/similar`) :
-première tranche du chantier 6 — `similar_by_key` (vecteur SigLIP déjà en
-base, zéro GPU/NAS), `GET /api/similar?key=&n=`, page `/files?sim=<clé>`
-(réutilise la branche résultats de `/files?q=`), bouton « Semblables » dans la
-lightbox galerie ; navigation de proche en proche. Testé hors serveur
-(py_compile + micro-banc VectorStore synthétique) ; **à observer en réel après
-redémarrage**. Veille v2ctx inchangée (n=2 : astre/objet, date en prose).
+**Deux livraisons observées bonnes en réel, dans l'ordre.** (1) Purge des
+doublons : total = **43 067 pile** (43 086 − 19), plus aucune clé absolue
+`\\NAS…\_Uploads` (file « À vérifier » incluse). (2) **Navigation par
+similarité VALIDÉE en réel (13/08)** : bouton « Semblables » de la lightbox →
+page de résultats, navigation de proche en proche. `feat/similar` **committée
+et fusionnée** (bat 27/28/29 passés, `_tmp_obs/` supprimé). Reste un test
+d'occasion : au prochain upload téléphone, une photo = UNE entrée.
+
+**Session 11 à commiter** (`SESSION_COMMIT.txt` prêt, `fix/lieux-thumb`) :
+**résidu O1 confirmé PUIS corrigé** — la section Lieux de `/sujets` était la
+dernière grille à charger des originaux (mesuré sur le serveur en marche :
+25 cartes via `/media/…`, 0 via `/api/thumb`). `places_list()` rend désormais
+`/api/thumb?key=…&s=512`. Mesuré sur une clé de lieu réelle (antislashs +
+espaces) : **41 Ko contre 2 435 Ko, −98 %** — soit ~60 Mo de NAS épargnés à
+chaque ouverture de `/sujets`. Veille v2ctx inchangée (n=2 : astre/objet,
+date en prose).
 
 ## À faire — par ordre de valeur (réordonné au triple audit du 11/08)
 
@@ -35,11 +39,11 @@ redémarrage**. Veille v2ctx inchangée (n=2 : astre/objet, date en prose).
    Seule conséquence mécanique : le point 9 (algo) reste parqué — c'est un
    ordre de travaux, pas une dette.
 2. **Observer en réel ce qui est livré** : v2ctx/Knowledge Builder **fait ✔**,
-   purge des 19 doublons **fait ✔** (12/08) ; reste : bouton « Semblables »
-   (session 10, après redémarrage), re-upload = une entrée, seek vidéo mobile,
-   test du Z. Veille v2ctx sur un lot plus grand : identifications
-   astre/objet, fuite de la date en prose — tout geste de prompt passe par
-   `vision-eval`.
+   purge des 19 doublons **fait ✔**, bouton « Semblables » **fait ✔** (13/08) ;
+   reste : vignettes Lieux (session 11, après redémarrage), re-upload = une
+   entrée, seek vidéo mobile, test du Z. Veille v2ctx sur un lot plus grand :
+   identifications astre/objet, fuite de la date en prose — tout geste de
+   prompt passe par `vision-eval`.
 3. **Knowledge Builder + version de pipeline : CÂBLÉS (s8) et OBSERVÉS (s9)** —
    suite naturelle : composition d'affichage date · lieu · noms depuis `faits`
    (choix tranché : structuré d'abord, affichage plus tard) ; re-tagging
@@ -54,14 +58,16 @@ redémarrage**. Veille v2ctx inchangée (n=2 : astre/objet, date en prose).
    partiellement caduc — attendu, décision déjà écrite.
 5. **Correctifs d'audit restants** : I4–I8, O7–O9, O11–O15 (dont purge de
    `photo_thumbs/` — le cache croît sans borne ; il est **gitignoré depuis le
-   12/08**, il ne pollue plus `git status`). Résidu O1 : la section Lieux de
-   `/sujets` charge 25 originaux `/media/…` au lieu de `/api/thumb` — à
-   confirmer puis corriger.
+   12/08**, il ne pollue plus `git status`). **Résidu O1 : SOLDÉ (s11)** —
+   Lieux de `/sujets` passé à `/api/thumb`, −98 % mesuré ; O1 est désormais
+   clos partout. Le wagon naturel de O15 (purge du cache `photo_thumbs/`)
+   gagne en poids maintenant que toutes les grilles l'alimentent.
 6. **Navigation par similarité** : `/api/similar` + page `/files?sim=` +
-   bouton « Semblables » **livrés (s10, à observer)** ; restent : doublons
-   proches bridés (>0,98 + même journée → quarantaine réversible, 50 paires
-   jugées par Mike avant tout geste) ; rangée « même jour, autres années »
-   (requête date, zéro IA).
+   bouton « Semblables » **livrés et OBSERVÉS BONS (13/08)** ; restent :
+   doublons proches bridés (>0,98 + même journée → quarantaine réversible,
+   50 paires jugées par Mike avant tout geste) ; rangée « même jour, autres
+   années » (requête date, zéro IA). Les deux tranches restantes réutilisent
+   `similar_by_key` tel quel — aucune brique nouvelle à écrire.
 7. **Extraction `ui/` — décision nette à prendre** : session dédiée `bundle.py`
    ou parcage explicite (item zombie ; préparatoire fait et vérifié, détail git).
 8. **Cross-pipeline (Mutz/Caline)** : outil livré, réversible. Fix auto REJETÉ

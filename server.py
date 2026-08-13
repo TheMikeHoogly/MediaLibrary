@@ -8651,8 +8651,15 @@ def places_list():
 
     Le GPS prime : une photo deja nommee par GPS n'est pas re-comptee par le
     chemin. Lecture seule, tout en memoire (index + gps_places.json en cache) :
-    aucun acces NAS -> pas de note_heavy_activity. La vignette (photo pleine
-    resolution, comme la galerie) ne se charge que cote client, en lazy."""
+    aucun acces NAS -> pas de note_heavy_activity.
+
+    La vignette passe par /api/thumb (residu de l'audit O1, corrige le 13/08) :
+    cette section chargeait encore 25 ORIGINAUX pleine resolution (2-6 Mo lus
+    sur le NAS par carte affichee) la ou toutes les autres grilles sont passees
+    aux vignettes 512 px. Les cartes Personnes/Animaux, elles, affichent une
+    decoupe /api/facecrop : deja legere, rien a changer. /api/thumb redirige
+    vers l'original s'il ne sait pas vignetter (video, HEIC, PIL absent), donc
+    le client n'a aucun cas particulier a gerer."""
     roots = media_roots()
     gps = gps_places_connus()               # {cle: libelle} ; {} si non active
     agg = {}                                # normalise -> {"name", "keys"(set)}
@@ -8681,9 +8688,13 @@ def places_list():
             continue
         crop = None
         for k in keys:                      # premiere photo servable = vignette
-            u = _url_for_key(k, roots)
-            if u:
-                crop = u
+            # _url_for_key reste le test de SERVABILITE (cle sous une racine) ;
+            # seule l'URL rendue change : vignette au lieu de l'original.
+            if _url_for_key(k, roots):
+                # safe='' : meme encodage que le encodeURIComponent des pages
+                # (les cles Windows portent antislashs et espaces).
+                crop = ('/api/thumb?key=' + urllib.parse.quote(k, safe='')
+                        + '&s=512')
                 break
         out.append({"name": a["name"], "photos": len(keys), "crop": crop})
     out.sort(key=lambda x: -x["photos"])
