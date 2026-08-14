@@ -52,6 +52,9 @@
 |---|---|---|
 | Aplatir DateTimeOriginal / CreateDate / ModifyDate en un seul `min()` | **REJETÉ** (13/08) | `ModifyDate` seul est souvent la date du SCAN d'un vieux tirage : un 1995 numérisé en 2005 partait en 2005 dans toute vue chronologique. Les champs restent séparés (`champs_dates_item`). |
 | `ModifyDate` seul cru si son année figure parmi celles du CHEMIN | **ADOPTÉ** (13/08) | Attrape le scan sans rien inventer : en cas de contradiction on rend `None`, la photo garde son repli « année du dossier » (statu quo). Comparé à l'ENSEMBLE des années, jamais au seul `min` — un dossier « Photos 2005-2010\2008\ » faisait sinon reculer la photo de 3 ans (défaut trouvé en relecture). Portée : n'attrape PAS un scanner qui remplit `DateTimeOriginal`. |
+| Corriger les photos datées par un nom de fichier de SCAN | **REJETÉ** (14/08) | Mesuré par `/api/jour` sur les 38 254 photos à date précise : 4,0 % contredisent les années du chemin, mais 139 sont des réveillons et 914 à 1 an d'écart (photo de janvier dans le dossier de l'an d'avant) — tous légitimes. Il reste **215 photos à ≥ 4 ans d'écart (0,56 %)**, dont **62 seulement** viennent du nom de fichier ; le gros lot EXIF n'est pas un scan mais une GoPro à l'horloge fausse (`Seychelles 2025\Plongée` → 2016). Aucune règle ne sépare ces 215 des 914 légitimes sans risquer de vraies dates. |
+| Plancher 1990 des années lues dans un CHEMIN | **CORRIGÉ → 1900** (14/08) | Le plancher convient à une date d'appareil photo, pas à un nom de dossier : un dossier « 1985 » ne rendait aucune année, donc (a) `_best_time` tombait sur `mtime` — **714 photos de 1982-1989 datées de 2026**, la date de copie NAS — et (b) le garde-fou `date_fiable` se désarme sans année de chemin, laissant 13 photos de 1985 à la date de leur numérisation (16/11/2006). Corrigé dans `server._path_years` et `renommage_facts.path_year`. |
+| `_path_years` lisait le NOM DE FICHIER, pas seulement les dossiers | **CORRIGÉ** (14/08) | `119-1908_IMG.JPG` (numéro de séquence de scanner) dans un dossier 2002 rendait `{1908, 2002}` ; `_path_year_num` prend le `min()` → recul de 94 ans. Masqué jusqu'ici par le plancher 1990, il fallait le boucher en le descendant. `renommage_facts.path_year` excluait déjà le nom et documentait pourquoi. Mesuré sur 19 384 fichiers : 38 photos tirées en arrière, **0 qui perd son repli** (une vraie date de nom passe avant, par `_fname_time`). |
 | Écrire `None` (« lu, rien trouvé ») pour tout un lot ExifTool | **REJETÉ** (13/08) | Un lot raté (NAS muet, timeout) est indiscernable d'un lot vide : écrire `None` condamne la photo pour toujours (les backfills sautent les entrées qui portent la clé). On n'écrit que pour les fichiers dont ExifTool a parlé (`valeurs_a_ecrire`), et les « muets » sont comptés dans `/reglages`. Vaut aussi pour `namechk` (noms). |
 
 ## Méthode (invariants à ne pas réapprendre)
@@ -74,6 +77,14 @@
   réparation des dates, les dossiers-témoins semblaient inchangés — la vue dossier ne trouvait
   simplement pas les entrées (casse des clés SMB). La même mesure lue par clé d'index montrait
   0 % → 60 %. Une vue peut mentir sur la donnée ; vérifier par le chemin qui l'écrit.
+- **Un garde-fou qui n'a rien à quoi se comparer ne garde rien** (14/08) : `date_fiable`
+  croit `ModifyDate` quand le chemin ne porte aucune année (« rien à contredire ») — règle
+  saine, sauf que le plancher 1990 rendait le chemin muet précisément sur les dossiers
+  d'avant 1990, c'est-à-dire sur les photos que le garde-fou existait pour protéger. Le cas
+  où une protection s'annule doit être compté, pas seulement écrit.
+- **Chercher un défaut en trouve souvent un autre, plus gros** (14/08) : la piste de départ
+  (scans datés par leur nom) valait 62 photos ; la mesure faite pour la classer a exhumé les
+  714 photos des années 80 datées de 2026. La mesure a rapporté dix fois la correction.
 - **Mesurer la matière première avant de bâtir dessus** (13/08) : le chantier « même jour »
   supposait des dates au jour près ; 29 % de la photothèque n'en avait aucune, et la cause était
   un bug de démarrage vieux de plusieurs mois. Une heure de mesure a valu plus que la

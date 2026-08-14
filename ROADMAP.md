@@ -6,6 +6,35 @@ session, choses à observer) dans `PROMPT_NOUVELLE_SESSION.md`. Audits :
 `docs/AUDIT_INTERNE_2026-08.md` (I1–I17, O1–O15, A–F),
 `docs/AUDIT_EXTERNE_2026.md`, `docs/RANGEMENT_2026.md`.
 
+## État (14/08/2026, session 14)
+
+**Session 13 OBSERVÉE EN RÉEL, tout passe** (casse des clés + « même jour ») :
+dossier NAS ancien → tags, description, personnes, Géo, date précise (2 août au
+lieu du 1ᵉʳ janvier) ; bouton « Même jour » → 115 photos sur 11 années, référence
+exclue ; photo sans date précise → bouton caché ; diaporama aléatoire NAS →
+19/20 clés NAS, 0 sans tags, 0 sans description ; et la chaîne complète sur une
+clé NAS (`/api/similar` encodée, `/api/thumb` 200, `/api/jour` précise).
+
+**Le plancher 1990 des années du CHEMIN — CORRIGÉ (s14), à observer en réel.**
+`_path_years` filtrait à `1990 <= y`, ce qui va pour une date d'appareil photo et
+pas pour un nom de dossier : un dossier « 1985 » ne rendait AUCUNE année. Deux
+dégâts mesurés : (1) `_path_year` rendait 0, `_best_time` tombait sur `mtime` et
+**714 photos de 1982-1989 étaient datées de 2026**, la date de copie sur le NAS ;
+(2) le garde-fou anti-scan de `date_fiable` se désarme quand le chemin n'a aucune
+année — les 13 photos de `1985\19850601 …` portent la date de la numérisation
+(16/11/2006). Plancher à **1900**, dans `server._path_years` ET
+`renommage_facts.path_year` (mêmes semantics, même bug). Au passage, `_path_years`
+**exclut désormais le nom de fichier**, comme `renommage_facts` le faisait déjà et
+le documentait : `119-1908_IMG.JPG` dans un dossier 2002 rendait `{1908, 2002}` et
+`min()` reculait la photo de 94 ans — trou masqué jusqu'ici par le plancher 1990.
+Mesuré sur 19 384 fichiers : 38 photos tirées en arrière par leur nom, 0 qui perd
+son repli. Tests : `test_plan_renommage.py` 11/11 (2 cas ajoutés),
+`test_tagging_meta.py`, `test_meme_jour.py` verts.
+
+**Conséquence pour les gestes de renommage** : `docs/plan_renommage.json` a été
+produit AVANT ce correctif — les photos des années 80 y sont en « sans date ».
+**Régénérer le plan après redémarrage**, avant tout lot.
+
 ## État (14/08/2026, session 13)
 
 **Trois tâches de fond mortes en silence — réparées et observées** (`fix/backfills-silencieux`,
@@ -58,14 +87,20 @@ un 1ᵉʳ janvier qui n'a jamais existé. Toutes les années, groupées, référ
    seuil ~0.2 ou « Nettoyer (référence) ») ; re-rejeter Caline une fois ;
    activer `gps_place` (`18 - …gazetteer.bat` → `enrichir_lieux.py` →
    `--ecrire` → redémarrer) — profite du backfill GPS enfin réparé ; lots de
-   renommage **débloqués** (plan = 2114 ; le banc `eval/tagging_v1.json`, keyé
-   par chemin, en deviendra partiellement caduc — attendu).
+   renommage **débloqués** (plan = 2114 ; **régénérer le plan d'abord**, cf. le
+   plancher 1990 ; le banc `eval/tagging_v1.json`, keyé par chemin, en deviendra
+   partiellement caduc — attendu).
 5. **Correctifs d'audit restants** : I4–I8, O7–O9, O11–O15. **O1 clos partout** ;
    O15 (purge de `photo_thumbs/`) gagne en poids. La casse des clés de la vue
    dossier est **corrigée** (s13) — reste à l'observer en réel.
 6. **Navigation par similarité et par date** : `/api/similar` + `/files?sim=` +
    bouton « Semblables » **observés bons (13/08)** ; « même jour, autres années »
-   **livré (s13)**, à observer. Reste : doublons proches bridés (>0,98 + même
+   **livré et observé (s13/s14)**. Petits restes vus à l'observation : le bouton
+   de la visionneuse dit « Meme jour (14 aout) » quand la page dit « 14 août »
+   (`MOIS_JOUR` en ASCII dans le JS, sur la foi d'un commentaire faux — la règle
+   ASCII vaut pour les `.bat`) ; et le 14 août contient du bruit (bloc 2010 en
+   triple sur trois chemins NAS, 14 captures d'écran sur 115). Reste aussi :
+   doublons proches bridés (>0,98 + même
    journée → quarantaine réversible, 50 paires jugées avant tout geste). Élargir
    « même jour » à une fenêtre ±1 j n'est PAS décidé : à ne faire que si la
    moisson au jour strict se révèle trop maigre en réel.
@@ -116,6 +151,12 @@ un 1ᵉʳ janvier qui n'a jamais existé. Toutes les années, groupées, référ
 ### Résiduels faible valeur (ne pas prioriser)
 Vidé le 12/08 : les trois résiduels sont rattachés en wagons aux chantiers 10
 (Pause globale des workers) et 11e (bandeau `#pending`, libellé `/pets`).
+Ajoutés le 14/08, chiffrés et volontairement non traités : (a) le plancher 1990
+subsiste dans `plan_rangement.py`, `recensement_doublons.py` et
+`diagnostic_dates.py` — sans effet mesuré tant qu'aucun dossier d'avant 1990
+n'est rangé ni recensé, mais c'est la même erreur ; (b) `/files?dir=1&rec=1` (toute
+la racine NAS) ne répond pas en 6 minutes — la galerie récursive à la racine est
+inutilisable, cause non cherchée.
 
 ## Acquis — ne pas reproposer (détail : git + `eval/DECISIONS.md`)
 

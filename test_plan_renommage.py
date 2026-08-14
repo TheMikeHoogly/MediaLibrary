@@ -116,6 +116,27 @@ def test_annee_du_dossier_pas_du_nom():
     assert nn[:8] == "20070000", nn
 
 
+def test_annee_dossier_pre_1990():
+    # Un dossier « 1986 » porte son annee en clair, mais le plancher a 1990 la
+    # jetait : les 714 photos des annees 80 de « Photos Papa » partaient en
+    # « sans date » au renommage (mesure du 14/08). Elles doivent desormais
+    # etre datees par leur dossier, comme n'importe quelle autre annee.
+    entries = [("Photos/Photos Papa/1986/Scan_001.jpg", {})]
+    moves, stats = P.construire_plan(entries)
+    assert len(moves) == 1, stats
+    assert moves[0]["new_name"][:8] == "19860000", moves[0]["new_name"]
+
+
+def test_annee_dossier_pre_1990_ignore_le_nom():
+    # Le plancher descend, mais le nom de fichier reste EXCLU : un « 1975 » de
+    # numero de sequence ne doit pas passer devant le dossier (meme garde-fou
+    # que IMG_1998, verifie sur la plage nouvellement ouverte).
+    entries = [("Photos/Photos Papa/1986/Scan_1975.jpg", {})]
+    moves, _ = P.construire_plan(entries)
+    assert len(moves) == 1
+    assert moves[0]["new_name"][:8] == "19860000", moves[0]["new_name"]
+
+
 TESTS = [
     ("est_nom_brut : vrais", test_est_nom_brut_vrais),
     ("est_nom_brut : faux", test_est_nom_brut_faux),
@@ -124,6 +145,8 @@ TESTS = [
     ("collision meme dossier -> suffixe", test_collision_meme_dossier_suffixe),
     ("collision contre fichier non renomme", test_collision_contre_fichier_non_renomme),
     ("annee du dossier, pas du nom (IMG_1998)", test_annee_du_dossier_pas_du_nom),
+    ("annee du dossier pre-1990 (1986)", test_annee_dossier_pre_1990),
+    ("pre-1990 : le nom reste exclu (Scan_1975)", test_annee_dossier_pre_1990_ignore_le_nom),
     ("sans date -> non renomme (pas de 00000000)", test_sans_date_non_renomme),
     ("sujet force le francais (desc anglaise)", test_sujet_force_le_francais),
 ]

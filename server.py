@@ -1343,15 +1343,43 @@ def _fname_time(name):
         return None
 
 
+# Plancher des années lues dans un CHEMIN. 1990 était la valeur d'origine : elle
+# convient à des dates d'APPAREIL PHOTO, pas à des noms de DOSSIERS. Mesuré le
+# 14/08 : elle exilait les années 80 de la photothèque. Un dossier « 1985 » ne
+# rendait AUCUNE année, avec deux dégâts en cascade — (1) `_path_year` rendait 0,
+# donc `_best_time` tombait sur `mtime` et 714 photos de 1982-1989 étaient datées
+# de 2026, la date de COPIE sur le NAS ; (2) le garde-fou anti-scan de
+# `date_fiable` se désarme quand le chemin n'a aucune année (« rien à
+# contredire ») — les 13 photos de « 1985\19850601 … » portent encore la date de
+# la séance de numérisation, 16/11/2006. Au-dessous de 1970, `time.mktime` refuse
+# sous Windows : `_path_year` rend alors 0 et la photo garde son repli — dégradé,
+# jamais cassé.
+ANNEE_CHEMIN_MIN, ANNEE_CHEMIN_MAX = 1900, 2100
+
+
 def _path_years(key):
-    """TOUTES les années (19xx/20xx) portées par le CHEMIN, en entiers.
+    """TOUTES les années (19xx/20xx) portées par les DOSSIERS de la clé, en
+    entiers — le NOM DE FICHIER est exclu.
 
     L'ensemble, pas seulement la plus ancienne : un dossier peut porter une
     PLAGE (« Photos 2005-2010\\2008\\… ») et exiger l'égalité avec le seul
     minimum ferait reculer la photo de trois ans. Sert de garde-fou aux dates
-    EXIF des photos scannées (`tagging_meta.date_fiable`)."""
-    return {int(y) for y in re.findall(r'(?<!\d)(19\d{2}|20\d{2})(?!\d)', str(key))
-            if 1990 <= int(y) <= 2100}
+    EXIF des photos scannées (`tagging_meta.date_fiable`).
+
+    Le nom de fichier est écarté pour la raison déjà écrite dans
+    `renommage_facts.path_year` : un numéro de séquence de scanner n'est pas une
+    année. « 119-1908_IMG.JPG » dans un dossier 2002 rendait {1908, 2002}, et
+    `_path_year_num` prend le `min()` — la photo reculait de 94 ans. Invisible
+    jusqu'ici parce que le plancher 1990 jetait le 1908 par accident ; en le
+    descendant, il fallait boucher le trou pour de bon. Mesuré sur 19 384
+    fichiers (Photos Papa, Photos Flo, 2010, _A TRIER) : 38 photos tirées en
+    arrière par leur nom, et AUCUNE ne perd son repli en excluant le nom — une
+    date vraiment portée par le nom passe de toute façon avant, par
+    `_fname_time` (`_best_time`, branche 1)."""
+    k = str(key).replace('/', '\\')
+    dossiers = k.rsplit('\\', 1)[0] if '\\' in k else ''
+    return {int(y) for y in re.findall(r'(?<!\d)(19\d{2}|20\d{2})(?!\d)', dossiers)
+            if ANNEE_CHEMIN_MIN <= int(y) <= ANNEE_CHEMIN_MAX}
 
 
 def _path_year_num(key):

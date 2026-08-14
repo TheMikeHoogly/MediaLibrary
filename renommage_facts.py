@@ -69,6 +69,14 @@ def fname_datetime(name):
     return date8, None
 
 
+# Meme plancher que server.ANNEE_CHEMIN_MIN, et pour la meme raison (mesure du
+# 14/08) : a 1990, un dossier « 1985 » ne rendait aucune annee, et les 714 photos
+# des annees 80 partaient au renommage en « 00000000 » (precision « aucune »)
+# alors que leur dossier porte l'annee en clair. Ici le nom de fichier est deja
+# exclu, donc descendre le plancher n'ouvre aucun trou supplementaire.
+ANNEE_CHEMIN_MIN, ANNEE_CHEMIN_MAX = 1900, 2100
+
+
 def path_year(key):
     """« YYYY » de la plus ancienne année trouvée dans le CHEMIN — dossiers datés
     UNIQUEMENT, en EXCLUANT le nom de fichier. Un numéro de séquence comme
@@ -76,7 +84,8 @@ def path_year(key):
     vrai dossier (2007) via `min()`, d'où une date fausse au renommage."""
     k = str(key).replace('\\', '/')
     dossier = k.rsplit('/', 1)[0] if '/' in k else ''
-    yrs = [int(y) for y in _PATH_YEAR.findall(dossier) if 1990 <= int(y) <= 2100]
+    yrs = [int(y) for y in _PATH_YEAR.findall(dossier)
+           if ANNEE_CHEMIN_MIN <= int(y) <= ANNEE_CHEMIN_MAX]
     return f"{min(yrs):04d}" if yrs else None
 
 
