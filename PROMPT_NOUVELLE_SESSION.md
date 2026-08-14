@@ -7,38 +7,36 @@
 Tu reprends **MediaLibrary**. Lis `ROADMAP.md` puis `eval/DECISIONS.md`, débrief
 en 2–3 lignes, puis on attaque.
 
-## Où on en est (14/08/2026, fin de session 12)
+## Où on en est (14/08/2026, fin de session 13)
 
-- **Trois tâches de fond réparées, observées bonnes en réel** (branche
-  `fix/backfills-silencieux`, committée, **pas encore fusionnée**). Elles
-  mouraient en silence à chaque démarrage depuis toujours. Résultat de la nuit,
-  0 fichier muet et 0 erreur sur les trois : **32 822 dates de prise de vue**
-  récupérées sur 42 060 photos lues, **184 tags de noms** rapatriés depuis les
-  XMP, **5 394 photos géolocalisées** de plus (carte : 1 220 → 6 614 points).
-- **Un second bug est apparu en vérifiant** : la vue « Dossiers »
-  (`/files?dir=`) ne trouve aucune entrée d'index pour la racine NAS —
-  `Path.resolve()` minuscule le nom d'hôte SMB, `STORE.get(str(f))` est
-  sensible à la casse. Elle affiche donc toutes les photos sans tags, sans
-  description, sans GPS et sans date. **Antérieur à cette session**, non
-  corrigé. C'est le prochain chantier (point 5 de `ROADMAP.md`).
+- `fix/backfills-silencieux` **fusionné**. Les trois tâches de fond ont fini leur
+  passe complète ; elles ne repasseront qu'en rattrapage (quelques fichiers).
+- **Livré en session 13, branche `feat/meme-jour-et-casse`, PAS ENCORE OBSERVÉ
+  EN RÉEL** (le serveur n'a pas de hot-reload : il faut le redémarrer) :
+  1. **Correctif de casse.** `_serve_gallery` et `_serve_random` retrouvent
+     l'entrée d'index par `_index_key_for_path` (index secondaire
+     `{chemin normalisé: clé}`, `fichiers.build_key_index`) au lieu de
+     `STORE.get(str(f))`. Ils rendent aussi la clé d'index EXACTE au client.
+  2. **Chantier 6a « même jour, autres années ».** `meme_jour.py` (pur, testé :
+     `python test_meme_jour.py`, 40 vérifications), `/api/jour`,
+     `/files?jour=<clé|MM-JJ>`, bouton « Même jour » dans la visionneuse.
+     Dates **précises uniquement** ; toutes les années, groupées, référence
+     exclue.
+- Témoin vérifié en bac à sable : sur le code d'avant, la même photo sort sans
+  tags et au 1ᵉʳ janvier ; sur le code d'après, 20 tags et sa vraie date.
 
 ## Prochain pas — par valeur
 
-1. **Geste Mike : bat 28** (fusionner `fix/backfills-silencieux`), puis bat 29.
-   Rien d'autre ne bloque : les trois passes ont fini et ne repasseront qu'en
-   rattrapage (quelques fichiers) aux prochains démarrages.
-2. **Casse des clés dans la vue dossier** — petit correctif, gros effet :
-   `_serve_gallery` doit chercher l'entrée via `_pkey` (index secondaire
-   `{_pkey: clé}` bâti une fois, comme le fait déjà le reste du code) au lieu
-   de `STORE.get(str(f))`. À observer en réel : ouvrir un dossier ancien, les
-   tags et la date de prise de vue doivent apparaître.
-3. **Chantier 6a « même jour, autres années »**, maintenant débloqué : moteur
-   date pure (index MM-JJ en mémoire, **dates précises seulement**, jamais le
-   repli « année du dossier »), route `/api/jour`, page `/files?jour=<clé>`
-   calquée sur le mode `sim=`, bouton « Même jour » dans la lightbox. Zéro IA,
-   zéro GPU, zéro accès NAS.
-4. **Le reste inchangé** (détail : `ROADMAP.md`) : file « À vérifier » ; lots de
-   renommage (plan = 2114) ; nettoyer Flo ; re-rejeter Caline ; activer
-   `gps_place` — d'autant plus intéressant maintenant que la carte a 6 614
-   points. Puis doublons proches bridés, UI — harmonisation (11), restauration
-   à blanc (12), serveur MCP lecture (13).
+1. **Observer en réel, c'est la seule chose qui compte maintenant** (192.168.0.13:8080,
+   après `0 - Démarrer le serveur.bat`) :
+   (a) ouvrir un dossier ancien du NAS → tags, description, GPS et date de prise
+   de vue doivent apparaître ; (b) ouvrir une photo → bouton « Même jour
+   (14 août) », cliquer → la journée, toutes années, groupée par millésime ;
+   (c) une photo sans date précise ne doit PAS montrer le bouton ;
+   (d) diaporama aléatoire sur le NAS → tags et description présents.
+2. **Gestes Mike, dans cet ordre** : nettoyer Flo (5 909 photos) ; re-rejeter
+   Caline une fois ; activer `gps_place` (bat 18 → `enrichir_lieux.py` →
+   `--ecrire` → redémarrer) ; lots de renommage (plan = 2114).
+3. **Le reste inchangé** (détail : `ROADMAP.md`) : file « À vérifier » ;
+   doublons proches bridés ; UI — harmonisation (11) ; restauration à blanc
+   (12) ; serveur MCP lecture (13).

@@ -6,28 +6,31 @@ session, choses à observer) dans `PROMPT_NOUVELLE_SESSION.md`. Audits :
 `docs/AUDIT_INTERNE_2026-08.md` (I1–I17, O1–O15, A–F),
 `docs/AUDIT_EXTERNE_2026.md`, `docs/RANGEMENT_2026.md`.
 
-## État (14/08/2026, session 12)
+## État (14/08/2026, session 13)
 
-**Trois tâches de fond mortes en silence depuis toujours — RÉPARÉES ET
-OBSERVÉES** (`fix/backfills-silencieux`). Garde `if not EXIFTOOL: return`
-placée AVANT le `sleep`, alors que `EXIFTOOL` est affecté par
-`maintenance_loop` lancé dans le même souffle : `backfill_dates`,
-`backfill_gps` et `reimport_name_tags` renonçaient en microsecondes, à chaque
-démarrage. Les trois passes ont tourné dans la nuit du 13 au 14/08, **0 fichier
-muet, 0 erreur** : dates **32 822 trouvées sur 42 060 lues** (2008 passe de 0 %
-à 60 % de dates précises, 2010 de 2 % à 98 %, 91 % sur un échantillon de 1 477
-photos toutes époques) ; noms **184 tags `personne:`/`animal:` récupérés**
-depuis les XMP — cette passe n'avait jamais tourné ; GPS **5 394 photos
-géolocalisées de plus**, la carte passe de 1 220 à **6 614 points**.
+**Trois tâches de fond mortes en silence — réparées et observées** (`fix/backfills-silencieux`,
+fusionné) : garde `if not EXIFTOOL: return` placée AVANT le `sleep`, alors que
+`maintenance_loop` affecte `EXIFTOOL` dans le même souffle. Résultat de la nuit du 13
+au 14/08, 0 fichier muet et 0 erreur : **32 822 dates** sur 42 060 lues (2008 : 0 % →
+60 % de dates précises ; 2010 : 2 % → 98 %), **184 tags de noms** rapatriés des XMP
+(cette passe n'avait jamais tourné), **5 394 photos géolocalisées** de plus — la carte
+passe de 1 220 à **6 614 points**.
 
-**Découvert en vérifiant : la vue « Dossiers » ment sur toute la racine NAS.**
-`Path.resolve()` minuscule le nom d'hôte SMB (`\\nas-bremblens\…`) alors que
-les clés d'index gardent leur casse (`\\NAS-Bremblens\…`) ; `STORE.get(str(f))`
-est un accès de dictionnaire, donc sensible à la casse, et rate. Même photo :
-`/files?dir=` → 0 tag, 1ᵉʳ janvier ; `/files?q=` → 20 tags, 16 février 2008. La
-galerie par dossier affiche donc tout sans tags, sans description, sans GPS et
-sans date. Antérieur à cette session (le reste du code passe par `_pkey`, qui
-normalise). Correctif : point 5.
+**Casse des clés dans la vue dossier — CORRIGÉE (s13), à observer en réel.**
+`Path.resolve()` minuscule le nom d'hôte SMB, `STORE.get(str(f))` est un accès de
+dictionnaire : la galerie par dossier ratait TOUTE la racine NAS et affichait la
+photothèque sans tags, sans description, sans GPS, au 1ᵉʳ janvier. `_serve_gallery` et
+`_serve_random` (même bug, non repéré) passent maintenant par `_index_key_for_path`,
+adossé à `fichiers.build_key_index`. La clé rendue au client est désormais la clé
+d'index EXACTE : `/api/thumb`, `/api/similar` et la suppression par clé visent juste.
+
+**Chantier 6a « même jour, autres années » — LIVRÉ (s13), à observer en réel.**
+Moteur pur `meme_jour.py` (+ `test_meme_jour.py`, 40 vérifications), route `/api/jour`,
+page `/files?jour=<clé|MM-JJ>`, bouton « Même jour » dans la visionneuse. **Dates
+PRÉCISES uniquement** (EXIF `taken` + date du nom de fichier) : le repli « année du
+dossier » est exclu par construction, sinon des milliers de photos se rangeraient sous
+un 1ᵉʳ janvier qui n'a jamais existé. Toutes les années, groupées, référence exclue
+(tranché par Mike le 14/08). Zéro IA, zéro GPU, zéro accès NAS.
 
 ## À faire — par ordre de valeur (réordonné au triple audit du 11/08)
 
@@ -57,20 +60,15 @@ normalise). Correctif : point 5.
    `--ecrire` → redémarrer) — profite du backfill GPS enfin réparé ; lots de
    renommage **débloqués** (plan = 2114 ; le banc `eval/tagging_v1.json`, keyé
    par chemin, en deviendra partiellement caduc — attendu).
-5. **Correctifs d'audit restants** : I4–I8, O7–O9, O11–O15. **Neuf et
-   prioritaire — casse des clés dans la vue dossier** : `_serve_gallery`
-   cherche l'entrée par `STORE.get(str(f))` au lieu de passer par `_pkey` ; un
-   index secondaire `{_pkey: clé}` bâti une fois règle le cas. Effet immédiat :
-   la galerie par dossier retrouve tags, GPS et dates. **O1 clos partout**
-   (s11, observé s12) ; O15 (purge de `photo_thumbs/`) gagne en poids.
-6. **Navigation par similarité** : `/api/similar` + page `/files?sim=` +
-   bouton « Semblables » **livrés et OBSERVÉS BONS (13/08)** ; restent :
-   doublons proches bridés (>0,98 + même journée → quarantaine réversible,
-   50 paires jugées avant tout geste) ; rangée « même jour, autres années »
-   — **bloquée tant que le backfill des dates n'est pas observé** : sur la base
-   d'aujourd'hui elle rassemblerait des milliers de photos sous un 1er janvier
-   qui n'a jamais existé. À bâtir sur les dates PRÉCISES uniquement, jamais sur
-   le repli « année du dossier ». Aucune brique nouvelle (`similar_by_key`).
+5. **Correctifs d'audit restants** : I4–I8, O7–O9, O11–O15. **O1 clos partout** ;
+   O15 (purge de `photo_thumbs/`) gagne en poids. La casse des clés de la vue
+   dossier est **corrigée** (s13) — reste à l'observer en réel.
+6. **Navigation par similarité et par date** : `/api/similar` + `/files?sim=` +
+   bouton « Semblables » **observés bons (13/08)** ; « même jour, autres années »
+   **livré (s13)**, à observer. Reste : doublons proches bridés (>0,98 + même
+   journée → quarantaine réversible, 50 paires jugées avant tout geste). Élargir
+   « même jour » à une fenêtre ±1 j n'est PAS décidé : à ne faire que si la
+   moisson au jour strict se révèle trop maigre en réel.
 7. **Extraction `ui/` — décision nette à prendre** : session dédiée `bundle.py`
    ou parcage explicite (item zombie ; préparatoire fait et vérifié, détail git).
 8. **Cross-pipeline (Mutz/Caline)** : outil livré, réversible. Fix auto REJETÉ
@@ -133,7 +131,8 @@ Vidé le 12/08 : les trois résiduels sont rattachés en wagons aux chantiers 10
   (8,4 Go), rangement par année, orchestrateur de maintenance.
 - **Renommage** : cœur + plan + applicateur réversibles prêts (plan = 2114) ;
   `gps_place` codé (pas activé).
-- **UI** : design system « chambre noire » (tokens, plancher a11y), planche
+- **UI** : design system « chambre noire » (tokens, plancher a11y — dont
+  `:focus-visible` sur la galerie, s13), planche
   contact, `/reglages`, `/people` réorganisé, `/sujets` guichet unique
   (sous-nav + onglet Classification + files « À vérifier » miroir
   personnes/animaux, clavier Espace/X/Z/lettre).
@@ -147,11 +146,10 @@ Vidé le 12/08 : les trois résiduels sont rattachés en wagons aux chantiers 10
   et sourcés (`faits`), noms JAMAIS via le prompt (fusion `_noms_attendus`,
   exclude = autorité) ; `TAGGING_PIPELINE_VERSION` estampillée (`pipe`) ;
   1 lecture exiftool/photo (élargie à la date de prise de vue).
-- **Observabilité** : boucle scan/backup (O5), `backup_verify`, et depuis le
-  13/08 les **trois tâches de fond EXIF** (dates, noms, GPS) — état, avancement
-  et « fichiers muets » dans `/reglages`. Leçon acquise : *un travail de fond
-  qui ne rend pas de comptes finit par ne plus travailler du tout*, et personne
-  ne le voit. Trois l'ont fait pendant des mois.
+- **Observabilité** : boucle scan/backup (O5), `backup_verify`, et les trois
+  tâches de fond EXIF (dates, noms, GPS) — état, avancement et « fichiers
+  muets » dans `/reglages`. Leçon : *un travail de fond qui ne rend pas de
+  comptes finit par ne plus travailler du tout*, et personne ne le voit.
 - **Hygiène** : nettoyage de session réversible (bat 29) ; commit guidé
   `SESSION_COMMIT.txt` (bat 27) ; fusion fast-forward sans checkout, serveur
   allumé (bat 28) ; **suppression des branches déjà fusionnées (bat 30)** —

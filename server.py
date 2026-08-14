@@ -2064,6 +2064,60 @@ def _url_for_key(k, roots=None):
     return None
 
 
+# ─── « Même jour, autres années » : index MM-JJ en mémoire ───────────────────
+# Moteur pur et testé dans meme_jour.py (import léger : re + time). Bâti sur
+# les dates PRÉCISES uniquement — jamais le repli « année du dossier », qui
+# rangerait des milliers de photos sous un 1ᵉʳ janvier qui n'a jamais existé.
+# Même cache que _key_index : reconstruit quand le nombre d'entrées change ou
+# après JOUR_IDX_TTL. Aucun accès NAS, aucun GPU.
+import meme_jour
+_JOUR_IDX = {"at": 0.0, "n": -1, "map": None}
+_JOUR_IDX_LOCK = threading.Lock()
+JOUR_IDX_TTL = 300.0
+
+
+def _jour_index():
+    """{« MM-JJ » : [(epoch, clé), …]}, en cache."""
+    with _JOUR_IDX_LOCK:
+        n, now = len(STORE.data), time.time()
+        if (_JOUR_IDX["map"] is None or _JOUR_IDX["n"] != n
+                or now - _JOUR_IDX["at"] > JOUR_IDX_TTL):
+            _JOUR_IDX["map"] = meme_jour.construire_index(
+                list(STORE.data.items()), _fname_time)
+            _JOUR_IDX["n"], _JOUR_IDX["at"] = n, now
+        return _JOUR_IDX["map"]
+
+
+def _jour_de(cle, entree):
+    """« MM-JJ » d'une photo si sa date est PRÉCISE, sinon None. Sert aussi à
+    la visionneuse : sans jour, le bouton « Même jour » se cache — on n'ouvre
+    pas une porte sur une page qui n'a rien à montrer."""
+    ep = meme_jour.epoch_precis(cle, entree or {}, _fname_time)
+    return meme_jour.cle_jour(ep) if ep is not None else None
+
+
+def _jour_resoudre(param):
+    """Paramètre de /api/jour et /files?jour= → (jour « MM-JJ », clé de la photo
+    de référence ou None). Accepte les deux formes : un jour tout fait
+    (« 08-14 », pour un lien qu'on partage ou qu'on remet en favori) ou la CLÉ
+    d'une photo (ce que passe le bouton de la visionneuse). Renvoie
+    (None, clé) si la photo existe mais n'a pas de date précise — l'appelant
+    doit alors le DIRE, pas afficher une page vide."""
+    j = meme_jour.jour_demande(param)
+    if j:
+        return j, None
+    cle = param
+    if cle and STORE.data.get(cle) is None:
+        # Lien ancien ou clé minusculée (hôte SMB) : on repasse par l'index
+        # secondaire plutôt que de rendre une page vide.
+        alt = _index_key_for_path(_resolve_key(cle))
+        if alt:
+            cle = alt
+    # `or {}` : une photo déposée à l'instant n'est pas encore dans l'index,
+    # mais son NOM peut déjà porter la date — on ne lui refuse pas la page.
+    return _jour_de(cle, STORE.data.get(cle) or {}), cle
+
+
 def _index_entries_under(folder):
     """Entrées de l'index situées sous un dossier (récursif), sans toucher
     au système de fichiers."""
@@ -2080,6 +2134,66 @@ def _index_entries_under(folder):
         if _pkey(k).startswith(pref):
             out.append((k, e))
     return out
+
+
+# ─── Chemin réel → clé d'index (la casse ne doit JAMAIS décider) ─────────────
+# Les clés d'index gardent la casse d'origine du NAS (« \\NAS-Bremblens\… »)
+# alors que Path.resolve() MINUSCULE le nom d'hôte SMB : un STORE.get(str(f))
+# est un accès de dictionnaire, donc sensible à la casse, et rate TOUTES les
+# photos de la racine NAS. Symptôme observé le 14/08 : la galerie par dossier
+# affichait la photothèque entière sans tags, sans description, sans GPS et au
+# 1ᵉʳ janvier, alors que la même photo vue par /files?q= portait 20 tags et sa
+# vraie date. Le reste du code passait déjà par _pkey ; ici on rétablit la même
+# règle via l'index secondaire {chemin normalisé: clé} de fichiers.py — celui
+# que la vue Dossiers utilise déjà pour ne jamais perdre un nom humain.
+#
+# Le dictionnaire est bâti une fois puis mis en cache : reconstruit quand le
+# nombre d'entrées change (tagging, purge) ou après KEY_IDX_TTL. Un renommage
+# garde la même taille : la carte peut donc être périmée au plus TTL secondes,
+# et un accès périmé retombe proprement sur « pas d'entrée » (le fichier n'est
+# de toute façon plus à cet endroit du disque).
+_KEY_IDX = {"at": 0.0, "n": -1, "map": None}
+_KEY_IDX_LOCK = threading.Lock()
+KEY_IDX_TTL = 60.0
+
+
+def _key_index():
+    """{chemin normalisé (_pkey) : clé d'index exacte}, en cache."""
+    with _KEY_IDX_LOCK:
+        n, now = len(STORE.data), time.time()
+        if (_KEY_IDX["map"] is None or _KEY_IDX["n"] != n
+                or now - _KEY_IDX["at"] > KEY_IDX_TTL):
+            _KEY_IDX["map"] = fichiers.build_key_index(
+                list(STORE.data.keys()), _resolve_key)
+            _KEY_IDX["n"], _KEY_IDX["at"] = n, now
+        return _KEY_IDX["map"]
+
+
+def _key_index_invalider():
+    """Force la reconstruction des DEUX cartes au prochain accès. Un renommage
+    ne change pas le nombre d'entrées : la garde par taille ne verrait rien, et
+    l'index MM-JJ servirait pendant 5 min une clé morte (vignette 404, et une
+    suppression visant un fichier qui n'est plus là). Verrous pris l'un APRÈS
+    l'autre, jamais imbriqués."""
+    with _KEY_IDX_LOCK:
+        _KEY_IDX["n"] = -1
+    with _JOUR_IDX_LOCK:
+        _JOUR_IDX["n"] = -1
+
+
+def _index_key_for_path(p, carte=None):
+    """Clé d'index d'un fichier du disque, insensible à la casse et aux
+    séparateurs — ou None si le fichier n'est pas indexé. À utiliser partout
+    où l'on part d'un chemin PARCOURU (donc resolve()) pour retrouver l'entrée.
+
+    `carte` : instantané obtenu par `_key_index()`. Le passer est OBLIGATOIRE
+    dans une boucle — sans lui, chaque fichier redemande la carte, et il suffit
+    qu'un thread de fond ajoute une entrée (tagging) ou renomme (rangement)
+    entre deux tours pour reconstruire 43 000 entrées à chaque itération,
+    verrou tenu. Un instantané figé pour la durée d'une requête est de toute
+    façon plus cohérent qu'une carte qui bouge en cours de rendu."""
+    k = (_key_index() if carte is None else carte).get(_pkey(p))
+    return k if k is not None and STORE.data.get(k) is not None else None
 
 
 def _assoc_next(prev_key, exclude):
@@ -2477,6 +2591,7 @@ def rekey_everywhere(old, new, mtime=None, save=True):
     moved = STORE.rekey(old, new, mtime=mtime)
     if not moved:
         return False
+    _key_index_invalider()   # la carte {chemin: clé} vient de mentir
     subject_stores = (FACE_STORE, PEOPLE_STORE, ANIMAL_STORE, PETS_STORE)
     for st in subject_stores:
         try:
@@ -4469,6 +4584,11 @@ body { font-family: var(--f-texte);
 .cell img { width: 100%; height: 100%; object-fit: cover; display: block;
              opacity: 0; transition: opacity 0.3s, transform 0.2s; }
 .cell img.loaded { opacity: 1; }
+/* Millesime en mode « meme jour » : une DONNEE sur la photo -> --f-donnees,
+   comme le numero de vue d'une planche contact. */
+.cell .an { position: absolute; bottom: 2px; left: 4px; font-family: var(--f-donnees);
+            font-size: var(--t-xs); line-height: 1; color: var(--texte);
+            text-shadow: 0 1px 2px #000; }
 .cell:hover img { transform: scale(1.05); }
 .caption { padding: var(--e-1) var(--e-2) var(--e-2); font-size: var(--t-xs); line-height: 1.25; color: var(--graphite);
            min-height: 2.3em; display: -webkit-box; -webkit-line-clamp: 2;
@@ -4490,11 +4610,28 @@ body { font-family: var(--f-texte);
             overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 #lb-close { color: #fff; background: var(--salle-3); border: none; border-radius: var(--r-md);
              padding: var(--e-2) var(--e-4); cursor: pointer; font-size: var(--t-md); }
-/* -- semblables : navigation, pas une action -- neutre, cible 44px -- */
-#lb-sim { min-height: var(--touch); padding: 0 var(--e-4); border-radius: var(--r-md);
+/* -- semblables / meme jour : navigation, pas une action -- neutre, cible 44px.
+   Deux portes de sortie de la visionneuse : par le SENS (vecteur SigLIP) et par
+   la DATE (meme mois-jour, toutes annees). Meme poids visuel, donc meme regle. */
+#lb-sim, #lb-jour { min-height: var(--touch); padding: 0 var(--e-4); border-radius: var(--r-md);
           background: var(--salle-3); border: var(--trait); color: var(--texte);
           cursor: pointer; font-size: var(--t-md); }
-#lb-sim:hover { background: var(--salle-2); }
+#lb-sim:hover, #lb-jour:hover { background: var(--salle-2); }
+#lb-jour[hidden] { display: none; }
+/* Millesime d'une annee dans le bandeau « meme jour » : une MESURE, donc
+   --f-donnees (plancher photo-ui : les nombres s'alignent et se comparent). */
+.fchip.jour-an { font-family: var(--f-donnees); color: var(--graphite); }
+.fchip.jour-an b { color: var(--texte); font-weight: 600; }
+/* Plancher d'accessibilite n. 1 : focus visible. La page n'avait AUCUNE regle
+   :focus-visible -- ecart releve en ajoutant « Meme jour », corrige ici pour
+   toute la galerie plutot que pour le seul bouton neuf. */
+:focus-visible { outline: 2px solid var(--veilleuse); outline-offset: 2px; }
+/* #ss-fill exclu : sa transition n'est pas un ornement, c'est la seule
+   indication du temps restant dans le diaporama. */
+@media (prefers-reduced-motion: reduce) {
+  *:not(#ss-fill), *::before, *::after { transition-duration: 0.01ms !important;
+                                         animation-duration: 0.01ms !important; }
+}
 #lb-prev, #lb-next { color: #fff; background: var(--salle-3); border: none;
                       border-radius: var(--r-md); padding: var(--e-2) var(--e-3); cursor: pointer; font-size: var(--t-lg); }
 
@@ -4606,6 +4743,7 @@ __FOLDERS__
     <span id="lb-name"></span>
     <button id="lb-next">&#8594;</button>
     <button id="lb-sim" aria-label="Voir les photos semblables">&#128269; Semblables</button>
+    <button id="lb-jour" aria-label="Voir les photos du meme jour, toutes annees">&#128197; Meme jour</button>
     <button id="lb-del" aria-label="Supprimer cette photo">&#128465;&#65039; Supprimer</button>
     <button id="lb-close">Fermer</button>
   </div>
@@ -4922,7 +5060,11 @@ __FOLDERS__
       cell.className = 'cell';
       var cap = f.desc || '';
       cell.innerHTML = '<div class="ph"><img data-src="' + thumbUrl(f, 512)
-                     + '" data-fb="' + esc(f.url) + '" alt="" title="' + esc(f.name) + '"></div>'
+                     + '" data-fb="' + esc(f.url) + '" alt="" title="' + esc(f.name) + '">'
+                     // `annee` n'est envoye qu'en mode « meme jour » : c'est la
+                     // que le millesime porte le recit (2008, 2011, 2019).
+                     + (f.annee ? '<span class="an">' + f.annee + '</span>' : '')
+                     + '</div>'
                      + '<div class="caption' + (cap ? '' : ' empty') + '">'
                      + (cap ? esc(cap) : 'pas encore analysée') + '</div>';
       cell.onclick = function() { openLb(i); };
@@ -4950,6 +5092,19 @@ __FOLDERS__
     if (f.kw && f.kw.length) { t.textContent = f.kw.join(' · '); t.className = ''; }
     else { t.textContent = 'pas encore de tags'; t.className = 'none'; }
     document.getElementById('lb-desc').textContent = f.desc || '';
+    // Pas de date au jour pres -> pas de bouton (29 % de la photothèque en
+    // est la). Le libelle porte le jour : « Meme jour (14 aout) ».
+    var jb = document.getElementById('lb-jour');
+    jb.hidden = !f.jour;
+    if (f.jour) jb.textContent = '📅 Meme jour (' + jourLisible(f.jour) + ')';
+  }
+  // « 08-14 » -> « 14 aout ». Sans locale : toLocaleDateString depend du poste
+  // et le serveur, lui, ecrit deja ce libelle sans accents dans meme_jour.py.
+  var MOIS_JOUR = ['janvier','fevrier','mars','avril','mai','juin','juillet',
+                   'aout','septembre','octobre','novembre','decembre'];
+  function jourLisible(j) {
+    var m = /^(\\d{2})-(\\d{2})$/.exec(j || '');
+    return m ? (parseInt(m[2], 10) + ' ' + MOIS_JOUR[parseInt(m[1], 10) - 1]) : '';
   }
   function lbMove(d) {
     if (!visible.length) return;
@@ -4967,6 +5122,14 @@ __FOLDERS__
   document.getElementById('lb-sim').addEventListener('click', function() {
     var f = visible[lbIdx];
     if (f && f.key) location.href = '/files?sim=' + encodeURIComponent(f.key);
+  });
+
+  // « Meme jour » : meme geste de navigation, mais par la DATE. On passe la
+  // CLE (pas le jour) : le serveur en deduit le mois-jour ET ecarte la photo
+  // de reference de ses propres resultats.
+  document.getElementById('lb-jour').addEventListener('click', function() {
+    var f = visible[lbIdx];
+    if (f && f.key && f.jour) location.href = '/files?jour=' + encodeURIComponent(f.key);
   });
 
   // 5 bandes verticales : seules les bandes des bords (20%) naviguent
@@ -11728,6 +11891,8 @@ class Handler(BaseHTTPRequestHandler):
             self._serve_semantic_search()
         elif path == '/api/similar':
             self._serve_similar()
+        elif path == '/api/jour':
+            self._serve_jour()
 
         elif path == '/api/search/status':
             self._serve_semantic_status()
@@ -12025,6 +12190,13 @@ class Handler(BaseHTTPRequestHandler):
         simparam = (q.get('sim') or [''])[0].strip()
         sim_mode = (bool(simparam) and not search_mode
                     and not dirparam and not sel and not motif)
+        # Page « même jour, autres années » : /files?jour=<clé de photo> ou
+        # /files?jour=MM-JJ. Troisième mode « la grille est un résultat », après
+        # ?q= et ?sim= — mais celui-ci ne coûte ni vecteur ni GPU : il lit
+        # l'index MM-JJ en mémoire (dates PRÉCISES uniquement).
+        jourparam = (q.get('jour') or [''])[0].strip()
+        jour_mode = (bool(jourparam) and not search_mode and not sim_mode
+                     and not dirparam and not sel and not motif)
 
         if dirparam:
             roots = media_roots()
@@ -12121,13 +12293,34 @@ class Handler(BaseHTTPRequestHandler):
                             '<span class="fchip">&#128269; Semblables à '
                             + html.escape(Path(simparam).name) + '</span>'
                             '</div>')
+        jour_items, jour_libelle = [], ''
+        if jour_mode:
+            jour_cle, jour_ref = _jour_resoudre(jourparam)
+            if not jour_cle:
+                # État vide RÉDIGÉ (plancher photo-ui n° 7) : dire POURQUOI.
+                # 29 % de la photothèque n'a pas de date au jour près ; une
+                # page muette laisserait croire à une panne.
+                folders_html = (
+                    '<div class="folders"><span class="fchip">'
+                    'Cette photo n\'a pas de date de prise de vue au jour '
+                    'près : seule son année est connue, on ne peut donc pas '
+                    'la rapprocher d\'un même jour.</span></div>')
+            else:
+                jour_libelle = meme_jour.libelle_jour(jour_cle)
+                jour_items = meme_jour.photos_du_jour(
+                    _jour_index(), jour_cle, exclure=jour_ref)
         is_uploads = folder in (UPLOAD_DIR, UPLOAD_DIR.resolve())
         roots_g = media_roots()
+        carte_cles = _key_index()   # UN instantané pour toute la boucle
         file_data = []
         for f in files:
-            entry = (STORE.get(str(f))
-                     or (STORE.get(f.name) if is_uploads else None)
-                     or {})
+            # Clé d'index EXACTE (casse d'origine) : `f` vient d'un parcours de
+            # `folder`, donc d'un resolve() qui minuscule l'hôte SMB — un accès
+            # direct STORE.get(str(f)) raterait toute la racine NAS.
+            fkey = _index_key_for_path(f, carte_cles)
+            if fkey is None and is_uploads and STORE.get(f.name) is not None:
+                fkey = f.name
+            entry = (STORE.get(fkey) if fkey else None) or {}
             if entry.get('failed'):
                 continue  # image endommagée : on ne l'affiche pas
             # évite un stat() réseau par fichier quand l'index connaît déjà
@@ -12140,7 +12333,12 @@ class Handler(BaseHTTPRequestHandler):
                     size, mtime = 0, 0
             kw = list(dict.fromkeys(
                 (entry.get('kw_fr') or []) + (entry.get('kw_en') or [])))
-            folder_lbl, gurl = _folder_link_for_key(str(f), roots_g)
+            # Chemin ABSOLU, pas la clé : une clé d'Uploads est relative
+            # (« Album/x.jpg ») et _folder_link_for_key ne la rattacherait à
+            # aucune racine (lien vers la racine au lieu du sous-dossier).
+            # _resolve_key préserve la casse d'origine de la clé NAS.
+            folder_lbl, gurl = _folder_link_for_key(
+                str(_resolve_key(fkey)) if fkey else str(f), roots_g)
             file_data.append({
                 'name': f.relative_to(folder).as_posix() if rec else f.name,
                 # Clé d'index : sert à recouper les résultats de la recherche
@@ -12149,15 +12347,24 @@ class Handler(BaseHTTPRequestHandler):
                 # TOUJOURS le chemin absolu : un fichier non encore indexé y
                 # retombait sinon sur un nom nu, résolu à tort sous Uploads par
                 # _key_to_target (mauvaise racine). Uploads : comportement
-                # inchangé (nom nu, relatif).
-                'key': str(f) if (not is_uploads
-                                  or STORE.get(str(f)) is not None) else f.name,
+                # inchangé (nom nu, relatif). Photo INDEXÉE : on renvoie la clé
+                # telle qu'elle est stockée (casse d'origine) — c'est elle que
+                # /api/similar, la suppression par clé et /api/jour attendent.
+                # Non indexé : convention scan_uploads — nom nu SEULEMENT à la
+                # racine d'Uploads. Un « x.jpg » d'un sous-dossier rendu en nom
+                # nu se résout à la racine et fait viser un AUTRE fichier.
+                'key': fkey or (f.name if is_uploads
+                                and _pkey(f.parent) == _pkey(UPLOAD_DIR)
+                                else str(f)),
                 'url': url_for(f),
                 'size': human_size(size),
                 'mtime': mtime,
                 # Date de PRISE (epoch) pour le tri chronologique de la galerie
                 # et l'ordre du diaporama — _best_time : EXIF, sinon nom/annee, sinon mtime.
-                'taken': _best_time(str(f), entry),
+                'taken': _best_time(fkey or str(f), entry),
+                # Jour « MM-JJ » si la date est PRÉCISE (sinon None) : c'est lui
+                # qui décide si le bouton « Même jour » s'affiche.
+                'jour': _jour_de(fkey or str(f), entry),
                 'kw': kw,
                 'gps': entry.get('gps'),
                 'desc': entry.get('desc', ''),
@@ -12193,6 +12400,7 @@ class Handler(BaseHTTPRequestHandler):
                     'size': human_size(e.get('size') or 0),
                     'mtime': e.get('mtime') or 0,
                     'taken': _best_time(k, e),   # date de prise (epoch) pour le tri chronologique
+                    'jour': _jour_de(k, e),
                     'kw': sorted(kws),
                     'gps': e.get('gps'),
                     'desc': e.get('desc', ''),
@@ -12247,12 +12455,61 @@ class Handler(BaseHTTPRequestHandler):
                     'size': human_size(e.get('size') or 0),
                     'mtime': e.get('mtime') or 0,
                     'taken': _best_time(k, e),
+                    'jour': _jour_de(k, e),
                     'kw': kws,
                     'gps': e.get('gps'),
                     'desc': e.get('desc', ''),
                     'folder': folder_lbl,
                     'gurl': gurl,
                 })
+
+        # « Même jour » : la grille devient la journée, du plus ANCIEN au plus
+        # récent (l'ordre du récit familial). Même forme d'objet que les autres
+        # modes, donc rendu client inchangé — sauf `annee`, qui laisse la
+        # vignette porter son millésime.
+        if jour_mode:
+            roots_cache = media_roots()
+            file_data = []
+            for _ep, k in jour_items[:1500]:
+                e = STORE.data.get(k) or {}
+                url = _url_for_key(k, roots_cache)
+                if not url:
+                    continue
+                kws = list(dict.fromkeys(
+                    (e.get('kw_fr') or []) + (e.get('kw_en') or [])))
+                folder_lbl, gurl = _folder_link_for_key(k, roots_cache)
+                file_data.append({
+                    'name': Path(k).name,
+                    'key': k,
+                    'url': url,
+                    'size': human_size(e.get('size') or 0),
+                    'mtime': e.get('mtime') or 0,
+                    'taken': _ep,
+                    'annee': meme_jour.annee_de(_ep),
+                    'jour': _jour_de(k, e),
+                    'kw': kws,
+                    'gps': e.get('gps'),
+                    'desc': e.get('desc', ''),
+                    'folder': folder_lbl,
+                    'gurl': gurl,
+                })
+            # Bandeau bâti sur ce qui est RÉELLEMENT rendu (après le plafond et
+            # après les clés sans URL servable) : un compteur qui annonce plus
+            # que ce qu'on voit est un compteur qui ment.
+            chips = ('<span class="fchip">&#128197; ' + html.escape(jour_libelle)
+                     + '</span>')
+            comptes = {}
+            for _e in file_data:
+                comptes[_e['annee']] = comptes.get(_e['annee'], 0) + 1
+            # Une puce par année : c'est le récit de la page (« ce jour-là,
+            # en 2008, en 2011, en 2019 »), et un ancrage pour l'œil.
+            for an in sorted(comptes):
+                chips += ('<span class="fchip jour-an">' + str(an)
+                          + ' <b>' + str(comptes[an]) + '</b></span>')
+            if not comptes:
+                chips += ('<span class="fchip">Aucune autre photo ce '
+                          'jour-là dans la photothèque.</span>')
+            folders_html = '<div class="folders">' + chips + '</div>'
 
         # Comptes par motif sur la vue courante, puis filtre eventuel. Import
         # PARESSEUX : interet est pur (re/pathlib), aucun modele ni deps ML au
@@ -12429,6 +12686,61 @@ class Handler(BaseHTTPRequestHandler):
             })
         self._send(200, json.dumps(
             {'results': sortie, 'encodee': True, 'key': cle},
+            ensure_ascii=False).encode(), 'application/json')
+
+    def _serve_jour(self):
+        """« Même jour, autres années » — les photos qui partagent le mois-jour
+        d'une photo donnée, groupées par année.
+
+        ?key=<clé de photo> (ce que passe la visionneuse) ou ?jour=MM-JJ (lien
+        partageable). Même forme de sortie que /api/search et /api/similar
+        (`results` : key/url/name/desc/kw), plus `annees` pour le récit et
+        `jour`/`libelle` pour le titre. Zéro IA, zéro GPU, zéro accès NAS :
+        tout vient de l'index en mémoire — pas de note_heavy_activity.
+
+        `precise:false` distingue « cette photo n'a pas de date au jour près »
+        d'un vrai jour vide : sans ça, une photo datée du seul « année du
+        dossier » ouvrirait une page muette."""
+        qs = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
+        param = ((qs.get('jour', [''])[0] or qs.get('key', [''])[0]) or '').strip()
+        try:
+            limite = min(int(qs.get('n', ['1500'])[0] or 1500), 5000)
+        except ValueError:      # ?n=abc : un paramètre bancal n'est pas un 500
+            limite = 1500
+        if not param:
+            self._send(200, json.dumps({'results': [], 'annees': []}).encode(),
+                       'application/json')
+            return
+        jour, cle_ref = _jour_resoudre(param)
+        if not jour:
+            self._send(200, json.dumps(
+                {'results': [], 'annees': [], 'precise': False, 'key': cle_ref},
+                ensure_ascii=False).encode(), 'application/json')
+            return
+        items = meme_jour.photos_du_jour(_jour_index(), jour, exclure=cle_ref)
+        roots = media_roots()
+        sortie, comptes = [], {}
+        for _ep, k in items[:limite]:
+            e = STORE.data.get(k) or {}
+            an = meme_jour.annee_de(_ep)
+            comptes[an] = comptes.get(an, 0) + 1
+            sortie.append({
+                'key': k,
+                'url': _url_for_key(k, roots),
+                'name': Path(k).name,
+                'annee': an,
+                'taken': _ep,
+                'desc': e.get('desc', ''),
+                'kw': (e.get('kw_fr') or e.get('kw_en') or [])[:8],
+            })
+        # `annees` décrit `results`, pas la journée entière : au-delà du
+        # plafond `n`, `total` dit ce qui a été écarté (pas de troncature
+        # silencieuse).
+        annees = [{'annee': an, 'n': comptes[an]} for an in sorted(comptes)]
+        self._send(200, json.dumps(
+            {'results': sortie, 'annees': annees, 'jour': jour,
+             'libelle': meme_jour.libelle_jour(jour), 'precise': True,
+             'key': cle_ref, 'rendus': len(sortie), 'total': len(items)},
             ensure_ascii=False).encode(), 'application/json')
 
     def _serve_semantic_status(self):
@@ -13397,23 +13709,29 @@ class Handler(BaseHTTPRequestHandler):
                 return '/uploads/' + urllib.parse.quote(
                     p.relative_to(UPLOAD_DIR).as_posix())
 
-        p = None
+        # Même piège de casse que la galerie : _random_photo marche sous
+        # `folder`, issu d'un resolve() qui minuscule l'hôte SMB. Sans le
+        # passage par l'index secondaire, le diaporama aléatoire du NAS
+        # renvoyait des photos sans tags ni description, et une clé
+        # minusculée que /api/similar ne retrouvait pas.
+        p, key, entry = None, None, {}
         for _ in range(6):
             cand = _random_photo(folder)
             if cand is None:
                 break
-            ce = STORE.get(str(cand)) or STORE.get(cand.name) or {}
+            ck = _index_key_for_path(cand)
+            ce = (STORE.get(ck) if ck else None) or {}
             if not ce.get('failed'):
-                p = cand
+                p, key, entry = cand, ck, ce
                 break
         if p is None:
             self._send(200, b'{"url": null}', 'application/json')
             return
-        key = p.name if _pkey(p.parent) == _pkey(UPLOAD_DIR) else str(p)
-        entry = STORE.get(str(p)) or STORE.get(p.name) or {}
+        if key is None:   # fichier pas encore indexé : convention scan_uploads
+            key = p.name if _pkey(p.parent) == _pkey(UPLOAD_DIR) else str(p)
         kw = list(dict.fromkeys(
             (entry.get('kw_fr') or []) + (entry.get('kw_en') or [])))
-        folder, gurl = _folder_link_for_key(str(p))
+        folder, gurl = _folder_link_for_key(str(_resolve_key(key)))
         body = json.dumps({
             'url': url_for(p),
             'name': p.name,
