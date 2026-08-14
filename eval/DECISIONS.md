@@ -70,6 +70,10 @@
   alerte si >15 % des clés ne résolvent plus.
 - **Ordre imposé (`vision-eval`)** : hypothèse + protocole *avant* de mesurer, puis mesurer,
   décider, et seulement ensuite câbler. Exiger un écart minimal (≥ 5 photos) avant un vainqueur.
+- **Mesurer par le chemin de code de la DONNÉE, pas par une vue** (14/08) : après la
+  réparation des dates, les dossiers-témoins semblaient inchangés — la vue dossier ne trouvait
+  simplement pas les entrées (casse des clés SMB). La même mesure lue par clé d'index montrait
+  0 % → 60 %. Une vue peut mentir sur la donnée ; vérifier par le chemin qui l'écrit.
 - **Mesurer la matière première avant de bâtir dessus** (13/08) : le chantier « même jour »
   supposait des dates au jour près ; 29 % de la photothèque n'en avait aucune, et la cause était
   un bug de démarrage vieux de plusieurs mois. Une heure de mesure a valu plus que la

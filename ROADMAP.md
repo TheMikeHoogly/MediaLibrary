@@ -6,28 +6,28 @@ session, choses à observer) dans `PROMPT_NOUVELLE_SESSION.md`. Audits :
 `docs/AUDIT_INTERNE_2026-08.md` (I1–I17, O1–O15, A–F),
 `docs/AUDIT_EXTERNE_2026.md`, `docs/RANGEMENT_2026.md`.
 
-## État (13/08/2026, session 12)
+## État (14/08/2026, session 12)
 
-**Résidu O1 : soldé et OBSERVÉ BON en réel** — `/sujets` section Lieux,
-25 cartes sur 25 en `/api/thumb`, **1 007 Ko et 315 ms pour les 25** (contre
-~60 Mo d'originaux). `fix/lieux-thumb` committée et fusionnée. Avant :
-purge des doublons (43 067 pile) et bouton « Semblables », observés bons
-aussi. Reste un test d'occasion : au prochain upload téléphone, une photo =
-UNE entrée.
+**Trois tâches de fond mortes en silence depuis toujours — RÉPARÉES ET
+OBSERVÉES** (`fix/backfills-silencieux`). Garde `if not EXIFTOOL: return`
+placée AVANT le `sleep`, alors que `EXIFTOOL` est affecté par
+`maintenance_loop` lancé dans le même souffle : `backfill_dates`,
+`backfill_gps` et `reimport_name_tags` renonçaient en microsecondes, à chaque
+démarrage. Les trois passes ont tourné dans la nuit du 13 au 14/08, **0 fichier
+muet, 0 erreur** : dates **32 822 trouvées sur 42 060 lues** (2008 passe de 0 %
+à 60 % de dates précises, 2010 de 2 % à 98 %, 91 % sur un échantillon de 1 477
+photos toutes époques) ; noms **184 tags `personne:`/`animal:` récupérés**
+depuis les XMP — cette passe n'avait jamais tourné ; GPS **5 394 photos
+géolocalisées de plus**, la carte passe de 1 220 à **6 614 points**.
 
-**Session 12 — TROIS tâches de fond mortes en silence depuis toujours**
-(`fix/backfills-silencieux`, à commiter). Parti pour le chantier 6a, on a
-mesuré la matière première : **12 407 photos (29 %) sans date au jour près**,
-**42 060 entrées sur 43 067 jamais lues**. Cause (`diagnostic_dates.py`) :
-garde `if not EXIFTOOL: return` placée AVANT le `sleep`, alors que `EXIFTOOL`
-est affecté par `maintenance_loop` lancé dans le même souffle — `backfill_dates`,
-`backfill_gps` et surtout `reimport_name_tags` (rapatriement des noms XMP,
-invariant n° 2 : **jamais** tournée, aucun `namechk`) renonçaient en
-microsecondes, à chaque démarrage. Corrigé + trois garde-fous nés de la
-relecture : aucune écriture pour un fichier dont ExifTool n'a pas parlé ; la
-date de SCAN ne passe plus pour la prise de vue ; passes sérialisées
-(dates → noms → GPS) et comptes rendus dans `/reglages`. **Rien n'est observé
-en réel : tout se joue au prochain bat 0** — premier démarrage long.
+**Découvert en vérifiant : la vue « Dossiers » ment sur toute la racine NAS.**
+`Path.resolve()` minuscule le nom d'hôte SMB (`\\nas-bremblens\…`) alors que
+les clés d'index gardent leur casse (`\\NAS-Bremblens\…`) ; `STORE.get(str(f))`
+est un accès de dictionnaire, donc sensible à la casse, et rate. Même photo :
+`/files?dir=` → 0 tag, 1ᵉʳ janvier ; `/files?q=` → 20 tags, 16 février 2008. La
+galerie par dossier affiche donc tout sans tags, sans description, sans GPS et
+sans date. Antérieur à cette session (le reste du code passe par `_pkey`, qui
+normalise). Correctif : point 5.
 
 ## À faire — par ordre de valeur (réordonné au triple audit du 11/08)
 
@@ -41,15 +41,11 @@ en réel : tout se joue au prochain bat 0** — premier démarrage long.
    l'occasion se présente**. Métrique = erreurs découvertes, pas l'accord
    modèle-humain. Conséquence : le point 9 (algo) reste parqué — ordre de
    travaux, pas dette.
-2. **Observer en réel ce qui est livré** : v2ctx/Knowledge Builder **fait ✔**,
-   purge des 19 doublons **fait ✔**, bouton « Semblables » **fait ✔**,
-   vignettes Lieux **fait ✔** (13/08) ; **à observer en tête de la prochaine
-   session : les trois tâches de fond réparées** (`/reglages` → trois cartes ;
-   puis relancer `diagnostic_dates.py` : les 12 407 sans date doivent
-   s'effondrer, `taken absent` tomber près de 0, et `namechk` exister). Reste :
-   re-upload = une entrée, seek vidéo mobile, test du Z. Veille v2ctx sur un
-   lot plus grand : identifications astre/objet, fuite de la date en prose —
-   tout geste de prompt passe par `vision-eval`.
+2. **Observer en réel ce qui est livré** : v2ctx/Knowledge Builder, purge des
+   19 doublons, bouton « Semblables », vignettes Lieux, **et les trois tâches
+   de fond réparées** — tous **faits ✔**. Reste : re-upload = une entrée, seek
+   vidéo mobile, test du Z. Veille v2ctx sur un lot plus grand : astre/objet,
+   fuite de la date en prose — tout geste de prompt passe par `vision-eval`.
 3. **Knowledge Builder + version de pipeline : CÂBLÉS (s8) et OBSERVÉS (s9)** —
    suite naturelle : composition d'affichage date · lieu · noms depuis `faits`
    (choix tranché : structuré d'abord, affichage plus tard) ; re-tagging
@@ -61,10 +57,12 @@ en réel : tout se joue au prochain bat 0** — premier démarrage long.
    `--ecrire` → redémarrer) — profite du backfill GPS enfin réparé ; lots de
    renommage **débloqués** (plan = 2114 ; le banc `eval/tagging_v1.json`, keyé
    par chemin, en deviendra partiellement caduc — attendu).
-5. **Correctifs d'audit restants** : I4–I8, O7–O9, O11–O15. **O1 clos
-   partout** (s11, observé s12). O15 (purge de `photo_thumbs/`, cache sans
-   borne, gitignoré depuis le 12/08) gagne en poids : toutes les grilles
-   l'alimentent désormais.
+5. **Correctifs d'audit restants** : I4–I8, O7–O9, O11–O15. **Neuf et
+   prioritaire — casse des clés dans la vue dossier** : `_serve_gallery`
+   cherche l'entrée par `STORE.get(str(f))` au lieu de passer par `_pkey` ; un
+   index secondaire `{_pkey: clé}` bâti une fois règle le cas. Effet immédiat :
+   la galerie par dossier retrouve tags, GPS et dates. **O1 clos partout**
+   (s11, observé s12) ; O15 (purge de `photo_thumbs/`) gagne en poids.
 6. **Navigation par similarité** : `/api/similar` + page `/files?sim=` +
    bouton « Semblables » **livrés et OBSERVÉS BONS (13/08)** ; restent :
    doublons proches bridés (>0,98 + même journée → quarantaine réversible,
