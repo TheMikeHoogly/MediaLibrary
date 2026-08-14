@@ -14,26 +14,26 @@ en 2–3 lignes, puis on attaque.
   chantier « même jour, autres années » (115 photos sur 11 années au 14 août,
   référence exclue, bouton caché quand la date n'est pas au jour près). La
   branche `feat/meme-jour-et-casse` est donc **prête à fusionner (bat 28)**.
-- **Livré en session 14, branche `fix/plancher-annees-chemin`, PAS ENCORE
-  OBSERVÉ EN RÉEL** (redémarrage nécessaire) : le plancher 1990 des années lues
-  dans un CHEMIN passe à **1900**, et `_path_years` **exclut le nom de fichier**.
-  Détail et chiffres : `ROADMAP.md` (État s14) + `eval/DECISIONS.md`.
-  Tests verts : `test_plan_renommage.py` 11/11, `test_tagging_meta.py`,
-  `test_meme_jour.py`.
+- **Plancher des années du CHEMIN à 1900 + nom de fichier exclu — livré ET
+  observé** : 716 photos de 1982-1989 ont retrouvé leur année (elles affichaient
+  avril 2026), 38 photos tirées en arrière par un numéro de scanner corrigées,
+  0 régression sur 20 239 fichiers vérifiés.
+- **ExifTool disparu en silence — corrigé, PAS ENCORE OBSERVÉ** (il faut un
+  démarrage) : deux répertoires fantômes nommés `\\NAS-Bremblens\home\…`, nés
+  d'un `mkdir` au niveau module exécuté sous POSIX, égaraient la recherche
+  d'ExifTool ; l'`OSError` était muette. Détail : `ROADMAP.md` (État s14).
+- Branche `fix/plancher-annees-chemin`. Tests verts : `test_plan_renommage.py`
+  11/11, `test_tagging_meta.py`, `test_meme_jour.py`.
 
 ## Prochain pas — par valeur
 
-1. **Observer en réel le plancher** (192.168.0.13:8080, après
-   `0 - Démarrer le serveur.bat`) : (a) `/files?dir=1/Photos%20Papa&rec=1` →
-   les photos de `1982`…`1989` doivent porter leur année de dossier, plus
-   avril 2026 ; **714 photos attendues** ; (b) une photo de `1986` ouverte
-   → date affichée 1986 ; (c) vérifier qu'aucune photo de `2002`
-   (`119-1908_IMG.JPG`) n'a reculé — le nom de fichier ne doit plus compter ;
-   (d) contre-mesure honnête : compter combien de photos changent d'année et
-   dans quel sens, pas seulement celles qu'on espérait.
+1. **Observer ExifTool au démarrage** : la console ne doit plus dire
+   « ExifTool indisponible » ; les trois tâches de fond (dates, noms, GPS)
+   doivent repartir et rendre des comptes dans `/reglages`. Si un dossier est
+   illisible, le serveur le NOMME désormais au lieu de se taire.
 2. **Régénérer `docs/plan_renommage.json`** avant tout lot de renommage : le
-   plan actuel a été produit avant le correctif, les années 80 y sont en
-   « sans date ».
+   plan actuel a été produit avant le correctif du plancher, les années 80 y
+   sont en « sans date ».
 3. **Gestes Mike, dans cet ordre** : nettoyer Flo (5 909 photos) ; re-rejeter
    Caline une fois ; activer `gps_place` (bat 18 → `enrichir_lieux.py` →
    `--ecrire` → redémarrer) ; lots de renommage (après le point 2).

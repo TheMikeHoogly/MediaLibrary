@@ -77,6 +77,17 @@
   réparation des dates, les dossiers-témoins semblaient inchangés — la vue dossier ne trouvait
   simplement pas les entrées (casse des clés SMB). La même mesure lue par clé d'index montrait
   0 % → 60 %. Une vue peut mentir sur la donnée ; vérifier par le chemin qui l'écrit.
+- **Un effet de bord à l'import finit par sortir de la machine** (14/08) : `server.py`
+  créait `DATA_DIR`/`UPLOAD_DIR` au niveau module. Sous POSIX, où l'antislash n'est pas un
+  séparateur, un simple `import server` a fabriqué deux répertoires nommés
+  `\\NAS-Bremblens\home\…` à la racine du projet — que Windows relit ensuite comme des
+  chemins UNC. Coût : ExifTool introuvable, et les trois tâches de fond mortes. Un `mkdir`
+  au niveau module s'exécute chez tous ceux qui lisent le fichier, pas seulement chez ceux
+  qui le lancent.
+- **Le message d'erreur visible n'est pas toujours l'erreur** (14/08) : « ExifTool
+  indisponible (HTTP 404) » désignait le téléchargement de secours ; la vraie panne était
+  un `except OSError` muet, trois lignes plus haut. Un repli silencieux déguise la cause en
+  symptôme du repli.
 - **Un garde-fou qui n'a rien à quoi se comparer ne garde rien** (14/08) : `date_fiable`
   croit `ModifyDate` quand le chemin ne porte aucune année (« rien à contredire ») — règle
   saine, sauf que le plancher 1990 rendait le chemin muet précisément sur les dossiers

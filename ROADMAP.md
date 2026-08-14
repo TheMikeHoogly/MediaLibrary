@@ -31,9 +31,34 @@ Mesuré sur 19 384 fichiers : 38 photos tirées en arrière par leur nom, 0 qui 
 son repli. Tests : `test_plan_renommage.py` 11/11 (2 cas ajoutés),
 `test_tagging_meta.py`, `test_meme_jour.py` verts.
 
+**OBSERVÉ EN RÉEL (s14)** : 716 photos de 1982-1989 datées par leur dossier (1986 :
+306, 1984 : 152, 1983 : 138, 1985 : 100…), les 38 photos tirées en arrière par un
+numéro de scanner corrigées, et **0 régression sur 20 239 fichiers** vérifiés
+(Photos Papa, Photos Flo, 2010, 2008, _A TRIER) — aucune photo n'a perdu son
+repli. Restent 15 photos hors de leur année : elles portent une date PRÉCISE
+fausse (numérisation du 16/11/2006), cas classé REJETÉ.
+
 **Conséquence pour les gestes de renommage** : `docs/plan_renommage.json` a été
 produit AVANT ce correctif — les photos des années 80 y sont en « sans date ».
-**Régénérer le plan après redémarrage**, avant tout lot.
+**Régénérer le plan**, avant tout lot.
+
+**ExifTool disparu en silence — CORRIGÉ (s14), à observer au prochain
+démarrage.** Symptôme : « ExifTool indisponible (HTTP 404) » au lancement alors
+que `exiftool-13.59_64\exiftool.exe` est bien là ; `EXIFTOOL = None`, donc les
+trois tâches de fond sortent aussitôt et les tags de noms repassent en plan B
+`piexif` (JPEG, sans XMP). Chaîne complète : `server.py` faisait
+`DATA_DIR.mkdir()` / `UPLOAD_DIR.mkdir()` **au niveau module**, donc à l'IMPORT ;
+sous POSIX (VM du pont, sandbox) l'antislash est un caractère ordinaire, et ces
+lignes ont fabriqué deux répertoires nommés `\\NAS-Bremblens\home\Photos\_Uploads`
+et `\\nas-bremblens\home\Uploads` (04 et 31/07, vides) à la racine du projet ;
+Windows relit ces noms comme des chemins UNC, le `rglob` de `ensure_exiftool` est
+parti interroger le NAS, l'`except OSError` était MUET, et le seul message
+restant était le 404 du téléchargement de secours. Trois correctifs : les deux
+`mkdir` passent par `_creer_dossier_si_absolu` (refuse et le DIT si le chemin
+n'est pas absolu sur la plateforme courante) ; `ensure_exiftool` regarde d'abord
+les emplacements probables sans rien parcourir ; le parcours de secours élague
+(`EXIFTOOL_SKIP_DIRS`, noms à séparateur) et **rend compte** de ce qu'il n'a pas
+pu lire. Les deux dossiers fantômes sont dans `_to_delete\faux_dossiers_unc\`.
 
 ## État (14/08/2026, session 13)
 

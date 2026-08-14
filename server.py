@@ -83,8 +83,32 @@ else:
 if UPLOAD_DIR is None:
     UPLOAD_DIR = DATA_DIR
 
-DATA_DIR.mkdir(parents=True, exist_ok=True)
-UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+def _creer_dossier_si_absolu(p, quoi):
+    """`mkdir` SEULEMENT si le chemin est absolu POUR LA PLATEFORME COURANTE.
+
+    Ces deux créations sont des EFFETS DE BORD À L'IMPORT : un simple
+    `import server` (un test, une relecture, un outil) suffit à les déclencher.
+    Sous Windows, « \\\\nas-bremblens\\home\\Uploads » est un chemin UNC et tout
+    va bien. Sous POSIX (VM du pont, sandbox, CI), l'antislash est un caractère
+    ORDINAIRE : la même ligne fabrique, dans le dossier du projet, un répertoire
+    dont le NOM contient des antislashs. Windows relit ensuite ce nom comme un
+    chemin UNC — et le 14/08 c'est exactement ce qui a fait disparaître ExifTool :
+    le parcours de `ensure_exiftool` quittait le disque local pour interroger le
+    NAS, l'OSError était avalée, et les trois tâches de fond mouraient en
+    silence. Deux dossiers fantômes (04 et 31/07) pour une capacité perdue.
+    Ici on refuse de créer, et on le DIT."""
+    if not p.is_absolute():
+        print(f"  ⚠ {quoi} n'est pas un chemin absolu sur cette plateforme : "
+              f"{p!s} — dossier NON créé (import hors Windows ?).")
+        return
+    try:
+        p.mkdir(parents=True, exist_ok=True)
+    except OSError as e:
+        print(f"  ⚠ {quoi} : création impossible ({e}).")
+
+
+_creer_dossier_si_absolu(DATA_DIR, "DATA_DIR")
+_creer_dossier_si_absolu(UPLOAD_DIR, "UPLOAD_DIR")
 INDEX_FILE = DATA_DIR / "tags_index.json"
 
 # ─── Reconnaissance des animaux (Phase 1 : détection YOLO) ───
@@ -712,15 +736,92 @@ def pending_done(name):
 
 # ────────────────────────── ExifTool ──────────────────────────
 
+# Dossiers que la recherche d'ExifTool ne doit JAMAIS parcourir : volumineux
+# (vignettes, uploads, environnement virtuel) ou hors sujet (git, corbeilles).
+EXIFTOOL_SKIP_DIRS = {
+    '.git', '.venv', '__pycache__', 'photo_thumbs', 'face_thumbs',
+    'animal_thumbs', 'uploads', 'recuperees', 'dist', 'OLD', 'docs', 'eval',
+    'ui', '_corbeille_session', '_to_delete', '_bat_archive',
+}
+
+
+def _exiftool_emplacements_probables():
+    """Emplacements PLAUSIBLES d'exiftool.exe, sans parcourir le projet.
+
+    Le zip officiel s'extrait dans « exiftool-XX.XX_64/ » et contient
+    « exiftool.exe » (ou « exiftool(-k).exe » selon la version) : on le cherche
+    par motif, pas par parcours total. Répondre vite ici, c'est ne jamais avoir
+    besoin du parcours de secours."""
+    yield SCRIPT_DIR / "exiftool.exe"
+    yield SCRIPT_DIR / "exiftool" / "exiftool.exe"
+    yield SCRIPT_DIR / "exiftool" / "exiftool(-k).exe"
+    try:
+        dossiers = sorted(SCRIPT_DIR.glob("exiftool*"))
+    except OSError:
+        dossiers = []
+    for d in dossiers:
+        try:
+            if not d.is_dir():
+                continue
+        except OSError:
+            continue
+        yield d / "exiftool.exe"
+        yield d / "exiftool(-k).exe"
+
+
+def _exiftool_parcours_de_secours():
+    """Parcours borné et BAVARD du dossier du projet.
+
+    Remplace `sorted(SCRIPT_DIR.rglob("exiftool*.exe"))` sous `except OSError:
+    hits = []` — un parcours total dont l'échec était MUET. Le 14/08, deux
+    répertoires créés par erreur et nommés « \\\\NAS-Bremblens\\home\\... »
+    (cf. `_creer_dossier_si_absolu`) faisaient sortir le parcours du disque
+    local : Windows relit un nom à antislashs comme un chemin UNC et va
+    interroger le NAS. L'OSError était avalée, `hits` devenait vide, le code
+    enchaînait sur le téléchargement, et le seul message visible était un 404
+    sans rapport. ExifTool passait pour absent et les trois tâches de fond
+    (dates, noms, GPS) sortaient aussitôt.
+
+    Un travail de fond qui ne rend pas de comptes finit par ne plus travailler
+    du tout : ici on élague, et on dit ce qu'on n'a pas pu lire."""
+    trouves, illisibles = [], []
+    for racine, dossiers, fichiers in os.walk(SCRIPT_DIR,
+                                              onerror=illisibles.append):
+        # Élagage EN PLACE (os.walk le relit) : on ne descend ni dans les gros
+        # dossiers, ni dans un nom qui contient un séparateur — un tel nom n'est
+        # pas un dossier légitime ici, et c'est lui qui égarait le parcours.
+        dossiers[:] = [d for d in dossiers
+                       if d not in EXIFTOOL_SKIP_DIRS
+                       and not d.startswith('.')
+                       and '\\' not in d and '/' not in d]
+        for f in fichiers:
+            bas = f.lower()
+            if bas.startswith('exiftool') and bas.endswith('.exe'):
+                trouves.append(Path(racine) / f)
+    for e in illisibles:
+        print(f"  ⚠ Recherche d'ExifTool : « {getattr(e, 'filename', '?')} » "
+              f"illisible ({type(e).__name__}) — ignoré.")
+    return sorted(trouves)
+
+
 def ensure_exiftool():
     w = shutil.which("exiftool")
     if w:
         return Path(w)
-    # un exiftool*.exe déposé n'importe où dans le dossier du projet ?
-    try:
-        hits = sorted(SCRIPT_DIR.rglob("exiftool*.exe"))
-    except OSError:
-        hits = []
+    # d'abord les emplacements probables (rapide, aucun parcours)
+    for c in _exiftool_emplacements_probables():
+        try:
+            if not c.is_file():
+                continue
+            if c.name.lower() == "exiftool.exe":
+                return c
+            cible = c.with_name("exiftool.exe")
+            c.rename(cible)
+            return cible
+        except OSError:
+            continue
+    # sinon seulement, un exiftool*.exe déposé ailleurs dans le projet
+    hits = _exiftool_parcours_de_secours()
     for h in hits:
         if h.name.lower() == "exiftool.exe":
             return h
@@ -732,6 +833,10 @@ def ensure_exiftool():
         print("  ⚠ Le dossier Image-ExifTool-* est la version SOURCE (Perl), inutilisable ici.")
         print("    Il faut le zip « Windows Executable » (exiftool-XX.XX_64.zip) depuis")
         print("    https://exiftool.org — extrais-le dans le dossier du projet.")
+    # Dire ce qu'on a cherché AVANT de parler réseau : sans cette ligne, un
+    # échec local se présentait sous la forme d'une erreur de téléchargement.
+    print(f"  ℹ Aucun exiftool*.exe trouvé sous {SCRIPT_DIR} "
+          f"(ni « exiftool » dans le PATH).")
     print("  ⬇ Téléchargement d'ExifTool (une seule fois)…")
     edir = SCRIPT_DIR / "exiftool"
     try:
