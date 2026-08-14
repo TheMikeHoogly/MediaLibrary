@@ -1,0 +1,83 @@
+{
+ "entrees": 43067,
+ "echecs": 989,
+ "taguees": 42078,
+ "pipe": {
+  "qwen3-vl:2b|v2ctx|kb1": 18,
+  "v0": 42060
+ },
+ "sans_faits_alors": 42060,
+ "gagnes": {
+  "date": 41800,
+  "lieu": 5814,
+  "personne": 18886,
+  "animal": 886,
+  "espece": 4753
+ },
+ "changes": {
+  "date": 0,
+  "lieu": 0,
+  "personne": 0,
+  "animal": 0,
+  "espece": 0
+ },
+ "alors": {
+  "date": 18,
+  "lieu": 0,
+  "personne": 21,
+  "animal": 0,
+  "espece": 0
+ },
+ "maintenant": {
+  "date": 41818,
+  "lieu": 5814,
+  "personne": 36838,
+  "animal": 911,
+  "espece": 5040
+ },
+ "entrees_gain": 42002,
+ "entrees_gain_v0": 42002,
+ "entrees_gain_kb1": 0,
+ "entrees_sans_aucun_fait": 58,
+ "gps_sans_lieu": 6317,
+ "taken_present": 32840,
+ "date_src": {
+  "exif": 32840,
+  "annee du dossier": 3564,
+  "nom du fichier": 5414,
+  "aucune": 260
+ },
+ "richesse": {
+  "2": 13945,
+  "1": 16094,
+  "5": 1096,
+  "3": 7043,
+  "4": 2508,
+  "6": 600,
+  "7": 286,
+  "10": 66,
+  "9": 117,
+  "8": 183,
+  "14": 14,
+  "11": 37,
+  "16": 3,
+  "15": 5,
+  "12": 17,
+  "13": 4,
+  "17": 1,
+  "18": 1,
+  "0": 58
+ },
+ "strates": {
+  "nom": 19608,
+  "date seule": 14517,
+  "annee seule": 1476,
+  "espece": 2912,
+  "lieu": 3507,
+  "aucun fait": 58
+ },
+ "at_mois": {
+  "2026-08": 13199,
+  "2026-07": 28879
+ }
+}

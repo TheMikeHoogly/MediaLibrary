@@ -5,32 +5,33 @@ dans **git** ; les rejets dans `eval/DECISIONS.md` ; l'éphémère dans
 `PROMPT_NOUVELLE_SESSION.md`. Audits : `docs/AUDIT_INTERNE_2026-08.md`
 (I1–I17, O1–O15, A–F), `docs/AUDIT_EXTERNE_2026.md`, `docs/RANGEMENT_2026.md`.
 
-## État (14/08/2026, session 14)
+## État (14/08/2026, session 15)
 
-**Session 13 observée en réel, tout passe** : casse des clés SMB et « même jour »
-(115 photos sur 11 années, référence exclue, bouton caché sans date précise) ;
-chaîne complète vérifiée sur une clé NAS (`similar`, `thumb`, `jour`).
+**Mesure 3a faite — re-passe de tagging PARKÉE, pas rejetée.** `mesure_repasse.py`
+(copie de la base, zéro GPU, zéro NAS ; 18 tests verts, recoupée par un second
+chemin de code ; détail `mesure_repasse.txt`, `eval/mesure_repasse.json`) :
+**42 060 des 42 078 entrées taguées sont en `pipe` v0**, taguées jusqu'au 11/08
+donc **toutes au prompt V0 = image seule** — aucun fait en contexte, par
+construction du prompt et non par défaut d'enregistrement. Elles recevraient
+aujourd'hui : date 41 818 (78 % EXIF au jour près) · nom 18 886 · lieu 5 814 ·
+espèce 4 753 ; 58 photos resteraient sans rien. **Mais ces faits sont déjà dans
+l'index** : la re-passe n'achète que la DESCRIPTION, et son seul fondement est
+l'A/B 25-15 sur 40 photos — **p = 0,15**.
+→ **Ordre** : bat 18 (**6 317** photos ont un GPS et aucun lieu, zéro GPU) · puis
+3b, banc de 200 photos stratifié = **0,5 h GPU** · la passe seulement s'il
+tranche (strate « nom » 19 608 = 23,2 h ; tout = 49,8 h).
 
-**Plancher 1990 des années du CHEMIN → 1900, nom de fichier exclu — livré ET
-observé.** Un dossier « 1985 » ne rendait aucune année : `_best_time` tombait sur
-`mtime` et le garde-fou anti-scan de `date_fiable` se désarmait. Observé : **716
-photos de 1982-1989 rendues à leur dossier** (elles affichaient avril 2026), 38
-photos tirées en arrière par un numéro de scanner corrigées, **0 régression sur
-20 239 fichiers**. Restent 15 photos à date PRÉCISE fausse (numérisation du
-16/11/2006) : cas REJETÉ. Chiffres : `eval/DECISIONS.md`.
-→ **Régénérer `docs/plan_renommage.json`** : le plan est antérieur, les années 80
-y sont en « sans date ».
+## Sessions 13-14 — livrées et observées en réel (récit : git)
 
-**ExifTool disparu en silence — corrigé et observé.** Les `mkdir` de `DATA_DIR` /
-`UPLOAD_DIR` s'exécutaient au NIVEAU MODULE, donc à l'import : sous POSIX
-l'antislash n'est pas un séparateur, et deux répertoires nommés
-`\\NAS-Bremblens\home\…` (04 et 31/07, vides) sont nés à la racine. Windows les
-relit comme des chemins UNC → le `rglob` de `ensure_exiftool` partait sur le NAS,
-l'`except OSError` était muet, seul restait le 404 du téléchargement de secours ;
-`EXIFTOOL = None`, les trois tâches de fond sortaient et les noms repassaient en
-plan B `piexif` (JPEG, sans XMP). Correctifs : `_creer_dossier_si_absolu` (refuse
-et le DIT), emplacements probables d'abord, parcours de secours élagué et bavard ;
-fantômes dans `_to_delete\faux_dossiers_unc\`. Vérifié au redémarrage.
+Casse des clés SMB · « même jour » (115 photos sur 11 années) · **plancher des
+années du CHEMIN 1990 → 1900, nom de fichier exclu** (716 photos de 1982-1989
+rendues à leur décennie, 38 corrigées d'un numéro de scanner, 0 régression sur
+20 239 fichiers ; restent 15 dates PRÉCISES fausses, cas REJETÉ) · **ExifTool
+disparu en silence** (deux dossiers fantômes UNC nés d'un `mkdir` au niveau
+module, `OSError` muet ; `_creer_dossier_si_absolu` refuse et le DIT).
+Raisons et chiffres : `eval/DECISIONS.md`.
+→ **Régénérer `docs/plan_renommage.json`** : le plan est antérieur au plancher,
+les années 80 y sont en « sans date ».
 
 ## À faire — par ordre de valeur (réordonné au triple audit du 11/08)
 
@@ -43,31 +44,32 @@ fantômes dans `_to_delete\faux_dossiers_unc\`. Vérifié au redémarrage.
    re-upload = une entrée, seek vidéo mobile, test du Z. Veille v2ctx sur un lot
    plus grand (astre/objet, fuite de la date en prose).
 3. **Chaîne « noms → descriptions → recherche » (demandé par Mike, 14/08).**
-   Knowledge Builder et `TAGGING_PIPELINE_VERSION` sont câblés (s8) et observés
-   (s9) ; le stock de visages nommés (300 personnes) rend enfin une passe de
-   re-tagging discutable. L'ordre est imposé par le COÛT — la passe complète
-   vaut ~51 h GPU, on ne la paie qu'une fois :
-   (a) **Mesurer d'abord ce qu'elle rapporterait** : combien d'entrées sont
-   encore en `pipe` v0, et surtout combien portent aujourd'hui des `faits`
-   (noms · date · lieu) qu'elles n'avaient pas quand elles ont été taguées —
-   les backfills du 13-14/08 ont ajouté 32 822 dates et 5 394 GPS, c'est CE qui
-   a changé. Sans ce chiffre, les 51 h sont un pari.
-   (b) **Trancher le modèle AVANT la passe** (`vision-eval` : protocole avant
-   mesure) : plafond DUR de 4 Go de VRAM — `qwen3-vl:4b` déborde déjà, « plus
-   gros » n'est pas une variable libre. Candidats : Florence-2 léger, un
-   `qwen3-vl:2b` mieux prompté. Question au banc : un modèle plus gros apporte-t-il
-   encore quelque chose QUAND les faits sont déjà donnés en contexte (v2ctx) ?
-   Si non, le gain est dans les faits, pas dans le modèle.
-   (c) **Puis la passe unique** : opt-in, jamais automatique, estampillée `pipe`,
-   reprenable. **Les noms ne repassent PAS par le prompt** (REJETÉ 31/07 : ignoré
-   84 % du temps, coût ×2,6) — fusion programmatique, comme aujourd'hui.
-   (d) **La recherche (14) ne dépend PAS de (c)** : sa couche déterministe
-   (fiches, dates, lieux, tags) est à zéro GPU et avance en parallèle. Le
-   re-tagging n'améliore que la traîne sémantique.
-   Wagon : composition d'affichage date · lieu · noms depuis `faits`.
-4. **Gestes Mike, dans cet ordre** : nettoyer Flo (5 909 photos ; « Corriger »
-   ~0.2 ou « Nettoyer (référence) ») ; re-rejeter Caline une fois ; activer
-   `gps_place` (bat 18 → `enrichir_lieux.py` → `--ecrire` → redémarrer) ; lots de
+   L'ordre est imposé par le COÛT : la passe complète vaut ~50 h GPU.
+   (a) **Mesurer ce qu'elle rapporterait — FAIT** (État ci-dessus). Le contexte
+   serait riche, mais les faits sont **déjà** dans l'index : elle n'achète que la
+   description. Suspendue à (b) — ne rien lancer avant.
+   (b) **Trancher l'écart ET le modèle AVANT la passe** (`vision-eval` :
+   protocole avant mesure). Un seul banc, **200 photos stratifiées** (contexte
+   riche nom+date+lieu / pauvre date seule), notation à l'aveugle :
+   (i) **v2ctx bat-il vraiment V0 ?** 25-15 sur 40 donne p = 0,15 ; il faut ~123
+   photos pour trancher 62,5 % à 80 % de puissance. (ii) **Un modèle plus gros
+   apporte-t-il encore quelque chose quand les faits sont donnés en contexte ?**
+   Plafond DUR 4 Go de VRAM (`qwen3-vl:4b` déborde) ; candidats : Florence-2
+   léger, `qwen3-vl:2b` mieux prompté. **~0,5 h GPU contre 50.** Si l'écart ne
+   tient pas, le gain est dans les faits, pas dans le modèle.
+   (c) **Passe unique seulement si (b) la justifie** : opt-in, estampillée `pipe`,
+   reprenable. Menu : strate « nom » 19 608 = 23,2 h · +espèce 22 520 = 26,6 h ·
+   +lieu 26 027 = 30,8 h · tout 42 078 = 49,8 h. Commencer par « nom ».
+   **Les noms ne repassent PAS par le prompt** (REJETÉ 31/07 : ignoré 84 % du
+   temps, coût ×2,6) — fusion programmatique.
+   (d) **La recherche (14) ne dépend PAS de (c)** : couche déterministe à zéro
+   GPU, elle avance en parallèle. Wagon : composition d'affichage
+   date · lieu · noms depuis `faits`.
+4. **Gestes Mike, dans cet ordre** : **activer `gps_place` d'abord** (bat 18 →
+   `enrichir_lieux.py` → `--ecrire` → redémarrer) — **6 317 photos ont un GPS et
+   aucun lieu**, c'est le plus gros gisement de faits du projet et il coûte zéro
+   GPU ; nettoyer Flo (5 909 photos ; « Corriger »
+   ~0.2 ou « Nettoyer (référence) ») ; re-rejeter Caline une fois ; lots de
    renommage **débloqués** (plan = 2114 ; **régénérer le plan d'abord**, cf. le
    plancher 1990 ; le banc `eval/tagging_v1.json` en deviendra partiellement
    caduc — attendu).
@@ -118,10 +120,9 @@ fantômes dans `_to_delete\faux_dossiers_unc\`. Vérifié au redémarrage.
 Vidé le 12/08 : les trois résiduels sont rattachés en wagons aux chantiers 10
 (Pause globale des workers) et 11e (bandeau `#pending`, libellé `/pets`).
 14/08, chiffrés et volontairement non traités : (a) le plancher 1990 subsiste
-dans `plan_rangement.py`, `recensement_doublons.py`, `diagnostic_dates.py` — même
-erreur, sans effet tant qu'aucun dossier d'avant 1990 n'y passe ; (b)
-`/files?dir=1&rec=1` (racine NAS) ne répond pas en 6 min — galerie récursive
-racine inutilisable, cause non cherchée.
+dans `plan_rangement.py`, `recensement_doublons.py`, `diagnostic_dates.py` —
+sans effet tant qu'aucun dossier d'avant 1990 n'y passe ; (b)
+`/files?dir=1&rec=1` (racine NAS) ne répond pas en 6 min, cause non cherchée.
 
 ## Acquis — ne pas reproposer (détail : git + `eval/DECISIONS.md`)
 
