@@ -38,25 +38,21 @@ les années 80 y sont en « sans date ».
 1. **Vérité terrain humaine — au fil de l'eau, PAS un blocage.** ~0,8 % de
    confirmations (91/12 072) ; files garnies. **Cadrage Mike (12/08)** : le stock
    est limité par la CONNAISSANCE, pas par l'outillage — Flo nommera ce que Mike
-   ne sait pas nommer, quand l'outil sera à ~90 % ; 300 personnes déjà reconnues.
-   Métrique = erreurs découvertes. Le point 9 reste parqué.
+   ne sait pas nommer, quand l'outil sera à ~90 %. Métrique = erreurs
+   découvertes. Le point 9 reste parqué.
 2. **Observer en réel ce qui est livré** — le gros est **fait ✔**. Reste :
-   re-upload = une entrée, seek vidéo mobile, test du Z. Veille v2ctx sur un lot
-   plus grand (astre/objet, fuite de la date en prose).
+   re-upload = une entrée, seek vidéo mobile, test du Z.
 3. **Chaîne « noms → descriptions → recherche » (demandé par Mike, 14/08).**
    L'ordre est imposé par le COÛT : la passe complète vaut ~50 h GPU.
    (a) **Mesurer ce qu'elle rapporterait — FAIT** (État ci-dessus). Le contexte
    serait riche, mais les faits sont **déjà** dans l'index : elle n'achète que la
    description. Suspendue à (b) — ne rien lancer avant.
-   (b) **Trancher l'écart ET le modèle AVANT la passe** (`vision-eval` :
-   protocole avant mesure). Un seul banc, **200 photos stratifiées** (contexte
-   riche nom+date+lieu / pauvre date seule), notation à l'aveugle :
-   (i) **v2ctx bat-il vraiment V0 ?** 25-15 sur 40 donne p = 0,15 ; il faut ~123
-   photos pour trancher 62,5 % à 80 % de puissance. (ii) **Un modèle plus gros
-   apporte-t-il encore quelque chose quand les faits sont donnés en contexte ?**
-   Plafond DUR 4 Go de VRAM (`qwen3-vl:4b` déborde) ; candidats : Florence-2
-   léger, `qwen3-vl:2b` mieux prompté. **~0,5 h GPU contre 50.** Si l'écart ne
-   tient pas, le gain est dans les faits, pas dans le modèle.
+   (b) **Le banc qui tranche — protocole écrit et figé, outil prêt** :
+   `docs/PROTOCOLE_3B_TAGGING.md` (hypothèse, strates, critère de décision AVANT
+   la mesure : ≥ 88 préférences sur 150). `eval_tagging.py` recâblé sur la prod
+   (prompt `V2CTX`, vraies dates, vrais lieux), 150 paires notées au lieu de 40,
+   `--depouiller` applique le critère. **25 min GPU contre 50 h.** À lancer
+   **après le bat 18** et **avant** les lots de renommage.
    (c) **Passe unique seulement si (b) la justifie** : opt-in, estampillée `pipe`,
    reprenable. Menu : strate « nom » 19 608 = 23,2 h · +espèce 22 520 = 26,6 h ·
    +lieu 26 027 = 30,8 h · tout 42 078 = 49,8 h. Commencer par « nom ».
@@ -100,13 +96,12 @@ les années 80 y sont en « sans date ».
 12. **Assurance-vie : restauration à blanc (PROMU 12/08).** Test « PC mort
     lundi, tout revit vendredi » : restaurer le snapshot NAS sur un dossier
     vierge, chronométrer, noter chaque manque (dont la copie hors-site de
-    `journal_jugements.jsonl`, locale et gitignorée). Tant qu'il n'a pas tourné,
-    la sauvegarde « vérifiée » est une promesse.
-13. **Serveur exposé en MCP, lecture seule d'abord (PROMU 12/08).** Recherche
-    (sémantique + tags), fiches personnes/animaux et `faits` sourcés en outils
-    MCP locaux (JSON-RPC stdio, zéro dépendance — skill `mcp-builder`) :
-    interroger la bibliothèque depuis une conversation Claude, premier fruit de
-    la provenance. Écriture plus tard. Mêmes briques que 14a.
+    `journal_jugements.jsonl`). Tant qu'il n'a pas tourné, la sauvegarde
+    « vérifiée » est une promesse.
+13. **Serveur exposé en MCP, lecture seule d'abord (PROMU 12/08).** Recherche,
+    fiches personnes/animaux et `faits` sourcés en outils MCP locaux (JSON-RPC
+    stdio, zéro dépendance — skill `mcp-builder`) : interroger la bibliothèque
+    depuis une conversation Claude. Écriture plus tard. Mêmes briques que 14a.
 14. **Recherche IA locale contextuelle (demandé 12/08).** Le champ comprend une
     demande en langage naturel et la décompose. (a) **Déterministe d'abord** —
     filtres structurés depuis l'existant (fiches, dates, `gps_place`/`faits`,
@@ -119,6 +114,11 @@ les années 80 y sont en « sans date ».
 ### Résiduels faible valeur (ne pas prioriser)
 Vidé le 12/08 : les trois résiduels sont rattachés en wagons aux chantiers 10
 (Pause globale des workers) et 11e (bandeau `#pending`, libellé `/pets`).
+14/08 : **`server.py` prend `sys.argv[1]` comme `UPLOAD_DIR`** (l. 72) — tout
+script qui l'importe avec un drapeau (`--dry`, `--limit`) hérite d'un
+`UPLOAD_DIR` faux ; sans effet observé (l'échantillon du banc n'a aucune photo
+d'Uploads) et désormais bruyant grâce à `_creer_dossier_si_absolu`. Correctif
+d'une ligne : ignorer `argv[1]` s'il commence par `-`. Demande un redémarrage.
 14/08, chiffrés et volontairement non traités : (a) le plancher 1990 subsiste
 dans `plan_rangement.py`, `recensement_doublons.py`, `diagnostic_dates.py` —
 sans effet tant qu'aucun dossier d'avant 1990 n'y passe ; (b)

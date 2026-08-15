@@ -6,9 +6,14 @@ eval/PLAN_assertions_vs_pixels.md).
 Compare trois façons de produire les tags/description d'une photo, à schéma
 JSON identique :
 
-  V0  image seule + PROMPT actuel        (référence = pipeline en place)
-  V1  assertions seules, SANS image      (le LLM met en langage des faits)
-  V2  assertions + image (hybride)       (les faits guident le VLM)
+  V0     image seule + PROMPT actuel     (référence = pipeline en place)
+  V1     assertions seules, SANS image   (le LLM met en langage des faits)
+  V2     assertions + image, IMPÉRATIF de noms   (historique, retiré de la prod)
+  V2CTX  assertions + image, prompt de PRODUCTION verbatim (tagging_meta)
+
+Banc 3b (docs/PROTOCOLE_3B_TAGGING.md) : c'est **V0 contre V2CTX**, sur les 150
+photos de l'échantillon figé, notation à l'aveugle des 150 paires. Le 25-15 sur
+40 du 12/08 donne p = 0,15 : pas de quoi engager 50 h de GPU.
 
 Le modèle est FIGÉ (qwen3-vl:2b) pour cette passe : on compare des variantes,
 pas des modèles. Le banc ne fait que LIRE la base ; il n'écrit aucun tag XMP.
@@ -22,14 +27,17 @@ Sorties (dans eval/) :
 Usage :
   python eval_tagging.py --dry            # bâtit l'échantillon + montre 3 blocs
                                           # d'assertions, SANS appeler Ollama
-  python eval_tagging.py                  # passe complète (Ollama requis)
+  python eval_tagging.py                  # banc 3b : V0 vs V2CTX (Ollama requis)
   python eval_tagging.py --limit 20       # passe rapide sur 20 photos
+  python eval_tagging.py --depouiller     # dépouille eval/notes.json (critère 3b)
+  python eval_tagging.py --depouiller _v2sans   # dépouille une notation passée
 """
 import sys, os, io, json, time, hashlib, argparse, threading, subprocess, random
 from pathlib import Path
 from datetime import datetime
 
 import server as s   # sûr : aucun thread ne démarre à l'import (garde __main__)
+import tagging_meta  # PROD : prompt et faits. Le banc ne les réécrit plus.
 
 EVAL_DIR = s.SCRIPT_DIR / "eval"
 SAMPLE_FILE = EVAL_DIR / "tagging_v1.json"
@@ -38,8 +46,16 @@ RATING_HTML = EVAL_DIR / "rating.html"
 RATING_MAP = EVAL_DIR / "rating_map.json"
 
 N_RICHE, N_PAUVRE, N_PIEGE, N_INCERTAIN = 50, 50, 30, 20
-RATING_SUBSET = 40           # nb de photos pour la notation à l'aveugle
+# Nb de photos notées à l'aveugle. 40 était trop peu : le 25-15 du 12/08 donne
+# p = 0,15 — un écart réel mais NON DÉMONTRÉ, sur lequel reposait une dépense de
+# 50 h GPU. Il faut ~123 paires pour trancher une préférence de 62,5 % à 80 % de
+# puissance (docs/PROTOCOLE_3B_TAGGING.md). 0 = toutes les photos éligibles.
+RATING_SUBSET = 0
 MODEL_FIXE = "qwen3-vl:2b"   # figé pour cette passe
+
+# Variantes connues. V2CTX est le prompt de PRODUCTION (tagging_meta) : c'est
+# lui qu'on départage de V0 (protocole 3b). V1/V2 restent pour l'historique.
+VARIANTES = ('V0', 'V1', 'V2', 'V2CTX')
 
 IMG_EXT = {'.jpg', '.jpeg', '.png', '.webp', '.bmp', '.gif', '.tif', '.tiff',
            '.heic', '.heif'}
@@ -104,88 +120,37 @@ def construire_echantillon():
     return ech
 
 
-# ─────────────────── Knowledge Builder v0 (depuis la base) ───────────────────
-
-def _lieu(k):
-    """Vrai lieu tiré du chemin (via lieux_connus + _lieu_plausible du serveur),
-    ou None. Évite le générique « Uploads » de _folder_link_for_key."""
-    try:
-        lx = s.lieux_connus()
-    except Exception:
-        lx = {}
-    if not lx:
-        return None
-    try:
-        parts = s._chemin_relatif(k).replace('/', '\\').split('\\')[:-1]
-    except Exception:
-        parts = list(Path(k).parts)[:-1]
-    for p in reversed(parts):
-        lieu = s._lieu_plausible(p)
-        if not lieu:
-            continue
-        for cand in [lieu] + [m for m in lieu.split() if len(m) >= 5]:
-            if s._sans_accents(cand) in lx:
-                return lx[s._sans_accents(cand)]
-    return None
-
-
-def _fmt_date(k, e):
-    t = None
-    try:
-        t = s._best_time(k, e)
-    except Exception:
-        t = None
-    if not t:
-        return None
-    try:
-        if isinstance(t, (int, float)):
-            return datetime.fromtimestamp(t).strftime('%-d %B %Y')
-        return str(t)[:40]
-    except Exception:
-        return str(t)[:40]
+# ──────────────── Knowledge Builder : on APPELLE la prod, on ne la copie pas ───
+#
+# Trois fois le banc a mesuré autre chose que la production parce qu'il
+# recopiait sa logique (mesure du 14/08, docs/PROTOCOLE_3B_TAGGING.md) :
+#   - `_fmt_date` faisait `strftime('%-d %B %Y')`, invalide sous Windows : les
+#     150 photos de `tagging_results.json` ont reçu « Date : 1230807600.0
+#     (EXIF) ». Le correctif vivait déjà en prod (`format_date_fr`).
+#   - `_lieu` retombait sur la déduction par dossiers quand `lieux.txt` manquait
+#     et affirmait « TRIER », « Calinous », « Visite » sous une provenance
+#     inventée. 118 des 150 lieux étaient faux.
+#   - `bloc_assertions` écrivait « (EXIF) » et « (chemin du dossier) » en dur,
+#     quelle que soit la vraie source.
+# Désormais tout passe par `server._assertions_pour` et `tagging_meta` : si la
+# prod change, le banc change avec elle ou casse bruyamment.
 
 
 def assertions(k):
-    """Assemble les faits connus sur la photo, avec leur source. Aucun calcul
-    GPU : tout vient de l'index et des stores."""
+    """Faits connus sur la photo — EXACTEMENT ceux que le worker de tagging
+    assemblerait (`server._assertions_pour`), sources comprises. Aucun GPU,
+    aucune lecture NAS : les mots-clés viennent de l'entrée d'index et la date
+    de `taken` (celle qu'ExifTool a déjà écrite), comme en production."""
     e = s.STORE.data.get(k) or {}
-    kw_fr = [str(x) for x in (e.get('kw_fr') or [])]
-    persons = sorted({t.split(':', 1)[1].strip() for t in kw_fr
-                      if t.lower().startswith('personne:')})
-    a_noms = sorted({t.split(':', 1)[1].strip() for t in kw_fr
-                     if t.lower().startswith('animal:')})
-    especes = []
-    ae = s.ANIMAL_STORE.data.get(k)
-    if isinstance(ae, dict):
-        especes = sorted({a.get('species') for a in (ae.get('animals') or [])
-                          if a.get('species')})
-    lieu = _lieu(k)
-    date = _fmt_date(k, e)
-    plain = [t for t in kw_fr
-             if not (t.lower().startswith('personne:')
-                     or t.lower().startswith('animal:'))]
-    return {'key': k, 'persons': persons, 'animals': a_noms,
-            'species': especes, 'lieu': lieu, 'date': date,
-            'tags_fr': plain, 'desc': e.get('desc')}
+    existing_kw = [str(x) for x in (e.get('kw_fr') or [])]
+    a = s._assertions_pour(k, existing_kw, e.get('taken'))
+    a['desc'] = e.get('desc')
+    return a
 
 
 def bloc_assertions(a):
-    """Rend les assertions en texte français (une ligne par fait présent)."""
-    L = ['Faits deja etablis sur cette photo par des modeles specialises :']
-    if a['date']:
-        L.append(f"- Date : {a['date']} (EXIF)")
-    if a['lieu']:
-        L.append(f"- Lieu : {a['lieu']} (chemin du dossier)")
-    if a['persons']:
-        L.append(f"- Personnes : {', '.join(a['persons'])} (reconnaissance faciale)")
-    if a['animals']:
-        sp = f" ({', '.join(a['species'])})" if a['species'] else ""
-        L.append(f"- Animaux : {', '.join(a['animals'])}{sp} (re-identification)")
-    if a['tags_fr']:
-        L.append(f"- Elements visuels deja notes : {', '.join(a['tags_fr'][:12])}")
-    if len(L) == 1:
-        L.append('- (aucun fait structure disponible pour cette photo)')
-    return '\n'.join(L)
+    """Rendu texte des assertions — celui de la PROD, provenance vraie."""
+    return tagging_meta.bloc_assertions(a)
 
 
 # ─────────────────────────── Prompts par variante ───────────────────────────
@@ -209,7 +174,17 @@ def prompt_v1(a):
             + bloc_assertions(a) + '\n\n' + REGLES_JSON)
 
 
+def prompt_v2ctx(a):
+    """Prompt de PRODUCTION, verbatim (`tagging_meta.prompt_tagging`) : assertions
+    en contexte, SANS impératif de noms. C'est la variante à départager de V0 —
+    celle notée le 12/08 n'a jamais été écrite dans un fichier de résultats, donc
+    n'était pas reproductible."""
+    return tagging_meta.prompt_tagging(a)
+
+
 def prompt_v2(a):
+    # HISTORIQUE (adopte le 31/07, remplace par v2ctx le 12/08) : garde le bloc
+    # IMPERATIF, que la prod a retire. Conserve pour comparaison, pas pour decider.
     # v2 : le premier essai ignorait les noms injectes (3 % d ancrage) car le
     # prompt ne les reclamait jamais. On EXIGE desormais que chaque nom/espece
     # asserte apparaisse dans la sortie -- sinon on ne teste pas l hypothese.
@@ -326,7 +301,7 @@ def _jaccard(x, y):
 def proxies(results):
     """Vitesse, taux de JSON malformé, cohérence intra-scène (dossier+jour)."""
     out = {}
-    for v in ('V0', 'V1', 'V2'):
+    for v in VARIANTES:
         temps = [r[v]['dt'] for r in results if r.get(v)]
         malf = [r[v]['malforme'] for r in results if r.get(v)]
         out[v] = {
@@ -341,7 +316,7 @@ def proxies(results):
         jour = (r['assert'].get('date') or '?')
         gid = (str(Path(k).parent), jour)
         groupes.setdefault(gid, []).append(r)
-    for v in ('V0', 'V1', 'V2'):
+    for v in VARIANTES:
         js = []
         for g in groupes.values():
             if len(g) < 2:
@@ -357,13 +332,18 @@ def proxies(results):
 # ─────────────────────────── Page de notation ───────────────────────────
 
 def generer_rating(results, rating_html=RATING_HTML, rating_map=RATING_MAP):
-    sub = [r for r in results if r['cat'] in ('riche', 'piege', 'incertain')]
+    # « pauvre » (contexte = date seule) EST notée : c'est la strate qui dit si le
+    # gain vient des faits ou du prompt. L'exclure revenait a ne mesurer que la
+    # moitie riche, puis a extrapoler a 42 000 photos dont 35 % sont pauvres.
+    sub = [r for r in results
+           if r['cat'] in ('riche', 'pauvre', 'piege', 'incertain')]
     random.Random(42).shuffle(sub)
-    sub = sub[:RATING_SUBSET]
+    if RATING_SUBSET:
+        sub = sub[:RATING_SUBSET]
     # Variantes présentes dans TOUTES les cartes notées. Une notation à l'aveugle
     # A/B/C n'a de sens qu'à partir de 2 variantes — un comparatif de modèles en
     # V0 seul ne génère pas de page (on compare alors entre fichiers de modèles).
-    present = [v for v in ('V0', 'V1', 'V2') if sub and all(r.get(v) for r in sub)]
+    present = [v for v in VARIANTES if sub and all(r.get(v) for r in sub)]
     if len(present) < 2:
         print(f"  (notation ignoree : {len(present)} variante(s) — comparer entre "
               f"fichiers de modeles)")
@@ -375,6 +355,10 @@ def generer_rating(results, rating_html=RATING_HTML, rating_map=RATING_MAP):
         random.Random(1000 + idx).shuffle(variantes)
         lettres = lettres_all[:len(variantes)]
         mapping[str(idx)] = {L: v for L, (v, _d) in zip(lettres, variantes)}
+        # Traçabilité du dépouillement : quelle photo, quelle strate. Préfixées
+        # « _ » pour ne jamais être confondues avec une lettre notée.
+        mapping[str(idx)]['_key'] = r['key']
+        mapping[str(idx)]['_cat'] = r['cat']
         try:
             img = _thumb_b64(s._resolve_key(r['key']), 520)
             imgtag = f'<img src="data:image/jpeg;base64,{img}">'
@@ -480,7 +464,7 @@ def finaliser(results, vram_peak, modele=MODEL_FIXE, paths=None):
 
     if pr:
         print(f"\n===== PROXIES (auto) — modele {modele} =====")
-        for v in ('V0', 'V1', 'V2'):
+        for v in VARIANTES:
             p = pr[v]
             if p.get('s_par_photo') is None:
                 continue
@@ -524,7 +508,11 @@ def rerun_v2():
     echecs = []
     with VramSampler() as vram:
         for n, row in enumerate(results, 1):
-            a = row.get('assert') or assertions(row['key'])
+            # Les assertions se RECALCULENT : reprendre `row['assert']` est ce
+            # qui a fait entrer les dates-epoch de juillet dans la mesure du
+            # 12/08 (docs/PROTOCOLE_3B_TAGGING.md). On réécrit aussi la ligne.
+            a = assertions(row['key'])
+            row['assert'] = a
             try:
                 b64 = _img_b64_retry(row['key'])
                 resp, dt = ollama_call(prompt_v2(a), b64)
@@ -550,6 +538,85 @@ def rerun_v2():
     finaliser(results, vram.peak)
 
 
+# ─────────────────────────── Dépouillement (3b) ───────────────────────────
+
+def compter(notes, mapping, cats=None):
+    """Compte les préférences et les hallucinations PAR VARIANTE, à partir des
+    notes (index -> {best, halluc}) et du mapping (index -> {lettre: variante}).
+    Logique pure : aucun accès disque, aucun store. `cats` = index -> catégorie,
+    pour la ventilation par strate."""
+    pref, halluc, vus, par_cat = {}, {}, {}, {}
+    for i, n in (notes or {}).items():
+        brut = (mapping or {}).get(str(i)) or {}
+        # les cles techniques (« _key », « _cat ») ne sont pas des lettres
+        paire = {L: v for L, v in brut.items() if not str(L).startswith('_')}
+        for lettre, v in paire.items():
+            vus[v] = vus.get(v, 0) + 1
+        best = paire.get(n.get('best'))
+        if best:
+            pref[best] = pref.get(best, 0) + 1
+            c = (cats or {}).get(str(i)) or brut.get('_cat') or '?'
+            par_cat.setdefault(c, {})
+            par_cat[c][best] = par_cat[c].get(best, 0) + 1
+        for h in (n.get('halluc') or []):
+            if paire.get(h):
+                halluc[paire[h]] = halluc.get(paire[h], 0) + 1
+    return {'pref': pref, 'halluc': halluc, 'vus': vus, 'par_cat': par_cat}
+
+
+def _binom_p(k, n):
+    """p bilatérale d'un signe-test à p=0,5 (au moins k succès sur n)."""
+    from math import comb
+    if not n:
+        return 1.0
+    k = max(k, n - k)
+    return min(1.0, 2 * sum(comb(n, i) for i in range(k, n + 1)) / 2 ** n)
+
+
+def depouiller(suffixe=''):
+    """Applique le critère de décision de docs/PROTOCOLE_3B_TAGGING.md."""
+    notes_f = EVAL_DIR / f"notes{suffixe}.json"
+    map_f = EVAL_DIR / f"rating_map{suffixe}.json"
+    if not (notes_f.exists() and map_f.exists()):
+        print(f"Manque {notes_f.name} ou {map_f.name} — note d'abord la page HTML.")
+        return
+    notes = json.loads(notes_f.read_text(encoding='utf-8'))
+    mapping = json.loads(map_f.read_text(encoding='utf-8'))
+    # Strates : « _cat » du mapping si présent (pages générées après le 14/08),
+    # sinon reconstruit depuis l'échantillon figé via « _key ».
+    cats = {}
+    try:
+        ech = json.loads(SAMPLE_FILE.read_text(encoding='utf-8'))
+        cats = {i: ech.get(m.get('_key')) for i, m in mapping.items()
+                if isinstance(m, dict) and m.get('_key')}
+    except Exception:
+        cats = {}
+    st = compter(notes, mapping, {i: c for i, c in cats.items() if c})
+    n = sum(st['pref'].values())
+    print(f"\n== Depouillement {notes_f.name} — {n} paires notees ==")
+    for v, k in sorted(st['pref'].items(), key=lambda x: -x[1]):
+        print(f"   {v:<6} prefere {k:>4} fois  ({100.0 * k / n:.1f} %)")
+    print(f"   hallucinations : {st['halluc'] or 'aucune'} "
+          f"(descriptions vues : {st['vus']})")
+    if st['par_cat']:
+        print("   par strate :")
+        for c, d in sorted(st['par_cat'].items()):
+            print(f"      {c:<10} {d}")
+    if len(st['pref']) == 2:
+        (v1, k1), (_v2, _k2) = sorted(st['pref'].items(), key=lambda x: -x[1])
+        p = _binom_p(k1, n)
+        print(f"\n   {v1} en tete : {k1}/{n}, p = {p:.4f}")
+        # Critere ecrit d'avance (protocole 3b) : significatif ET pas plus
+        # d'hallucinations que la reference.
+        if p < 0.05:
+            print("   -> ECART DEMONTRE. Verifier les hallucinations, puis "
+                  "choisir la strate (ROADMAP 3c).")
+        else:
+            print("   -> NON DEMONTRE. La re-passe ne se fait pas. "
+                  "Consigner la decision dans eval/DECISIONS.md.")
+    print()
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--dry', action='store_true',
@@ -560,9 +627,17 @@ def main():
                     help="rejoue SEULEMENT V2 (nouveau prompt) sur les résultats existants")
     ap.add_argument('--modele', default=MODEL_FIXE,
                     help="modèle Ollama à tester (défaut qwen3-vl:2b). Ex : gemma4:e2b")
-    ap.add_argument('--variantes', default='V0,V1,V2',
-                    help="variantes à produire. Ex : V0 pour un comparatif de modèles économe")
+    ap.add_argument('--variantes', default='V0,V2CTX',
+                    help="variantes à produire (défaut : le banc 3b, V0 vs prompt de prod). "
+                         "Ex : V0 pour un comparatif de modèles économe")
+    ap.add_argument('--depouiller', nargs='?', const='', metavar='SUFFIXE',
+                    help="dépouille une notation déjà faite (eval/notes<SUFFIXE>.json "
+                         "x rating_map<SUFFIXE>.json) et applique le critere 3b")
     args = ap.parse_args()
+
+    if args.depouiller is not None:
+        depouiller(args.depouiller)
+        return
 
     if args.rerun_v2:
         rerun_v2()
@@ -570,9 +645,9 @@ def main():
 
     modele = args.modele
     vs = [v.strip().upper() for v in args.variantes.split(',') if v.strip()]
-    inconnu = [v for v in vs if v not in ('V0', 'V1', 'V2')]
+    inconnu = [v for v in vs if v not in VARIANTES]
     if inconnu:
-        print(f"Variante(s) inconnue(s) : {inconnu}. Attendu : V0, V1, V2.")
+        print(f"Variante(s) inconnue(s) : {inconnu}. Attendu : {', '.join(VARIANTES)}.")
         return
     paths = _paths(modele)
 
@@ -603,7 +678,7 @@ def main():
                 continue
             row = {'key': k, 'cat': ech[k], 'assert': a}
             src = {'V0': (s.PROMPT, b64), 'V1': (prompt_v1(a), None),
-                   'V2': (prompt_v2(a), b64)}
+                   'V2': (prompt_v2(a), b64), 'V2CTX': (prompt_v2ctx(a), b64)}
             try:
                 for v in vs:
                     prompt, img = src[v]
