@@ -1,7 +1,7 @@
 
 === Mesure 3a - ce que rapporterait une re-passe de tagging ===
 Entrees d'index    : 43067   (taguees 42078, en echec 989)
-Fiches chargees    : personnes 351, animaux 12, lieux 30, gps_places 0
+Fiches chargees    : personnes 351, animaux 12, lieux 181, gps_places 6595
 
 -- Repartition par version de pipeline --
    qwen3-vl:2b|v2ctx|kb1                 18  (0.0 %)
@@ -10,7 +10,7 @@ Fiches chargees    : personnes 351, animaux 12, lieux 30, gps_places 0
 -- Faits : au moment du tagging  vs  aujourd'hui --
    type        alors  aujourd'hui   entrees qui GAGNENT  qui CHANGENT
    date            18        41818                 41800             0
-   lieu             0         5814                  5814             0
+   lieu             0        12459                 12459             0
    personne        21        36838                 18886             0
    animal           0          911                   886             0
    espece           0         5040                  4753             0
@@ -43,31 +43,31 @@ Fiches chargees    : personnes 351, animaux 12, lieux 30, gps_places 0
 
 -- Richesse du contexte (nb de faits par photo) --
    0 fait(s)         58
-   1 fait(s)      16094
-   2 fait(s)      13945
-   3 fait(s)       7043
-   4 fait(s)       2508
-   5 fait(s)       1096
-   6 fait(s)        600
-   7 fait(s)        286
-   8 fait(s)        183
-   9 fait(s)        117
-   10 fait(s)         66
-   11 fait(s)         37
-   12 fait(s)         17
-   13 fait(s)          4
+   1 fait(s)      12686
+   2 fait(s)      15941
+   3 fait(s)       7454
+   4 fait(s)       3156
+   5 fait(s)       1256
+   6 fait(s)        666
+   7 fait(s)        337
+   8 fait(s)        232
+   9 fait(s)        123
+   10 fait(s)         67
+   11 fait(s)         56
+   12 fait(s)         15
+   13 fait(s)          6
    14 fait(s)         14
-   15 fait(s)          5
+   15 fait(s)          6
    16 fait(s)          3
    17 fait(s)          1
-   18 fait(s)          1
+   19 fait(s)          1
 
 -- Menu des re-passes CIBLEES (strate la plus riche d'abord) --
    nom            19608 photos | cumul   19608 =  23.2 h GPU
    espece          2912 photos | cumul   22520 =  26.6 h GPU
-   lieu            3507 photos | cumul   26027 =  30.8 h GPU
-   date seule     14517 photos | cumul   40544 =  48.0 h GPU
-   annee seule     1476 photos | cumul   42020 =  49.7 h GPU
+   lieu            6915 photos | cumul   29435 =  34.8 h GPU
+   date seule     11117 photos | cumul   40552 =  48.0 h GPU
+   annee seule     1468 photos | cumul   42020 =  49.7 h GPU
    aucun fait        58 photos | cumul   42078 =  49.8 h GPU
 
 -- Quand ces entrees ont-elles ete taguees ? --
@@ -80,7 +80,7 @@ Fiches chargees    : personnes 351, animaux 12, lieux 30, gps_places 0
    Passe ciblee     :   42002 photos = 49.7 h   (seulement celles qui gagnent un fait)
 
 -- Potentiel dormant (independant de la re-passe) --
-   Entrees avec GPS mais sans lieu aujourd'hui  :    6317
+   Entrees avec GPS mais sans lieu aujourd'hui  :      18
    -> autant de faits 'lieu' que le bat 18 (gps_place) ferait naitre
       AVANT la re-passe. A activer d'abord : le fait vaut mieux que le tour.
 

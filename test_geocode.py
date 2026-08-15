@@ -35,6 +35,64 @@ LAPAZ = g.Place('La Paz', -16.5000, -68.1500, 'BO', '02', 812799)
 GAZ = [BREMBLENS, LAUSANNE, GENEVE, PARIS, LAPAZ]
 
 
+def test_parse_locaux_lit_les_deux_syntaxes():
+    lignes = [
+        "# commentaire",
+        "",
+        "Bremblens ; 46.54605 ; 6.51821 ; 1.5",
+        "Sanstruc ; 47.0 ; 7.0",            # rayon par défaut
+        "Sitten => Sion",
+        "Paris 16 Passy   =>   Paris",
+        "ligne bancale sans rien",          # ignorée, pas d'exception
+        "Faux ; pas_un_nombre ; 7.0",       # ignorée
+        "  => Vide",                        # ignorée (ancien manquant)
+    ]
+    locaux, alias = g.parse_locaux(lignes)
+    check(len(locaux) == 2, f'2 lieux locaux (obtenu {len(locaux)})')
+    check(locaux[0].label == 'Bremblens' and locaux[0].rayon == 1.5,
+          'Bremblens avec son rayon')
+    check(locaux[1].rayon == g.RAYON_LOCAL_DEFAUT, 'rayon par defaut applique')
+    check(alias.get('sitten') == 'Sion', 'alias Sitten -> Sion')
+    check(alias.get('paris 16 passy') == 'Paris', 'alias espaces nettoyes')
+    check(len(alias) == 2, f'2 alias (obtenu {len(alias)})')
+
+
+def test_nearest_local_gagne_dans_son_rayon():
+    locaux, _ = g.parse_locaux(["Bremblens ; 46.54605 ; 6.51821 ; 1.5"])
+    pl = g.nearest_local(46.54605, 6.51821, locaux)
+    check(pl is not None and pl.label == 'Bremblens', 'centroide -> Bremblens')
+
+
+def test_nearest_local_navale_pas_la_commune_voisine():
+    """Le garde-fou du rayon : l'amas « Bussigny » mesuré à 2,44 km du domicile
+    ne doit PAS être capté par le lieu local, sinon on corrige un faux par un
+    autre."""
+    locaux, _ = g.parse_locaux(["Bremblens ; 46.54605 ; 6.51821 ; 1.5"])
+    d = g.haversine_km(46.54605, 6.51821, 46.55146, 6.54904)
+    check(d > 1.5, f'amas voisin hors rayon (mesure {d:.2f} km)')
+    check(g.nearest_local(46.55146, 6.54904, locaux) is None,
+          'amas voisin non capte par le lieu local')
+
+
+def test_nearest_local_sans_fichier():
+    check(g.nearest_local(46.5, 6.5, []) is None, 'aucun lieu local -> None')
+    check(g.nearest_local(46.5, 6.5, None) is None, 'locaux None -> None')
+
+
+def test_appliquer_alias():
+    alias = {'sitten': 'Sion', 'geneva': 'Genève'}
+    check(g.appliquer_alias('Sitten', alias) == 'Sion', 'Sitten -> Sion')
+    check(g.appliquer_alias('Geneva', alias) == 'Genève', 'Geneva -> Genève')
+    check(g.appliquer_alias('Lausanne', alias) == 'Lausanne', 'sans alias : intact')
+    check(g.appliquer_alias(None, alias) is None, 'None reste None')
+    check(g.appliquer_alias('Sitten', {}) == 'Sitten', 'table vide : intact')
+
+
+def test_load_locaux_fichier_absent():
+    locaux, alias = g.load_locaux(Path(tempfile.gettempdir()) / 'nexiste_pas_xyz.txt')
+    check(locaux == [] and alias == {}, 'fichier absent -> ([], {})')
+
+
 def test_sans_accents():
     check(g.sans_accents('Genève') == 'geneve', 'sans_accents Genève')
     check(g.sans_accents('PÉROU') == 'perou', 'sans_accents PEROU')

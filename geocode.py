@@ -81,10 +81,12 @@ def _valide_latlon(lat, lon):
 
 class Place:
     """Une entrée du gazetteer. `label` porte les accents (affichage) ; `norm`
-    est sa forme de comparaison ; `pop` sert à départager deux villes proches."""
-    __slots__ = ('label', 'norm', 'lat', 'lon', 'cc', 'admin1', 'pop')
+    est sa forme de comparaison ; `pop` sert à départager deux villes proches.
+    `rayon` n'est renseigné que pour les LIEUX LOCAUX (voir load_locaux) : il
+    borne la zone où ce nom l'emporte sur le gazetteer."""
+    __slots__ = ('label', 'norm', 'lat', 'lon', 'cc', 'admin1', 'pop', 'rayon')
 
-    def __init__(self, label, lat, lon, cc='', admin1='', pop=0):
+    def __init__(self, label, lat, lon, cc='', admin1='', pop=0, rayon=None):
         self.label = label
         self.norm = sans_accents(label)
         self.lat = lat
@@ -92,6 +94,7 @@ class Place:
         self.cc = cc
         self.admin1 = admin1
         self.pop = pop
+        self.rayon = rayon
 
     def __repr__(self):
         return f"Place({self.label!r}, {self.lat}, {self.lon}, cc={self.cc})"
@@ -191,6 +194,92 @@ def cluster_points(points, eps_km=2.0):
     return clusters
 
 
+# ───────────── Le dernier mot revient à l'humain : lieux_locaux.txt ──────────
+#
+# GeoNames `cities1000` s'arrête à 1 000 habitants : un village de 600 âmes en
+# est ABSENT, et le plus proche voisin rend alors la bourgade d'à côté. Mesuré
+# le 14/08 : le plus gros amas du corpus — 1 257 photos, le domicile — sortait
+# « Bussigny », commune voisine à 2,9 km. Plausible pour un algorithme, faux
+# dans la langue de la famille, et destiné à finir dans des noms de fichiers.
+#
+# Deux corrections, dans un seul fichier lisible et modifiable à la main :
+#   Nom ; lat ; lon [; rayon_km]   -> lieu LOCAL, prioritaire dans son rayon
+#   Ancien => Nouveau              -> ALIAS d'un libellé du gazetteer
+# Le rayon est volontairement serré : il doit couvrir le village SANS avaler
+# l'amas de la commune voisine (2,44 km dans le cas mesuré).
+
+ALIAS_SEP = '=>'
+RAYON_LOCAL_DEFAUT = 1.5
+
+
+def parse_locaux(lignes):
+    """(lieux_locaux, alias) depuis les LIGNES d'un `lieux_locaux.txt` — PUR.
+
+    - `lieux_locaux` : [Place] portant un `rayon` (km).
+    - `alias` : {libellé_normalisé -> libellé de remplacement}.
+    Une ligne illisible est ignorée en silence : ce fichier est écrit à la main,
+    une virgule de travers ne doit pas faire échouer tout le géocodage."""
+    locaux, alias = [], {}
+    for brute in lignes:
+        ligne = str(brute).split('#')[0].strip()
+        if not ligne:
+            continue
+        if ALIAS_SEP in ligne:
+            ancien, _sep, nouveau = ligne.partition(ALIAS_SEP)
+            ancien, nouveau = ancien.strip(), nouveau.strip()
+            if ancien and nouveau:
+                alias[sans_accents(ancien)] = nouveau
+            continue
+        parts = [p.strip() for p in ligne.split(';')]
+        if len(parts) < 3 or not parts[0]:
+            continue
+        ll = _valide_latlon(parts[1], parts[2])
+        if not ll:
+            continue
+        rayon = RAYON_LOCAL_DEFAUT
+        if len(parts) > 3 and parts[3]:
+            try:
+                rayon = float(parts[3])
+            except ValueError:
+                rayon = RAYON_LOCAL_DEFAUT
+        locaux.append(Place(parts[0], ll[0], ll[1], rayon=rayon))
+    return locaux, alias
+
+
+def load_locaux(path):
+    """Lit `lieux_locaux.txt`. Rend ([], {}) si le fichier est absent — le
+    géocodage marche sans, il est simplement moins fidèle."""
+    try:
+        lignes = Path(path).read_text(encoding='utf-8').splitlines()
+    except OSError:
+        return [], {}
+    return parse_locaux(lignes)
+
+
+def nearest_local(lat, lon, locaux):
+    """Le lieu local dont le point est DANS son rayon et le plus proche, sinon
+    None. Prioritaire sur le gazetteer : c'est un choix humain explicite."""
+    ll = _valide_latlon(lat, lon)
+    if not ll or not locaux:
+        return None
+    lat, lon = ll
+    best, best_d = None, float('inf')
+    for pl in locaux:
+        d = haversine_km(lat, lon, pl.lat, pl.lon)
+        if d <= (pl.rayon or RAYON_LOCAL_DEFAUT) and d < best_d:
+            best, best_d = pl, d
+    return best
+
+
+def appliquer_alias(label, alias):
+    """Remplace un libellé du gazetteer par celui que la famille emploie
+    (« Sitten » -> « Sion », « Paris 16 Passy » -> « Paris »). Sans table, ou
+    sans correspondance, le libellé passe intact."""
+    if not label or not alias:
+        return label
+    return alias.get(sans_accents(label), label)
+
+
 def label_place(place, avec_pays=False):
     """Libellé d'affichage d'un `Place`, dans le style de lieux.txt (accentué,
     un nom propre). `avec_pays` ajoute le code pays entre parenthèses pour lever
@@ -205,4 +294,5 @@ def label_place(place, avec_pays=False):
 __all__ = [
     'sans_accents', 'haversine_km', 'Place', 'load_gazetteer',
     'nearest', 'cluster_points', 'label_place',
+    'parse_locaux', 'load_locaux', 'nearest_local', 'appliquer_alias',
 ]

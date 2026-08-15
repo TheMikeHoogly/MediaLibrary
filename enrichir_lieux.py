@@ -44,6 +44,9 @@ SCRIPT_DIR = Path(__file__).resolve().parent
 DB_DEFAUT = SCRIPT_DIR / "photos.db"
 GAZ_DEFAUT = SCRIPT_DIR / "cities1000.txt"
 LIEUX_FICHIER = SCRIPT_DIR / "lieux.txt"
+# Corrections humaines du géocodage : villages absents du gazetteer et libellés
+# à renommer. Le fichier peut ne pas exister — le géocodage marche sans.
+LOCAUX_FICHIER = SCRIPT_DIR / "lieux_locaux.txt"
 SORTIE_JSON = SCRIPT_DIR / "gps_places.json"
 
 # Sentinelles du bloc géré dans lieux.txt (permettent une re-exécution
@@ -86,10 +89,13 @@ def lire_gps_ro(db_path, table="tags"):
 
 # ─────────────────────────── cœur pur (testable) ─────────────────────────────
 
-def construire_places(gps_list, gaz, eps_km=2.0, max_km=MAX_KM_DEFAUT):
+def construire_places(gps_list, gaz, eps_km=2.0, max_km=MAX_KM_DEFAUT,
+                      locaux=None, alias=None):
     """(places_par_cle, clusters_info) — PUR.
 
     `gps_list` : liste de (clé, lat, lon). `gaz` : liste de geocode.Place.
+    `locaux` / `alias` : corrections humaines (lieux_locaux.txt) — un lieu local
+    l'emporte sur le gazetteer dans son rayon, et l'alias renomme un libellé.
     - places_par_cle : {clé -> libellé} pour toute photo dont le cluster a été
       nommé (les clusters non nommés — trop loin de toute ville — sont omis).
     - clusters_info : un résumé par cluster (centroïde, effectif, libellé, km),
@@ -101,8 +107,12 @@ def construire_places(gps_list, gaz, eps_km=2.0, max_km=MAX_KM_DEFAUT):
     infos = []
     for c in clusters:
         lat, lon = c['centroid']
-        pl = geocode.nearest(lat, lon, gaz, max_km=max_km)
-        label = geocode.label_place(pl)
+        # 1) le choix humain d'abord, 2) le gazetteer ensuite
+        pl = geocode.nearest_local(lat, lon, locaux)
+        source = 'local' if pl is not None else 'gazetteer'
+        if pl is None:
+            pl = geocode.nearest(lat, lon, gaz, max_km=max_km)
+        label = geocode.appliquer_alias(geocode.label_place(pl), alias)
         dist = (geocode.haversine_km(lat, lon, pl.lat, pl.lon)
                 if pl is not None else None)
         infos.append({
@@ -111,6 +121,7 @@ def construire_places(gps_list, gaz, eps_km=2.0, max_km=MAX_KM_DEFAUT):
             'lieu': label,
             'km': round(dist, 2) if dist is not None else None,
             'pays': pl.cc if pl is not None else None,
+            'source': source if pl is not None else None,
         })
         if label:
             for idx in c['members']:
@@ -195,10 +206,17 @@ def _rapport(infos, n_photos, n_places):
     non = [i for i in infos if not i['lieu']]
     print(f"=== Geocodage inverse : {n_photos} photos GPS, {len(infos)} clusters "
           f"-> {n_places} photos nommees ===\n")
+    locaux = [i for i in nommes if i.get('source') == 'local']
+    if locaux:
+        print(f"Corriges a la main (lieux_locaux.txt) : {len(locaux)} cluster(s), "
+              f"{sum(i['effectif'] for i in locaux)} photos")
     print("Clusters nommes (du plus gros au plus petit) :")
     for i in nommes:
-        print(f"  {i['effectif']:>4}  {i['lieu']:<24} "
+        marque = ' *' if i.get('source') == 'local' else ''
+        print(f"  {i['effectif']:>4}  {i['lieu'] + marque:<24} "
               f"({i['km']} km, {i['pays']})  @ {i['centroid']}")
+    if locaux:
+        print("  (* = lieu local, prioritaire sur le gazetteer)")
     if non:
         print(f"\nClusters NON nommes (aucune ville sous {int(MAX_KM_DEFAUT)} km) :")
         for i in non:
@@ -212,6 +230,8 @@ def main(argv=None):
     ap.add_argument('--eps', type=float, default=2.0, help="rayon de cluster (km)")
     ap.add_argument('--max-km', type=float, default=MAX_KM_DEFAUT,
                     help="distance max au centroïde pour nommer")
+    ap.add_argument('--locaux', default=str(LOCAUX_FICHIER),
+                    help="corrections humaines : lieux locaux + alias")
     ap.add_argument('--ecrire', action='store_true',
                     help="applique (backup + ecriture) ; sinon dry-run")
     args = ap.parse_args(argv)
@@ -238,8 +258,14 @@ def main(argv=None):
     gaz = geocode.load_gazetteer(gaz_path)
     print(f"  {len(gaz)} lieux charges.")
 
+    locaux, alias = geocode.load_locaux(args.locaux)
+    if locaux or alias:
+        print(f"  Corrections humaines ({Path(args.locaux).name}) : "
+              f"{len(locaux)} lieu(x) local(aux), {len(alias)} alias.")
+
     places_par_cle, infos = construire_places(
-        gps_list, gaz, eps_km=args.eps, max_km=args.max_km)
+        gps_list, gaz, eps_km=args.eps, max_km=args.max_km,
+        locaux=locaux, alias=alias)
     _rapport(infos, len(gps_list), len(places_par_cle))
 
     labels = sorted({v for v in places_par_cle.values()}, key=geocode.sans_accents)

@@ -1,0 +1,51 @@
+# Corrections HUMAINES du géocodage inverse (enrichir_lieux.py).
+# Ce fichier a le dernier mot sur le gazetteer. Il s'édite à la main, une ligne
+# à la fois, et il est relu à chaque exécution. Sans lui, le géocodage marche
+# toujours — il est simplement moins fidèle.
+#
+# ── 1) LIEUX LOCAUX ──────────────────────────────────────────────────────────
+#   Nom ; latitude ; longitude ; rayon_km
+# GeoNames cities1000 s'arrête à 1 000 habitants : un village plus petit en est
+# ABSENT, et le plus proche voisin rend la bourgade d'à côté. Une ligne ici
+# reprend la main dans le rayon indiqué.
+# Le rayon doit couvrir le village SANS avaler l'amas de la commune voisine :
+# mesuré le 14/08, l'amas « Bussigny » est à 2,44 km de celui du domicile.
+# Les coordonnées ci-dessous sont le centroïde de l'amas lui-même — rien n'est
+# inventé, elles viennent des photos.
+#
+Bremblens ; 46.54605 ; 6.51821 ; 1.5
+#
+# ── 2) ALIAS DE LIBELLÉS ─────────────────────────────────────────────────────
+#   Ancien => Nouveau
+# Le gazetteer nomme dans la langue du pays, et descend parfois au quartier.
+# Ces lignes ramènent le libellé à celui que la famille emploie — c'est lui qui
+# finira dans les noms de fichiers et dans la recherche.
+# La comparaison ignore les accents ; le libellé de DROITE est repris tel quel,
+# accents compris.
+#
+# Villes suisses, en français
+Sitten => Sion
+Geneva => Genève
+Basel => Bâle
+Bern => Berne
+Luzern => Lucerne
+Biel/Bienne => Bienne
+Murten/Morat => Morat
+Zürich (Kreis 6) / Unterstrass => Zurich
+#
+# Quartiers ramenés à leur ville
+Paris 04 Hôtel-de-Ville => Paris
+Paris 16 Passy => Paris
+Paris 18 Buttes-Montmartre => Paris
+Quinze-Vingts => Paris
+Sagrada Família => Barcelone
+Sants-Montjuïc => Barcelone
+Dapperbuurt => Amsterdam
+Barajas de Madrid => Madrid
+Ville-Marie => Montréal
+Blécherette => Lausanne
+Loyang => Singapour
+#
+# Jugement à confirmer : Les Avanchets est sur la commune de Vernier, pas de
+# Genève. Remplace la cible par « Vernier » si tu préfères la commune exacte.
+Les Avanchets => Vernier

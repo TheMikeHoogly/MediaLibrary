@@ -13,13 +13,20 @@ chemin de code ; détail `mesure_repasse.txt`, `eval/mesure_repasse.json`) :
 **42 060 des 42 078 entrées taguées sont en `pipe` v0**, taguées jusqu'au 11/08
 donc **toutes au prompt V0 = image seule** — aucun fait en contexte, par
 construction du prompt et non par défaut d'enregistrement. Elles recevraient
-aujourd'hui : date 41 818 (78 % EXIF au jour près) · nom 18 886 · lieu 5 814 ·
-espèce 4 753 ; 58 photos resteraient sans rien. **Mais ces faits sont déjà dans
+aujourd'hui : date 41 818 (78 % EXIF au jour près) · nom 18 886 · **lieu 12 459**
+· espèce 4 753 ; 58 photos resteraient sans rien. **Mais ces faits sont déjà dans
 l'index** : la re-passe n'achète que la DESCRIPTION, et son seul fondement est
 l'A/B 25-15 sur 40 photos — **p = 0,15**.
-→ **Ordre** : bat 18 (**6 317** photos ont un GPS et aucun lieu, zéro GPU) · puis
-3b, banc de 200 photos stratifié = **0,5 h GPU** · la passe seulement s'il
-tranche (strate « nom » 19 608 = 23,2 h ; tout = 49,8 h).
+
+**`gps_place` ACTIVÉ et observé.** 6 614 photos GPS → 221 amas → **6 595
+nommées** ; `lieux.txt` +151 lieux (bloc marqué, backup). Les faits « lieu »
+passent de **5 814 à 12 459** et les photos à GPS sans lieu de **6 317 à 18**
+(3 amas hors des 25 km — le garde-fou tient). Corrigé au passage : le gazetteer
+s'arrête à 1 000 habitants, donc le domicile (1 257 photos, le plus gros amas)
+sortait « Bussigny ». **`lieux_locaux.txt`** — lieux locaux prioritaires + alias
+— reprend la main (`eval/DECISIONS.md`). Tests 52/52 et 30/30.
+→ **Ordre** : **3b**, banc de 150 paires = **25 min GPU** · la passe seulement
+s'il tranche (strate « nom » 19 608 = 23,2 h ; tout = 49,8 h).
 
 ## Sessions 13-14 — livrées et observées en réel (récit : git)
 
@@ -61,20 +68,16 @@ les années 80 y sont en « sans date ».
    (d) **La recherche (14) ne dépend PAS de (c)** : couche déterministe à zéro
    GPU, elle avance en parallèle. Wagon : composition d'affichage
    date · lieu · noms depuis `faits`.
-4. **Gestes Mike, dans cet ordre** : **activer `gps_place` d'abord** (bat 18 →
-   `enrichir_lieux.py` → `--ecrire` → redémarrer) — **6 317 photos ont un GPS et
-   aucun lieu**, c'est le plus gros gisement de faits du projet et il coûte zéro
-   GPU ; nettoyer Flo (5 909 photos ; « Corriger »
-   ~0.2 ou « Nettoyer (référence) ») ; re-rejeter Caline une fois ; lots de
-   renommage **débloqués** (plan = 2114 ; **régénérer le plan d'abord**, cf. le
-   plancher 1990 ; le banc `eval/tagging_v1.json` en deviendra partiellement
-   caduc — attendu).
+4. **Gestes Mike** : `gps_place` **fait ✔** ; nettoyer Flo (5 909 photos ;
+   « Corriger » ~0.2 ou « Nettoyer (référence) ») ; re-rejeter Caline une fois ;
+   lots de renommage **débloqués** (plan = 2114 ; **régénérer le plan d'abord**,
+   cf. le plancher 1990, et **après le banc 3b** que le renommage rendrait
+   partiellement caduc).
 5. **Correctifs d'audit restants** : I4–I8, O7–O9, O11–O15. **O1 clos partout** ;
    O15 (purge de `photo_thumbs/`) gagne en poids.
 6. **Navigation par similarité et par date** : « Semblables » et « même jour »
-   **livrés et observés** (un 14 août bruité au passage : bloc 2010 en triple,
-   14 captures sur 115). Reste : doublons proches bridés (>0,98 + même journée →
-   quarantaine réversible, 50 paires jugées avant tout geste). Élargir « même
+   **livrés et observés**. Reste : doublons proches bridés (>0,98 + même journée
+   → quarantaine réversible, 50 paires jugées avant tout geste). Élargir « même
    jour » à ±1 j n'est PAS décidé — seulement si la moisson stricte est maigre.
 7. **Extraction `ui/` — décision nette à prendre** : session dédiée `bundle.py`
    ou parcage explicite (item zombie ; préparatoire fait, détail git).
@@ -82,15 +85,14 @@ les années 80 y sont en « sans date ».
    (18 % faux rejets). Relancer si un nouveau nom d'animal sort en `personne:`.
 9. **Reconnaissance — algo (BARRIÈRE : vérité terrain ≥ ~5 %).**
    HDBSCAN/Chinese Whispers/AdaFace inévaluables à 0,8 %. La barrière reste.
-10. **Données / finitions** : édition des réglages depuis `/reglages` (wagon :
-    Pause globale des workers) ; 2ᵉ passe des 945 illisibles + `recuperees/` →
-    NAS ; `docs/journaux/` gitignoré + purge des undo > 30 j (I12).
+10. **Données / finitions** : réglages éditables depuis `/reglages` (wagon :
+    pause globale des workers) ; 2ᵉ passe des 945 illisibles + `recuperees/` →
+    NAS ; purge des undo > 30 j (I12).
 11. **UI — harmonisation des vues (demandé 12/08, skill `photo-ui`)** :
     (a) clic sur l'image d'une personne → sa démo aléatoire ; (b) lieux : texte
     sous l'image en tooltip ; (c) harmoniser visages/lieux/animaux — mêmes
     fonctions partout, **sauf** l'effacement, réservé à Classification ;
-    (d) zoom pinch + molette (démos et plein écran) ; (e) wagons : retrait du
-    bandeau `#pending`, libellé `/pets` « empreintes calculées ».
+    (d) zoom pinch + molette ; (e) wagons : bandeau `#pending`, libellé `/pets`.
     Wagon 14/08 : le bouton dit « Meme jour (14 aout) » là où la page dit
     « 14 août » (`MOIS_JOUR` ASCII dans le JS, sur un commentaire faux).
 12. **Assurance-vie : restauration à blanc (PROMU 12/08).** Test « PC mort
@@ -99,16 +101,15 @@ les années 80 y sont en « sans date ».
     `journal_jugements.jsonl`). Tant qu'il n'a pas tourné, la sauvegarde
     « vérifiée » est une promesse.
 13. **Serveur exposé en MCP, lecture seule d'abord (PROMU 12/08).** Recherche,
-    fiches personnes/animaux et `faits` sourcés en outils MCP locaux (JSON-RPC
-    stdio, zéro dépendance — skill `mcp-builder`) : interroger la bibliothèque
-    depuis une conversation Claude. Écriture plus tard. Mêmes briques que 14a.
+    fiches et `faits` sourcés en outils MCP locaux (JSON-RPC stdio, zéro
+    dépendance — skill `mcp-builder`). Écriture plus tard. Briques de 14a.
 14. **Recherche IA locale contextuelle (demandé 12/08).** Le champ comprend une
     demande en langage naturel et la décompose. (a) **Déterministe d'abord** —
     filtres structurés depuis l'existant (fiches, dates, `gps_place`/`faits`,
-    tags, reste → SigLIP) : zéro GPU, couvre l'essentiel, **indépendant du
-    re-tagging (3)** ; (b) ensuite seulement, **escalade ponctuelle** vers un
-    modèle chargé à la demande (bail GpuArbiter, 4 Go, déchargé après). Modèle et
-    seuil = `vision-eval`, jamais câblé sans mesure.
+    tags, reste → SigLIP) : zéro GPU, **indépendant du re-tagging (3)**, et sa
+    matière vient de doubler côté lieux ; (b) ensuite seulement, **escalade
+    ponctuelle** vers un modèle chargé à la demande (bail GpuArbiter, déchargé
+    après). Modèle et seuil = `vision-eval`, jamais câblé sans mesure.
 15. **À évaluer (`vision-eval`)** : Florence-2 léger — rattaché au point 3b.
 
 ### Résiduels faible valeur (ne pas prioriser)

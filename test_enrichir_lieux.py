@@ -60,6 +60,38 @@ def test_construire_ignore_gps_nul():
     check('h.jpg' in par_cle, 'point valide gardé')
 
 
+def test_construire_lieu_local_prioritaire():
+    """Le cas mesuré le 14/08 : 1 257 photos du domicile nommées « Bussigny »,
+    la commune voisine, parce que le village est absent du gazetteer."""
+    gaz = [g.Place('Bussigny', 46.55560, 6.54640, 'CH', 'VD', 8000)]
+    locaux, alias = g.parse_locaux(["Bremblens ; 46.54605 ; 6.51821 ; 1.5"])
+    gps = [('maison1.jpg', 46.54605, 6.51821), ('maison2.jpg', 46.54610, 6.51830)]
+    par_cle, infos = e.construire_places(gps, gaz, locaux=locaux, alias=alias)
+    check(par_cle['maison1.jpg'] == 'Bremblens', 'domicile -> Bremblens')
+    check(infos[0]['source'] == 'local', 'source signalee comme locale')
+    # sans le fichier de corrections, on retombe sur le gazetteer
+    par_cle2, infos2 = e.construire_places(gps, gaz)
+    check(par_cle2['maison1.jpg'] == 'Bussigny', 'sans correction -> Bussigny')
+    check(infos2[0]['source'] == 'gazetteer', 'source signalee comme gazetteer')
+
+
+def test_construire_applique_les_alias():
+    gaz = [g.Place('Sitten', 46.2331, 7.3606, 'CH', 'VS', 34978)]
+    _locaux, alias = g.parse_locaux(["Sitten => Sion"])
+    gps = [('valais.jpg', 46.2331, 7.3606)]
+    par_cle, infos = e.construire_places(gps, gaz, alias=alias)
+    check(par_cle['valais.jpg'] == 'Sion', 'Sitten renomme en Sion')
+    check(infos[0]['lieu'] == 'Sion', 'rapport affiche le libelle corrige')
+
+
+def test_construire_sans_corrections_inchange():
+    """Compatibilité : sans lieux_locaux.txt, le comportement d'avant."""
+    gps = [('a.jpg', 46.5468, 6.5310), ('c.jpg', 48.8566, 2.3522)]
+    avant, _ = e.construire_places(gps, GAZ)
+    apres, _ = e.construire_places(gps, GAZ, locaux=[], alias={})
+    check(avant == apres, 'listes vides = comportement d origine')
+
+
 def test_fusionner_ajoute_nouveaux():
     existant = [
         "# entete",
