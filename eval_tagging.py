@@ -120,6 +120,55 @@ def construire_echantillon():
     return ech
 
 
+# Part maximale de clés MORTES tolérée avant de refuser la passe. Même seuil que
+# `--mesurer` (eval/DECISIONS.md, « fragilité du corpus »).
+#
+# Le 15/08, faute de ce garde : « Ranger par année » avait déplacé les fichiers
+# (« _A TRIER\250914_Samsung\20250730_151021.jpg » → « 2025\20250730_151021.jpg »),
+# 65 des 150 clés ne résolvaient plus, la boucle les a sautées UNE PAR UNE et le
+# banc a tourné 25 minutes sur 85 photos sans jamais dire le total. Deux dégâts :
+# le critère pré-enregistré (≥ 88 sur 150) devenait hors d'atteinte, et les
+# quotas de strates que l'échantillon fige étaient cassés (pièges 12/30).
+# Un échantillon amputé de 43 % ne mesure plus ce qu'il prétend mesurer.
+MAX_CLES_MORTES_PCT = 15.0
+
+
+def verifier_echantillon(ech, forcer=False):
+    """Refuse de lancer 25 min de GPU sur un échantillon amputé. True = on y va.
+
+    Le contrôle est instantané (appartenance à l'index en mémoire, aucun accès
+    NAS) et se fait AVANT le premier appel Ollama — un avertissement noyé dans
+    un log de 25 minutes ne protège personne.
+    """
+    mortes = [k for k in ech if k not in s.STORE.data]
+    if not mortes:
+        return True
+    pct = 100.0 * len(mortes) / len(ech)
+    print(f"\n  ! {len(mortes)} des {len(ech)} clés de l'échantillon ne sont plus "
+          f"dans l'index ({pct:.1f} %).")
+    for k in mortes[:3]:
+        print(f"      {k}")
+    if len(mortes) > 3:
+        print(f"      … et {len(mortes) - 3} autre(s)")
+    if pct <= MAX_CLES_MORTES_PCT and not forcer:
+        print(f"    Sous le seuil de {MAX_CLES_MORTES_PCT:.0f} % : on continue, "
+              f"mais le n final sera de {len(ech) - len(mortes)}.")
+        return True
+    if forcer:
+        print("    --forcer : passe lancée malgré tout. Le n final ne sera PAS "
+              "celui du protocole — le critère écrit d'avance ne s'applique plus.")
+        return True
+    print(f"\n    ARRÊT : au-delà de {MAX_CLES_MORTES_PCT:.0f} %, la passe "
+          f"mesurerait un échantillon amputé et ses quotas de strates.")
+    print("    Les fichiers ont probablement été DÉPLACÉS (rangement par année).")
+    print("    Suivre le renommage sans régénérer l'échantillon :")
+    print("        python recler_echantillon.py            # rapport")
+    print("        python recler_echantillon.py --ecrire   # applique")
+    print("    Puis relancer le banc. (`--forcer` passe outre, en connaissance "
+          "de cause.)")
+    return False
+
+
 # ──────────────── Knowledge Builder : on APPELLE la prod, on ne la copie pas ───
 #
 # Trois fois le banc a mesuré autre chose que la production parce qu'il
@@ -574,7 +623,16 @@ def _binom_p(k, n):
 
 
 def depouiller(suffixe=''):
-    """Applique le critère de décision de docs/PROTOCOLE_3B_TAGGING.md."""
+    """Applique le critère de décision de docs/PROTOCOLE_3B_TAGGING.md — ENTIER.
+
+    Jusqu'au 16/08 cette fonction testait la préférence, puis imprimait
+    « vérifier les hallucinations » : elle laissait le bras le plus coûteux du
+    critère à la bonne volonté du lecteur. Sur les vraies notes, la préférence
+    passait largement (94/147, p = 0,0009) et les hallucinations avaient
+    DOUBLÉ — l'outil aurait affiché « ÉCART DÉMONTRÉ ». La logique vit
+    désormais dans `depouillement.py`, pure et testée.
+    """
+    import depouillement as dep
     notes_f = EVAL_DIR / f"notes{suffixe}.json"
     map_f = EVAL_DIR / f"rating_map{suffixe}.json"
     if not (notes_f.exists() and map_f.exists()):
@@ -582,6 +640,23 @@ def depouiller(suffixe=''):
         return
     notes = json.loads(notes_f.read_text(encoding='utf-8'))
     mapping = json.loads(map_f.read_text(encoding='utf-8'))
+
+    # Garde-fou d'appariement : `notes.json` arrive du dossier de
+    # téléchargements et il est facile d'en laisser traîner un ancien. Le
+    # 15/08, `eval/notes.json` datait du 31/07 et contenait 40 notes d'un autre
+    # run — appariées au nouveau mapping, elles auraient donné un verdict
+    # d'apparence normale. Une notation partielle est légitime ; une notation
+    # QUI NE CORRESPOND PAS au mapping ne l'est pas.
+    orphelines = [i for i in notes if str(i) not in mapping]
+    if orphelines:
+        print(f"\n  ! {len(orphelines)} note(s) sans carte correspondante dans "
+              f"{map_f.name}.")
+        print(f"    {notes_f.name} vient probablement d'une AUTRE passe. "
+              f"Le dépouillement est arrêté.")
+        return
+    if len(notes) < len(mapping):
+        print(f"  ({len(notes)} notes pour {len(mapping)} cartes — notation "
+              f"partielle, le seuil est recalculé pour ce n.)")
     # Strates : « _cat » du mapping si présent (pages générées après le 14/08),
     # sinon reconstruit depuis l'échantillon figé via « _key ».
     cats = {}
@@ -594,26 +669,34 @@ def depouiller(suffixe=''):
     st = compter(notes, mapping, {i: c for i, c in cats.items() if c})
     n = sum(st['pref'].values())
     print(f"\n== Depouillement {notes_f.name} — {n} paires notees ==")
-    for v, k in sorted(st['pref'].items(), key=lambda x: -x[1]):
-        print(f"   {v:<6} prefere {k:>4} fois  ({100.0 * k / n:.1f} %)")
-    print(f"   hallucinations : {st['halluc'] or 'aucune'} "
-          f"(descriptions vues : {st['vus']})")
-    if st['par_cat']:
-        print("   par strate :")
-        for c, d in sorted(st['par_cat'].items()):
-            print(f"      {c:<10} {d}")
-    if len(st['pref']) == 2:
-        (v1, k1), (_v2, _k2) = sorted(st['pref'].items(), key=lambda x: -x[1])
-        p = _binom_p(k1, n)
-        print(f"\n   {v1} en tete : {k1}/{n}, p = {p:.4f}")
-        # Critere ecrit d'avance (protocole 3b) : significatif ET pas plus
-        # d'hallucinations que la reference.
-        if p < 0.05:
-            print("   -> ECART DEMONTRE. Verifier les hallucinations, puis "
-                  "choisir la strate (ROADMAP 3c).")
-        else:
-            print("   -> NON DEMONTRE. La re-passe ne se fait pas. "
-                  "Consigner la decision dans eval/DECISIONS.md.")
+
+    lignes = dep.paires(notes, mapping)
+    # La strate vient du mapping (« _cat ») ; si la page est ancienne, on la
+    # reconstruit depuis l'echantillon fige via « _key ».
+    for i, r in zip([i for i in notes if str(i) in mapping], lignes):
+        if r['cat'] == '?' and cats.get(str(i)):
+            r['cat'] = cats[str(i)]
+
+    variantes = [v for v in VARIANTES if st['vus'].get(v)]
+    if len(variantes) != 2:
+        print(f"   {len(variantes)} variante(s) notee(s) : le critere 3b "
+              f"compare V0 et V2CTX. Rien a trancher.")
+        return
+    ref = 'V0' if 'V0' in variantes else variantes[0]
+    cand = [v for v in variantes if v != ref][0]
+
+    res = dep.verdict_3b(lignes, variante=cand, reference=ref)
+    print('\n'.join(dep.lignes_de_verdict(res, variante=cand, reference=ref)))
+    suite = {
+        'justifiee': "La re-passe est justifiee dans son PRINCIPE : choisir la "
+                     "strate (ROADMAP 3c).",
+        'non_demontree': "La re-passe NE SE FAIT PAS. Relancer le banc elargi "
+                         "seulement si une raison neuve apparait.",
+        'close': "La re-passe est CLOSE. Le gain etait dans les faits, pas dans "
+                 "la description.",
+    }[res['decision']]
+    print(f"   {suite}")
+    print("   Consigner la decision dans eval/DECISIONS.md — quelle qu elle soit.")
     print()
 
 
@@ -633,6 +716,9 @@ def main():
     ap.add_argument('--depouiller', nargs='?', const='', metavar='SUFFIXE',
                     help="dépouille une notation déjà faite (eval/notes<SUFFIXE>.json "
                          "x rating_map<SUFFIXE>.json) et applique le critere 3b")
+    ap.add_argument('--forcer', action='store_true',
+                    help="lancer malgré des clés mortes au-delà du seuil "
+                         "(le critère écrit d'avance ne s'applique plus)")
     args = ap.parse_args()
 
     if args.depouiller is not None:
@@ -658,6 +744,11 @@ def main():
     from collections import Counter
     print(f"Échantillon : {len(ech)} photos  {dict(Counter(ech.values()))}")
     print(f"Modèle : {modele} | variantes : {','.join(vs)}")
+
+    # AVANT le premier appel Ollama : un échantillon amputé ne mesure plus ce
+    # qu'il prétend mesurer, et 25 min de GPU ne se rattrapent pas.
+    if not verifier_echantillon(ech, forcer=args.forcer):
+        return
 
     if args.dry:
         for k in cles[:3]:

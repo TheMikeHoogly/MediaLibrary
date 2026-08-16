@@ -119,6 +119,75 @@ def cles_fantomes_par_collision(keys, est_fichier, named=None):
     return sorted(set(out))
 
 
+# ── Vecteurs orphelins : la table `vectors` contre la table `tags` ──────────
+# Un AUTRE orphelin que celui du reste de ce script. Ici la photo n'a pas
+# forcement disparu du DISQUE : elle a disparu de l'INDEX (`tags`) sans que son
+# vecteur semantique soit retire. Consequence visible depuis que la recherche
+# est la porte d'entree (chantier 14a) : `/api/search` remonte la photo, mais
+# `STORE.data.get(cle)` rend `{}` — resultat MUET, sans description ni
+# mots-cles, avec une URL qui peut ne mener nulle part. Mesure du 15/08 :
+# 2 374 vecteurs `photo` orphelins, soit 2,6 % des resultats sur huit requetes
+# ordinaires — dont le dossier ARZOPA, celui-la meme qui a motive ce script.
+#
+# AUCUN acces disque : c'est une comparaison base contre base. Donc pas de
+# « indetermine », pas de faux positif d'un NAS debranche — contrairement au
+# reste du script, ce compte est fiable partout, y compris hors machine.
+
+# Seul `photo` est comparable a `tags`. Les autres `kind` portent des cles
+# COMPOSEES (« <cle_photo>faces0 », « <nom_de_personne>refs0 ») : les comparer
+# telles quelles annonce 86 181 orphelins qui n'en sont pas. Piege verifie le
+# 15/08 — un compte spectaculaire est d'abord une erreur de cle.
+KINDS_CLE_PHOTO = ('photo',)
+
+
+def orphelins_vecteurs(lignes, cles_tags, kinds=KINDS_CLE_PHOTO,
+                       taille_echantillon=8):
+    """(kind, cle) x cles de `tags` -> (par_kind, orphelins_par_kind, echantillon).
+
+    `lignes` : iterable de couples (kind, cle) — typiquement
+    `cx.execute('SELECT kind, k FROM vectors')`.
+    `cles_tags` : ensemble des cles de la table `tags`.
+    Ne compte que les `kinds` dont la cle EST une cle de photo.
+    """
+    par_kind, orphelins = {}, {}
+    echantillon = []
+    for kind, cle in lignes:
+        par_kind[kind] = par_kind.get(kind, 0) + 1
+        if kind not in kinds:
+            continue
+        if cle not in cles_tags:
+            orphelins[kind] = orphelins.get(kind, 0) + 1
+            if len(echantillon) < taille_echantillon:
+                echantillon.append(cle)
+    return par_kind, orphelins, echantillon
+
+
+def analyser_vecteurs(cx, bavard=True):
+    """Compte les vecteurs dont la cle n'existe plus dans `tags`."""
+    cles_tags = {k for (k,) in cx.execute('SELECT k FROM tags')}
+    par_kind, orphelins, ech = orphelins_vecteurs(
+        cx.execute('SELECT kind, k FROM vectors'), cles_tags)
+    if bavard:
+        print("-" * 70)
+        print(f"  Table vectors : {sum(par_kind.values())} ligne(s)")
+        for kind in sorted(par_kind):
+            marque = ''
+            if kind not in KINDS_CLE_PHOTO:
+                marque = '  (cle composee : non comparable a tags)'
+            print(f"    {kind:10s} {par_kind[kind]:7d}{marque}")
+        total = sum(orphelins.values())
+        print(f"    ORPHELINS (cle absente de tags) : {total}"
+              f"  sur {par_kind.get('photo', 0)} vecteurs photo")
+        print("      -> resultats MUETS dans /api/search : ni description ni"
+              " mots-cles.")
+        if ech:
+            print("    Echantillon :")
+            for cle in ech:
+                print(f"      {cle[:70]}")
+        print()
+    return par_kind, orphelins, ech
+
+
 # ── Configuration (repliquee, SANS importer server.py) ──────────────────────
 
 def _premiere_ligne(nom):
@@ -289,6 +358,11 @@ def main():
     cx = ouvrir_ro()
     noms = charger_noms(cx)
     print(f"  {len(noms)} photo(s) portant un nom humain (personne:/animal:)\n")
+
+    # Base contre base : instantane, aucun acces disque, fiable partout.
+    # Passe en premier pour cette raison — le reste depend du NAS.
+    if not filtre:
+        analyser_vecteurs(cx)
 
     champ = {'faces': 'faces', 'animals': 'animals'}
     total_orph = total_nom = total_fant = 0

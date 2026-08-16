@@ -33,6 +33,22 @@ from datetime import datetime
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
+# ── Une sortie REDIRIGÉE ne doit pas tuer l'import ───────────────────────────
+# Windows : quand stdout est une CONSOLE, Python encode dans la page de code du
+# terminal et les pictogrammes des messages de démarrage passent. Quand stdout
+# est un TUYAU ou un FICHIER (`python eval_tagging.py > sortie.txt`, un outil
+# qui capture, un test), Python retombe sur cp1252 et le premier « 🗄 » lève
+# UnicodeEncodeError — À L'IMPORT, donc avant toute ligne utile. L'outil meurt
+# sur un glyphe décoratif.
+# On ne change pas l'encodage (ce serait du mojibake dans une console cp850) :
+# on change seulement la POLITIQUE D'ERREUR. Un caractère non représentable
+# devient « ? » et le programme continue. Le message compte, pas l'icône.
+for _flux in (sys.stdout, sys.stderr):
+    try:
+        _flux.reconfigure(errors='replace')
+    except (AttributeError, ValueError, OSError):
+        pass                       # flux remplacé par un objet sans reconfigure
+
 # ────────────────────────── Config ──────────────────────────
 
 PORT = 8080
@@ -68,9 +84,15 @@ except OSError:
 
 # ── Dossier des UPLOADS depuis le téléphone (librement modifiable) ────────────
 # Priorité : argument ligne de commande > dossier_uploads.txt > défaut (= DATA_DIR).
+# `server` est IMPORTÉ par des outils qui ont leurs propres drapeaux
+# (`eval_tagging.py --depouiller`, `mesure_repasse.py --limit 50`) : sans ce
+# garde, `argv[1] = "--depouiller"` devient un UPLOAD_DIR relatif et muet, et
+# `_creer_dossier_si_absolu` doit refuser un dossier nommé « --depouiller ».
+# Un chemin ne commence jamais par « - » : seul un drapeau le fait.
+_argv_dir = sys.argv[1] if len(sys.argv) > 1 else ''
 UPLOAD_DIR = None
-if len(sys.argv) > 1:
-    UPLOAD_DIR = Path(sys.argv[1])
+if _argv_dir and not _argv_dir.startswith('-'):
+    UPLOAD_DIR = Path(_argv_dir)
 else:
     try:
         for _l in (SCRIPT_DIR / "dossier_uploads.txt").read_text(encoding='utf-8').splitlines():
@@ -3149,39 +3171,103 @@ def _chemin_relatif(k, roots=None):
 
 
 def _cles_du_lieu(lieux):
-    """Clés dont le chemin, sous la racine média, contient tous ces lieux."""
+    """Clés dont le CHEMIN **ou** le lieu GÉOCODÉ contient tous ces lieux.
+
+    Le chemin seul ne suffit plus depuis l'activation de `gps_place` (14/08) :
+    6 595 photos portent un lieu venu du GPS alors que leur dossier ne dit rien
+    (« DCIM », « Sauvegarde téléphone »). Chercher « Sion » ne les trouvait pas
+    — la matière avait doublé côté lieux et la recherche n'en voyait que la
+    moitié. Les deux sources sont donc en OU, lieu par lieu ; le ET porte,
+    comme avant, sur l'ENSEMBLE des lieux demandés.
+
+    Zéro accès NAS : `gps_places_connus` est un cache mémoire adossé au mtime
+    du fichier.
+    """
     besoin = [_sans_accents(l) for l in lieux]
     roots = media_roots()          # 1× : sinon _chemin_relatif relit config + stats NAS par clé
+    try:
+        gps = gps_places_connus()
+    except Exception:                                         # noqa: BLE001
+        gps = {}
     out = set()
     for k in list(STORE.data):
         chemin = _sans_accents(_chemin_relatif(k, roots))
-        if all(b in chemin for b in besoin):
+        libelle = _sans_accents(gps.get(k) or '') if gps else ''
+        if all(b in chemin or (libelle and b in libelle) for b in besoin):
             out.add(k)
     return out
 
 
-def semantic_search(requete, limite=80):
-    """Recherche HYBRIDE : noms humains + lieu + sens de l'image.
+# ─── Couche DÉTERMINISTE de la recherche (chantier 14a) ──────────────────────
+# Moteur pur et testé dans recherche.py (import léger : re + time + geocode).
+# Il ne fait que DÉCOMPOSER la phrase ; le filtrage temporel se fait ici, sur
+# l'index déjà en mémoire — zéro GPU, zéro NAS.
+import recherche
 
-    SigLIP ne connaît pas « Luna » ni « Mike » : ce sont des étiquettes posées
-    par un humain, invisibles au contenu visuel. On les traite donc à part —
-    filtrage exact sur le tag — puis on classe le sous-ensemble obtenu par
-    similarité sémantique sur le reste de la phrase.
+
+def _epoch_precis(cle, entree):
+    """Date au JOUR près d'une photo, ou None. Une seule implémentation de
+    cette règle dans le projet (`meme_jour`), partagée avec « même jour »."""
+    return meme_jour.epoch_precis(cle, entree or {}, _fname_time)
+
+
+# Année SÛRE : date précise, sinon année du DOSSIER, **jamais `mtime`**.
+# `_best_time` retombe sur `mtime` en dernier recours — légitime pour ranger
+# une galerie, mensonger pour répondre « photos de 2015 » : le tagging de 2026
+# a réécrit le fichier d'une photo de 1998.
+_annee_fiable = recherche.annee_fiable_depuis(_epoch_precis, _path_year_num)
+
+
+def semantic_search(requete, limite=80, detail=None):
+    """Recherche HYBRIDE : noms humains + lieu + PÉRIODE + sens de l'image.
+
+    SigLIP ne connaît ni « Luna », ni « Sion », ni « décembre 2015 » : ce sont
+    des étiquettes posées par un humain, un chemin, une date EXIF — invisibles
+    au contenu visuel. On les traite donc à part, par filtrage exact, puis on
+    CLASSE le sous-ensemble obtenu par similarité sémantique sur ce qui reste
+    de la phrase.
+
+    Quatre dimensions se combinent : QUI (tags posés par un humain), OÙ
+    (chemin du fichier **ou** lieu géocodé), QUAND (date de prise de vue), et
+    QUOI (sens de l'image). Les trois premières filtrent, la dernière classe.
+    « Luna à Sion en décembre 2015 » se lit ainsi de gauche à droite.
+
+    **L'ordre d'extraction est un invariant** : noms, puis lieux, puis dates.
+    Quelqu'un peut s'appeler « Mai » ; un nom humain mangé par un mois serait
+    une capacité perdue en silence.
+
+    `detail` : dict optionnel rempli en sortie (noms, lieux, période, reste,
+    `sans_date`) — l'appelant HTTP en a besoin pour DIRE ce qu'il a compris et
+    combien de photos ont été écartées faute de date. Il n'est pas rendu par la
+    valeur de retour pour ne pas casser la forme `[(clé, score)]` que partagent
+    /api/search, /api/similar et /api/jour.
     """
     sem = _semantic_mod()
     vs = photo_vectors()
     tags, reste = _extraire_noms(requete)
     lieux, reste = _extraire_lieux(reste)
+    periode, reste = recherche.extraire_periode(reste)
+    if detail is not None:
+        detail.update(noms=[t.split(':', 1)[-1] for t in tags], lieux=lieux,
+                      periode=periode.libelle if periode else '',
+                      reste=reste, sans_date=0)
 
-    # Trois dimensions se combinent : QUI (tags posés par un humain), OÙ
-    # (chemin du fichier), et QUOI (sens de l'image). Chacune filtre, la
-    # dernière classe. « Luna à Bremblens en hiver » se lit ainsi de gauche
-    # à droite.
-    if tags or lieux:
-        candidats = _cles_portant(tags) if tags else None
-        if lieux:
-            du_lieu = _cles_du_lieu(lieux)
-            candidats = du_lieu if candidats is None else (candidats & du_lieu)
+    candidats = _cles_portant(tags) if tags else None
+    if lieux:
+        du_lieu = _cles_du_lieu(lieux)
+        candidats = du_lieu if candidats is None else (candidats & du_lieu)
+    if periode is not None:
+        # Sur les candidats déjà réduits quand il y en a — sinon sur tout
+        # l'index (43 000 entrées, opérations pures : quelques dizaines de ms).
+        source = ([(k, STORE.data.get(k) or {}) for k in candidats]
+                  if candidats is not None else list(STORE.data.items()))
+        du_temps, sans_date = recherche.filtrer_periode(
+            source, periode, _epoch_precis, _annee_fiable)
+        candidats = du_temps if candidats is None else (candidats & du_temps)
+        if detail is not None:
+            detail['sans_date'] = sans_date
+
+    if candidats is not None:
         if not candidats:
             return []
         if not reste:
@@ -4929,7 +5015,8 @@ __FOLDERS__
   // Le filtre habituel compare des mots-cles ; ce mode-ci compare le SENS.
   // « chat endormi sur le canape » fonctionne sans qu'aucun de ces mots
   // n'apparaisse dans les tags.
-  var modeIA = false, iaResultats = null, iaJeton = 0, iaNoms = '';
+  var modeIA = false, iaResultats = null, iaJeton = 0, iaCompris = '',
+      iaEcartees = 0;
   var btnIA = document.getElementById('btn-ia');
   btnIA.addEventListener('click', function() {
     modeIA = !modeIA;
@@ -4954,10 +5041,23 @@ __FOLDERS__
         if (d.error) { cnt.textContent = d.error; iaResultats = null; return; }
         iaResultats = {};
         (d.results || []).forEach(function(x, i) { iaResultats[x.key] = i; });
-        // Rend visible ce que la requete a compris : un nom reconnu est
-        // traite comme un filtre exact, le reste comme du sens.
-        iaNoms = (d.noms && d.noms.length)
-          ? d.noms.join(' + ') + (d.reste ? ' · ' + d.reste : '') : '';
+        // Rend visible ce que la requete a compris. Les trois premieres
+        // dimensions sont des FILTRES EXACTS (qui, ou, quand), la derniere du
+        // SENS. L'afficher n'est pas cosmetique : sans ca, une requete qui
+        // filtre en silence est une requete qu'on n'ose plus croire.
+        // Avant le 15/08 seul « qui » etait montre : une recherche par lieu
+        // seul filtrait sans jamais le dire.
+        var bouts = [];
+        if (d.noms && d.noms.length) bouts.push(d.noms.join(' + '));
+        if (d.lieux && d.lieux.length) bouts.push(d.lieux.join(' + '));
+        if (d.periode) bouts.push(d.periode);
+        if (d.reste) bouts.push(d.reste);
+        iaCompris = bouts.join(' · ');
+        // Photos ecartees faute d'une date assez precise pour la periode
+        // demandee (un mois n'existe pas dans une annee de dossier). Une
+        // protection qui s'annule doit se COMPTER : sans ce chiffre,
+        // « 3 photos » se lit « il n'y en a que 3 ».
+        iaEcartees = d.sans_date || 0;
         applyFilter();
       })
       .catch(function() {
@@ -5207,8 +5307,10 @@ __FOLDERS__
 
     var txt = visible.length + ' photo(s)';
     if (selTags.length) txt += ' / ' + FILES.length;
-    document.getElementById('cnt').textContent =
-      (modeIA && iaNoms) ? txt + ' — ' + iaNoms : txt;
+    if (modeIA && iaCompris) txt += ' — ' + iaCompris;
+    if (modeIA && iaEcartees)
+      txt += ' (' + iaEcartees + ' sans date assez précise)';
+    document.getElementById('cnt').textContent = txt;
   }
 
   // ── lightbox ──
@@ -12751,8 +12853,9 @@ class Handler(BaseHTTPRequestHandler):
             self._send(200, json.dumps({'results': []}).encode(),
                        'application/json')
             return
+        detail = {}
         try:
-            resultats = semantic_search(requete, limite)
+            resultats = semantic_search(requete, limite, detail=detail)
         except Exception as e:                                # noqa: BLE001
             self._send(200, json.dumps(
                 {'results': [], 'error': str(e)[:200]},
@@ -12770,12 +12873,19 @@ class Handler(BaseHTTPRequestHandler):
                 'desc': e.get('desc', ''),
                 'kw': (e.get('kw_fr') or e.get('kw_en') or [])[:8],
             })
-        noms, reste = _extraire_noms(requete)
-        lieux, reste = _extraire_lieux(reste)
+        # La décomposition vient de `semantic_search` (`detail`) au lieu d'être
+        # RECALCULÉE ici : deux extractions parallèles finissent toujours par
+        # diverger, et c'est alors l'écran qui ment sur ce que le moteur a fait.
+        # `sans_date` : photos écartées faute de date assez précise pour la
+        # période demandée. Sans ce chiffre, « 3 résultats » se lit « il n'y a
+        # que 3 photos » au lieu de « 12 000 photos n'ont pas de mois connu ».
         self._send(200, json.dumps(
             {'results': sortie, 'q': requete,
-             'noms': [n.split(':', 1)[1] for n in noms],
-             'lieux': lieux, 'reste': reste},
+             'noms': detail.get('noms', []),
+             'lieux': detail.get('lieux', []),
+             'periode': detail.get('periode', ''),
+             'sans_date': detail.get('sans_date', 0),
+             'reste': detail.get('reste', requete)},
             ensure_ascii=False).encode(), 'application/json')
 
     def _serve_similar(self):

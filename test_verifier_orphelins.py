@@ -112,6 +112,45 @@ def test_cles_fantomes_par_collision():
     return ok
 
 
+def test_orphelins_vecteurs():
+    ok = True
+    lignes = [
+        ("photo", "a.jpg"), ("photo", "b.jpg"), ("photo", "disparue.jpg"),
+        ("faces", "a.jpgfaces0"), ("faces", "b.jpgfaces1"),
+        ("people", "Mikerefs0"),
+    ]
+    tags = {"a.jpg", "b.jpg"}
+    par_kind, orph, ech = vo.orphelins_vecteurs(lignes, tags)
+
+    ok &= _check(par_kind == {"photo": 3, "faces": 2, "people": 1},
+                 "compte par kind")
+    ok &= _check(orph == {"photo": 1}, "seul le kind photo est compare")
+    ok &= _check(ech == ["disparue.jpg"], "echantillon = la cle absente")
+
+    # LE piege : comparer TOUS les kinds annonce des orphelins qui n'en sont
+    # pas. Les cles faces/people sont COMPOSEES, elles ne sont pas des cles de
+    # photo. Verifie le 15/08 : 86 181 faux orphelins sur la vraie base.
+    _, faux, _ = vo.orphelins_vecteurs(
+        lignes, tags, kinds=("photo", "faces", "people"))
+    ok &= _check(sum(faux.values()) == 4,
+                 "sans le garde de kind : 3 faux orphelins de plus")
+
+    # Base vide de vecteurs : aucun orphelin, pas une exception.
+    ok &= _check(vo.orphelins_vecteurs([], tags) == ({}, {}, []),
+                 "aucun vecteur -> aucun orphelin")
+
+    # Aucune cle dans tags (base neuve) : tous les vecteurs photo sont
+    # orphelins — c'est vrai, et c'est ce qu'il faut dire.
+    _, tous, _ = vo.orphelins_vecteurs(lignes, set())
+    ok &= _check(tous == {"photo": 3}, "tags vide -> tous les photo orphelins")
+
+    # L'echantillon est BORNE : un diagnostic ne deverse pas 2 374 lignes.
+    beaucoup = [("photo", f"x{i}.jpg") for i in range(50)]
+    _, _, e2 = vo.orphelins_vecteurs(beaucoup, set(), taille_echantillon=3)
+    ok &= _check(len(e2) == 3, "echantillon borne")
+    return ok
+
+
 if __name__ == "__main__":
     print("== noms_humains ==")
     a = test_noms_humains()
@@ -125,8 +164,10 @@ if __name__ == "__main__":
     e = test_est_fantome()
     print("== cles_fantomes_par_collision ==")
     f = test_cles_fantomes_par_collision()
+    print("== orphelins_vecteurs ==")
+    g = test_orphelins_vecteurs()
     print()
-    if a and b and c and d and e and f:
+    if a and b and c and d and e and f and g:
         print("TOUS LES TESTS PASSENT")
         raise SystemExit(0)
     print("DES TESTS ONT ECHOUE")

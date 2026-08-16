@@ -4,58 +4,53 @@
 > `C:\Prog\Claude\MediaLibrary`. Règles, protocole, architecture, tests en réel :
 > `CLAUDE.md` (chargé auto). Ici : **uniquement l'état et le prochain pas.**
 
-Tu reprends **MediaLibrary**. Lis `ROADMAP.md` puis `eval/DECISIONS.md`, débrief
-en 2–3 lignes, puis on attaque.
+Tu reprends **MediaLibrary**. Lis `ROADMAP.md`, puis `eval/DECISIONS.md` (ce qui
+a été tranché) et `eval/METHODE.md` (comment on tranche). Débrief en 2–3 lignes,
+puis on attaque.
 
-## Où on en est (14/08/2026, fin de session 15)
+## Où on en est (16/08/2026, fin de session 16)
 
-Sessions 13-14 livrées et observées. Session 15 n'a **pas touché `server.py`** :
-une mesure, un outil, un protocole, et l'activation des lieux GPS.
+**1. Le banc 3b a tranché : la re-passe de tagging est CLOSE.** 147 paires
+notées à l'aveugle. V2CTX préféré 94/147 (63,9 %, p = 0,0009), au-dessus du
+seuil pré-enregistré — **mais ses hallucinations ont doublé** (24 contre 13 ;
+apparié 15 contre 4, p = 0,019), et **hors des 30 pièges la préférence tombe
+sous le seuil** (69/117, p = 0,064). Le critère écrit d'avance est un ET.
+**~50 h de GPU ne seront pas dépensées.** Le chantier 3 est clos.
 
-**1. Mesure 3a — re-passe de tagging PARKÉE, pas rejetée** (`mesure_repasse.py`,
-copie de la base, zéro GPU ; 18 tests verts, recoupée par un second chemin de
-code ; `mesure_repasse.txt`) : **42 060 des 42 078 entrées taguées sont en `pipe`
-v0**, toutes au prompt V0 = image seule, donc **aucun fait en contexte, par
-construction du prompt** — pas par défaut d'enregistrement. Elles recevraient
-aujourd'hui date 41 818 · nom 18 886 · lieu 12 459 · espèce 4 753. **Mais ces
-faits sont déjà dans l'index** : la re-passe n'achète que la DESCRIPTION, sur un
-25-15 à **p = 0,15**.
+**2. 14a livré et observé en réel.** La recherche a quatre dimensions : noms →
+lieux → **période** → sens. « années 80 » rend 752 photos, le lieu géocodé fait
+passer Lausanne de 120 à 1 031, et `sans_date` (3 824 / 260) est compté ET
+affiché.
 
-**2. `gps_place` activé et observé.** 6 614 photos GPS → 221 amas → 6 595
-nommées ; `lieux.txt` +151 (bloc marqué, backup). Faits « lieu » **5 814 →
-12 459**, photos à GPS sans lieu **6 317 → 18**. Le gazetteer s'arrêtant à
-1 000 habitants, le domicile (1 257 photos) sortait « Bussigny » : **`lieux_locaux.txt`**
-reprend la main (lieux locaux prioritaires + alias), tests 52/52 et 30/30.
-
-**3. Protocole 3b écrit, banc réparé.** `docs/PROTOCOLE_3B_TAGGING.md` fige
-hypothèse, strates et **critère de décision AVANT la mesure** (≥ 88 préférences
-sur 150). Trois défauts du banc corrigés, tous vérifiés dans les données : dates
-asserted en **epoch brut sur 150/150**, lieux venant de la branche de secours de
-`lieux_connus` (« TRIER », « Calinous » — 118 des 150 faux), prompts dérivés de
-la prod. `eval_tagging.py` importe désormais `tagging_meta` et
-`_assertions_pour` ; variante **V2CTX** = prompt de prod verbatim ; **150
-paires** notées au lieu de 40 ; `--depouiller` applique le critère.
+**3. Trois pannes muettes fermées** : `sys.argv[1]` pris pour `UPLOAD_DIR` ;
+l'import de `server` qui mourait sur une sortie redirigée ; et le banc qui
+tournait 25 min sur 57 % d'un échantillon dont les fichiers avaient été
+déplacés — `eval_tagging.py` refuse maintenant au-delà de 15 % de clés mortes,
+`recler_echantillon.py` suit les renommages sans régénérer.
 
 ## Prochain pas — par valeur
 
-1. **Lancer le banc 3b** — c'est l'observation qui manque. `python
-   eval_tagging.py` (V0 vs V2CTX, ~25 min GPU), noter `eval/rating.html` à
-   l'aveugle, puis `python eval_tagging.py --depouiller`. **Avant** les lots de
-   renommage, qui rendront l'échantillon caduc. Le résultat se consigne dans
-   `eval/DECISIONS.md` quel qu'il soit : c'est lui qui débloque ou enterre 50 h.
-2. **14a — recherche déterministe**, zéro GPU, indépendante de la re-passe : sa
-   matière vient de doubler côté lieux (12 459 faits).
-3. **Régénérer `docs/plan_renommage.json`** avant tout lot (le plan est antérieur
-   au correctif du plancher ET aux lieux GPS).
-4. **Le reste** (`ROADMAP.md`) : gestes Mike (Flo, Caline) ; doublons proches ;
+1. **Purger les 2 374 vecteurs orphelins.** `/api/search` remonte des photos
+   absentes de l'index : résultats muets, 2,6 % des résultats, dont 2 143 du
+   dossier ARZOPA supprimé le 08/08. Diagnostic prêt et sans risque :
+   `python verifier_orphelins.py` (base contre base, zéro accès disque). Aucun
+   n'a de jumeau dans `tags` — la purge ne perd rien d'indexé. Le geste
+   d'écriture reste à écrire (`forget_everywhere` existe). **Réversible ou rien.**
+2. **Les lots de renommage sont débloqués sans réserve** — plus rien n'attend le
+   banc. **Régénérer `docs/plan_renommage.json` d'abord** : il est antérieur au
+   plancher 1900 ET aux lieux GPS.
+3. **Le prompt de PRODUCTION hallucine plus que V0** (`eval/DECISIONS.md`) : le
+   banc a mesuré autre chose que ce qu'il visait. Chaque photo taguée à partir
+   de maintenant le paie. **Ne pas revenir à V0 sans protocole** — ce serait
+   refaire à l'envers l'erreur qu'on vient d'éviter.
+4. **14a, suites** : les `faits` ne filtrent pas encore ; pas de filtre par
+   espèce ni par fiche ; le tri d'un résultat sans mot-clé passe encore par
+   `_best_time` (donc `mtime`) là où la sélection l'exclut.
+5. **Le reste** (`ROADMAP.md`) : gestes Mike (Flo, Caline) ; doublons proches ;
    UI (11) ; restauration à blanc (12) ; MCP lecture (13).
 
-**Un piège trouvé, non corrigé** (résiduel `ROADMAP.md`) : `server.py` prend
-`sys.argv[1]` comme `UPLOAD_DIR` (l. 72) — tout script qui l'importe avec un
-drapeau hérite d'un `UPLOAD_DIR` faux. Sans effet observé, désormais bruyant.
-Correctif d'une ligne, mais il demande un redémarrage et une observation : en
-début de session, pas en fin.
+**Ne pas rouvrir sans chiffre neuf** : les deux planchers 1990 restants coûtent
+7 photos et 0, et ils sont couplés. La strate « piège » du banc (83 %) est une
+hypothèse post-hoc sur 30 photos, pas une décision.
 
-**Ordre des gestes git : 27 → 0 → 28.** Session 14 est observée, sa branche peut
-partir dans `main`. Session 15 : rien à observer côté serveur — l'observation qui
-manque est le banc.
+**Ordre des gestes git : 27 → 0 → 28.**

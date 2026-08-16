@@ -170,6 +170,10 @@ TRACKING_MD = {
     "ROADMAP.md": 12000,
     "PROMPT_NOUVELLE_SESSION.md": 4000,
     "eval/DECISIONS.md": 9000,
+    # Sorti de DECISIONS.md le 16/08 : « ce qui a ete tranche » d'un cote,
+    # « comment on tranche » de l'autre. Budget propre pour que le corpus de
+    # methode soit GOUVERNE et non pas soustrait au lint.
+    "eval/METHODE.md": 6000,
     "README.md": None,
     "INSTALLATION.md": None,
 }

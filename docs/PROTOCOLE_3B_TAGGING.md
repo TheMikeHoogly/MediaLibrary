@@ -116,3 +116,55 @@ par strate. Il reproduit à l'identique le 25-15 / p = 0,15 du 12/08 (vérifié)
 - **Rejouer une variante sur des assertions stockées** (`row['assert']`) : c'est
   ainsi que les epochs de juillet se sont invités dans la mesure du 12/08.
   Les assertions se recalculent à chaque passe.
+
+## Amendement du 15/08/2026 — l'échantillon avait bougé sous le banc
+
+**Écrit AVANT toute notation, et avant tout résultat.** C'est la seule condition
+qui permet d'amender un critère pré-enregistré sans le vider de son sens.
+
+Une première passe a tourné le 15/08 à 09:16 et s'est arrêtée à **85 photos sur
+150**. Cause : `eval/tagging_v1.json` fige l'échantillon depuis le 30/07, mais
+« Ranger par année » a depuis déplacé les fichiers —
+`_A TRIER\250914_Samsung_Mike\20250730_151021.jpg` est devenu
+`2025\20250730_151021.jpg`. **65 clés étaient mortes** (63 sous `_A TRIER`), la
+boucle les a sautées une par une, et rien n'a dit le total.
+
+Deux dégâts, pas un :
+
+- le critère **≥ 88 sur 150** devenait arithmétiquement hors d'atteinte ;
+- les **quotas de strates** que l'échantillon existe pour préserver étaient
+  cassés — pièges 12/30, riches 28/50, pauvres 32/50, incertains 13/20.
+
+Cette passe est **abandonnée**. Ses résultats ne sont pas notés.
+
+### Réparation retenue — suivre le renommage, ne PAS régénérer
+
+`recler_echantillon.py` apparie par NOM DE FICHIER et **seulement si le jumeau
+est unique** ; deux candidats ne sont jamais départagés (un nom en double dans
+deux dossiers mettrait une AUTRE photo dans le banc). Ce sont les mêmes photos,
+les mêmes strates, des chemins à jour — le même geste que `rekey_everywhere`.
+
+Bilan : **62 re-clées**, 2 ambiguës (le fichier existe en double), 1 disparue.
+
+### Nouveau critère — pour n = 147
+
+Calculé avec `_binom_p` du banc lui-même, à α < 0,05 bilatéral :
+
+| n | seuil | p au seuil | p juste en dessous |
+|---|---|---|---|
+| 150 (initial) | 88 | 0,0409 | 87 → 0,0600 |
+| **147 (retenu)** | **86** | **0,0474** | 85 → 0,0692 |
+
+- **≥ 86 sur 147** *et* pas plus d'hallucinations que V0 → la re-passe est
+  justifiée dans son principe (choix de la strate, ROADMAP 3c).
+- **76 à 85** → écart possible, non démontré. **La passe ne se fait pas.**
+- **≤ 75, ou hallucinations en hausse** → la re-passe est **close**.
+
+Les 30 pièges se dépouillent toujours à part.
+
+### Garde-fou ajouté
+
+`eval_tagging.py` compte les clés mortes **avant le premier appel Ollama** et
+refuse au-delà de **15 %** (même seuil que `--mesurer`), en indiquant le
+re-clage. `--forcer` passe outre, en disant que le critère ne s'applique plus.
+Un avertissement noyé dans un log de 25 minutes ne protège personne.
