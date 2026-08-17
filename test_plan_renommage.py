@@ -9,6 +9,7 @@ dossier, y compris contre un fichier non renomme) sont resolues par suffixe.
 import sys
 
 import plan_renommage as P
+import renommage_facts as RF
 
 
 def test_est_nom_brut_vrais():
@@ -137,6 +138,61 @@ def test_annee_dossier_pre_1990_ignore_le_nom():
     assert moves[0]["new_name"][:8] == "19860000", moves[0]["new_name"]
 
 
+
+# ── Garde-fou SCAN (17/08) ────────────────────────────────────────────────────
+# Un tirage numerise porte souvent la date du SCAN dans DateTimeOriginal ;
+# `tagging_meta.date_fiable` ne garde que ModifyDate. Sans ce garde-fou, 12
+# photos de « Photos Papa » rangees sous 1990/1993/2003 partaient en 2007.
+_SCAN_2007 = 1183892222        # 08/07/2007, milieu de journee
+_PRISE_2014 = 1401368781       # 29/05/2014
+
+
+def test_date_posterieure_au_dossier_refusee():
+    """Dossier 1990 + EXIF 2007 -> l'annee du DOSSIER gagne (statu quo)."""
+    key = r"\\NAS\home\Photos\Photos Papa\1990\1990_Achumani\IMG_1307.jpg"
+    d, prec = RF.resolve_datestamp(key, {'taken': _SCAN_2007})
+    assert d == '19900000', d
+    assert prec == 'annee', prec
+
+
+def test_date_anterieure_au_dossier_gardee():
+    """Dossier d'IMPORT 2026 + EXIF 2014 -> l'EXIF a raison, on le garde."""
+    key = r"\\NAS\home\Photos\2026\Photos Floflo\Miki\IMG_5387.JPG"
+    d, prec = RF.resolve_datestamp(key, {'taken': _PRISE_2014})
+    assert d.startswith('20140529'), d
+    assert prec == 'exact', prec
+
+
+def test_reveillon_tolere():
+    """Un an d'ecart = debordement legitime (139 mesures le 14/08), pas un scan."""
+    key = r"\\NAS\home\Photos\2019 Voyage\IMG_0001.jpg"
+    d, _ = RF.resolve_datestamp(key, {'taken': 1577840000})   # 01/01/2020
+    assert d.startswith('2020'), d
+
+
+def test_chemin_sans_annee_ne_contredit_rien():
+    key = r"\\NAS\home\Photos\Divers\IMG_0002.jpg"
+    d, prec = RF.resolve_datestamp(key, {'taken': _SCAN_2007})
+    assert d.startswith('20070708'), d
+    assert prec == 'exact', prec
+
+
+def test_plage_de_dossier_compare_au_MAX():
+    """« 2005-2010\\2008 » : une photo de 2010 n'est pas un scan."""
+    key = r"\\NAS\home\Photos\Photos 2005-2010\2008\IMG_0003.jpg"
+    d, _ = RF.resolve_datestamp(key, {'taken': 1275000000})   # 28/05/2010
+    assert d.startswith('2010'), d
+
+
+def test_scan_refuse_laisse_le_nom_de_fichier_parler():
+    """Le repli n'est pas « annee du dossier » d'office : le nom de fichier
+    reste prioritaire sur lui (ordre inchange)."""
+    key = r"\\NAS\home\Photos\Photos Papa\1993\IMG_19930712_101500.jpg"
+    d, prec = RF.resolve_datestamp(key, {'taken': _SCAN_2007})
+    assert d == '19930712-101500', d
+    assert prec == 'exact', prec
+
+
 TESTS = [
     ("est_nom_brut : vrais", test_est_nom_brut_vrais),
     ("est_nom_brut : faux", test_est_nom_brut_faux),
@@ -149,6 +205,12 @@ TESTS = [
     ("pre-1990 : le nom reste exclu (Scan_1975)", test_annee_dossier_pre_1990_ignore_le_nom),
     ("sans date -> non renomme (pas de 00000000)", test_sans_date_non_renomme),
     ("sujet force le francais (desc anglaise)", test_sujet_force_le_francais),
+    ("garde-fou scan : EXIF 2007 sous dossier 1990 refuse", test_date_posterieure_au_dossier_refusee),
+    ("EXIF 2014 sous dossier d'import 2026 garde", test_date_anterieure_au_dossier_gardee),
+    ("reveillon : un an d'ecart tolere", test_reveillon_tolere),
+    ("chemin sans annee : rien a contredire", test_chemin_sans_annee_ne_contredit_rien),
+    ("plage de dossier : comparaison au MAX", test_plage_de_dossier_compare_au_MAX),
+    ("scan refuse : le nom de fichier reste prioritaire", test_scan_refuse_laisse_le_nom_de_fichier_parler),
 ]
 
 

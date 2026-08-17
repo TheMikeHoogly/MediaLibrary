@@ -34,6 +34,9 @@
   présentes, mais dans un dossier caché hors de toute racine scannée — aucun scan ne les
   reprendrait, donc muettes à vie. Répliquer la règle de SÉLECTION du producteur, pas
   seulement tester l'existence.
+- **Une limite ÉCRITE n'est pas une limite gérée** (17/08) : `tagging_meta.date_fiable` annonçait dans sa propre docstring que le scanner remplissant `DateTimeOriginal` passait au travers. Vrai, assumé, sans conséquence — jusqu'au chantier qui rend la limite coûteuse. Ici le renommage : ce qui n'était qu'une photo mal triée devenait un NOM DE FICHIER en 2007 sur un tirage de 1990. Relire les limites documentées à l'entrée de chaque chantier qui écrit.
+- **Deux gestes réversibles enchaînés ne sont pas réversibles** (17/08) : renommer en 2007 puis ranger par année déplace la photo dans `2007/` — et le dossier `1990_Achumani`, dernier témoin du fait humain, disparaît. Juger la réversibilité de la CHAÎNE, pas du geste.
+- **La direction d'un écart porte le sens** (17/08) : une date EXIF postérieure au dossier est un artefact de scan ; antérieure, c'est l'EXIF qui corrige un dossier d'import. Même écart, deux verdicts opposés — un garde-fou symétrique aurait détruit les 20 bonnes corrections en sauvant les 12 mauvaises.
 - **Un compte spectaculaire est d'abord une erreur de clé** (15/08) : `vectors` contre `tags`
   sans filtrer le `kind` annonçait 86 181 orphelins ; le vrai chiffre : 2 374.
 - **Un chiffre devient une mesure quand deux chemins y tombent** (15/08) : `sans_date` = 3 824

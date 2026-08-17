@@ -5,7 +5,7 @@ dans **git** ; les rejets dans `eval/DECISIONS.md` ; les invariants de méthode
 dans `eval/METHODE.md` ; l'éphémère dans `PROMPT_NOUVELLE_SESSION.md`. Audits : `docs/AUDIT_INTERNE_2026-08.md`
 (I1–I17, O1–O15, A–F), `docs/AUDIT_EXTERNE_2026.md`, `docs/RANGEMENT_2026.md`.
 
-## État (17/08/2026, session 17)
+## État (17/08/2026, session 18)
 
 **Vecteurs orphelins PURGÉS ET OBSERVÉS EN RÉEL.** Les 2 374 vecteurs `photo`
 sans ligne `tags` rendaient des résultats MUETS (2,6 % sur huit requêtes).
@@ -37,8 +37,22 @@ jamais mélangées, et le filtre **compte** ce qu'il écarte : `sans_date` = **3
 (aucune date au jour près) ou **260** (aucune année fiable), les deux confirmés
 par un second chemin de code sur une COPIE de la base.
 
-**À régénérer avant tout lot** : `docs/plan_renommage.json` est antérieur au
-plancher 1900 et aux lieux GPS.
+**Plan de renommage RÉGÉNÉRÉ, COMPARÉ, et le premier lot est prêt.** 7 058 moves
+(contre 6 642 le 12/08 — l'AVANT avait été archivé hors git, sans quoi la
+comparaison n'existait pas). Sans date fiable : **435 → 18**. Noms portant un
+lieu : **941 → 1 175** (le gain GPS : zermatt, amsterdam, fribourg, bâle).
+Sur les 1 148 noms changés : 655 décalages d'une ou deux secondes (l'EXIF prend
+la main sur l'heure du nom), 184 dates vagues devenues précises, 163 lieux
+ajoutés, 19 années changées. **Et c'est là que la comparaison a payé** : 12 de
+ces changements écrivaient une date de SCAN (2007) sur les photos de Papa
+rangées sous 1990, 1993 et 2003 — trois lots de numérisation, horodatages
+espacés de 12 à 20 s. Garde-fou posé dans `renommage_facts` (module PUR, 17/17
+tests), **observé : 12 → 0**, les 12 noms redeviennent ceux du 12/08, et les 20
+corrections légitimes (dossier d'import `2026\Photos Floflo` → vraies dates
+2014-2018) sont intactes. Dry-run : **7 058 applicables, 0 sauté**.
+**Reste OUVERT et non mesuré** : `taken` est toujours faux en base pour ces
+photos — `/api/jour` place `1990_Achumani\IMG_1307.jpg` au 1ᵉʳ mai 2007. Le
+garde-fou protège le nom du fichier, pas l'index.
 
 ## À faire — par ordre de valeur (réordonné au triple audit du 11/08)
 
@@ -56,10 +70,10 @@ plancher 1900 et aux lieux GPS.
    à partir de maintenant le paie. **Ne pas revenir à V0 sans protocole** — le
    même piège qu'on vient d'éviter. Wagon de 14 : composition d'affichage
    date · lieu · noms depuis `faits`.
-4. **Gestes Mike** : `gps_place` **fait ✔** ; nettoyer Flo (5 909 photos ;
-   « Corriger » ~0.2 ou « Nettoyer (référence) ») ; re-rejeter Caline une fois ;
-   lots de renommage **débloqués sans réserve** — le banc 3b est passé, plus
-   rien n'attend. **Régénérer `docs/plan_renommage.json` d'abord.**
+4. **Gestes Mike** : `gps_place` **fait ✔** ; plan de renommage **régénéré,
+   comparé et vérifié à blanc ✔** (État) — reste à cliquer les lots de 200
+   jusqu'à 0 restant ; nettoyer Flo (5 909 photos ; « Corriger » ~0.2 ou
+   « Nettoyer (référence) ») ; re-rejeter Caline une fois.
 5. **Correctifs d'audit** : I4–I8, O7–O9, O11–O15. O1 clos partout ; O15 (purge
    de `photo_thumbs/`) gagne en poids.
 6. **Navigation par similarité et par date** : « Semblables » et « même jour »
@@ -71,16 +85,22 @@ plancher 1900 et aux lieux GPS.
    (18 % faux rejets). Relancer si un nouveau nom d'animal sort en `personne:`.
 9. **Reconnaissance — algo (BARRIÈRE : vérité terrain ≥ ~5 %).**
    HDBSCAN/Chinese Whispers/AdaFace inévaluables à 0,8 %. La barrière reste.
-10. **Données / finitions** : réglages éditables depuis `/reglages` (wagon :
-    pause globale des workers) ; 2ᵉ passe des 945 illisibles + `recuperees/` →
-    NAS ; purge des undo > 30 j (I12). Wagon 17/08 : deux images TRONQUÉES
+10. **Données / finitions** : **NEUF 17/08 — compter les dates de SCAN crues en
+    base.** Un scanner qui remplit `DateTimeOriginal` passe le garde-fou de
+    `date_fiable` (sa docstring le dit) : ces photos sortent à l'année du scan
+    dans le tri chronologique, « même jour » et le filtre par période. 12 cas
+    connus (les seuls que le plan de renommage regarde), portée réelle inconnue.
+    Mesurer sur une COPIE de la base avant toute correction — et se souvenir que
+    l'écart NÉGATIF (dossier d'import) est légitime. Puis : réglages éditables
+    depuis `/reglages` (wagon : pause globale des workers) ; 2ᵉ passe des 945
+    illisibles + `recuperees/` → NAS ; purge des undo > 30 j (I12). Wagon 17/08 : deux images TRONQUÉES
     (`Sanetsch/DSC00550.JPG`, `France & Belgique/DSC00795.JPG`) restent en
     attente d'encodage à chaque démarrage — visibles dans `erreurs_images`.
 11. **UI — harmonisation des vues (demandé 12/08, skill `photo-ui`)** :
     (a) clic sur l'image d'une personne → sa démo aléatoire ; (b) lieux : texte
     sous l'image en tooltip ; (c) harmoniser visages/lieux/animaux — mêmes
     fonctions partout, **sauf** l'effacement, réservé à Classification ;
-    (d) zoom pinch + molette ; (e) wagons : bandeau `#pending`, libellé `/pets`.
+    (d) zoom pinch + molette — `maximum-scale=1` **retiré ✔ 17/08** (il interdisait le pinch ; WCAG 1.4.4) ; (e) wagons : bandeau `#pending`, libellé `/pets`.
     Wagon 14/08 : le bouton dit « Meme jour (14 aout) » là où la page dit
     « 14 août » (`MOIS_JOUR` ASCII dans le JS, sur un commentaire faux).
 12. **Assurance-vie : restauration à blanc (PROMU 12/08).** Test « PC mort
@@ -127,8 +147,10 @@ effet tant qu'aucun dossier d'avant 1990 n'y passe ; (b) `/files?dir=1&rec=1`
   10 s), rejets réversibles, reclassement `personne:`→`animal:` réversible.
 - **Fichiers/Rangement** : `/browse` réversible, dédoublonnage appliqué
   (8,4 Go), rangement par année, orchestrateur de maintenance.
-- **Renommage** : cœur + plan + applicateur réversibles prêts (plan = 2114) ;
-  `gps_place` codé (pas activé).
+- **Renommage** : cœur + plan + applicateur réversibles prêts ; plan régénéré le
+  17/08 (**7 058 moves**, dry-run 7 058 applicables / 0 sauté) ; `gps_place`
+  actif dans les noms (1 175 en portent un) ; garde-fou date de SCAN
+  (`date_de_scan_presumee`, asymétrique et toléré à un an).
 - **UI** : design system « chambre noire » (tokens, plancher a11y dont
   `:focus-visible`), planche contact, `/reglages`, `/people` réorganisé,
   `/sujets` guichet unique (sous-nav, Classification, files « À vérifier »,

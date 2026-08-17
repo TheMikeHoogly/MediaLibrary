@@ -89,6 +89,47 @@ def path_year(key):
     return f"{min(yrs):04d}" if yrs else None
 
 
+# Ecart TOLERE, en annees, entre une date PRECISE et l'annee du dossier qui
+# porte la photo. Un reveillon deborde legitimement d'un an (« 2019 Voyage » qui
+# contient le 1er janvier 2020) : la mesure du 14/08 en a compte 139, et c'est
+# pourquoi on n'a PAS corrige les dates de nom de fichier. Au-dela d'un an, un
+# ecart POSITIF n'est plus un debordement : c'est la date du SCAN.
+ECART_ANNEE_TOLERE = 1
+
+
+def path_years(key):
+    """Ensemble des annees PLAUSIBLES lues dans les DOSSIERS du chemin (jamais
+    le nom de fichier — voir `path_year`). `path_year` en rend la plus ancienne ;
+    ici on les rend TOUTES, parce qu'un dossier peut porter une plage
+    (« Photos 2005-2010\\2008\\… ») et que comparer a la seule plus ancienne
+    ferait reculer la photo de trois ans."""
+    k = str(key).replace('\\', '/')
+    dossier = k.rsplit('/', 1)[0] if '/' in k else ''
+    return set(int(y) for y in _PATH_YEAR.findall(dossier)
+               if ANNEE_CHEMIN_MIN <= int(y) <= ANNEE_CHEMIN_MAX)
+
+
+def date_de_scan_presumee(annee, annees_chemin):
+    """True si `annee` (celle d'une date EXIF precise) est POSTERIEURE a toutes
+    les annees du dossier de plus de `ECART_ANNEE_TOLERE` — signature du tirage
+    NUMERISE : le scanner inscrit l'instant du scan dans `DateTimeOriginal`, que
+    `tagging_meta.date_fiable` croit sans condition (son garde-fou ne couvre que
+    `ModifyDate`, il le dit lui-meme).
+
+    Mesure du 17/08 : 12 photos de « Photos Papa » rangees sous 1990, 1993 et
+    2003 recevaient une date de 2007 — trois lots de scan, horodatages espaces
+    de 12 a 20 s. L'ecart est ASYMETRIQUE a dessein : une date ANTERIEURE au
+    dossier est au contraire le cas ou l'EXIF a raison contre un dossier
+    d'import (« 2026\\Photos Floflo » contient de vraies photos de 2014), et on
+    la garde.
+
+    L'annee du dossier est un fait HUMAIN — quelqu'un savait. Refuser ne fabrique
+    rien : on retombe sur « YYYY0000 », c'est-a-dire le statu quo."""
+    if not annees_chemin:
+        return False              # rien a contredire
+    return annee > max(annees_chemin) + ECART_ANNEE_TOLERE
+
+
 def resolve_datestamp(key, entry):
     """(datestamp, precision). datestamp = « YYYYMMDD » ou « YYYYMMDD-HHMMSS »
     quand l'heure est connue (elle préserve l'ordre INTRA-JOURNEE des rafales et
@@ -98,8 +139,13 @@ def resolve_datestamp(key, entry):
     if isinstance(t, (int, float)) and t > 0:
         import time as _t
         lt = _t.localtime(t)
-        return (f"{lt.tm_year:04d}{lt.tm_mon:02d}{lt.tm_mday:02d}"
-                f"-{lt.tm_hour:02d}{lt.tm_min:02d}{lt.tm_sec:02d}"), 'exact'
+        # Garde-fou SCAN : une date posterieure au dossier n'est pas crue (elle
+        # ecrirait l'annee du scan dans le NOM DU FICHIER, la ou l'annee du
+        # dossier est le seul fait humain restant). On laisse alors le repli
+        # jouer : nom de fichier, puis annee du dossier.
+        if not date_de_scan_presumee(lt.tm_year, path_years(key)):
+            return (f"{lt.tm_year:04d}{lt.tm_mon:02d}{lt.tm_mday:02d}"
+                    f"-{lt.tm_hour:02d}{lt.tm_min:02d}{lt.tm_sec:02d}"), 'exact'
     # 2) date (+ heure eventuelle) dans le nom de fichier
     d, hms = fname_datetime(_basename(key))
     if d:
@@ -244,6 +290,7 @@ def resolve_facts(key, entry, lieux=None, gps_place=None, image_type=None):
 
 
 __all__ = [
-    'fname_datetime', 'path_year', 'resolve_datestamp', 'names_from_entry',
+    'fname_datetime', 'path_year', 'path_years', 'date_de_scan_presumee',
+    'resolve_datestamp', 'names_from_entry',
     'load_lieux', 'resolve_path_place', 'ext_of', 'resolve_facts',
 ]
