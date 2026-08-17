@@ -51,7 +51,8 @@
 | Une seule précision de date pour tous les filtres | **REJETÉ** (15/08) | Exiger le jour partout cache 3 824 photos ; l'accepter partout invente un mois. |
 | Filtrer sans dire combien on écarte | **REJETÉ** (15/08) | « 3 photos » se lit « il n'y en a que 3 ». `sans_date` compté et affiché. |
 | Fêtes MOBILES (Pâques) | **REJETÉ** (15/08) | Mal placée d'un jour = pire qu'absente. Fixes seulement. |
-| Laisser les vecteurs des photos sorties de l'index | **À TRAITER** (15/08) | `/api/search` remonte **2 374 photos absentes de `tags`** — résultats MUETS, 2,6 % des résultats. 2 143 = ARZOPA (supprimé le 08/08), 91 en corbeille ; aucun jumeau dans `tags`, purge sans perte. |
+| Laisser les vecteurs des photos sorties de l'index | **TRAITÉ** (17/08) | 2 374 vecteurs `photo` purgés, **quarantaine réversible** (`_corbeille_vecteurs/`, b64, `--restaurer`). Observé après redémarrage : **0 muet sur 1 600 résultats** (2,6 % avant), 0 orphelin base contre base. Ventilation : 2 143 ARZOPA (clé absolue ET relative), 138 = 69 clés malformées comptées deux fois, 91 `.corbeille-rangement`, 2 disparus. |
+| « Fichier absent » comme seul critère de purge | **CORRIGÉ** (17/08) | « Le fichier existe » ne dit pas « il sera re-tagué » : 91 photos bien présentes vivaient hors de toute racine scannée (`.corbeille-rangement`) — muettes à vie. Trois cas, pas deux : absent → purge ; présent HORS PORTÉE → purge ; présent sous racine scannée → épargné (0 en pratique). Règle du scan répliquée dans `sera_re_tague()`, pas devinée. |
 
 ## Dates de prise de vue
 

@@ -30,6 +30,10 @@
 - **Mesurer la matière première avant de bâtir dessus** (13/08), et **par le chemin de code de
   la DONNÉE, pas par une vue** (14/08) : par clé, 0 % devenait 60 %. **Un avant/après n'existe
   que si l'AVANT a été enregistré** — sinon, tautologie.
+- **« Le fichier existe » ne dit pas « il sera repris »** (17/08) : 91 photos bien
+  présentes, mais dans un dossier caché hors de toute racine scannée — aucun scan ne les
+  reprendrait, donc muettes à vie. Répliquer la règle de SÉLECTION du producteur, pas
+  seulement tester l'existence.
 - **Un compte spectaculaire est d'abord une erreur de clé** (15/08) : `vectors` contre `tags`
   sans filtrer le `kind` annonçait 86 181 orphelins ; le vrai chiffre : 2 374.
 - **Un chiffre devient une mesure quand deux chemins y tombent** (15/08) : `sans_date` = 3 824

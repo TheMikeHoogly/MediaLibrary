@@ -128,3 +128,9 @@ eval/interet_candidats_etiquetage.html
 # Quarantaine réversible des répertoires de travail éphémères. Local, jamais
 # versionné ; à vider à la main quand on est sûr.
 _corbeille_session/
+
+# ─── Quarantaine des vecteurs purgés (purger_vecteurs_orphelins.py) ─────────
+# Les vecteurs sémantiques supprimés y sont écrits AVANT le DELETE (JSONL,
+# vecteur en base64) : c'est la réversibilité. Local, jamais versionné ; à
+# vider à la main une fois la recherche observée en réel.
+_corbeille_vecteurs/
