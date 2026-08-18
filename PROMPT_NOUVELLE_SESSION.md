@@ -8,53 +8,53 @@ Tu reprends **MediaLibrary**. Lis `ROADMAP.md`, puis `eval/DECISIONS.md` (ce qui
 a été tranché) et `eval/METHODE.md` (comment on tranche). Débrief en 2–3 lignes,
 puis on attaque.
 
-## Où on en est (17/08/2026, fin de session 18)
+## Où on en est (17/08/2026, fin de session 19)
 
-**1. Le plan de renommage est régénéré, comparé et vérifié à blanc.** 7 058 moves
-contre 6 642 le 12/08. Sans date fiable : **435 → 18**. Noms portant un lieu :
-**941 → 1 175** (gain GPS). Dry-run : **7 058 applicables, 0 sauté**. Les lots de
-200 sont le geste suivant (bouton « 3 · Appliquer un lot », recliquer jusqu'à 0).
+**1. Les dates de SCAN en base sont COMPTÉES : 72**, contre 12 connues — le plan
+de renommage n'en voyait que les noms bruts. `mesure_dates_scan.py` (PUR,
+32 tests, lecture seule sur une COPIE) applique au champ `taken` le critère que
+le renommage applique au nom. Presque toutes dans « Photos Papa » ; écarts +2 à
++32 ans. **Confirmé sur le serveur vivant** : `/api/jour?jour=05-01` rend les
+4 photos de `1990_Achumani` avec `precise: true`. Même corpus (43 064).
 
-**2. La comparaison a payé, et c'est la leçon** : 12 des 1 148 noms changés
-écrivaient une date de **SCAN** (2007) sur les photos de Papa rangées sous 1990,
-1993 et 2003 — trois lots de numérisation, horodatages espacés de 12 à 20 s.
-`tagging_meta.date_fiable` ne garde que `ModifyDate` ; le scanner qui remplit
-`DateTimeOriginal` passe au travers, **sa propre docstring le disait**. Garde-fou
-`renommage_facts.date_de_scan_presumee` (module PUR, 17/17 tests) : une date
-précise postérieure de plus d'un an à toutes les années du dossier n'est pas crue.
-**Asymétrique à dessein** — une date ANTÉRIEURE est l'EXIF qui corrige un dossier
-d'import (`2026\Photos Floflo` → vraies dates 2014-2018, 20 cas, intacts).
-Observé : **12 → 0**, les 12 noms redeviennent ceux du 12/08, 0 effet de bord.
+**2. Le DÉSACCORD des deux chemins a rapporté plus que leur accord.** A (dossier
+contre `taken`) voyait 15 fichiers renommés, B (le repli `YYYY0000` laissé dans
+le nom) en voyait 27, 12 communs. L'écart n'était pas du bruit :
+**(a)** le repli sur le NOM n'est pas gardé — l'étape 2 lit la date du nom de
+fichier sans contrôle, et un scanner qui NOMME ses fichiers y réinscrit la date
+que l'étape 1 vient d'écarter (1 cas) ; **(b)** 15 noms sont PÉRIMÉS —
+`YYYY0000` alors que la date précise est connue depuis, par une tâche de fond
+arrivée après le renommage, et le plan ne regarde plus les fichiers renommés.
+Les 27 se réconcilient : **12 vrais refus + 15 périmés**.
 
-**3. Et l'AVANT avait failli disparaître** : générer le plan réécrit
-`docs/plan_renommage.json` en place. Copie archivée dans
-`_corbeille_session/plan_avant/` — sans elle, aucune comparaison. (Au passage :
-le « plan = 2 114 » de l'ancienne feuille de route était périmé de deux mois.)
+**3. L'asymétrie protégeait 1 369 dates, pas 20.** Autant de photos portent une
+date ANTÉRIEURE à leur dossier (958 à un an) — vidages de téléphone, dossiers
+d'import. Un garde-fou symétrique les aurait toutes détruites pour en sauver 72.
 
-**4. `maximum-scale=1` retiré du viewport** (il interdisait le pinch-zoom,
-WCAG 1.4.4 — point 11d). Le « mode mobile sur PC » signalé par Mike n'était pas
-le site : zoom Chrome à ~400 % sur l'hôte (`innerWidth` = 255 px CSS).
+**4. Rien n'a été corrigé** : mesurer d'abord. Angle mort compté et assumé :
+6 818 photos sans année dans leur dossier, 10 226 sans `taken`.
 
 ## Prochain pas — par valeur
 
-1. **Cliquer les lots de renommage** jusqu'à 0 restant (200 par clic, journal
-   undo par lot, « 4 · Annuler le dernier lot » si besoin). Après le premier lot,
-   **observer en réel** : une photo renommée garde-t-elle ses noms humains
-   (`rekey_everywhere`), la recherche la retrouve-t-elle ?
-2. **Compter les dates de SCAN crues EN BASE** (ROADMAP 10). Le garde-fou protège
-   le NOM, pas l'index : `/api/jour` place encore `1990_Achumani\IMG_1307.jpg` au
-   1ᵉʳ mai 2007, donc le tri chronologique, « même jour » et le filtre par période
-   se trompent. 12 cas connus, portée réelle inconnue. Mesurer sur une COPIE.
+1. **Instrumenter ce que le scan OUBLIE** (ROADMAP 10a) — le seul point encore
+   sans instrument. `forget_everywhere` renvoie un nombre que personne
+   n'enregistre ; l'étape 4 de `_sync_dir` ne dit pas combien de clés elle
+   retire ; les −250 du 17/08 restent indiagnosticables. Exposer le compteur
+   (résumé de scan + `/api/maint/status`) est la condition pour trancher à la
+   prochaine occurrence.
+2. **Décider quoi faire des 72** (ROADMAP 10b). Trois gestes indépendants, du
+   moins cher au plus cher : garder l'étape 2 du repli (le NOM — 1 cas, module
+   pur, sans redémarrage) ; rendre au plan de renommage les 15 noms périmés ;
+   corriger `taken` en base (pipeline de dates, `monolith-surgery`, backfill —
+   et surtout **ne pas emporter les 1 369 antérieures**).
 3. **Le prompt de PRODUCTION hallucine plus que V0** (`eval/DECISIONS.md`) :
    inchangé, chaque photo taguée le paie. **Ne pas revenir à V0 sans protocole.**
-4. **14a, suites** : les `faits` ne filtrent pas encore ; pas de filtre par espèce
-   ni par fiche ; le tri d'un résultat sans mot-clé passe encore par `_best_time`
-   (donc `mtime`) là où la sélection l'exclut.
-5. **Deux images tronquées** (`Sanetsch/DSC00550.JPG`,
-   `France & Belgique/DSC00795.JPG`) repassent en attente d'encodage à chaque
-   démarrage — visibles dans `erreurs_images` de `/api/search/status`.
-6. **Le reste** (`ROADMAP.md`) : gestes Mike (Flo, Caline) ; doublons proches ;
-   UI (11) ; restauration à blanc (12) ; MCP lecture (13).
+4. **14a, suites** : les `faits` ne filtrent pas encore ; pas de filtre par
+   espèce ni par fiche ; le tri d'un résultat sans mot-clé passe encore par
+   `_best_time` (donc `mtime`) là où la sélection l'exclut.
+5. **Le reste** (`ROADMAP.md`) : deux images tronquées en attente d'encodage à
+   chaque démarrage ; gestes Mike (Flo, Caline) ; doublons proches ; UI (11) ;
+   restauration à blanc (12) ; MCP lecture (13).
 
 **Ne pas rouvrir sans chiffre neuf** : les deux planchers 1990 restants coûtent
 7 photos et 0, et ils sont couplés. La strate « piège » du banc 3b (83 %) est
