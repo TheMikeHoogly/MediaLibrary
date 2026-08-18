@@ -23,6 +23,13 @@ COMPATIBILITÉ
     Le verrou est un RLock (et non un Lock) car server.py appelle _save()
     à l'intérieur de `with STORE.lock:` (l. 584-593, 733-743, 3822-3831, 4543).
 
+COMPTES (17/08/2026 → 18/08)
+    `TrackedDict` est le GOULOT par lequel passe toute clé qui entre ou sort de
+    l'index EN MÉMOIRE. Un `RegistreOublis` (module `comptes_index.py`) peut y
+    être branché après construction (`brancher_registre`) : il compte alors les
+    ajouts et les retraits, avec le motif déclaré par l'appelant. Sans registre
+    branché, le comportement est inchangé au bit près (un test `is None`).
+
 CONVERGENCE
     Les mutations imbriquées d'un niveau (`e = STORE.data.get(k); e['x'] = 1`)
     sont détectées automatiquement : les entrées sont des TrackedEntry qui
@@ -107,7 +114,14 @@ class TrackedEntry(dict):
 
 
 class TrackedDict(dict):
-    """Index qui signale les ajouts/suppressions de clés."""
+    """Index qui signale les ajouts/suppressions de clés.
+
+    GOULOT DES COMPTES : toute clé qui entre ou sort de l'index en mémoire passe
+    ici. Si un `RegistreOublis` est branché sur le store, il est notifié — c'est
+    ce qui rend « ce que le scan oublie » comptable (cf. comptes_index.py).
+    Seules les variations de TAILLE sont signalées : réécrire une clé existante
+    n'est ni un ajout ni un retrait.
+    """
 
     __slots__ = ('_store',)
 
@@ -120,14 +134,27 @@ class TrackedDict(dict):
             return v
         return TrackedEntry(self._store, k, v if isinstance(v, dict) else {})
 
+    def _reg(self):
+        """Registre branché, ou None. Jamais d'exception : un instrument ne doit
+        pas casser le programme qu'il observe."""
+        return getattr(self._store, '_registre', None)
+
     def __setitem__(self, k, v):
+        neuve = k not in self
         super().__setitem__(k, self._wrap(k, v))
         self._store._dirty.add(k)
+        if neuve:
+            r = self._reg()
+            if r is not None:
+                r.cle_ajoutee(k)
 
     def __delitem__(self, k):
         super().__delitem__(k)
         self._store._supprimes.add(k)
         self._store._dirty.discard(k)
+        r = self._reg()
+        if r is not None:
+            r.cle_retiree(k)
 
     def pop(self, k, *d):
         présent = k in self
@@ -135,18 +162,28 @@ class TrackedDict(dict):
         if présent:
             self._store._supprimes.add(k)
             self._store._dirty.discard(k)
+            reg = self._reg()
+            if reg is not None:
+                reg.cle_retiree(k)
         return r
 
     def popitem(self):
         k, v = super().popitem()
         self._store._supprimes.add(k)
         self._store._dirty.discard(k)
+        reg = self._reg()
+        if reg is not None:
+            reg.cle_retiree(k)
         return k, v
 
     def clear(self):
-        self._store._supprimes.update(self.keys())
+        cles = list(self.keys())
+        self._store._supprimes.update(cles)
         self._store._dirty.clear()
         super().clear()
+        reg = self._reg()
+        if reg is not None:
+            reg.cles_retirees(cles)
 
     def update(self, *a, **kw):
         for k, v in dict(*a, **kw).items():
@@ -169,6 +206,9 @@ class SqliteStore:
         self.lock = threading.RLock()          # RLock : _save() est appelé sous lock
         self._dirty = set()
         self._supprimes = set()
+        # Carnet de comptes des ajouts/retraits de cles (comptes_index.py).
+        # None = non branche -> aucun cout, comportement historique.
+        self._registre = None
         self._hash = {}                        # clé -> empreinte persistée
         self._d = TrackedDict(self)
 
@@ -292,12 +332,34 @@ class SqliteStore:
 
     @data.setter
     def data(self, valeur):
-        """Remplacement global (server.py l. 3823 : ANIMAL_STORE.data = {})."""
+        """Remplacement global (server.py : ANIMAL_STORE.data = {}).
+
+        Ce chemin vide le dict PAR EN DESSOUS (`dict.clear`) : il court-circuite
+        `TrackedDict.clear` et donc le goulot des comptes. Il DÉCLARE donc
+        lui-même ses retraits — sans quoi la réconciliation les prendrait pour
+        un écart inexpliqué, c'est-à-dire un faux positif sur le seul chiffre
+        qui doit rester digne de foi.
+        """
         with self.lock:
-            self._supprimes.update(self._d.keys())
+            anciennes = list(self._d.keys())
+            self._supprimes.update(anciennes)
             dict.clear(self._d)
+            if self._registre is not None and anciennes:
+                self._registre.cles_retirees(anciennes)
             for k, v in (valeur or {}).items():
                 self._d[k] = v
+
+    def brancher_registre(self, registre):
+        """Branche (ou débranche avec None) le carnet de comptes.
+
+        À appeler APRÈS construction : `_charger()` remplit le dict par en
+        dessous (`dict.__setitem__`), donc le chargement initial n'est pas
+        compté — ce qui est voulu : le point de départ de la réconciliation est
+        `len(store.data)` au premier cycle, pas un cumul d'ajouts fictifs.
+        """
+        with self.lock:
+            self._registre = registre
+        return registre
 
     def has(self, name):
         e = self._d.get(name)

@@ -8,45 +8,43 @@ Tu reprends **MediaLibrary**. Lis `ROADMAP.md`, puis `eval/DECISIONS.md` (ce qui
 a été tranché) et `eval/METHODE.md` (comment on tranche). Débrief en 2–3 lignes,
 puis on attaque.
 
-## Où on en est (17/08/2026, fin de session 19)
+## Où on en est (18/08/2026, fin de session 20)
 
-**1. Les dates de SCAN en base sont COMPTÉES : 72**, contre 12 connues — le plan
-de renommage n'en voyait que les noms bruts. `mesure_dates_scan.py` (PUR,
-32 tests, lecture seule sur une COPIE) applique au champ `taken` le critère que
-le renommage applique au nom. Presque toutes dans « Photos Papa » ; écarts +2 à
-+32 ans. **Confirmé sur le serveur vivant** : `/api/jour?jour=05-01` rend les
-4 photos de `1990_Achumani` avec `precise: true`. Même corpus (43 064).
+**Le scan rend enfin des comptes — chantier 10a, LIVRÉ mais PAS OBSERVÉ.**
+`comptes_index.py` (module PUR, 37 tests) branche un registre sur le **goulot**
+de l'index en mémoire : `TrackedDict` (`store_sqlite.py`), par où passe toute
+clé qui entre ou sort. Trois choses deviennent visibles :
 
-**2. Le DÉSACCORD des deux chemins a rapporté plus que leur accord.** A (dossier
-contre `taken`) voyait 15 fichiers renommés, B (le repli `YYYY0000` laissé dans
-le nom) en voyait 27, 12 communs. L'écart n'était pas du bruit :
-**(a)** le repli sur le NOM n'est pas gardé — l'étape 2 lit la date du nom de
-fichier sans contrôle, et un scanner qui NOMME ses fichiers y réinscrit la date
-que l'étape 1 vient d'écarter (1 cas) ; **(b)** 15 noms sont PÉRIMÉS —
-`YYYY0000` alors que la date précise est connue depuis, par une tâche de fond
-arrivée après le renommage, et le plan ne regarde plus les fichiers renommés.
-Les 27 se réconcilient : **12 vrais refus + 15 périmés**.
+1. **Qui retire, et combien** — chaque appelant déclare son motif :
+   `scan:disparus`, `scan:modifies`, `purge:cles_fantomes`,
+   `demarrage:dossiers_caches`, `rekey`, `tagging`.
+2. **Ce qui retire SANS le dire** — bucket « (non declare) », avec des exemples
+   de clés. C'est le bucket intéressant, pas les autres.
+3. **L'écart inexpliqué de chaque cycle de scan** :
+   `inexpliqué = (fin − début) − (ajouts − retraits)`. Non nul = la taille de
+   l'index a changé **hors du goulot**. C'est le chiffre qui manquait aux −250
+   du 17/08 ; zéro partout ferme le sujet.
 
-**3. L'asymétrie protégeait 1 369 dates, pas 20.** Autant de photos portent une
-date ANTÉRIEURE à leur dossier (958 à un an) — vidages de téléphone, dossiers
-d'import. Un garde-fou symétrique les aurait toutes détruites pour en sauver 72.
+Lecture : `/reglages` → panneau « Comptes de l'index » (badge *reconcilie* /
+*ecart ±n* / *en attente*), et `GET /api/maint/status` → clé `oublis`.
+L'étape 4 de `_sync_dir` dit maintenant `n/demandées` au lieu de se taire
+quand `n = 0`. Au passage : `.panel .mut` passe de 2,2:1 à 5,9:1 (plancher a11y).
 
-**4. Rien n'a été corrigé** : mesurer d'abord. Angle mort compté et assumé :
-6 818 photos sans année dans leur dossier, 10 226 sans `taken`.
+**Rien n'est acquis tant que ce n'est pas observé en réel.** Un instrument non
+lu vaut zéro.
 
 ## Prochain pas — par valeur
 
-1. **Instrumenter ce que le scan OUBLIE** (ROADMAP 10a) — le seul point encore
-   sans instrument. `forget_everywhere` renvoie un nombre que personne
-   n'enregistre ; l'étape 4 de `_sync_dir` ne dit pas combien de clés elle
-   retire ; les −250 du 17/08 restent indiagnosticables. Exposer le compteur
-   (résumé de scan + `/api/maint/status`) est la condition pour trancher à la
-   prochaine occurrence.
+1. **Observer 10a chez Mike.** Ouvrir `/reglages` après quelques cycles de scan
+   (5 min chacun). Trois lectures possibles : tout à zéro → l'index est sain et
+   le sujet se ferme ; « (non declare) » non nul → une porte oubliée, les
+   exemples de clés disent laquelle ; écart inexpliqué non nul → l'index bouge
+   hors du goulot, et le nombre dit de combien. **Ne rien décider avant.**
 2. **Décider quoi faire des 72** (ROADMAP 10b). Trois gestes indépendants, du
    moins cher au plus cher : garder l'étape 2 du repli (le NOM — 1 cas, module
    pur, sans redémarrage) ; rendre au plan de renommage les 15 noms périmés ;
    corriger `taken` en base (pipeline de dates, `monolith-surgery`, backfill —
-   et surtout **ne pas emporter les 1 369 antérieures**).
+   et surtout **ne pas emporter les 1 369 dates antérieures**).
 3. **Le prompt de PRODUCTION hallucine plus que V0** (`eval/DECISIONS.md`) :
    inchangé, chaque photo taguée le paie. **Ne pas revenir à V0 sans protocole.**
 4. **14a, suites** : les `faits` ne filtrent pas encore ; pas de filtre par

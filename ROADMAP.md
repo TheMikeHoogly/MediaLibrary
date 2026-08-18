@@ -6,44 +6,29 @@ dans `eval/METHODE.md` ; l'éphémère dans `PROMPT_NOUVELLE_SESSION.md`. Audits
 `docs/AUDIT_INTERNE_2026-08.md` (I1–I17, O1–O15, A–F),
 `docs/AUDIT_EXTERNE_2026.md`, `docs/RANGEMENT_2026.md`.
 
-## État (17/08/2026, session 19)
+## État (18/08/2026, session 20)
 
-**Les dates de SCAN sont COMPTÉES en base — 72, et ce n'est pas le chiffre qui
-compte le plus.** `mesure_dates_scan.py` (module PUR, 32 tests, lecture seule
-sur une COPIE) applique au champ `taken` le critère que le renommage applique
-au NOM : **72 photos** portent une date postérieure de plus d'un an à toutes
-les années de leur dossier, contre **12 connues** — le plan de renommage n'en
-voyait que les noms encore bruts. Quasi toutes dans « Photos Papa » (tirages
-numérisés) ; années inscrites 2003 à 2015, écarts de +2 à +32 ans ; **0 en
-échec de lecture, 72 fichiers bien présents**. Confirmé sur le serveur VIVANT :
-`/api/jour?jour=05-01` rend les quatre photos de `1990_Achumani` avec
-`precise: true` — l'index affirme le 1er mai 2007 pour des tirages de 1990.
-Même corpus des deux côtés (43 064).
+**Le scan rend enfin des comptes (chantier 10a).** `comptes_index.py` (module
+PUR, 37 tests) branche un registre sur le **GOULOT** de l'index en mémoire —
+`TrackedDict` dans `store_sqlite.py`, par où passe toute clé qui entre ou sort :
+aucun retrait ne peut lui échapper. Chaque appelant **déclare son motif**
+(`scan:disparus`, `scan:modifies`, `purge:cles_fantomes`,
+`demarrage:dossiers_caches`, `rekey`, `tagging`) ; ce qui retire **sans** motif
+tombe dans un bucket nommé, avec des exemples de clés. Et chaque cycle de scan
+est **réconcilié** : `inexpliqué = (fin − début) − (ajouts − retraits)`. Non nul
+= l'index a changé de taille **hors du goulot** — précisément le chiffre qui
+manquait aux −250 du 17/08. Lecture : `/reglages` (panneau « Comptes de
+l'index ») et `GET /api/maint/status` (clé `oublis`). L'étape 4 de `_sync_dir`
+dit désormais `n/demandées`, et non plus un silence quand `n = 0`.
 
-**Et le DÉSACCORD des deux chemins a rapporté plus que leur accord.** Chemin A
-(dossier contre `taken`) voyait 15 fichiers renommés, chemin B (le repli
-`YYYY0000` laissé dans le nom) en voyait 27 ; 12 communs. L'écart n'était pas
-du bruit :
+**LIVRÉ, PAS ENCORE OBSERVÉ EN RÉEL** : tant qu'aucun cycle n'a tourné chez
+Mike, l'instrument est une promesse — pas un acquis.
 
-- **Le repli sur le NOM n'est pas gardé** (1 cas, `Photos Papa\1983\
-  20150810_073417.jpg`) : quand l'étape 1 refuse `taken`, l'étape 2 lit la date
-  du nom de fichier — et un scanner qui NOMME ses fichiers y réinscrit la date
-  que l'étape 1 venait d'écarter. Un seul cas aujourd'hui, mais le garde-fou du
-  17/08 ne couvre qu'une des deux portes.
-- **15 noms sont PÉRIMÉS** : nom en `YYYY0000` alors que la date précise est
-  connue **depuis** le renommage (tâche de fond EXIF). Le plan ne regarde plus
-  les fichiers déjà renommés : il n'y reviendra pas seul. Réconciliation exacte
-  des 27 : **12 vrais refus + 15 périmés**.
-- **L'asymétrie protégeait 1 369 dates, pas 20** : autant de photos portent une
-  date ANTÉRIEURE à leur dossier (958 à un an, 192 à deux) — vidages de
-  téléphone et dossiers d'import. Un garde-fou symétrique les aurait toutes
-  détruites pour en sauver 72.
-
-**Angle mort assumé et compté** : 6 818 photos n'ont aucune année dans leur
-dossier — rien à contredire, donc rien à dire. 10 226 n'ont pas de `taken`.
-
-**Rien n'a été corrigé** : mesurer d'abord. La décision de toucher `taken` en
-base est ouverte (point 10).
+**Rappel de la session 19** (détail : git et `eval/DECISIONS.md`) : **72** dates
+de SCAN comptées en base contre 12 connues ; le désaccord des deux chemins a
+livré le repli sur le NOM non gardé (1 cas) et **15 noms périmés** ; l'asymétrie
+du garde-fou protège **1 369** dates antérieures. Rien n'a été corrigé — la
+décision reste ouverte (point 10b).
 
 ## À faire — par ordre de valeur
 
@@ -75,13 +60,10 @@ base est ouverte (point 10).
 9. **Reconnaissance — algo (BARRIÈRE : vérité terrain ≥ ~5 %).**
    HDBSCAN/Chinese Whispers/AdaFace inévaluables à 0,8 %. La barrière reste.
 10. **Données / finitions.** Trois chantiers, dans cet ordre :
-    (a) **Compter ce que le scan OUBLIE** — toujours OUVERT, et c'est le seul
-    point encore sans instrument : `forget_everywhere` renvoie un nombre que
-    personne n'enregistre, l'étape 4 de `_sync_dir` ne dit pas combien de clés
-    elle retire, et les −250 du 17/08 restent indiagnosticables. Exposer le
-    compteur (résumé de scan + `/api/maint/status`) est la condition pour
-    trancher à la prochaine occurrence. *Un travail de fond qui ne rend pas de
-    comptes finit par ne plus travailler du tout* — vrai une troisième fois.
+    (a) **Compter ce que le scan OUBLIE — INSTRUMENT LIVRÉ (18/08), À
+    OBSERVER.** Reste : lire `/reglages` après quelques cycles. Un « (non
+    declare) » ou un écart inexpliqué non nul EST la piste ; zéro partout ferme
+    le sujet. Rien à décider avant d'avoir vu un chiffre en réel.
     (b) **Dates de scan : mesurées (72), correction NON décidée.** Corriger
     `taken` en base touche le pipeline de dates (`monolith-surgery`) et demande
     un backfill ; 72 photos mal triées en sont l'enjeu, contre 1 369 dates
@@ -158,7 +140,7 @@ touche l'un touche l'autre. Chiffrés et non traités (14/08) : (a) le plancher
   quarantaine réversible `_corbeille_vecteurs/`.
 - **Observabilité** : boucle scan/backup (O5), `backup_verify`, trois tâches de
   fond EXIF (dates, noms, GPS) — état, avancement et « fichiers muets » dans
-  `/reglages`.
+  `/reglages` ; comptes de l'index au goulot (`comptes_index.py`, à observer).
 - **Mesure** : `mesure_dates_scan.py` — dates de scan en base, lecture seule sur
   copie, deux chemins indépendants.
 - **Hygiène** : nettoyage réversible (bat 29), commit guidé `SESSION_COMMIT.txt`

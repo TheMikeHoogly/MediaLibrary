@@ -415,6 +415,84 @@ def make_store(json_path):
 
 
 STORE = make_store(INDEX_FILE)
+
+# ─── Comptes de l'index : ce que le scan OUBLIE (chantier 10a, 18/08/2026) ────
+# Le 17/08, l'index EN MÉMOIRE a perdu 250 entrées que `photos.db` avait
+# gardées, et le mécanisme est resté introuvable — non par manque d'hypothèses
+# (trois testées, trois tombées) mais parce que RIEN NE COMPTAIT les retraits :
+# `forget_everywhere()` renvoyait un nombre que personne n'enregistrait.
+#
+# Le registre (`comptes_index.py`) se branche sur le GOULOT — `TrackedDict`
+# dans `store_sqlite.py`, par où passe toute clé qui entre ou sort de l'index —
+# et chaque appelant DÉCLARE son motif. Trois choses deviennent visibles :
+#   • combien chaque motif retire (scan:disparus, purge:cles_fantomes…) ;
+#   • ce qui retire SANS motif (bucket « (non declare) », avec des exemples) ;
+#   • l'ÉCART INEXPLIQUÉ de chaque cycle de scan — la taille de l'index a
+#     changé sans qu'aucune mutation passée par le goulot ne l'explique.
+# C'est ce dernier chiffre qui manquait aux −250. Lecture : `/reglages` et
+# `GET /api/maint/status` (clé « oublis »).
+
+
+class _RegistreInerte:
+    """Registre qui ne compte rien et ne casse rien.
+
+    Utilisé quand le module est absent OU quand l'index tourne encore sur le
+    repli JSON (`TagStore`), dont le dict nu n'est pas instrumenté : mieux vaut
+    un instrument MUET qu'un instrument qui ment — des compteurs à zéro se
+    liraient « rien n'a été retiré », et la réconciliation crierait à l'écart
+    inexpliqué à chaque cycle.
+    """
+
+    actif = False
+
+    def motif(self, *a, **k):
+        import contextlib
+        return contextlib.nullcontext()
+
+    def motif_du_thread(self, *a, **k):
+        return None
+
+    def cle_ajoutee(self, *a):
+        pass
+
+    def cle_retiree(self, *a):
+        pass
+
+    def cles_retirees(self, *a):
+        pass
+
+    def debut_cycle(self, *a):
+        pass
+
+    def fin_cycle(self, *a):
+        return None
+
+    def resume(self):
+        return {'actif': False}
+
+    def ligne_cycle(self, *a):
+        return ''
+
+    def ligne_motifs(self):
+        return ''
+
+
+try:
+    from comptes_index import RegistreOublis
+except ImportError:                     # module absent → instrument inerte
+    RegistreOublis = None
+
+if RegistreOublis is not None and hasattr(STORE, 'brancher_registre'):
+    REGISTRE = RegistreOublis()
+    STORE.brancher_registre(REGISTRE)
+    print(f"  📒 Comptes de l'index actifs — départ à {len(STORE.data)} entrées")
+else:
+    REGISTRE = _RegistreInerte()
+    if RegistreOublis is None:
+        print("  📒 Comptes de l'index indisponibles (comptes_index.py absent)")
+    else:
+        print("  📒 Comptes de l'index indisponibles (index JSON non instrumenté)")
+
 TAG_QUEUE = queue.Queue()
 PENDING = set()
 PENDING_LOCK = threading.Lock()
@@ -1785,6 +1863,15 @@ def parse_tags(raw):
 def tagger_worker():
     fails = {}
     downs = {}
+    # Ce thread ne fait qu'une chose : toutes ses entrees d'index relevent du
+    # tagging. Motif permanent -> les milliers d'AJOUTS legitimes ne noient pas
+    # le bucket « non declare ». Contrepartie assumee : un RETRAIT fait ici
+    # serait etiquete « tagging » plutot que non declare -- mais une ligne
+    # « tagging » avec des retraits non nuls est justement une anomalie visible,
+    # ce worker n'etant cense qu'ajouter.
+    # Les autres threads (maintenance, HTTP) restent volontairement SANS motif
+    # permanent : c'est la qu'un oubli non declare doit pouvoir se montrer.
+    REGISTRE.motif_du_thread('tagging')
     while True:
         name = TAG_QUEUE.get()
         try:
@@ -2535,7 +2622,11 @@ def _sync_dir(label, cur, own_keys, first=False, deep=False):
             if mtime is not None and abs(mtime - old_m) > 2:
                 changed.append(k)
         if changed:
-            STORE.remove_many(changed)
+            # Motif déclaré : ces retraits sont TEMPORAIRES (l'entrée revient
+            # après re-tagging), mais ils font quand même baisser l'index —
+            # sans motif ils passeraient pour un oubli.
+            with REGISTRE.motif('scan:modifies', label=label):
+                STORE.remove_many(changed)
             for k in changed:
                 enqueue(k)
             print(f"  ♻ {label} : {len(changed)} fichier(s) modifié(s) → re-tagging")
@@ -2545,10 +2636,15 @@ def _sync_dir(label, cur, own_keys, first=False, deep=False):
     #    vecteur sémantique (avant : STORE seul → détections orphelines, bug ARZOPA).
     #    Les fiches nommées (PEOPLE/PETS, keyées par nom) ne sont pas touchées.
     if orphans:
-        n = forget_everywhere(orphans)
-        if n:
-            print(f"  🧹 {label} : {n} entrée(s) de fichiers disparus retirée(s)"
-                  f" (tags + visages/animaux + vecteurs)")
+        n = forget_everywhere(orphans, motif='scan:disparus', label=label)
+        # On dit TOUJOURS combien on a demandé et combien est parti : « 0 sur
+        # 250 » est une information, et c'est précisément celle qui manquait le
+        # 17/08. L'écart = clés déjà absentes de l'index (déjà retirées par un
+        # autre chemin), et c'est lui qu'il faut voir.
+        ecart = len(orphans) - n
+        print(f"  🧹 {label} : {n}/{len(orphans)} entrée(s) de fichiers disparus"
+              f" retirée(s) (tags + visages/animaux + vecteurs)"
+              + (f" — {ecart} déjà absente(s) de l'index" if ecart else ""))
 
 
 def scan_uploads(first=False, deep=False):
@@ -2743,7 +2839,11 @@ def rekey_everywhere(old, new, mtime=None, save=True):
 
     Renvoie True si l'entrée `tags` a été re-clée, False sinon.
     """
-    moved = STORE.rekey(old, new, mtime=mtime)
+    # Un re-clé = 1 retrait + 1 ajout : NEUTRE en taille d'index, mais il doit
+    # être déclaré, sinon il gonfle le bucket « non declare » des deux côtés et
+    # noie le seul signal qui compte.
+    with REGISTRE.motif('rekey'):
+        moved = STORE.rekey(old, new, mtime=mtime)
     if not moved:
         return False
     _key_index_invalider()   # la carte {chemin: clé} vient de mentir
@@ -2776,7 +2876,7 @@ def rekey_everywhere(old, new, mtime=None, save=True):
     return moved
 
 
-def forget_everywhere(keys):
+def forget_everywhere(keys, motif='oubli', label=''):
     """Inverse de `rekey_everywhere` : OUBLIE completement des cles dont le
     FICHIER a disparu. Sans elle, la purge du scan (`_sync_dir` etape 4) ne
     retirait que le store `tags` et laissait les detections visages/animaux et
@@ -2794,11 +2894,17 @@ def forget_everywhere(keys):
     jamais touchees ici. Le tag `personne:`/`animal:` de la photo disparait avec
     la photo (elle n'existe plus), mais la fiche et sa signature (refs = copies)
     survivent. Renvoie le nombre d'entrees `tags` retirees.
+
+    `motif` / `label` : DECLARATION au carnet de comptes (comptes_index.py).
+    Le nombre renvoye ne suffisait pas — personne ne l'enregistrait (17/08).
+    L'appelant dit desormais POURQUOI il oublie, et le registre garde la trace
+    (compte par motif + exemples de cles), lisible dans /reglages.
     """
     keys = [k for k in keys if k]
     if not keys:
         return 0
-    n = STORE.remove_many(keys)
+    with REGISTRE.motif(motif, label=label):
+        n = STORE.remove_many(keys)
     # Seules FACE_STORE et ANIMAL_STORE portent des detections keyees par photo.
     # PEOPLE/PETS sont keyes par nom -> volontairement exclus (ne rien casser).
     for st in (FACE_STORE, ANIMAL_STORE):
@@ -2869,7 +2975,7 @@ def purge_cles_fantomes(dry_run=False):
             list(st.data.keys()), _est_fichier, named)
     fantomes = sorted(set(fantomes))
     if fantomes and not dry_run:
-        forget_everywhere(fantomes)
+        forget_everywhere(fantomes, motif='purge:cles_fantomes')
     return fantomes
 
 
@@ -4010,7 +4116,11 @@ def attribuer_visages(membres, cible):
 
 # État observable de la boucle de scan/backup (audit O5) : « dernier scan à
 # HH:MM » dans /reglages — un crash silencieux devient visible.
-MAINT_LOOP_STATE = {"dernier_scan": 0.0, "derniere_erreur": "", "erreur_at": 0.0}
+MAINT_LOOP_STATE = {"dernier_scan": 0.0, "derniere_erreur": "", "erreur_at": 0.0,
+                    # Réconciliation du dernier cycle de scan (comptes_index) :
+                    # debut/fin/ajouts/retraits/inexplique. Vide tant qu'aucun
+                    # cycle n'a tourné.
+                    "dernier_cycle": {}}
 # Vérification de la sauvegarde (audit A, « assurance-vie ») : résultat de la
 # dernière restauration à blanc du snapshot NAS. Voir backup_verify().
 BACKUP_VERIFY_STATE = {"at": 0.0, "ok": None, "integrity": "", "detail": "",
@@ -4025,7 +4135,8 @@ def maintenance_loop():
     # purge des entrées de dossiers cachés (.thumbs, @eaDir…) déjà indexées
     bad = [k for k in list(STORE.data) if _is_hidden_path(_resolve_key(k))]
     if bad:
-        n = STORE.remove_many(bad)
+        with REGISTRE.motif('demarrage:dossiers_caches'):
+            n = STORE.remove_many(bad)
         print(f"  🧹 {n} entrée(s) de dossiers cachés retirée(s) de l'index")
     # Purge unique des clés fantômes (doublons malformés type « ARZOPA » qui ne
     # résolvent pas mais dont la vraie photo existe sous une clé correcte). Sans
@@ -4047,8 +4158,28 @@ def maintenance_loop():
         try:
             # scan approfondi ~1x/heure : détecte aussi les fichiers modifiés
             deep = (cycle % 12 == 6)
-            scan_uploads(first, deep)
-            retro_write_metadata()
+            # Réconciliation du cycle (chantier 10a) : on encadre le scan par la
+            # TAILLE de l'index et on compare à ce que les mutations déclarées
+            # prédisent. Le `finally` est essentiel : un cycle laissé OUVERT
+            # ferait porter au suivant les mutations de deux cycles — un
+            # instrument qui ment est pire que pas d'instrument.
+            # `len()` et le snapshot des compteurs doivent etre pris ENSEMBLE :
+            # sinon un ajout concurrent glisse entre les deux et fabrique un
+            # ecart de +1 la ou rien n'a fui. Toutes les mutations de l'index
+            # passent par le verrou du store, donc le prendre ici les exclut.
+            # Ordre de verrous : STORE.lock -> registre (jamais l'inverse).
+            with STORE.lock:
+                REGISTRE.debut_cycle(len(STORE.data))
+            try:
+                scan_uploads(first, deep)
+                retro_write_metadata()
+            finally:
+                with STORE.lock:
+                    _res = REGISTRE.fin_cycle(len(STORE.data))
+                MAINT_LOOP_STATE["dernier_cycle"] = _res or {}
+                _ligne = REGISTRE.ligne_cycle(_res)
+                if _ligne:
+                    print(f"  📒 {_ligne}")
             first = False
             MAINT_LOOP_STATE["dernier_scan"] = time.time()
         except Exception as e:                                # noqa: BLE001
@@ -6162,6 +6293,9 @@ td.n, th.n { text-align: right; font-family: var(--f-donnees); }
          border-radius: var(--r-md); padding: 14px; margin: 10px 0; box-shadow: 0 6px 30px #000a; }
 .panel h3 { font: 600 var(--t-md)/1.2 var(--f-affichage); margin-bottom: var(--e-2); }
 .panel td, .panel th { border-color: var(--papier-2); }
+/* --graphite est le gris des surfaces SOMBRES : sur le papier il tombait a
+   2,2:1 (plancher a11y = 4,5:1). --graphite-p sur --papier donne 5,9:1. */
+.panel .mut { color: var(--graphite-p); }
 .rowf { display: flex; gap: var(--e-2); align-items: center; flex-wrap: wrap; }
 .b { min-height: var(--touch); padding: 0 14px; border-radius: 8px; border: 1px solid var(--graphite-p);
      background: transparent; color: var(--texte-papier); font: 500 var(--t-sm) var(--f-texte); cursor: pointer; }
@@ -6170,6 +6304,13 @@ td.n, th.n { text-align: right; font-family: var(--f-donnees); }
          border: 1px solid var(--graphite-p); color: var(--graphite-p); }
 .badge.on { color: #fff; background: var(--fixateur); border-color: var(--fixateur); }
 .badge.paused { color: #fff; background: var(--veilleuse); border-color: var(--veilleuse); }
+/* --encre = erreur (semantique stricte des accents) : un ecart inexplique
+   dans les comptes de l'index n'est pas une attente, c'est une anomalie. */
+.badge.alerte { color: #fff; background: var(--encre); border-color: var(--encre); }
+.oubmsg { margin-top: 10px; padding: var(--e-2) var(--e-3); border-radius: var(--r-md);
+          background: var(--papier-2); color: var(--texte-papier);
+          font: 500 0.82rem var(--f-donnees); }
+.oubmsg.alerte { border-left: 3px solid var(--encre); }
 .subh { font: 600 var(--t-sm)/1.2 var(--f-affichage); margin: 16px 0 2px; letter-spacing: -0.01em; }
 .stepren { list-style: none; display: flex; flex-direction: column; gap: var(--e-2); margin-top: var(--e-2); }
 .stepren li { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
@@ -6205,6 +6346,15 @@ td.n, th.n { text-align: right; font-family: var(--f-donnees); }
 
   <h2>Bibliotheque</h2>
   <div class="cards" id="lib"></div>
+
+  <div class="panel">
+    <h3>Comptes de l&#39;index <span class="badge" id="oub-badge"></span></h3>
+    <p class="mut">Qui retire des entrees de l&#39;index, et combien. L&#39;<b>ecart inexplique</b>
+       compte les entrees dont l&#39;index a varie <em>sans</em> qu&#39;aucune operation declaree ne
+       l&#39;explique : c&#39;est exactement le chiffre qui manquait le 17 aout, quand 250 entrees ont
+       disparu de la memoire sans laisser de trace. Zero = tout s&#39;explique.</p>
+    <div id="oublis"></div>
+  </div>
 
   <div class="panel">
     <h3>Maintenance <span class="badge" id="maint-badge"></span></h3>
@@ -6313,6 +6463,68 @@ function load(){
       card('Personnes', c.personnes||0), card('Animaux', c.animaux||0),
       card('Visages', c.visages||0)
     ].join('');
+    // Comptes de l'index (chantier 10a) : ce que le scan OUBLIE, enfin compte.
+    // Le badge dit l'essentiel en un mot ; le detail sert a trancher.
+    var ou=s.oublis||{}, ob=document.getElementById('oub-badge'), od=document.getElementById('oublis');
+    if(!ou.actif){
+      ob.textContent='indisponible'; ob.className='badge';
+      od.innerHTML='<p class="mut">Index non instrumente (repli JSON) : aucun compte n\\'est tenu. '
+        +'Mieux vaut pas de chiffre qu\\'un chiffre faux.</p>';
+    } else {
+      var ine=ou.inexplique_cumul||0, ncy=ou.cycles_inexpliques||0;
+      if(ine||ncy){ ob.textContent='ecart '+(ine>0?'+':'')+ine; ob.className='badge alerte'; }
+      // « reconcilie » ne se dit qu'apres au moins un cycle : avant, il n'y a
+      // rien a reconcilier, et l'annoncer serait une fausse assurance.
+      else if(!ou.cycles_vus){ ob.textContent='en attente'; ob.className='badge'; }
+      else { ob.textContent='reconcilie'; ob.className='badge on'; }
+      var h='';
+      // 1) Le dernier cycle de scan, en clair.
+      var cy=(ou.cycles||[])[0];
+      if(cy){
+        var d=cy.fin-cy.debut, sgn=(d>0?'+':'');
+        h+='<div class="oubmsg'+(cy.inexplique?' alerte':'')+'" role="status" aria-live="polite">'
+          +'Dernier scan ('+esc(tstamp(cy.at))+') : index '+cy.debut+' \\u2192 '+cy.fin+' ('+sgn+d+')'
+          +' \\u00b7 '+cy.ajouts+' ajout(s), '+cy.retraits+' retrait(s) declares'
+          +(cy.inexplique
+              ? ' \\u00b7 \\u26a0 ECART INEXPLIQUE '+(cy.inexplique>0?'+':'')+cy.inexplique
+              : ' \\u00b7 tout s\\'explique')
+          +'</div>';
+      } else {
+        h+='<p class="mut" style="margin-top:10px">Aucun cycle de scan termine depuis le '
+          +'demarrage. Le premier arrive au prochain scan.</p>';
+      }
+      // 2) Qui retire quoi, depuis le demarrage.
+      var pm=ou.par_motif||{}, mk=Object.keys(pm), rows='';
+      mk.forEach(function(k){
+        rows+='<tr><td>'+esc(k)+'</td><td class="n">'+(pm[k].retraits||0)+'</td>'
+             +'<td class="n">'+(pm[k].ajouts||0)+'</td></tr>';
+      });
+      h+= rows
+        ? ('<table style="margin-top:10px"><thead><tr><th>Motif</th><th class="n">Retraits</th>'
+           +'<th class="n">Ajouts</th></tr></thead><tbody>'+rows+'</tbody></table>')
+        : '<p class="mut" style="margin-top:10px">Rien n\\'est entre ni sorti de l\\'index depuis le demarrage.</p>';
+      // 3) Les retraits que PERSONNE n'a declares : le bucket qui compte.
+      if(ou.non_declares){
+        var ex=(ou.non_declares_exemples||[]).map(function(e){return e.cle;}).slice(0,3);
+        h+='<div class="oubmsg alerte">'+ou.non_declares+' retrait(s) sans motif declare'
+          +(ex.length?' \\u00b7 ex. '+esc(ex.join(', ')):'')+'</div>';
+      }
+      // 4) Les derniers gestes, pour dater une anomalie.
+      var evs=(ou.evenements||[]).slice(0,5), erows='';
+      evs.forEach(function(e){
+        // « x200 » : blocs consecutifs de meme motif, fusionnes en une ligne.
+        erows+='<tr><td>'+esc(tstamp(e.at))+'</td><td>'+esc(e.motif)
+             +((e.n||1)>1?' \\u00d7'+e.n:'')+'</td>'
+             +'<td>'+esc(e.label||'')+'</td><td class="n">'+e.retraits+'</td>'
+             +'<td class="n">'+e.ajouts+'</td></tr>';
+      });
+      if(erows){
+        h+='<h4 class="subh">Derniers mouvements</h4><table><thead><tr><th>Quand</th>'
+          +'<th>Motif</th><th>Ou</th><th class="n">Retraits</th><th class="n">Ajouts</th>'
+          +'</tr></thead><tbody>'+erows+'</tbody></table>';
+      }
+      od.innerHTML=h;
+    }
     var badge=document.getElementById('maint-badge');
     if(m.paused){ badge.textContent='en pause'; badge.className='badge paused'; }
     else if(m.auto){ badge.textContent='auto'; badge.className='badge on'; }
@@ -13770,6 +13982,10 @@ class Handler(BaseHTTPRequestHandler):
             # Boucle scan/backup (audit O5) + vérification de sauvegarde et
             # export des jugements (audit A) : rendus visibles dans /reglages.
             'boucle': dict(MAINT_LOOP_STATE),
+            # Comptes de l'index (chantier 10a) : qui retire des cles, combien,
+            # et ce que personne n'explique. Toutes les listes sont bornees par
+            # le registre lui-meme.
+            'oublis': REGISTRE.resume(),
             'backup_verify': dict(BACKUP_VERIFY_STATE),
             # Backfills EXIF (dates, GPS) : morts en silence pendant des mois,
             # desormais observables (bug du 13/08, cf. _attendre_exiftool).
