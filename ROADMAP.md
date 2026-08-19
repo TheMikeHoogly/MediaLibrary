@@ -3,8 +3,7 @@
 Carte des **priorités**, rien d'autre. Les récits de travaux terminés vivent
 dans **git** ; les rejets dans `eval/DECISIONS.md` ; la méthode dans
 `eval/METHODE.md` ; l'éphémère dans `PROMPT_NOUVELLE_SESSION.md`. Audits :
-`docs/AUDIT_INTERNE_2026-08.md`, `docs/AUDIT_EXTERNE_2026.md`,
-`docs/RANGEMENT_2026.md`.
+`docs/AUDIT_INTERNE_2026-08.md`, `docs/AUDIT_EXTERNE_2026.md`, `docs/RANGEMENT_2026.md`.
 
 ## État (19/08/2026, session 25)
 
@@ -15,27 +14,37 @@ Reste NON DÉCIDÉ : corriger `taken` en base (**72** photos contre **1 369** da
 antérieures). **Non observé en réel** : Mike ne l'a pas lancé.
 
 **`faits` devient une VUE — le backfill est REJETÉ, rien n'est écrit.**
-`faits_vue.py` (pur, 26 tests) calcule les faits à la demande ; `server`
-lui délègue la règle de lieu (**0 différence sur 43 064 clés**).
+`faits_vue.py` (pur, 26 tests) calcule les faits à la demande ; `server` lui
+délègue la règle de lieu (**0 différence sur 43 064 clés**). **En réel après
+redémarrage** : `import faits_vue` tient, et `_chemin_relatif` — délégué, appelé
+43 064 fois pour bâtir `/sujets` — laisse « Bremblens » à **2 398** photos et non
+30 682 : le retrait de la racine média a survécu à la délégation. **Pas encore
+observé** : la branche du KB elle-même (`pending` = 0, aucun tagging depuis le
+redémarrage) — le premier tagging sera son observation.
 `mesure_faits_vue.py` a tranché sur COPIE :
 
-- **Ce qu'elle rend** : **42 974 (99,79 %)** avec un fait, mais le chiffre
-  honnête est **29 775 (69,14 %)** avec un fait NON-date ; 13 199 n'ont que la
-  date, 90 sont muettes. Matière : date 42 773 · personne 18 859 · lieu **12 802**
-  (6 595 GPS + 6 207 chemin) · espèce 4 750 · animal 935.
+- **Ce qu'elle rend** : 42 974 (99,79 %) avec un fait, mais le chiffre honnête
+  est **29 775 (69,14 %)** avec un fait NON-date ; 13 199 n'ont que la date, 90
+  sont muettes. Matière : date 42 773 · personne 18 859 · lieu **12 802** (6 595
+  GPS + 6 207 chemin) · espèce 4 750 · animal 935.
 - **Pourquoi une vue** : sur les 81 pourvues, elle en corrige **4** — 3 noms
-  « Flo » retirés depuis, **1 photo qui a reçu 6 noms APRÈS son tagging**. Un
-  backfill aurait gravé les deux erreurs 43 064 fois.
+  « Flo » retirés depuis, **1 photo qui a reçu 6 noms APRÈS son tagging**.
 - **Ce qu'elle coûte** : **1,4 ms** par page de 50, **3,8 s** sur l'index entier.
   Prudence : `_noms_attendus` balaie toutes les fiches à chaque appel (13,9 ms
-  pour 50 clés) — en balayage complet, index inversé des noms construit UNE fois.
+  pour 50 clés) — en balayage complet, index inversé construit UNE fois.
 
-**Et le LIEU n'est prêt pour aucune des deux règles.** Celle du KB évite les
-**577** lieux collés dans un mot, mais en RATE **378** en mot entier (207 effacés
-au nettoyage, **124 libellés MULTI-MOTS jamais essayés** — « Weekend Vallée
-d'Aoste », 47 mots de 4 lettres) et répond AUTREMENT sur **591** (315 fois plus
-précise, 119 moins, 157 arbitraires). **1 546** désaccords — l'argument décisif
-pour la vue : une règle corrigée vaudra pour les 43 064 sans migration.
+**Et le LIEU a TROIS règles, pas deux — la troisième est la seule qu'on VOIE.**
+(1) renommage (`resolve_path_place`, sous-chaîne, libellé le plus long) ;
+(2) Knowledge Builder (`faits_vue.lieu_par_segments`, segments entiers, dossier
+le plus profond) ; (3) **`places_list` / `_cles_du_lieu` — la page `/sujets` et
+la RECHERCHE — sous-chaîne aussi, et intacte.** Observé le 19/08 après
+redémarrage : `/sujets` affiche **« Ins » : 493 photos** (≥ 442 collées depuis
+« Cousins&Cousines »), et une recherche « Ins » rend 80 résultats dont **32
+viennent de Cousins&Cousines**. La (2) évite ces 577 collés mais RATE 378 mots
+entiers (207 effacés au nettoyage, **124 libellés MULTI-MOTS jamais essayés** —
+« Weekend Vallée d'Aoste », 47 mots de 4 lettres) et répond AUTREMENT sur 591 :
+**1 546** désaccords. Corriger (2) sans (3), c'est corriger là où personne ne
+regarde.
 
 ## À faire — par ordre de valeur
 
@@ -45,10 +54,9 @@ pour la vue : une règle corrigée vaudra pour les 43 064 sans migration.
 2. **Observer en réel ce qui est livré** — **fait ✔**. Reste : re-upload = une
    entrée, seek vidéo mobile, test du Z.
 3. **Chaîne « noms → descriptions → recherche » — 3a, 3b, 3c CLOS le 16/08.**
-   La re-passe ne se fera pas. Reste ouvert : **le prompt de PRODUCTION est
-   celui qui hallucine le plus.** V2CTX est en prod depuis le 12/08 sur la foi
-   d'un 25-15 ; le banc de 147 photos montre le coût — toute photo taguée le
-   paie. **Pas de retour à V0 sans protocole.** Wagon de 14 : affichage
+   La re-passe ne se fera pas. Reste ouvert : **le prompt de PRODUCTION est celui
+   qui hallucine le plus** (adopté sur un 25-15 ; toute photo taguée le paie).
+   **Pas de retour à V0 sans protocole.** Wagon de 14 : affichage
    date · lieu · noms depuis `faits`.
 4. **Gestes Mike** : `gps_place` ✔ ; renommage appliqué ✔ (7 058) ; nettoyer
    Flo (5 909 photos ; « Corriger » ~0.2 ou « Nettoyer ») ; re-rejeter Caline.
@@ -56,9 +64,9 @@ pour la vue : une règle corrigée vaudra pour les 43 064 sans migration.
    `photo_thumbs/`) gagne en poids.
 6. **Navigation par similarité et par date** : « Semblables » et « même jour »
    livrés et observés. Reste : doublons proches bridés (>0,98 + même journée →
-   quarantaine réversible, 50 paires jugées avant tout geste).
+   quarantaine réversible, 50 paires jugées avant geste).
 7. **Extraction `ui/`** : décision à prendre — session dédiée `bundle.py` ou
-   parcage explicite (item zombie ; préparatoire fait, détail git).
+   parcage explicite (item zombie ; préparatoire fait).
 8. **Cross-pipeline (Mutz/Caline)** : outil livré, réversible. Fix auto REJETÉ
    (18 % faux rejets). Relancer si un nom d'animal sort en `personne:`.
 9. **Reconnaissance — algo.** BARRIÈRE : vérité terrain ≥ ~5 %. HDBSCAN /
@@ -92,29 +100,27 @@ pour la vue : une règle corrigée vaudra pour les 43 064 sans migration.
 14. **Recherche IA locale contextuelle.** (a) **Déterministe — la MATIÈRE est
     tranchée (19/08)** : `faits` est une **VUE** (`faits_vue.py`), pas un champ
     — mesures et raisons dans l'État. Reste, dans cet ordre :
-    **(i) brancher la vue** là où le point 3 l'attend (affichage date · lieu ·
-    noms) et sur `/api/…`, en construisant l'index inversé des noms UNE fois
-    par balayage ; **(ii) corriger la règle de LIEU** — les 124 libellés
-    multi-mots sont le plus gros lot et le plus facile (essayer le libellé
-    entier dans le segment, pas seulement ses mots), le seuil de 5 lettres en
-    coûte 47, et « France & Belgique » demande de trancher : deux lieux ou
-    aucun ; **(iii) le filtre**, mesuré sur la couverture réelle (69,14 %),
-    jamais sur les 99,79 %.
+    **(i) UNIFIER la règle de lieu sur les trois appelants** — `places_list` et
+    `_cles_du_lieu` sont ce que Mike VOIT, et ils collent encore « Ins » à 493
+    photos ; c'est là que le gain est immédiat, pas dans le KB ; **(ii) corriger
+    la règle** — 124 libellés multi-mots (essayer le libellé entier DANS le
+    segment), seuil de 5 lettres (47), « France & Belgique » à trancher : deux
+    lieux ou aucun ; **(iii) brancher la vue** là où le point 3 l'attend, index
+    inversé des noms construit UNE fois par balayage ; **(iv) le filtre**,
+    mesuré sur 69,14 %, jamais sur 99,79 %.
     (b) ensuite seulement, **escalade ponctuelle** vers un modèle
     chargé à la demande (bail GpuArbiter, déchargé après) — `vision-eval`,
     jamais câblé sans mesure.
 15. **À évaluer (`vision-eval`)** : Florence-2 léger. **Parqué** faute
-    d'hypothèse — le banc 3b a montré que les faits en contexte n'achètent pas
-    la description.
+    d'hypothèse (banc 3b).
 
 ### Résiduels faible valeur (ne pas prioriser)
 **MESURÉ le 15/08, et c'est pourquoi on n'y touche pas** : les deux planchers
-1990 (`_fname_time`, `meme_jour.ANNEE_MIN`) coûtent **7** photos et **0**, et
-ils sont **couplés** ; le plancher 1990 subsiste aussi dans `plan_rangement.py`,
+1990 (`_fname_time`, `meme_jour.ANNEE_MIN`) coûtent **7** photos et **0**, et ils
+sont **couplés** ; le plancher 1990 subsiste aussi dans `plan_rangement.py`,
 `recensement_doublons.py`, `diagnostic_dates.py`, sans effet tant qu'aucun
-dossier d'avant 1990 n'y passe. Le **plafond 2100** d'une date lue dans un NOM
-(`22082010141.jpg` → « 2082 ») : **72** en base, **coût 0** — uniquement parce
-qu'elles portent un `taken` et que `_best_time` prend `min()`. Enfin
+dossier d'avant 1990 n'y passe. Le **plafond 2100** (`22082010141.jpg` → 2082) :
+72 en base, coût 0 — parce qu'elles portent un `taken`. Enfin
 `/files?dir=1&rec=1` (racine NAS) ne répond pas en 6 min, cause non cherchée.
 
 ## Acquis — ne pas reproposer (détail : git + `eval/DECISIONS.md`)
@@ -162,9 +168,9 @@ qu'elles portent un `taken` et que `_best_time` prend `min()`. Enfin
 - **Multi-utilisateur** — avec un **déclencheur nommé** : un « mode Flo » minimal
   (file de nommage des visages qu'elle seule sait nommer), à ouvrir quand l'outil
   est à ~90 %. C'est lui qui débloque la vérité terrain.
-- **Vidéo → audio** : coût élevé, valeur incertaine, aucun déclencheur en vue.
+- **Vidéo → audio** : coût élevé, valeur incertaine, aucun déclencheur.
 - **Bibliothèque Figma** : le design system vit dans le code ; un miroir serait
-  de la doc à double entretien sans consommateur.
+  de la doc à double entretien.
 - Récits LLM auto : écartés (hallucination).
 
 **Vision** : mémoire familiale à provenance — deux tests : « PC mort lundi,

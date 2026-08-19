@@ -3,63 +3,62 @@
 > À coller après connexion de `C:\Prog\Claude\MediaLibrary`. Règles et
 > protocole : `CLAUDE.md`. Ici : **l'état et le prochain pas, rien d'autre.**
 
-Tu reprends **MediaLibrary**. **Commence par VÉRIFIER, pas par lire** :
-`.git/HEAD`, `.git/logs/HEAD` et `.git/logs/refs/heads/main` disent ce qui a été
-commité et FUSIONNÉ depuis — ce document, non. Puis `ROADMAP.md`,
-`eval/DECISIONS.md`, `eval/METHODE.md`. Débrief en 2–3 lignes, puis on attaque.
+Tu reprends **MediaLibrary**. **VÉRIFIE avant de lire** : `.git/HEAD`,
+`.git/logs/HEAD` et `.git/logs/refs/heads/main` disent ce qui a été commité et
+FUSIONNÉ depuis — ce document, non. Puis `ROADMAP.md`, `eval/DECISIONS.md`,
+`eval/METHODE.md`. Débrief en 2–3 lignes, puis on attaque.
 
 ## Où on en est (19/08/2026, fin de session 25)
 
 **`faits` est une VUE — le backfill est REJETÉ.** `faits_vue.py` (pur, 26 tests)
 calcule les faits à la demande ; `server` lui délègue la règle de lieu
-(`_lieu_pour_cle`, `_lieu_plausible`, `_chemin_relatif`) : **0 différence sur
-43 064 clés**. Rien n'est écrit en base, aucune migration.
+(`_lieu_pour_cle`, `_lieu_plausible`, `_chemin_relatif`). Rien n'est écrit en
+base, aucune migration. Pourquoi : sur les 81 entrées pourvues, la vue en
+**corrige 4** — 3 noms « Flo » retirés depuis, **1 photo qui a reçu 6 noms APRÈS
+son tagging**. Couverture 99,79 %, mais le chiffre honnête est **69,14 %** avec un
+fait NON-date. Coût : **1,4 ms** par page de 50, **3,8 s** sur l'index entier —
+seule prudence, `_noms_attendus` balaie toutes les fiches à chaque appel : en
+balayage complet, index inversé construit **une fois**.
 
-**Ce que la mesure a dit** (`mesure_faits_vue.py`, sur COPIE) : couverture
-**42 974 (99,79 %)**, mais le chiffre honnête est **29 775 (69,14 %)** avec un
-fait NON-date. Sur les **81** entrées pourvues, la vue en **corrige 4** — 3 noms
-« Flo » retirés depuis, **1 photo qui a reçu 6 noms APRÈS son tagging** : un champ
-écrit aurait gravé les deux erreurs 43 064 fois. Coût : **1,4 ms** par page de 50,
-**3,8 s** sur l'index entier ; seule prudence, `_noms_attendus` balaie toutes les
-fiches à chaque appel (13,9 ms pour 50 clés) — en balayage complet, index inversé
-construit **une fois**.
+**Observé après redémarrage** : `import faits_vue` tient, et `_chemin_relatif`
+délégué (43 064 appels pour bâtir `/sujets`) laisse « Bremblens » à **2 398** et
+non 30 682 — le retrait de la racine média a survécu. **Pas encore observé** : la
+branche du KB (`pending` = 0) — le premier tagging sera son observation.
 
-**Le LIEU n'est prêt pour aucune des deux règles.** Celle du KB évite **577**
-lieux collés dans un mot, mais en RATE **378** en mot entier et répond AUTREMENT
-sur **591** : **1 546** désaccords. C'est l'argument décisif pour la vue — une
-règle corrigée vaudra pour les 43 064 sans migration.
+**Ce que l'observation a exhumé, et qui commande la suite : le lieu a TROIS
+règles, pas deux.** (1) renommage — sous-chaîne ; (2) Knowledge Builder —
+segments entiers (corrigée) ; (3) **`places_list` / `_cles_du_lieu`, soit
+`/sujets` ET la recherche — sous-chaîne, intacte, et la SEULE que Mike voie.**
+En réel : `/sujets` affiche **« Ins » : 493 photos** (≥ 442 collées depuis
+« Cousins&Cousines »), et une recherche « Ins » rend 80 résultats dont **32**
+viennent de Cousins&Cousines. La correction a atterri là où personne ne regarde.
 
 ## Prochain pas
 
-1. **Corriger la règle de lieu, par ordre de gain.** (a) **124 libellés
-   MULTI-MOTS jamais essayés** — « Weekend Vallée d'Aoste » : la règle ne teste
-   que le segment entier ou ses mots un par un ; essayer aussi le libellé DANS le
-   segment. Plus gros lot, plus simple. (b) le **seuil de 5 lettres** coûte 47
-   (« Bâle », « Yani ») — mesurer les faux qu'il rattrape AVANT de le baisser.
-   (c) **« France & Belgique »** (157) demande une décision, pas un correctif :
-   deux lieux, ou aucun. (d) 207 effacés au nettoyage du segment : en dernier,
-   la cause n'est pas unique.
-2. **Brancher la vue** là où le point 3 du ROADMAP l'attend (affichage
-   date · lieu · noms), index inversé construit une fois par balayage. **Le
-   filtre ensuite**, mesuré sur 69,14 %, jamais sur 99,79 %.
-3. **Deux boutons qui mentent** (petit, `photo-ui`) : « Date ↑ » reste allumé
-   sur `/files?q=` alors que l'ordre affiché est celui du serveur ; en mode IA
-   les boutons de tri avalent le clic. Ancres : `sortBy`, `updateSortButtons`,
-   `applyFilter`, bloc `if (SEARCHQ)` de `GALLERY_PAGE`.
-4. **Le prompt de PRODUCTION hallucine plus que V0** : inchangé, chaque photo
-   taguée le paie. **Pas de retour à V0 sans protocole.**
-5. **Le reste** (`ROADMAP.md`) : trois constats du registre 10a ; gestes Mike
-   (Flo, Caline) ; doublons proches ; UI (11) ; restauration à blanc (12) ;
-   MCP lecture (13).
+1. **Unifier la règle de lieu sur ses trois appelants**, en commençant par ceux
+   qui se VOIENT (`places_list`, `_cles_du_lieu`). Ils comptent AUTREMENT : tous
+   les libellés qui matchent, pas le premier ; et `_cles_du_lieu` fait un ET sur
+   plusieurs lieux, GPS en OU. Mesurer AVANT/APRÈS sur copie.
+2. **Corriger la règle** : (a) **124 libellés MULTI-MOTS jamais essayés** —
+   « Weekend Vallée d'Aoste » : essayer le libellé entier DANS le segment ;
+   (b) **seuil de 5 lettres**, 47 photos — mesurer les faux qu'il rattrape AVANT
+   de le baisser ; (c) **« France & Belgique »** (157) : décision, pas correctif
+   — deux lieux ou aucun ; (d) 207 effacés au nettoyage, en dernier.
+3. **Brancher la vue** là où le point 3 du ROADMAP l'attend (affichage
+   date · lieu · noms). **Le filtre ensuite**, mesuré sur 69,14 %, jamais 99,79 %.
+4. **Deux boutons qui mentent** (petit, `photo-ui`) : « Date ↑ » reste allumé sur
+   `/files?q=` alors que l'ordre vient du serveur ; en mode IA les boutons de tri
+   avalent le clic. Ancres : `sortBy`, `updateSortButtons`, `applyFilter`, bloc
+   `if (SEARCHQ)` de `GALLERY_PAGE`.
+5. **Le reste** (`ROADMAP.md`) : prompt de PROD qui hallucine (pas de V0 sans
+   protocole) ; registre 10a ; gestes Mike (Flo, Caline) ; doublons proches ;
+   UI (11) ; restauration à blanc (12) ; MCP lecture (13).
 
-**Ne pas rouvrir sans chiffre neuf** : `taken` en base reste NON DÉCIDÉ (72
-photos contre **1 369** dates antérieures) ; les planchers 1990 coûtent 7 et 0,
-couplés ; le plafond 2100 coûte 0.
+**Ne pas rouvrir sans chiffre neuf** : `taken` en base NON DÉCIDÉ (72 photos
+contre **1 369** antérieures) ; planchers 1990 : 7 et 0, couplés ; plafond 2100 : 0.
 
-**À vider à la main** : `_corbeille_vecteurs/` (5,1 Mo) et
-`_corbeille_session/plan_avant/`.
+**À vider à la main** : `_corbeille_vecteurs/` et `_corbeille_session/plan_avant/`.
 
-**Gestes git : `27 - Git.bat`, 1 (commit) → 7 (redémarrage) → observation →
-2 (fusion), puis 3 si des branches traînent.** À observer après redémarrage :
-les lieux affichés ne doivent **pas bouger** — la délégation est mesurée
-équivalente, une différence visible serait un bug.
+**Git : `27 - Git.bat`, 1 (commit) → 2 (fusion)** — la branche
+`feat/faits-vue-plutot-que-backfill` porte le code ET son observation ; rien à
+redémarrer, ce dernier commit ne touche que des `.md`.
