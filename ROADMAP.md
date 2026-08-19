@@ -1,67 +1,72 @@
 # Feuille de route — MediaLibrary
 
 Carte des **priorités**, rien d'autre. Les récits de travaux terminés vivent
-dans **git** ; les rejets dans `eval/DECISIONS.md` ; les invariants de méthode
-dans `eval/METHODE.md` ; l'éphémère dans `PROMPT_NOUVELLE_SESSION.md`. Audits :
-`docs/AUDIT_INTERNE_2026-08.md` (I1–I17, O1–O15, A–F),
-`docs/AUDIT_EXTERNE_2026.md`, `docs/RANGEMENT_2026.md`.
+dans **git** ; les rejets dans `eval/DECISIONS.md` ; la méthode dans
+`eval/METHODE.md` ; l'éphémère dans `PROMPT_NOUVELLE_SESSION.md`. Audits :
+`docs/AUDIT_INTERNE_2026-08.md`, `docs/AUDIT_EXTERNE_2026.md`,
+`docs/RANGEMENT_2026.md`.
 
 ## État (19/08/2026, session 23)
 
-**10a et 10b CLOS, observés en réel.** 10a : `comptes_index.py` compte au
-GOULOT de l'index (`TrackedDict`) — 12 cycles à zéro + contrôle positif (+1
-`tagging`, −1 `scan:disparus`, `inexpliqué` **0**). Portée honnête : les −250 du
-17/08 sont apparus SOUS CHARGE ; les zéros disent « rien ne fuit », pas « rien
-ne peut fuir ». 10b : les **15** moves appliqués — 15 cibles distinctes, tous
-des `YYYY0000_` devenus précis, **0 date de scan réinscrite**, noms humains
-intacts, plan régénéré à **0**. Reste NON DÉCIDÉ : corriger `taken` en base
-(**72** photos contre **1 369** dates antérieures à ne pas emporter).
+**10a et 10b CLOS, observés.** Le registre des comptes de l'index tient (12
+cycles à zéro + contrôle positif) ; les **15** renommages périmés sont appliqués,
+0 date de scan réinscrite, noms intacts, plan régénéré à **0**. Portée honnête
+du registre : les −250 du 17/08 sont apparus SOUS CHARGE — les zéros disent
+« rien ne fuit », pas « rien ne peut fuir ». Reste NON DÉCIDÉ : corriger `taken`
+en base (**72** photos contre **1 369** dates antérieures).
 
-**14a — le TRI de la recherche avait sa propre règle de date, et elle mentait.**
-`semantic_search` filtrait par `annee_fiable` (jamais `mtime`) puis TRIAIT par
-`_best_time`, dont la branche 3 EST le `mtime`. Mesuré sur COPIE (43 064
-entrées, `mesure_tri_recherche.py`) : **259** photos sans aucune date sûre,
-dont **257 datées de 2026 par leur propre tagging** — et elles montaient en
-TÊTE de **56 des 364 noms** de l'index. **32** entrées n'ont pas même un
-`mtime` : l'ancienne clé (`… or ''`) mélangeait `float` et `str`, et l'ancien
-tri **ne s'exécute pas** sur l'index entier (TypeError → 500) — aucun NOM ne
-déclenche ce mélange aujourd'hui (0/364), le chemin par LIEU n'est pas mesuré :
-plancher, pas total. Corrigé par `recherche.trier_chronologique` : une seule
-règle de date par réponse, sans-date en FIN et COMPTÉES (`sans_date_tri`).
-**OBSERVÉ EN RÉEL** sur le serveur vivant : `sans_date_tri` = **53 · 43 · 29 ·
-29 · 21** (Véronique, Nikola, Mike, Marie, Sandra) — au chiffre près la mesure
-hors ligne, tête précisément datée et décroissante, muettes en fin. Deux
-chemins, un nombre. `/files?q=` affiche bien l'ordre du serveur (rang DOM =
-rang API), le bouton « Date ↑ » restant allumé à tort.
+**14a — le mensonge de la date, traqué partout où il classait.**
+Le FILTRE refusait le `mtime` depuis le 15/08 ; le TRI le gardait. Mesuré sur
+COPIE (43 064 entrées, `mesure_tri_recherche.py`) : **259** photos sans aucune
+date sûre, **257** datées de 2026 par leur propre tagging, en tête de **56 des
+364 noms** de l'index ; **32** n'ont pas même un `mtime`, et l'ancienne clé
+(`… or ''`) mélangeait `float` et `str` — l'ancien tri **ne s'exécute pas** sur
+l'index entier (TypeError → 500), sans qu'aucun NOM ne le déclenche (0/364 ;
+chemin par LIEU non mesuré : plancher, pas total).
+
+1. **Recherche — CORRIGÉ ET OBSERVÉ** (`recherche.trier_chronologique`, pur) :
+   une seule règle de date par réponse, sans-date en FIN et comptées. En réel :
+   `sans_date_tri` = **53 · 43 · 29 · 29 · 21** (Véronique, Nikola, Mike, Marie,
+   Sandra) — au chiffre près la mesure hors ligne. Deux chemins, un nombre.
+2. **Bandeau — ÉCRIT, à observer.** `/files?q=` ne disait NI ce qu'elle avait
+   compris NI ce qu'elle avait écarté, là où `/api/search` le dit depuis le
+   15/08. Un producteur, une fabrique de libellé, et le compte des photos
+   RENDUES sans date sûre, distinct de celui des photos ÉCARTÉES.
+3. **Galerie — ÉCRIT, à observer.** Même mensonge côté client
+   (`f.taken || f.mtime`) : **258** photos dans **31** dossiers sur 665, dont
+   **deux entièrement muets** (22 photos) et `Photos\Nikola` à **43 sur 54**.
+   Invisible en ordre croissant (le `mtime` de 2026 les met en fin par accident),
+   elles passaient EN TÊTE au reclic. **AVANT enregistré** sur `dir=1/Nikola` :
+   en décroissant, **20 des 20 premières** étaient des muettes. Désormais hors
+   du tri par date, en fin dans les deux sens, et comptées à l'écran.
 
 ## À faire — par ordre de valeur
 
-1. **Vérité terrain humaine — au fil de l'eau, PAS un blocage.** ~0,8 % de
-   confirmations (91/12 072). **Cadrage Mike (12/08)** : le stock est limité par
-   la CONNAISSANCE, pas par l'outillage — Flo nommera ce que Mike ne sait pas
+1. **Vérité terrain humaine — au fil de l'eau, PAS un blocage.** ~0,8 %
+   (91/12 072). **Cadrage Mike (12/08)** : le stock est limité par la
+   CONNAISSANCE, pas par l'outillage — Flo nommera ce que Mike ne sait pas
    nommer, quand l'outil sera à ~90 %. Métrique = erreurs découvertes.
 2. **Observer en réel ce qui est livré** — **fait ✔**. Reste : re-upload = une
    entrée, seek vidéo mobile, test du Z.
 3. **Chaîne « noms → descriptions → recherche » — 3a, 3b, 3c CLOS le 16/08.**
-   La re-passe ne se fera pas. Reste ouvert, et c'est NEUF : **le prompt de
-   PRODUCTION est celui qui hallucine le plus.** V2CTX est en prod depuis le
-   12/08 sur la foi d'un 25-15 ; le banc de 147 photos confirme la préférence et
-   montre le coût — toute photo taguée le paie. **Pas de retour à V0 sans
-   protocole.** Wagon de 14 : affichage date · lieu · noms depuis `faits`.
+   La re-passe ne se fera pas. Reste ouvert : **le prompt de PRODUCTION est
+   celui qui hallucine le plus.** V2CTX est en prod depuis le 12/08 sur la foi
+   d'un 25-15 ; le banc de 147 photos montre le coût — toute photo taguée le
+   paie. **Pas de retour à V0 sans protocole.** Wagon de 14 : affichage
+   date · lieu · noms depuis `faits`.
 4. **Gestes Mike** : `gps_place` ✔ ; renommage appliqué ✔ (7 058) ; nettoyer
-   Flo (5 909 photos ; « Corriger » ~0.2 ou « Nettoyer (référence) ») ;
-   re-rejeter Caline une fois.
-5. **Correctifs d'audit** : I4–I8, O7–O9, O11–O15. O1 clos partout ; O15 (purge
-   de `photo_thumbs/`) gagne en poids.
+   Flo (5 909 photos ; « Corriger » ~0.2 ou « Nettoyer ») ; re-rejeter Caline.
+5. **Correctifs d'audit** : I4–I8, O7–O9, O11–O15. O1 clos ; O15 (purge de
+   `photo_thumbs/`) gagne en poids.
 6. **Navigation par similarité et par date** : « Semblables » et « même jour »
    livrés et observés. Reste : doublons proches bridés (>0,98 + même journée →
-   quarantaine réversible, 50 paires jugées avant tout geste). ±1 j non décidé.
+   quarantaine réversible, 50 paires jugées avant tout geste).
 7. **Extraction `ui/`** : décision nette à prendre — session dédiée `bundle.py`
    ou parcage explicite (item zombie ; préparatoire fait, détail git).
 8. **Cross-pipeline (Mutz/Caline)** : outil livré, réversible. Fix auto REJETÉ
    (18 % faux rejets). Relancer si un nouveau nom d'animal sort en `personne:`.
-9. **Reconnaissance — algo (BARRIÈRE : vérité terrain ≥ ~5 %).**
-   HDBSCAN/Chinese Whispers/AdaFace inévaluables à 0,8 %. La barrière reste.
+9. **Reconnaissance — algo (BARRIÈRE : vérité terrain ≥ ~5 %).** HDBSCAN /
+   Chinese Whispers / AdaFace inévaluables à 0,8 %. La barrière reste.
 10. **Données / finitions.** Trois chantiers, dans cet ordre :
     (a) **Compter ce que le scan OUBLIE — CLOS (18/08).** Trois constats
     mineurs, non traités : un ajout découvert PAR LE SCAN est étiqueté
@@ -87,14 +92,14 @@ rang API), le bouton « Date ↑ » restant allumé à tort.
     (e) wagons : bandeau `#pending`, libellé `/pets`, le bouton qui dit
     « Meme jour (14 aout) » là où la page dit « 14 août », et « Date ↑ » qui
     reste allumé sur `/files?q=` alors que l'ordre affiché est celui du serveur.
-12. **Assurance-vie : restauration à blanc (PROMU 12/08).** Test « PC mort
-    lundi, tout revit vendredi » : restaurer le snapshot NAS sur un dossier
-    vierge, chronométrer, noter chaque manque (dont la copie hors-site de
+12. **Assurance-vie : restauration à blanc (PROMU 12/08).** « PC mort lundi,
+    tout revit vendredi » : restaurer le snapshot NAS sur un dossier vierge,
+    chronométrer, noter chaque manque (dont la copie hors-site de
     `journal_jugements.jsonl`). Tant qu'il n'a pas tourné, la sauvegarde
     « vérifiée » est une promesse.
 13. **Serveur exposé en MCP, lecture seule d'abord (PROMU 12/08).** Recherche,
-    fiches et `faits` sourcés en outils MCP locaux (JSON-RPC stdio, zéro
-    dépendance — skill `mcp-builder`). Écriture plus tard. Briques de 14a.
+    fiches et `faits` en outils MCP locaux (JSON-RPC stdio, zéro dépendance —
+    skill `mcp-builder`). Écriture plus tard. Briques de 14a.
 14. **Recherche IA locale contextuelle.** (a) **Déterministe — LIVRÉ ET OBSERVÉ**,
     vecteurs orphelins purgés ; tri sans mot-clé aligné sur la règle de date du
     filtre (19/08, observé). Manques : les `faits` ne filtrent pas encore (le
@@ -110,16 +115,15 @@ rang API), le bouton « Date ↑ » restant allumé à tort.
 ### Résiduels faible valeur (ne pas prioriser)
 **MESURÉ le 15/08, et c'est pourquoi on n'y touche pas** : `meme_jour.ANNEE_MIN`
 coûte **0 photo**, mais seulement parce que `_fname_time` refuse déjà une année
-< 1990 lue dans le NOM DE FICHIER, ce qui coûte **7 photos**. **Couplés** : qui
-touche l'un touche l'autre. Chiffrés et non traités (14/08) : (a) le plancher
-1990 subsiste dans `plan_rangement.py`, `recensement_doublons.py`,
-`diagnostic_dates.py` — sans effet tant qu'aucun dossier d'avant 1990 n'y passe ;
-(b) `/files?dir=1&rec=1` (racine NAS) ne répond pas en 6 min, cause non cherchée ;
-(c) **plafond 2100 de la date lue dans un NOM** (`_fname_time`, `fname_datetime`) :
-`22082010141.jpg` (DDMMYYYY + séquence) se lit « 2082-01-01 ». **72** en base,
-**coût 0** — mais uniquement parce que les 72 portent un `taken` et que
-`_best_time` prend `min()` ; une seule sans `taken` serait datée du futur.
-Trouvé le 19/08 par le garde-fou de l'étape 2, qui les refuse déjà au renommage.
+< 1990 lue dans le NOM, ce qui coûte **7 photos** — **couplés**. Chiffrés et non
+traités : (a) le plancher 1990 subsiste dans `plan_rangement.py`,
+`recensement_doublons.py`, `diagnostic_dates.py`, sans effet tant qu'aucun
+dossier d'avant 1990 n'y passe ; (b) `/files?dir=1&rec=1` (racine NAS) ne répond
+pas en 6 min, cause non cherchée ; (c) **plafond 2100 de la date lue dans un
+NOM** (`_fname_time`, `fname_datetime`) : `22082010141.jpg` (DDMMYYYY +
+séquence) se lit « 2082-01-01 ». **72** en base, **coût 0** — mais uniquement
+parce que les 72 portent un `taken` et que `_best_time` prend `min()` ; une
+seule sans `taken` serait datée du futur.
 
 ## Acquis — ne pas reproposer (détail : git + `eval/DECISIONS.md`)
 
@@ -136,8 +140,8 @@ Trouvé le 19/08 par le garde-fou de l'étape 2, qui les refuse déjà au renomm
   dans les noms (1 175 en portent un) ; garde-fou date de SCAN
   (`date_de_scan_presumee`, asymétrique, toléré à un an).
 - **UI** : design system « chambre noire » (tokens, plancher a11y), planche
-  contact, `/reglages`, `/people`, `/sujets` guichet unique (Classification,
-  files « À vérifier », clavier Espace/X/Z/lettre).
+  contact, `/reglages`, `/people`, `/sujets` guichet unique (clavier
+  Espace/X/Z/lettre).
 - **Correction** : faux positifs « Corriger »/« Nettoyer (référence) », retrait
   SÛR (`untag`→`exclude`), `exclude` autorité partout + auto-guérison.
 - **Perf** : scoring vectorisé (156 s → qq s) ; `/api/thumb` (−98 % octets NAS) ;
@@ -149,8 +153,8 @@ Trouvé le 19/08 par le garde-fou de l'étape 2, qui les refuse déjà au renomm
   orphelins purgés et observés** (0 muet sur 1 600 résultats, contre 2,6 %),
   quarantaine réversible `_corbeille_vecteurs/`.
 - **Observabilité** : boucle scan/backup (O5), `backup_verify`, trois tâches de
-  fond EXIF (dates, noms, GPS) — état, avancement et « fichiers muets » dans
-  `/reglages` ; comptes de l'index au goulot (`comptes_index.py`, observé).
+  fond EXIF (dates, noms, GPS) dans `/reglages` ; comptes de l'index au goulot
+  (`comptes_index.py`, observé).
 - **Recherche** : quatre dimensions (noms · lieux · période · sens) ; une seule
   règle de date pour filtrer ET trier (`recherche.py`, pur).
 - **Mesure** : `mesure_dates_scan.py`, `mesure_tri_recherche.py` — lecture seule

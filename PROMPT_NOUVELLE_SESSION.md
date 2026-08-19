@@ -10,37 +10,44 @@ puis on attaque.
 
 ## Où on en est (19/08/2026, fin de session 23)
 
-**10b CLOS et OBSERVÉ.** Les 15 moves attendus sont appliqués : 15 cibles
-distinctes, tous des `YYYY0000_` devenus précis, 0 date de scan réinscrite,
-noms humains intacts, plan régénéré à **0**.
+**10b CLOS et OBSERVÉ** : 15 moves appliqués, 0 date de scan réinscrite, noms
+humains intacts, plan régénéré à **0**.
 
-**14a — une seule règle de date par réponse : ÉCRIT, MESURÉ, OBSERVÉ.**
-La recherche filtrait par `annee_fiable` (jamais `mtime`) puis TRIAIT par
-`_best_time`, dont la branche 3 EST le `mtime`. Mesuré sur COPIE
-(`mesure_tri_recherche.py`, 43 064 entrées) : **259** photos sans date sûre,
-**257** datées de 2026 par leur propre tagging, **en tête** de **56 des 364
-noms** de l'index — 53 des 100 premières pour « Véronique », 29 pour « Mike ».
-Et **32** entrées sans même un `mtime` : `_best_time(…) or ''` mélangeait
-`float` et `str`, l'ancien tri **ne s'exécute pas** sur l'index entier
-(TypeError → 500). Aucun NOM ne déclenche ce mélange aujourd'hui (0/364) et le
-chemin par LIEU n'est pas mesuré : **plancher, pas total.**
-Corrigé par `recherche.trier_chronologique` (pure) : date précise, sinon année
-du DOSSIER, jamais `mtime` ; les sans-date en FIN de liste et **comptées**
-(`sans_date_tri`, rendu par `/api/search`). 72 tests verts.
-**Observé sur le serveur vivant** : `sans_date_tri` = **53 · 43 · 29 · 29 · 21**
-pour Véronique, Nikola, Mike, Marie, Sandra — au chiffre près la mesure hors
-ligne (deux chemins, un nombre) ; tête précisément datée et décroissante,
-muettes en fin ; `/files?q=` affiche bien l'ordre du serveur (rang DOM = rang
-API). Reste dû : **bat 28**.
+**14a — le `mtime` ne classe plus rien.** Le FILTRE le refusait depuis le 15/08,
+le TRI le gardait. Mesuré sur COPIE (`mesure_tri_recherche.py`, 43 064 entrées) :
+**259** photos sans date sûre, **257** datées de 2026 par leur propre tagging,
+en tête de **56 des 364 noms** et de **31 dossiers sur 665** (deux ENTIÈREMENT
+muets ; `Photos\Nikola` 43 sur 54). **32** n'ont pas même un `mtime` :
+`_best_time(…) or ''` mélangeait `float` et `str`, l'ancien tri **ne s'exécutait
+pas** sur l'index entier (TypeError → 500), sans qu'aucun NOM ne le déclenche
+(0/364 ; chemin par LIEU non mesuré — plancher, pas total).
+
+1. **Recherche — OBSERVÉ.** `recherche.trier_chronologique` (pur) : date
+   précise, sinon année du DOSSIER, jamais `mtime` ; sans-date en FIN et
+   comptées. En réel : `sans_date_tri` = **53 · 43 · 29 · 29 · 21** (Véronique,
+   Nikola, Mike, Marie, Sandra) — au chiffre près la mesure hors ligne.
+2. **Bandeau + galerie — ÉCRITS, PAS OBSERVÉS.** `/files?q=` dit enfin ce
+   qu'elle a compris et écarté (même producteur que `/api/search`) ; la galerie
+   sort les photos sans date sûre du tri par date (fin de liste dans les deux
+   sens) et les compte. 83 tests verts, dont `node --check` sur les 9 pages.
 
 ## Prochain pas
 
-1. **`sans_date_tri` est compté mais pas AFFICHÉ.** `sans_date` l'est déjà
-   (`iaEcartees`, bandeau « compris ») ; wagon `photo-ui`. Même vue : le bouton
-   « Date ↑ » reste allumé sur `/files?q=` alors que l'ordre affiché est celui
-   du serveur — l'écran annonce un tri qu'il n'applique pas.
+1. **OBSERVER le bandeau et la galerie — rien d'autre avant.** Geste Mike :
+   redémarrer (`0`), puis
+   (a) accueil → chercher « Véronique » : le compteur doit dire
+   « 174 photo(s) — Véronique · 53 sans date connue, en fin de liste » ;
+   (b) `http://192.168.0.13:8080/files?dir=1/Nikola` — 54 photos dont **43 sans
+   date**, toutes datées de 2026 par leur tagging. **AVANT enregistré le 19/08
+   sur le serveur vivant** : en ordre DÉCROISSANT (un reclic sur « Date »),
+   **20 des 20 premières** étaient des muettes ; en croissant, 9 sur 20 — mais
+   par arithmétique, le dossier n'ayant que **11** photos datées. APRÈS attendu :
+   **les 11 datées d'abord dans les deux sens**, les 43 muettes derrière, et le
+   compteur qui dit « 43 sans date connue, en fin de liste ».
 2. **14a, suites** : les `faits` ne filtrent pas ; pas de filtre par espèce ni
-   par fiche.
+   par fiche. Et le bouton « Date ↑ » reste allumé sur `/files?q=` alors que
+   l'ordre affiché est celui du serveur — l'écran annonce un tri qu'il
+   n'applique pas.
 3. **Le prompt de PRODUCTION hallucine plus que V0** (`eval/DECISIONS.md`) :
    inchangé, chaque photo taguée le paie. **Ne pas revenir à V0 sans protocole.**
 4. **Trois constats du registre 10a**, non traités : ajout étiqueté `tagging` au

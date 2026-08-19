@@ -218,6 +218,63 @@ def par_nom(items, tete=100):
     return out
 
 
+
+# ─────────── (D) la GALERIE : le meme mensonge, cote client ───────────
+#
+# `sortBy('date')` de `GALLERY_PAGE` classe par `f.taken || f.mtime`, et `taken`
+# est déjà `_best_time` — donc `mtime` en dernier recours. C'est la règle que la
+# recherche vient d'abandonner, toujours en place dans la vue la plus utilisée.
+#
+# Elle ne se voit pas de la même façon dans les deux sens : le tri par défaut est
+# CROISSANT, et une photo sans date porte un `mtime` de 2026, la plus grande
+# valeur — elle tombe donc en fin de liste, là où la règle honnête la met aussi.
+# **C'est au reclic (décroissant) que le défaut sort** : ces photos passent en
+# tête. On compte donc les deux, séparément, plutôt que d'annoncer un seul
+# chiffre qui vaudrait pour un sens et pas pour l'autre.
+
+def dossier_de(cle):
+    k = str(cle).replace('\\', '/')
+    return k.rsplit('/', 1)[0] if '/' in k else ''
+
+
+def par_dossier(items, mini=2):
+    """Par DOSSIER : combien de photos n'ont aucune date sûre, et le dossier
+    est-il entièrement muet (auquel cas son ordre est arbitraire de bout en
+    bout, dans les deux sens) ?
+
+    Rend {'dossiers', 'dossiers_touches', 'photos_sans_date_sure',
+    'dossiers_entierement_muets', 'photos_dans_ces_dossiers', 'pires'}.
+    """
+    par = {}
+    for cle, e in items:
+        if e.get('failed'):
+            continue
+        par.setdefault(dossier_de(cle), []).append((cle, e))
+    touches, muets, pires = 0, [], []
+    total_muettes = 0
+    for d, sous in par.items():
+        if len(sous) < mini:
+            continue
+        muettes = sum(1 for c, e in sous if rang_de(c, e) in ('mtime', 'aucune'))
+        if not muettes:
+            continue
+        touches += 1
+        total_muettes += muettes
+        if muettes == len(sous):
+            muets.append((len(sous), d))
+        pires.append((muettes, len(sous), d))
+    pires.sort(reverse=True)
+    muets.sort(reverse=True)
+    return {
+        'dossiers': sum(1 for v in par.values() if len(v) >= mini),
+        'dossiers_touches': touches,
+        'photos_sans_date_sure': total_muettes,
+        'dossiers_entierement_muets': len(muets),
+        'photos_dans_ces_dossiers': sum(n for n, _ in muets),
+        'pires': pires[:8],
+    }
+
+
 # ─────────────────────────── lecture de la COPIE ───────────────────────────
 
 def charger(chemin):
@@ -279,6 +336,7 @@ def mesurer(items, tete=100, exemples=10):
         'exemples_aucune': sans_rien[:exemples],
         'fuseau': time.tzname,
     }
+    rapport['galerie'] = par_dossier(items)
     noms = par_nom(items, tete=tete)
     casses = {n: d for n, d in noms.items() if d['plante']}
     en_tete = {n: d for n, d in noms.items()
@@ -330,6 +388,19 @@ def imprimer(rap):
         p("    (float et chaine vide melanges : la recherche repondait 500)")
     else:
         p("  Ancien tri : pas de TypeError sur ce corpus.")
+    ga = rap.get('galerie') or {}
+    if ga:
+        p("  LA GALERIE (tri client `taken || mtime`, meme mensonge)")
+        p(f"    dossiers de 2 photos et plus  {ga['dossiers']:>7}")
+        p(f"    dont au moins une sans date   {ga['dossiers_touches']:>7}")
+        p(f"    photos concernees             "
+          f"{ga['photos_sans_date_sure']:>7}")
+        p(f"    dossiers ENTIEREMENT muets    "
+          f"{ga['dossiers_entierement_muets']:>7}"
+          f"  ({ga['photos_dans_ces_dossiers']} photos, ordre arbitraire)")
+        for m, n, d in ga['pires']:
+            p(f"    {m:>4}/{n:<5} {d[-58:]}")
+        p("")
     rq = rap.get('requetes_par_nom') or {}
     if rq:
         p("  UN NOM, RIEN D'AUTRE (la branche corrigee) — PLANCHER : le")

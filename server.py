@@ -3324,6 +3324,22 @@ def _epoch_precis(cle, entree):
 _annee_fiable = recherche.annee_fiable_depuis(_epoch_precis, _path_year_num)
 
 
+def _sans_date_sure(cle, e):
+    """1 si AUCUNE date sûre ne classe cette photo — ni précise, ni année de
+    dossier. Elle n'est alors ni récente ni ancienne : elle est INCONNUE.
+
+    La galerie classait ces photos par `_best_time`, donc par leur `mtime`,
+    c'est-à-dire par la date de leur dernier tagging (2026) : en ordre
+    décroissant elles passaient en tête. Mesuré le 19/08 : **258** photos dans
+    **31** dossiers, dont deux ENTIÈREMENT muets (22 photos) — `Photos\\Nikola`
+    en compte 43 sur 54. Le client les range désormais en fin de liste dans les
+    deux sens, et les compte."""
+    try:
+        return 0 if _annee_fiable(cle, e or {}) else 1
+    except Exception:                                         # noqa: BLE001
+        return 1
+
+
 def semantic_search(requete, limite=80, detail=None):
     """Recherche HYBRIDE : noms humains + lieu + PÉRIODE + sens de l'image.
 
@@ -5132,6 +5148,7 @@ __FOLDERS__
   var HASSUBS = __HASSUBS__;
   var DIRQ = __DIRQ__;
   var SEARCHQ = __SEARCHQ__;   // requete si /files?q= (page de resultats globale), sinon ''
+  var SEARCHMETA = __SEARCHMETA__;  // ce que le serveur a compris de SEARCHQ ({} sinon)
   var MOTIFS = __MOTIFS__;
   var sorted = FILES.slice();
   var visible = FILES.slice();
@@ -5157,7 +5174,26 @@ __FOLDERS__
   // « chat endormi sur le canape » fonctionne sans qu'aucun de ces mots
   // n'apparaisse dans les tags.
   var modeIA = false, iaResultats = null, iaJeton = 0, iaCompris = '',
-      iaEcartees = 0;
+      iaEcartees = 0, iaSansOrdre = 0;
+
+  // Lit la decomposition renvoyee par le serveur (/api/search ou __SEARCHMETA__)
+  // et remplit les trois variables d'affichage. UNE seule implementation : les
+  // deux chemins arrivent sur la meme page et doivent dire la meme chose.
+  //   iaCompris   — ce qui a ete compris (qui, ou, quand, puis le sens) ;
+  //   iaEcartees  — photos EXCLUES faute d'une date assez precise ;
+  //   iaSansOrdre — photos RENDUES mais sans aucune date sure : elles sont en
+  //                 fin de liste, et le taire ferait passer un classement
+  //                 degrade pour un classement.
+  function lireDecomposition(d) {
+    var bouts = [];
+    if (d.noms && d.noms.length) bouts.push(d.noms.join(' + '));
+    if (d.lieux && d.lieux.length) bouts.push(d.lieux.join(' + '));
+    if (d.periode) bouts.push(d.periode);
+    if (d.reste) bouts.push(d.reste);
+    iaCompris = bouts.join(' \u00b7 ');
+    iaEcartees = d.sans_date || 0;
+    iaSansOrdre = d.sans_date_tri || 0;
+  }
   var btnIA = document.getElementById('btn-ia');
   btnIA.addEventListener('click', function() {
     modeIA = !modeIA;
@@ -5188,17 +5224,7 @@ __FOLDERS__
         // filtre en silence est une requete qu'on n'ose plus croire.
         // Avant le 15/08 seul « qui » etait montre : une recherche par lieu
         // seul filtrait sans jamais le dire.
-        var bouts = [];
-        if (d.noms && d.noms.length) bouts.push(d.noms.join(' + '));
-        if (d.lieux && d.lieux.length) bouts.push(d.lieux.join(' + '));
-        if (d.periode) bouts.push(d.periode);
-        if (d.reste) bouts.push(d.reste);
-        iaCompris = bouts.join(' · ');
-        // Photos ecartees faute d'une date assez precise pour la periode
-        // demandee (un mois n'existe pas dans une annee de dossier). Une
-        // protection qui s'annule doit se COMPTER : sans ce chiffre,
-        // « 3 photos » se lit « il n'y en a que 3 ».
-        iaEcartees = d.sans_date || 0;
+        lireDecomposition(d);
         applyFilter();
       })
       .catch(function() {
@@ -5213,6 +5239,9 @@ __FOLDERS__
   // par defaut ; un reclic sur le meme bouton inverse le sens. « Nom » de meme
   // (A-Z par defaut, reclic = Z-A). Le diaporama « Demo » suit ensuite cet ordre.
   function photoTime(f){ return f.taken || f.mtime || 0; }
+  // `sd` : le serveur a marque cette photo comme n'ayant AUCUNE date sure
+  // (ni precise, ni annee de dossier). Absent = datee.
+  function sansDate(f){ return !!f.sd; }
   function updateSortButtons() {
     var d = document.getElementById('btn-date'), n = document.getElementById('btn-name');
     d.className = 'tb' + (currentSort==='date' ? ' active' : '');
@@ -5229,9 +5258,22 @@ __FOLDERS__
     else { currentSort = m; sortAsc = true; }       // nouveau tri = sens par defaut
     updateSortButtons();
     var s = FILES.slice();
-    if (m === 'date') s.sort(function(a,b){ return photoTime(a) - photoTime(b); });
-    else s.sort(function(a,b){ return a.name.localeCompare(b.name); });
-    if (!sortAsc) s.reverse();
+    if (m === 'date') {
+      // Une photo sans aucune date sure n'est ni recente ni ancienne : elle est
+      // INCONNUE. La classer par `photoTime` revient a la dater de son dernier
+      // tagging (2026) — invisible en ordre croissant, ou elle tombe en fin par
+      // accident, mais elle passait EN TETE au reclic. On la range donc en fin
+      // dans les DEUX sens, par nom pour que la page soit reproductible.
+      var datees = [], muettes = [];
+      s.forEach(function(f) { (sansDate(f) ? muettes : datees).push(f); });
+      datees.sort(function(a,b){ return photoTime(a) - photoTime(b); });
+      if (!sortAsc) datees.reverse();
+      muettes.sort(function(a,b){ return a.name.localeCompare(b.name); });
+      s = datees.concat(muettes);
+    } else {
+      s.sort(function(a,b){ return a.name.localeCompare(b.name); });
+      if (!sortAsc) s.reverse();
+    }
     sorted = s;
     applyFilter();
   }
@@ -5448,9 +5490,22 @@ __FOLDERS__
 
     var txt = visible.length + ' photo(s)';
     if (selTags.length) txt += ' / ' + FILES.length;
+    // Hors mode IA, c'est le tri par date qui range les muettes en fin : on le
+    // DIT, sinon la fin de planche passe pour de vieilles photos. En mode IA,
+    // le meme fait est porte par `iaSansOrdre`, plus bas — jamais les deux.
+    if (!modeIA && currentSort === 'date') {
+      var nsd = 0;
+      for (var vi = 0; vi < visible.length; vi++) if (visible[vi].sd) nsd++;
+      if (nsd) txt += ' · ' + nsd + ' sans date connue, en fin de liste';
+    }
     if (modeIA && iaCompris) txt += ' — ' + iaCompris;
+    // Deux chiffres, deux sens : `iaEcartees` compte des photos ABSENTES de la
+    // liste, `iaSansOrdre` des photos PRESENTES mais qu'aucune date ne permet
+    // de classer. Les confondre serait pire que les taire.
     if (modeIA && iaEcartees)
       txt += ' (' + iaEcartees + ' sans date assez précise)';
+    if (modeIA && iaSansOrdre)
+      txt += ' · ' + iaSansOrdre + ' sans date connue, en fin de liste';
     document.getElementById('cnt').textContent = txt;
   }
 
@@ -6118,6 +6173,7 @@ __FOLDERS__
     qInput.placeholder = 'Décris la photo…';
     iaResultats = {};
     FILES.forEach(function(f, i) { iaResultats[f.key] = i; });
+    lireDecomposition(SEARCHMETA || {});
     applyFilter();
   }
 
@@ -12865,6 +12921,7 @@ class Handler(BaseHTTPRequestHandler):
                     'gurl': gurl,
                 })
 
+        detail_q = {}
         # Recherche globale (/files?q=...) : on REMPLACE la grille par le resultat
         # de semantic_search, dans l'ordre de pertinence renvoye. Meme forme
         # d'objet que la branche `sel` (donc rendu client inchange). Lecture seule,
@@ -12875,6 +12932,11 @@ class Handler(BaseHTTPRequestHandler):
             note_heavy_activity()
             roots_cache = media_roots()
             file_data = []
+            # Ce que la requête a COMPRIS et ce qu'elle a mis de côté : la page
+            # `/files?q=` le taisait, alors que /api/search le dit depuis le
+            # 15/08 — la même requête s'expliquait dans un canal et filtrait en
+            # silence dans l'autre. Un seul producteur (`semantic_search`), donc
+            # aucune ré-extraction côté page.
             try:
                 if sim_mode:
                     # 200 : aligné sur la recherche IA côté client (n=200) —
@@ -12892,7 +12954,8 @@ class Handler(BaseHTTPRequestHandler):
                                         '</span></div>')
                         resultats_q = []
                 else:
-                    resultats_q = semantic_search(qparam, 1500)
+                    resultats_q = semantic_search(qparam, 1500,
+                                                  detail=detail_q)
             except Exception:                                 # noqa: BLE001
                 resultats_q = []
             for k, _score in resultats_q:
@@ -12986,6 +13049,16 @@ class Handler(BaseHTTPRequestHandler):
             if motif:
                 file_data = []
 
+        # Marque les photos qu'aucune date sûre ne classe. Post-passe UNIQUE :
+        # les trois branches qui remplissent `file_data` (navigation, sélection,
+        # recherche) partagent ainsi la même règle. La clé n'est écrite que pour
+        # les concernées — 258 sur 43 064 : écrire « 0 » 43 064 fois coûterait
+        # 300 ko de JSON pour ne rien dire.
+        for _fd in file_data:
+            _k = _fd.get('key') or _fd.get('name') or ''
+            if _sans_date_sure(_k, STORE.data.get(_k)):
+                _fd['sd'] = 1
+
         page = (GALLERY_PAGE
                 .replace('__FOLDERS__', folders_html)
                 .replace('__MOTIFS__', json.dumps(
@@ -12996,6 +13069,8 @@ class Handler(BaseHTTPRequestHandler):
                 .replace('__HASSUBS__', '1' if subdirs else '0')
                 .replace('__DIRQ__', json.dumps(dirparam))
                 .replace('__SEARCHQ__', json.dumps(qparam if search_mode else ''))
+                .replace('__SEARCHMETA__', json.dumps(
+                    detail_q if search_mode else {}, ensure_ascii=False))
                 .replace('__TAGDATA__', json.dumps(
                     {'counts': top_tags, 'sel': sel, 'mode': tmode},
                     ensure_ascii=False)))
