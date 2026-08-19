@@ -23,13 +23,24 @@ Un seul bat, un menu. Il **affiche l'état du dépôt et le geste conseillé**, 
 | 4 | Nouveau chantier : `git checkout -b` depuis la branche courante | non |
 | 5 | État détaillé : `status -sb`, `log`, `main..HEAD`, `branch -vv` | non |
 | 6 | Ouvrir GitHub (dépôt, branches, commits, comparaison) | non |
+| 7 | **Redémarrer le serveur** (délègue à `0 - Démarrer le serveur.bat`) | non |
 
 **Aucun choix ne fait de `checkout main`** : le serveur peut rester allumé.
 Chaque geste demande confirmation ; le verrou `.git\*.lock` est détecté à
 l'entrée et à chaque geste.
 
-**Ordre d'une session : `1` (commit) → `0 - Démarrer le serveur.bat` →
-observation en réel → `2` (fusion).** On ne fusionne qu'après avoir observé.
+**Ordre d'une session : `1` (commit) → `7` (redémarrage) → observation en réel
+→ `2` (fusion).** On ne fusionne qu'après avoir observé. Le choix `1` **propose
+lui-même le `7`** quand le commit touche un `.py` : il n'y a pas de rechargement
+à chaud, et observer sans redémarrer c'est observer l'ancien code — le seul
+maillon de la séquence que rien ne rappelait. Les `mesure_*.py` et `test_*.py`
+sont exclus du déclenchement : le serveur ne les importe jamais, et une alerte
+qui sonne pour rien s'ignore.
+
+Le choix 7 ne réimplémente rien : il retrouve `0 - Démarrer le serveur.bat` par
+joker (son nom porte un accent, ce bat-ci est en ASCII pur) et le `call`. C'est
+ce bat qui arrête le processus à l'écoute du port 8080 puis relance dans une
+fenêtre séparée.
 
 Les anciens bats `27` (commit), `28` (fusion) et `30` (branches) sont dans
 `_bat_archive/` : leur code est repris tel quel dans le bat unique, les y remettre

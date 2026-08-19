@@ -35,7 +35,10 @@ décisions techniques. `FACE_USE_GPU=False` **volontaire** (VRAM prise par Ollam
 5. **Git = gestes de Mike, exclusivement.** Claude ne touche jamais à git : ni
    outil de plugin/MCP, ni `git` via `device_bash` (chaque appel laisse un
    `.git/index.lock` que la VM ne peut pas supprimer). Lire l'état :
-   `.git/logs/HEAD` via staging — lecture seule, aucun verrou.
+   `.git/HEAD` (branche courante), `.git/logs/HEAD` (commits) et
+   `.git/logs/refs/heads/main` (**fusions** — le choix 2 fusionne sans
+   checkout, donc rien n'en paraît dans `logs/HEAD`) via staging — lecture
+   seule, aucun verrou.
 
 ## Fichiers
 
@@ -54,18 +57,23 @@ change/teste un modèle ou un seuil.
 
 ## Protocole
 
-**« Go »** : lire `ROADMAP.md` puis `eval/DECISIONS.md` (+ doc de chantier du
-sujet) → débrief 2–3 lignes → attaquer le plus utile (ou faire choisir), plan
-court avant le code.
+**« Go »** : **d'abord VÉRIFIER l'état réel, ensuite lire les docs.** Une doc
+décrit l'intention de la FIN de session précédente, pas ce que Mike a fait
+après — commits, redémarrage, fusion. Lire `.git/HEAD`, `.git/logs/HEAD` et
+`.git/logs/refs/heads/main` via staging (lecture seule) : ils disent ce qui est
+commité et ce qui est FUSIONNÉ. Annoncer l'écart quand la doc se trompe.
+Puis : `ROADMAP.md`, `eval/DECISIONS.md` (+ doc de chantier du sujet) → débrief
+2–3 lignes → attaquer le plus utile (ou faire choisir), plan court avant le
+code.
 
 **Chaque échange qui fait avancer** : mettre à jour `ROADMAP.md` (statut),
 `PROMPT_NOUVELLE_SESSION.md` (réécrit en entier), `eval/DECISIONS.md` (si une
 éval a tranché). Écrire `SESSION_COMMIT.txt` à la racine (ASCII, sans guillemets
 ni `!`, 2 lignes : `branche=feat/…`, `titre=…` court) — `27 - Git.bat`,
 **choix 1**, le consomme. Tout git passe par ce bat unique (état + conseil,
-commit, fusion, branches, GitHub) : donner à Mike les gestes dans l'ordre
-(**choix 1**, puis **choix 2** après validation en réel) — commit et push
-restent ses gestes.
+commit, **redémarrage du serveur**, fusion, branches, GitHub) : donner à Mike
+les gestes dans l'ordre (**1**, puis **7**, puis **2** après validation en
+réel) — commit, push et redémarrage restent ses gestes.
 
 **Fin de session (systématique)** : condenser les docs de suivi sous les seuils
 du lint — **le détail vit dans git, pas dans les docs : c'est le levier tokens** ;
@@ -83,8 +91,8 @@ quarantaine réversible `_corbeille_session/`, rien n'est supprimé) ; laisser
 ## Tester en réel
 
 Serveur chez Mike : **192.168.0.13:8080**, via **Claude-in-Chrome**. **Pas de
-hot-reload** : toute modif de `server.py` exige un redémarrage
-(`0 - Démarrer le serveur.bat`) — geste Mike. Clics/captures : onglet au premier
+hot-reload** : toute modif de `server.py` exige un redémarrage — geste Mike,
+`27 - Git.bat` choix 7 (proposé d'office après un commit qui touche un `.py`). Clics/captures : onglet au premier
 plan obligatoire ; l'état passe par `fetch('/api/…')` GET (marche onglet caché) ;
 GPU/ordonnanceur : `GET /api/search/status`. Livraison sandbox → disque :
 `SendUserFile` puis `device_commit_files`. Tests :

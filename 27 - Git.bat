@@ -11,13 +11,18 @@ REM   le repertoire de travail n'est jamais reecrit, donc le
 REM   verrou de server.py ne gene pas et le serveur peut rester
 REM   allume.
 REM
-REM   Le menu affiche l'etat du depot ET le geste conseille.
+REM   Le menu affiche l'etat du depot, l'etat du SERVEUR, et le
+REM   geste conseille. Apres un commit qui touche du code Python,
+REM   il propose le redemarrage : sans lui, on observerait
+REM   l'ancienne version -- et une observation fausse est pire
+REM   qu'une observation absente.
 REM
 REM   ASCII PUR obligatoire (voir CLAUDE.md / verifier_bat.py).
 REM ============================================================
 setlocal enabledelayedexpansion
 cd /d "%~dp0"
 set "DEPOT=https://github.com/TheMikeHoogly/MediaLibrary"
+set "PORT=8080"
 
 git rev-parse --is-inside-work-tree >nul 2>&1
 if errorlevel 1 (
@@ -42,6 +47,7 @@ echo   Branche : !BRANCH!
 echo   Arbre   : !TXT_ARBRE!
 echo   Main    : !TXT_AVANCE!
 echo   Distant : !TXT_DISTANT!
+echo   Serveur : !TXT_SERVEUR!
 echo ------------------------------------------------------------
 echo   Conseille : !CONSEIL!
 echo ------------------------------------------------------------
@@ -51,12 +57,14 @@ echo   3. Nettoyer les branches deja fusionnees
 echo   4. Nouveau chantier        creer une branche
 echo   5. Etat detaille           status, log, branches
 echo   6. Ouvrir GitHub dans le navigateur
+echo   7. Redemarrer le serveur   pour observer le code commite
 echo   0. Quitter
 echo ------------------------------------------------------------
-echo   Ordre d'une session : 1 commit, puis "0 - Demarrer le
-echo   serveur.bat", puis observation en reel, puis 2 fusion.
+echo   Ordre d'une session : 1 commit, puis 7 redemarrage, puis
+echo   observation en reel, puis 2 fusion. Le choix 1 propose
+echo   lui-meme le redemarrage quand le commit touche du .py.
 echo.
-choice /c 1234560 /n /m "Ton choix : "
+choice /c 12345670 /n /m "Ton choix : "
 set "CH=!ERRORLEVEL!"
 if "!CH!"=="1" call :commit
 if "!CH!"=="2" call :fusion
@@ -64,7 +72,8 @@ if "!CH!"=="3" call :branches
 if "!CH!"=="4" call :nouvelle
 if "!CH!"=="5" call :detail
 if "!CH!"=="6" call :github
-if "!CH!"=="7" goto :fin
+if "!CH!"=="7" call :redemarrer
+if "!CH!"=="8" goto :fin
 goto :menu
 
 :fin
@@ -98,6 +107,11 @@ set "TXT_DISTANT=branche jamais poussee sur GitHub"
 if "!PUB!"=="1" set "TXT_DISTANT=publiee, a jour avec origin"
 if "!PUB!"=="1" for /f %%n in ('git rev-list --count refs/remotes/origin/!BRANCH!..HEAD 2^>nul') do set "NPUSH=%%n"
 if not "!NPUSH!"=="0" set "TXT_DISTANT=publiee, !NPUSH! commits non pousses"
+
+set "SRV=0"
+for /f "tokens=5" %%P in ('netstat -ano -p TCP ^| findstr /C:":!PORT! " ^| findstr "LISTENING"') do set "SRV=1"
+set "TXT_SERVEUR=arrete"
+if "!SRV!"=="1" set "TXT_SERVEUR=en marche sur le port !PORT!"
 
 set "CONSEIL=1. Commit de session"
 if "!NMOD!"=="0" set "CONSEIL=2. Fusionner dans main - seulement si observe en reel"
@@ -245,12 +259,35 @@ if errorlevel 1 (
   echo Le push a echoue. Tu peux reessayer : git push -u origin !BRANCH!
 )
 
+REM --- Le commit touche-t-il du code que le SERVEUR charge ? ---
+REM   Si oui, le serveur qui tourne execute encore l'ANCIENNE version :
+REM   observer maintenant, c'est observer le code d'avant. C'est la seule
+REM   etape de la sequence que rien ne rappelait.
+REM
+REM   Les bancs de mesure (mesure_*.py) et les tests (test_*.py) ne sont
+REM   JAMAIS importes par le serveur : les compter ferait sonner l'alerte
+REM   pour rien, et une alerte qui sonne pour rien s'ignore.
+set "PYCHANGE="
+git show --name-only --pretty=format: HEAD | findstr /i /r "\.py$" | findstr /v /i /r "^test_ ^mesure_" >nul 2>&1
+if not errorlevel 1 set "PYCHANGE=1"
+if not defined PYCHANGE goto :rappel_commit
+echo.
+echo ------------------------------------------------------------
+echo   CE COMMIT TOUCHE DU CODE CHARGE PAR LE SERVEUR
+echo ------------------------------------------------------------
+echo   Il n'y a PAS de rechargement a chaud : le serveur qui tourne
+echo   execute encore la version d'avant. Observer sans redemarrer,
+echo   c'est observer l'ancien code.
+echo.
+choice /c ON /n /m "Redemarrer le serveur maintenant ? (O = oui / N = non) : "
+if errorlevel 2 goto :rappel_commit
+call :redemarrer
+
 :rappel_commit
 echo.
 echo ------------------------------------------------------------
 echo   PROCHAINES ACTIONS :
-echo   - Le code a change ? Redemarrer le serveur :
-echo     "0 - Demarrer le serveur.bat"
+echo   - Observer en reel : http://192.168.0.13:!PORT!
 echo   - Valide en reel ? Revenir ici et choisir 2 pour fusionner.
 echo   - ROADMAP.md et PROMPT_NOUVELLE_SESSION.md a jour ?
 echo     ^(Claude les prepare pour la prochaine session.^)
@@ -528,6 +565,62 @@ if errorlevel 1 (
 ) else (
   echo Branche !NB! creee et active.
 )
+echo.
+pause
+exit /b 0
+
+REM ============================================================
+REM   7. REDEMARRER LE SERVEUR
+REM   Delegue a "0 - Demarrer le serveur.bat", qui sait deja
+REM   arreter le processus a l'ecoute du port avant de relancer.
+REM   Le nom de ce bat porte un accent ; ce fichier-ci est en
+REM   ASCII PUR, donc on le retrouve par JOKER, jamais en
+REM   l'ecrivant.
+REM ============================================================
+:redemarrer
+cls
+echo ============================================================
+echo   7. REDEMARRER LE SERVEUR
+echo ============================================================
+echo.
+REM   `dir /b` developpe le joker a coup sur et rend le nom NU : un
+REM   `for` sur un motif entre guillemets ne garantit pas les deux.
+set "BAT0="
+for /f "delims=" %%f in ('dir /b "0 - D*marrer le serveur.bat" 2^>nul') do set "BAT0=%%f"
+if not defined BAT0 goto :bat0_absent
+if not exist "!BAT0!" goto :bat0_absent
+goto :bat0_trouve
+
+:bat0_absent
+echo Introuvable : le bat de demarrage du serveur.
+echo Il commence normalement par "0 - D" et se trouve ici :
+echo   !CD!
+echo.
+pause
+exit /b 0
+
+:bat0_trouve
+echo Bat de demarrage : !BAT0!
+echo.
+echo Il va ARRETER le processus qui ecoute sur le port !PORT!, puis
+echo relancer le serveur dans une fenetre separee. Les traitements
+echo en cours ^(tagging, scan^) sont interrompus.
+echo.
+choice /c ON /n /m "Redemarrer maintenant ? (O = oui / N = annuler) : "
+if errorlevel 2 (
+  echo Annule. Le serveur n'a pas ete touche.
+  echo.
+  pause
+  exit /b 0
+)
+echo.
+call "!BAT0!"
+echo.
+echo ------------------------------------------------------------
+echo   Serveur relance dans sa propre fenetre.
+echo   Observer en reel : http://192.168.0.13:!PORT!
+echo   On ne fusionne ^(choix 2^) qu'APRES cette observation.
+echo ------------------------------------------------------------
 echo.
 pause
 exit /b 0

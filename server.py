@@ -1280,16 +1280,12 @@ def _lieu_pour_cle(k):
         lx = {}
     if lx:
         try:
-            parts = _chemin_relatif(k).replace('/', '\\').split('\\')[:-1]
+            import faits_vue
+            lieu = faits_vue.lieu_par_segments(k, lx, media_roots())
+            if lieu:
+                return lieu, 'chemin'
         except Exception:
-            parts = list(Path(k).parts)[:-1]
-        for p in reversed(parts):
-            lieu = _lieu_plausible(p)
-            if not lieu:
-                continue
-            for cand in [lieu] + [m for m in lieu.split() if len(m) >= 5]:
-                if _sans_accents(cand) in lx:
-                    return lx[_sans_accents(cand)], 'chemin'
+            pass
     return None, None
 
 
@@ -3069,21 +3065,15 @@ _LIEUX_CACHE = {"at": 0.0, "index": {}}
 # Absent tant que le batch n'a pas tourné -> {} (le segment lieu est omis).
 GPS_PLACES_FICHIER = SCRIPT_DIR / "gps_places.json"
 _GPS_PLACES_CACHE = {"mtime": -1.0, "index": {}}
-_LIEUX_BRUIT = re.compile(
-    r'^(?:\d+|camera|dcim|photos?|images?|divers|screenshots?|whatsapp'
-    r'|samsung|iphone|xiaomi|huawei|pixel|sauvegardes?|export\w*)$', re.I)
-
-
 def _lieu_plausible(nom):
-    """Un dossier est-il un nom de lieu ? Heuristique, corrigeable à la main."""
-    n = re.sub(r'^\d{2,8}[-_ ]*', '', str(nom)).strip()      # « 240211_… »
-    n = re.sub(r'\b(19|20)\d{2}\b', '', n).strip()           # année
-    n = re.sub(r'^\d{1,2}[ .\-]+', '', n).strip()            # « 07 Voyage… »
-    if len(n) < 4 or _LIEUX_BRUIT.match(n):
-        return None
-    mots = [m for m in re.split(r'[\s_\-]+', n) if len(m) > 2
-            and not _LIEUX_BRUIT.match(m)]
-    return ' '.join(mots) if mots else None
+    """Un dossier est-il un nom de lieu ? Heuristique, corrigeable à la main.
+
+    La règle vit dans `faits_vue` — une seule implémentation pour le serveur et
+    pour la VUE des faits. Deux règles qui se ressemblent finissent par
+    diverger, et une provenance qui affirme un lieu que la page ne montre pas
+    est pire qu'une absence de provenance."""
+    import faits_vue
+    return faits_vue.lieu_plausible(nom)
 
 
 def lieux_connus():
@@ -3267,13 +3257,9 @@ def _chemin_relatif(k, roots=None):
     is_dir() (stats SMB sur le NAS) — 64k appels bloquent l'API plusieurs
     minutes (place_list / _cles_du_lieu). Défaut None = comportement d'origine.
     """
-    s = str(k)
-    bas = s.lower().replace('/', '\\')
-    for _lbl, racine in (roots if roots is not None else media_roots()):
-        r = str(racine).lower().replace('/', '\\').rstrip('\\')
-        if bas.startswith(r):
-            return s[len(r):]
-    return s
+    import faits_vue
+    return faits_vue.chemin_relatif(
+        k, roots if roots is not None else media_roots())
 
 
 def _cles_du_lieu(lieux):

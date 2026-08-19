@@ -6,44 +6,42 @@ dans **git** ; les rejets dans `eval/DECISIONS.md` ; la méthode dans
 `docs/AUDIT_INTERNE_2026-08.md`, `docs/AUDIT_EXTERNE_2026.md`,
 `docs/RANGEMENT_2026.md`.
 
-## État (19/08/2026, session 24)
+## État (19/08/2026, session 25)
 
-**Session 23** : 10a, 10b et 14a CLOS et observés — détail dans git et
-`eval/DECISIONS.md`. Reste NON DÉCIDÉ : corriger `taken` en base (**72** photos
-contre **1 369** dates antérieures).
+**Sessions 23–24** : 10a, 10b et 14a CLOS et observés ; `27 - Git.bat` (guichet
+unique — état dépôt + serveur, commit, redémarrage, fusion sans checkout,
+branches, GitHub) **observé le 19/08**, session 24 commitée et fusionnée par lui.
+Reste NON DÉCIDÉ : corriger `taken` en base (**72** photos contre **1 369** dates
+antérieures). **Non observé en réel** : Mike ne l'a pas lancé.
 
-**Git : guichet unique.** Les bats 27, 28 et 30 sont fondus dans
-`27 - Git.bat` — état du dépôt + geste conseillé, commit de session, fusion
-fast-forward sans checkout, purge des branches, ouverture GitHub. Leur code est
-repris tel quel ; les trois anciens sont dans `_bat_archive/`, les y reprendre
-suffit à revenir en arrière. **Non observé en réel** : Mike ne l'a pas lancé.
+**`faits` devient une VUE — le backfill est REJETÉ, rien n'est écrit.**
+`faits_vue.py` (pur, 26 tests) calcule les faits à la demande ; `server`
+lui délègue la règle de lieu (**0 différence sur 43 064 clés**).
+`mesure_faits_vue.py` a tranché sur COPIE :
 
-**Backfill des `faits` : la matière est MESURÉE** (`mesure_faits_backfill.py`,
-lecture seule sur COPIE, 17 tests). `faits` couvre **81** entrées sur 43 064 ;
-un backfill déterministe en porterait **42 974 (99,79 %)** — **et ce chiffre
-est une alarme, pas un succès** : **12 752 (29,61 %)** n'auraient que la DATE.
-Le chiffre honnête est **30 222 (70,18 %)** avec au moins un fait NON-date. Par
-type : personne **18 863**, lieu **13 757** (6 595 GPS + 7 162 chemin), espèce
-**4 750**, animal **935**, date **42 773** (dont **3 995** par la seule année du
-dossier). **90** entrées resteraient muettes.
+- **Ce qu'elle rend** : **42 974 (99,79 %)** avec un fait, mais le chiffre
+  honnête est **29 775 (69,14 %)** avec un fait NON-date ; 13 199 n'ont que la
+  date, 90 sont muettes. Matière : date 42 773 · personne 18 859 · lieu **12 802**
+  (6 595 GPS + 6 207 chemin) · espèce 4 750 · animal 935.
+- **Pourquoi une vue** : sur les 81 pourvues, elle en corrige **4** — 3 noms
+  « Flo » retirés depuis, **1 photo qui a reçu 6 noms APRÈS son tagging**. Un
+  backfill aurait gravé les deux erreurs 43 064 fois.
+- **Ce qu'elle coûte** : **1,4 ms** par page de 50, **3,8 s** sur l'index entier.
+  Prudence : `_noms_attendus` balaie toutes les fiches à chaque appel (13,9 ms
+  pour 50 clés) — en balayage complet, index inversé des noms construit UNE fois.
 
-**Deux constats qui commandent la conception.** (a) `faits` est un
-**INSTANTANÉ, pas une vue** : sur les 81 déjà pourvues, **12 divergent** de ce
-que dit l'index aujourd'hui — des noms écrits en juin et retirés depuis (Flo).
-Un backfill écrit une fois se périmera exactement pareil. (b) **Le lieu ne doit
-pas être backfillé par le miroir du renommage** : `resolve_path_place` teste une
-SOUS-CHAÎNE — **577** photos reçoivent un lieu collé à l'intérieur d'un mot,
-dont **442 « Ins » depuis « Cousins&Cousines »** et 13 « Orbe » depuis
-« Vallorbe ». La règle du KB (`server._lieu_pour_cle`) compare des segments
-ENTIERS et n'a pas ce défaut. Déjà réalisé dans des noms de fichiers : **6** —
-latent, pas encore payé.
+**Et le LIEU n'est prêt pour aucune des deux règles.** Celle du KB évite les
+**577** lieux collés dans un mot, mais en RATE **378** en mot entier (207 effacés
+au nettoyage, **124 libellés MULTI-MOTS jamais essayés** — « Weekend Vallée
+d'Aoste », 47 mots de 4 lettres) et répond AUTREMENT sur **591** (315 fois plus
+précise, 119 moins, 157 arbitraires). **1 546** désaccords — l'argument décisif
+pour la vue : une règle corrigée vaudra pour les 43 064 sans migration.
 
 ## À faire — par ordre de valeur
 
 1. **Vérité terrain humaine — au fil de l'eau, PAS un blocage.** ~0,8 %
-   (91/12 072). **Cadrage Mike (12/08)** : le stock est limité par la
-   CONNAISSANCE, pas par l'outillage — Flo nommera ce que Mike ne sait pas
-   nommer, quand l'outil sera à ~90 %. Métrique = erreurs découvertes.
+   (91/12 072). Le stock est limité par la CONNAISSANCE, pas l'outillage : Flo
+   nommera ce que Mike ne sait pas nommer, quand l'outil sera à ~90 %.
 2. **Observer en réel ce qui est livré** — **fait ✔**. Reste : re-upload = une
    entrée, seek vidéo mobile, test du Z.
 3. **Chaîne « noms → descriptions → recherche » — 3a, 3b, 3c CLOS le 16/08.**
@@ -59,22 +57,19 @@ latent, pas encore payé.
 6. **Navigation par similarité et par date** : « Semblables » et « même jour »
    livrés et observés. Reste : doublons proches bridés (>0,98 + même journée →
    quarantaine réversible, 50 paires jugées avant tout geste).
-7. **Extraction `ui/`** : décision nette à prendre — session dédiée `bundle.py`
-   ou parcage explicite (item zombie ; préparatoire fait, détail git).
+7. **Extraction `ui/`** : décision à prendre — session dédiée `bundle.py` ou
+   parcage explicite (item zombie ; préparatoire fait, détail git).
 8. **Cross-pipeline (Mutz/Caline)** : outil livré, réversible. Fix auto REJETÉ
    (18 % faux rejets). Relancer si un nom d'animal sort en `personne:`.
 9. **Reconnaissance — algo.** BARRIÈRE : vérité terrain ≥ ~5 %. HDBSCAN /
    Chinese Whispers / AdaFace inévaluables à 0,8 %.
 10. **Données / finitions.** Trois chantiers, dans cet ordre :
-    (a) **Compter ce que le scan OUBLIE — CLOS (18/08).** Trois constats
-    mineurs, non traités : un ajout découvert PAR LE SCAN est étiqueté
-    `tagging` (c'est la mise en file qui crée la clé) ; `dict.__ior__` n'est pas
-    redéfini dans `TrackedDict` (aucun usage, vérifié) ; `cycles_vus` est la
-    longueur d'un anneau de 10, pas un compteur — il affiche « 10 » à vie.
-    (b) **Garde-fou du repli sur le NOM + reprise des noms périmés — CLOS
-    (19/08), observé.** Reste : **correction de `taken` en base NON décidée**
-    — elle touche le pipeline de dates (`monolith-surgery`) et exige un
-    backfill, pour 72 photos, contre 1 369 dates antérieures à ne pas emporter.
+    (a) **Compter ce que le scan OUBLIE — CLOS (18/08).** Trois constats mineurs
+    non traités : un ajout vu PAR LE SCAN est étiqueté `tagging` ; `dict.__ior__`
+    non redéfini dans `TrackedDict` (aucun usage) ; `cycles_vus` est la longueur
+    d'un anneau de 10 — il affiche « 10 » à vie.
+    (b) **Garde-fou du repli sur le NOM + noms périmés — CLOS (19/08), observé.**
+    Reste : **`taken` en base NON décidé** — 72 photos contre 1 369 antérieures.
     (c) Réglages éditables depuis `/reglages` (wagon : pause globale des
     workers) ; 2ᵉ passe des 945 illisibles + `recuperees/` → NAS ; purge des
     undo > 30 j (I12) ; deux images TRONQUÉES en attente d'encodage à chaque
@@ -90,23 +85,21 @@ latent, pas encore payé.
 12. **Assurance-vie : restauration à blanc (PROMU 12/08).** « PC mort lundi,
     tout revit vendredi » : restaurer le snapshot NAS sur un dossier vierge,
     chronométrer, noter chaque manque (dont la copie hors-site de
-    `journal_jugements.jsonl`). Tant qu'il n'a pas tourné, la sauvegarde
-    « vérifiée » est une promesse.
+    `journal_jugements.jsonl`). Tant qu'il n'a pas tourné, c'est une promesse.
 13. **Serveur exposé en MCP, lecture seule d'abord (PROMU 12/08).** Recherche,
     fiches et `faits` en outils MCP locaux (JSON-RPC stdio, zéro dépendance —
     skill `mcp-builder`). Écriture plus tard. Briques de 14a.
-14. **Recherche IA locale contextuelle.** (a) **Déterministe — LIVRÉ ET
-    OBSERVÉ** : vecteurs orphelins purgés ; une seule règle de date pour filtrer
-    ET trier, partout (19/08). Le manque suivant n'est pas le filtre mais la
-    MATIÈRE, et elle est désormais **mesurée** (voir l'État) : `faits` = 81
-    entrées ; un backfill déterministe en porterait 42 974, dont seulement
-    **30 222 avec un fait NON-date**. Ordre : **backfill d'abord** (pur, sans
-    GPU ni VLM ni NAS, chaque fait portant sa VRAIE source — `index` pour les
-    noms), **lieu par la règle du KB et non par le miroir du renommage**,
-    `espece` à part (elle vient des détections) ; **le filtre ensuite**, mesuré
-    sur la couverture réelle. À trancher avant d'écrire : un champ figé se
-    périme (12 des 81 divergent déjà) — recalcul à la demande, ou re-backfill
-    à chaque correction de nom.
+14. **Recherche IA locale contextuelle.** (a) **Déterministe — la MATIÈRE est
+    tranchée (19/08)** : `faits` est une **VUE** (`faits_vue.py`), pas un champ
+    — mesures et raisons dans l'État. Reste, dans cet ordre :
+    **(i) brancher la vue** là où le point 3 l'attend (affichage date · lieu ·
+    noms) et sur `/api/…`, en construisant l'index inversé des noms UNE fois
+    par balayage ; **(ii) corriger la règle de LIEU** — les 124 libellés
+    multi-mots sont le plus gros lot et le plus facile (essayer le libellé
+    entier dans le segment, pas seulement ses mots), le seuil de 5 lettres en
+    coûte 47, et « France & Belgique » demande de trancher : deux lieux ou
+    aucun ; **(iii) le filtre**, mesuré sur la couverture réelle (69,14 %),
+    jamais sur les 99,79 %.
     (b) ensuite seulement, **escalade ponctuelle** vers un modèle
     chargé à la demande (bail GpuArbiter, déchargé après) — `vision-eval`,
     jamais câblé sans mesure.
@@ -139,8 +132,7 @@ qu'elles portent un `taken` et que `_best_time` prend `min()`. Enfin
   dans les noms (1 175 en portent un) ; garde-fou date de SCAN
   (`date_de_scan_presumee`, asymétrique, toléré à un an).
 - **UI** : design system « chambre noire » (tokens, plancher a11y), planche
-  contact, `/reglages`, `/people`, `/sujets` guichet unique (clavier
-  Espace/X/Z/lettre).
+  contact, `/reglages`, `/people`, `/sujets` guichet unique (clavier).
 - **Correction** : faux positifs « Corriger »/« Nettoyer (référence) », retrait
   SÛR (`untag`→`exclude`), `exclude` autorité partout + auto-guérison.
 - **Perf** : scoring vectorisé (156 s → qq s) ; `/api/thumb` (−98 % octets NAS) ;
@@ -158,10 +150,11 @@ qu'elles portent un `taken` et que `_best_time` prend `min()`. Enfin
 - **Recherche** : quatre dimensions (noms · lieux · période · sens) ; une seule
   règle de date pour filtrer ET trier (`recherche.py`, pur).
 - **Mesure** : `mesure_dates_scan.py`, `mesure_tri_recherche.py`,
-  `mesure_faits_backfill.py` — lecture seule sur COPIE, jamais sur `photos.db`.
+  `mesure_faits_backfill.py`, `mesure_faits_vue.py` — lecture seule sur COPIE,
+  jamais sur `photos.db`.
 - **Hygiène** : nettoyage réversible (29) ; **tout git dans `27 - Git.bat`**,
-  guichet unique — état du dépôt + geste conseillé, commit guidé, fusion
-  fast-forward sans checkout, purge des branches, GitHub. Ordre **1 → 0 → 2** :
+  guichet unique — état dépôt + serveur, commit guidé, redémarrage, fusion
+  fast-forward sans checkout, purge des branches, GitHub. Ordre **1 → 7 → 2** :
   on ne fusionne qu'après observation en réel.
 
 ## Réserve — futur, non prioritaire (triée le 12/08)
