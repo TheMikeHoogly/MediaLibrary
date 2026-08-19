@@ -6,29 +6,31 @@ dans `eval/METHODE.md` ; l'éphémère dans `PROMPT_NOUVELLE_SESSION.md`. Audits
 `docs/AUDIT_INTERNE_2026-08.md` (I1–I17, O1–O15, A–F),
 `docs/AUDIT_EXTERNE_2026.md`, `docs/RANGEMENT_2026.md`.
 
-## État (18/08/2026, session 21)
+## État (19/08/2026, session 22)
 
-**Le scan rend des comptes — chantier 10a CLOS le 18/08.**
+**Le scan rend des comptes — 10a CLOS le 18/08, et PROUVÉ.**
 `comptes_index.py` (module PUR, 37 tests) branche un registre sur le **GOULOT**
 de l'index en mémoire (`TrackedDict`) : motif déclaré par appelant, bucket
-« non déclaré » avec exemples de clés, et réconciliation par cycle
+« non déclaré » avec exemples de clés, réconciliation par cycle
 (`inexpliqué = (fin − début) − (ajouts − retraits)`). Lecture : `/reglages` et
-`GET /api/maint/status` (clé `oublis`).
+`GET /api/maint/status` (clé `oublis`). En réel : 12 cycles, 43 064 invariant,
+tout à zéro — puis un **contrôle positif**, photo-témoin déposée dans
+`_Uploads` puis retirée : +1 (`tagging`), −1 (`scan:disparus`), `inexpliqué`
+**0** aux deux. Les zéros disent « rien ne fuit », et non « rien n'est mesuré ».
+**Portée honnête** : les −250 du 17/08 sont apparus SOUS CHARGE — ceci ne prouve
+pas l'absence de fuite sous charge, seulement qu'elle serait comptée.
 
-**OBSERVÉ EN RÉEL** : 12 cycles chez Mike, index 43 064 invariant, tout à zéro —
-puis un **contrôle positif** en deux temps, une photo-témoin déposée dans
-`_Uploads` puis retirée : `43 064 → 43 065` (+1, motif `tagging`), puis
-`43 065 → 43 064` (−1, motif **`scan:disparus`**, « où » = Uploads),
-`inexpliqué` **0** aux deux, « (non declare) » 0. L'instrument compte, nomme et
-réconcilie : les zéros disent « rien ne fuit », et non « rien n'est mesuré ».
-**Portée honnête** : les −250 du 17/08 sont apparus SOUS CHARGE. Ceci ne prouve
-pas qu'aucune fuite n'existe sous charge — ça prouve qu'elle serait comptée.
-
-**Rappel de la session 19** (détail : git et `eval/DECISIONS.md`) : **72** dates
-de SCAN comptées en base contre 12 connues ; le désaccord des deux chemins a
-livré le repli sur le NOM non gardé (1 cas) et **15 noms périmés** ; l'asymétrie
-du garde-fou protège **1 369** dates antérieures. Rien n'a été corrigé — la
-décision reste ouverte (point 10b).
+**10b — les deux gestes purs sont ÉCRITS le 19/08, pas encore observés.**
+(1) Le garde-fou anti-scan couvre désormais les DEUX sources de date précise,
+`taken` **et** le nom de fichier : **73** noms refusés en base — 1 vraie date de
+scan, 72 faux futurs (résiduels) — et **0 nom brut** parmi eux, donc le geste
+ferme une porte sans déplacer un fichier. (2) Le plan revient sur les
+`YYYY0000_` qu'il a lui-même écrits, **et seulement** quand la date est devenue
+précise : **15** moves simulés sur copie, exactement les 15 comptés par l'autre
+chemin, cibles distinctes, 0 collision, 0 scan réinscrit, **376** en attente
+d'une date. **Reste dû : redémarrer, générer le plan, appliquer, observer.**
+Le troisième geste — corriger `taken` en base pour **72** photos — reste NON
+DÉCIDÉ : c'est lui qui risque d'emporter les **1 369** dates antérieures.
 
 ## À faire — par ordre de valeur
 
@@ -41,10 +43,9 @@ décision reste ouverte (point 10b).
 3. **Chaîne « noms → descriptions → recherche » — 3a, 3b, 3c CLOS le 16/08.**
    La re-passe ne se fera pas. Reste ouvert, et c'est NEUF : **le prompt de
    PRODUCTION est celui qui hallucine le plus.** V2CTX est en prod depuis le
-   12/08 sur la foi d'un 25-15 ; le banc de 147 photos confirme la préférence
-   mais montre le coût. Toute photo taguée à partir de maintenant le paie.
-   **Ne pas revenir à V0 sans protocole.** Wagon de 14 : composition d'affichage
-   date · lieu · noms depuis `faits`.
+   12/08 sur la foi d'un 25-15 ; le banc de 147 photos confirme la préférence et
+   montre le coût — toute photo taguée le paie. **Pas de retour à V0 sans
+   protocole.** Wagon de 14 : affichage date · lieu · noms depuis `faits`.
 4. **Gestes Mike** : `gps_place` ✔ ; renommage appliqué ✔ (7 058) ; nettoyer
    Flo (5 909 photos ; « Corriger » ~0.2 ou « Nettoyer (référence) ») ;
    re-rejeter Caline une fois.
@@ -61,20 +62,20 @@ décision reste ouverte (point 10b).
    HDBSCAN/Chinese Whispers/AdaFace inévaluables à 0,8 %. La barrière reste.
 10. **Données / finitions.** Trois chantiers, dans cet ordre :
     (a) **Compter ce que le scan OUBLIE — CLOS (18/08), observé + contrôle
-    positif.** Trois constats mineurs relevés au passage, non traités : un ajout
-    découvert PAR LE SCAN est étiqueté `tagging` (c'est la mise en file qui crée
-    la clé) — juste pour « qui retire », trompeur pour « qui ajoute » ;
-    `dict.__ior__` n'est pas redéfini dans `TrackedDict` (seul chemin qui
-    contredit « aucune clé n'échappe » — aucun usage aujourd'hui, vérifié) ;
-    `cycles_vus` est la longueur d'un anneau de 10, pas un compteur — il affiche
-    « 10 » à vie.
-    (b) **Dates de scan : mesurées (72), correction NON décidée.** Corriger
-    `taken` en base touche le pipeline de dates (`monolith-surgery`) et demande
-    un backfill ; 72 photos mal triées en sont l'enjeu, contre 1 369 dates
-    antérieures à ne surtout pas emporter avec. Deux sous-chantiers moins chers
-    et indépendants : garder l'étape 2 du repli (le NOM, 1 cas) et rendre au
-    plan de renommage les 15 noms périmés. Rien n'est fait tant que ce n'est pas
-    observé en réel.
+    positif.** Trois constats mineurs, non traités : un ajout découvert PAR LE
+    SCAN est étiqueté `tagging` (c'est la mise en file qui crée la clé) — juste
+    pour « qui retire », trompeur pour « qui ajoute » ; `dict.__ior__` n'est pas
+    redéfini dans `TrackedDict` (seul chemin qui contredit « aucune clé
+    n'échappe » — aucun usage, vérifié) ; `cycles_vus` est la longueur d'un
+    anneau de 10, pas un compteur : il affiche « 10 » à vie.
+    (b) **Les deux gestes purs sont écrits (19/08) — reste à OBSERVER** :
+    garde-fou de l'étape 2 du repli (`renommage_facts`) et reprise des noms
+    périmés (`plan_renommage`, `est_nom_annee_seule`). 28 tests verts, plan
+    simulé sur copie. Geste Mike : redémarrer, générer le plan (15 attendus),
+    relire `docs/plan_renommage.md`, appliquer, vérifier. **Correction de
+    `taken` en base : toujours NON décidée** — elle touche le pipeline de dates
+    (`monolith-surgery`) et exige un backfill, pour 72 photos, contre 1 369
+    dates antérieures à ne surtout pas emporter avec.
     (c) Réglages éditables depuis `/reglages` (wagon : pause globale des
     workers) ; 2ᵉ passe des 945 illisibles + `recuperees/` → NAS ; purge des
     undo > 30 j (I12) ; deux images TRONQUÉES (`Sanetsch/DSC00550.JPG`,
@@ -113,7 +114,12 @@ coûte **0 photo**, mais seulement parce que `_fname_time` refuse déjà une ann
 touche l'un touche l'autre. Chiffrés et non traités (14/08) : (a) le plancher
 1990 subsiste dans `plan_rangement.py`, `recensement_doublons.py`,
 `diagnostic_dates.py` — sans effet tant qu'aucun dossier d'avant 1990 n'y passe ;
-(b) `/files?dir=1&rec=1` (racine NAS) ne répond pas en 6 min, cause non cherchée.
+(b) `/files?dir=1&rec=1` (racine NAS) ne répond pas en 6 min, cause non cherchée ;
+(c) **plafond 2100 de la date lue dans un NOM** (`_fname_time`, `fname_datetime`) :
+`22082010141.jpg` (DDMMYYYY + séquence) se lit « 2082-01-01 ». **72** en base,
+**coût 0** — mais uniquement parce que les 72 portent un `taken` et que
+`_best_time` prend `min()` ; une seule sans `taken` serait datée du futur.
+Trouvé le 19/08 par le garde-fou de l'étape 2, qui les refuse déjà au renommage.
 
 ## Acquis — ne pas reproposer (détail : git + `eval/DECISIONS.md`)
 

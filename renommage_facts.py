@@ -22,7 +22,10 @@ ce module) : `gps_place` (géocodage inverse des coordonnées `e['gps']`) et
 chemin, puis reste vide — la résolution complète viendra côté serveur.
 
 Politique de DATE (micro-décision, à valider) :
-  - date précise (EXIF `taken` ou date dans le nom) -> « YYYYMMDD », precision='exact' ;
+  - date précise (EXIF `taken` ou date dans le nom) -> « YYYYMMDD », precision='exact'.
+    Les DEUX passent par `date_de_scan_presumee` (garde-fou asymétrique) : une
+    date postérieure au dossier de plus d'un an est la date du SCAN, d'où qu'elle
+    vienne. Le nom de fichier n'y était pas soumis avant le 19/08 ;
   - sinon année du dossier -> « YYYY0000 » (mois/jour inconnus, mais l'année
     RÉELLE est conservée et le tri reste chronologique), precision='annee' ;
   - sinon -> « 00000000 », precision='aucune'. Jamais de mtime (peu fiable) dans
@@ -133,7 +136,12 @@ def date_de_scan_presumee(annee, annees_chemin):
 def resolve_datestamp(key, entry):
     """(datestamp, precision). datestamp = « YYYYMMDD » ou « YYYYMMDD-HHMMSS »
     quand l'heure est connue (elle préserve l'ordre INTRA-JOURNEE des rafales et
-    réduit les collisions). Voir la politique de date dans l'en-tête."""
+    réduit les collisions). Voir la politique de date dans l'en-tête.
+
+    Le garde-fou SCAN s'applique aux DEUX sources de date précise — `taken` ET
+    le nom de fichier. Il ne couvrait que la première jusqu'au 19/08 : voir le
+    commentaire de l'étape 2."""
+    annees_chemin = path_years(key)          # lu une fois, servi deux fois
     # 1) EXIF sauvegarde ('taken', epoch) -> date + heure
     t = entry.get('taken') if isinstance(entry, dict) else None
     if isinstance(t, (int, float)) and t > 0:
@@ -143,12 +151,23 @@ def resolve_datestamp(key, entry):
         # ecrirait l'annee du scan dans le NOM DU FICHIER, la ou l'annee du
         # dossier est le seul fait humain restant). On laisse alors le repli
         # jouer : nom de fichier, puis annee du dossier.
-        if not date_de_scan_presumee(lt.tm_year, path_years(key)):
+        if not date_de_scan_presumee(lt.tm_year, annees_chemin):
             return (f"{lt.tm_year:04d}{lt.tm_mon:02d}{lt.tm_mday:02d}"
                     f"-{lt.tm_hour:02d}{lt.tm_min:02d}{lt.tm_sec:02d}"), 'exact'
-    # 2) date (+ heure eventuelle) dans le nom de fichier
+    # 2) date (+ heure eventuelle) dans le nom de fichier — MEME garde-fou.
+    #
+    # Le repli n'est pas une source moins fiable : c'est une AUTRE ECRITURE DU
+    # MEME GESTE. Le logiciel de numerisation qui inscrit l'instant du scan dans
+    # DateTimeOriginal nomme souvent le fichier de ce meme instant. Sans
+    # controle ici, l'etape 2 reinscrit exactement la date que l'etape 1 vient
+    # d'ecarter : le garde-fou du 17/08 ne fermait qu'une porte sur deux.
+    # Mesure du 17/08, retrouvee le 19/08 sur la base du jour : 1 cas —
+    # « Photos Papa\1983\20150810_073417.jpg », dossier 1983, nom en 2015.
+    # L'asymetrie est la MEME qu'a l'etape 1 (1 369 dates ANTERIEURES au dossier
+    # sont l'EXIF qui corrige un dossier d'import) : une date anterieure lue
+    # dans le nom reste crue ; seul le POSTERIEUR de plus d'un an est refuse.
     d, hms = fname_datetime(_basename(key))
-    if d:
+    if d and not date_de_scan_presumee(int(d[:4]), annees_chemin):
         return (f"{d}-{hms}" if hms else d), 'exact'
     # 3) annee du dossier -> YYYY0000 (pas d'heure)
     y = path_year(key)
