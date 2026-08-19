@@ -2348,6 +2348,85 @@ def _jour_de(cle, entree):
     return meme_jour.cle_jour(ep) if ep is not None else None
 
 
+def _faits_ctx():
+    """Contexte partage par TOUTES les photos d'une page -- construit UNE fois.
+
+    `_noms_attendus(cle)` repond a la meme question, mais en rebalayant toutes
+    les fiches personnes+animaux a CHAQUE appel : gratuit pour une photo (le
+    worker de tagging), ruineux pour une planche -- 13,9 ms par lot de 50, et
+    le balayage recommence a chaque photo. L'index INVERSE ci-dessous se batit
+    en un seul passage ; ensuite chaque photo n'est plus qu'un acces dict, et
+    le cout de l'affichage cesse de dependre du nombre de fiches.
+
+    DEUX passes, et c'est voulu : les `exclude` de toutes les fiches sont
+    collectes AVANT les `faces`. `exclude` fait autorite partout (invariant du
+    projet) ; en une seule passe, un nom retire par une fiche pourrait etre
+    ressuscite par une autre selon l'ordre du dict -- une autorite qui depend
+    d'un ordre d'iteration n'en est pas une.
+
+    Rend un dict opaque, a passer tel quel a `_faits_pour`."""
+    attendus, exclus = {}, {}
+    try:
+        fiches = []
+        for store, prefix in ((PEOPLE_STORE, 'personne'), (PETS_STORE, 'animal')):
+            for pe in list(store.data.values()):
+                if isinstance(pe, dict) and pe.get('name'):
+                    fiches.append(("%s:%s" % (prefix, pe['name']), pe))
+        for tag, pe in fiches:                    # passe 1 : les retraits
+            for k in (pe.get('exclude') or []):
+                exclus.setdefault(k, set()).add(tag.lower())
+        for tag, pe in fiches:                    # passe 2 : les attributions
+            for kf in (pe.get('faces') or []):
+                if (isinstance(kf, (list, tuple)) and len(kf) == 2
+                        and tag.lower() not in exclus.get(kf[0], ())):
+                    attendus.setdefault(kf[0], []).append(tag)
+    except Exception:                             # noqa: BLE001
+        attendus, exclus = {}, {}
+    try:
+        lieux = lieux_connus()
+    except Exception:                             # noqa: BLE001
+        lieux = {}
+    try:
+        gps = gps_places_connus()
+    except Exception:                             # noqa: BLE001
+        gps = {}
+    return {'attendus': attendus, 'exclus': exclus, 'lieux': lieux,
+            'gps': gps, 'racines': media_roots()}
+
+
+def _faits_pour(cle, entree, ctx):
+    """`date . lieu . noms` d'une photo, chacun avec sa SOURCE -- la VUE.
+
+    Pas le champ `faits` grave en base : ecrit par le seul worker de tagging
+    (81 photos sur 43 064) et deja perime sur 12 d'entre elles. Le backfill a
+    ete rejete le 19/08 pour cette raison meme ; ce qui s'affiche se recalcule.
+
+    Une seule regle, celle que partagent le renommage, le Knowledge Builder,
+    `/sujets` et la recherche : `faits_vue.assertions`. Rien n'est reassemble
+    ici -- un deuxieme assemblage, meme fidele, finit par diverger, et c'est
+    alors l'ecran qui ment sur ce que le moteur a compris.
+
+    `ctx` vient de `_faits_ctx()`. Rend None quand la photo ne porte AUCUN des
+    trois : mieux vaut ne rien afficher qu'une ligne vide."""
+    import faits_vue
+    e = entree if isinstance(entree, dict) else {}
+    kw = list(ctx['attendus'].get(cle) or [])
+    ex = ctx['exclus'].get(cle) or ()
+    for t in (e.get('kw_fr') or []):
+        tl = str(t).lower()
+        if ((tl.startswith('personne:') or tl.startswith('animal:'))
+                and tl not in ex):
+            kw.append(t)
+    a = faits_vue.assertions(cle, e, gps_place=ctx['gps'].get(cle),
+                             lieux=ctx['lieux'], racines=ctx['racines'],
+                             noms_attendus=kw)
+    noms = list(a['persons']) + list(a['animals'])
+    if not (a['date'] or a['lieu'] or noms):
+        return None
+    return {'date': a['date'], 'date_src': a['date_src'],
+            'lieu': a['lieu'], 'lieu_src': a['lieu_src'], 'noms': noms}
+
+
 def _jour_resoudre(param):
     """Paramètre de /api/jour et /files?jour= → (jour « MM-JJ », clé de la photo
     de référence ou None). Accepte les deux formes : un jour tout fait
@@ -4995,6 +5074,17 @@ body { font-family: var(--f-texte);
            min-height: 2.3em; display: -webkit-box; -webkit-line-clamp: 2;
            -webkit-box-orient: vertical; overflow: hidden; }
 .caption.empty { color: var(--graphite); font-style: italic; }
+/* Faits : ce que le serveur SAIT de la photo (date . lieu . noms), par
+   opposition a `.caption`, qui est ce qu'un modele en a DIT. Deux lignes
+   distinctes et dans cet ordre : le fait porte sa provenance, la description
+   non. Une seule ligne, jamais deux -- la planche vit de sa densite.
+   Les noms passent en --texte et non --fixateur : #4A8C7B sur --salle-3
+   mesure 4,45:1, sous le plancher AA de 4,5:1 a cette taille. */
+.faits { padding: var(--e-1) var(--e-2) 0; font-size: var(--t-xs); line-height: 1.3;
+         color: var(--graphite); white-space: nowrap; overflow: hidden;
+         text-overflow: ellipsis; }
+.faits .d { font-family: var(--f-donnees); }
+.faits .n { color: var(--texte); }
 
 /* -- lightbox -- */
 #lb { display: none; position: fixed; inset: 0; background: #000;
@@ -5005,6 +5095,15 @@ body { font-family: var(--f-texte);
 #lb-tags { font-size: var(--t-md); color: var(--texte); line-height: 1.4; }
 #lb-tags.none { color: var(--graphite); font-style: italic; }
 #lb-desc { font-size: var(--t-sm); color: var(--graphite); margin-top: var(--e-1); font-style: italic; }
+/* Visionneuse : une photo a la fois, donc la place de DIRE la provenance
+   (exif / nom du fichier / annee du dossier -- gps / chemin). C'est la
+   promesse du projet : aucun fait affirme sans provenance. */
+#lb-faits { font-size: var(--t-sm); color: var(--graphite); line-height: 1.5;
+             margin-bottom: var(--e-2); }
+#lb-faits .d { font-family: var(--f-donnees); color: var(--texte); }
+#lb-faits .n { color: var(--texte); }
+#lb-faits .src { font-size: var(--t-xs); color: var(--graphite); }
+#lb-faits.none { font-style: italic; }
 #lb-bar { background: var(--salle-2); padding: var(--e-3) var(--e-4); display: flex;
            align-items: center; gap: var(--e-3); flex-shrink: 0; }
 #lb-name { flex: 1; font-size: var(--t-sm); color: var(--graphite);
@@ -5137,6 +5236,7 @@ __FOLDERS__
 <div id="lb">
   <img id="lb-img" src="" alt="">
   <div id="lb-meta">
+    <div id="lb-faits"></div>
     <div id="lb-tags"></div>
     <div id="lb-desc"></div>
   </div>
@@ -5506,6 +5606,27 @@ __FOLDERS__
   }
 
   // ── grid ──
+  // « date . lieu . noms » -- les faits que le serveur SAIT, calcules a la
+  // demande (`faits_vue`), jamais lus dans un champ grave : sur les 81 photos
+  // qui portent un `faits` en base, 12 divergent deja de l'index.
+  // UN seul producteur pour la planche et la visionneuse : deux rendus du
+  // meme fait finissent par se contredire, et c'est l'ecran qui ment.
+  // `avecSrc` est la seule difference -- la planche est dense, la visionneuse
+  // ne montre qu'une photo et a donc la place de dire la provenance.
+  function faitsHtml(f, avecSrc) {
+    var fa = f.faits;
+    if (!fa) return '';
+    function src(s) {
+      return (avecSrc && s) ? ' <span class="src">(' + esc(s) + ')</span>' : '';
+    }
+    var p = [];
+    if (fa.date) p.push('<span class="d">' + esc(fa.date) + '</span>' + src(fa.date_src));
+    if (fa.lieu) p.push(esc(fa.lieu) + src(fa.lieu_src));
+    if (fa.noms && fa.noms.length)
+      p.push('<span class="n">' + esc(fa.noms.join(', ')) + '</span>');
+    return p.join(' · ');
+  }
+
   function renderGrid() {
     var grid = document.getElementById('grid');
     grid.innerHTML = '';
@@ -5540,12 +5661,17 @@ __FOLDERS__
       var cell = document.createElement('div');
       cell.className = 'cell';
       var cap = f.desc || '';
+      var fh = faitsHtml(f, false);
       cell.innerHTML = '<div class="ph"><img data-src="' + thumbUrl(f, 512)
                      + '" data-fb="' + esc(f.url) + '" alt="" title="' + esc(f.name) + '">'
                      // `annee` n'est envoye qu'en mode « meme jour » : c'est la
                      // que le millesime porte le recit (2008, 2011, 2019).
                      + (f.annee ? '<span class="an">' + f.annee + '</span>' : '')
                      + '</div>'
+                     // Rien a dire -> pas de ligne : une ligne vide sous
+                     // chaque vignette couterait 43 064 fois la hauteur d'un
+                     // fait absent.
+                     + (fh ? '<div class="faits">' + fh + '</div>' : '')
                      + '<div class="caption' + (cap ? '' : ' empty') + '">'
                      + (cap ? esc(cap) : 'pas encore analysée') + '</div>';
       cell.onclick = function() { openLb(i); };
@@ -5586,6 +5712,13 @@ __FOLDERS__
     var f = visible[lbIdx];
     document.getElementById('lb-img').src = f.url;
     document.getElementById('lb-name').textContent = f.name + '  (' + f.size + ')';
+    // Les faits AVANT les tags : les premiers portent leur source, les
+    // seconds sortent d'un modele. L'ordre de lecture dit lequel engage le
+    // projet.
+    var fx = document.getElementById('lb-faits');
+    var fh = faitsHtml(f, true);
+    fx.innerHTML = fh || 'ni date, ni lieu, ni nom connus';
+    fx.className = fh ? '' : 'none';
     var t = document.getElementById('lb-tags');
     if (f.kw && f.kw.length) { t.textContent = f.kw.join(' · '); t.className = ''; }
     else { t.textContent = 'pas encore de tags'; t.className = 'none'; }
@@ -12901,6 +13034,12 @@ class Handler(BaseHTTPRequestHandler):
         is_uploads = folder in (UPLOAD_DIR, UPLOAD_DIR.resolve())
         roots_g = media_roots()
         carte_cles = _key_index()   # UN instantané pour toute la boucle
+        # Faits (date . lieu . noms) : le contexte des noms, lieux et
+        # racines est bati UNE fois pour la page entiere -- voir
+        # `_faits_ctx`. Les quatre modes de la page (navigation, tags,
+        # recherche, meme jour) le partagent : c'est le meme instantane
+        # qui sert la planche et la visionneuse.
+        fctx = _faits_ctx()
         file_data = []
         for f in files:
             # Clé d'index EXACTE (casse d'origine) : `f` vient d'un parcours de
@@ -12954,6 +13093,7 @@ class Handler(BaseHTTPRequestHandler):
                 # Jour « MM-JJ » si la date est PRÉCISE (sinon None) : c'est lui
                 # qui décide si le bouton « Même jour » s'affiche.
                 'jour': _jour_de(fkey or str(f), entry),
+                'faits': _faits_pour(fkey or str(f), entry, fctx),
                 'kw': kw,
                 'gps': entry.get('gps'),
                 'desc': entry.get('desc', ''),
@@ -12990,6 +13130,7 @@ class Handler(BaseHTTPRequestHandler):
                     'mtime': e.get('mtime') or 0,
                     'taken': _best_time(k, e),   # date de prise (epoch) pour le tri chronologique
                     'jour': _jour_de(k, e),
+                    'faits': _faits_pour(k, e, fctx),
                     'kw': sorted(kws),
                     'gps': e.get('gps'),
                     'desc': e.get('desc', ''),
@@ -13052,6 +13193,7 @@ class Handler(BaseHTTPRequestHandler):
                     'mtime': e.get('mtime') or 0,
                     'taken': _best_time(k, e),
                     'jour': _jour_de(k, e),
+                    'faits': _faits_pour(k, e, fctx),
                     'kw': kws,
                     'gps': e.get('gps'),
                     'desc': e.get('desc', ''),
@@ -13083,6 +13225,7 @@ class Handler(BaseHTTPRequestHandler):
                     'taken': _ep,
                     'annee': meme_jour.annee_de(_ep),
                     'jour': _jour_de(k, e),
+                    'faits': _faits_pour(k, e, fctx),
                     'kw': kws,
                     'gps': e.get('gps'),
                     'desc': e.get('desc', ''),

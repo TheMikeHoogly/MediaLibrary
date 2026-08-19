@@ -8,49 +8,47 @@ Tu reprends **MediaLibrary**. **VÉRIFIE avant de lire** : `.git/HEAD`,
 FUSIONNÉ depuis — ce document, non. Puis `ROADMAP.md`, `eval/DECISIONS.md`,
 `eval/METHODE.md`. Débrief en 2–3 lignes, puis on attaque.
 
-## Où on en est (19/08/2026, fin de session 26)
+## Où on en est (19/08/2026, fin de session 27)
 
-**Le lieu n'a plus qu'UNE règle, et c'est celle qu'on voit.** `places_list` et
-`_cles_du_lieu` délèguent à `faits_vue.lieux_du_chemin`. Observé après
-redémarrage : **« Ins » 493 → 5**, recherche **499 → 11 dont 0** venant de
-« Cousins&Cousines », page **2 119 → 1 539 ms**.
+**La vue s'affiche.** `date · lieu · noms` sous chaque vignette et dans la
+visionneuse, avec leurs SOURCES. Un seul producteur client (`faitsHtml`), un
+seul assembleur serveur (`faits_vue.assertions`), les quatre modes de `/files`
+sur le même objet-photo. 14a-**iii** est clos.
 
-Le banc `mesure_lieu_visible.py` a corrigé la règle elle-même : **les 876
-« collés » n'étaient pas tous faux** — « Yani2004 », « AchumaniAlto »,
-« CuevaMarkusIrpavi » sont de VRAIS lieux (~330). D'où la découpe des mots sur
-les frontières de casse et de chiffres, les groupes de mots contigus, le trait
-d'union conservé. Gains : **Sud France 315 · San Borja 82 · Vallée d'Aoste 81 ·
-Rurrenabaque 55**. « France & Belgique » compte pour **les deux**.
+**L'index inversé est mesuré** : page de 50 à **1,11 ms** contre **9,65 ms** en
+balayage naïf (**×8,7**) ; index entier 2,234 s. `_faits_ctx()` le bâtit en
+**deux passes** — tous les `exclude` avant tous les `faces` — sinon l'autorité
+d'un retrait dépendrait de l'ordre du dict.
 
-**`taken` en base : REJETÉ ; le garde-fou est passé à la LECTURE.**
-`faits_vue.date_credible` injecté dans `meme_jour.epoch_precis` — **70** photos
-perdent une date précise fausse. `_best_time` en était une copie : la galerie
-datait de 2006 ce que la recherche datait de 1985.
+**Observé en réel** : `q=Ins` → 11 photos, **11 dates · 11 lieux · 5 noms**,
+page **1 048–1 462 ms** (contre 1 539) ; `q=montagne` → 1 500 photos en
+**477–1 082 ms**. 11 tests verts (`test_faits_affichage.py`), dont la
+comparaison des deux voies de noms et l'inversion de l'ordre des fiches.
 
-**Deux boutons qui mentaient : corrigés, observés.** L'ordre du serveur
-s'appelle « Pertinence ».
-
-**Pas encore observé** : la branche KB de `faits_vue` (`pending` = 0) — le
-premier tagging sera son observation.
+**Le chiffre honnête est 69,95 %**, pas 69,14 % (30 122 photos avec un fait
+NON-date) — `lieux.txt` a grossi.
 
 ## Prochain pas
 
-1. **Brancher la vue** (14a-iii) : affichage **date · lieu · noms** depuis
-   `faits_vue`, là où le point 3 du ROADMAP l'attend. `_noms_attendus` balaie
-   toutes les fiches à chaque appel — en balayage complet, **index inversé
-   construit UNE fois** (13,9 ms pour 50 clés sinon).
-2. **Le filtre ensuite** (14a-iv), mesuré sur **69,14 %** (photos avec un fait
-   NON-date), jamais sur 99,79 %.
+1. **Le filtre (14a-iv)** : filtrer la recherche sur les faits, mesuré sur les
+   **69,95 %**, jamais sur 99,79 %. `mesure_faits_vue.py` donne la matière par
+   type (personne 43,79 %, lieu 31,11 %, espèce 11,03 %, animal 2,17 %).
+2. **À trancher, vu à l'écran** : dans la visionneuse, les noms apparaissent
+   DEUX fois — dans la ligne de faits et dans les tags `personne:…` en dessous.
+   Redondance à assumer ou à retirer des tags affichés.
 3. **Gestes Mike** : nettoyer Flo (5 909 photos) ; re-rejeter Caline.
 4. **Le reste** (`ROADMAP.md`) : prompt de PROD qui hallucine ; doublons
    proches ; UI (11) ; restauration à blanc (12) ; MCP lecture (13).
 
-**Ne pas rouvrir sans chiffre neuf** : `taken` en base (rejeté 19/08) ;
+**Ne pas rouvrir sans chiffre neuf** : `taken` en base (rejeté 19/08) ; backfill
+ÉCRIT de `faits` (rejeté 19/08) ; index des noms en UNE passe (rejeté 19/08) ;
 planchers 1990 : 7 et 0, couplés ; plafond 2100 : 0.
 
-**Limite assumée, à basculer si elle gêne** : le nom de FICHIER compte comme
-source de lieu — 52 vrais contre **9 faux** qu'aucune règle syntaxique
-n'attrapera (« Grupo en la Laguna », « MisionSuiza » — en Bolivie).
+**Pas encore observé** : la branche KB de `faits_vue` (`pending` = 0) — le
+premier tagging sera son observation.
+
+**Limite assumée** : le nom de FICHIER compte comme source de lieu — 52 vrais
+contre **9 faux** qu'aucune règle syntaxique n'attrapera.
 `faits_vue.lieux_du_chemin(..., avec_fichier=False)`.
 
 **À vider à la main** : `_corbeille_vecteurs/` et `_corbeille_session/plan_avant/`.

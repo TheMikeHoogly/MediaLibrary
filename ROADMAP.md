@@ -5,37 +5,31 @@ dans **git** ; les rejets dans `eval/DECISIONS.md` ; la méthode dans
 `eval/METHODE.md` ; l'éphémère dans `PROMPT_NOUVELLE_SESSION.md`. Audits :
 `docs/AUDIT_INTERNE_2026-08.md`, `docs/AUDIT_EXTERNE_2026.md`, `docs/RANGEMENT_2026.md`.
 
-## État (19/08/2026, session 26)
+## État (19/08/2026, session 27)
 
-**Le lieu n'a plus qu'UNE règle — et c'est celle qu'on voit.** `places_list` et
-`_cles_du_lieu` (`/sujets` + recherche) testaient une sous-chaîne ; elles
-délèguent à `faits_vue.lieux_du_chemin`. **Observé après redémarrage** :
-« Ins » **493 → 5**, recherche **499 → 11 dont 0** venant de
-« Cousins&Cousines » (32 sur 80 avant), page **2 119 → 1 539 ms**.
+**La vue s'affiche : `date · lieu · noms` sous chaque vignette et dans la
+visionneuse, avec leurs SOURCES.** Un seul producteur côté client
+(`faitsHtml`), un seul assembleur côté serveur (`faits_vue.assertions`) : la
+planche et la fiche ne peuvent plus se contredire. Les quatre modes de `/files`
+(navigation, tags, recherche, même jour) partagent le même objet-photo.
 
-`mesure_lieu_visible.py` a corrigé la règle elle-même : **les 876 « collés »
-n'étaient pas tous faux**. « Yani2004 » (219), « AchumaniAlto » (48),
-« CuevaMarkusIrpavi » (6) sont de VRAIS lieux collés à l'année ou au sujet —
-~330 que les segments entiers auraient emportés avec les 546 faux. La règle
-découpe donc les mots sur les frontières de CASSE et de CHIFFRES (« Vallorbe »
-reste entier, « Cousins&Cousines » ne rend jamais « Ins »), essaie les groupes
-de mots contigus et garde le trait d'union. Gains nets : **Sud France 315,
-San Borja 82, Vallée d'Aoste 81, Rurrenabaque 55** (libellé ajouté à
-`lieux.txt`) ; « France & Belgique » compte pour **les deux** (574 · 157). Le
-nom de FICHIER compte aussi : 52 vrais contre 9 faux qu'aucune règle
-syntaxique n'attrapera (« Grupo en la Laguna »). Coût tenu par mémoïsation des
-segments — les noms de fichiers, uniques, restent hors cache.
+**L'index inversé des noms est mesuré, pas supposé** (`mesure_faits_vue.py`,
+base réelle) : une page de 50 coûte **1,11 ms** avec, **9,65 ms** avec le
+balayage naïf de `_noms_attendus` — **×8,7**. `_faits_ctx()` le bâtit une fois
+par page, en **deux passes** (tous les `exclude` avant tous les `faces`) : en
+une seule, l'autorité d'un retrait dépendrait de l'ordre du dict, et un nom
+retiré pourrait revenir. Index entier : 2,234 s (51,9 µs/photo).
 
-**`taken` en base : REJETÉ ; le garde-fou passe à la LECTURE.** 72 dates de
-scan contre **1 347** antérieures légitimes — et `taken` est une LECTURE de
-l'EXIF : la réécrire lui ôterait sa provenance. `faits_vue.date_credible` est
-injecté dans `meme_jour.epoch_precis` : **70 photos** perdent une date précise
-fausse et retombent sur l'année du dossier. `_best_time` en était une COPIE —
-la galerie datait de 2006 ce que la recherche datait déjà de 1985. Observé :
-`Photos Papa\1983\20150810_…` a quitté le « 10 août ».
+**Observé en réel** après redémarrage (`code_a_jour` vrai) : `q=Ins` rend 11
+photos — **11 avec une date, 11 avec un lieu, 5 avec des noms** — page en
+**1 048–1 462 ms** (contre 1 539 ms avant) ; `q=montagne` rend 1 500 photos en
+**477–1 082 ms** (1 233 Ko). L'affichage est gratuit à l'échelle de la page.
 
-**Pas encore observé** : la branche KB de `faits_vue` (`pending` = 0, aucun
-tagging depuis) — le premier tagging sera son observation.
+**Le chiffre honnête a bougé : 69,95 %** (30 122 photos avec un fait NON-date),
+non 69,14 % — `lieux.txt` a grossi. C'est sur lui que se mesure le filtre
+(14a-iv), jamais sur les 99,79 %. Matière : date 99,32 %, personne 43,79 %,
+lieu 31,11 %, espèce 11,03 %, animal 2,17 %. L'autorité vivante **retire 13
+noms et en ajoute 2** — la raison même de ne pas graver le champ.
 
 ## À faire — par ordre de valeur
 
@@ -48,8 +42,8 @@ tagging depuis) — le premier tagging sera son observation.
 3. **Chaîne « noms → descriptions → recherche » — 3a, 3b, 3c CLOS le 16/08.**
    La re-passe ne se fera pas. Reste ouvert : **le prompt de PRODUCTION est celui
    qui hallucine le plus** (adopté sur un 25-15 ; toute photo taguée le paie).
-   **Pas de retour à V0 sans protocole.** Wagon de 14 : affichage
-   date · lieu · noms depuis `faits`.
+   **Pas de retour à V0 sans protocole.** (Le wagon de 14 — affichage
+   date · lieu · noms — est arrivé le 19/08.)
 4. **Gestes Mike** : `gps_place` ✔ ; renommage appliqué ✔ (7 058) ; nettoyer
    Flo (5 909 photos) ; re-rejeter Caline.
 5. **Correctifs d'audit** : I4–I8, O7–O9, O11–O15. O1 clos ; O15 (purge de
@@ -93,10 +87,10 @@ tagging depuis) — le premier tagging sera son observation.
     (a) **Déterministe — (i) et (ii) CLOS et OBSERVÉS le 19/08** : `faits` est
     une VUE (`faits_vue.py`), et la règle de LIEU est unifiée sur ses trois
     appelants, corrigée et mesurée (voir l'État, banc `mesure_lieu_visible.py`).
-    Reste, dans cet ordre : **(iii) brancher la vue** là où le point 3 l'attend
-    (affichage date · lieu · noms), index inversé des noms construit UNE fois
-    par balayage ; **(iv) le filtre**, mesuré sur **69,14 %** (photos avec un
-    fait NON-date), jamais sur 99,79 %.
+    **(iii) CLOS et OBSERVÉ le 19/08** : la vue s'affiche sur la planche et
+    dans la visionneuse, index inversé des noms bâti une fois par page (×8,7).
+    Reste : **(iv) le filtre**, mesuré sur **69,95 %** (photos avec un fait
+    NON-date), jamais sur 99,79 %.
     (b) ensuite seulement, **escalade ponctuelle** vers un modèle chargé à la
     demande (bail GpuArbiter, déchargé après) — `vision-eval`, jamais câblé
     sans mesure.
@@ -127,7 +121,10 @@ portent un `taken`. Enfin
   dans les noms (1 175 en portent un) ; garde-fou date de SCAN
   (`date_de_scan_presumee`, asymétrique, toléré à un an).
 - **UI** : design system « chambre noire » (tokens, plancher a11y), planche
-  contact, `/reglages`, `/people`, `/sujets` guichet unique.
+  contact, `/reglages`, `/people`, `/sujets` guichet unique ; **faits
+  `date · lieu · noms` sous chaque vignette et dans la visionneuse**, avec
+  leur SOURCE (exif / nom du fichier / année du dossier — gps / chemin),
+  produits par la VUE et par un seul rendu partagé.
 - **Correction** : faux positifs « Corriger »/« Nettoyer », retrait SÛR
   (`untag`→`exclude`), `exclude` autorité partout + auto-guérison.
 - **Perf** : scoring vectorisé (156 s → qq s) ; `/api/thumb` (−98 % octets NAS) ;
