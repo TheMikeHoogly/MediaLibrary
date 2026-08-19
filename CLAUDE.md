@@ -43,13 +43,13 @@ décisions techniques. `FACE_USE_GPU=False` **volontaire** (VRAM prise par Ollam
    livrer**, la preuve AVANT le commit. `force=raison` dans
    `SESSION_COMMIT.txt` lève les contrôles négociables, jamais le verrou, la
    branche ni les fichiers binaires. Ce que l'agent ne sait pas faire (`reset`,
-   `rebase`, `--force`, vraie fusion, suppression de branche) reste un geste de
-   Mike : `27 - Git.bat`.
-   **Lire l'état, toujours et d'abord** : `.git/HEAD` (branche), `.git/logs/HEAD`
-   (commits) et `.git/logs/refs/heads/main` (**fusions** — le fast-forward se
-   fait sans checkout, rien n'en paraît dans `logs/HEAD`) via staging, lecture
-   seule, aucun verrou. `_etat_git.json` dit ce que l'agent a **tenté** ; git
-   dit ce qui s'est **passé**.
+   `rebase`, `--force`, vraie fusion, suppression de branche) reste à Mike :
+   `27 - Git.bat`.
+   **Lire l'état, toujours et d'abord** : `.git/HEAD`, `.git/logs/HEAD` et
+   `.git/logs/refs/heads/main` (**fusions** — le fast-forward se fait sans
+   checkout, rien n'en paraît dans `logs/HEAD`) via staging, lecture seule,
+   aucun verrou. `_etat_git.json` dit ce que l'agent a **tenté** ; git dit ce
+   qui s'est **passé**.
 
 ## Fichiers
 
@@ -88,6 +88,14 @@ seulement alors écrire `livrer` dans `_commande_git.txt`. VÉRIFIER ensuite dan
 `.git/logs/*`, pas dans le rapport de l'agent. Si l'agent refuse, il dit
 pourquoi : corriger, ne pas forcer par réflexe. Canal fermé (fenêtre absente)
 ou refus non levable → rendre la main à Mike : `27 - Git.bat`, **1** puis **2**.
+
+**Traite autonome (« go », Mike absent)** : livrer avec **`commit`** — branche
++ push, `main` INTACTE : une traite qui dérape se jette en supprimant UNE
+branche ; la fusion (`livrer`) attend son retour. Un choix qui lui appartient —
+jugement produit, geste irréversible sur l'archive, chiffre qui contredit une
+décision écrite — s'écrit dans `QUESTIONS_MIKE.md` avec une recommandation, et
+on PASSE au point suivant qui n'en dépend pas. Jamais s'arrêter au premier
+caillou ; jamais trancher à sa place.
 
 **Fin de session (systématique)** : condenser les docs de suivi sous les seuils
 du lint — **le détail vit dans git, pas dans les docs : c'est le levier tokens** ;

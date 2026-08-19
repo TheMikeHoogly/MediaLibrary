@@ -34,12 +34,17 @@ dans la visionneuse, avec leurs sources. Index inversé des noms : **1,11 ms**
 par page de 50 contre **9,65 ms** (×8,7). Observé : `q=Ins` → 11 photos,
 11 dates · 11 lieux · 5 noms, page **1 048–1 462 ms** contre 1 539.
 
+**Traite autonome** (« go », Mike absent) : livrer avec `commit`, pas `livrer`
+— `main` reste intacte, la fusion attend son retour. Un choix qui lui
+appartient va dans `QUESTIONS_MIKE.md` avec une recommandation, et on passe au
+point suivant. Détail : `CLAUDE.md`.
+
 ## Prochain pas
 
 1. **Le filtre (14a-iv)** : filtrer la recherche sur les faits, mesuré sur les
    **69,95 %** (photos avec un fait NON-date), jamais sur 99,79 %.
-2. **À trancher, vu à l'écran** : dans la visionneuse les noms apparaissent
-   deux fois — ligne de faits et tags `personne:…`. Assumer ou retirer.
+2. **Deux questions t'attendent** dans `QUESTIONS_MIKE.md` : les noms en
+   double dans la visionneuse, et `eval/DECISIONS.md` à saturation.
 3. **Gestes Mike** : nettoyer Flo (5 909 photos) ; re-rejeter Caline.
 4. **Le reste** (`ROADMAP.md`) : prompt de PROD qui hallucine ; doublons
    proches ; UI (11) ; restauration à blanc (12) ; MCP lecture (13).
