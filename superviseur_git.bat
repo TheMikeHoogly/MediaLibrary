@@ -1,0 +1,65 @@
+@echo off
+chcp 65001 >nul
+setlocal enabledelayedexpansion
+cd /d "%~dp0"
+title MediaLibrary - Git
+
+REM ============================================================
+REM   AGENT GIT
+REM
+REM   Il surveille _commande_git.txt et, quand il y lit autre
+REM   chose que "rien", lance git_agent.py. Celui-ci CONTROLE
+REM   avant de livrer : verrou, branche, fichiers, serveur a
+REM   jour, tests, bats, lint. Il refuse plutot que de graver
+REM   une observation fausse.
+REM
+REM   Pourquoi une fenetre separee et pas le serveur : le
+REM   serveur est l'OBJET du commit, un git qui bloque
+REM   bloquerait une requete, et un serveur du reseau local
+REM   capable de lancer git est une surface qu'on ne veut pas.
+REM
+REM   Pourquoi pas le superviseur du serveur : il est bloque
+REM   tant que server.py tourne, il ne peut rien surveiller.
+REM
+REM   Fermer cette fenetre ferme le canal - et rien d'autre.
+REM   Le serveur continue, les gestes manuels du bat 27 aussi.
+REM ============================================================
+
+set "PY=.venv\Scripts\python.exe"
+if not exist "%PY%" set "PY=python"
+set "CMDFILE=_commande_git.txt"
+
+if not exist "git_agent.py" (
+  echo ERREUR : git_agent.py est introuvable dans ce dossier.
+  pause
+  exit /b 1
+)
+
+REM Etat de depart : rien a faire. Sinon une commande laissee par
+REM une session precedente partirait toute seule au demarrage.
+> "%CMDFILE%" echo rien
+
+echo.
+echo [agent git] En ecoute sur %CMDFILE%.
+echo [agent git] Mots acceptes : rien ^| commit ^| livrer
+echo [agent git] "livrer" = controles + commit + push + fusion de main.
+echo.
+
+:boucle
+set "CMD=rien"
+if exist "%CMDFILE%" set /p CMD=<"%CMDFILE%"
+set "CMD=!CMD: =!"
+
+REM Toute lecture qui n'est PAS exactement "rien" passe la main a
+REM Python - y compris une lecture douteuse. Python est tolerant
+REM (BOM, LF, CRLF) et fait autorite ; une commande lue de travers
+REM coute un lancement pour rien, jamais une livraison perdue.
+if /i not "!CMD!"=="rien" (
+  echo.
+  echo [agent git] Commande lue : "!CMD!"
+  "%PY%" git_agent.py --executer
+  echo.
+)
+
+timeout /t 3 >nul
+goto boucle

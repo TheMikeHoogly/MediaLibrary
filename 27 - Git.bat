@@ -58,13 +58,14 @@ echo   4. Nouveau chantier        creer une branche
 echo   5. Etat detaille           status, log, branches
 echo   6. Ouvrir GitHub dans le navigateur
 echo   7. Redemarrer le serveur   pour observer le code commite
+echo   8. Agent git                dernier controle, dernier commit
 echo   0. Quitter
 echo ------------------------------------------------------------
 echo   Ordre d'une session : 1 commit, puis 7 redemarrage, puis
 echo   observation en reel, puis 2 fusion. Le choix 1 propose
 echo   lui-meme le redemarrage quand le commit touche du .py.
 echo.
-choice /c 12345670 /n /m "Ton choix : "
+choice /c 123456780 /n /m "Ton choix : "
 set "CH=!ERRORLEVEL!"
 if "!CH!"=="1" call :commit
 if "!CH!"=="2" call :fusion
@@ -73,7 +74,8 @@ if "!CH!"=="4" call :nouvelle
 if "!CH!"=="5" call :detail
 if "!CH!"=="6" call :github
 if "!CH!"=="7" call :redemarrer
-if "!CH!"=="8" goto :fin
+if "!CH!"=="8" call :agent
+if "!CH!"=="9" goto :fin
 goto :menu
 
 :fin
@@ -620,6 +622,42 @@ echo ------------------------------------------------------------
 echo   Serveur relance dans sa propre fenetre.
 echo   Observer en reel : http://192.168.0.13:!PORT!
 echo   On ne fusionne ^(choix 2^) qu'APRES cette observation.
+echo ------------------------------------------------------------
+echo.
+pause
+exit /b 0
+
+REM ============================================================
+REM   8. AGENT GIT
+REM   L'agent (fenetre "MediaLibrary - Git", lancee par le bat 0)
+REM   surveille _commande_git.txt et livre APRES controle. Ce
+REM   choix montre ce qu'il a tente, et pourquoi il a refuse.
+REM
+REM   Ce qu'il RAPPORTE n'est pas ce qui s'est PASSE : la preuve
+REM   reste git lui-meme, choix 5.
+REM ============================================================
+:agent
+cls
+echo ============================================================
+echo   8. AGENT GIT - dernier rapport
+echo ============================================================
+echo.
+tasklist /fi "WINDOWTITLE eq MediaLibrary - Git*" 2>nul | find /i "cmd.exe" >nul
+if errorlevel 1 (
+  echo   Fenetre "MediaLibrary - Git" : ABSENTE.
+  echo   Le canal est ferme : les commits restent manuels ^(choix 1^).
+  echo   Pour l'ouvrir : relancer "0 - Demarrer le serveur.bat".
+) else (
+  echo   Fenetre "MediaLibrary - Git" : en ecoute.
+)
+echo.
+set "PY=.venv\Scripts\python.exe"
+if not exist "%PY%" set "PY=python"
+"%PY%" git_agent.py --etat
+echo.
+echo ------------------------------------------------------------
+echo   Controler SANS rien livrer  : %PY% git_agent.py --controle
+echo   Ce que git dit vraiment     : choix 5 de ce menu
 echo ------------------------------------------------------------
 echo.
 pause

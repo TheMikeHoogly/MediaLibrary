@@ -148,3 +148,7 @@ _corbeille_vecteurs/
 # d'un poste a l'autre.
 _commande_serveur.txt
 _commande_serveur.txt.tmp
+_commande_git.txt
+_commande_git.txt.tmp
+_etat_git.json
+_etat_git.json.tmp

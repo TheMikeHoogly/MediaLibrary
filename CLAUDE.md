@@ -32,13 +32,24 @@ décisions techniques. `FACE_USE_GPU=False` **volontaire** (VRAM prise par Ollam
    dans le dossier du script ; sauvegarde NAS par snapshot (`backup_db()`).
    Ne jamais ouvrir `photos.db` depuis le sandbox : le serveur est l'écrivain
    unique — les tests copient la base d'abord.
-5. **Git = gestes de Mike, exclusivement.** Claude ne touche jamais à git : ni
-   outil de plugin/MCP, ni `git` via `device_bash` (chaque appel laisse un
-   `.git/index.lock` que la VM ne peut pas supprimer). Lire l'état :
-   `.git/HEAD` (branche courante), `.git/logs/HEAD` (commits) et
-   `.git/logs/refs/heads/main` (**fusions** — le choix 2 fusionne sans
-   checkout, donc rien n'en paraît dans `logs/HEAD`) via staging — lecture
-   seule, aucun verrou.
+5. **Git : jamais depuis la VM, toujours par l'AGENT.** `git` lancé sur le
+   dossier MONTÉ laisse un `.git/index.lock` que la VM ne sait pas supprimer —
+   donc ni outil de plugin/MCP, ni `git` via `device_bash`, jamais. Claude
+   livre en écrivant **`livrer`** dans `_commande_git.txt` ; `git_agent.py`
+   (fenêtre « MediaLibrary - Git ») CONTRÔLE, puis commit + push + fusion
+   fast-forward. Il **refuse** tant que le serveur ne fait pas tourner le code
+   visé, qu'un test d'un module touché est rouge, qu'un `.bat` n'est pas ASCII
+   pur ou que le lint crie — d'où l'ordre : **éditer → redémarrer → OBSERVER →
+   livrer**, la preuve AVANT le commit. `force=raison` dans
+   `SESSION_COMMIT.txt` lève les contrôles négociables, jamais le verrou, la
+   branche ni les fichiers binaires. Ce que l'agent ne sait pas faire (`reset`,
+   `rebase`, `--force`, vraie fusion, suppression de branche) reste un geste de
+   Mike : `27 - Git.bat`.
+   **Lire l'état, toujours et d'abord** : `.git/HEAD` (branche), `.git/logs/HEAD`
+   (commits) et `.git/logs/refs/heads/main` (**fusions** — le fast-forward se
+   fait sans checkout, rien n'en paraît dans `logs/HEAD`) via staging, lecture
+   seule, aucun verrou. `_etat_git.json` dit ce que l'agent a **tenté** ; git
+   dit ce qui s'est **passé**.
 
 ## Fichiers
 
@@ -47,6 +58,7 @@ décisions techniques. `FACE_USE_GPU=False` **volontaire** (VRAM prise par Ollam
 | `server.py` | Monolithe ~12 000 l. : config, stores, pipelines, workers, routeur, 9 pages HTML inline |
 | `store_sqlite.py` / `vectors.py` | Persistance SQLite / vecteurs BLOB + cosinus |
 | `pilotage.py` / `superviseur.bat` | Arrêt et redémarrage commandés par `_commande_serveur.txt` |
+| `git_agent.py` / `superviseur_git.bat` | Livraison git commandée par `_commande_git.txt`, sous contrôles ; rapport dans `_etat_git.json` |
 | `ROADMAP.md` | Priorités — à relire en début de session |
 | `PROMPT_NOUVELLE_SESSION.md` | Éphémère : état + prochain pas, réécrit chaque session |
 | `eval/DECISIONS.md` | Adopté / rejeté / parké — ne rien reproposer sans le relire |
@@ -70,11 +82,12 @@ code.
 **Chaque échange qui fait avancer** : mettre à jour `ROADMAP.md` (statut),
 `PROMPT_NOUVELLE_SESSION.md` (réécrit en entier), `eval/DECISIONS.md` (si une
 éval a tranché). Écrire `SESSION_COMMIT.txt` à la racine (ASCII, sans guillemets
-ni `!`, 2 lignes : `branche=feat/…`, `titre=…` court) — `27 - Git.bat`,
-**choix 1**, le consomme. Tout git passe par ce bat unique (état + conseil,
-commit, redémarrage, fusion, branches, GitHub) : donner à Mike les gestes dans
-l'ordre (**1**, puis **2** après validation en réel) — commit et push restent
-ses gestes ; le redémarrage, Claude le fait lui-même (« Tester en réel »).
+ni `!` : `branche=feat/…`, `titre=…` court, `force=raison` seulement si une
+preuve est impossible à produire). Puis **redémarrer, observer en réel**, et
+seulement alors écrire `livrer` dans `_commande_git.txt`. VÉRIFIER ensuite dans
+`.git/logs/*`, pas dans le rapport de l'agent. Si l'agent refuse, il dit
+pourquoi : corriger, ne pas forcer par réflexe. Canal fermé (fenêtre absente)
+ou refus non levable → rendre la main à Mike : `27 - Git.bat`, **1** puis **2**.
 
 **Fin de session (systématique)** : condenser les docs de suivi sous les seuils
 du lint — **le détail vit dans git, pas dans les docs : c'est le levier tokens** ;
@@ -96,7 +109,10 @@ hot-reload** : toute modif de `server.py` exige un redémarrage.
 
 **Redémarrage par Claude** (`pilotage.py` + `superviseur.bat`) : écrire un mot
 dans `_commande_serveur.txt` — `redemarrer`, `arret`, `marche` — via
-`device_bash` ; ne jamais le supprimer (la VM ne sait pas). Puis **VÉRIFIER**
+`device_bash`, **avec un CRLF** (`printf 'redemarrer\r\n'` : l'autre lecteur
+est `cmd.exe`) ; ne jamais le supprimer (la VM ne sait pas). Même protocole,
+mêmes octets, pour `_commande_git.txt` (`rien`, `commit`, `livrer`). Puis
+**VÉRIFIER**
 avec `GET /api/serveur` : `demarre_a` doit avoir bougé et `code_a_jour` valoir
 `true`, sinon la mesure porte sur l'ancien code. Exige le superviseur (fenêtre
 « MediaLibrary - Serveur », lancée par `0 - Démarrer le serveur.bat`) ; sans

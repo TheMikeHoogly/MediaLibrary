@@ -31,6 +31,14 @@ non 69,14 % — `lieux.txt` a grossi. C'est sur lui que se mesure le filtre
 lieu 31,11 %, espèce 11,03 %, animal 2,17 %. L'autorité vivante **retire 13
 noms et en ajoute 2** — la raison même de ne pas graver le champ.
 
+**La livraison git est automatisée, et c'est une PORTE.** `git_agent.py`
+(fenêtre « MediaLibrary - Git », ouverte par le bat 0) surveille
+`_commande_git.txt` et refuse tant que la preuve manque — d'où l'ordre inversé :
+éditer → redémarrer → **observer** → livrer. `force=raison` lève les contrôles
+négociables, jamais le verrou, `main`, un binaire ni un `checkout` risqué.
+21 tests ; `_etat_git.json` dit ce qu'il a TENTÉ, `.git/logs/*` ce qui s'est
+PASSÉ.
+
 ## À faire — par ordre de valeur
 
 1. **Vérité terrain humaine — au fil de l'eau, PAS un blocage.** ~0,8 %
@@ -150,10 +158,13 @@ portent un `taken`. Enfin
   (`pilotage.py`, 22 tests ; `superviseur.bat` relance sur le code 42 et
   s'arrête après 5 sorties anormales) — la sandbox observe enfin ses propres
   livraisons. `GET /api/serveur` dit `demarre_a` et **`code_a_jour`**.
-- **Hygiène** : nettoyage réversible (29) ; **tout git dans `27 - Git.bat`**,
-  guichet unique — état dépôt + serveur, commit guidé, redémarrage, fusion
-  fast-forward sans checkout, purge des branches, GitHub. Ordre **1 → 7 → 2** :
-  on ne fusionne qu'après observation en réel.
+- **Hygiène et livraison** : nettoyage réversible (29) ; `27 - Git.bat` reste
+  le guichet des gestes de Mike (état, commit guidé, fusion sans checkout,
+  purge des branches, GitHub, rapport de l'agent au choix 8) ; **`git_agent.py`
+  livre pour la sandbox** — `livrer` dans `_commande_git.txt`, puis commit +
+  push + fast-forward, **après contrôles** (serveur à jour, tests des modules
+  touchés, `.bat` ASCII, lint). L'ordre s'inverse : **observer AVANT de
+  commiter**.
 
 ## Réserve — futur, non prioritaire (triée le 12/08)
 
