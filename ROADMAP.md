@@ -15,30 +15,24 @@ du registre : les −250 du 17/08 sont apparus SOUS CHARGE — les zéros disent
 « rien ne fuit », pas « rien ne peut fuir ». Reste NON DÉCIDÉ : corriger `taken`
 en base (**72** photos contre **1 369** dates antérieures).
 
-**14a — le mensonge de la date, traqué partout où il classait.**
-Le FILTRE refusait le `mtime` depuis le 15/08 ; le TRI le gardait. Mesuré sur
+**14a — le `mtime` ne classe plus rien, et c'est OBSERVÉ.** Le FILTRE le
+refusait depuis le 15/08 ; le TRI le gardait, dans les trois vues. Mesuré sur
 COPIE (43 064 entrées, `mesure_tri_recherche.py`) : **259** photos sans aucune
 date sûre, **257** datées de 2026 par leur propre tagging, en tête de **56 des
-364 noms** de l'index ; **32** n'ont pas même un `mtime`, et l'ancienne clé
-(`… or ''`) mélangeait `float` et `str` — l'ancien tri **ne s'exécute pas** sur
-l'index entier (TypeError → 500), sans qu'aucun NOM ne le déclenche (0/364 ;
-chemin par LIEU non mesuré : plancher, pas total).
+364 noms** et de **31 dossiers sur 665** (`Photos\Nikola` : 43 sur 54, deux
+dossiers entièrement muets). **32** n'ont pas même un `mtime` : l'ancienne clé
+(`… or ''`) mélangeait `float` et `str` et **l'ancien tri ne s'exécutait pas**
+sur l'index entier (TypeError → 500), sans qu'aucun NOM ne le déclenche (0/364 ;
+chemin par LIEU non mesuré — plancher, pas total).
 
-1. **Recherche — CORRIGÉ ET OBSERVÉ** (`recherche.trier_chronologique`, pur) :
-   une seule règle de date par réponse, sans-date en FIN et comptées. En réel :
-   `sans_date_tri` = **53 · 43 · 29 · 29 · 21** (Véronique, Nikola, Mike, Marie,
-   Sandra) — au chiffre près la mesure hors ligne. Deux chemins, un nombre.
-2. **Bandeau — ÉCRIT, à observer.** `/files?q=` ne disait NI ce qu'elle avait
-   compris NI ce qu'elle avait écarté, là où `/api/search` le dit depuis le
-   15/08. Un producteur, une fabrique de libellé, et le compte des photos
-   RENDUES sans date sûre, distinct de celui des photos ÉCARTÉES.
-3. **Galerie — ÉCRIT, à observer.** Même mensonge côté client
-   (`f.taken || f.mtime`) : **258** photos dans **31** dossiers sur 665, dont
-   **deux entièrement muets** (22 photos) et `Photos\Nikola` à **43 sur 54**.
-   Invisible en ordre croissant (le `mtime` de 2026 les met en fin par accident),
-   elles passaient EN TÊTE au reclic. **AVANT enregistré** sur `dir=1/Nikola` :
-   en décroissant, **20 des 20 premières** étaient des muettes. Désormais hors
-   du tri par date, en fin dans les deux sens, et comptées à l'écran.
+Corrigé par `recherche.trier_chronologique` (pur) : date précise, sinon année du
+DOSSIER, jamais `mtime` ; sans-date en FIN et **comptées**. La page `/files?q=`,
+qui se taisait là où `/api/search` parlait, reçoit le même `detail` — un
+producteur, une fabrique de libellé. **En réel** : `sans_date_tri` =
+**53 · 43 · 29 · 29 · 21** (Véronique, Nikola, Mike, Marie, Sandra), au chiffre
+près la mesure hors ligne ; bandeau « 174 photo(s) — Véronique · 53 sans date
+connue, en fin de liste » ; et sur `dir=1/Nikola`, **20 des 20 premières**
+étaient muettes en décroissant, **0 sur 11** désormais.
 
 ## À faire — par ordre de valeur
 

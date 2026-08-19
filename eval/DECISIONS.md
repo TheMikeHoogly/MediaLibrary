@@ -14,7 +14,7 @@
 | MegaDescriptor plutôt que DINOv2 | **REJETÉ** (31/07) | À armes égales, DINOv2 garde +3,4 pts. |
 | Découpes en plus haute résolution | **REJETÉ** (31/07) | Aucun effet (256 px ne touche que l'affichage). Fêtes MOBILES aussi (15/08) : mal placée d'un jour, pire qu'absente. |
 | Détecteur ML de rebut / flou auto | **REJETÉ par conception** (03/08) | Rebut évident = règle simple ; subtil non isolable sans risquer une bonne photo. |
-| `sqlite-vec` ; embeddings INT8 | **REJETÉ** (11/08) | Cosinus numpy sur BLOB suffit. INT8 : ×2 (159→80 Mo) mais recall@10 0,9685 — « sans perte » réfuté. |
+| `sqlite-vec` ; embeddings INT8 | **REJETÉ** (11/08) | Cosinus numpy sur BLOB suffit. INT8 : ×2 mais recall@10 0,9685 — « sans perte » réfuté. |
 
 ## Tagging / description
 
@@ -40,15 +40,15 @@
 
 | Idée / piste | Verdict | Raison |
 |---|---|---|
-| Nommer les lieux au SEUL gazetteer `cities1000` | **CORRIGÉ** (14/08) | Il s'arrête à 1 000 hab. : le domicile (1 257 photos) sortait « Bussigny ». `lieux_locaux.txt` : locaux prioritaires (1,5 km) + alias. |
+| Nommer les lieux au SEUL gazetteer `cities1000` | **CORRIGÉ** (14/08) | Il s'arrête à 1 000 hab. : le domicile (1 257 photos) sortait « Bussigny ». `lieux_locaux.txt` : locaux prioritaires + alias. |
 | API de géocodage cloud (TomTom, OSM…) | **REJETÉ** | Vie privée du GPS familial ; clé/quota/réseau au démarrage. Gazetteer LOCAL. |
 | Chercher un lieu dans le SEUL chemin | **CORRIGÉ** (15/08) | 6 595 photos ont un `gps_place` que leur dossier ignore. Chemin **OU** géocodé : Lausanne 120 → 1 031. |
 | `_best_time` comme source d'année d'un filtre | **REJETÉ** (15/08) | Il retombe sur `mtime` : le tagging de 2026 a réécrit une photo de 1998. Source dédiée : précise, sinon DOSSIER, jamais `mtime`. |
 | Une précision de date unique pour tous les filtres | **REJETÉ** (15/08) | Exiger le jour partout cache 3 824 photos ; l'accepter partout invente un mois. |
 | Filtrer sans dire combien on écarte | **REJETÉ** (15/08) | « 3 photos » se lit « il n'y en a que 3 ». `sans_date` compté et affiché. |
 | Laisser les vecteurs des photos sorties de l'index | **TRAITÉ** (17/08) | 2 374 purgés, quarantaine réversible. Puis **0 muet sur 1 600 résultats** (2,6 % avant). |
-| Le `mtime` comme date de repli pour CLASSER | **CORRIGÉ** (19/08) | Le filtre le refusait depuis le 15/08 ; le tri le gardait — recherche, page `/files?q=` et galerie. Sur copie : **259** photos sans date sûre, **257** datées de 2026 par leur propre tagging, en tête de **56 des 364 noms** et de **31 dossiers sur 665** (deux ENTIÈREMENT muets ; `Photos\Nikola` 43 sur 54). **32** sans même un `mtime` : `… or ''` mélangeait `float` et `str`, l'ancien tri **ne s'exécutait pas** sur l'index entier (TypeError → 500), sans qu'aucun NOM ne le déclenche (0/364 ; chemin par LIEU non mesuré). Une seule règle partout, sans-date en FIN et COMPTÉES. Recherche **observée** : `sans_date_tri` = 53 · 43 · 29 · 29 · 21, au chiffre près la mesure. Galerie : à observer. |
-| La page `/files?q=` se taisait | **CORRIGÉ** (19/08) | `/api/search` disait ce qu'il avait compris et écarté ; la page du champ d'accueil, non. Même producteur (`detail`), une fabrique de libellé. |
+| Le `mtime` comme date de repli pour CLASSER | **CORRIGÉ, OBSERVÉ** (19/08) | Le filtre le refusait depuis le 15/08 ; le tri le gardait — recherche, `/files?q=` et galerie. Sur copie : **259** photos sans date sûre, **257** datées de 2026 par leur propre tagging, en tête de **56 des 364 noms** et de **31 dossiers sur 665**. **32** sans même un `mtime` : `… or ''` mélangeait `float` et `str`, l'ancien tri **ne s'exécutait pas** sur l'index entier (TypeError → 500), sans qu'aucun NOM ne le déclenche (0/364 ; chemin par LIEU non mesuré). Une seule règle partout, sans-date en FIN et COMPTÉES. En réel : `sans_date_tri` = 53 · 43 · 29 · 29 · 21, au chiffre près la mesure ; sur `dir=1/Nikola`, 20 des 20 premières étaient muettes en décroissant, 0 sur 11 désormais. |
+| La page `/files?q=` se taisait | **CORRIGÉ, OBSERVÉ** (19/08) | `/api/search` disait ce qu'il avait compris et écarté ; la page du champ d'accueil, non. Même producteur (`detail`), une fabrique de libellé. |
 | « Fichier absent » comme seul critère de purge | **CORRIGÉ** (17/08) | « Le fichier existe » ne dit pas « il sera re-tagué » : 91 photos vivaient hors de toute racine scannée. Règle du scan répliquée dans `sera_re_tague()`. |
 
 ## Dates de prise de vue

@@ -13,40 +13,32 @@ puis on attaque.
 **10b CLOS et OBSERVÉ** : 15 moves appliqués, 0 date de scan réinscrite, noms
 humains intacts, plan régénéré à **0**.
 
-**14a — le `mtime` ne classe plus rien.** Le FILTRE le refusait depuis le 15/08,
-le TRI le gardait. Mesuré sur COPIE (`mesure_tri_recherche.py`, 43 064 entrées) :
-**259** photos sans date sûre, **257** datées de 2026 par leur propre tagging,
-en tête de **56 des 364 noms** et de **31 dossiers sur 665** (deux ENTIÈREMENT
-muets ; `Photos\Nikola` 43 sur 54). **32** n'ont pas même un `mtime` :
-`_best_time(…) or ''` mélangeait `float` et `str`, l'ancien tri **ne s'exécutait
-pas** sur l'index entier (TypeError → 500), sans qu'aucun NOM ne le déclenche
-(0/364 ; chemin par LIEU non mesuré — plancher, pas total).
+**14a CLOS et OBSERVÉ — le `mtime` ne classe plus rien.** Le FILTRE le refusait
+depuis le 15/08, le TRI le gardait, dans les trois vues. Mesuré sur COPIE
+(`mesure_tri_recherche.py`, 43 064 entrées) : **259** photos sans date sûre,
+**257** datées de 2026 par leur propre tagging, en tête de **56 des 364 noms**
+et de **31 dossiers sur 665** (`Photos\Nikola` 43 sur 54). **32** n'ont pas même
+un `mtime` : `_best_time(…) or ''` mélangeait `float` et `str`, et **l'ancien
+tri ne s'exécutait pas** sur l'index entier (TypeError → 500) — sans qu'aucun
+NOM ne le déclenche (0/364 ; chemin par LIEU non mesuré, plancher pas total).
 
-1. **Recherche — OBSERVÉ.** `recherche.trier_chronologique` (pur) : date
-   précise, sinon année du DOSSIER, jamais `mtime` ; sans-date en FIN et
-   comptées. En réel : `sans_date_tri` = **53 · 43 · 29 · 29 · 21** (Véronique,
-   Nikola, Mike, Marie, Sandra) — au chiffre près la mesure hors ligne.
-2. **Bandeau + galerie — ÉCRITS, PAS OBSERVÉS.** `/files?q=` dit enfin ce
-   qu'elle a compris et écarté (même producteur que `/api/search`) ; la galerie
-   sort les photos sans date sûre du tri par date (fin de liste dans les deux
-   sens) et les compte. 83 tests verts, dont `node --check` sur les 9 pages.
+Corrigé par `recherche.trier_chronologique` (pur) : date précise, sinon année du
+DOSSIER, jamais `mtime` ; sans-date en FIN et **comptées**. `/files?q=`, qui se
+taisait là où `/api/search` parlait, reçoit le même `detail`. **En réel** :
+`sans_date_tri` = **53 · 43 · 29 · 29 · 21** (Véronique, Nikola, Mike, Marie,
+Sandra), au chiffre près la mesure ; bandeau « 174 photo(s) — Véronique · 53
+sans date connue, en fin de liste » ; sur `dir=1/Nikola`, **20 des 20 premières**
+étaient muettes en décroissant, **0 sur 11** désormais. 83 tests verts, dont
+`node --check` sur les 9 pages (`test_gallery_placeholders.py`, par AST).
 
 ## Prochain pas
 
-1. **OBSERVER le bandeau et la galerie — rien d'autre avant.** Geste Mike :
-   redémarrer (`0`), puis
-   (a) accueil → chercher « Véronique » : le compteur doit dire
-   « 174 photo(s) — Véronique · 53 sans date connue, en fin de liste » ;
-   (b) `http://192.168.0.13:8080/files?dir=1/Nikola` — 54 photos dont **43 sans
-   date**, toutes datées de 2026 par leur tagging. **AVANT enregistré le 19/08
-   sur le serveur vivant** : en ordre DÉCROISSANT (un reclic sur « Date »),
-   **20 des 20 premières** étaient des muettes ; en croissant, 9 sur 20 — mais
-   par arithmétique, le dossier n'ayant que **11** photos datées. APRÈS attendu :
-   **les 11 datées d'abord dans les deux sens**, les 43 muettes derrière, et le
-   compteur qui dit « 43 sans date connue, en fin de liste ».
-2. **14a, suites** : les `faits` ne filtrent pas ; pas de filtre par espèce ni
-   par fiche. Et le bouton « Date ↑ » reste allumé sur `/files?q=` alors que
-   l'ordre affiché est celui du serveur — l'écran annonce un tri qu'il
+1. **14a, suites** : les `faits` ne filtrent pas encore (le lieu passe par
+   `gps_places` + chemin) ; pas de filtre par espèce ni par fiche. Wagon du
+   point 3 : affichage date · lieu · noms depuis `faits`.
+2. **Deux boutons qui mentent** (wagon `photo-ui`) : « Date ↑ » reste allumé sur
+   `/files?q=` alors que l'ordre affiché est celui du serveur ; et en mode IA
+   les boutons de tri ne font rien du tout — l'écran annonce un tri qu'il
    n'applique pas.
 3. **Le prompt de PRODUCTION hallucine plus que V0** (`eval/DECISIONS.md`) :
    inchangé, chaque photo taguée le paie. **Ne pas revenir à V0 sans protocole.**
