@@ -129,6 +129,14 @@ eval/interet_candidats_etiquetage.html
 # versionné ; à vider à la main quand on est sûr.
 _corbeille_session/
 
+# ─── Corbeille du pont bureau (device_bash ne sait pas supprimer) ───────────
+# Le pont vers le poste de Mike refuse `rm` : ce qui doit disparaître y est
+# DÉPLACÉ, et Mike vide le dossier. Sans cette ligne, `git add -A` du bat 27
+# versionnait la corbeille — deux fichiers y sont déjà entrés par ce chemin
+# (`_TEST_COMPTES_10a.jpg`, `_tmp_gitread/blob_prefusion`), à détacher à la main :
+#     git rm -r --cached _to_delete
+_to_delete/
+
 # ─── Quarantaine des vecteurs purgés (purger_vecteurs_orphelins.py) ─────────
 # Les vecteurs sémantiques supprimés y sont écrits AVANT le DELETE (JSONL,
 # vecteur en base64) : c'est la réversibilité. Local, jamais versionné ; à

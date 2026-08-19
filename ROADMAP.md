@@ -26,13 +26,11 @@ sur l'index entier (TypeError → 500), sans qu'aucun NOM ne le déclenche (0/36
 chemin par LIEU non mesuré — plancher, pas total).
 
 Corrigé par `recherche.trier_chronologique` (pur) : date précise, sinon année du
-DOSSIER, jamais `mtime` ; sans-date en FIN et **comptées**. La page `/files?q=`,
-qui se taisait là où `/api/search` parlait, reçoit le même `detail` — un
-producteur, une fabrique de libellé. **En réel** : `sans_date_tri` =
-**53 · 43 · 29 · 29 · 21** (Véronique, Nikola, Mike, Marie, Sandra), au chiffre
-près la mesure hors ligne ; bandeau « 174 photo(s) — Véronique · 53 sans date
-connue, en fin de liste » ; et sur `dir=1/Nikola`, **20 des 20 premières**
-étaient muettes en décroissant, **0 sur 11** désormais.
+DOSSIER, jamais `mtime` ; sans-date en FIN et **comptées**. `/files?q=`, qui se
+taisait là où `/api/search` parlait, reçoit le même `detail`. **En réel** :
+`sans_date_tri` = **53 · 43 · 29 · 29 · 21** (Véronique, Nikola, Mike, Marie,
+Sandra), au chiffre près la mesure ; et sur `dir=1/Nikola`, **20 des 20
+premières** étaient muettes en décroissant, **0 sur 11** désormais.
 
 ## À faire — par ordre de valeur
 
@@ -94,11 +92,18 @@ connue, en fin de liste » ; et sur `dir=1/Nikola`, **20 des 20 premières**
 13. **Serveur exposé en MCP, lecture seule d'abord (PROMU 12/08).** Recherche,
     fiches et `faits` en outils MCP locaux (JSON-RPC stdio, zéro dépendance —
     skill `mcp-builder`). Écriture plus tard. Briques de 14a.
-14. **Recherche IA locale contextuelle.** (a) **Déterministe — LIVRÉ ET OBSERVÉ**,
-    vecteurs orphelins purgés ; tri sans mot-clé aligné sur la règle de date du
-    filtre (19/08, observé). Manques : les `faits` ne filtrent pas encore (le
-    lieu passe par `gps_places` + chemin) ; pas de filtre espèce ni fiche ;
-    `sans_date_tri` est compté mais pas AFFICHÉ (wagon `photo-ui`).
+14. **Recherche IA locale contextuelle.** (a) **Déterministe — LIVRÉ ET
+    OBSERVÉ** : vecteurs orphelins purgés ; une seule règle de date pour filtrer
+    ET trier, partout (19/08). **Le manque suivant n'est PAS le filtre, c'est la
+    MATIÈRE — compté le 19/08** : `faits` ne couvre que **81** entrées sur
+    43 064 (**0,19 %**), exactement les 81 estampillées `v2ctx|kb1` ; les 42 983
+    autres n'ont aucun `pipe`. Filtrer dessus rendrait presque rien EN AYANT
+    L'AIR DE MARCHER. Or le matériau est déjà en base pour **37 999** photos
+    (18 863 `personne:`, 32 838 dates, 6 614 GPS, 935 animaux) : un **backfill
+    DÉTERMINISTE**, sans GPU ni VLM, est le préalable — chaque fait y portant sa
+    VRAIE source (« index »), pas celle d'un tagging qui n'a pas eu lieu.
+    `espece` dépend en plus des détections : à traiter à part. Ensuite
+    seulement : filtre par espèce, par fiche.
     (b) ensuite seulement, **escalade ponctuelle** vers un modèle
     chargé à la demande (bail GpuArbiter, déchargé après) — `vision-eval`,
     jamais câblé sans mesure.
@@ -142,7 +147,8 @@ seule sans `taken` serait datée du futur.
   `_send_file` Range/streaming ; workers sous ordonnanceur ; GpuArbiter 27/27.
 - **Tagging** : `qwen3-vl:2b`, prompt v2ctx ; Knowledge Builder : faits
   noms/date/lieu structurés et sourcés (`faits`), noms JAMAIS via le prompt ;
-  `TAGGING_PIPELINE_VERSION` estampillée (`pipe`) ; 1 lecture exiftool/photo.
+  `TAGGING_PIPELINE_VERSION` estampillée (`pipe`) — **sur les 81 photos taguées
+  DEPUIS**, pas sur le fonds ; 1 lecture exiftool/photo.
 - **Index/vecteurs** : cascade `forget_everywhere` au scan ; **2 374 vecteurs
   orphelins purgés et observés** (0 muet sur 1 600 résultats, contre 2,6 %),
   quarantaine réversible `_corbeille_vecteurs/`.
