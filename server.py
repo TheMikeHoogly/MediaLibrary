@@ -67,6 +67,19 @@ except OSError:
 MAX_IMAGE_SIDE = 896           # redimensionnement avant envoi à l'IA
 SCRIPT_DIR = Path(__file__).resolve().parent
 
+# ── De quand date ce processus, et fait-il tourner le code du disque ? ───────
+# Sans hot-reload, la question « le serveur exécute-t-il ce que je viens
+# d'écrire ? » n'avait aucune réponse observable : on redémarrait, et on
+# croyait. On fige donc ici l'instant du démarrage ET le mtime de `server.py`
+# AU MOMENT OÙ IL A ÉTÉ CHARGÉ. Comparé au mtime actuel, il répond seul :
+# `/api/serveur` rend `code_a_jour`. Un redémarrage oublié cesse d'être
+# indétectable.
+DEMARRE_A = time.time()
+try:
+    SERVER_PY_MTIME = Path(__file__).resolve().stat().st_mtime
+except OSError:
+    SERVER_PY_MTIME = None
+
 # ── Emplacement des INDEX (tags / visages / personnes) ───────────────────────
 # NE PAS déplacer sans copier les .json d'abord : sinon tout le travail accumulé
 # est perdu (les visages/personnes ne sont PAS stockés dans les photos). Reste
@@ -12449,6 +12462,9 @@ class Handler(BaseHTTPRequestHandler):
         elif path == '/reglages':
             self._serve_reglages()
 
+        elif path == '/api/serveur':
+            self._serve_serveur_etat()
+
         elif path == '/api/maint/status':
             self._serve_maint_status()
 
@@ -13995,6 +14011,35 @@ class Handler(BaseHTTPRequestHandler):
         }).encode()
         self._send(200, body, 'application/json')
 
+    def _serve_serveur_etat(self):
+        """Identité du PROCESSUS : depuis quand il tourne, et s'il exécute le
+        `server.py` qui est sur le disque.
+
+        C'est l'instrument qui rend le redémarrage OBSERVABLE. Sans lui, la
+        seule preuve qu'un redémarrage a eu lieu était de faire confiance au
+        geste — et le projet a déjà payé pour savoir qu'observer sans
+        redémarrer, c'est observer l'ancien code. `code_a_jour` à `false` dit
+        exactement cela, avant qu'on ne conclue quoi que ce soit d'une mesure.
+
+        Lecture seule, un `stat` local, aucun accès NAS."""
+        import pilotage
+        try:
+            mtime = (SCRIPT_DIR / 'server.py').stat().st_mtime
+        except OSError:
+            mtime = None
+        a_jour = (mtime is not None and SERVER_PY_MTIME is not None
+                  and abs(mtime - SERVER_PY_MTIME) < 0.001)
+        body = json.dumps({
+            'pid': os.getpid(),
+            'demarre_a': DEMARRE_A,
+            'uptime_s': round(time.time() - DEMARRE_A, 1),
+            'commande': pilotage.lire(SCRIPT_DIR / pilotage.FICHIER),
+            'server_py_mtime_charge': SERVER_PY_MTIME,
+            'server_py_mtime_disque': mtime,
+            'code_a_jour': a_jour,
+        }, ensure_ascii=False).encode()
+        self._send(200, body, 'application/json')
+
     # ─── Centre de controle : /reglages ───────────────────────────────────
     def _serve_reglages(self):
         self._send_html(REGLAGES_PAGE)
@@ -14624,6 +14669,47 @@ class Handler(BaseHTTPRequestHandler):
         self.wfile.write(body)
 
 
+def pilotage_loop():
+    """Veille sur `_commande_serveur.txt` : arrêt et redémarrage COMMANDÉS.
+
+    Le protocole, ses raisons et ses garde-fous sont dans `pilotage.py`. Ici,
+    seulement le geste : lire un mot toutes les deux secondes (un `stat` local,
+    jamais le NAS) et sortir quand il le dit.
+
+    POURQUOI `os._exit` ET PAS UN ARRÊT PROPRE. Le redémarrage existant
+    (`0 - Demarrer le serveur.bat`, appelé par le bat 27) fait un
+    `taskkill /F` : ce chemin-ci n'est donc pas plus brutal que celui qu'il
+    remplace, il est seulement déclenché autrement. Et il est sûr pour la même
+    raison que l'autre l'était : les écritures d'index sont atomiques et
+    validées une par unité de travail (invariant 2), donc il n'existe aucun
+    instant où mourir laisse une donnée à moitié écrite. Un `serve_forever`
+    interrompu proprement, lui, attendrait des workers qui peuvent tenir une
+    lecture NAS de plusieurs minutes — un redémarrage qui ne redémarre pas est
+    pire qu'un redémarrage sec.
+
+    Le processus ne se relance jamais lui-même : il sort, et `superviseur.bat`
+    décide. Un processus qui organiserait sa propre résurrection ne pourrait
+    pas garantir que le port est libéré avant de le reprendre.
+    """
+    import pilotage
+    chemin = SCRIPT_DIR / pilotage.FICHIER
+    while True:
+        time.sleep(pilotage.PERIODE_S)
+        try:
+            cmd = pilotage.lire(chemin)
+        except Exception:                                     # noqa: BLE001
+            continue                    # une veille ne doit jamais tuer l'hôte
+        if not pilotage.doit_sortir(cmd):
+            continue
+        print(f"\n[pilotage] commande recue : {cmd} — arret du serveur "
+              f"(code {pilotage.CODE_REDEMARRAGE}).", flush=True)
+        try:
+            sys.stdout.flush()
+        except Exception:                                     # noqa: BLE001
+            pass
+        os._exit(pilotage.CODE_REDEMARRAGE)
+
+
 class QuietServer(ThreadingHTTPServer):
     """N'affiche pas de traceback quand un téléphone ferme sa connexion."""
 
@@ -14642,6 +14728,18 @@ if __name__ == '__main__':
     # lancer les workers, pour repartir sur une base propre (pas de dimensions
     # d'empreintes mélangées).
     migrate_animal_pipeline()
+
+    # La commande repasse à « marche » AVANT que la veille ne démarre : sans
+    # cela, un processus relancé lirait le « redemarrer » qui l'a fait naître
+    # et ressortirait aussitôt — une boucle de redémarrage, à la milliseconde
+    # près, et sans rien pour la dire.
+    try:
+        import pilotage
+        pilotage.ecrire(SCRIPT_DIR / pilotage.FICHIER, 'marche')
+        threading.Thread(target=pilotage_loop, daemon=True).start()
+    except Exception as e:                                    # noqa: BLE001
+        print(f"  ⚠ Pilotage par fichier indisponible ({e}) — "
+              f"redemarrage uniquement par les bats.")
 
     threading.Thread(target=tagger_worker, daemon=True).start()
     threading.Thread(target=maintenance_loop, daemon=True).start()

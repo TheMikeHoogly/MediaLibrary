@@ -142,3 +142,9 @@ _to_delete/
 # vecteur en base64) : c'est la réversibilité. Local, jamais versionné ; à
 # vider à la main une fois la recherche observée en réel.
 _corbeille_vecteurs/
+
+# Pilotage du serveur (arret / redemarrage commandes par fichier) : c'est un
+# ETAT de la machine, pas du code. Le versionner ferait voyager un « arret »
+# d'un poste a l'autre.
+_commande_serveur.txt
+_commande_serveur.txt.tmp

@@ -49,8 +49,8 @@ regarde.
 ## À faire — par ordre de valeur
 
 1. **Vérité terrain humaine — au fil de l'eau, PAS un blocage.** ~0,8 %
-   (91/12 072). Le stock est limité par la CONNAISSANCE, pas l'outillage : Flo
-   nommera ce que Mike ne sait pas nommer, quand l'outil sera à ~90 %.
+   (91/12 072) : limité par la CONNAISSANCE, pas l'outillage — Flo nommera ce
+   que Mike ne sait pas nommer, quand l'outil sera à ~90 %.
 2. **Observer en réel ce qui est livré** — **fait ✔**. Reste : re-upload = une
    entrée, seek vidéo mobile, test du Z.
 3. **Chaîne « noms → descriptions → recherche » — 3a, 3b, 3c CLOS le 16/08.**
@@ -59,7 +59,7 @@ regarde.
    **Pas de retour à V0 sans protocole.** Wagon de 14 : affichage
    date · lieu · noms depuis `faits`.
 4. **Gestes Mike** : `gps_place` ✔ ; renommage appliqué ✔ (7 058) ; nettoyer
-   Flo (5 909 photos ; « Corriger » ~0.2 ou « Nettoyer ») ; re-rejeter Caline.
+   Flo (5 909 photos) ; re-rejeter Caline.
 5. **Correctifs d'audit** : I4–I8, O7–O9, O11–O15. O1 clos ; O15 (purge de
    `photo_thumbs/`) gagne en poids.
 6. **Navigation par similarité et par date** : « Semblables » et « même jour »
@@ -71,25 +71,23 @@ regarde.
    (18 % faux rejets). Relancer si un nom d'animal sort en `personne:`.
 9. **Reconnaissance — algo.** BARRIÈRE : vérité terrain ≥ ~5 %. HDBSCAN /
    Chinese Whispers / AdaFace inévaluables à 0,8 %.
-10. **Données / finitions.** Trois chantiers, dans cet ordre :
+10. **Données / finitions**, dans cet ordre :
     (a) **Compter ce que le scan OUBLIE — CLOS (18/08).** Trois constats mineurs
     non traités : un ajout vu PAR LE SCAN est étiqueté `tagging` ; `dict.__ior__`
     non redéfini dans `TrackedDict` (aucun usage) ; `cycles_vus` est la longueur
     d'un anneau de 10 — il affiche « 10 » à vie.
     (b) **Garde-fou du repli sur le NOM + noms périmés — CLOS (19/08), observé.**
     Reste : **`taken` en base NON décidé** — 72 photos contre 1 369 antérieures.
-    (c) Réglages éditables depuis `/reglages` (wagon : pause globale des
-    workers) ; 2ᵉ passe des 945 illisibles + `recuperees/` → NAS ; purge des
-    undo > 30 j (I12) ; deux images TRONQUÉES en attente d'encodage à chaque
-    démarrage, visibles dans `erreurs_images`.
-11. **UI — harmonisation des vues (demandé 12/08, skill `photo-ui`)** :
-    (a) clic sur l'image d'une personne → sa démo aléatoire ; (b) lieux : texte
-    sous l'image en tooltip ; (c) harmoniser visages/lieux/animaux — mêmes
-    fonctions partout, **sauf** l'effacement, réservé à Classification ;
-    (d) zoom pinch + molette — `maximum-scale=1` retiré ✔ (WCAG 1.4.4) ;
-    (e) wagons : bandeau `#pending`, libellé `/pets`, le bouton qui dit
-    « Meme jour (14 aout) » là où la page dit « 14 août », et « Date ↑ » qui
-    reste allumé sur `/files?q=` alors que l'ordre affiché est celui du serveur.
+    (c) Réglages éditables depuis `/reglages` ; 2ᵉ passe des 945 illisibles +
+    `recuperees/` → NAS ; purge des undo > 30 j (I12) ; deux images TRONQUÉES
+    visibles dans `erreurs_images` à chaque démarrage.
+11. **UI — harmonisation des vues (12/08, skill `photo-ui`)** : (a) clic sur
+    l'image d'une personne → sa démo aléatoire ; (b) lieux : texte sous l'image
+    en tooltip ; (c) harmoniser visages/lieux/animaux — mêmes fonctions partout,
+    **sauf** l'effacement, réservé à Classification ; (d) zoom pinch + molette —
+    `maximum-scale=1` retiré ✔ ; (e) wagons : bandeau `#pending`, libellé
+    `/pets`, « Meme jour (14 aout) » là où la page dit « 14 août », et « Date ↑ »
+    allumé sur `/files?q=` alors que l'ordre vient du serveur.
 12. **Assurance-vie : restauration à blanc (PROMU 12/08).** « PC mort lundi,
     tout revit vendredi » : restaurer le snapshot NAS sur un dossier vierge,
     chronométrer, noter chaque manque (dont la copie hors-site de
@@ -131,16 +129,16 @@ dossier d'avant 1990 n'y passe. Le **plafond 2100** (`22082010141.jpg` → 2082)
   multiples ; vérif d'espèce.
 - **Nommage** : attribution unifiée personnes+animaux (multi-noms, annulation
   10 s), rejets réversibles, reclassement `personne:`→`animal:` réversible.
-- **Fichiers/Rangement** : `/browse` réversible, dédoublonnage appliqué
-  (8,4 Go), rangement par année, orchestrateur de maintenance.
+- **Fichiers/Rangement** : `/browse` réversible, dédoublonnage (8,4 Go),
+  rangement par année, orchestrateur de maintenance.
 - **Renommage** : cœur + plan + applicateur réversibles ; **7 058 renommages
   appliqués et observés** (0 sauté, noms humains intacts) ; `gps_place` actif
   dans les noms (1 175 en portent un) ; garde-fou date de SCAN
   (`date_de_scan_presumee`, asymétrique, toléré à un an).
 - **UI** : design system « chambre noire » (tokens, plancher a11y), planche
-  contact, `/reglages`, `/people`, `/sujets` guichet unique (clavier).
-- **Correction** : faux positifs « Corriger »/« Nettoyer (référence) », retrait
-  SÛR (`untag`→`exclude`), `exclude` autorité partout + auto-guérison.
+  contact, `/reglages`, `/people`, `/sujets` guichet unique.
+- **Correction** : faux positifs « Corriger »/« Nettoyer », retrait SÛR
+  (`untag`→`exclude`), `exclude` autorité partout + auto-guérison.
 - **Perf** : scoring vectorisé (156 s → qq s) ; `/api/thumb` (−98 % octets NAS) ;
   `_send_file` Range/streaming ; workers sous ordonnanceur ; GpuArbiter 27/27.
 - **Tagging** : `qwen3-vl:2b`, prompt v2ctx ; Knowledge Builder : faits
@@ -151,13 +149,16 @@ dossier d'avant 1990 n'y passe. Le **plafond 2100** (`22082010141.jpg` → 2082)
   orphelins purgés et observés** (0 muet sur 1 600 résultats, contre 2,6 %),
   quarantaine réversible `_corbeille_vecteurs/`.
 - **Observabilité** : boucle scan/backup (O5), `backup_verify`, trois tâches de
-  fond EXIF (dates, noms, GPS) dans `/reglages` ; comptes de l'index au goulot
-  (`comptes_index.py`, observé).
+  fond EXIF dans `/reglages` ; comptes de l'index au goulot (`comptes_index.py`).
 - **Recherche** : quatre dimensions (noms · lieux · période · sens) ; une seule
   règle de date pour filtrer ET trier (`recherche.py`, pur).
 - **Mesure** : `mesure_dates_scan.py`, `mesure_tri_recherche.py`,
   `mesure_faits_backfill.py`, `mesure_faits_vue.py` — lecture seule sur COPIE,
   jamais sur `photos.db`.
+- **Pilotage** : arrêt/redémarrage commandés par `_commande_serveur.txt`
+  (`pilotage.py`, 22 tests ; `superviseur.bat` relance sur le code 42 et
+  s'arrête après 5 sorties anormales) — la sandbox observe enfin ses propres
+  livraisons. `GET /api/serveur` dit `demarre_a` et **`code_a_jour`**.
 - **Hygiène** : nettoyage réversible (29) ; **tout git dans `27 - Git.bat`**,
   guichet unique — état dépôt + serveur, commit guidé, redémarrage, fusion
   fast-forward sans checkout, purge des branches, GitHub. Ordre **1 → 7 → 2** :
@@ -165,9 +166,9 @@ dossier d'avant 1990 n'y passe. Le **plafond 2100** (`22082010141.jpg` → 2082)
 
 ## Réserve — futur, non prioritaire (triée le 12/08)
 
-- **Multi-utilisateur** — avec un **déclencheur nommé** : un « mode Flo » minimal
-  (file de nommage des visages qu'elle seule sait nommer), à ouvrir quand l'outil
-  est à ~90 %. C'est lui qui débloque la vérité terrain.
+- **Multi-utilisateur** — **déclencheur nommé** : un « mode Flo » minimal (file
+  de nommage des visages qu'elle seule sait nommer), à ouvrir quand l'outil est à
+  ~90 %. C'est lui qui débloque la vérité terrain.
 - **Vidéo → audio** : coût élevé, valeur incertaine, aucun déclencheur.
 - **Bibliothèque Figma** : le design system vit dans le code ; un miroir serait
   de la doc à double entretien.

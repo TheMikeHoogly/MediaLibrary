@@ -46,6 +46,7 @@ décisions techniques. `FACE_USE_GPU=False` **volontaire** (VRAM prise par Ollam
 |---|---|
 | `server.py` | Monolithe ~12 000 l. : config, stores, pipelines, workers, routeur, 9 pages HTML inline |
 | `store_sqlite.py` / `vectors.py` | Persistance SQLite / vecteurs BLOB + cosinus |
+| `pilotage.py` / `superviseur.bat` | Arrêt et redémarrage commandés par `_commande_serveur.txt` |
 | `ROADMAP.md` | Priorités — à relire en début de session |
 | `PROMPT_NOUVELLE_SESSION.md` | Éphémère : état + prochain pas, réécrit chaque session |
 | `eval/DECISIONS.md` | Adopté / rejeté / parké — ne rien reproposer sans le relire |
@@ -71,9 +72,9 @@ code.
 éval a tranché). Écrire `SESSION_COMMIT.txt` à la racine (ASCII, sans guillemets
 ni `!`, 2 lignes : `branche=feat/…`, `titre=…` court) — `27 - Git.bat`,
 **choix 1**, le consomme. Tout git passe par ce bat unique (état + conseil,
-commit, **redémarrage du serveur**, fusion, branches, GitHub) : donner à Mike
-les gestes dans l'ordre (**1**, puis **7**, puis **2** après validation en
-réel) — commit, push et redémarrage restent ses gestes.
+commit, redémarrage, fusion, branches, GitHub) : donner à Mike les gestes dans
+l'ordre (**1**, puis **2** après validation en réel) — commit et push restent
+ses gestes ; le redémarrage, Claude le fait lui-même (« Tester en réel »).
 
 **Fin de session (systématique)** : condenser les docs de suivi sous les seuils
 du lint — **le détail vit dans git, pas dans les docs : c'est le levier tokens** ;
@@ -91,9 +92,19 @@ quarantaine réversible `_corbeille_session/`, rien n'est supprimé) ; laisser
 ## Tester en réel
 
 Serveur chez Mike : **192.168.0.13:8080**, via **Claude-in-Chrome**. **Pas de
-hot-reload** : toute modif de `server.py` exige un redémarrage — geste Mike,
-`27 - Git.bat` choix 7 (proposé d'office après un commit qui touche un `.py`). Clics/captures : onglet au premier
-plan obligatoire ; l'état passe par `fetch('/api/…')` GET (marche onglet caché) ;
-GPU/ordonnanceur : `GET /api/search/status`. Livraison sandbox → disque :
-`SendUserFile` puis `device_commit_files`. Tests :
-`python test_ordonnanceur.py` (27 vérifications).
+hot-reload** : toute modif de `server.py` exige un redémarrage.
+
+**Redémarrage par Claude** (`pilotage.py` + `superviseur.bat`) : écrire un mot
+dans `_commande_serveur.txt` — `redemarrer`, `arret`, `marche` — via
+`device_bash` ; ne jamais le supprimer (la VM ne sait pas). Puis **VÉRIFIER**
+avec `GET /api/serveur` : `demarre_a` doit avoir bougé et `code_a_jour` valoir
+`true`, sinon la mesure porte sur l'ancien code. Exige le superviseur (fenêtre
+« MediaLibrary - Serveur », lancée par `0 - Démarrer le serveur.bat`) ; sans
+lui, rien ne relance — geste Mike, bat 0 ou `27 - Git.bat` choix 7. Un
+redémarrage interrompt tagging et scan en cours : ne pas en enchaîner sans
+raison.
+
+Clics/captures : onglet au premier plan obligatoire ; l'état passe par
+`fetch('/api/…')` GET (marche onglet caché) ; GPU/ordonnanceur :
+`GET /api/search/status`. Livraison sandbox → disque : `SendUserFile` puis
+`device_commit_files`. Tests : `python test_ordonnanceur.py` (27 vérifications).
