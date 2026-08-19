@@ -16,6 +16,14 @@ d'évaluation, ou à des scripts devenus **dangereux à relancer**.
   Relancer `reparer_gpu.py --nettoyer` pourrait désinstaller/réinstaller torch et
   **re-casser** le GPU qui fonctionne.
 
+## Remplacés par un guichet unique (19/08/2026)
+
+`27 - Commit de session.bat`, `28 - Fusionner la branche dans main.bat` et
+`30 - Nettoyer les branches fusionnees.bat` sont **remplacés par `27 - Git.bat`**
+(menu : état + conseil, commit, fusion fast-forward, branches, GitHub). Leur code
+y est repris tel quel, en sous-routines. Les remettre à la racine suffit à
+revenir en arrière — ils fonctionnent toujours.
+
 ## Installation ponctuelle — déjà faite
 
 `7`, `8`, `9`, `10`, `14` (installers visages/GPU/animaux/chats/recherche),
@@ -31,6 +39,6 @@ une évaluation, mais pas dans le flux courant.
 
 `0` (démarrer), les deux `1` (Ollama, installateur nouveau PC), `17` (récupérer
 illisibles), `24` (purger la corbeille — destructif mais bien protégé), `25`
-(maintenance), `26` (ranger par année), `27` (commit de session), les deux
-`Migrer` (export/import nouveau PC), `Verifier GPU` et `Moniteur GPU` (diagnostic
-GPU, lecture seule).
+(maintenance), `26` (ranger par année), `27 - Git.bat` (tout git), `29`
+(nettoyage de session), les deux `Migrer` (export/import nouveau PC),
+`Verifier GPU` et `Moniteur GPU` (diagnostic GPU, lecture seule).

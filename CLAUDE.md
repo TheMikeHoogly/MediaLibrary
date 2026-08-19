@@ -61,9 +61,11 @@ court avant le code.
 **Chaque échange qui fait avancer** : mettre à jour `ROADMAP.md` (statut),
 `PROMPT_NOUVELLE_SESSION.md` (réécrit en entier), `eval/DECISIONS.md` (si une
 éval a tranché). Écrire `SESSION_COMMIT.txt` à la racine (ASCII, sans guillemets
-ni `!`, 2 lignes : `branche=feat/…`, `titre=…` court) — le bat 27 le consomme.
-Donner à Mike les gestes exacts dans l'ordre (27, puis 28 après validation en
-réel) — commit et push restent ses gestes.
+ni `!`, 2 lignes : `branche=feat/…`, `titre=…` court) — `27 - Git.bat`,
+**choix 1**, le consomme. Tout git passe par ce bat unique (état + conseil,
+commit, fusion, branches, GitHub) : donner à Mike les gestes dans l'ordre
+(**choix 1**, puis **choix 2** après validation en réel) — commit et push
+restent ses gestes.
 
 **Fin de session (systématique)** : condenser les docs de suivi sous les seuils
 du lint — **le détail vit dans git, pas dans les docs : c'est le levier tokens** ;

@@ -6,31 +6,37 @@ dans **git** ; les rejets dans `eval/DECISIONS.md` ; la méthode dans
 `docs/AUDIT_INTERNE_2026-08.md`, `docs/AUDIT_EXTERNE_2026.md`,
 `docs/RANGEMENT_2026.md`.
 
-## État (19/08/2026, session 23)
+## État (19/08/2026, session 24)
 
-**10a et 10b CLOS, observés.** Le registre des comptes de l'index tient (12
-cycles à zéro + contrôle positif) ; les **15** renommages périmés sont appliqués,
-0 date de scan réinscrite, noms intacts, plan régénéré à **0**. Portée honnête
-du registre : les −250 du 17/08 sont apparus SOUS CHARGE — les zéros disent
-« rien ne fuit », pas « rien ne peut fuir ». Reste NON DÉCIDÉ : corriger `taken`
-en base (**72** photos contre **1 369** dates antérieures).
+**Session 23** : 10a, 10b et 14a CLOS et observés — détail dans git et
+`eval/DECISIONS.md`. Reste NON DÉCIDÉ : corriger `taken` en base (**72** photos
+contre **1 369** dates antérieures).
 
-**14a — le `mtime` ne classe plus rien, et c'est OBSERVÉ.** Le FILTRE le
-refusait depuis le 15/08 ; le TRI le gardait, dans les trois vues. Mesuré sur
-COPIE (43 064 entrées, `mesure_tri_recherche.py`) : **259** photos sans aucune
-date sûre, **257** datées de 2026 par leur propre tagging, en tête de **56 des
-364 noms** et de **31 dossiers sur 665** (`Photos\Nikola` : 43 sur 54, deux
-dossiers entièrement muets). **32** n'ont pas même un `mtime` : l'ancienne clé
-(`… or ''`) mélangeait `float` et `str` et **l'ancien tri ne s'exécutait pas**
-sur l'index entier (TypeError → 500), sans qu'aucun NOM ne le déclenche (0/364 ;
-chemin par LIEU non mesuré — plancher, pas total).
+**Git : guichet unique.** Les bats 27, 28 et 30 sont fondus dans
+`27 - Git.bat` — état du dépôt + geste conseillé, commit de session, fusion
+fast-forward sans checkout, purge des branches, ouverture GitHub. Leur code est
+repris tel quel ; les trois anciens sont dans `_bat_archive/`, les y reprendre
+suffit à revenir en arrière. **Non observé en réel** : Mike ne l'a pas lancé.
 
-Corrigé par `recherche.trier_chronologique` (pur) : date précise, sinon année du
-DOSSIER, jamais `mtime` ; sans-date en FIN et **comptées**. `/files?q=`, qui se
-taisait là où `/api/search` parlait, reçoit le même `detail`. **En réel** :
-`sans_date_tri` = **53 · 43 · 29 · 29 · 21** (Véronique, Nikola, Mike, Marie,
-Sandra), au chiffre près la mesure ; et sur `dir=1/Nikola`, **20 des 20
-premières** étaient muettes en décroissant, **0 sur 11** désormais.
+**Backfill des `faits` : la matière est MESURÉE** (`mesure_faits_backfill.py`,
+lecture seule sur COPIE, 17 tests). `faits` couvre **81** entrées sur 43 064 ;
+un backfill déterministe en porterait **42 974 (99,79 %)** — **et ce chiffre
+est une alarme, pas un succès** : **12 752 (29,61 %)** n'auraient que la DATE.
+Le chiffre honnête est **30 222 (70,18 %)** avec au moins un fait NON-date. Par
+type : personne **18 863**, lieu **13 757** (6 595 GPS + 7 162 chemin), espèce
+**4 750**, animal **935**, date **42 773** (dont **3 995** par la seule année du
+dossier). **90** entrées resteraient muettes.
+
+**Deux constats qui commandent la conception.** (a) `faits` est un
+**INSTANTANÉ, pas une vue** : sur les 81 déjà pourvues, **12 divergent** de ce
+que dit l'index aujourd'hui — des noms écrits en juin et retirés depuis (Flo).
+Un backfill écrit une fois se périmera exactement pareil. (b) **Le lieu ne doit
+pas être backfillé par le miroir du renommage** : `resolve_path_place` teste une
+SOUS-CHAÎNE — **577** photos reçoivent un lieu collé à l'intérieur d'un mot,
+dont **442 « Ins » depuis « Cousins&Cousines »** et 13 « Orbe » depuis
+« Vallorbe ». La règle du KB (`server._lieu_pour_cle`) compare des segments
+ENTIERS et n'a pas ce défaut. Déjà réalisé dans des noms de fichiers : **6** —
+latent, pas encore payé.
 
 ## À faire — par ordre de valeur
 
@@ -56,26 +62,23 @@ premières** étaient muettes en décroissant, **0 sur 11** désormais.
 7. **Extraction `ui/`** : décision nette à prendre — session dédiée `bundle.py`
    ou parcage explicite (item zombie ; préparatoire fait, détail git).
 8. **Cross-pipeline (Mutz/Caline)** : outil livré, réversible. Fix auto REJETÉ
-   (18 % faux rejets). Relancer si un nouveau nom d'animal sort en `personne:`.
-9. **Reconnaissance — algo (BARRIÈRE : vérité terrain ≥ ~5 %).** HDBSCAN /
-   Chinese Whispers / AdaFace inévaluables à 0,8 %. La barrière reste.
+   (18 % faux rejets). Relancer si un nom d'animal sort en `personne:`.
+9. **Reconnaissance — algo.** BARRIÈRE : vérité terrain ≥ ~5 %. HDBSCAN /
+   Chinese Whispers / AdaFace inévaluables à 0,8 %.
 10. **Données / finitions.** Trois chantiers, dans cet ordre :
     (a) **Compter ce que le scan OUBLIE — CLOS (18/08).** Trois constats
     mineurs, non traités : un ajout découvert PAR LE SCAN est étiqueté
-    `tagging` (c'est la mise en file qui crée la clé) — juste pour « qui
-    retire », trompeur pour « qui ajoute » ; `dict.__ior__` n'est pas redéfini
-    dans `TrackedDict` (seul chemin qui contredit « aucune clé n'échappe » —
-    aucun usage, vérifié) ; `cycles_vus` est la longueur d'un anneau de 10, pas
-    un compteur : il affiche « 10 » à vie.
+    `tagging` (c'est la mise en file qui crée la clé) ; `dict.__ior__` n'est pas
+    redéfini dans `TrackedDict` (aucun usage, vérifié) ; `cycles_vus` est la
+    longueur d'un anneau de 10, pas un compteur — il affiche « 10 » à vie.
     (b) **Garde-fou du repli sur le NOM + reprise des noms périmés — CLOS
     (19/08), observé.** Reste : **correction de `taken` en base NON décidée**
     — elle touche le pipeline de dates (`monolith-surgery`) et exige un
     backfill, pour 72 photos, contre 1 369 dates antérieures à ne pas emporter.
     (c) Réglages éditables depuis `/reglages` (wagon : pause globale des
     workers) ; 2ᵉ passe des 945 illisibles + `recuperees/` → NAS ; purge des
-    undo > 30 j (I12) ; deux images TRONQUÉES (`Sanetsch/DSC00550.JPG`,
-    `France & Belgique/DSC00795.JPG`) en attente d'encodage à chaque démarrage,
-    visibles dans `erreurs_images`.
+    undo > 30 j (I12) ; deux images TRONQUÉES en attente d'encodage à chaque
+    démarrage, visibles dans `erreurs_images`.
 11. **UI — harmonisation des vues (demandé 12/08, skill `photo-ui`)** :
     (a) clic sur l'image d'une personne → sa démo aléatoire ; (b) lieux : texte
     sous l'image en tooltip ; (c) harmoniser visages/lieux/animaux — mêmes
@@ -94,16 +97,16 @@ premières** étaient muettes en décroissant, **0 sur 11** désormais.
     skill `mcp-builder`). Écriture plus tard. Briques de 14a.
 14. **Recherche IA locale contextuelle.** (a) **Déterministe — LIVRÉ ET
     OBSERVÉ** : vecteurs orphelins purgés ; une seule règle de date pour filtrer
-    ET trier, partout (19/08). **Le manque suivant n'est PAS le filtre, c'est la
-    MATIÈRE — compté le 19/08** : `faits` ne couvre que **81** entrées sur
-    43 064 (**0,19 %**), exactement les 81 estampillées `v2ctx|kb1` ; les 42 983
-    autres n'ont aucun `pipe`. Filtrer dessus rendrait presque rien EN AYANT
-    L'AIR DE MARCHER. Or le matériau est déjà en base pour **37 999** photos
-    (18 863 `personne:`, 32 838 dates, 6 614 GPS, 935 animaux) : un **backfill
-    DÉTERMINISTE**, sans GPU ni VLM, est le préalable — chaque fait y portant sa
-    VRAIE source (« index »), pas celle d'un tagging qui n'a pas eu lieu.
-    `espece` dépend en plus des détections : à traiter à part. Ensuite
-    seulement : filtre par espèce, par fiche.
+    ET trier, partout (19/08). Le manque suivant n'est pas le filtre mais la
+    MATIÈRE, et elle est désormais **mesurée** (voir l'État) : `faits` = 81
+    entrées ; un backfill déterministe en porterait 42 974, dont seulement
+    **30 222 avec un fait NON-date**. Ordre : **backfill d'abord** (pur, sans
+    GPU ni VLM ni NAS, chaque fait portant sa VRAIE source — `index` pour les
+    noms), **lieu par la règle du KB et non par le miroir du renommage**,
+    `espece` à part (elle vient des détections) ; **le filtre ensuite**, mesuré
+    sur la couverture réelle. À trancher avant d'écrire : un champ figé se
+    périme (12 des 81 divergent déjà) — recalcul à la demande, ou re-backfill
+    à chaque correction de nom.
     (b) ensuite seulement, **escalade ponctuelle** vers un modèle
     chargé à la demande (bail GpuArbiter, déchargé après) — `vision-eval`,
     jamais câblé sans mesure.
@@ -112,17 +115,14 @@ premières** étaient muettes en décroissant, **0 sur 11** désormais.
     la description.
 
 ### Résiduels faible valeur (ne pas prioriser)
-**MESURÉ le 15/08, et c'est pourquoi on n'y touche pas** : `meme_jour.ANNEE_MIN`
-coûte **0 photo**, mais seulement parce que `_fname_time` refuse déjà une année
-< 1990 lue dans le NOM, ce qui coûte **7 photos** — **couplés**. Chiffrés et non
-traités : (a) le plancher 1990 subsiste dans `plan_rangement.py`,
+**MESURÉ le 15/08, et c'est pourquoi on n'y touche pas** : les deux planchers
+1990 (`_fname_time`, `meme_jour.ANNEE_MIN`) coûtent **7** photos et **0**, et
+ils sont **couplés** ; le plancher 1990 subsiste aussi dans `plan_rangement.py`,
 `recensement_doublons.py`, `diagnostic_dates.py`, sans effet tant qu'aucun
-dossier d'avant 1990 n'y passe ; (b) `/files?dir=1&rec=1` (racine NAS) ne répond
-pas en 6 min, cause non cherchée ; (c) **plafond 2100 de la date lue dans un
-NOM** (`_fname_time`, `fname_datetime`) : `22082010141.jpg` (DDMMYYYY +
-séquence) se lit « 2082-01-01 ». **72** en base, **coût 0** — mais uniquement
-parce que les 72 portent un `taken` et que `_best_time` prend `min()` ; une
-seule sans `taken` serait datée du futur.
+dossier d'avant 1990 n'y passe. Le **plafond 2100** d'une date lue dans un NOM
+(`22082010141.jpg` → « 2082 ») : **72** en base, **coût 0** — uniquement parce
+qu'elles portent un `taken` et que `_best_time` prend `min()`. Enfin
+`/files?dir=1&rec=1` (racine NAS) ne répond pas en 6 min, cause non cherchée.
 
 ## Acquis — ne pas reproposer (détail : git + `eval/DECISIONS.md`)
 
@@ -157,10 +157,11 @@ seule sans `taken` serait datée du futur.
   (`comptes_index.py`, observé).
 - **Recherche** : quatre dimensions (noms · lieux · période · sens) ; une seule
   règle de date pour filtrer ET trier (`recherche.py`, pur).
-- **Mesure** : `mesure_dates_scan.py`, `mesure_tri_recherche.py` — lecture seule
-  sur COPIE, jamais sur `photos.db`.
-- **Hygiène** : nettoyage réversible (29), commit guidé (27), fusion
-  fast-forward (28), purge des branches fusionnées (30). Ordre **27 → 0 → 28** :
+- **Mesure** : `mesure_dates_scan.py`, `mesure_tri_recherche.py`,
+  `mesure_faits_backfill.py` — lecture seule sur COPIE, jamais sur `photos.db`.
+- **Hygiène** : nettoyage réversible (29) ; **tout git dans `27 - Git.bat`**,
+  guichet unique — état du dépôt + geste conseillé, commit guidé, fusion
+  fast-forward sans checkout, purge des branches, GitHub. Ordre **1 → 0 → 2** :
   on ne fusionne qu'après observation en réel.
 
 ## Réserve — futur, non prioritaire (triée le 12/08)
@@ -168,9 +169,9 @@ seule sans `taken` serait datée du futur.
 - **Multi-utilisateur** — avec un **déclencheur nommé** : un « mode Flo » minimal
   (file de nommage des visages qu'elle seule sait nommer), à ouvrir quand l'outil
   est à ~90 %. C'est lui qui débloque la vérité terrain.
-- **Vidéo → audio** — coût élevé, valeur incertaine, aucun déclencheur en vue.
-- **Bibliothèque Figma** — le design system vit déjà dans le code ; un miroir
-  serait de la doc à double entretien sans consommateur.
+- **Vidéo → audio** : coût élevé, valeur incertaine, aucun déclencheur en vue.
+- **Bibliothèque Figma** : le design system vit dans le code ; un miroir serait
+  de la doc à double entretien sans consommateur.
 - Récits LLM auto : écartés (hallucination).
 
 **Vision** : mémoire familiale à provenance — deux tests : « PC mort lundi,
