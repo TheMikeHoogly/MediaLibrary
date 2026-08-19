@@ -31,13 +31,14 @@ non 69,14 % — `lieux.txt` a grossi. C'est sur lui que se mesure le filtre
 lieu 31,11 %, espèce 11,03 %, animal 2,17 %. L'autorité vivante **retire 13
 noms et en ajoute 2** — la raison même de ne pas graver le champ.
 
-**La livraison git est automatisée, et c'est une PORTE.** `git_agent.py`
-(fenêtre « MediaLibrary - Git », ouverte par le bat 0) surveille
-`_commande_git.txt` et refuse tant que la preuve manque — d'où l'ordre inversé :
-éditer → redémarrer → **observer** → livrer. `force=raison` lève les contrôles
-négociables, jamais le verrou, `main`, un binaire ni un `checkout` risqué.
-21 tests ; `_etat_git.json` dit ce qu'il a TENTÉ, `.git/logs/*` ce qui s'est
-PASSÉ.
+**La livraison git est automatisée, et c'est une PORTE — observée.**
+`git_agent.py` (fenêtre « MediaLibrary - Git ») surveille `_commande_git.txt`
+et refuse tant que la preuve manque : l'ordre s'inverse, éditer → redémarrer →
+**observer** → livrer. Premier acte, **il s'est commité lui-même** (`a43f9d0`,
+10 fichiers) — push et fast-forward de main compris, cinq contrôles passés.
+`force=` lève les négociables, jamais le verrou, `main`, un binaire ni un
+`checkout` risqué. 21 tests ; `_etat_git.json` dit ce qu'il a TENTÉ,
+`.git/logs/*` ce qui s'est PASSÉ.
 
 ## À faire — par ordre de valeur
 

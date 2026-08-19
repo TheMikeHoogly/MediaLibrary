@@ -22,6 +22,8 @@ pas ASCII pur, si le lint des docs crie. Jamais contournables, même avec
 fichier binaire ou > 5 Mo, `checkout` vers une branche existante (il réécrirait
 `server.py` sous le serveur). **L'ordre s'inverse : éditer → redémarrer →
 OBSERVER → livrer.** 21 tests, dont six sur ce que `force=` n'ouvre pas.
+**Observé** : son premier acte a été de se commiter lui-même (`a43f9d0`, 10
+fichiers, push et fast-forward de main compris, cinq contrôles passés).
 
 **Vérifie toujours dans `.git/logs/*`**, jamais dans `_etat_git.json` : celui-ci
 dit ce que l'agent a TENTÉ, git dit ce qui s'est PASSÉ. Canal fermé ou refus
