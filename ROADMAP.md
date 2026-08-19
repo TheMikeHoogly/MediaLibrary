@@ -5,54 +5,46 @@ dans **git** ; les rejets dans `eval/DECISIONS.md` ; la méthode dans
 `eval/METHODE.md` ; l'éphémère dans `PROMPT_NOUVELLE_SESSION.md`. Audits :
 `docs/AUDIT_INTERNE_2026-08.md`, `docs/AUDIT_EXTERNE_2026.md`, `docs/RANGEMENT_2026.md`.
 
-## État (19/08/2026, session 25)
+## État (19/08/2026, session 26)
 
-**Sessions 23–24** : 10a, 10b et 14a CLOS et observés ; `27 - Git.bat` (guichet
-unique — état dépôt + serveur, commit, redémarrage, fusion sans checkout,
-branches, GitHub) **observé le 19/08**, session 24 commitée et fusionnée par lui.
-Reste NON DÉCIDÉ : corriger `taken` en base (**72** photos contre **1 369** dates
-antérieures). **Non observé en réel** : Mike ne l'a pas lancé.
+**Le lieu n'a plus qu'UNE règle — et c'est celle qu'on voit.** `places_list` et
+`_cles_du_lieu` (`/sujets` + recherche) testaient une sous-chaîne ; elles
+délèguent à `faits_vue.lieux_du_chemin`. **Observé après redémarrage** :
+« Ins » **493 → 5**, recherche **499 → 11 dont 0** venant de
+« Cousins&Cousines » (32 sur 80 avant), page **2 119 → 1 539 ms**.
 
-**`faits` devient une VUE — le backfill est REJETÉ, rien n'est écrit.**
-`faits_vue.py` (pur, 26 tests) calcule les faits à la demande ; `server` lui
-délègue la règle de lieu (**0 différence sur 43 064 clés**). **En réel après
-redémarrage** : `import faits_vue` tient, et `_chemin_relatif` — délégué, appelé
-43 064 fois pour bâtir `/sujets` — laisse « Bremblens » à **2 398** photos et non
-30 682 : le retrait de la racine média a survécu à la délégation. **Pas encore
-observé** : la branche du KB elle-même (`pending` = 0, aucun tagging depuis le
-redémarrage) — le premier tagging sera son observation.
-`mesure_faits_vue.py` a tranché sur COPIE :
+`mesure_lieu_visible.py` a corrigé la règle elle-même : **les 876 « collés »
+n'étaient pas tous faux**. « Yani2004 » (219), « AchumaniAlto » (48),
+« CuevaMarkusIrpavi » (6) sont de VRAIS lieux collés à l'année ou au sujet —
+~330 que les segments entiers auraient emportés avec les 546 faux. La règle
+découpe donc les mots sur les frontières de CASSE et de CHIFFRES (« Vallorbe »
+reste entier, « Cousins&Cousines » ne rend jamais « Ins »), essaie les groupes
+de mots contigus et garde le trait d'union. Gains nets : **Sud France 315,
+San Borja 82, Vallée d'Aoste 81, Rurrenabaque 55** (libellé ajouté à
+`lieux.txt`) ; « France & Belgique » compte pour **les deux** (574 · 157). Le
+nom de FICHIER compte aussi : 52 vrais contre 9 faux qu'aucune règle
+syntaxique n'attrapera (« Grupo en la Laguna »). Coût tenu par mémoïsation des
+segments — les noms de fichiers, uniques, restent hors cache.
 
-- **Ce qu'elle rend** : 42 974 (99,79 %) avec un fait, mais le chiffre honnête
-  est **29 775 (69,14 %)** avec un fait NON-date ; 13 199 n'ont que la date, 90
-  sont muettes. Matière : date 42 773 · personne 18 859 · lieu **12 802** (6 595
-  GPS + 6 207 chemin) · espèce 4 750 · animal 935.
-- **Pourquoi une vue** : sur les 81 pourvues, elle en corrige **4** — 3 noms
-  « Flo » retirés depuis, **1 photo qui a reçu 6 noms APRÈS son tagging**.
-- **Ce qu'elle coûte** : **1,4 ms** par page de 50, **3,8 s** sur l'index entier.
-  Prudence : `_noms_attendus` balaie toutes les fiches à chaque appel (13,9 ms
-  pour 50 clés) — en balayage complet, index inversé construit UNE fois.
+**`taken` en base : REJETÉ ; le garde-fou passe à la LECTURE.** 72 dates de
+scan contre **1 347** antérieures légitimes — et `taken` est une LECTURE de
+l'EXIF : la réécrire lui ôterait sa provenance. `faits_vue.date_credible` est
+injecté dans `meme_jour.epoch_precis` : **70 photos** perdent une date précise
+fausse et retombent sur l'année du dossier. `_best_time` en était une COPIE —
+la galerie datait de 2006 ce que la recherche datait déjà de 1985. Observé :
+`Photos Papa\1983\20150810_…` a quitté le « 10 août ».
 
-**Et le LIEU a TROIS règles, pas deux — la troisième est la seule qu'on VOIE.**
-(1) renommage (`resolve_path_place`, sous-chaîne, libellé le plus long) ;
-(2) Knowledge Builder (`faits_vue.lieu_par_segments`, segments entiers, dossier
-le plus profond) ; (3) **`places_list` / `_cles_du_lieu` — la page `/sujets` et
-la RECHERCHE — sous-chaîne aussi, et intacte.** Observé le 19/08 après
-redémarrage : `/sujets` affiche **« Ins » : 493 photos** (≥ 442 collées depuis
-« Cousins&Cousines »), et une recherche « Ins » rend 80 résultats dont **32
-viennent de Cousins&Cousines**. La (2) évite ces 577 collés mais RATE 378 mots
-entiers (207 effacés au nettoyage, **124 libellés MULTI-MOTS jamais essayés** —
-« Weekend Vallée d'Aoste », 47 mots de 4 lettres) et répond AUTREMENT sur 591 :
-**1 546** désaccords. Corriger (2) sans (3), c'est corriger là où personne ne
-regarde.
+**Pas encore observé** : la branche KB de `faits_vue` (`pending` = 0, aucun
+tagging depuis) — le premier tagging sera son observation.
 
 ## À faire — par ordre de valeur
 
 1. **Vérité terrain humaine — au fil de l'eau, PAS un blocage.** ~0,8 %
    (91/12 072) : limité par la CONNAISSANCE, pas l'outillage — Flo nommera ce
    que Mike ne sait pas nommer, quand l'outil sera à ~90 %.
-2. **Observer en réel ce qui est livré** — **fait ✔**. Reste : re-upload = une
-   entrée, seek vidéo mobile, test du Z.
+2. **Observer en réel ce qui est livré** — **fait ✔** (chaque livraison du
+   19/08 a son contrôle positif). Reste : re-upload = une entrée, seek vidéo
+   mobile, test du Z.
 3. **Chaîne « noms → descriptions → recherche » — 3a, 3b, 3c CLOS le 16/08.**
    La re-passe ne se fera pas. Reste ouvert : **le prompt de PRODUCTION est celui
    qui hallucine le plus** (adopté sur un 25-15 ; toute photo taguée le paie).
@@ -77,7 +69,8 @@ regarde.
     non redéfini dans `TrackedDict` (aucun usage) ; `cycles_vus` est la longueur
     d'un anneau de 10 — il affiche « 10 » à vie.
     (b) **Garde-fou du repli sur le NOM + noms périmés — CLOS (19/08), observé.**
-    Reste : **`taken` en base NON décidé** — 72 photos contre 1 369 antérieures.
+    **`taken` en base : REJETÉ (19/08)** — le garde-fou est passé à la LECTURE
+    (voir l'État). Rien n'est écrit.
     (c) Réglages éditables depuis `/reglages` ; 2ᵉ passe des 945 illisibles +
     `recuperees/` → NAS ; purge des undo > 30 j (I12) ; deux images TRONQUÉES
     visibles dans `erreurs_images` à chaque démarrage.
@@ -85,9 +78,10 @@ regarde.
     l'image d'une personne → sa démo aléatoire ; (b) lieux : texte sous l'image
     en tooltip ; (c) harmoniser visages/lieux/animaux — mêmes fonctions partout,
     **sauf** l'effacement, réservé à Classification ; (d) zoom pinch + molette —
-    `maximum-scale=1` retiré ✔ ; (e) wagons : bandeau `#pending`, libellé
-    `/pets`, « Meme jour (14 aout) » là où la page dit « 14 août », et « Date ↑ »
-    allumé sur `/files?q=` alors que l'ordre vient du serveur.
+    `maximum-scale=1` retiré ✔ ; (e) **boutons de tri : CLOS (19/08), observé** — l'ordre du serveur
+    s'appelle « Pertinence », un seul ordre allumé, le clic n'est plus avalé.
+    Reste : bandeau `#pending`, libellé `/pets`, « Meme jour (14 aout) » là où
+    la page dit « 14 août ».
 12. **Assurance-vie : restauration à blanc (PROMU 12/08).** « PC mort lundi,
     tout revit vendredi » : restaurer le snapshot NAS sur un dossier vierge,
     chronométrer, noter chaque manque (dont la copie hors-site de
@@ -95,20 +89,17 @@ regarde.
 13. **Serveur exposé en MCP, lecture seule d'abord (PROMU 12/08).** Recherche,
     fiches et `faits` en outils MCP locaux (JSON-RPC stdio, zéro dépendance —
     skill `mcp-builder`). Écriture plus tard. Briques de 14a.
-14. **Recherche IA locale contextuelle.** (a) **Déterministe — la MATIÈRE est
-    tranchée (19/08)** : `faits` est une **VUE** (`faits_vue.py`), pas un champ
-    — mesures et raisons dans l'État. Reste, dans cet ordre :
-    **(i) UNIFIER la règle de lieu sur les trois appelants** — `places_list` et
-    `_cles_du_lieu` sont ce que Mike VOIT, et ils collent encore « Ins » à 493
-    photos ; c'est là que le gain est immédiat, pas dans le KB ; **(ii) corriger
-    la règle** — 124 libellés multi-mots (essayer le libellé entier DANS le
-    segment), seuil de 5 lettres (47), « France & Belgique » à trancher : deux
-    lieux ou aucun ; **(iii) brancher la vue** là où le point 3 l'attend, index
-    inversé des noms construit UNE fois par balayage ; **(iv) le filtre**,
-    mesuré sur 69,14 %, jamais sur 99,79 %.
-    (b) ensuite seulement, **escalade ponctuelle** vers un modèle
-    chargé à la demande (bail GpuArbiter, déchargé après) — `vision-eval`,
-    jamais câblé sans mesure.
+14. **Recherche IA locale contextuelle.**
+    (a) **Déterministe — (i) et (ii) CLOS et OBSERVÉS le 19/08** : `faits` est
+    une VUE (`faits_vue.py`), et la règle de LIEU est unifiée sur ses trois
+    appelants, corrigée et mesurée (voir l'État, banc `mesure_lieu_visible.py`).
+    Reste, dans cet ordre : **(iii) brancher la vue** là où le point 3 l'attend
+    (affichage date · lieu · noms), index inversé des noms construit UNE fois
+    par balayage ; **(iv) le filtre**, mesuré sur **69,14 %** (photos avec un
+    fait NON-date), jamais sur 99,79 %.
+    (b) ensuite seulement, **escalade ponctuelle** vers un modèle chargé à la
+    demande (bail GpuArbiter, déchargé après) — `vision-eval`, jamais câblé
+    sans mesure.
 15. **À évaluer (`vision-eval`)** : Florence-2 léger. **Parqué** faute
     d'hypothèse (banc 3b).
 
@@ -117,8 +108,8 @@ regarde.
 1990 (`_fname_time`, `meme_jour.ANNEE_MIN`) coûtent **7** photos et **0**, et ils
 sont **couplés** ; le plancher 1990 subsiste aussi dans `plan_rangement.py`,
 `recensement_doublons.py`, `diagnostic_dates.py`, sans effet tant qu'aucun
-dossier d'avant 1990 n'y passe. Le **plafond 2100** (`22082010141.jpg` → 2082) :
-72 en base, coût 0 — parce qu'elles portent un `taken`. Enfin
+dossier d'avant 1990 n'y passe. Le **plafond 2100** (`22082010141.jpg` → 2082) : 72 en base, coût 0 — elles
+portent un `taken`. Enfin
 `/files?dir=1&rec=1` (racine NAS) ne répond pas en 6 min, cause non cherchée.
 
 ## Acquis — ne pas reproposer (détail : git + `eval/DECISIONS.md`)
@@ -150,11 +141,14 @@ dossier d'avant 1990 n'y passe. Le **plafond 2100** (`22082010141.jpg` → 2082)
   quarantaine réversible `_corbeille_vecteurs/`.
 - **Observabilité** : boucle scan/backup (O5), `backup_verify`, trois tâches de
   fond EXIF dans `/reglages` ; comptes de l'index au goulot (`comptes_index.py`).
-- **Recherche** : quatre dimensions (noms · lieux · période · sens) ; une seule
-  règle de date pour filtrer ET trier (`recherche.py`, pur).
-- **Mesure** : `mesure_dates_scan.py`, `mesure_tri_recherche.py`,
-  `mesure_faits_backfill.py`, `mesure_faits_vue.py` — lecture seule sur COPIE,
-  jamais sur `photos.db`.
+- **Recherche** : quatre dimensions (noms · lieux · période · sens) ; **une
+  seule règle de date** (filtre, tri, « même jour », `_best_time`, fait — la
+  date de SCAN écartée à la lecture) et **une seule règle de LIEU**
+  (`faits_vue`, segments + mots collés découpés — jamais de sous-chaîne),
+  partagées par le renommage, le KB, `/sujets` et la recherche.
+- **Mesure** : `mesure_dates_scan.py` (`--lecture`), `mesure_tri_recherche.py`,
+  `mesure_faits_backfill.py`, `mesure_faits_vue.py`, `mesure_lieu_visible.py` —
+  lecture seule sur COPIE, jamais sur `photos.db`.
 - **Pilotage** : arrêt/redémarrage commandés par `_commande_serveur.txt`
   (`pilotage.py`, 22 tests ; `superviseur.bat` relance sur le code 42 et
   s'arrête après 5 sorties anormales) — la sandbox observe enfin ses propres

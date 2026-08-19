@@ -38,11 +38,18 @@ RE_JOUR = re.compile(r'^(\d{2})-(\d{2})$')
 ANNEE_MIN, ANNEE_MAX = 1990, 2100
 
 
-def epoch_precis(cle, entree, fname_time):
+def epoch_precis(cle, entree, fname_time, credible=None):
     """Date de prise de vue PRÉCISE (au jour près) d'une photo, ou None.
 
     `fname_time` : callable nom_de_fichier -> epoch|None (server._fname_time).
-    JAMAIS le repli « année du dossier » : voir l'en-tête du module."""
+    JAMAIS le repli « année du dossier » : voir l'en-tête du module.
+
+    `credible` : callable (clé, epoch) -> bool, injecté comme `fname_time` pour
+    qu'il n'existe qu'UNE implémentation de la règle dans le projet. Le serveur
+    passe `faits_vue.date_credible`, qui écarte la date du SCAN — le numériseur
+    l'inscrit dans `DateTimeOriginal` **et** dans le nom, donc les DEUX sources
+    doivent y passer (72 photos, mesurées le 19/08). `None` = tout est cru,
+    comportement d'avant le 19/08."""
     precises = []
     t = entree.get('taken') if isinstance(entree, dict) else None
     if isinstance(t, (int, float)) and not isinstance(t, bool) and t > 0:
@@ -53,6 +60,8 @@ def epoch_precis(cle, entree, fname_time):
         fn = None
     if isinstance(fn, (int, float)) and fn > 0:
         precises.append(float(fn))
+    if credible is not None:
+        precises = [e for e in precises if credible(cle, e)]
     return min(precises) if precises else None
 
 
@@ -91,16 +100,20 @@ def jour_demande(param):
     return '%02d-%02d' % (mois, jour)
 
 
-def construire_index(entrees, fname_time):
+def construire_index(entrees, fname_time, credible=None):
     """{« MM-JJ » : [(epoch, clé), …]} — chaque liste triée du plus ANCIEN au
     plus récent. `entrees` : itérable (clé, entrée) — typiquement
     `STORE.data.items()`. Les entrées `failed` et celles sans date précise sont
-    ignorées (voir l'invariant du module)."""
+    ignorées (voir l'invariant du module).
+
+    `credible` : passé tel quel à `epoch_precis` — l'index du jour doit écarter
+    la date du SCAN comme le reste, sinon une photo de 1985 numérisée en 2006
+    revient hanter un « 1er juin » où elle n'a jamais été prise."""
     index = {}
     for cle, entree in entrees:
         if not isinstance(entree, dict) or entree.get('failed'):
             continue
-        ep = epoch_precis(cle, entree, fname_time)
+        ep = epoch_precis(cle, entree, fname_time, credible)
         if ep is None:
             continue
         j = cle_jour(ep)

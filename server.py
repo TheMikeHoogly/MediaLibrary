@@ -1622,16 +1622,16 @@ def _best_time(key, e):
        la plus ancienne (évite les dates de MODIFICATION, faussées par le tagging);
     2) sinon, l'année du dossier (approx. 1er janvier) ;
     3) en tout dernier recours seulement, le mtime (peu fiable).
-    Renvoie un timestamp epoch (0 si rien)."""
-    precise = []
-    t = e.get('taken') if isinstance(e, dict) else None
-    if isinstance(t, (int, float)) and t > 0:
-        precise.append(t)
-    fn = _fname_time(Path(key).name)
-    if fn:
-        precise.append(fn)
+    Renvoie un timestamp epoch (0 si rien).
+
+    La branche 1 est DÉLÉGUÉE à `_epoch_precis` depuis le 19/08. Elle en était
+    la copie — même minimum sur les mêmes deux sources — et cette copie a
+    survécu au garde-fou de la date de SCAN : la recherche datait déjà une photo
+    de « Photos Papa\\1985 » de 1985, pendant que la galerie la classait en
+    2006. 70 photos, une seule règle désormais."""
+    precise = _epoch_precis(key, e)
     if precise:
-        return min(precise)
+        return precise
     py = _path_year(key)
     if py:
         return py
@@ -2333,8 +2333,9 @@ def _jour_index():
         n, now = len(STORE.data), time.time()
         if (_JOUR_IDX["map"] is None or _JOUR_IDX["n"] != n
                 or now - _JOUR_IDX["at"] > JOUR_IDX_TTL):
+            import faits_vue
             _JOUR_IDX["map"] = meme_jour.construire_index(
-                list(STORE.data.items()), _fname_time)
+                list(STORE.data.items()), _fname_time, faits_vue.date_credible)
             _JOUR_IDX["n"], _JOUR_IDX["at"] = n, now
         return _JOUR_IDX["map"]
 
@@ -2343,7 +2344,7 @@ def _jour_de(cle, entree):
     """« MM-JJ » d'une photo si sa date est PRÉCISE, sinon None. Sert aussi à
     la visionneuse : sans jour, le bouton « Même jour » se cache — on n'ouvre
     pas une porte sur une page qui n'a rien à montrer."""
-    ep = meme_jour.epoch_precis(cle, entree or {}, _fname_time)
+    ep = _epoch_precis(cle, entree)      # garde-fou de la date de SCAN compris
     return meme_jour.cle_jour(ep) if ep is not None else None
 
 
@@ -3276,7 +3277,7 @@ def _chemin_relatif(k, roots=None):
 
 
 def _cles_du_lieu(lieux):
-    """Clés dont le CHEMIN **ou** le lieu GÉOCODÉ contient tous ces lieux.
+    """Clés dont le CHEMIN **ou** le lieu GÉOCODÉ désigne tous ces lieux.
 
     Le chemin seul ne suffit plus depuis l'activation de `gps_place` (14/08) :
     6 595 photos portent un lieu venu du GPS alors que leur dossier ne dit rien
@@ -3285,20 +3286,36 @@ def _cles_du_lieu(lieux):
     moitié. Les deux sources sont donc en OU, lieu par lieu ; le ET porte,
     comme avant, sur l'ENSEMBLE des lieux demandés.
 
-    Zéro accès NAS : `gps_places_connus` est un cache mémoire adossé au mtime
-    du fichier.
+    **La branche CHEMIN délègue à `faits_vue` depuis le 19/08** (chantier
+    14a-i). Elle testait une SOUS-CHAÎNE : « Ins » se trouvait dans
+    « Cousins&Cousines » et une recherche « Ins » rendait 499 clés dont 488
+    fausses. C'était la TROISIÈME règle de lieu du projet, la seule que
+    l'utilisateur voie — il n'en reste qu'une. La branche GPS, elle, ne change
+    pas : un libellé de gazetteer n'est pas un chemin de dossier.
+
+    Zéro accès NAS : `gps_places_connus` et `lieux_connus` sont des caches
+    mémoire adossés au mtime de leur fichier.
     """
+    import faits_vue
     besoin = [_sans_accents(l) for l in lieux]
     roots = media_roots()          # 1× : sinon _chemin_relatif relit config + stats NAS par clé
     try:
         gps = gps_places_connus()
     except Exception:                                         # noqa: BLE001
         gps = {}
+    try:
+        index = lieux_connus()
+    except Exception:                                         # noqa: BLE001
+        index = {}
     out = set()
     for k in list(STORE.data):
-        chemin = _sans_accents(_chemin_relatif(k, roots))
+        # `avec_fichier` : 52 photos ne nomment leur lieu que dans leur nom de
+        # fichier (« 060_Lavando Trinidad.jpg ») contre 9 qui s'y trompent
+        # (« Grupo en la Laguna » — la lagune, pas La Laguna). Mesuré le 19/08.
+        du_chemin = {_sans_accents(l) for l in faits_vue.lieux_du_chemin(
+            k, index, roots, tous=True, avec_fichier=True)}
         libelle = _sans_accents(gps.get(k) or '') if gps else ''
-        if all(b in chemin or (libelle and b in libelle) for b in besoin):
+        if all(b in du_chemin or (libelle and b in libelle) for b in besoin):
             out.add(k)
     return out
 
@@ -3312,8 +3329,17 @@ import recherche
 
 def _epoch_precis(cle, entree):
     """Date au JOUR près d'une photo, ou None. Une seule implémentation de
-    cette règle dans le projet (`meme_jour`), partagée avec « même jour »."""
-    return meme_jour.epoch_precis(cle, entree or {}, _fname_time)
+    cette règle dans le projet (`meme_jour`), partagée avec « même jour ».
+
+    `faits_vue.date_credible` écarte la date du SCAN : le numériseur l'inscrit
+    dans `DateTimeOriginal` ET dans le nom du fichier, et l'index l'a gardée —
+    72 photos, de +2 à +32 ans au-delà de leur dossier (mesure du 19/08). Le
+    renommage s'en protégeait depuis le 17/08 ; le tri, le filtre par période
+    et « même jour » la croyaient encore. **Rien n'est corrigé en base** : la
+    lecture applique le garde-fou, `taken` garde sa provenance."""
+    import faits_vue
+    return meme_jour.epoch_precis(cle, entree or {}, _fname_time,
+                                  faits_vue.date_credible)
 
 
 # Année SÛRE : date précise, sinon année du DOSSIER, **jamais `mtime`**.
@@ -5070,8 +5096,9 @@ body { font-family: var(--f-texte);
           title="Recherche par le sens : d&eacute;cris la photo en fran&ccedil;ais">IA</button>
   <span class="count" id="cnt"></span>
   <div class="btn-group">
-    <button class="tb active" id="btn-date">Date</button>
-    <button class="tb" id="btn-name">Nom A-Z</button>
+    <button class="tb active" id="btn-date" aria-pressed="true">Date</button>
+    <button class="tb" id="btn-name" aria-pressed="false">Nom A-Z</button>
+    <button class="tb" id="btn-rel" aria-pressed="false" style="display:none">Pertinence</button>
   </div>
   <div class="btn-group">
     <button class="tb demo" id="btn-seq">&#9654; Demo</button>
@@ -5200,13 +5227,26 @@ __FOLDERS__
     btnIA.setAttribute('aria-pressed', modeIA ? 'true' : 'false');
     qInput.placeholder = modeIA ? 'Décris la photo…' : 'Recherche tags…';
     iaResultats = null;
-    if (modeIA && qInput.value.trim()) rechercheIA(); else applyFilter();
+    // Sans classement, « Pertinence » n'a plus de sens : on retombe sur la date
+    // plutot que de laisser un bouton actif sans ordre derriere lui.
+    if (currentSort === 'pertinence') { currentSort = ''; sortAsc = true; }
+    if (modeIA && qInput.value.trim()) rechercheIA();
+    else if (currentSort === '') sortBy('date');
+    else { updateSortButtons(); applyFilter(); }
     if (modeIA) qInput.focus();
   });
 
+  // Un classement qui disparait (requete vidée, erreur, sortie du mode IA)
+  // doit emporter le bouton qui le nomme, sinon « Pertinence » reste allume
+  // devant une liste qu'il ne classe plus.
+  function oublierPertinence() {
+    if (currentSort === 'pertinence') { currentSort = ''; sortAsc = true; sortBy('date'); }
+    else { updateSortButtons(); applyFilter(); }
+  }
+
   function rechercheIA() {
     var t = qInput.value.trim();
-    if (!t) { iaResultats = null; applyFilter(); return; }
+    if (!t) { iaResultats = null; oublierPertinence(); return; }
     var jeton = ++iaJeton;                 // ignore les reponses hors delai
     var cnt = document.getElementById('cnt');
     cnt.textContent = 'recherche…';
@@ -5214,9 +5254,12 @@ __FOLDERS__
       .then(function(r) { return r.json(); })
       .then(function(d) {
         if (jeton !== iaJeton) return;
-        if (d.error) { cnt.textContent = d.error; iaResultats = null; return; }
+        if (d.error) { cnt.textContent = d.error; iaResultats = null;
+                       updateSortButtons(); return; }
         iaResultats = {};
         (d.results || []).forEach(function(x, i) { iaResultats[x.key] = i; });
+        currentSort = 'pertinence';    // et le bouton le DIT
+        updateSortButtons();
         // Rend visible ce que la requete a compris. Les trois premieres
         // dimensions sont des FILTRES EXACTS (qui, ou, quand), la derniere du
         // SENS. L'afficher n'est pas cosmetique : sans ca, une requete qui
@@ -5241,10 +5284,25 @@ __FOLDERS__
   // `sd` : le serveur a marque cette photo comme n'ayant AUCUNE date sure
   // (ni precise, ni annee de dossier). Absent = datee.
   function sansDate(f){ return !!f.sd; }
+  // Trois ordres possibles, jamais deux : 'date', 'name' et 'pertinence' —
+  // celui que le SERVEUR a rendu pour une requete. Avant le 19/08 il n'avait
+  // pas de nom : la page de resultats affichait « Date ↑ » allume alors que
+  // l'ordre venait de /api/search, et cliquer sur « Date » ne changeait rien
+  // (applyFilter re-triait par pertinence derriere). Un bouton qui ment est
+  // pire qu'un bouton absent.
   function updateSortButtons() {
-    var d = document.getElementById('btn-date'), n = document.getElementById('btn-name');
+    var d = document.getElementById('btn-date'), n = document.getElementById('btn-name'),
+        p = document.getElementById('btn-rel');
+    // « Pertinence » n'existe que quand un classement a ete rendu : proposer un
+    // ordre qu'on ne saurait pas produire serait un troisieme mensonge.
+    p.style.display = iaResultats ? '' : 'none';
+    p.className = 'tb' + (currentSort==='pertinence' ? ' active' : '');
+    p.title = 'Ordre rendu par la recherche : la photo la plus proche de la requete en tete';
     d.className = 'tb' + (currentSort==='date' ? ' active' : '');
     n.className = 'tb' + (currentSort==='name' ? ' active' : '');
+    d.setAttribute('aria-pressed', currentSort==='date' ? 'true' : 'false');
+    n.setAttribute('aria-pressed', currentSort==='name' ? 'true' : 'false');
+    p.setAttribute('aria-pressed', currentSort==='pertinence' ? 'true' : 'false');
     d.textContent = 'Date ' + (currentSort==='date' ? (sortAsc ? '↑' : '↓') : '');
     n.textContent = currentSort==='name' ? ('Nom ' + (sortAsc ? 'A→Z' : 'Z→A')) : 'Nom A-Z';
     d.title = currentSort==='date'
@@ -5253,6 +5311,12 @@ __FOLDERS__
     n.title = 'Trier par nom' + (currentSort==='name' ? ' (reclic pour inverser)' : '');
   }
   function sortBy(m) {
+    if (m === 'pertinence') {          // l'ordre vient du serveur : rien a trier
+      currentSort = 'pertinence';
+      updateSortButtons();
+      applyFilter();
+      return;
+    }
     if (m === currentSort) sortAsc = !sortAsc;     // reclic = inverse le sens
     else { currentSort = m; sortAsc = true; }       // nouveau tri = sens par defaut
     updateSortButtons();
@@ -5419,9 +5483,11 @@ __FOLDERS__
       }
       return true;
     });
-    // Le classement par pertinence prime sur le tri date/nom : c'est ce que
-    // l'utilisateur attend quand il a formule une requete.
-    if (modeIA && iaResultats) {
+    // Le classement par pertinence est l'ordre PAR DEFAUT d'une recherche —
+    // c'est ce que l'utilisateur attend quand il vient de formuler une requete.
+    // Mais il ne s'impose plus : jusqu'au 19/08, `modeIA && iaResultats`
+    // suffisait, donc un clic sur « Date » etait avale sans rien dire.
+    if (currentSort === 'pertinence' && iaResultats) {
       visible.sort(function(a, b) {
         return iaResultats[a.key] - iaResultats[b.key];
       });
@@ -5489,10 +5555,12 @@ __FOLDERS__
 
     var txt = visible.length + ' photo(s)';
     if (selTags.length) txt += ' / ' + FILES.length;
-    // Hors mode IA, c'est le tri par date qui range les muettes en fin : on le
-    // DIT, sinon la fin de planche passe pour de vieilles photos. En mode IA,
-    // le meme fait est porte par `iaSansOrdre`, plus bas — jamais les deux.
-    if (!modeIA && currentSort === 'date') {
+    // C'est le tri par DATE qui range les muettes en fin : on le DIT, sinon la
+    // fin de planche passe pour de vieilles photos. Le critere est l'ordre reel,
+    // pas le mode : trier des resultats IA par date range les muettes ici aussi.
+    // Quand l'ordre est la pertinence, le meme fait est porte par `iaSansOrdre`,
+    // plus bas — jamais les deux.
+    if (currentSort === 'date') {
       var nsd = 0;
       for (var vi = 0; vi < visible.length; vi++) if (visible[vi].sd) nsd++;
       if (nsd) txt += ' · ' + nsd + ' sans date connue, en fin de liste';
@@ -5503,7 +5571,7 @@ __FOLDERS__
     // de classer. Les confondre serait pire que les taire.
     if (modeIA && iaEcartees)
       txt += ' (' + iaEcartees + ' sans date assez précise)';
-    if (modeIA && iaSansOrdre)
+    if (currentSort === 'pertinence' && iaSansOrdre)
       txt += ' · ' + iaSansOrdre + ' sans date connue, en fin de liste';
     document.getElementById('cnt').textContent = txt;
   }
@@ -5957,6 +6025,7 @@ __FOLDERS__
   // ── init ──
   document.getElementById('btn-date').onclick = function() { sortBy('date'); };
   document.getElementById('btn-name').onclick = function() { sortBy('name'); };
+  document.getElementById('btn-rel').onclick  = function() { sortBy('pertinence'); };
   document.getElementById('btn-seq').onclick  = function() { startSlideshow('seq'); };
   document.getElementById('btn-rnd').onclick  = function() { startSlideshow('rnd'); };
   document.getElementById('btn-asc').onclick  = function() { startSlideshow('asc'); };
@@ -6173,7 +6242,7 @@ __FOLDERS__
     iaResultats = {};
     FILES.forEach(function(f, i) { iaResultats[f.key] = i; });
     lireDecomposition(SEARCHMETA || {});
-    applyFilter();
+    sortBy('pertinence');   // le serveur a deja classe : le bouton le dit
   }
 
   // lancement auto du diaporama après redirection récursive
@@ -9579,8 +9648,10 @@ def places_list():
          + enrichir_lieux.py --ecrire n'ont pas tourne : la page reste alors
          alimentee par le repli ci-dessous.
       2. REPLI DOSSIERS : lieux_connus() (lieux.txt / heuristique), retrouves par
-         sous-chaine du chemin relatif — EXACTEMENT la logique de _cles_du_lieu,
-         pour que /sujets et la barre de recherche parlent des memes lieux.
+         faits_vue.lieux_du_chemin — SEGMENTS entiers, pas sous-chaine (19/08,
+         chantier 14a-i : « Ins » comptait 493 photos dont 442 venaient de
+         « Cousins&Cousines »). Meme appel que _cles_du_lieu, pour que /sujets
+         et la barre de recherche parlent des memes lieux : une seule regle.
 
     Le GPS prime : une photo deja nommee par GPS n'est pas re-comptee par le
     chemin. Lecture seule, tout en memoire (index + gps_places.json en cache) :
@@ -9606,14 +9677,17 @@ def places_list():
     gps_keys = set(gps)                      # photos deja attribuees par GPS
     index = lieux_connus()                  # {normalise: libelle}
     if index:
-        lieux_norm = [(nk, lbl) for nk, lbl in index.items() if nk]
+        import faits_vue
         for k in list(STORE.data):
             if k in gps_keys:               # le GPS prime : pas de double compte
                 continue
-            chemin = _sans_accents(_chemin_relatif(k, roots))
-            for nk, lbl in lieux_norm:
-                if nk in chemin:
-                    agg.setdefault(nk, {"name": lbl, "keys": set()})["keys"].add(k)
+            # tous=True : une photo compte dans CHAQUE lieu qu'elle designe
+            # (« France & Belgique » est les deux) ; avec_fichier=True : 52
+            # photos ne nomment leur lieu que la (mesure du 19/08).
+            for lbl in faits_vue.lieux_du_chemin(k, index, roots, tous=True,
+                                                 avec_fichier=True):
+                agg.setdefault(_sans_accents(lbl),
+                               {"name": lbl, "keys": set()})["keys"].add(k)
     out = []
     for a in agg.values():
         keys = a["keys"]

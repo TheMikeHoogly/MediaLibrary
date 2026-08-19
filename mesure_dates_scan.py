@@ -62,7 +62,7 @@ import os
 import sqlite3
 import sys
 import time
-from collections import Counter
+from collections import Counter, defaultdict
 
 try:
     from renommage_facts import (ECART_ANNEE_TOLERE, date_de_scan_presumee,
@@ -346,6 +346,66 @@ def formater(r, exemples=12):
     return '\n'.join(L)
 
 
+def effet_de_la_lecture(entrees):
+    """CE QUE LE GARDE-FOU CHANGE QUAND C'EST LA **LECTURE** QUI L'APPLIQUE.
+
+    Décision du 19/08 : on n'écrit pas `taken` en base — 72 corrections face à
+    1 347 dates antérieures légitimes, et un `taken` réécrit perd sa provenance
+    (c'est une LECTURE de l'EXIF, pas une déduction). La correction est une VUE,
+    exactement comme `faits`. Reste à savoir ce qu'elle déplace vraiment.
+
+    Trois consommateurs lisent la date PRÉCISE : le tri de la galerie, le
+    filtre par période, et « même jour ». Tous passent par `epoch_precis` —
+    qui prend le MINIMUM du `taken` et de la date lue dans le NOM. Le scanner
+    ayant écrit dans les deux, les deux doivent passer le garde-fou : d'où
+    quatre cas, et non deux.
+
+    Le module IMPORTE la règle (`faits_vue.date_credible`, `meme_jour`), il ne
+    la recopie pas."""
+    import faits_vue
+    import meme_jour
+    nom_time = lambda n: faits_vue.epoch_du_nom(n)             # noqa: E731
+    cas = Counter()
+    exemples = defaultdict(list)
+    for cle, taken in entrees:
+        e = {'taken': taken} if taken else {}
+        avant = meme_jour.epoch_precis(cle, e, nom_time)
+        apres = meme_jour.epoch_precis(cle, e, nom_time,
+                                       faits_vue.date_credible)
+        if avant is None and apres is None:
+            cas['aucune date precise, avant comme apres'] += 1
+        elif avant == apres:
+            cas['date precise inchangee'] += 1
+        elif apres is None:
+            cas['PERD sa date precise (retombe sur l annee du dossier)'] += 1
+            if len(exemples['perd']) < 8:
+                exemples['perd'].append((cle, annee_de(avant)))
+        else:
+            cas['CHANGE de date precise (l autre source restait credible)'] += 1
+            if len(exemples['change']) < 8:
+                exemples['change'].append((cle, annee_de(avant), annee_de(apres)))
+    return {'cas': dict(cas), 'exemples': {k: v for k, v in exemples.items()}}
+
+
+def formater_lecture(r):
+    L = ["", "=" * 62,
+         "SI LA LECTURE APPLIQUE LE GARDE-FOU (rien n'est ecrit en base)",
+         "=" * 62]
+    for k, n in sorted(r['cas'].items(), key=lambda x: -x[1]):
+        L.append(f"  {n:>7}  {k}")
+    if r['exemples'].get('perd'):
+        L.append("  Elles perdent une date PRECISE fausse et retombent sur")
+        L.append("  l'annee du dossier - un fait humain, pas une invention :")
+        for cle, an in r['exemples']['perd']:
+            L.append(f"      {an} -> annee du dossier   {cle[-72:]}")
+    if r['exemples'].get('change'):
+        L.append("  Elles changent de date : le SCAN etait dans une source,")
+        L.append("  l'autre restait credible.")
+        for cle, av, ap in r['exemples']['change']:
+            L.append(f"      {av} -> {ap}   {cle[-72:]}")
+    return '\n'.join(L)
+
+
 def main(argv=None):
     # Description ASCII : la sortie doit survivre a une REDIRECTION sous
     # Windows (cp1252) -- l'import mourait deja d'un UnicodeEncodeError des que
@@ -356,9 +416,15 @@ def main(argv=None):
     p.add_argument('--table', default='tags')
     p.add_argument('--exemples', type=int, default=12)
     p.add_argument('--json', help='ecrire le rapport complet en JSON')
+    p.add_argument('--lecture', action='store_true',
+                   help='mesurer ce que le garde-fou change a la LECTURE')
     a = p.parse_args(argv)
-    r = mesurer(lire_entrees(a.base, a.table))
+    entrees = list(lire_entrees(a.base, a.table))
+    r = mesurer(entrees)
     print(formater(r, a.exemples))
+    if a.lecture:
+        r['lecture'] = effet_de_la_lecture(entrees)
+        print(formater_lecture(r['lecture']))
     if a.json:
         with open(a.json, 'w', encoding='utf-8') as f:
             json.dump(r, f, ensure_ascii=False, indent=1)
@@ -368,7 +434,8 @@ def main(argv=None):
 
 __all__ = ['annee_de', 'classer', 'dossier_de', 'racine_lisible',
            'datestamp_du_nom', 'renomme_par_le_plan', 'refuse_par_le_garde_fou',
-           'mesurer', 'lire_entrees', 'formater']
+           'mesurer', 'lire_entrees', 'formater', 'effet_de_la_lecture',
+           'formater_lecture']
 
 
 if __name__ == '__main__':

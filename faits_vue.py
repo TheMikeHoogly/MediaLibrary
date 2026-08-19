@@ -55,13 +55,18 @@ pour servir l'utilisateur.
 """
 
 import re
+import time
+from functools import lru_cache
 
 import tagging_meta
-from renommage_facts import (_sans_accents, fname_datetime, names_from_entry,
-                             path_year)
+from renommage_facts import (_sans_accents, date_de_scan_presumee,
+                             fname_datetime, names_from_entry, path_year,
+                             path_years)
 
-__all__ = ['chemin_relatif', 'lieu_plausible', 'lieu_par_segments', 'lieu_pour',
-           'epoch_du_nom', 'date_et_source', 'assertions', 'faits']
+__all__ = ['chemin_relatif', 'lieu_plausible', 'candidats_du_segment',
+           'lieux_du_chemin', 'lieu_par_segments', 'lieu_pour', 'epoch_du_nom',
+           'date_credible', 'taken_credible', 'date_et_source', 'assertions',
+           'faits', 'OPTIONS_AVANT_14A']
 
 
 # Dossiers qui ne sont jamais des lieux (miroir : `server._LIEUX_BRUIT`).
@@ -97,45 +102,196 @@ def chemin_relatif(cle, racines=()):
     return s
 
 
-def lieu_plausible(nom):
-    """Un dossier est-il un nom de lieu ? Heuristique, corrigeable à la main."""
-    n = re.sub(r'^\d{2,8}[-_ ]*', '', str(nom)).strip()      # « 240211_… »
-    n = re.sub(r'\b(19|20)\d{2}\b', '', n).strip()           # année
-    n = re.sub(r'^\d{1,2}[ .\-]+', '', n).strip()            # « 07 Voyage… »
+def _nettoyer_segment(nom):
+    """Segment débarrassé de ce qui n'est jamais un lieu : préfixe numérique
+    (« 240211_… »), année, numéro de tête (« 07 Voyage… »)."""
+    n = re.sub(r'^\d{2,8}[-_ ]*', '', str(nom)).strip()
+    n = re.sub(r'\b(19|20)\d{2}\b', '', n).strip()
+    return re.sub(r'^\d{1,2}[ .\-]+', '', n).strip()
+
+
+def lieu_plausible(nom, separateurs=r'[\s_\-]+'):
+    """Un dossier est-il un nom de lieu ? Heuristique, corrigeable à la main.
+
+    `separateurs` : ce qui coupe les MOTS du segment. Par défaut le trait
+    d'union en fait partie — et c'est précisément ce qui fait rater
+    « Crans-Montana » : le segment devient « Crans Montana », qui n'est plus la
+    clé du libellé. `OPTIONS_UNIFIEE` le retire ; `candidats_du_segment` coupe
+    alors les traits en DERNIER recours, pour ne rien perdre de ce que la règle
+    d'aujourd'hui trouve."""
+    n = _nettoyer_segment(nom)
     if len(n) < 4 or LIEUX_BRUIT.match(n):
         return None
-    mots = [m for m in re.split(r'[\s_\-]+', n) if len(m) > 2
+    mots = [m for m in re.split(separateurs, n) if len(m) > 2
             and not LIEUX_BRUIT.match(m)]
     return ' '.join(mots) if mots else None
 
 
-def lieu_par_segments(cle, lieux, racines=()):
-    """Lieu déduit du CHEMIN, segment par segment — la règle du Knowledge
-    Builder, et la seule qu'on veuille.
+# Variantes de la règle de lieu. Elles existent pour être MESURÉES avant d'être
+# adoptées (`mesure_lieu_visible.py`) : `OPTIONS_PROD` est le comportement
+# d'aujourd'hui, bit pour bit ; `OPTIONS_UNIFIEE` répare les deux trous connus
+# (libellés MULTI-MOTS jamais essayés, trait d'union qui casse la clé).
+# Ce que la règle faisait AVANT le 19/08, gardé pour que le banc puisse encore
+# mesurer l'écart — la prod, elle, n'a plus qu'un jeu d'options : les défauts.
+OPTIONS_AVANT_14A = {'multi_mots': False, 'traits_separateurs': True,
+                     'seuil_mot': 5, 'couper_casse': False}
 
-    Le dossier le plus PROFOND gagne (parcours en sens inverse) : « Photos /
-    Espagne / Barcelone » est une photo de Barcelone. Chaque segment est
-    d'abord nettoyé (`lieu_plausible`), puis cherché dans `lieux` — un DICT :
-    la comparaison est une clé, donc un MOT ENTIER. C'est toute la différence
-    avec `renommage_facts.resolve_path_place`, qui teste `norm in dossier` et
-    trouve « Ins » dans « Cousins&Cousines ».
+
+# Découpe d'un mot COLLÉ : « Yani2004 » → Yani, 2004 ; « AchumaniAlto » →
+# Achumani, Alto ; « CuevaMarkusIrpavi » → Cueva, Markus, Irpavi. Les dossiers
+# de famille collent le lieu à l'année ou au sujet, et la comparaison par mot
+# entier les perdait tous (219 photos « Yani », 48 « Achumani », 6 « Irpavi »).
+# Ce qui n'a PAS de frontière interne reste entier — « Vallorbe » ne rend pas
+# « Orbe », « Chatelain » ne rend pas « Châtel », « Cousins&Cousines » ne rend
+# pas « Ins ». C'est toute la différence avec la sous-chaîne.
+_MOT_COLLE = re.compile(r"[A-ZÀ-Þ]+(?![a-zà-þ])|[A-ZÀ-Þ]?[a-zà-þ]+|\d+")
+
+# Longueur maximale, en MOTS, d'un groupe essayé. Aucun libellé connu n'en
+# compte plus de quatre (« Playa de las Américas », « Banyuls de la Marenda ») ;
+# cinq laisse une marge. Sans cette borne, le nombre de groupes croît au CARRÉ
+# du nombre de mots — et un nom de fichier renommé en compte dix (mesuré :
+# 0,33 s pour l'index entier deviennent 0,89 s). Le segment ENTIER reste
+# toujours essayé, quelle que soit sa longueur.
+_MAX_MOTS_GROUPE = 5
+
+
+@lru_cache(maxsize=8192)
+def candidats_du_segment(nom, multi_mots=True, traits_separateurs=False,
+                         seuil_mot=4, couper_casse=True):
+    """Libellés à ESSAYER pour un segment de dossier, du plus spécifique au
+    moins. Liste ordonnée, sans doublon — vide si le segment n'est pas un lieu
+    plausible.
+
+    Tous ces candidats sont comparés ENTIERS à l'index des lieux (une clé de
+    dict). C'est l'invariant du module : jamais de sous-chaîne, sans quoi
+    « Ins » retrouve « Cousins&Cousines ».
+
+    `multi_mots` : essayer aussi les groupes de mots CONTIGUS, du plus long au
+    plus court, formés sur les mots BRUTS du segment — y compris les articles
+    de deux lettres que `lieu_plausible` écarte. Sans ces groupes, un libellé
+    en plusieurs mots n'est essayé que si le segment ne dit QUE lui : « Okt
+    Frankfurt La Paz » ne rend rien, et « La » ne survit pas au nettoyage.
+    `seuil_mot` : longueur minimale d'un mot ISOLÉ — en dessous, un mot court
+    noie le chemin de faux positifs (le groupe, lui, n'a pas ce risque).
+    `couper_casse` : découper aussi les mots COLLÉS sur leurs frontières de
+    casse et de chiffres (`_MOT_COLLE`). Sans lui, « Yani2004 » et
+    « AchumaniAlto » ne rendent rien : les dossiers de famille collent le lieu
+    à l'année ou au sujet.
+
+    **Mémoïsée, et c'est ce qui la rend payable** : `/sujets` et la recherche
+    balaient 43 064 clés, mais celles-ci se partagent quelques milliers de
+    segments — « Photos », « 2007 », « 04 Avril » reviennent des centaines de
+    fois. Le résultat est un tuple : une valeur de cache ne se mute pas.
+
+    Un NOM DE FICHIER, lui, est unique : le mémoïser ne sert à rien et EXPULSE
+    les dossiers du cache (43 064 noms contre 8 192 places — mesuré : 0,28 s
+    devenaient 0,83 s). `lieux_du_chemin` l'appelle donc sans cache."""
+    return _candidats_du_segment(nom, multi_mots, traits_separateurs,
+                                 seuil_mot, couper_casse)
+
+
+def _candidats_du_segment(nom, multi_mots, traits_separateurs, seuil_mot,
+                          couper_casse):
+    """Le corps de `candidats_du_segment`, hors cache."""
+    n = _nettoyer_segment(nom)
+    if len(n) < 4 or LIEUX_BRUIT.match(n):
+        return []
+    sep = r'[\s_\-]+' if traits_separateurs else r'[\s_]+'
+    bruts = [m for m in re.split(sep, n) if m]
+    mots = [m for m in bruts if len(m) > 2 and not LIEUX_BRUIT.match(m)]
+    if not mots:
+        return []
+    out = [' '.join(mots)]
+    if multi_mots:
+        for taille in range(min(len(bruts), _MAX_MOTS_GROUPE), 1, -1):
+            for i in range(len(bruts) - taille + 1):
+                out.append(' '.join(bruts[i:i + taille]))
+    out += [m for m in mots if len(m) >= seuil_mot]
+    if not traits_separateurs:
+        # Le trait d'union n'est plus un séparateur de MOTS (« Crans-Montana »
+        # reste entier), mais il reste un séparateur de DERNIER recours :
+        # « Vacances-Crète » doit continuer de rendre « Crète ».
+        for m in mots:
+            for sm in re.split(r"[\-']+", m):
+                if len(sm) >= seuil_mot:
+                    out.append(sm)
+    if couper_casse:
+        for m in bruts:
+            morceaux = _MOT_COLLE.findall(m)
+            if len(morceaux) > 1:
+                for i in range(len(morceaux)):
+                    fin = min(len(morceaux), i + _MAX_MOTS_GROUPE)
+                    for j in range(fin, i, -1):
+                        c = ' '.join(morceaux[i:j])
+                        if len(c) >= seuil_mot:
+                            out.append(c)
+    vus, uniq = set(), []
+    for c in out:
+        if c and c not in vus:
+            vus.add(c)
+            uniq.append(c)
+    return tuple(uniq)
+
+
+def lieux_du_chemin(cle, lieux, racines=(), tous=False, avec_fichier=False,
+                    **options):
+    """Libellés que le CHEMIN désigne, du dossier le plus PROFOND au plus haut.
+
+    `tous=False` s'arrête au premier : le fait « lieu » d'une photo n'en porte
+    qu'un, et « Photos / Espagne / Barcelone » est une photo de Barcelone.
+    `tous=True` les rend TOUS — c'est ce dont ont besoin `/sujets` et la
+    recherche, qui ne répondent pas à la même question : ils comptent une photo
+    dans CHAQUE lieu qu'elle désigne, et cherchent un lieu parmi plusieurs.
+    Une seule règle, deux façons de la lire.
+
+    `avec_fichier` : le NOM DU FICHIER compte-t-il comme un segment ? Non par
+    défaut — un fait « lieu » se lit dans les dossiers, et le renommage ÉCRIT
+    des lieux dans les noms (circularité). Mais 127 photos ne nomment leur lieu
+    que là (« 20km de Lausanne.jpg »), et « Trinidad » n'existe que par ce
+    chemin : c'est une décision, pas une évidence.
 
     `lieux` : {libellé sans accents: libellé} — `server.lieux_connus()` ou
     `renommage_facts.load_lieux(...)`, c'est le même fichier."""
     if not lieux:
-        return None
-    parts = chemin_relatif(cle, racines).replace('/', '\\').split('\\')[:-1]
-    for p in reversed(parts):
-        lieu = lieu_plausible(p)
-        if not lieu:
-            continue
-        # Le segment entier d'abord, puis ses mots longs : « Vacances Crete »
-        # doit rendre « Crète », mais on ne descend pas sous 5 lettres — un
-        # mot court noie le chemin de faux positifs.
-        for cand in [lieu] + [m for m in lieu.split() if len(m) >= 5]:
-            if _sans_accents(cand) in lieux:
-                return lieux[_sans_accents(cand)]
-    return None
+        return []
+    parts = chemin_relatif(cle, racines).replace('/', '\\').split('\\')
+    if avec_fichier:
+        # Sans son extension : « 20km de Lausanne.jpg » finit sinon sur le mot
+        # « lausanne.jpg », qui n'est la clé de rien.
+        parts = parts[:-1] + [re.sub(r'\.[A-Za-z0-9]{1,5}$', '', parts[-1])]
+    else:
+        parts = parts[:-1]
+    out, vus = [], set()
+    for i, p in enumerate(reversed(parts)):
+        # i == 0 et `avec_fichier` : c'est le NOM DE FICHIER, unique — hors
+        # cache, sinon il expulse les dossiers (voir `candidats_du_segment`).
+        cands = (_candidats_du_segment(
+            p, options.get('multi_mots', True),
+            options.get('traits_separateurs', False),
+            options.get('seuil_mot', 4), options.get('couper_casse', True))
+            if (i == 0 and avec_fichier) else candidats_du_segment(p, **options))
+        for cand in cands:
+            lbl = lieux.get(_sans_accents(cand))
+            if lbl and lbl not in vus:
+                vus.add(lbl)
+                out.append(lbl)
+                if not tous:
+                    return out
+    return out
+
+
+def lieu_par_segments(cle, lieux, racines=(), **options):
+    """Lieu déduit du CHEMIN, segment par segment — la règle du Knowledge
+    Builder, et la seule qu'on veuille : le PREMIER de `lieux_du_chemin`.
+
+    Le dossier le plus PROFOND gagne : « Photos / Espagne / Barcelone » est une
+    photo de Barcelone. Chaque segment est d'abord nettoyé (`lieu_plausible`),
+    puis ses candidats (`candidats_du_segment`) sont cherchés dans `lieux` — un
+    DICT : la comparaison est une clé, donc un MOT ENTIER. C'est toute la
+    différence avec `renommage_facts.resolve_path_place`, qui teste
+    `norm in dossier` et trouve « Ins » dans « Cousins&Cousines »."""
+    l = lieux_du_chemin(cle, lieux, racines, tous=False, **options)
+    return l[0] if l else None
 
 
 def lieu_pour(cle, lieux=None, racines=(), gps_place=None):
@@ -154,7 +310,6 @@ def epoch_du_nom(cle):
     """Epoch de la date lue dans le NOM du fichier, ou None. Passe par
     `renommage_facts.fname_datetime` : miroir déclaré de `server._fname_time`,
     une seule règle pour la prod et pour les bancs."""
-    import time
     nom = str(cle).replace('\\', '/').rsplit('/', 1)[-1]
     d8, hms = fname_datetime(nom)
     if not d8:
@@ -167,17 +322,52 @@ def epoch_du_nom(cle):
         return None
 
 
+def date_credible(cle, epoch):
+    """Cette date PRÉCISE peut-elle être crue pour cette photo ?
+
+    Faux quand c'est la date du SCAN : le numériseur inscrit l'instant du scan
+    dans `DateTimeOriginal` **et** dans le nom du fichier, et l'index l'a gardé
+    — une photo de `Photos Papa\\1990\\1990_Achumani` sort au 1er mai 2007.
+    Mesuré le 19/08 : **72** photos en base, +2 à +32 ans au-delà de leur
+    dossier.
+
+    Le critère est celui du renommage depuis le 17/08
+    (`renommage_facts.date_de_scan_presumee`), IMPORTÉ et non recopié — sans
+    quoi le projet aurait une quatrième règle de date. Il est ASYMÉTRIQUE à
+    dessein : une date ANTÉRIEURE au dossier est au contraire l'EXIF qui corrige
+    un dossier d'import, et elles sont **1 347** — un garde-fou symétrique
+    ferait dix-huit fois plus de dégâts que de bien.
+
+    **Rien n'est écrit** : corriger `taken` en base graverait une déduction
+    par-dessus une LECTURE de l'EXIF, et lui ferait perdre sa provenance. Comme
+    pour `faits` le 19/08, la correction est une VUE."""
+    try:
+        annee = time.localtime(float(epoch)).tm_year
+    except (ValueError, TypeError, OverflowError, OSError):
+        return False
+    return not date_de_scan_presumee(annee, path_years(cle))
+
+
+def taken_credible(cle, entree):
+    """Le `taken` de l'index, ou None s'il porte la date du SCAN."""
+    t = entree.get('taken') if isinstance(entree, dict) else None
+    if not (isinstance(t, (int, float)) and not isinstance(t, bool) and t > 0):
+        return None
+    return float(t) if date_credible(cle, t) else None
+
+
 def date_et_source(cle, entree):
     """(libellé, source) de la date : `taken` (exif) → date lue dans le NOM →
-    année du DOSSIER. **Jamais le `mtime`** — il porte la date du TAGGING, pas
+    année du DOSSIER, **la date du SCAN écartée des deux premières**
+    (`date_credible`, 72 photos). **Jamais le `mtime`** — il porte la date du TAGGING, pas
     celle de la prise de vue (une photo de 1998 réécrite en 2026). Une date
     fausse affirmée est une graine d'hallucination, pas un fait : mieux vaut
     rien."""
-    t = entree.get('taken') if isinstance(entree, dict) else None
-    if isinstance(t, (int, float)) and not isinstance(t, bool) and t > 0:
+    t = taken_credible(cle, entree)
+    if t:
         return tagging_meta.format_date_fr(t), 'exif'
     fn = epoch_du_nom(cle)
-    if fn:
+    if fn and date_credible(cle, fn):
         return tagging_meta.format_date_fr(fn), 'nom du fichier'
     an = path_year(cle)                  # rend « YYYY » (chaîne), pas un epoch
     if an:
