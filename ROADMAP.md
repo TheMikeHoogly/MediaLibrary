@@ -6,23 +6,23 @@ dans `eval/METHODE.md` ; l'éphémère dans `PROMPT_NOUVELLE_SESSION.md`. Audits
 `docs/AUDIT_INTERNE_2026-08.md` (I1–I17, O1–O15, A–F),
 `docs/AUDIT_EXTERNE_2026.md`, `docs/RANGEMENT_2026.md`.
 
-## État (18/08/2026, session 20)
+## État (18/08/2026, session 21)
 
-**Le scan rend enfin des comptes (chantier 10a).** `comptes_index.py` (module
-PUR, 37 tests) branche un registre sur le **GOULOT** de l'index en mémoire —
-`TrackedDict` dans `store_sqlite.py`, par où passe toute clé qui entre ou sort :
-aucun retrait ne peut lui échapper. Chaque appelant **déclare son motif**
-(`scan:disparus`, `scan:modifies`, `purge:cles_fantomes`,
-`demarrage:dossiers_caches`, `rekey`, `tagging`) ; ce qui retire **sans** motif
-tombe dans un bucket nommé, avec des exemples de clés. Et chaque cycle de scan
-est **réconcilié** : `inexpliqué = (fin − début) − (ajouts − retraits)`. Non nul
-= l'index a changé de taille **hors du goulot** — précisément le chiffre qui
-manquait aux −250 du 17/08. Lecture : `/reglages` (panneau « Comptes de
-l'index ») et `GET /api/maint/status` (clé `oublis`). L'étape 4 de `_sync_dir`
-dit désormais `n/demandées`, et non plus un silence quand `n = 0`.
+**Le scan rend des comptes — chantier 10a CLOS le 18/08.**
+`comptes_index.py` (module PUR, 37 tests) branche un registre sur le **GOULOT**
+de l'index en mémoire (`TrackedDict`) : motif déclaré par appelant, bucket
+« non déclaré » avec exemples de clés, et réconciliation par cycle
+(`inexpliqué = (fin − début) − (ajouts − retraits)`). Lecture : `/reglages` et
+`GET /api/maint/status` (clé `oublis`).
 
-**LIVRÉ, PAS ENCORE OBSERVÉ EN RÉEL** : tant qu'aucun cycle n'a tourné chez
-Mike, l'instrument est une promesse — pas un acquis.
+**OBSERVÉ EN RÉEL** : 12 cycles chez Mike, index 43 064 invariant, tout à zéro —
+puis un **contrôle positif** en deux temps, une photo-témoin déposée dans
+`_Uploads` puis retirée : `43 064 → 43 065` (+1, motif `tagging`), puis
+`43 065 → 43 064` (−1, motif **`scan:disparus`**, « où » = Uploads),
+`inexpliqué` **0** aux deux, « (non declare) » 0. L'instrument compte, nomme et
+réconcilie : les zéros disent « rien ne fuit », et non « rien n'est mesuré ».
+**Portée honnête** : les −250 du 17/08 sont apparus SOUS CHARGE. Ceci ne prouve
+pas qu'aucune fuite n'existe sous charge — ça prouve qu'elle serait comptée.
 
 **Rappel de la session 19** (détail : git et `eval/DECISIONS.md`) : **72** dates
 de SCAN comptées en base contre 12 connues ; le désaccord des deux chemins a
@@ -60,10 +60,14 @@ décision reste ouverte (point 10b).
 9. **Reconnaissance — algo (BARRIÈRE : vérité terrain ≥ ~5 %).**
    HDBSCAN/Chinese Whispers/AdaFace inévaluables à 0,8 %. La barrière reste.
 10. **Données / finitions.** Trois chantiers, dans cet ordre :
-    (a) **Compter ce que le scan OUBLIE — INSTRUMENT LIVRÉ (18/08), À
-    OBSERVER.** Reste : lire `/reglages` après quelques cycles. Un « (non
-    declare) » ou un écart inexpliqué non nul EST la piste ; zéro partout ferme
-    le sujet. Rien à décider avant d'avoir vu un chiffre en réel.
+    (a) **Compter ce que le scan OUBLIE — CLOS (18/08), observé + contrôle
+    positif.** Trois constats mineurs relevés au passage, non traités : un ajout
+    découvert PAR LE SCAN est étiqueté `tagging` (c'est la mise en file qui crée
+    la clé) — juste pour « qui retire », trompeur pour « qui ajoute » ;
+    `dict.__ior__` n'est pas redéfini dans `TrackedDict` (seul chemin qui
+    contredit « aucune clé n'échappe » — aucun usage aujourd'hui, vérifié) ;
+    `cycles_vus` est la longueur d'un anneau de 10, pas un compteur — il affiche
+    « 10 » à vie.
     (b) **Dates de scan : mesurées (72), correction NON décidée.** Corriger
     `taken` en base touche le pipeline de dates (`monolith-surgery`) et demande
     un backfill ; 72 photos mal triées en sont l'enjeu, contre 1 369 dates
@@ -140,7 +144,7 @@ touche l'un touche l'autre. Chiffrés et non traités (14/08) : (a) le plancher
   quarantaine réversible `_corbeille_vecteurs/`.
 - **Observabilité** : boucle scan/backup (O5), `backup_verify`, trois tâches de
   fond EXIF (dates, noms, GPS) — état, avancement et « fichiers muets » dans
-  `/reglages` ; comptes de l'index au goulot (`comptes_index.py`, à observer).
+  `/reglages` ; comptes de l'index au goulot (`comptes_index.py`, observé).
 - **Mesure** : `mesure_dates_scan.py` — dates de scan en base, lecture seule sur
   copie, deux chemins indépendants.
 - **Hygiène** : nettoyage réversible (bat 29), commit guidé `SESSION_COMMIT.txt`

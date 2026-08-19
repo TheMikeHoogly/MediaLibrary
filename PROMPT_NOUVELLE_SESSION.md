@@ -8,43 +8,37 @@ Tu reprends **MediaLibrary**. Lis `ROADMAP.md`, puis `eval/DECISIONS.md` (ce qui
 a été tranché) et `eval/METHODE.md` (comment on tranche). Débrief en 2–3 lignes,
 puis on attaque.
 
-## Où on en est (18/08/2026, fin de session 20)
+## Où on en est (18/08/2026, fin de session 21)
 
-**Le scan rend enfin des comptes — chantier 10a, LIVRÉ mais PAS OBSERVÉ.**
-`comptes_index.py` (module PUR, 37 tests) branche un registre sur le **goulot**
-de l'index en mémoire : `TrackedDict` (`store_sqlite.py`), par où passe toute
-clé qui entre ou sort. Trois choses deviennent visibles :
+**Chantier 10a CLOS — l'instrument a été observé, et prouvé.** Douze cycles de
+scan chez Mike : index 43 064 invariant, `ajouts`/`retraits` 0, « (non declare) »
+0, `inexpliqué` 0 partout. Puis un **contrôle positif** en deux temps — une
+photo-témoin déposée dans `_Uploads`, puis retirée :
 
-1. **Qui retire, et combien** — chaque appelant déclare son motif :
-   `scan:disparus`, `scan:modifies`, `purge:cles_fantomes`,
-   `demarrage:dossiers_caches`, `rekey`, `tagging`.
-2. **Ce qui retire SANS le dire** — bucket « (non declare) », avec des exemples
-   de clés. C'est le bucket intéressant, pas les autres.
-3. **L'écart inexpliqué de chaque cycle de scan** :
-   `inexpliqué = (fin − début) − (ajouts − retraits)`. Non nul = la taille de
-   l'index a changé **hors du goulot**. C'est le chiffre qui manquait aux −250
-   du 17/08 ; zéro partout ferme le sujet.
+```
+43 064 → 43 065  (+1)  ajouts 1   motif tagging         inexplique 0
+43 065 → 43 064  (−1)  retraits 1 motif scan:disparus   inexplique 0
+```
 
-Lecture : `/reglages` → panneau « Comptes de l'index » (badge *reconcilie* /
-*ecart ±n* / *en attente*), et `GET /api/maint/status` → clé `oublis`.
-L'étape 4 de `_sync_dir` dit maintenant `n/demandées` au lieu de se taire
-quand `n = 0`. Au passage : `.panel .mut` passe de 2,2:1 à 5,9:1 (plancher a11y).
-
-**Rien n'est acquis tant que ce n'est pas observé en réel.** Un instrument non
-lu vaut zéro.
+C'est ce geste qui donne leur sens aux zéros : sans lui, « zéro partout » et
+« l'instrument est débranché » se lisent pareil. Le sujet des −250 du 17/08 se
+ferme : rien n'a été perdu, le mécanisme reste inconnu, et s'il revient le
+registre rendra le chiffre. **Portée honnête** : les −250 sont apparus SOUS
+CHARGE ; ceci ne prouve pas l'absence de fuite sous charge, seulement qu'elle
+serait comptée.
 
 ## Prochain pas — par valeur
 
-1. **Observer 10a chez Mike.** Ouvrir `/reglages` après quelques cycles de scan
-   (5 min chacun). Trois lectures possibles : tout à zéro → l'index est sain et
-   le sujet se ferme ; « (non declare) » non nul → une porte oubliée, les
-   exemples de clés disent laquelle ; écart inexpliqué non nul → l'index bouge
-   hors du goulot, et le nombre dit de combien. **Ne rien décider avant.**
-2. **Décider quoi faire des 72** (ROADMAP 10b). Trois gestes indépendants, du
-   moins cher au plus cher : garder l'étape 2 du repli (le NOM — 1 cas, module
-   pur, sans redémarrage) ; rendre au plan de renommage les 15 noms périmés ;
-   corriger `taken` en base (pipeline de dates, `monolith-surgery`, backfill —
-   et surtout **ne pas emporter les 1 369 dates antérieures**).
+1. **10b — les deux gestes pas chers, indépendants et réversibles** : garder
+   l'étape 2 du repli (le NOM — 1 cas, module pur, sans redémarrage) et rendre
+   au plan de renommage les **15 noms périmés**. Ils ne touchent NI le pipeline
+   de dates NI les **1 369** dates antérieures. Le troisième geste — corriger
+   `taken` en base pour **72** photos (`monolith-surgery` + backfill) — reste
+   **non décidé** : c'est lui qui risque d'emporter les 1 369.
+2. **Trois constats du registre**, relevés le 18/08, non traités (ROADMAP 10a) :
+   ajout étiqueté `tagging` au lieu de `scan:*` ; `dict.__ior__` non redéfini
+   dans `TrackedDict` (trou latent du goulot, aucun usage) ; `cycles_vus` =
+   longueur d'un anneau de 10, pas un compteur.
 3. **Le prompt de PRODUCTION hallucine plus que V0** (`eval/DECISIONS.md`) :
    inchangé, chaque photo taguée le paie. **Ne pas revenir à V0 sans protocole.**
 4. **14a, suites** : les `faits` ne filtrent pas encore ; pas de filtre par
