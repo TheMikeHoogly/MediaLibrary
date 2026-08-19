@@ -534,3 +534,66 @@ def annee_fiable_depuis(epoch_precis, path_year_num):
         except (TypeError, ValueError):
             return 0
     return lire
+
+
+# ── Tri chronologique : la même règle de date que le FILTRE ──────────────
+#
+# Le cas « aucun mot pour SigLIP » (« Luna en 2015 ») a déjà tout filtré ; il
+# ne reste qu'à RANGER. Le serveur y appelait `_best_time`, dont la branche 3
+# est le `mtime` — la source que le filtre d'à côté refuse explicitement
+# (`annee_fiable_depuis`, décision du 15/08). Une photo sans date connue
+# prenait donc la date de son dernier tagging (2026) et passait DEVANT toutes
+# les autres : la seule dont la date est certainement fausse s'affichait en
+# tête. Deux règles de date pour une même réponse finissent toujours par se
+# contredire ; il n'y en a plus qu'une.
+
+# Rangs de précision. L'ordre du tri est (année, rang, epoch) décroissant : à
+# année égale, une photo précisément datée passe devant une photo datée par son
+# seul DOSSIER — lui donner un 1er janvier la ferait passer devant un 1er
+# janvier RÉEL, c'est-à-dire inventer un jour (refus du 15/08).
+RANG_PRECIS, RANG_ANNEE, RANG_AUCUN = 2, 1, 0
+
+
+def trier_chronologique(entrees, epoch_precis, annee_fiable):
+    """Ordonne des (clé, entrée) de la plus RÉCENTE à la plus ancienne.
+    Rend `(clés_triées, sans_date)`.
+
+    `epoch_precis` et `annee_fiable` : les MÊMES lecteurs que `filtrer_periode`
+    — une seule règle de date par réponse.
+
+    `sans_date` compte les photos placées SANS aucune date sûre : elles vont en
+    FIN de liste, jamais en tête. Une protection qui s'annule doit se compter,
+    sinon la dégradation est muette.
+
+    Le tri ne jette rien — pas même une entrée `failed` : filtrer est le travail
+    de `filtrer_periode`, ranger est le sien. Les ex æquo gardent l'ordre reçu
+    (`sorted` stable) : l'appelant passe ses clés triées, et la même requête
+    rend deux fois la même page.
+    """
+    rangs = []
+    sans_date = 0
+    for cle, entree in entrees:
+        e = entree if isinstance(entree, dict) else {}
+        ep = None
+        try:
+            ep = epoch_precis(cle, e)
+        except Exception:                                     # noqa: BLE001
+            ep = None
+        if ep is not None:
+            try:
+                an = time.localtime(float(ep)).tm_year
+                rangs.append(((an, RANG_PRECIS, float(ep)), cle))
+                continue
+            except (ValueError, TypeError, OverflowError, OSError):
+                pass
+        try:
+            an = int(annee_fiable(cle, e)) or 0
+        except (TypeError, ValueError):
+            an = 0
+        if an:
+            rangs.append(((an, RANG_ANNEE, 0.0), cle))
+        else:
+            sans_date += 1
+            rangs.append(((0, RANG_AUCUN, 0.0), cle))
+    rangs.sort(key=lambda it: it[0], reverse=True)
+    return [cle for _, cle in rangs], sans_date

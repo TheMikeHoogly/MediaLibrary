@@ -6,31 +6,32 @@ dans `eval/METHODE.md` ; l'éphémère dans `PROMPT_NOUVELLE_SESSION.md`. Audits
 `docs/AUDIT_INTERNE_2026-08.md` (I1–I17, O1–O15, A–F),
 `docs/AUDIT_EXTERNE_2026.md`, `docs/RANGEMENT_2026.md`.
 
-## État (19/08/2026, session 22)
+## État (19/08/2026, session 23)
 
-**Le scan rend des comptes — 10a CLOS le 18/08, et PROUVÉ.**
-`comptes_index.py` (module PUR, 37 tests) branche un registre sur le **GOULOT**
-de l'index en mémoire (`TrackedDict`) : motif déclaré par appelant, bucket
-« non déclaré » avec exemples de clés, réconciliation par cycle
-(`inexpliqué = (fin − début) − (ajouts − retraits)`). Lecture : `/reglages` et
-`GET /api/maint/status` (clé `oublis`). En réel : 12 cycles, 43 064 invariant,
-tout à zéro — puis un **contrôle positif**, photo-témoin déposée dans
-`_Uploads` puis retirée : +1 (`tagging`), −1 (`scan:disparus`), `inexpliqué`
-**0** aux deux. Les zéros disent « rien ne fuit », et non « rien n'est mesuré ».
-**Portée honnête** : les −250 du 17/08 sont apparus SOUS CHARGE — ceci ne prouve
-pas l'absence de fuite sous charge, seulement qu'elle serait comptée.
+**10a et 10b CLOS, tous deux observés en réel.** 10a : `comptes_index.py`
+compte au GOULOT de l'index (`TrackedDict`) — 12 cycles à zéro, plus un
+contrôle positif (+1 `tagging`, −1 `scan:disparus`, `inexpliqué` **0**). Portée
+honnête : les −250 du 17/08 sont apparus SOUS CHARGE ; les zéros disent « rien
+ne fuit », pas « rien ne peut fuir ». 10b : les **15** moves attendus appliqués
+(`docs/undo_renommage_20260819_075541.json`) — 15 cibles distinctes, tous des
+`YYYY0000_` devenus précis, dans deux dossiers dont l'année confirme la date
+écrite, **0 date de scan réinscrite**, noms humains intacts ; plan régénéré
+ensuite : **0 à renommer**. Reste NON DÉCIDÉ : corriger `taken` en base
+(**72** photos contre **1 369** dates antérieures à ne pas emporter).
 
-**10b — les deux gestes purs sont ÉCRITS le 19/08, pas encore observés.**
-(1) Le garde-fou anti-scan couvre désormais les DEUX sources de date précise,
-`taken` **et** le nom de fichier : **73** noms refusés en base — 1 vraie date de
-scan, 72 faux futurs (résiduels) — et **0 nom brut** parmi eux, donc le geste
-ferme une porte sans déplacer un fichier. (2) Le plan revient sur les
-`YYYY0000_` qu'il a lui-même écrits, **et seulement** quand la date est devenue
-précise : **15** moves simulés sur copie, exactement les 15 comptés par l'autre
-chemin, cibles distinctes, 0 collision, 0 scan réinscrit, **376** en attente
-d'une date. **Reste dû : redémarrer, générer le plan, appliquer, observer.**
-Le troisième geste — corriger `taken` en base pour **72** photos — reste NON
-DÉCIDÉ : c'est lui qui risque d'emporter les **1 369** dates antérieures.
+**14a — le TRI de la recherche avait sa propre règle de date, et elle mentait.**
+`semantic_search` filtrait par `annee_fiable` (jamais `mtime`) puis TRIAIT par
+`_best_time`, dont la branche 3 EST le `mtime`. Mesuré sur COPIE (43 064
+entrées, `mesure_tri_recherche.py`) : **259** photos sans aucune date sûre,
+dont **257 datées de 2026 par leur propre tagging** — et elles montaient en
+TÊTE. **56 des 364 noms** de l'index en portent dans leurs 100 premiers
+résultats : **53/100** pour « Véronique », 29/100 pour « Mike » (5 566 photos).
+**32** entrées n'ont pas même un `mtime` : l'ancienne clé (`… or ''`) mélangeait
+`float` et `str`, et l'ancien tri **ne s'exécute pas** sur l'index entier
+(TypeError → 500). Aucun NOM ne déclenche ce mélange aujourd'hui (0/364) ; le
+chemin par LIEU n'est pas mesuré — plancher, pas total. Corrigé par
+`recherche.trier_chronologique` : une seule règle de date par réponse, sans-date
+en FIN et COMPTÉES (`sans_date_tri`). **Reste à observer en réel.**
 
 ## À faire — par ordre de valeur
 
@@ -61,21 +62,17 @@ DÉCIDÉ : c'est lui qui risque d'emporter les **1 369** dates antérieures.
 9. **Reconnaissance — algo (BARRIÈRE : vérité terrain ≥ ~5 %).**
    HDBSCAN/Chinese Whispers/AdaFace inévaluables à 0,8 %. La barrière reste.
 10. **Données / finitions.** Trois chantiers, dans cet ordre :
-    (a) **Compter ce que le scan OUBLIE — CLOS (18/08), observé + contrôle
-    positif.** Trois constats mineurs, non traités : un ajout découvert PAR LE
-    SCAN est étiqueté `tagging` (c'est la mise en file qui crée la clé) — juste
-    pour « qui retire », trompeur pour « qui ajoute » ; `dict.__ior__` n'est pas
-    redéfini dans `TrackedDict` (seul chemin qui contredit « aucune clé
-    n'échappe » — aucun usage, vérifié) ; `cycles_vus` est la longueur d'un
-    anneau de 10, pas un compteur : il affiche « 10 » à vie.
-    (b) **Les deux gestes purs sont écrits (19/08) — reste à OBSERVER** :
-    garde-fou de l'étape 2 du repli (`renommage_facts`) et reprise des noms
-    périmés (`plan_renommage`, `est_nom_annee_seule`). 28 tests verts, plan
-    simulé sur copie. Geste Mike : redémarrer, générer le plan (15 attendus),
-    relire `docs/plan_renommage.md`, appliquer, vérifier. **Correction de
-    `taken` en base : toujours NON décidée** — elle touche le pipeline de dates
-    (`monolith-surgery`) et exige un backfill, pour 72 photos, contre 1 369
-    dates antérieures à ne surtout pas emporter avec.
+    (a) **Compter ce que le scan OUBLIE — CLOS (18/08).** Trois constats
+    mineurs, non traités : un ajout découvert PAR LE SCAN est étiqueté
+    `tagging` (c'est la mise en file qui crée la clé) — juste pour « qui
+    retire », trompeur pour « qui ajoute » ; `dict.__ior__` n'est pas redéfini
+    dans `TrackedDict` (seul chemin qui contredit « aucune clé n'échappe » —
+    aucun usage, vérifié) ; `cycles_vus` est la longueur d'un anneau de 10, pas
+    un compteur : il affiche « 10 » à vie.
+    (b) **Garde-fou du repli sur le NOM + reprise des noms périmés — CLOS
+    (19/08), observé.** Reste : **correction de `taken` en base NON décidée**
+    — elle touche le pipeline de dates (`monolith-surgery`) et exige un
+    backfill, pour 72 photos, contre 1 369 dates antérieures à ne pas emporter.
     (c) Réglages éditables depuis `/reglages` (wagon : pause globale des
     workers) ; 2ᵉ passe des 945 illisibles + `recuperees/` → NAS ; purge des
     undo > 30 j (I12) ; deux images TRONQUÉES (`Sanetsch/DSC00550.JPG`,
@@ -97,10 +94,11 @@ DÉCIDÉ : c'est lui qui risque d'emporter les **1 369** dates antérieures.
     fiches et `faits` sourcés en outils MCP locaux (JSON-RPC stdio, zéro
     dépendance — skill `mcp-builder`). Écriture plus tard. Briques de 14a.
 14. **Recherche IA locale contextuelle.** (a) **Déterministe — LIVRÉ ET OBSERVÉ**,
-    vecteurs orphelins purgés. Manques : les `faits` ne filtrent pas encore (le
-    lieu passe par `gps_places` + chemin) ; pas de filtre espèce ni fiche ; le
-    tri sans mot-clé reste `_best_time` (donc `mtime`) là où la sélection
-    l'exclut. (b) ensuite seulement, **escalade ponctuelle** vers un modèle
+    vecteurs orphelins purgés ; tri sans mot-clé aligné sur la règle de date du
+    filtre (19/08, **à observer**). Manques : les `faits` ne filtrent pas encore
+    (le lieu passe par `gps_places` + chemin) ; pas de filtre espèce ni fiche ;
+    `sans_date_tri` est compté mais pas AFFICHÉ (wagon `photo-ui`).
+    (b) ensuite seulement, **escalade ponctuelle** vers un modèle
     chargé à la demande (bail GpuArbiter, déchargé après) — `vision-eval`,
     jamais câblé sans mesure.
 15. **À évaluer (`vision-eval`)** : Florence-2 léger. **Parqué** faute
@@ -151,8 +149,10 @@ Trouvé le 19/08 par le garde-fou de l'étape 2, qui les refuse déjà au renomm
 - **Observabilité** : boucle scan/backup (O5), `backup_verify`, trois tâches de
   fond EXIF (dates, noms, GPS) — état, avancement et « fichiers muets » dans
   `/reglages` ; comptes de l'index au goulot (`comptes_index.py`, observé).
-- **Mesure** : `mesure_dates_scan.py` — dates de scan en base, lecture seule sur
-  copie, deux chemins indépendants.
+- **Recherche** : quatre dimensions (noms · lieux · période · sens) ; une seule
+  règle de date pour filtrer ET trier (`recherche.py`, pur).
+- **Mesure** : `mesure_dates_scan.py`, `mesure_tri_recherche.py` — lecture seule
+  sur COPIE, jamais sur `photos.db`.
 - **Hygiène** : nettoyage réversible (bat 29), commit guidé `SESSION_COMMIT.txt`
   (27), fusion fast-forward serveur allumé (28), purge des branches fusionnées
   (30). Ordre **27 → 0 → 28** : on ne fusionne qu'après observation en réel.

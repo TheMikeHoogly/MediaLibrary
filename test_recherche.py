@@ -318,6 +318,91 @@ class TestAnneeFiable(unittest.TestCase):
         self.assertEqual(lire("x.jpg", {"mtime": _epoch(2026, 8, 15)}), 0)
 
 
+
+class TestTriChronologique(unittest.TestCase):
+    """Le tri du cas « aucun mot pour SigLIP » — meme regle de date que le
+    FILTRE. Avant le 19/08 il passait par `_best_time`, dont la branche 3 est
+    le `mtime` : la photo dont la date est certainement fausse s'affichait en
+    TETE."""
+
+    def setUp(self):
+        self.dossiers = {"d.jpg": 2015, "e.jpg": 2019}
+        self.precis = lambda cle, e: e.get("taken")
+        self.annee = r.annee_fiable_depuis(
+            self.precis, lambda cle: self.dossiers.get(cle, 0))
+
+    def _trier(self, entrees):
+        return r.trier_chronologique(entrees, self.precis, self.annee)
+
+    def test_le_plus_recent_dabord(self):
+        cles, _ = self._trier([("a.jpg", {"taken": _epoch(2015, 7, 4)}),
+                               ("c.jpg", {"taken": _epoch(2018, 12, 25)}),
+                               ("b.jpg", {"taken": _epoch(2015, 12, 25)})])
+        self.assertEqual(cles, ["c.jpg", "b.jpg", "a.jpg"])
+
+    def test_une_annee_de_dossier_plus_recente_passe_devant(self):
+        """L'annee du dossier CLASSE : elle ne relegue pas la photo."""
+        cles, _ = self._trier([("a.jpg", {"taken": _epoch(2015, 12, 25)}),
+                               ("e.jpg", {})])           # dossier 2019
+        self.assertEqual(cles, ["e.jpg", "a.jpg"])
+
+    def test_a_annee_egale_la_date_precise_passe_devant(self):
+        """On ne fabrique pas un 1er janvier : il ferait passer la photo
+        devant un 1er janvier REEL (refus du 15/08)."""
+        cles, _ = self._trier([("d.jpg", {}),             # dossier 2015 seul
+                               ("a.jpg", {"taken": _epoch(2015, 1, 1)})])
+        self.assertEqual(cles, ["a.jpg", "d.jpg"])
+
+    def test_mtime_jamais_ET_LA_PHOTO_MUETTE_FINIT_DERNIERE(self):
+        """Le defaut corrige : `_best_time` aurait rendu ["z.jpg", ...].
+
+        Si un jour quelqu'un rebranche `_best_time` ici, ce test tombe.
+        """
+        entrees = [("z.jpg", {"mtime": _epoch(2026, 8, 19)}),   # aucune date
+                   ("a.jpg", {"taken": _epoch(2015, 12, 25)}),
+                   ("e.jpg", {})]                               # dossier 2019
+        cles, sans_date = self._trier(entrees)
+        self.assertEqual(cles, ["e.jpg", "a.jpg", "z.jpg"])
+        self.assertEqual(sans_date, 1)
+
+    def test_les_sans_date_sont_COMPTES(self):
+        """Une protection qui s'annule doit se compter."""
+        _, sans_date = self._trier([("y.jpg", {}), ("z.jpg", {}),
+                                    ("a.jpg", {"taken": _epoch(2015, 5, 5)})])
+        self.assertEqual(sans_date, 2)
+
+    def test_ex_aequo_gardent_lordre_recu(self):
+        """Deux fois la meme requete, deux fois la meme page."""
+        entrees = [("m.jpg", {}), ("n.jpg", {}), ("o.jpg", {})]
+        self.assertEqual(self._trier(entrees)[0], ["m.jpg", "n.jpg", "o.jpg"])
+        self.assertEqual(self._trier(entrees[::-1])[0],
+                         ["o.jpg", "n.jpg", "m.jpg"])
+
+    def test_aucun_melange_de_types_meme_sans_date(self):
+        """`sorted(key=lambda k: _best_time(...) or '')` melangeait `float` et
+        `str` : une seule photo sans date faisait tomber la recherche en 500.
+        """
+        cles, _ = self._trier([("z.jpg", {}),
+                               ("a.jpg", {"taken": _epoch(2015, 5, 5)})])
+        self.assertEqual(cles, ["a.jpg", "z.jpg"])
+
+    def test_epoch_illisible_retombe_sur_lannee_du_dossier(self):
+        cles, sans_date = r.trier_chronologique(
+            [("d.jpg", {"taken": "pas un epoch"})],
+            lambda c, e: e.get("taken"), self.annee)
+        self.assertEqual((cles, sans_date), (["d.jpg"], 0))
+
+    def test_entree_non_dict_toleree(self):
+        cles, sans_date = self._trier([("x.jpg", None)])
+        self.assertEqual((cles, sans_date), (["x.jpg"], 1))
+
+    def test_le_tri_ne_jette_rien_pas_meme_une_entree_ratee(self):
+        """Filtrer est le travail de `filtrer_periode` ; ranger est le sien."""
+        cles, _ = self._trier([("f.jpg", {"failed": True}),
+                               ("a.jpg", {"taken": _epoch(2015, 5, 5)})])
+        self.assertEqual(cles, ["a.jpg", "f.jpg"])
+
+
 class TestOrdreImpose(unittest.TestCase):
     """Les noms passent AVANT les dates — sinon un prenom se fait manger."""
 

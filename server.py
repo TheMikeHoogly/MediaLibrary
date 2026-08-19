@@ -3356,7 +3356,7 @@ def semantic_search(requete, limite=80, detail=None):
     if detail is not None:
         detail.update(noms=[t.split(':', 1)[-1] for t in tags], lieux=lieux,
                       periode=periode.libelle if periode else '',
-                      reste=reste, sans_date=0)
+                      reste=reste, sans_date=0, sans_date_tri=0)
 
     candidats = _cles_portant(tags) if tags else None
     if lieux:
@@ -3377,12 +3377,22 @@ def semantic_search(requete, limite=80, detail=None):
         if not candidats:
             return []
         if not reste:
-            # Aucun autre mot : on rend les plus récentes d'abord.
-            avec_date = sorted(
-                candidats,
-                key=lambda k: _best_time(k, STORE.data.get(k) or {}) or '',
-                reverse=True)
-            return [(k, 1.0) for k in avec_date[:limite]]
+            # Aucun autre mot : on rend les plus récentes d'abord — avec la
+            # MÊME règle de date que le filtre juste au-dessus. `_best_time`
+            # était branché ici : sa branche 3 est le `mtime`, celui-là même
+            # que `_annee_fiable` refuse (le tagging de 2026 réécrit le
+            # fichier d'une photo de 1998). La photo dont la date est
+            # certainement fausse s'affichait donc en TÊTE, et sa clé
+            # (`… or ''`) mélangeait `float` et `str` : une seule photo sans
+            # aucune date faisait tomber la recherche en TypeError.
+            # `sorted(candidats)` d'abord : le tri est stable, les ex æquo
+            # gardent donc un ordre reproductible d'une requête à l'autre.
+            ordre, sans_date_tri = recherche.trier_chronologique(
+                ((k, STORE.data.get(k) or {}) for k in sorted(candidats)),
+                _epoch_precis, _annee_fiable)
+            if detail is not None:
+                detail['sans_date_tri'] = sans_date_tri
+            return [(k, 1.0) for k in ordre[:limite]]
         with SEMANTIC_LOCK:
             q = sem.encoder_textes([reste])[0]
         return vs.search(sem.KIND, q, limite=limite, restreindre=candidats)
@@ -13097,6 +13107,10 @@ class Handler(BaseHTTPRequestHandler):
              'lieux': detail.get('lieux', []),
              'periode': detail.get('periode', ''),
              'sans_date': detail.get('sans_date', 0),
+             # `sans_date_tri` : photos RENDUES mais placées sans aucune date
+             # sûre — elles vont en fin de liste. Une protection qui s'annule
+             # doit se compter, même quand elle ne cache rien.
+             'sans_date_tri': detail.get('sans_date_tri', 0),
              'reste': detail.get('reste', requete)},
             ensure_ascii=False).encode(), 'application/json')
 
