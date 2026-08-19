@@ -8,15 +8,13 @@ dans `eval/METHODE.md` ; l'éphémère dans `PROMPT_NOUVELLE_SESSION.md`. Audits
 
 ## État (19/08/2026, session 23)
 
-**10a et 10b CLOS, tous deux observés en réel.** 10a : `comptes_index.py`
-compte au GOULOT de l'index (`TrackedDict`) — 12 cycles à zéro, plus un
-contrôle positif (+1 `tagging`, −1 `scan:disparus`, `inexpliqué` **0**). Portée
-honnête : les −250 du 17/08 sont apparus SOUS CHARGE ; les zéros disent « rien
-ne fuit », pas « rien ne peut fuir ». 10b : les **15** moves attendus appliqués
-(`docs/undo_renommage_20260819_075541.json`) — 15 cibles distinctes, tous des
-`YYYY0000_` devenus précis, dans deux dossiers dont l'année confirme la date
-écrite, **0 date de scan réinscrite**, noms humains intacts ; plan régénéré
-ensuite : **0 à renommer**. Reste NON DÉCIDÉ : corriger `taken` en base
+**10a et 10b CLOS, observés en réel.** 10a : `comptes_index.py` compte au
+GOULOT de l'index (`TrackedDict`) — 12 cycles à zéro + contrôle positif (+1
+`tagging`, −1 `scan:disparus`, `inexpliqué` **0**). Portée honnête : les −250 du
+17/08 sont apparus SOUS CHARGE ; les zéros disent « rien ne fuit », pas « rien
+ne peut fuir ». 10b : les **15** moves appliqués — 15 cibles distinctes, tous
+des `YYYY0000_` devenus précis, **0 date de scan réinscrite**, noms humains
+intacts, plan régénéré à **0**. Reste NON DÉCIDÉ : corriger `taken` en base
 (**72** photos contre **1 369** dates antérieures à ne pas emporter).
 
 **14a — le TRI de la recherche avait sa propre règle de date, et elle mentait.**
@@ -24,14 +22,17 @@ ensuite : **0 à renommer**. Reste NON DÉCIDÉ : corriger `taken` en base
 `_best_time`, dont la branche 3 EST le `mtime`. Mesuré sur COPIE (43 064
 entrées, `mesure_tri_recherche.py`) : **259** photos sans aucune date sûre,
 dont **257 datées de 2026 par leur propre tagging** — et elles montaient en
-TÊTE. **56 des 364 noms** de l'index en portent dans leurs 100 premiers
-résultats : **53/100** pour « Véronique », 29/100 pour « Mike » (5 566 photos).
-**32** entrées n'ont pas même un `mtime` : l'ancienne clé (`… or ''`) mélangeait
-`float` et `str`, et l'ancien tri **ne s'exécute pas** sur l'index entier
-(TypeError → 500). Aucun NOM ne déclenche ce mélange aujourd'hui (0/364) ; le
-chemin par LIEU n'est pas mesuré — plancher, pas total. Corrigé par
-`recherche.trier_chronologique` : une seule règle de date par réponse, sans-date
-en FIN et COMPTÉES (`sans_date_tri`). **Reste à observer en réel.**
+TÊTE de **56 des 364 noms** de l'index. **32** entrées n'ont pas même un
+`mtime` : l'ancienne clé (`… or ''`) mélangeait `float` et `str`, et l'ancien
+tri **ne s'exécute pas** sur l'index entier (TypeError → 500) — aucun NOM ne
+déclenche ce mélange aujourd'hui (0/364), le chemin par LIEU n'est pas mesuré :
+plancher, pas total. Corrigé par `recherche.trier_chronologique` : une seule
+règle de date par réponse, sans-date en FIN et COMPTÉES (`sans_date_tri`).
+**OBSERVÉ EN RÉEL** sur le serveur vivant : `sans_date_tri` = **53 · 43 · 29 ·
+29 · 21** (Véronique, Nikola, Mike, Marie, Sandra) — au chiffre près la mesure
+hors ligne, tête précisément datée et décroissante, muettes en fin. Deux
+chemins, un nombre. `/files?q=` affiche bien l'ordre du serveur (rang DOM =
+rang API), le bouton « Date ↑ » restant allumé à tort.
 
 ## À faire — par ordre de valeur
 
@@ -83,8 +84,9 @@ en FIN et COMPTÉES (`sans_date_tri`). **Reste à observer en réel.**
     sous l'image en tooltip ; (c) harmoniser visages/lieux/animaux — mêmes
     fonctions partout, **sauf** l'effacement, réservé à Classification ;
     (d) zoom pinch + molette — `maximum-scale=1` retiré ✔ (WCAG 1.4.4) ;
-    (e) wagons : bandeau `#pending`, libellé `/pets`, et le bouton qui dit
-    « Meme jour (14 aout) » là où la page dit « 14 août ».
+    (e) wagons : bandeau `#pending`, libellé `/pets`, le bouton qui dit
+    « Meme jour (14 aout) » là où la page dit « 14 août », et « Date ↑ » qui
+    reste allumé sur `/files?q=` alors que l'ordre affiché est celui du serveur.
 12. **Assurance-vie : restauration à blanc (PROMU 12/08).** Test « PC mort
     lundi, tout revit vendredi » : restaurer le snapshot NAS sur un dossier
     vierge, chronométrer, noter chaque manque (dont la copie hors-site de
@@ -95,8 +97,8 @@ en FIN et COMPTÉES (`sans_date_tri`). **Reste à observer en réel.**
     dépendance — skill `mcp-builder`). Écriture plus tard. Briques de 14a.
 14. **Recherche IA locale contextuelle.** (a) **Déterministe — LIVRÉ ET OBSERVÉ**,
     vecteurs orphelins purgés ; tri sans mot-clé aligné sur la règle de date du
-    filtre (19/08, **à observer**). Manques : les `faits` ne filtrent pas encore
-    (le lieu passe par `gps_places` + chemin) ; pas de filtre espèce ni fiche ;
+    filtre (19/08, observé). Manques : les `faits` ne filtrent pas encore (le
+    lieu passe par `gps_places` + chemin) ; pas de filtre espèce ni fiche ;
     `sans_date_tri` est compté mais pas AFFICHÉ (wagon `photo-ui`).
     (b) ensuite seulement, **escalade ponctuelle** vers un modèle
     chargé à la demande (bail GpuArbiter, déchargé après) — `vision-eval`,
@@ -153,9 +155,9 @@ Trouvé le 19/08 par le garde-fou de l'étape 2, qui les refuse déjà au renomm
   règle de date pour filtrer ET trier (`recherche.py`, pur).
 - **Mesure** : `mesure_dates_scan.py`, `mesure_tri_recherche.py` — lecture seule
   sur COPIE, jamais sur `photos.db`.
-- **Hygiène** : nettoyage réversible (bat 29), commit guidé `SESSION_COMMIT.txt`
-  (27), fusion fast-forward serveur allumé (28), purge des branches fusionnées
-  (30). Ordre **27 → 0 → 28** : on ne fusionne qu'après observation en réel.
+- **Hygiène** : nettoyage réversible (29), commit guidé (27), fusion
+  fast-forward (28), purge des branches fusionnées (30). Ordre **27 → 0 → 28** :
+  on ne fusionne qu'après observation en réel.
 
 ## Réserve — futur, non prioritaire (triée le 12/08)
 
