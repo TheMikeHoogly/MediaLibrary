@@ -1,7 +1,8 @@
 # Feuille de route — MediaLibrary
 
 Carte des **priorités**, rien d'autre. Les récits de travaux terminés vivent
-dans **git** ; les rejets dans `eval/DECISIONS.md` ; la méthode dans
+dans **git** ; les rejets dans `eval/DECISIONS.md` (photothèque) et
+`docs/DECISIONS_OUTILLAGE.md` (canaux, pilotage, livraison) ; la méthode dans
 `eval/METHODE.md` ; l'éphémère dans `PROMPT_NOUVELLE_SESSION.md`. Audits :
 `docs/AUDIT_INTERNE_2026-08.md`, `docs/AUDIT_EXTERNE_2026.md`, `docs/RANGEMENT_2026.md`.
 

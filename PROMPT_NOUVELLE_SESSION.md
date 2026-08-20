@@ -6,7 +6,8 @@
 Tu reprends **MediaLibrary**. **VÉRIFIE avant de lire** : `.git/HEAD`,
 `.git/logs/HEAD` et `.git/logs/refs/heads/main` disent ce qui a été commité et
 FUSIONNÉ — ce document, non. Puis `ROADMAP.md`, `eval/DECISIONS.md`,
-`eval/METHODE.md`. Débrief en 2–3 lignes, puis on attaque.
+`eval/METHODE.md` — et `docs/DECISIONS_OUTILLAGE.md` si le sujet touche aux
+canaux. Débrief en 2–3 lignes, puis on attaque.
 
 ## Où on en est (20/08/2026, session 28)
 
@@ -33,13 +34,9 @@ Ce qui tient : la **CONCORDANCE** YOLO ∧ tagueur — **3 065** photos, chat
    dans la recherche, annoncé dans la ligne « ce que j'ai compris », plus des
    puces qui l'insèrent. Matière : la concordance, jamais `det_score` seul.
    Mesurer d'abord ce que le jeton rend, avec le nouveau canal.
-2. **`eval/DECISIONS.md` déborde son budget** (13 156 / 12 000, six verdicts
-   neufs le 20/08) : question posée dans `QUESTIONS_MIKE.md`, livré avec
-   `force=` en attendant. Ne pas condenser davantage sans sa réponse — c'est
-   la précision des raisons qu'on rognerait.
-3. **Gestes Mike** : nettoyer Flo (5 909 photos) ; re-rejeter Caline ;
+2. **Gestes Mike** : nettoyer Flo (5 909 photos) ; re-rejeter Caline ;
    `copie.db` (290 Mo) traîne à la racine, désormais gitignoré.
-4. **Le reste** (`ROADMAP.md`) : prompt de PROD qui hallucine ; doublons
+3. **Le reste** (`ROADMAP.md`) : prompt de PROD qui hallucine ; doublons
    proches ; UI (11) ; restauration à blanc (12) ; MCP lecture (13).
 
 **Ne pas rouvrir sans chiffre neuf** : `taken` en base ; backfill ÉCRIT de

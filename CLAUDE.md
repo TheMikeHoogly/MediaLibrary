@@ -9,8 +9,7 @@
 Photothèque familiale locale : serveur **Python stdlib pur** (`http.server`) sur
 le réseau domestique, ~30 000 photos sur NAS SMB, 5 pipelines d'IA locale —
 tagging `qwen3-vl:2b` (Ollama), visages InsightFace `buffalo_l` (512-d), animaux
-YOLO11s, individus animaux DINOv2 (768-d), recherche sémantique SigLIP 2
-(`semantic.py`). Les noms attribués (`personne:Nom`, `animal:Nom`) sont écrits
+YOLO11s, individus DINOv2 (768-d), recherche SigLIP 2 (`semantic.py`). Les noms attribués (`personne:Nom`, `animal:Nom`) sont écrits
 dans les **XMP des fichiers** (exiftool) : ils survivent à la base.
 **Matériel : RTX 3050 Laptop, 4 Go VRAM** — la contrainte qui filtre toutes les
 décisions techniques. `FACE_USE_GPU=False` **volontaire** (VRAM prise par Ollama).
@@ -55,14 +54,17 @@ décisions techniques. `FACE_USE_GPU=False` **volontaire** (VRAM prise par Ollam
 
 | Fichier | Rôle |
 |---|---|
-| `server.py` | Monolithe ~12 000 l. : config, stores, pipelines, workers, routeur, 9 pages HTML inline |
+| `server.py` | Monolithe ~12 000 l. : config, stores, pipelines, workers, routeur, 9 pages HTML |
 | `store_sqlite.py` / `vectors.py` | Persistance SQLite / vecteurs BLOB + cosinus |
 | `pilotage.py` / `superviseur.bat` | Arrêt et redémarrage commandés par `_commande_serveur.txt` |
-| `git_agent.py` / `superviseur_git.bat` | Livraison git commandée par `_commande_git.txt`, sous contrôles ; rapport dans `_etat_git.json` |
+| `git_agent.py` / `superviseur_git.bat` | Livraison git sur ordre de `_commande_git.txt`, sous contrôles → `_etat_git.json` |
+| `banc_agent.py` / `superviseur_banc.bat` | Lance un BANC sur ordre de `_commande_banc.txt` → `_banc_sortie.txt`. Familles qui MESURENT, sans shell |
+| `canal.py` | Les trois canaux, mêmes octets (BOM/CRLF/LF, écriture atomique) |
 | `ROADMAP.md` | Priorités — à relire en début de session |
 | `PROMPT_NOUVELLE_SESSION.md` | Éphémère : état + prochain pas, réécrit chaque session |
-| `eval/DECISIONS.md` | Adopté / rejeté / parké — ne rien reproposer sans le relire |
-| `docs/` | Audits, rangement, `GIT_WORKFLOW.md` (circulation sandbox ↔ machine ↔ GitHub) |
+| `eval/DECISIONS.md` | Adopté / rejeté / parké, PHOTOTHÈQUE — ne rien reproposer sans le relire |
+| `docs/DECISIONS_OUTILLAGE.md` | Idem, OUTILLAGE : canaux, pilotage, livraison |
+| `docs/` | Audits, rangement, `GIT_WORKFLOW.md` (sandbox ↔ machine ↔ GitHub) |
 
 **Skills (`.claude/skills/`)** : `monolith-surgery` avant toute modif de
 `server.py` · `photo-ui` dès qu'on touche l'UI · `vision-eval` pour un modèle
@@ -75,40 +77,42 @@ décrit l'intention de la FIN de session précédente, pas ce que Mike a fait
 après — commits, redémarrage, fusion. Lire `.git/HEAD`, `.git/logs/HEAD` et
 `.git/logs/refs/heads/main` via staging (lecture seule) : ils disent ce qui est
 commité et ce qui est FUSIONNÉ. Annoncer l'écart quand la doc se trompe.
-Puis : `ROADMAP.md`, `eval/DECISIONS.md` (+ doc de chantier du sujet) → débrief
+Puis : `ROADMAP.md`, `eval/DECISIONS.md` (+ l'outillage si le sujet y touche,
++ doc de chantier) → débrief
 2–3 lignes → attaquer le plus utile (ou faire choisir), plan court avant le
 code.
 
+**MESURER** : le banc et ses arguments dans `_commande_banc.txt`, puis LIRE
+`_banc_sortie.txt` — la VM n'atteint pas le LAN, un banc qui interroge le
+serveur ne tourne QUE par là. Un banc livré sans avoir tourné est une promesse.
+
 **Chaque échange qui fait avancer** : mettre à jour `ROADMAP.md` (statut),
-`PROMPT_NOUVELLE_SESSION.md` (réécrit en entier), `eval/DECISIONS.md` (si une
-éval a tranché). Écrire `SESSION_COMMIT.txt` à la racine (ASCII, sans guillemets
-ni `!` : `branche=feat/…`, `titre=…` court, `force=raison` seulement si une
-preuve est impossible à produire). Puis **redémarrer, observer en réel**, et
-seulement alors écrire `livrer` dans `_commande_git.txt`. VÉRIFIER ensuite dans
-`.git/logs/*`, pas dans le rapport de l'agent. Si l'agent refuse, il dit
-pourquoi : corriger, ne pas forcer par réflexe. Canal fermé (fenêtre absente)
-ou refus non levable → rendre la main à Mike : `27 - Git.bat`, **1** puis **2**.
+`PROMPT_NOUVELLE_SESSION.md` (réécrit en entier), et le fichier de décisions du
+DOMAINE si une éval a tranché. Écrire `SESSION_COMMIT.txt` (ASCII, sans guillemets ni `!` :
+`branche=feat/…`, `titre=…` court, `force=raison` seulement si la preuve est
+impossible à produire). Puis **redémarrer, observer en réel**, et seulement
+alors `livrer`. VÉRIFIER dans `.git/logs/*`, pas dans le rapport de l'agent. Un
+refus dit pourquoi : corriger, ne pas forcer par réflexe. Canal fermé ou refus
+non levable → rendre la main : `27 - Git.bat`, **1** puis **2**.
 
 **Traite autonome (« go », Mike absent)** : livrer avec **`commit`** — branche
 + push, `main` INTACTE : une traite qui dérape se jette en supprimant UNE
 branche ; la fusion (`livrer`) attend son retour. Un choix qui lui appartient —
-jugement produit, geste irréversible sur l'archive, chiffre qui contredit une
-décision écrite — s'écrit dans `QUESTIONS_MIKE.md` avec une recommandation, et
-on PASSE au point suivant qui n'en dépend pas. Jamais s'arrêter au premier
-caillou ; jamais trancher à sa place.
+jugement produit, geste irréversible, chiffre qui contredit une décision écrite
+— s'écrit dans `QUESTIONS_MIKE.md` avec une recommandation, et on PASSE au point
+suivant. Jamais s'arrêter au premier caillou ; jamais trancher à sa place.
 
-**Fin de session (systématique)** : condenser les docs de suivi sous les seuils
-du lint — **le détail vit dans git, pas dans les docs : c'est le levier tokens** ;
-`python nettoyer_session.py` (lint propre attendu ; `--appliquer` ou bat 29 =
-quarantaine réversible `_corbeille_session/`, rien n'est supprimé) ; laisser
-`PROMPT_NOUVELLE_SESSION.md` en amorce lean prête à coller.
+**Fin de session (systématique)** : docs de suivi sous les seuils du lint —
+**le détail vit dans git : c'est le levier tokens** ; `python
+nettoyer_session.py` (lint propre attendu ; `--appliquer` = quarantaine
+réversible) ; `PROMPT_NOUVELLE_SESSION.md` en amorce lean prête à coller.
 
 ## Méthode
 
-- **Un score parfait est une alarme, pas un succès** (deux bancs du projet ne
-  mesuraient pas ce qu'ils prétendaient).
-- **Une correction n'est acquise qu'une fois son effet observé en réel** — un
-  proxy n'est pas le juge.
+- **Un score parfait est une alarme** (deux bancs ne mesuraient pas ce qu'ils
+  prétendaient).
+- **Une correction n'est acquise qu'une fois observée en réel** — un proxy n'est
+  pas le juge, et un banc qui n'a pas tourné n'est pas un banc.
 
 ## Tester en réel
 
@@ -119,13 +123,13 @@ hot-reload** : toute modif de `server.py` exige un redémarrage.
 dans `_commande_serveur.txt` — `redemarrer`, `arret`, `marche` — via
 `device_bash`, **en CRLF** (`printf 'redemarrer\r\n'` : l'autre lecteur est
 `cmd.exe`) ; ne jamais le supprimer. Même protocole pour `_commande_git.txt`
-(`rien`, `ping`, `commit`, `livrer`). **AVANT** de redémarrer, lire `uptime_s` :
-sous 60 s quelqu'un vient de le faire — ne pas se battre avec lui. **APRÈS**,
-VÉRIFIER `GET /api/serveur` : `demarre_a` bougé, `code_a_jour` vrai, sinon la
-mesure porte sur l'ancien code. Les deux fenêtres du bat 0 sont requises
-(« MediaLibrary - Serveur » et « - Git ») ; l'agent est vivant si
-`_agent_git_vu.txt` a moins de 30 s (`git_agent.py --etat`), sinon `ping`, et si
-rien ne répond rendre la main. Un redémarrage interrompt tagging et scan.
+(`rien`, `ping`, `commit`, `livrer`) et `_commande_banc.txt` (un banc + ses
+arguments). **AVANT** de redémarrer, lire `uptime_s` : sous 60 s quelqu'un vient
+de le faire. **APRÈS**, VÉRIFIER `GET /api/serveur` : `demarre_a` bougé,
+`code_a_jour` vrai, sinon la mesure porte sur l'ancien code. Les TROIS fenêtres
+du bat 0 sont requises (Serveur, Git, Bancs) ; un agent est vivant si son
+`_agent_*_vu.txt` a moins de 30 s, sinon `ping`, et si rien ne répond rendre la
+main. Un redémarrage interrompt tagging et scan.
 
 Clics/captures : onglet au premier plan ; l'état passe par `fetch('/api/…')`
 GET (marche onglet caché) ; GPU : `GET /api/search/status`. Sandbox → disque :

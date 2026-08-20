@@ -166,14 +166,29 @@ def apply_quarantine(cands):
 
 # Docs de suivi + seuil de bloat (octets). None = pas de seuil (juste refs/dates).
 TRACKING_MD = {
-    "CLAUDE.md": 8000,
+    # 8 000 → 8 500 le 20/08 : le troisième canal (les bancs) a ajouté une
+    # ligne au tableau des fichiers et un paragraphe au protocole. Le seuil
+    # reste SERRÉ, et volontairement loin des 50 000 de DECISIONS : ce
+    # fichier-ci est relu à CHAQUE session, il coûte des tokens à chaque fois
+    # et il rivalise avec le reste pour l'attention. Un budget large ici
+    # rendrait le brief bavard, et un brief bavard n'est plus lu.
+    "CLAUDE.md": 8500,
     "ROADMAP.md": 12000,
     "PROMPT_NOUVELLE_SESSION.md": 4000,
-    # Relevé de 9 000 à 12 000 le 19/08, sur décision de Mike : le fichier
-    # était à 8 969 et chaque session y ajoute des verdicts qu'aucune ne
-    # peut retirer — c'est sa raison d'être. Condenser encore rongeait la
+    # 9 000 → 12 000 le 19/08, puis 50 000 le 20/08 — deux décisions de Mike,
+    # même raison : chaque session ajoute des verdicts qu'aucune ne peut
+    # retirer, c'est la raison d'être du fichier, et condenser rongeait la
     # PRÉCISION des raisons, ce que le seuil était censé protéger.
-    "eval/DECISIONS.md": 12000,
+    # À 50 000 le seuil ne protège plus contre le RÉCIT — il ne rattrape
+    # qu'un emballement franc. Ce qui protège du récit est la FORME : un
+    # tableau, une ligne par verdict, un chiffre dans chaque raison.
+    "eval/DECISIONS.md": 50000,
+    # Sorti de DECISIONS.md le 20/08 : découpage par DOMAINE, non par statut
+    # (l'archive par âge avait été rejetée la veille — elle obligeait à relire
+    # les deux fichiers). Ici l'outillage : les trois canaux, le pilotage, la
+    # livraison git. Qui travaille la recherche n'a jamais besoin de savoir
+    # pourquoi `taskkill` a échoué.
+    "docs/DECISIONS_OUTILLAGE.md": 50000,
     # Sorti de DECISIONS.md le 16/08 : « ce qui a ete tranche » d'un cote,
     # « comment on tranche » de l'autre. Budget propre pour que le corpus de
     # methode soit GOUVERNE et non pas soustrait au lint.
@@ -231,7 +246,7 @@ def lint_md():
         p = SCRIPT_DIR / rel
         if not p.exists():
             if rel in ("CLAUDE.md", "ROADMAP.md", "PROMPT_NOUVELLE_SESSION.md",
-                       "eval/DECISIONS.md"):
+                       "eval/DECISIONS.md", "docs/DECISIONS_OUTILLAGE.md"):
                 warns.append(f"MANQUANT  {rel} — doc de suivi attendu, absent.")
             continue
         text = p.read_text(encoding="utf-8", errors="replace")
