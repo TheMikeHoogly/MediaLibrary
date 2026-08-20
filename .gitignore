@@ -18,6 +18,13 @@ photos.db-shm
 *.db.bak
 *.db.avant-*
 *.snapshot.tmp
+# Les bancs mesurent sur une COPIE (le serveur est l'écrivain unique) : la
+# procédure produit donc un `copie.db` de 290 Mo dans le dossier. L'agent git
+# le refuserait — un binaire n'est jamais négociable — mais un refus au moment
+# de livrer coûte un aller-retour. Mieux vaut qu'il n'existe pas pour git.
+copie.db
+copie.db-wal
+copie.db-shm
 
 # Vignettes et découpes : dérivées, volumineuses (22 000 fichiers)
 animal_thumbs/
