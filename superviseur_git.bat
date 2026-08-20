@@ -28,6 +28,16 @@ REM ============================================================
 set "PY=.venv\Scripts\python.exe"
 if not exist "%PY%" set "PY=python"
 set "CMDFILE=_commande_git.txt"
+set "GENFILE=_generation.txt"
+
+REM --- GENERATION : meme regle que le superviseur du serveur ---
+REM   Le bat 0 ecrit un jeton neuf a chaque demarrage ; si celui
+REM   qu'on lit differe de celui qu'on a lu en naissant, cette
+REM   fenetre est l'ancienne et se retire. Deux agents git qui
+REM   liraient la meme commande la joueraient deux fois.
+set "GEN="
+if exist "%GENFILE%" set /p GEN=<"%GENFILE%"
+set "GEN=!GEN: =!"
 
 if not exist "git_agent.py" (
   echo ERREUR : git_agent.py est introuvable dans ce dossier.
@@ -51,6 +61,16 @@ echo [agent git] d'autre, mais les commits redeviennent manuels.
 echo.
 
 :boucle
+set "GENNOW="
+if exist "%GENFILE%" set /p GENNOW=<"%GENFILE%"
+set "GENNOW=!GENNOW: =!"
+if not "!GENNOW!"=="!GEN!" (
+  echo.
+  echo [agent git] Un nouveau demarrage a eu lieu - cette fenetre se retire.
+  timeout /t 4 >nul
+  exit /b 0
+)
+
 REM Signe de vie : ce fichier est TOUCHE a chaque tour. Son age dit si
 REM l'agent ecoute encore - sans lui, une fenetre morte-nee etait
 REM indiscernable d'une fenetre en ecoute (arrive le 19/08, personne

@@ -26,6 +26,17 @@ REM   precedente partirait tout seul au demarrage.
 > "_commande_serveur.txt" echo marche
 > "_commande_git.txt" echo rien
 
+REM === GENERATION : ce demarrage prend la main ===
+REM   Jeton neuf, ecrit AVANT tout le reste. Les superviseurs
+REM   d'une session precedente le relisent a chaque tour ; le
+REM   voyant change, ils se retirent d'eux-memes.
+REM
+REM   C'est ce qui remplace le taskkill par titre de fenetre : il
+REM   ne retrouve PAS fiablement les fenetres console (constate le
+REM   20/08 - deux fenetres "MediaLibrary - Serveur" survivantes).
+REM   Un titre se devine, un fichier se lit.
+> "_generation.txt" echo %RANDOM%%RANDOM%%RANDOM%
+
 REM === Preparatifs LENTS d'abord - le port est encore tenu ===
 if not exist ".venv\Scripts\python.exe" (
     echo Creation de l'environnement Python isole - une seule fois...
@@ -38,7 +49,9 @@ REM === MAINTENANT seulement, liberer la place ===
 REM   Le superviseur d'abord, avec /T : sans lui, son enfant
 REM   python survit a la mort de la fenetre et garde le port.
 echo.
-echo Arret des fenetres precedentes...
+echo Retrait des fenetres precedentes (par la generation)...
+REM   Best effort en plus, jamais a la place : quand il marche,
+REM   taskkill va plus vite que la boucle du superviseur.
 taskkill /F /T /FI "WINDOWTITLE eq MediaLibrary - Serveur*" >nul 2>&1
 taskkill /F /T /FI "WINDOWTITLE eq MediaLibrary - Git*" >nul 2>&1
 
@@ -72,6 +85,14 @@ exit /b 1
 
 :port_libre
 echo   Port %PORT% libre.
+
+REM   Laisser aux anciens superviseurs le temps de faire UN tour de
+REM   boucle : leur serveur vient d'etre tue, ils se reveillent, ils
+REM   lisent la generation et se retirent. Sans cette pause, on
+REM   lancerait le nouveau pendant que l'ancien croit encore a un
+REM   plantage - et il en relancerait un second.
+echo   Retrait des anciens superviseurs...
+timeout /t 8 >nul
 echo.
 
 REM === Le SERVEUR, sous superviseur, dans sa fenetre ===
@@ -120,7 +141,10 @@ if exist "superviseur_git.bat" (
 )
 
 echo.
-echo Serveur lance sur le port %PORT%. Cette fenetre va se fermer.
-echo Deux fenetres doivent rester ouvertes : "MediaLibrary - Serveur"
-echo et "MediaLibrary - Git".
-timeout /t 6 >nul
+echo Serveur lance sur le port %PORT%.
+echo.
+echo EXACTEMENT DEUX fenetres doivent rester : "MediaLibrary - Serveur"
+echo et "MediaLibrary - Git". S'il y en a une troisieme, elle vient
+echo d'une session precedente bloquee sur "pause" - elle ne sert plus
+echo a rien et peut etre fermee a la main.
+timeout /t 8 >nul

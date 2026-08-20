@@ -14,6 +14,7 @@ dans un dossier temporaire — jamais celui du projet. Les contrôles négociabl
 et supposent le projet complet ; ils sont couverts par le refus qu'ils
 produisent en usage réel, visible dans `_etat_git.json`.
 """
+import io
 import os
 import shutil
 import subprocess
@@ -22,6 +23,10 @@ import unittest
 from pathlib import Path
 
 import git_agent as ga
+
+# Le nom du bat porte un accent : il est ecrit ici en \u ASCII pour que ce
+# fichier reste lisible partout, comme les .bat eux-memes.
+BAT0 = '0 - D\u00e9marrer le serveur.bat'
 
 
 def _git_dispo():
@@ -226,6 +231,44 @@ class TestCommit(unittest.TestCase):
         d = ga.ecrire_etat(f, {'quand': 2, 'ok': False, 'refus': 'x'})
         self.assertEqual(d['dernier']['quand'], 2)
         self.assertEqual(d['historique'][0]['quand'], 1)
+
+
+# ─────────── les superviseurs se retirent d'eux-mêmes ───────────
+
+class TestGeneration(unittest.TestCase):
+    """Deux fenêtres « MediaLibrary - Serveur » ont survécu le 20/08 : le
+    `taskkill` par TITRE ne retrouve pas fiablement les fenêtres console, donc
+    l'ancien superviseur a relancé un serveur après qu'on a tué le sien.
+
+    Le remplaçant est un jeton de GÉNÉRATION dans un fichier — un titre se
+    devine, un fichier se lit. C'est du batch, donc non exécutable ici : on
+    vérifie au moins que les trois pièces existent et se répondent, pour qu'un
+    nettoyage distrait ne les dissocie pas en silence."""
+
+    def _lire(self, nom):
+        p = os.path.join(os.path.dirname(os.path.abspath(__file__)), nom)
+        with io.open(p, encoding='ascii') as f:
+            return f.read()
+
+    def test_le_bat0_ecrit_un_jeton_neuf(self):
+        src = self._lire(BAT0)
+        self.assertIn('_generation.txt', src)
+        self.assertIn('%RANDOM%', src)
+
+    def test_les_deux_superviseurs_relisent_et_se_retirent(self):
+        for nom in ('superviseur.bat', 'superviseur_git.bat'):
+            src = self._lire(nom)
+            self.assertIn('GENFILE=_generation.txt', src, nom)
+            self.assertIn('GENNOW', src, nom)
+            self.assertIn('exit /b 0', src, nom)
+
+    def test_le_taskkill_par_titre_n_est_plus_le_seul_moyen(self):
+        """Il reste en best effort — jamais comme unique mécanisme."""
+        src = self._lire(BAT0)
+        i_gen = src.index('_generation.txt')
+        i_kill = src.index('taskkill /F /T /FI')
+        self.assertLess(i_gen, i_kill,
+                        "la generation doit etre ecrite AVANT tout kill")
 
 
 if __name__ == '__main__':

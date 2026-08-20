@@ -27,9 +27,37 @@ REM ============================================================
 set "PY=.venv\Scripts\python.exe"
 if not exist "%PY%" set "PY=python"
 set "CMDFILE=_commande_serveur.txt"
+set "GENFILE=_generation.txt"
 set /a ECHECS=0
 
+REM --- GENERATION : a qui appartient cette machine ? -----------
+REM   Le bat 0 ecrit un jeton neuf dans %GENFILE% a chaque
+REM   demarrage. Ce superviseur retient celui qu'il a lu en
+REM   naissant ; s'il change, c'est qu'un nouveau demarrage a eu
+REM   lieu et que cette fenetre est l'ancienne : elle se retire.
+REM
+REM   Pourquoi pas taskkill par titre de fenetre : il ne retrouve
+REM   PAS fiablement les fenetres console. Le 20/08 il n'a rien
+REM   tue, l'ancien superviseur a survecu, a cru a un plantage
+REM   quand on a tue son serveur par PID, et en a relance un
+REM   second. Un fichier ne se devine pas.
+set "GEN="
+if exist "%GENFILE%" set /p GEN=<"%GENFILE%"
+set "GEN=!GEN: =!"
+
 :boucle
+set "GENNOW="
+if exist "%GENFILE%" set /p GENNOW=<"%GENFILE%"
+set "GENNOW=!GENNOW: =!"
+if not "!GENNOW!"=="!GEN!" (
+  echo.
+  echo [superviseur] Un nouveau demarrage a eu lieu - cette fenetre est
+  echo [superviseur] l'ancienne, elle se retire pour ne pas relancer un
+  echo [superviseur] second serveur.
+  timeout /t 4 >nul
+  exit /b 0
+)
+
 set "CMD=marche"
 if exist "%CMDFILE%" set /p CMD=<"%CMDFILE%"
 set "CMD=!CMD: =!"
