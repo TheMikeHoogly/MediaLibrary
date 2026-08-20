@@ -52,7 +52,8 @@ REM une session precedente partirait toute seule au demarrage.
 echo.
 echo [agent git] En ecoute sur %CMDFILE%.
 echo [agent git] Mots acceptes : rien ^| ping ^| commit ^| livrer
-echo [agent git] "livrer" = controles + commit + push + fusion de main.
+echo [agent git] "commit" = controles + commit + push, main INTACTE.
+echo [agent git] "livrer" = idem, plus le fast-forward de main.
 echo [agent git] "ping"   = signe de vie, ne touche a rien.
 echo.
 echo [agent git] NE PAS FERMER cette fenetre : elle est le canal par

@@ -193,12 +193,20 @@ class TestPorteNonContournable(unittest.TestCase):
 
 @unittest.skipUnless(_git_dispo(), "git indisponible")
 class TestCommit(unittest.TestCase):
-    """La livraison locale, de bout en bout — sans distant, donc sans push."""
+    """La livraison de bout en bout, contre un distant BARE local.
+
+    Le distant n'est pas un décor : depuis le 20/08, `commit` POUSSE. Le banc
+    tournait sans distant et validait donc un mode qui, en prod, laissait le
+    travail d'une traite autonome sur un seul disque."""
 
     def setUp(self):
         self.d = Path(tempfile.mkdtemp())
+        self.distant = Path(tempfile.mkdtemp()) / 'origin.git'
+        subprocess.run(('git', 'init', '--bare', '-q', str(self.distant)),
+                       capture_output=True)
         for a in (('init', '-q'), ('config', 'user.email', 'x@y.z'),
-                  ('config', 'user.name', 'banc')):
+                  ('config', 'user.name', 'banc'),
+                  ('remote', 'add', 'origin', str(self.distant))):
             subprocess.run(('git',) + a, cwd=str(self.d), capture_output=True)
         (self.d / 'ROADMAP.md').write_text('x', encoding='utf-8')
         (self.d / ga.SESSION_COMMIT).write_text(
@@ -207,6 +215,12 @@ class TestCommit(unittest.TestCase):
 
     def tearDown(self):
         shutil.rmtree(self.d, ignore_errors=True)
+        shutil.rmtree(self.distant.parent, ignore_errors=True)
+
+    def _refs_distantes(self):
+        r = subprocess.run(('git', 'for-each-ref', '--format=%(refname)'),
+                           cwd=str(self.distant), capture_output=True, text=True)
+        return set(r.stdout.split())
 
     def test_commit_cree_la_branche_et_consomme_la_proposition(self):
         rap = ga.livrer(self.d, ga.COMMIT)
@@ -217,6 +231,31 @@ class TestCommit(unittest.TestCase):
         r = subprocess.run(('git', 'rev-parse', '--abbrev-ref', 'HEAD'),
                            cwd=str(self.d), capture_output=True, text=True)
         self.assertEqual(r.stdout.strip(), 'feat/essai')
+
+    def test_commit_POUSSE_la_branche(self):
+        """La promesse de `CLAUDE.md`, tenue : une traite autonome laisse une
+        copie ailleurs que sur le disque de Mike."""
+        rap = ga.livrer(self.d, ga.COMMIT)
+        self.assertTrue(rap['ok'], rap)
+        self.assertIn('refs/heads/feat/essai', self._refs_distantes())
+
+    def test_commit_ne_touche_PAS_a_main(self):
+        """Ce que `commit` protège, c'est `main` — pas l'absence de copie."""
+        rap = ga.livrer(self.d, ga.COMMIT)
+        self.assertTrue(rap['ok'], rap)
+        self.assertNotIn('refs/heads/main', self._refs_distantes())
+
+    def test_sans_distant_le_commit_est_fait_et_le_refus_le_DIT(self):
+        """Un push impossible ne doit pas se lire « rien n'a marché » : le
+        commit est en local, et le rapport doit le dire pour qu'on le pousse
+        à la main plutôt que de refaire le travail."""
+        subprocess.run(('git', 'remote', 'remove', 'origin'), cwd=str(self.d),
+                       capture_output=True)
+        rap = ga.livrer(self.d, ga.COMMIT)
+        self.assertFalse(rap['ok'])
+        self.assertIn('push', (rap['refus'] or '').lower())
+        self.assertIn('local', (rap['refus'] or '').lower())
+        self.assertTrue(rap['commit'], "le commit local doit être rapporté")
 
     def test_sans_titre_rien_n_est_commite(self):
         (self.d / ga.SESSION_COMMIT).write_text("branche=feat/essai\n",

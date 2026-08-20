@@ -100,6 +100,9 @@ FICHIER_ETAT = '_etat_git.json'
 FICHIER_VU = '_agent_git_vu.txt'      # touché à chaque tour de boucle
 SESSION_COMMIT = 'SESSION_COMMIT.txt'
 
+# `commit` = branche + push, `main` INTACTE (traite autonome : la fusion
+# attend le retour de Mike). `livrer` ajoute le fast-forward de `main`. Les
+# deux POUSSENT : un commit qui ne vit que sur un disque n'est pas livré.
 RIEN, PING, COMMIT, LIVRER = 'rien', 'ping', 'commit', 'livrer'
 # `ping` ne touche à RIEN : il consomme la commande et écrit un rapport.
 # Sans lui, la seule façon de savoir si l'agent écoute était de lui
@@ -410,8 +413,9 @@ def controler(projet, sc, chemins):
 # ─────────────────────────────── l'exécution ────────────────────────────────
 
 def livrer(projet, commande):
-    """Contrôle puis, si la porte s'ouvre, commit (+ push + fusion pour
-    `livrer`). Rend le dict de rapport écrit dans `_etat_git.json`."""
+    """Contrôle puis, si la porte s'ouvre, commit + push — et la fusion de
+    `main` en plus pour `livrer`. Rend le dict de rapport écrit dans
+    `_etat_git.json`."""
     projet = Path(projet)
     rap = {'quand': time.time(), 'commande': commande, 'ok': False,
            'refus': None, 'notes': [], 'etapes': [], 'branche': '',
@@ -468,6 +472,19 @@ def livrer(projet, commande):
     _, sha, _ = _git(projet, 'rev-parse', '--short', 'HEAD')
     rap['commit'] = sha
 
+    # Le push vaut pour les DEUX modes, et c'est la correction du 20/08 : le
+    # mode `commit` s'arrêtait ici, alors que la convention de la traite
+    # autonome (`CLAUDE.md`) annonçait « branche + push ». Une nuit de travail
+    # ne vivait donc que sur le disque de Mike — exactement le scénario que le
+    # chantier 12 (« PC mort lundi, tout revit vendredi ») cherche à couvrir.
+    # Ce que `commit` protège, c'est `main` ; ce n'est pas l'absence de copie.
+    # Une branche de trop sur GitHub se jette en une commande ; une traite
+    # perdue ne se rejoue pas.
+    if not etape('push branche', 'push', '-u', 'origin', 'HEAD'):
+        rap['refus'] = ("commit fait, push refusé — le commit est en local, "
+                        "rien n'est perdu. Réseau ou identifiants GitHub ?")
+        return rap
+
     if commande == COMMIT:
         rap['ok'] = True
         return rap
@@ -475,10 +492,6 @@ def livrer(projet, commande):
     # Fusion : la technique éprouvée du bat 27 — on ne fait JAMAIS
     # `checkout main`, donc le répertoire de travail n'est pas réécrit et le
     # verrou de server.py tenu par le serveur ne gêne pas.
-    if not etape('push branche', 'push', '-u', 'origin', 'HEAD'):
-        rap['refus'] = ("commit fait, push refusé — le commit est en local, "
-                        "rien n'est perdu. Réseau ou identifiants GitHub ?")
-        return rap
     if not etape('fetch', 'fetch', 'origin'):
         rap['refus'] = "commit et push faits, fetch refusé"
         return rap
