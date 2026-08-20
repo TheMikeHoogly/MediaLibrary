@@ -8,56 +8,54 @@ Tu reprends **MediaLibrary**. **VÉRIFIE avant de lire** : `.git/HEAD`,
 FUSIONNÉ — ce document, non. Puis `ROADMAP.md`, `eval/DECISIONS.md`,
 `eval/METHODE.md`. Débrief en 2–3 lignes, puis on attaque.
 
-## Où on en est (20/08/2026, fin de session 28)
+## Où on en est (20/08/2026, session 28)
 
-**Chantier 14a CLOS : ce qu'on cherche est ce qu'on voit.** Le filtre des noms
-de la recherche lisait les `kw` bruts de l'index pendant que la ligne de faits
-lisait les fiches. **13 photos** sortaient d'une recherche par un nom
-qu'`exclude` avait retiré ; **0** dans l'autre sens (363 tags nommés balayés
-sur copie). `_autorite_des_noms()` est l'unique implémentation, partagée par
-`_faits_ctx` (affichage) et `_cles_portant` (filtre). **Observé** après
-redémarrage (`code_a_jour` vrai) : Silvio **495 → 494**, Danica **325 → 324**,
-clés exclues absentes. La fiche fait foi sur l'orthographe : « Luna · luna »
-(2 photos) et « luna » seul (1) ont disparu.
+**Chantier 14a-(iv) CLOS** : le filtre des noms de la recherche et la ligne de
+faits partagent enfin l'autorité (`_autorite_des_noms`). 13 photos sortaient
+d'une recherche par un nom retiré ; observé après redémarrage, Silvio
+495 → 494, Danica 325 → 324.
 
-**Portée du filtre, dite et non supposée : 92,74 %** — nom ou lieu atteint
-**27 936** des **30 122** photos à fait NON-date. Les **2 186** autres n'ont
-qu'une ESPÈCE : hors de portée du déterministe.
+**Tu as un TROISIÈME canal — utilise-le.** `_commande_banc.txt` → le nom d'un
+banc et ses arguments, par exemple `mesure_espece_recherche.py --base copie.db
+--exemples 14`. L'agent (fenêtre « MediaLibrary - Bancs ») le lance sous
+Windows et écrit `_banc_sortie.txt`. Il ne lance QUE `mesure_ verifier_
+diagnostic_ comptes_ inventaire_ test_ eval_`, sans shell ni chemin. C'est
+ainsi qu'on mesure ce que la VM ne peut pas atteindre (elle n'a pas le LAN).
 
-**Le travail est commité EN LOCAL sur `feat/filtre-des-noms-sur-l-autorite`,
-`main` est INTACTE** (traite autonome). **Attention** : `commit` ne POUSSE pas —
-vérifié dans `.git`, contre ce qu'annonçait `CLAUDE.md`. Rien n'est encore sur
-GitHub. Pour fusionner : `27 - Git.bat` → **2**, ou `livrer` dans
-`_commande_git.txt` (qui pousse, puis fait le fast-forward).
+**L'espèce a réfuté deux fois** : SigLIP ne rend que la moitié des détections
+de YOLO, mais `det_score` ne dit pas l'espèce (`cheval` 0,934 sur *chien*).
+Ce qui tient : la **CONCORDANCE** YOLO ∧ tagueur — **3 065** photos, chat
+**2 316**.
 
 ## Prochain pas
 
-1. **`QUESTIONS_MIKE.md`, deux choix qui t'attendent** : (a) l'ESPÈCE comme
-   5ᵉ axe du filtre — les 2 186 photos hors de portée ; ma recommandation :
-   **pas en ET** (YOLO rate des chats, le filtre rétrécirait en silence) ;
-   (b) `commit` ne pousse pas — une traite autonome n'a aucune copie hors de
-   ta machine. Rien n'est câblé en attendant.
-2. **Gestes Mike** : nettoyer Flo (5 909 photos) ; re-rejeter Caline.
-3. **Le reste** (`ROADMAP.md`) : prompt de PROD qui hallucine ; doublons
+1. **Câbler le 5ᵉ axe `espece:`** (forme A, choix de Mike) : un jeton explicite
+   dans la recherche, annoncé dans la ligne « ce que j'ai compris », plus des
+   puces qui l'insèrent. Matière : la concordance, jamais `det_score` seul.
+   Mesurer d'abord ce que le jeton rend, avec le nouveau canal.
+2. **`eval/DECISIONS.md` déborde son budget** (13 156 / 12 000, six verdicts
+   neufs le 20/08) : question posée dans `QUESTIONS_MIKE.md`, livré avec
+   `force=` en attendant. Ne pas condenser davantage sans sa réponse — c'est
+   la précision des raisons qu'on rognerait.
+3. **Gestes Mike** : nettoyer Flo (5 909 photos) ; re-rejeter Caline ;
+   `copie.db` (290 Mo) traîne à la racine, désormais gitignoré.
+4. **Le reste** (`ROADMAP.md`) : prompt de PROD qui hallucine ; doublons
    proches ; UI (11) ; restauration à blanc (12) ; MCP lecture (13).
 
 **Ne pas rouvrir sans chiffre neuf** : `taken` en base ; backfill ÉCRIT de
 `faits` ; index des noms en UNE passe ; filtre des noms sur les `kw` bruts ;
-agent git dans le serveur ; planchers 1990 (7 et 0, couplés) ; plafond 2100 (0).
+`det_score` comme critère d'espèce ; agent git dans le serveur ; planchers
+1990 (7 et 0, couplés) ; plafond 2100 (0).
 
-**Pas encore observé** : la branche KB de `faits_vue` (`pending` = 0) — le
-premier tagging sera son observation.
-
-**À vider à la main** : `_corbeille_vecteurs/` et `_corbeille_session/plan_avant/`.
-
-**Les deux canaux, mêmes octets** (CRLF, via `device_bash`, jamais supprimer) :
-`_commande_serveur.txt` → `redemarrer`, puis VÉRIFIER `GET /api/serveur`
-(`demarre_a` bougé, `code_a_jour` vrai) ; `_commande_git.txt` → `commit`
-(traite autonome, `main` intacte) ou `livrer` (Mike présent), puis VÉRIFIER
-`.git/logs/*`, jamais `_etat_git.json`. Deux fenêtres requises
-(« MediaLibrary - Serveur » et « - Git ») ; l'agent est vivant si
-`_agent_git_vu.txt` a moins de 30 s, sinon `ping`, sinon rendre la main.
+**Les TROIS canaux, mêmes octets** (CRLF, via `device_bash`, jamais supprimer ;
+`canal.py` les lit tous) : `_commande_serveur.txt` → `redemarrer`, puis
+VÉRIFIER `GET /api/serveur` (`code_a_jour` vrai) ; `_commande_git.txt` →
+`commit` (traite autonome) ou `livrer` (Mike présent), puis VÉRIFIER
+`.git/logs/*`, jamais `_etat_git.json` ; `_commande_banc.txt` → un banc, puis
+LIRE `_banc_sortie.txt`. Trois fenêtres doivent être ouvertes — Serveur, Git,
+Bancs ; un agent est vivant si son `_agent_*_vu.txt` a moins de 30 s.
 
 **Mesurer** : jamais sur `photos.db` (le serveur est l'écrivain unique) — copier
-la base, puis `TZ=Europe/Zurich` (un epoch local mal lu invente des
-divergences). Les bancs IMPORTENT la prod, ils ne la recopient pas.
+la base, puis `TZ=Europe/Zurich`. Les bancs IMPORTENT la prod, ils ne la
+recopient pas. Et un banc qui n'a jamais tourné est une promesse : le canal des
+bancs existe pour qu'aucun ne soit livré sans avoir tourné.

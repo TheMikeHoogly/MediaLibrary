@@ -7,38 +7,39 @@ dans **git** ; les rejets dans `eval/DECISIONS.md` ; la méthode dans
 
 ## État (20/08/2026, session 28)
 
-**Ce qu'on cherche est exactement ce qu'on voit — 14a-(iv) CLOS et OBSERVÉ.**
-Le filtre des noms lisait les `kw` bruts de l'index pendant que la ligne de
-faits lisait les fiches : deux chemins pour une même question. **13 photos**
-sortaient d'une recherche par un nom qu'`exclude` avait retiré (Mike 6, Flo 5,
-Silvio 1, Danica 1) — **0** dans l'autre sens, sur les 363 tags nommés balayés
-sur copie. `_autorite_des_noms()` est désormais l'unique implémentation, que
-partagent `_faits_ctx` (l'affichage) et `_cles_portant` (le filtre). Observé
-après redémarrage (`code_a_jour` vrai) : Silvio **495 → 494**, Danica
-**325 → 324**, les clés exclues absentes ; requête de 1 500 clés en 426 ms.
-La FICHE fait foi sur l'orthographe : « Luna · luna » (2 photos) et « luna »
-seul (1) ont disparu de la planche.
+**Ce qu'on cherche est ce qu'on voit — 14a-(iv) CLOS et OBSERVÉ.** Le filtre
+des noms lisait les `kw` bruts de l'index pendant que la ligne de faits lisait
+les fiches : **13 photos** sortaient d'une recherche par un nom qu'`exclude`
+avait retiré, **0** dans l'autre sens (363 tags balayés sur copie).
+`_autorite_des_noms()` est l'unique implémentation, partagée par l'affichage et
+le filtre. Observé : Silvio **495 → 494**, Danica **325 → 324**, clés exclues
+absentes. La fiche fait foi sur l'orthographe (« Luna · luna » a disparu).
 
-**La portée du filtre est dite, pas supposée : 92,74 %.** Sur les **30 122**
-photos qui portent un fait NON-date (69,95 % — jamais les 99,79 %), le filtre
-déterministe (nom **ou** lieu) en atteint **27 936**. Les **2 186** autres
-n'ont qu'une ESPÈCE pour matière : hors de portée, SigLIP seul les sort.
-Ajouter un 5ᵉ axe est un choix de Mike (`QUESTIONS_MIKE.md`), pas un acquis :
-un filtre d'espèce en ET rétrécirait en silence, YOLO ratant des chats.
-Matière : date 99,32 %, personne 43,79 %, lieu 31,11 %, espèce 11,03 %,
-animal 2,17 %.
+**Portée du filtre : 92,74 %** — nom ou lieu atteint **27 936** des **30 122**
+photos à fait NON-date. Les **2 186** autres n'ont qu'une ESPÈCE.
 
-**Ce qui tenait déjà** (détail : git) — la vue s'affiche sous chaque vignette
-et dans la visionneuse avec ses SOURCES, un seul producteur client, un seul
-assembleur serveur, les quatre modes de `/files` partagés ; l'index inversé des
-noms coûte **1,11 ms** par page de 50 contre **9,65 ms** au balayage naïf
-(**×8,7**), bâti en **deux passes**.
+**L'espèce est mesurée, et elle a réfuté deux fois.** SigLIP ne rend dans son
+top-1500 que la moitié des détections de YOLO (chat 50,1 %, chien 50,3 %,
+oiseau 48,3 %, cheval 72,6 %) — elles ont pourtant TOUTES un vecteur : mal
+classées, pas muettes. Mais `det_score` **ne dit pas l'espèce** : `cheval`
+0,934 sur *chien, homme, barrière*. Ce qui tient, c'est la **CONCORDANCE** de
+deux regards indépendants — YOLO et le tagueur : chat **2 316** (92,6 %
+d'accord), **3 065** en tout. C'est la matière du 5ᵉ axe, forme A (choix de
+Mike) : un jeton `espece:` explicite, jamais une promotion silencieuse.
 
-**La livraison git est une PORTE — observée.** `git_agent.py` refuse tant que
-la preuve manque : éditer → redémarrer → **observer** → livrer. `_etat_git.json`
-dit ce qu'il a TENTÉ, `.git/logs/*` ce qui s'est PASSÉ. Le bat 0 retire les
-anciens superviseurs par une **génération** (jeton relu à chaque tour) : le
-`taskkill` par titre ne tuait rien et laissait deux serveurs côte à côte.
+**Un TROISIÈME canal : la sandbox peut MESURER.** Elle n'atteint pas le LAN
+(`blocked-by-allowlist`), donc un banc qui interroge le serveur ne pouvait pas
+tourner chez elle — le 20/08, il a fallu le clavier de Mike, et sa sortie a
+réfuté une conclusion tirée de deux échantillons. `banc_agent.py` (fenêtre
+« MediaLibrary - Bancs ») lit `_commande_banc.txt`, ne lance QUE les familles
+qui MESURENT, sans shell ni chemin ni `force=`, et écrit `_banc_sortie.txt`.
+Les trois canaux partagent enfin `canal.py` — une seule façon de lire un ordre.
+
+**La livraison git est une PORTE — et elle POUSSE.** `commit` = branche + push,
+`main` intacte ; `livrer` ajoute le fast-forward. L'ordre s'inverse : éditer →
+redémarrer → **observer** → livrer. `_etat_git.json` dit ce qu'il a TENTÉ,
+`.git/logs/*` ce qui s'est PASSÉ. Le bat 0 retire les anciens superviseurs par
+une **génération** : le `taskkill` par titre ne tuait rien.
 
 ## À faire — par ordre de valeur
 
@@ -90,12 +91,11 @@ anciens superviseurs par une **génération** (jeton relu à chaque tour) : le
     fiches et `faits` en outils MCP locaux (JSON-RPC stdio, zéro dépendance —
     skill `mcp-builder`). Écriture plus tard. Briques de 14a.
 14. **Recherche IA locale contextuelle.**
-    (a) **Déterministe — CLOS et OBSERVÉ. (i)–(iii) le 19/08** : `faits` est une
-    VUE, la règle de LIEU est unifiée sur ses trois appelants, et la vue
-    s'affiche sur la planche et dans la visionneuse. **(iv) le 20/08** : le
-    FILTRE partage l'autorité des noms avec l'affichage (voir l'État).
-    Reste ouvert, et c'est un choix de Mike : **l'ESPÈCE comme 5ᵉ axe**, pour
-    les 2 186 photos hors de portée (`QUESTIONS_MIKE.md`).
+    (a) **Déterministe — CLOS et OBSERVÉ.** (i)–(iii) le 19/08 : `faits` est une
+    VUE, la règle de LIEU est unifiée, la vue s'affiche. (iv) le 20/08 : le
+    FILTRE partage l'autorité des noms avec l'affichage.
+    **EN COURS : le 5ᵉ axe `espece:`**, sur la CONCORDANCE YOLO ∧ tagueur
+    (3 065 photos, chat 2 316) — forme A, un jeton explicite.
     (b) ensuite seulement, **escalade ponctuelle** vers un modèle chargé à la
     demande (bail GpuArbiter, déchargé après) — `vision-eval`, jamais câblé
     sans mesure.
@@ -153,11 +153,11 @@ dossier d'avant 1990 n'y passe. Le **plafond 2100** (`22082010141.jpg` → 2082)
 - **Mesure** : `mesure_dates_scan.py` (`--lecture`), `mesure_tri_recherche.py`,
   `mesure_faits_backfill.py`, `mesure_faits_vue.py`, `mesure_lieu_visible.py` —
   lecture seule sur COPIE, jamais sur `photos.db`.
-- **Pilotage** : arrêt/redémarrage commandés par `_commande_serveur.txt`
-  (`pilotage.py` ; `superviseur.bat` relance sur le code 42, s'arrête après 5
-  sorties anormales, et se retire quand la **génération** change) — la sandbox
-  observe ses propres livraisons. `GET /api/serveur` dit `demarre_a` et
-  **`code_a_jour`**.
+- **Pilotage** : trois canaux-fichiers, une seule façon de les lire
+  (`canal.py`) — `_commande_serveur.txt` (redémarrer/arrêter, `pilotage.py`),
+  `_commande_git.txt` (livrer, `git_agent.py`), `_commande_banc.txt` (mesurer,
+  `banc_agent.py`). Les superviseurs se retirent quand la **génération**
+  change. `GET /api/serveur` dit `demarre_a` et **`code_a_jour`**.
 - **Hygiène et livraison** : nettoyage réversible (29) ; `27 - Git.bat` reste
   le guichet des gestes de Mike (état, commit guidé, fusion sans checkout,
   purge des branches, GitHub, rapport de l'agent au choix 8) ; **`git_agent.py`

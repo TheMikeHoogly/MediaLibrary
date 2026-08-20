@@ -38,8 +38,7 @@ de veille), le redémarrage au superviseur (`superviseur.bat`). Trois pièces
 séparées, chacune vérifiable seule.
 """
 
-import os
-from pathlib import Path
+import canal
 
 __all__ = ['FICHIER', 'COMMANDES', 'DEFAUT', 'CODE_REDEMARRAGE', 'PERIODE_S',
            'lire', 'ecrire', 'doit_sortir']
@@ -70,12 +69,11 @@ def lire(chemin):
     n'importe quoi rend `marche` — l'état qui ne fait rien.
 
     C'est délibéré : un fichier de pilotage mal formé ne doit jamais pouvoir
-    ARRÊTER le serveur. Le doute penche du côté qui laisse le service debout."""
-    try:
-        brut = Path(chemin).read_text(encoding='utf-8-sig', errors='replace')
-    except (OSError, ValueError):
-        return DEFAUT
-    mot = brut.strip().splitlines()[0].strip().lower() if brut.strip() else ''
+    ARRÊTER le serveur. Le doute penche du côté qui laisse le service debout.
+
+    Les octets sont l'affaire de `canal` — trois canaux, une seule façon de les
+    lire et de les écrire."""
+    mot = canal.lire_ligne(chemin, DEFAUT).lower()
     return mot if mot in COMMANDES else DEFAUT
 
 
@@ -98,11 +96,7 @@ def ecrire(chemin, commande):
     if commande not in COMMANDES:
         raise ValueError(f"commande inconnue : {commande!r} "
                          f"(attendu : {', '.join(COMMANDES)})")
-    chemin = Path(chemin)
-    tmp = chemin.with_suffix(chemin.suffix + '.tmp')
-    tmp.write_bytes(commande.encode('ascii') + b'\r\n')
-    os.replace(tmp, chemin)
-    return commande
+    return canal.ecrire_ligne(chemin, commande)
 
 
 def doit_sortir(commande):

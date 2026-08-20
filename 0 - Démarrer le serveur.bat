@@ -54,6 +54,7 @@ REM   Best effort en plus, jamais a la place : quand il marche,
 REM   taskkill va plus vite que la boucle du superviseur.
 taskkill /F /T /FI "WINDOWTITLE eq MediaLibrary - Serveur*" >nul 2>&1
 taskkill /F /T /FI "WINDOWTITLE eq MediaLibrary - Git*" >nul 2>&1
+taskkill /F /T /FI "WINDOWTITLE eq MediaLibrary - Bancs*" >nul 2>&1
 
 echo Liberation du port %PORT%...
 set /a ESSAIS=0
@@ -123,6 +124,21 @@ if not exist "superviseur_git.bat" (
     start "MediaLibrary - Git" cmd /c "superviseur_git.bat"
 )
 
+REM === L'AGENT DES BANCS, dans sa fenetre ===
+REM   Il lance un banc de MESURE sur cette machine et en ecrit
+REM   la sortie dans _banc_sortie.txt. La sandbox ne peut pas
+REM   le faire elle-meme : sa sortie reseau lui refuse le LAN,
+REM   ou vit le serveur qui detient SigLIP (constate le 20/08).
+REM   Il ne lance que ce qui MESURE, jamais ce qui ecrit.
+del /q "_agent_banc_vu.txt" >nul 2>&1
+if not exist "superviseur_banc.bat" (
+    echo   superviseur_banc.bat introuvable - pas d'agent des
+    echo   bancs, les mesures restent manuelles.
+) else (
+    echo Demarrage de l'agent des bancs...
+    start "MediaLibrary - Bancs" cmd /c "superviseur_banc.bat"
+)
+
 REM === Verifier que l'agent a bien pris la main ===
 REM   Il touche _agent_git_vu.txt a chaque tour de boucle. Sans ce
 REM   controle, une fenetre morte-nee etait indiscernable d'une
@@ -143,8 +159,8 @@ if exist "superviseur_git.bat" (
 echo.
 echo Serveur lance sur le port %PORT%.
 echo.
-echo EXACTEMENT DEUX fenetres doivent rester : "MediaLibrary - Serveur"
-echo et "MediaLibrary - Git". S'il y en a une troisieme, elle vient
-echo d'une session precedente bloquee sur "pause" - elle ne sert plus
-echo a rien et peut etre fermee a la main.
+echo EXACTEMENT TROIS fenetres doivent rester : "MediaLibrary - Serveur",
+echo "MediaLibrary - Git" et "MediaLibrary - Bancs". S'il y en a une
+echo quatrieme, elle vient d'une session precedente bloquee sur "pause"
+echo - elle ne sert plus a rien et peut etre fermee a la main.
 timeout /t 8 >nul

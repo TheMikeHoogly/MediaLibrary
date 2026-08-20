@@ -90,6 +90,8 @@ import sys
 import time
 from pathlib import Path
 
+import canal
+
 __all__ = ['FICHIER_COMMANDE', 'FICHIER_ETAT', 'COMMANDES', 'DEFAUT',
            'PERIODE_S', 'lire_commande', 'ecrire_commande',
            'lire_session_commit', 'motif_branche', 'motif_fichiers',
@@ -142,34 +144,24 @@ API_SERVEUR = 'http://127.0.0.1:8080/api/serveur'
 def lire_commande(chemin):
     """Commande courante, normalisée — toujours l'une de `COMMANDES`.
 
-    TOLÉRANT comme `pilotage.lire`, et pour la même raison : le fichier est
-    écrit tantôt par Windows (CRLF), tantôt depuis la VM (LF), parfois avec un
-    BOM. Absent, vide, illisible ou inconnu → `rien`, l'état qui n'agit pas.
-    Le doute penche du côté qui NE TOUCHE PAS au dépôt."""
-    try:
-        brut = Path(chemin).read_text(encoding='utf-8-sig', errors='replace')
-    except (OSError, ValueError):
-        return DEFAUT
-    mot = brut.strip().splitlines()[0].strip().lower() if brut.strip() else ''
+    Les octets sont l'affaire de `canal`, partagé avec `pilotage` et
+    `banc_agent` : absent, vide, illisible ou inconnu → `rien`, l'état qui
+    n'agit pas. Le doute penche du côté qui NE TOUCHE PAS au dépôt."""
+    mot = canal.lire_ligne(chemin, DEFAUT).lower()
     return mot if mot in COMMANDES else DEFAUT
 
 
 def ecrire_commande(chemin, commande):
     """Écrit la commande, atomiquement, en CRLF explicite.
 
-    Mêmes deux raisons que `pilotage.ecrire` : l'agent relit ce fichier toutes
-    les trois secondes (un fichier à moitié écrit se lirait `rien`, donc une
-    livraison silencieusement perdue), et la sandbox écrit depuis une VM Linux
-    où la plateforme mettrait un LF nu."""
+    Atomique parce que l'agent relit ce fichier toutes les trois secondes : un
+    fichier à moitié écrit se lirait `rien`, donc une livraison silencieusement
+    perdue. Le détail des octets vit dans `canal`."""
     commande = str(commande).strip().lower()
     if commande not in COMMANDES:
         raise ValueError(f"commande inconnue : {commande!r} "
                          f"(attendu : {', '.join(COMMANDES)})")
-    chemin = Path(chemin)
-    tmp = chemin.with_suffix(chemin.suffix + '.tmp')
-    tmp.write_bytes(commande.encode('ascii') + b'\r\n')
-    os.replace(tmp, chemin)
-    return commande
+    return canal.ecrire_ligne(chemin, commande)
 
 
 # ────────────────────────── lectures pures (testables) ──────────────────────

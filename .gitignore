@@ -160,4 +160,12 @@ _commande_git.txt.tmp
 _etat_git.json
 _etat_git.json.tmp
 _agent_git_vu.txt
+_commande_banc.txt
+_commande_banc.txt.tmp
+_etat_banc.json
+_etat_banc.json.tmp
+_agent_banc_vu.txt
+# La SORTIE d'un banc : un rapport de mesure, pas une source. Elle change à
+# chaque exécution et peut peser des centaines de milliers de caractères.
+_banc_sortie.txt
 _generation.txt
