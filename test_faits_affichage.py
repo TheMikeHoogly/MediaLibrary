@@ -64,7 +64,8 @@ def _espace(people, pets, index, lieux=None, gps=None, racines=()):
         'gps_places_connus': lambda: (gps or {}),
         'media_roots': lambda: racines,
     }
-    return _charger(('_faits_ctx', '_faits_pour', '_noms_attendus'), esp)
+    return _charger(('_autorite_des_noms', '_noms_fusionnes', '_faits_ctx',
+                     '_faits_pour', '_noms_attendus', '_cles_portant'), esp)
 
 
 # ───────────────── l'index inversé dit-il la même chose ? ─────────────────
@@ -205,6 +206,131 @@ class TestCablage(unittest.TestCase):
         self.assertEqual(self.src.count("function faitsHtml("), 1)
         self.assertEqual(self.src.count("faitsHtml(f, false)"), 1)  # planche
         self.assertEqual(self.src.count("faitsHtml(f, true)"), 1)   # visionneuse
+
+
+class TestFiltreDeRecherche(unittest.TestCase):
+    """`_cles_portant` — ce que la recherche FILTRE (chantier 14a-iv).
+
+    Le filtre lisait les `kw` bruts de l'index pendant que la vignette lisait
+    les fiches : deux chemins pour une même question, donc deux réponses. Sur
+    la base réelle, 13 photos sortaient d'une recherche par un nom que leur
+    ligne de faits ne portait pas — des retraits humains, la régression la plus
+    chère du projet, en silence.
+    """
+
+    PEOPLE = {
+        'p1': {'name': 'Luna', 'faces': [['a.jpg', 0], ['b.jpg', 0]]},
+        # Attribuée par la fiche seule : l'index ne la connaît pas encore.
+        'p2': {'name': 'Flo', 'faces': [['b.jpg', 1], ['c.jpg', 0],
+                                        ['d.jpg', 0]],
+               'exclude': ['c.jpg']},
+    }
+    PETS = {'a1': {'name': 'Caline', 'faces': []}}
+    INDEX = {
+        'a.jpg': {'kw_fr': ['chat', 'personne:Luna']},
+        'b.jpg': {'kw_fr': ['personne:Flo', 'personne:Luna']},
+        'c.jpg': {'kw_fr': ['personne:Flo']},     # retirée par la fiche
+        'd.jpg': {'kw_fr': ['plage']},            # fiche seule, index muet
+        'e.jpg': {'kw_fr': ['personne:Flo'], 'failed': True},
+    }
+
+    def _esp(self):
+        return _espace(self.PEOPLE, self.PETS, self.INDEX)
+
+    def test_un_nom_retire_ne_sort_plus_de_la_recherche(self):
+        """L'invariant : `exclude` fait autorité PARTOUT, y compris dans le
+        seul endroit que l'utilisateur interroge."""
+        esp = self._esp()
+        self.assertEqual(esp['_cles_portant'](['personne:Flo']),
+                         {'b.jpg', 'd.jpg'})
+
+    def test_un_nom_attribue_par_la_seule_fiche_sort(self):
+        """L'autre sens : nommer une photo dans une fiche doit la rendre
+        trouvable, même si l'index n'a pas encore été réécrit."""
+        esp = self._esp()
+        self.assertIn('d.jpg', esp['_cles_portant'](['personne:Flo']))
+
+    def test_le_filtre_et_l_affichage_disent_la_meme_chose(self):
+        """Le résultat du chantier, en une assertion : pour CHAQUE nom, les
+        photos que la recherche rend sont exactement celles dont la ligne de
+        faits porte ce nom."""
+        esp = self._esp()
+        ctx = esp['_faits_ctx']()
+        for tag, nom in (('personne:Flo', 'Flo'), ('personne:Luna', 'Luna')):
+            affichees = set()
+            for cle, e in self.INDEX.items():
+                if e.get('failed'):
+                    continue
+                f = esp['_faits_pour'](cle, e, ctx)
+                if f and nom in f['noms']:
+                    affichees.add(cle)
+            self.assertEqual(esp['_cles_portant']([tag]), affichees,
+                             "filtre et affichage divergent sur %s" % nom)
+
+    def test_le_ET_porte_sur_tous_les_noms_demandes(self):
+        esp = self._esp()
+        self.assertEqual(
+            esp['_cles_portant'](['personne:Flo', 'personne:Luna']), {'b.jpg'})
+
+    def test_une_photo_illisible_reste_ecartee(self):
+        """`failed` : le filtre ne ressuscite pas ce que tous les pipelines
+        écartent."""
+        esp = self._esp()
+        self.assertNotIn('e.jpg', esp['_cles_portant'](['personne:Flo']))
+
+    def test_l_autorite_ne_depend_pas_de_l_ordre_des_fiches(self):
+        esp1 = _espace(self.PEOPLE, self.PETS, self.INDEX)
+        esp2 = _espace(dict(reversed(list(self.PEOPLE.items()))), self.PETS,
+                       self.INDEX)
+        self.assertEqual(esp1['_cles_portant'](['personne:Flo']),
+                         esp2['_cles_portant'](['personne:Flo']))
+
+
+class TestCasseDesNoms(unittest.TestCase):
+    """La FICHE fait foi sur l'orthographe.
+
+    L'index porte encore `animal:luna` là où la fiche dit `animal:Luna` : sans
+    filtre de casse, la ligne affiche « Luna · luna » — le même animal nommé
+    deux fois (2 photos sur la base réelle, 20/08)."""
+
+    PETS = {'a1': {'name': 'Luna', 'faces': [['a.jpg', 0]]}}
+    INDEX = {'a.jpg': {'kw_fr': ['animal:luna', 'animal:Inti']}}
+
+    def test_la_ligne_ne_nomme_pas_deux_fois_le_meme_animal(self):
+        esp = _espace({}, self.PETS, self.INDEX)
+        f = esp['_faits_pour']('a.jpg', self.INDEX['a.jpg'],
+                               esp['_faits_ctx']())
+        self.assertEqual(sorted(f['noms']), ['Inti', 'Luna'])
+
+    def test_le_worker_de_tagging_n_ecrit_pas_le_doublon(self):
+        """La fusion d'avant l'écriture réinscrivait les deux formes dans
+        l'index à chaque tagging : la correction doit tenir là aussi."""
+        esp = _espace({}, self.PETS, self.INDEX)
+        tags, _ = esp['_noms_attendus']('a.jpg')
+        self.assertEqual(sorted(t.lower() for t in tags),
+                         ['animal:inti', 'animal:luna'])
+
+    def test_la_recherche_trouve_quelle_que_soit_la_casse(self):
+        esp = _espace({}, self.PETS, self.INDEX)
+        self.assertEqual(esp['_cles_portant'](['animal:Luna']), {'a.jpg'})
+
+    def test_une_photo_que_la_fiche_ne_revendique_pas_prend_son_orthographe(self):
+        """L'autre moitié du défaut (1 photo le 20/08) : la fiche n'a pas cette
+        photo dans ses `faces`, l'index l'a nommée `animal:luna` — la ligne
+        affichait « luna », c'est-à-dire l'accident d'écriture d'un mot-clé au
+        lieu du nom choisi par l'humain."""
+        esp = _espace({}, self.PETS, {'z.jpg': {'kw_fr': ['animal:luna']}})
+        f = esp['_faits_pour']('z.jpg', {'kw_fr': ['animal:luna']},
+                               esp['_faits_ctx']())
+        self.assertEqual(f['noms'], ['Luna'])
+
+    def test_un_nom_inconnu_des_fiches_garde_sa_graphie(self):
+        """`canon` corrige ce que la fiche revendique, il n'invente rien : un
+        nom que plus aucune fiche ne porte s'affiche tel que l'index le dit."""
+        esp = _espace({}, self.PETS, {'z.jpg': {'kw_fr': ['animal:mistigri']}})
+        f = esp['_faits_pour']('z.jpg', {'kw_fr': ['animal:mistigri']},
+                               esp['_faits_ctx']())
+        self.assertEqual(f['noms'], ['mistigri'])
 
 
 if __name__ == "__main__":

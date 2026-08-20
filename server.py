@@ -1263,12 +1263,18 @@ def _noms_attendus(key):
                             and kf[0] == key):
                         tags.append(tag)
                         break
+        # La FICHE fait foi sur l'orthographe : un `animal:luna` d'index ne
+        # s'ajoute pas à côté du `animal:Luna` d'une fiche, sinon le même
+        # animal est nommé deux fois (2 photos le 20/08) — et la fusion
+        # RÉÉCRIT le doublon dans l'index à chaque tagging.
+        deja = {t.lower() for t in tags}
         e = STORE.data.get(key)
         if isinstance(e, dict):
             for t in (e.get('kw_fr') or []):
                 tl = str(t).lower()
                 if ((tl.startswith('personne:') or tl.startswith('animal:'))
-                        and tl not in exclus):
+                        and tl not in exclus and tl not in deja):
+                    deja.add(tl)
                     tags.append(t)
     except Exception:
         pass
@@ -2348,24 +2354,35 @@ def _jour_de(cle, entree):
     return meme_jour.cle_jour(ep) if ep is not None else None
 
 
-def _faits_ctx():
-    """Contexte partage par TOUTES les photos d'une page -- construit UNE fois.
+def _autorite_des_noms():
+    """Index INVERSE de l'autorite vivante :
+    `({cle: [tags]}, {cle: {exclus}}, {tag minuscule: orthographe de la fiche})`.
 
-    `_noms_attendus(cle)` repond a la meme question, mais en rebalayant toutes
-    les fiches personnes+animaux a CHAQUE appel : gratuit pour une photo (le
-    worker de tagging), ruineux pour une planche -- 13,9 ms par lot de 50, et
-    le balayage recommence a chaque photo. L'index INVERSE ci-dessous se batit
-    en un seul passage ; ensuite chaque photo n'est plus qu'un acces dict, et
-    le cout de l'affichage cesse de dependre du nombre de fiches.
+    Une seule implementation, deux appelants -- ce qui s'AFFICHE (`_faits_ctx`)
+    et ce que la recherche FILTRE (`_cles_portant`). Ils repondaient a la meme
+    question par deux chemins : l'affichage par les fiches, le filtre par les
+    `kw` bruts de l'index. Resultat mesure le 20/08 sur la base reelle : 13
+    photos que la recherche rendait alors que leur ligne de faits ne portait
+    pas le nom -- des retraits humains que le filtre ignorait. `exclude` fait
+    autorite PARTOUT, y compris dans le seul endroit que l'utilisateur
+    interroge.
+
+    `_noms_attendus(cle)` repond encore a la meme question pour UNE photo (le
+    worker de tagging) en rebalayant toutes les fiches : gratuit une fois,
+    ruineux pour une planche -- 13,9 ms par lot de 50, et le balayage
+    recommence a chaque photo. L'index ci-dessous se batit en un seul passage ;
+    ensuite chaque photo n'est plus qu'un acces dict, et le cout cesse de
+    dependre du nombre de fiches.
 
     DEUX passes, et c'est voulu : les `exclude` de toutes les fiches sont
-    collectes AVANT les `faces`. `exclude` fait autorite partout (invariant du
-    projet) ; en une seule passe, un nom retire par une fiche pourrait etre
-    ressuscite par une autre selon l'ordre du dict -- une autorite qui depend
-    d'un ordre d'iteration n'en est pas une.
+    collectes AVANT les `faces`. En une seule passe, un nom retire par une
+    fiche pourrait etre ressuscite par une autre selon l'ordre du dict -- une
+    autorite qui depend d'un ordre d'iteration n'en est pas une.
 
-    Rend un dict opaque, a passer tel quel a `_faits_pour`."""
-    attendus, exclus = {}, {}
+    `canon` : l'orthographe que l'HUMAIN a choisie dans la fiche. L'index porte
+    encore des mots-cles ecrits avant elle (`animal:luna`) ; c'est la fiche qui
+    tranche, sinon la meme Luna s'affiche « Luna » ici et « luna » la."""
+    attendus, exclus, canon = {}, {}, {}
     try:
         fiches = []
         for store, prefix in ((PEOPLE_STORE, 'personne'), (PETS_STORE, 'animal')):
@@ -2373,6 +2390,7 @@ def _faits_ctx():
                 if isinstance(pe, dict) and pe.get('name'):
                     fiches.append(("%s:%s" % (prefix, pe['name']), pe))
         for tag, pe in fiches:                    # passe 1 : les retraits
+            canon.setdefault(tag.lower(), tag)
             for k in (pe.get('exclude') or []):
                 exclus.setdefault(k, set()).add(tag.lower())
         for tag, pe in fiches:                    # passe 2 : les attributions
@@ -2381,7 +2399,46 @@ def _faits_ctx():
                         and tag.lower() not in exclus.get(kf[0], ())):
                     attendus.setdefault(kf[0], []).append(tag)
     except Exception:                             # noqa: BLE001
-        attendus, exclus = {}, {}
+        return {}, {}, {}
+    return attendus, exclus, canon
+
+
+def _noms_fusionnes(cle, entree, attendus, exclus, canon=None):
+    """Tags de nom qui font AUTORITE sur une photo : ceux des fiches, plus ceux
+    de l'index que personne n'a retires.
+
+    La FICHE fait foi sur l'ORTHOGRAPHE — deux defauts d'un coup, tous deux
+    observes le 20/08 sur la base reelle : sans le filtre de casse, une photo
+    que la fiche revendique ET que l'index nomme autrement affiche
+    « Luna . luna » (2 photos) ; sans `canon`, une photo que la fiche ne
+    revendique pas s'affiche « luna » tout court (1 photo). Le nom montre alors
+    l'accident d'ecriture d'un mot-cle, pas le choix de l'humain.
+
+    Aucun nom n'est PERDU au passage : seule sa graphie change, et la recherche
+    compare en minuscules (`_cles_portant`)."""
+    canon = canon or {}
+    deja = {t.lower() for t in (attendus.get(cle) or ())}
+    ex = exclus.get(cle) or ()
+    noms = list(attendus.get(cle) or ())
+    e = entree if isinstance(entree, dict) else {}
+    for t in (e.get('kw_fr') or []):
+        tl = str(t).lower()
+        if ((tl.startswith('personne:') or tl.startswith('animal:'))
+                and tl not in ex and tl not in deja):
+            deja.add(tl)
+            noms.append(canon.get(tl, t))
+    return noms
+
+
+def _faits_ctx():
+    """Contexte partage par TOUTES les photos d'une page -- construit UNE fois.
+
+    L'autorite des noms vient de `_autorite_des_noms()`, que partage le filtre
+    de la recherche : ce qu'on cherche et ce qu'on voit ne peuvent plus se
+    contredire.
+
+    Rend un dict opaque, a passer tel quel a `_faits_pour`."""
+    attendus, exclus, canon = _autorite_des_noms()
     try:
         lieux = lieux_connus()
     except Exception:                             # noqa: BLE001
@@ -2390,8 +2447,8 @@ def _faits_ctx():
         gps = gps_places_connus()
     except Exception:                             # noqa: BLE001
         gps = {}
-    return {'attendus': attendus, 'exclus': exclus, 'lieux': lieux,
-            'gps': gps, 'racines': media_roots()}
+    return {'attendus': attendus, 'exclus': exclus, 'canon': canon,
+            'lieux': lieux, 'gps': gps, 'racines': media_roots()}
 
 
 def _faits_pour(cle, entree, ctx):
@@ -2410,13 +2467,8 @@ def _faits_pour(cle, entree, ctx):
     trois : mieux vaut ne rien afficher qu'une ligne vide."""
     import faits_vue
     e = entree if isinstance(entree, dict) else {}
-    kw = list(ctx['attendus'].get(cle) or [])
-    ex = ctx['exclus'].get(cle) or ()
-    for t in (e.get('kw_fr') or []):
-        tl = str(t).lower()
-        if ((tl.startswith('personne:') or tl.startswith('animal:'))
-                and tl not in ex):
-            kw.append(t)
+    kw = _noms_fusionnes(cle, e, ctx['attendus'], ctx['exclus'],
+                         ctx.get('canon'))
     a = faits_vue.assertions(cle, e, gps_place=ctx['gps'].get(cle),
                              lieux=ctx['lieux'], racines=ctx['racines'],
                              noms_attendus=kw)
@@ -3133,14 +3185,34 @@ def _extraire_noms(requete):
 
 
 def _cles_portant(tags):
-    """Clés dont l'index contient TOUS les tags demandés."""
+    """Clés qui portent TOUS les noms demandés — d'après l'AUTORITÉ VIVANTE.
+
+    Pas d'après les `kw` bruts de l'index, et c'est la correction du 20/08
+    (chantier 14a-iv) : le filtre les lisait tels quels, tandis que la ligne de
+    faits sous la vignette lit les fiches, où `exclude` fait autorité. Les deux
+    répondaient à la même question par deux chemins, donc ils divergeaient —
+    **13 photos** que la recherche rendait alors que leur ligne de faits ne
+    portait pas le nom (Mike 6, Flo 5, Silvio 1, Danica 1). Un nom retiré à la
+    main réapparaissait dans le seul endroit où l'utilisateur le cherche : la
+    forme de régression la plus chère du projet, en silence.
+
+    Les `kw_en` restent lus : un nom n'y est pas censé être, mais s'il s'y
+    trouve encore, l'oublier RETIRERAIT une photo trouvable — un retrait doit
+    venir d'un humain, jamais d'un refactoring.
+
+    Coût : le balayage de l'index était déjà là ; s'y ajoute un seul passage
+    sur les 363 fiches (`_autorite_des_noms`), pas un par photo."""
     besoin = [t.lower() for t in tags]
+    attendus, exclus, _canon = _autorite_des_noms()
     out = set()
     for k, e in list(STORE.data.items()):
         if e.get('failed'):
             continue
-        kw = [str(x).lower() for x in
-              ((e.get('kw_fr') or []) + (e.get('kw_en') or []))]
+        ex = exclus.get(k) or ()
+        kw = {str(x).lower() for x in
+              ((e.get('kw_fr') or []) + (e.get('kw_en') or []))}
+        kw -= set(ex)
+        kw |= {t.lower() for t in (attendus.get(k) or ())}
         if all(t in kw for t in besoin):
             out.add(k)
     return out

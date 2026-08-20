@@ -8,56 +8,38 @@ Tu reprends **MediaLibrary**. **VÉRIFIE avant de lire** : `.git/HEAD`,
 FUSIONNÉ — ce document, non. Puis `ROADMAP.md`, `eval/DECISIONS.md`,
 `eval/METHODE.md`. Débrief en 2–3 lignes, puis on attaque.
 
-## Où on en est (19/08/2026, fin de session 27)
+## Où on en est (20/08/2026, fin de session 28)
 
-**Tu livres toi-même dans git, mais seulement si tu peux le prouver.**
-`git_agent.py` tourne sous Windows (fenêtre « MediaLibrary - Git », ouverte par
-`0 - Démarrer le serveur.bat`) et surveille `_commande_git.txt` : `rien`,
-`commit`, `livrer`. `livrer` = contrôles + commit + push + fast-forward de main.
+**Chantier 14a CLOS : ce qu'on cherche est ce qu'on voit.** Le filtre des noms
+de la recherche lisait les `kw` bruts de l'index pendant que la ligne de faits
+lisait les fiches. **13 photos** sortaient d'une recherche par un nom
+qu'`exclude` avait retiré ; **0** dans l'autre sens (363 tags nommés balayés
+sur copie). `_autorite_des_noms()` est l'unique implémentation, partagée par
+`_faits_ctx` (affichage) et `_cles_portant` (filtre). **Observé** après
+redémarrage (`code_a_jour` vrai) : Silvio **495 → 494**, Danica **325 → 324**,
+clés exclues absentes. La fiche fait foi sur l'orthographe : « Luna · luna »
+(2 photos) et « luna » seul (1) ont disparu.
 
-Il **refuse** si un `.py` que le serveur importe est plus récent que
-`demarre_a`, si un `test_*.py` d'un module touché est rouge, si un `.bat` n'est
-pas ASCII pur, si le lint des docs crie. Jamais contournables, même avec
-`force=raison` : verrou `.git/*.lock`, branche `main` ou hors convention,
-fichier binaire ou > 5 Mo, `checkout` vers une branche existante (il réécrirait
-`server.py` sous le serveur). **L'ordre s'inverse : éditer → redémarrer →
-OBSERVER → livrer.** 21 tests, dont six sur ce que `force=` n'ouvre pas.
-**Observé** : son premier acte a été de se commiter lui-même (`a43f9d0`, 10
-fichiers, push et fast-forward de main compris, cinq contrôles passés).
+**Portée du filtre, dite et non supposée : 92,74 %** — nom ou lieu atteint
+**27 936** des **30 122** photos à fait NON-date. Les **2 186** autres n'ont
+qu'une ESPÈCE : hors de portée du déterministe.
 
-**Deux fenêtres doivent être ouvertes** (`0 - Démarrer le serveur.bat` les
-lance) : « MediaLibrary - Serveur » et « MediaLibrary - Git ». L'agent est
-vivant si `_agent_git_vu.txt` a moins de 30 s ; sinon écrire `ping` (inerte) et,
-si rien ne répond, rendre la main. Ne pas redémarrer si `uptime_s` < 60 s :
-quelqu'un vient de le faire.
-
-**Vérifie toujours dans `.git/logs/*`**, jamais dans `_etat_git.json` : celui-ci
-dit ce que l'agent a TENTÉ, git dit ce qui s'est PASSÉ. Canal fermé ou refus
-non levable → `27 - Git.bat` (**8** montre le dernier rapport).
-
-**Avant** (14a-iii) : `date · lieu · noms` s'affichent sous chaque vignette et
-dans la visionneuse, avec leurs sources. Index inversé des noms : **1,11 ms**
-par page de 50 contre **9,65 ms** (×8,7). Observé : `q=Ins` → 11 photos,
-11 dates · 11 lieux · 5 noms, page **1 048–1 462 ms** contre 1 539.
-
-**Traite autonome** (« go », Mike absent) : livrer avec `commit`, pas `livrer`
-— `main` reste intacte, la fusion attend son retour. Un choix qui lui
-appartient va dans `QUESTIONS_MIKE.md` avec une recommandation, et on passe au
-point suivant. Détail : `CLAUDE.md`.
+**Une branche est poussée, `main` est INTACTE** (traite autonome) : la fusion
+t'attend. `27 - Git.bat` → **2**, ou `livrer` dans `_commande_git.txt`.
 
 ## Prochain pas
 
-1. **Le filtre (14a-iv)** : filtrer la recherche sur les faits, mesuré sur les
-   **69,95 %** (photos avec un fait NON-date), jamais sur 99,79 %.
-2. **`QUESTIONS_MIKE.md` est vide** — les deux questions du 19/08 sont
-   réglées. C'est là que s'accumulent les choix pendant une traite autonome.
-3. **Gestes Mike** : nettoyer Flo (5 909 photos) ; re-rejeter Caline.
-4. **Le reste** (`ROADMAP.md`) : prompt de PROD qui hallucine ; doublons
+1. **`QUESTIONS_MIKE.md` : l'ESPÈCE comme 5ᵉ axe du filtre** — les 2 186
+   photos hors de portée. Ma recommandation : **pas en ET** (YOLO rate des
+   chats, le filtre rétrécirait en silence) ; au mieux un OU ou une puce.
+   Rien n'est câblé en attendant.
+2. **Gestes Mike** : nettoyer Flo (5 909 photos) ; re-rejeter Caline.
+3. **Le reste** (`ROADMAP.md`) : prompt de PROD qui hallucine ; doublons
    proches ; UI (11) ; restauration à blanc (12) ; MCP lecture (13).
 
 **Ne pas rouvrir sans chiffre neuf** : `taken` en base ; backfill ÉCRIT de
-`faits` ; index des noms en UNE passe ; agent git dans le serveur ; planchers
-1990 (7 et 0, couplés) ; plafond 2100 (0).
+`faits` ; index des noms en UNE passe ; filtre des noms sur les `kw` bruts ;
+agent git dans le serveur ; planchers 1990 (7 et 0, couplés) ; plafond 2100 (0).
 
 **Pas encore observé** : la branche KB de `faits_vue` (`pending` = 0) — le
 premier tagging sera son observation.
@@ -66,5 +48,12 @@ premier tagging sera son observation.
 
 **Les deux canaux, mêmes octets** (CRLF, via `device_bash`, jamais supprimer) :
 `_commande_serveur.txt` → `redemarrer`, puis VÉRIFIER `GET /api/serveur`
-(`demarre_a` bougé, `code_a_jour` vrai) ; `_commande_git.txt` → `livrer`, puis
-VÉRIFIER `.git/logs/HEAD`.
+(`demarre_a` bougé, `code_a_jour` vrai) ; `_commande_git.txt` → `commit`
+(traite autonome, `main` intacte) ou `livrer` (Mike présent), puis VÉRIFIER
+`.git/logs/*`, jamais `_etat_git.json`. Deux fenêtres requises
+(« MediaLibrary - Serveur » et « - Git ») ; l'agent est vivant si
+`_agent_git_vu.txt` a moins de 30 s, sinon `ping`, sinon rendre la main.
+
+**Mesurer** : jamais sur `photos.db` (le serveur est l'écrivain unique) — copier
+la base, puis `TZ=Europe/Zurich` (un epoch local mal lu invente des
+divergences). Les bancs IMPORTENT la prod, ils ne la recopient pas.

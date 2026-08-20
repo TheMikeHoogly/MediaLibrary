@@ -5,54 +5,52 @@ dans **git** ; les rejets dans `eval/DECISIONS.md` ; la méthode dans
 `eval/METHODE.md` ; l'éphémère dans `PROMPT_NOUVELLE_SESSION.md`. Audits :
 `docs/AUDIT_INTERNE_2026-08.md`, `docs/AUDIT_EXTERNE_2026.md`, `docs/RANGEMENT_2026.md`.
 
-## État (19/08/2026, session 27)
+## État (20/08/2026, session 28)
 
-**La vue s'affiche : `date · lieu · noms` sous chaque vignette et dans la
-visionneuse, avec leurs SOURCES.** Un seul producteur côté client
-(`faitsHtml`), un seul assembleur côté serveur (`faits_vue.assertions`) : la
-planche et la fiche ne peuvent plus se contredire. Les quatre modes de `/files`
-(navigation, tags, recherche, même jour) partagent le même objet-photo.
+**Ce qu'on cherche est exactement ce qu'on voit — 14a-(iv) CLOS et OBSERVÉ.**
+Le filtre des noms lisait les `kw` bruts de l'index pendant que la ligne de
+faits lisait les fiches : deux chemins pour une même question. **13 photos**
+sortaient d'une recherche par un nom qu'`exclude` avait retiré (Mike 6, Flo 5,
+Silvio 1, Danica 1) — **0** dans l'autre sens, sur les 363 tags nommés balayés
+sur copie. `_autorite_des_noms()` est désormais l'unique implémentation, que
+partagent `_faits_ctx` (l'affichage) et `_cles_portant` (le filtre). Observé
+après redémarrage (`code_a_jour` vrai) : Silvio **495 → 494**, Danica
+**325 → 324**, les clés exclues absentes ; requête de 1 500 clés en 426 ms.
+La FICHE fait foi sur l'orthographe : « Luna · luna » (2 photos) et « luna »
+seul (1) ont disparu de la planche.
 
-**L'index inversé des noms est mesuré, pas supposé** (`mesure_faits_vue.py`,
-base réelle) : une page de 50 coûte **1,11 ms** avec, **9,65 ms** avec le
-balayage naïf de `_noms_attendus` — **×8,7**. `_faits_ctx()` le bâtit une fois
-par page, en **deux passes** (tous les `exclude` avant tous les `faces`) : en
-une seule, l'autorité d'un retrait dépendrait de l'ordre du dict, et un nom
-retiré pourrait revenir. Index entier : 2,234 s (51,9 µs/photo).
+**La portée du filtre est dite, pas supposée : 92,74 %.** Sur les **30 122**
+photos qui portent un fait NON-date (69,95 % — jamais les 99,79 %), le filtre
+déterministe (nom **ou** lieu) en atteint **27 936**. Les **2 186** autres
+n'ont qu'une ESPÈCE pour matière : hors de portée, SigLIP seul les sort.
+Ajouter un 5ᵉ axe est un choix de Mike (`QUESTIONS_MIKE.md`), pas un acquis :
+un filtre d'espèce en ET rétrécirait en silence, YOLO ratant des chats.
+Matière : date 99,32 %, personne 43,79 %, lieu 31,11 %, espèce 11,03 %,
+animal 2,17 %.
 
-**Observé en réel** après redémarrage (`code_a_jour` vrai) : `q=Ins` rend 11
-photos — **11 avec une date, 11 avec un lieu, 5 avec des noms** — page en
-**1 048–1 462 ms** (contre 1 539 ms avant) ; `q=montagne` rend 1 500 photos en
-**477–1 082 ms** (1 233 Ko). L'affichage est gratuit à l'échelle de la page.
+**Ce qui tenait déjà** (détail : git) — la vue s'affiche sous chaque vignette
+et dans la visionneuse avec ses SOURCES, un seul producteur client, un seul
+assembleur serveur, les quatre modes de `/files` partagés ; l'index inversé des
+noms coûte **1,11 ms** par page de 50 contre **9,65 ms** au balayage naïf
+(**×8,7**), bâti en **deux passes**.
 
-**Le chiffre honnête a bougé : 69,95 %** (30 122 photos avec un fait NON-date),
-non 69,14 % — `lieux.txt` a grossi. C'est sur lui que se mesure le filtre
-(14a-iv), jamais sur les 99,79 %. Matière : date 99,32 %, personne 43,79 %,
-lieu 31,11 %, espèce 11,03 %, animal 2,17 %. L'autorité vivante **retire 13
-noms et en ajoute 2** — la raison même de ne pas graver le champ.
-
-**La livraison git est automatisée, et c'est une PORTE — observée.**
-`git_agent.py` (fenêtre « MediaLibrary - Git ») surveille `_commande_git.txt`
-et refuse tant que la preuve manque : l'ordre s'inverse, éditer → redémarrer →
-**observer** → livrer. Premier acte, **il s'est commité lui-même** (`a43f9d0`,
-10 fichiers) — push et fast-forward de main compris, cinq contrôles passés.
-`force=` lève les négociables, jamais le verrou, `main`, un binaire ni un
-`checkout` risqué. 21 tests ; `_etat_git.json` dit ce qu'il a TENTÉ,
-`.git/logs/*` ce qui s'est PASSÉ.
+**La livraison git est une PORTE — observée.** `git_agent.py` refuse tant que
+la preuve manque : éditer → redémarrer → **observer** → livrer. `_etat_git.json`
+dit ce qu'il a TENTÉ, `.git/logs/*` ce qui s'est PASSÉ. Le bat 0 retire les
+anciens superviseurs par une **génération** (jeton relu à chaque tour) : le
+`taskkill` par titre ne tuait rien et laissait deux serveurs côte à côte.
 
 ## À faire — par ordre de valeur
 
 1. **Vérité terrain humaine — au fil de l'eau, PAS un blocage.** ~0,8 %
    (91/12 072) : limité par la CONNAISSANCE, pas l'outillage — Flo nommera ce
    que Mike ne sait pas nommer, quand l'outil sera à ~90 %.
-2. **Observer en réel ce qui est livré** — **fait ✔** (chaque livraison du
-   19/08 a son contrôle positif). Reste : re-upload = une entrée, seek vidéo
-   mobile, test du Z.
+2. **Observer en réel ce qui est livré** — **fait ✔**. Reste : re-upload = une
+   entrée, seek vidéo mobile, test du Z.
 3. **Chaîne « noms → descriptions → recherche » — 3a, 3b, 3c CLOS le 16/08.**
    La re-passe ne se fera pas. Reste ouvert : **le prompt de PRODUCTION est celui
    qui hallucine le plus** (adopté sur un 25-15 ; toute photo taguée le paie).
-   **Pas de retour à V0 sans protocole.** (Le wagon de 14 — affichage
-   date · lieu · noms — est arrivé le 19/08.)
+   **Pas de retour à V0 sans protocole.**
 4. **Gestes Mike** : `gps_place` ✔ ; renommage appliqué ✔ (7 058) ; nettoyer
    Flo (5 909 photos) ; re-rejeter Caline.
 5. **Correctifs d'audit** : I4–I8, O7–O9, O11–O15. O1 clos ; O15 (purge de
@@ -69,8 +67,7 @@ et refuse tant que la preuve manque : l'ordre s'inverse, éditer → redémarrer
 10. **Données / finitions**, dans cet ordre :
     (a) **Compter ce que le scan OUBLIE — CLOS (18/08).** Trois constats mineurs
     non traités : un ajout vu PAR LE SCAN est étiqueté `tagging` ; `dict.__ior__`
-    non redéfini dans `TrackedDict` (aucun usage) ; `cycles_vus` est la longueur
-    d'un anneau de 10 — il affiche « 10 » à vie.
+    non redéfini dans `TrackedDict` ; `cycles_vus` affiche « 10 » à vie.
     (b) **Garde-fou du repli sur le NOM + noms périmés — CLOS (19/08), observé.**
     **`taken` en base : REJETÉ (19/08)** — le garde-fou est passé à la LECTURE
     (voir l'État). Rien n'est écrit.
@@ -93,13 +90,12 @@ et refuse tant que la preuve manque : l'ordre s'inverse, éditer → redémarrer
     fiches et `faits` en outils MCP locaux (JSON-RPC stdio, zéro dépendance —
     skill `mcp-builder`). Écriture plus tard. Briques de 14a.
 14. **Recherche IA locale contextuelle.**
-    (a) **Déterministe — (i) et (ii) CLOS et OBSERVÉS le 19/08** : `faits` est
-    une VUE (`faits_vue.py`), et la règle de LIEU est unifiée sur ses trois
-    appelants, corrigée et mesurée (voir l'État, banc `mesure_lieu_visible.py`).
-    **(iii) CLOS et OBSERVÉ le 19/08** : la vue s'affiche sur la planche et
-    dans la visionneuse, index inversé des noms bâti une fois par page (×8,7).
-    Reste : **(iv) le filtre**, mesuré sur **69,95 %** (photos avec un fait
-    NON-date), jamais sur 99,79 %.
+    (a) **Déterministe — CLOS et OBSERVÉ. (i)–(iii) le 19/08** : `faits` est une
+    VUE, la règle de LIEU est unifiée sur ses trois appelants, et la vue
+    s'affiche sur la planche et dans la visionneuse. **(iv) le 20/08** : le
+    FILTRE partage l'autorité des noms avec l'affichage (voir l'État).
+    Reste ouvert, et c'est un choix de Mike : **l'ESPÈCE comme 5ᵉ axe**, pour
+    les 2 186 photos hors de portée (`QUESTIONS_MIKE.md`).
     (b) ensuite seulement, **escalade ponctuelle** vers un modèle chargé à la
     demande (bail GpuArbiter, déchargé après) — `vision-eval`, jamais câblé
     sans mesure.
@@ -109,11 +105,11 @@ et refuse tant que la preuve manque : l'ordre s'inverse, éditer → redémarrer
 ### Résiduels faible valeur (ne pas prioriser)
 **MESURÉ le 15/08, et c'est pourquoi on n'y touche pas** : les deux planchers
 1990 (`_fname_time`, `meme_jour.ANNEE_MIN`) coûtent **7** photos et **0**, et ils
-sont **couplés** ; le plancher 1990 subsiste aussi dans `plan_rangement.py`,
+sont **couplés** ; il subsiste aussi dans `plan_rangement.py`,
 `recensement_doublons.py`, `diagnostic_dates.py`, sans effet tant qu'aucun
-dossier d'avant 1990 n'y passe. Le **plafond 2100** (`22082010141.jpg` → 2082) : 72 en base, coût 0 — elles
-portent un `taken`. Enfin
-`/files?dir=1&rec=1` (racine NAS) ne répond pas en 6 min, cause non cherchée.
+dossier d'avant 1990 n'y passe. Le **plafond 2100** (`22082010141.jpg` → 2082) :
+72 en base, coût 0. Enfin `/files?dir=1&rec=1` (racine NAS) ne répond pas en
+6 min, cause non cherchée.
 
 ## Acquis — ne pas reproposer (détail : git + `eval/DECISIONS.md`)
 
@@ -149,23 +145,25 @@ portent un `taken`. Enfin
   fond EXIF dans `/reglages` ; comptes de l'index au goulot (`comptes_index.py`).
 - **Recherche** : quatre dimensions (noms · lieux · période · sens) ; **une
   seule règle de date** (filtre, tri, « même jour », `_best_time`, fait — la
-  date de SCAN écartée à la lecture) et **une seule règle de LIEU**
-  (`faits_vue`, segments + mots collés découpés — jamais de sous-chaîne),
-  partagées par le renommage, le KB, `/sujets` et la recherche.
+  date de SCAN écartée à la lecture), **une seule règle de LIEU** (`faits_vue`,
+  segments + mots collés découpés — jamais de sous-chaîne) et **une seule
+  autorité des NOMS** (`_autorite_des_noms` : le filtre et l'affichage ne
+  peuvent plus se contredire), partagées par le renommage, le KB, `/sujets` et
+  la recherche.
 - **Mesure** : `mesure_dates_scan.py` (`--lecture`), `mesure_tri_recherche.py`,
   `mesure_faits_backfill.py`, `mesure_faits_vue.py`, `mesure_lieu_visible.py` —
   lecture seule sur COPIE, jamais sur `photos.db`.
 - **Pilotage** : arrêt/redémarrage commandés par `_commande_serveur.txt`
-  (`pilotage.py`, 22 tests ; `superviseur.bat` relance sur le code 42 et
-  s'arrête après 5 sorties anormales) — la sandbox observe enfin ses propres
-  livraisons. `GET /api/serveur` dit `demarre_a` et **`code_a_jour`**.
+  (`pilotage.py` ; `superviseur.bat` relance sur le code 42, s'arrête après 5
+  sorties anormales, et se retire quand la **génération** change) — la sandbox
+  observe ses propres livraisons. `GET /api/serveur` dit `demarre_a` et
+  **`code_a_jour`**.
 - **Hygiène et livraison** : nettoyage réversible (29) ; `27 - Git.bat` reste
   le guichet des gestes de Mike (état, commit guidé, fusion sans checkout,
   purge des branches, GitHub, rapport de l'agent au choix 8) ; **`git_agent.py`
-  livre pour la sandbox** — `livrer` dans `_commande_git.txt`, puis commit +
-  push + fast-forward, **après contrôles** (serveur à jour, tests des modules
-  touchés, `.bat` ASCII, lint). L'ordre s'inverse : **observer AVANT de
-  commiter**.
+  livre pour la sandbox** — `commit` ou `livrer` dans `_commande_git.txt`,
+  **après contrôles** (serveur à jour, tests des modules touchés, `.bat` ASCII,
+  lint). L'ordre s'inverse : **observer AVANT de commiter**.
 
 ## Réserve — futur, non prioritaire (triée le 12/08)
 
