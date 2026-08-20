@@ -169,7 +169,11 @@ TRACKING_MD = {
     "CLAUDE.md": 8000,
     "ROADMAP.md": 12000,
     "PROMPT_NOUVELLE_SESSION.md": 4000,
-    "eval/DECISIONS.md": 9000,
+    # Relevé de 9 000 à 12 000 le 19/08, sur décision de Mike : le fichier
+    # était à 8 969 et chaque session y ajoute des verdicts qu'aucune ne
+    # peut retirer — c'est sa raison d'être. Condenser encore rongeait la
+    # PRÉCISION des raisons, ce que le seuil était censé protéger.
+    "eval/DECISIONS.md": 12000,
     # Sorti de DECISIONS.md le 16/08 : « ce qui a ete tranche » d'un cote,
     # « comment on tranche » de l'autre. Budget propre pour que le corpus de
     # methode soit GOUVERNE et non pas soustrait au lint.

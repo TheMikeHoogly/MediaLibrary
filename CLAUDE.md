@@ -65,8 +65,8 @@ décisions techniques. `FACE_USE_GPU=False` **volontaire** (VRAM prise par Ollam
 | `docs/` | Audits, rangement, `GIT_WORKFLOW.md` (circulation sandbox ↔ machine ↔ GitHub) |
 
 **Skills (`.claude/skills/`)** : `monolith-surgery` avant toute modif de
-`server.py` · `photo-ui` dès qu'on touche l'UI · `vision-eval` dès qu'on
-change/teste un modèle ou un seuil.
+`server.py` · `photo-ui` dès qu'on touche l'UI · `vision-eval` pour un modèle
+ou un seuil.
 
 ## Protocole
 
@@ -117,18 +117,16 @@ hot-reload** : toute modif de `server.py` exige un redémarrage.
 
 **Redémarrage par Claude** (`pilotage.py` + `superviseur.bat`) : écrire un mot
 dans `_commande_serveur.txt` — `redemarrer`, `arret`, `marche` — via
-`device_bash`, **avec un CRLF** (`printf 'redemarrer\r\n'` : l'autre lecteur
-est `cmd.exe`) ; ne jamais le supprimer (la VM ne sait pas). Même protocole,
-mêmes octets, pour `_commande_git.txt` (`rien`, `commit`, `livrer`). Puis
-**VÉRIFIER**
-avec `GET /api/serveur` : `demarre_a` doit avoir bougé et `code_a_jour` valoir
-`true`, sinon la mesure porte sur l'ancien code. Exige le superviseur (fenêtre
-« MediaLibrary - Serveur », lancée par `0 - Démarrer le serveur.bat`) ; sans
-lui, rien ne relance — geste Mike, bat 0 ou `27 - Git.bat` choix 7. Un
-redémarrage interrompt tagging et scan en cours : ne pas en enchaîner sans
-raison.
+`device_bash`, **en CRLF** (`printf 'redemarrer\r\n'` : l'autre lecteur est
+`cmd.exe`) ; ne jamais le supprimer. Même protocole pour `_commande_git.txt`
+(`rien`, `ping`, `commit`, `livrer`). **AVANT** de redémarrer, lire `uptime_s` :
+sous 60 s quelqu'un vient de le faire — ne pas se battre avec lui. **APRÈS**,
+VÉRIFIER `GET /api/serveur` : `demarre_a` bougé, `code_a_jour` vrai, sinon la
+mesure porte sur l'ancien code. Les deux fenêtres du bat 0 sont requises
+(« MediaLibrary - Serveur » et « - Git ») ; l'agent est vivant si
+`_agent_git_vu.txt` a moins de 30 s (`git_agent.py --etat`), sinon `ping`, et si
+rien ne répond rendre la main. Un redémarrage interrompt tagging et scan.
 
-Clics/captures : onglet au premier plan obligatoire ; l'état passe par
-`fetch('/api/…')` GET (marche onglet caché) ; GPU/ordonnanceur :
-`GET /api/search/status`. Livraison sandbox → disque : `SendUserFile` puis
-`device_commit_files`. Tests : `python test_ordonnanceur.py` (27 vérifications).
+Clics/captures : onglet au premier plan ; l'état passe par `fetch('/api/…')`
+GET (marche onglet caché) ; GPU : `GET /api/search/status`. Sandbox → disque :
+`SendUserFile` puis `device_commit_files`.

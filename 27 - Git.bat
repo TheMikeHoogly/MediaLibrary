@@ -642,21 +642,18 @@ echo ============================================================
 echo   8. AGENT GIT - dernier rapport
 echo ============================================================
 echo.
-tasklist /fi "WINDOWTITLE eq MediaLibrary - Git*" 2>nul | find /i "cmd.exe" >nul
-if errorlevel 1 (
-  echo   Fenetre "MediaLibrary - Git" : ABSENTE.
-  echo   Le canal est ferme : les commits restent manuels ^(choix 1^).
-  echo   Pour l'ouvrir : relancer "0 - Demarrer le serveur.bat".
-) else (
-  echo   Fenetre "MediaLibrary - Git" : en ecoute.
-)
-echo.
+REM   Le signe de vie vient de _agent_git_vu.txt, touche a chaque
+REM   tour de boucle : un titre de fenetre se devine, un fichier
+REM   date se lit. git_agent.py --etat l'affiche en premier.
 set "PY=.venv\Scripts\python.exe"
 if not exist "%PY%" set "PY=python"
 "%PY%" git_agent.py --etat
 echo.
 echo ------------------------------------------------------------
 echo   Controler SANS rien livrer  : %PY% git_agent.py --controle
+echo   Reveiller / tester le canal : ecrire "ping" dans
+echo                                 _commande_git.txt
+echo   Canal ferme ? relancer "0 - Demarrer le serveur.bat"
 echo   Ce que git dit vraiment     : choix 5 de ce menu
 echo ------------------------------------------------------------
 echo.

@@ -5719,9 +5719,23 @@ __FOLDERS__
     var fh = faitsHtml(f, true);
     fx.innerHTML = fh || 'ni date, ni lieu, ni nom connus';
     fx.className = fh ? '' : 'none';
+    // Les noms sont DEJA dans la ligne de faits, triés, sans préfixe et avec
+    // leur source : les répéter en « personne:Cédric Baudin » sous cette ligne
+    // était du bruit, et le préfixe est un détail d'implémentation qui n'a
+    // rien à faire sous les yeux de la famille. Le FILTRE de la planche, lui,
+    // garde les tags nommés : y chercher « personne:Luna » a du sens.
     var t = document.getElementById('lb-tags');
-    if (f.kw && f.kw.length) { t.textContent = f.kw.join(' · '); t.className = ''; }
-    else { t.textContent = 'pas encore de tags'; t.className = 'none'; }
+    var libres = (f.kw || []).filter(function(k) {
+      var kl = String(k).toLowerCase();
+      return kl.indexOf('personne:') !== 0 && kl.indexOf('animal:') !== 0;
+    });
+    if (libres.length) { t.textContent = libres.join(' · '); t.className = ''; }
+    // Etat vide RÉDIGÉ (plancher photo-ui n° 7) : « pas encore de tags »
+    // mentirait sur une photo qui n'a QUE des noms — elle a bien été nommée.
+    else if (f.kw && f.kw.length) {
+      t.textContent = 'aucun mot-clé au-delà des noms';
+      t.className = 'none';
+    } else { t.textContent = 'pas encore de tags'; t.className = 'none'; }
     document.getElementById('lb-desc').textContent = f.desc || '';
     // Pas de date au jour pres -> pas de bouton (29 % de la photothèque en
     // est la). Le libelle porte le jour : « Meme jour (14 aout) ».

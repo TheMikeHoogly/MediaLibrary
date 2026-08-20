@@ -25,6 +25,12 @@ OBSERVER → livrer.** 21 tests, dont six sur ce que `force=` n'ouvre pas.
 **Observé** : son premier acte a été de se commiter lui-même (`a43f9d0`, 10
 fichiers, push et fast-forward de main compris, cinq contrôles passés).
 
+**Deux fenêtres doivent être ouvertes** (`0 - Démarrer le serveur.bat` les
+lance) : « MediaLibrary - Serveur » et « MediaLibrary - Git ». L'agent est
+vivant si `_agent_git_vu.txt` a moins de 30 s ; sinon écrire `ping` (inerte) et,
+si rien ne répond, rendre la main. Ne pas redémarrer si `uptime_s` < 60 s :
+quelqu'un vient de le faire.
+
 **Vérifie toujours dans `.git/logs/*`**, jamais dans `_etat_git.json` : celui-ci
 dit ce que l'agent a TENTÉ, git dit ce qui s'est PASSÉ. Canal fermé ou refus
 non levable → `27 - Git.bat` (**8** montre le dernier rapport).
@@ -43,8 +49,8 @@ point suivant. Détail : `CLAUDE.md`.
 
 1. **Le filtre (14a-iv)** : filtrer la recherche sur les faits, mesuré sur les
    **69,95 %** (photos avec un fait NON-date), jamais sur 99,79 %.
-2. **Deux questions t'attendent** dans `QUESTIONS_MIKE.md` : les noms en
-   double dans la visionneuse, et `eval/DECISIONS.md` à saturation.
+2. **`QUESTIONS_MIKE.md` est vide** — les deux questions du 19/08 sont
+   réglées. C'est là que s'accumulent les choix pendant une traite autonome.
 3. **Gestes Mike** : nettoyer Flo (5 909 photos) ; re-rejeter Caline.
 4. **Le reste** (`ROADMAP.md`) : prompt de PROD qui hallucine ; doublons
    proches ; UI (11) ; restauration à blanc (12) ; MCP lecture (13).

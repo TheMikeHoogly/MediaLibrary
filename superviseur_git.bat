@@ -41,11 +41,22 @@ REM une session precedente partirait toute seule au demarrage.
 
 echo.
 echo [agent git] En ecoute sur %CMDFILE%.
-echo [agent git] Mots acceptes : rien ^| commit ^| livrer
+echo [agent git] Mots acceptes : rien ^| ping ^| commit ^| livrer
 echo [agent git] "livrer" = controles + commit + push + fusion de main.
+echo [agent git] "ping"   = signe de vie, ne touche a rien.
+echo.
+echo [agent git] NE PAS FERMER cette fenetre : elle est le canal par
+echo [agent git] lequel la sandbox livre. La fermer ne casse rien
+echo [agent git] d'autre, mais les commits redeviennent manuels.
 echo.
 
 :boucle
+REM Signe de vie : ce fichier est TOUCHE a chaque tour. Son age dit si
+REM l'agent ecoute encore - sans lui, une fenetre morte-nee etait
+REM indiscernable d'une fenetre en ecoute (arrive le 19/08, personne
+REM ne s'en est apercu avant de chercher pourquoi rien ne se livrait).
+> "_agent_git_vu.txt" echo en ecoute
+
 set "CMD=rien"
 if exist "%CMDFILE%" set /p CMD=<"%CMDFILE%"
 set "CMD=!CMD: =!"

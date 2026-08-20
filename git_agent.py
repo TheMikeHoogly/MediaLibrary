@@ -69,6 +69,13 @@ LA VÉRIFICATION N'EST PAS SON RAPPORT
 début de session. Un agent qui serait à la fois l'acteur et le juge ne
 prouverait rien.
 
+LE SIGNE DE VIE
+
+`superviseur_git.bat` touche `_agent_git_vu.txt` à chaque tour de boucle, et la
+commande `ping` fait répondre l'agent sans rien toucher. Les deux existent parce
+que le 19/08 une fenêtre morte-née s'est révélée indiscernable d'une fenêtre en
+écoute : rien ne se livrait, et rien ne le disait.
+
 USAGE
     python git_agent.py --executer     (boucle du superviseur : agit si demandé)
     python git_agent.py --etat         (affiche le dernier rapport)
@@ -90,10 +97,14 @@ __all__ = ['FICHIER_COMMANDE', 'FICHIER_ETAT', 'COMMANDES', 'DEFAUT',
 
 FICHIER_COMMANDE = '_commande_git.txt'
 FICHIER_ETAT = '_etat_git.json'
+FICHIER_VU = '_agent_git_vu.txt'      # touché à chaque tour de boucle
 SESSION_COMMIT = 'SESSION_COMMIT.txt'
 
-RIEN, COMMIT, LIVRER = 'rien', 'commit', 'livrer'
-COMMANDES = (RIEN, COMMIT, LIVRER)
+RIEN, PING, COMMIT, LIVRER = 'rien', 'ping', 'commit', 'livrer'
+# `ping` ne touche à RIEN : il consomme la commande et écrit un rapport.
+# Sans lui, la seule façon de savoir si l'agent écoute était de lui
+# demander une livraison — un test qui modifie le dépôt n'est pas un test.
+COMMANDES = (RIEN, PING, COMMIT, LIVRER)
 DEFAUT = RIEN
 
 # Le superviseur relit le fichier toutes les PERIODE_S secondes. Trois : un
@@ -520,6 +531,20 @@ def main(argv):
     fcmd, fetat = projet / FICHIER_COMMANDE, projet / FICHIER_ETAT
 
     if '--etat' in argv:
+        # Le signe de vie AVANT le rapport : un rapport vieux de trois heures
+        # ne dit pas si l'agent écoute encore, et c'est la première question.
+        vu = projet / FICHIER_VU
+        try:
+            age = int(time.time() - vu.stat().st_mtime)
+            if age <= 30:
+                print("  Agent : EN ECOUTE (vu il y a %d s)." % age)
+            else:
+                print("  Agent : SILENCIEUX depuis %d s — sa fenetre "
+                      "\u00ab MediaLibrary - Git \u00bb est-elle ouverte ?" % age)
+        except OSError:
+            print("  Agent : AUCUN signe de vie — fenetre jamais lancee, ou "
+                  "fermee depuis un redemarrage.")
+        print()
         try:
             d = json.loads(fetat.read_text(encoding='utf-8'))
         except (OSError, ValueError):
@@ -547,6 +572,14 @@ def main(argv):
 
     commande = lire_commande(fcmd)
     if commande == RIEN:
+        return 0
+    if commande == PING:
+        ecrire_commande(fcmd, RIEN)
+        ecrire_etat(fetat, {'quand': time.time(), 'commande': PING, 'ok': True,
+                            'refus': None, 'notes': ["en écoute, rien tenté"],
+                            'etapes': [], 'branche': '', 'titre': '',
+                            'commit': ''})
+        print("[agent git] ping — en écoute.")
         return 0
     # Consommée AVANT d'agir : si l'agent meurt en route, il ne recommencera
     # pas tout seul au tour suivant. Une livraison ne se rejoue pas à l'aveugle.

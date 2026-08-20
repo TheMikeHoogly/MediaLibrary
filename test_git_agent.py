@@ -63,6 +63,13 @@ class TestCanal(unittest.TestCase):
         self.assertEqual(self.f.read_bytes(), b'livrer\r\n')
         self.assertFalse((self.d / (ga.FICHIER_COMMANDE + '.tmp')).exists())
 
+    def test_ping_est_une_commande_inerte(self):
+        """Un signe de vie qui ne touche à rien : demander une livraison pour
+        savoir si l'agent écoute serait un test qui modifie le dépôt."""
+        self.f.write_bytes(b'ping\r\n')
+        self.assertEqual(ga.lire_commande(self.f), ga.PING)
+        self.assertIn(ga.PING, ga.COMMANDES)
+
     def test_mot_inconnu_refuse_a_l_ecriture(self):
         with self.assertRaises(ValueError):
             ga.ecrire_commande(self.f, 'push --force')

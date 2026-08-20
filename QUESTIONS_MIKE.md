@@ -6,29 +6,14 @@
 > `eval/DECISIONS.md` si elle tranche, dans `ROADMAP.md` si elle priorise.
 > Protocole : `CLAUDE.md`, « Traite autonome ».
 
-## 1. Les noms s'affichent deux fois dans la visionneuse
+*Aucune question en attente.*
 
-Depuis 14a-iii, la ligne de faits rend `date · lieu · noms`, et les tags
-juste en dessous répètent `personne:Cédric Baudin`, `personne:Silvio`… Vu à
-l'écran le 19/08.
+## Réglées
 
-**Recommandation** : retirer les `personne:` / `animal:` de la ligne de tags
-de la visionneuse — la ligne de faits les dit mieux (triés, sans préfixe, avec
-leur source). Les tags gardent tout le reste. Réversible, ~10 lignes.
-
-**En attendant** : rien touché, les deux lignes coexistent.
-
-## 2. `eval/DECISIONS.md` est structurellement à saturation
-
-8 969 octets pour un budget de 9 000. Chaque session ajoute des verdicts et
-aucun ne peut disparaître — c'est la raison d'être du fichier. J'ai condensé
-une vingtaine de raisons le 19/08 ; la marge est épuisée.
-
-**Recommandation** : appliquer le précédent du 16/08 (`eval/METHODE.md` a reçu
-son budget propre) — sortir les verdicts d'un domaine clos dans
-`eval/DECISIONS_ARCHIVE.md`, budget propre, cité en tête de `DECISIONS.md`.
-Rien n'est perdu, rien n'échappe au lint. L'autre voie — relever le budget —
-désarme le garde-fou.
-
-**En attendant** : je condense au fil de l'eau, ce qui ronge la précision des
-raisons.
+- **19/08 — noms affichés deux fois dans la visionneuse.** Recommandation
+  suivie : les tags `personne:` / `animal:` sont retirés de la ligne de tags,
+  la ligne de faits les porte seule. Le filtre de la planche les garde.
+- **19/08 — `eval/DECISIONS.md` à saturation.** Mike a tranché CONTRE ma
+  recommandation d'archive : budget porté de 9 000 à 12 000 octets. Deux
+  fichiers à consulter valent moins qu'un seul complet. La marge retrouvée a
+  d'abord servi à RENDRE la précision rognée le matin même.

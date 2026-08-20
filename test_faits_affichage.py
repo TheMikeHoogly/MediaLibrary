@@ -192,6 +192,13 @@ class TestCablage(unittest.TestCase):
     def test_le_contexte_est_bati_une_seule_fois(self):
         self.assertEqual(self.src.count("fctx = _faits_ctx()"), 1)
 
+    def test_la_visionneuse_ne_repete_pas_les_noms(self):
+        """La ligne de faits les dit déjà, mieux : triés, sans préfixe, avec
+        leur source. Le FILTRE de la planche, lui, garde les tags nommés."""
+        self.assertIn("kl.indexOf('personne:') !== 0", self.src)
+        self.assertIn("aucun mot-clé au-delà des noms", self.src)
+        self.assertNotIn("t.textContent = f.kw.join(' · ')", self.src)
+
     def test_un_seul_producteur_de_la_ligne_pour_les_deux_vues(self):
         """Planche et visionneuse rendent le même fait : deux producteurs
         finiraient par se contredire."""
