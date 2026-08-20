@@ -24,15 +24,19 @@ clés exclues absentes. La fiche fait foi sur l'orthographe : « Luna · luna »
 **27 936** des **30 122** photos à fait NON-date. Les **2 186** autres n'ont
 qu'une ESPÈCE : hors de portée du déterministe.
 
-**Une branche est poussée, `main` est INTACTE** (traite autonome) : la fusion
-t'attend. `27 - Git.bat` → **2**, ou `livrer` dans `_commande_git.txt`.
+**Le travail est commité EN LOCAL sur `feat/filtre-des-noms-sur-l-autorite`,
+`main` est INTACTE** (traite autonome). **Attention** : `commit` ne POUSSE pas —
+vérifié dans `.git`, contre ce qu'annonçait `CLAUDE.md`. Rien n'est encore sur
+GitHub. Pour fusionner : `27 - Git.bat` → **2**, ou `livrer` dans
+`_commande_git.txt` (qui pousse, puis fait le fast-forward).
 
 ## Prochain pas
 
-1. **`QUESTIONS_MIKE.md` : l'ESPÈCE comme 5ᵉ axe du filtre** — les 2 186
-   photos hors de portée. Ma recommandation : **pas en ET** (YOLO rate des
-   chats, le filtre rétrécirait en silence) ; au mieux un OU ou une puce.
-   Rien n'est câblé en attendant.
+1. **`QUESTIONS_MIKE.md`, deux choix qui t'attendent** : (a) l'ESPÈCE comme
+   5ᵉ axe du filtre — les 2 186 photos hors de portée ; ma recommandation :
+   **pas en ET** (YOLO rate des chats, le filtre rétrécirait en silence) ;
+   (b) `commit` ne pousse pas — une traite autonome n'a aucune copie hors de
+   ta machine. Rien n'est câblé en attendant.
 2. **Gestes Mike** : nettoyer Flo (5 909 photos) ; re-rejeter Caline.
 3. **Le reste** (`ROADMAP.md`) : prompt de PROD qui hallucine ; doublons
    proches ; UI (11) ; restauration à blanc (12) ; MCP lecture (13).

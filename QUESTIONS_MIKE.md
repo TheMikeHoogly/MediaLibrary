@@ -25,6 +25,25 @@ planche (« a un animal détecté ») qui dit ce qu'elle fait.
 **En attendant** : rien n'est câblé, l'espèce reste invisible du filtre et de
 la ligne de faits ; « chat » part entier à SigLIP, comme avant.
 
+## 20/08 — `commit` ne pousse rien : la traite autonome n'a pas de copie hors machine
+
+**Le fait, lu dans git et non dans le rapport.** `CLAUDE.md` dit qu'une traite
+autonome livre avec `commit` = « branche + push, `main` INTACTE ». Le code, lui
+(`git_agent.py`, branche `if commande == COMMIT: return`), s'arrête après le
+commit LOCAL : `refs/remotes/origin/feat/filtre-des-noms-sur-l-autorite`
+n'existe pas. Une nuit de travail autonome ne vit donc que sur ton disque —
+c'est-à-dire exactement le scénario que le chantier 12 (« PC mort lundi »)
+cherche à couvrir.
+
+**Ma recommandation : pousser.** Ajouter `push -u origin HEAD` à la branche
+`commit` de l'agent. Ce que ça coûte : une branche de plus sur GitHub, qui se
+jette en une commande. Ce que ça évite : perdre une traite entière. `main`
+reste intacte dans les deux cas — c'est elle que la convention protège, pas
+l'absence de copie. L'autre issue, plus honnête à défaut : corriger
+`CLAUDE.md`, qui promet aujourd'hui quelque chose que le code ne fait pas.
+
+**En attendant** : rien n'est poussé, et la doc de reprise le dit.
+
 ## Réglées
 
 - **19/08 — noms affichés deux fois dans la visionneuse.** Recommandation
