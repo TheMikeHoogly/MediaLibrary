@@ -66,5 +66,9 @@
 - **Une approximation DÉCLARÉE finit par se voir, et c'est le BANC qui a tort** (19/08) : sous
   UTC, deux des six divergences « vue ↔ champ écrit » étaient des photos prises à 00h06 et 00h40.
   Sous `TZ=Europe/Zurich` : 4, toutes réelles. Relancer sous le bon fuseau coûte dix secondes.
+- **Un chiffre publié sans le CODE qui l'a produit n'est pas reproductible** (21/08) : la
+  concordance du 20/08 (3 065 photos) ne vivait que dans un tableau de décisions ; réécrite en
+  code le lendemain, elle rend 3 134 — même famille, pas le même trait. Écrire le chiffre ET le
+  banc, ou ne pas bâtir dessus.
 - **Fragilité du corpus** : clés corrompues et mutations concurrentes ont invalidé des runs ;
   `--mesurer` alerte au-delà de 15 % de clés mortes.

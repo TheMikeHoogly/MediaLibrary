@@ -153,7 +153,9 @@ dossier d'avant 1990 n'y passe. Le **plafond 2100** (`22082010141.jpg` → 2082)
   la recherche.
 - **Mesure** : `mesure_dates_scan.py` (`--lecture`), `mesure_tri_recherche.py`,
   `mesure_faits_backfill.py`, `mesure_faits_vue.py`, `mesure_lieu_visible.py` —
-  lecture seule sur COPIE, jamais sur `photos.db`.
+  lecture seule sur COPIE, jamais sur `photos.db` ; **`mesure_copie_base.py`
+  fabrique cette copie** (API `backup`, source en `mode=ro`, copie DATÉE) — plus un
+  geste de Mike, plus un aller-retour clavier avant de mesurer.
 - **Pilotage** : trois canaux-fichiers, une seule façon de les lire
   (`canal.py`) — `_commande_serveur.txt` (redémarrer/arrêter, `pilotage.py`),
   `_commande_git.txt` (livrer, `git_agent.py`), `_commande_banc.txt` (mesurer,
