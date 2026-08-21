@@ -9,7 +9,10 @@ FUSIONNÉ — ce document, non. Puis `ROADMAP.md`, `eval/DECISIONS.md`,
 `eval/METHODE.md` — et `docs/DECISIONS_OUTILLAGE.md` si le sujet touche aux
 canaux. Débrief en 2–3 lignes, puis on attaque.
 
-## Où on en est (20/08/2026, session 28)
+## Où on en est (20/08/2026, fin de session 28)
+
+**`main` est à `9fc7bd6`, tout est fusionné, rien n'attend.** Sept livraisons
+dans la journée, toutes observées avant d'être gravées.
 
 **Chantier 14a-(iv) CLOS** : le filtre des noms de la recherche et la ligne de
 faits partagent enfin l'autorité (`_autorite_des_noms`). 13 photos sortaient
@@ -26,7 +29,14 @@ ainsi qu'on mesure ce que la VM ne peut pas atteindre (elle n'a pas le LAN).
 **L'espèce a réfuté deux fois** : SigLIP ne rend que la moitié des détections
 de YOLO, mais `det_score` ne dit pas l'espèce (`cheval` 0,934 sur *chien*).
 Ce qui tient : la **CONCORDANCE** YOLO ∧ tagueur — **3 065** photos, chat
-**2 316**.
+**2 316**. Les deux réfutations sont venues d'un banc lancé en ENTIER, pas
+d'un échantillon : c'est ce qui a fait naître le troisième canal.
+
+**Les docs de suivi ont un seul seuil : 50 000 octets** (décision de Mike,
+20/08). Il ne rattrape plus qu'un emballement franc — ce qui tient une doc
+courte est son RÔLE, pas son plafond, et le commentaire de `TRACKING_MD` dit
+lequel pour chacune. Ne pas rogner la précision d'une raison pour gagner des
+octets : c'est le réflexe que ce seuil a fait payer trois fois le 20/08.
 
 ## Prochain pas
 
