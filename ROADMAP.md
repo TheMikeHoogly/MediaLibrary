@@ -60,7 +60,7 @@ une **génération** : le `taskkill` par titre ne tuait rien.
    chantier 9 en dépend, pas le produit. Et le compte à rouvrir n'est pas
    1 196 : les **1 496 exclusions** sont des étiquettes humaines elles aussi —
    « ce visage n'est PAS Flo » évalue un clustering aussi bien qu'un
-   rattachement. Vérité terrain réelle : **2 692 décisions**.
+   rattachement. Vérité terrain réelle : **2 984 décisions** (1 196 rattachements, 1 496 exclusions, **292 confirmations** — sous-comptée deux fois le même jour).
 2. **Observer en réel ce qui est livré** — **fait ✔**. Reste : re-upload = une
    entrée, seek vidéo mobile, test du Z.
 3. **Chaîne « noms → descriptions → recherche » — 3a, 3b, 3c CLOS le 16/08.**
@@ -79,7 +79,7 @@ une **génération** : le `taskkill` par titre ne tuait rien.
 8. **Cross-pipeline (Mutz/Caline)** : outil livré, réversible. Fix auto REJETÉ
    (18 % faux rejets). Relancer si un nom d'animal sort en `personne:`.
 9. **Reconnaissance — algo. PARQUÉ (21/08, choix de Mike).** HDBSCAN /
-   Chinese Whispers / AdaFace restent inévaluables — 2 692 décisions humaines
+   Chinese Whispers / AdaFace restent inévaluables — 2 984 décisions humaines
    sur 71 868 visages. Ce n'est pas une dette : le produit n'en dépend pas, et
    la couverture des noms au niveau PHOTO est déjà là (point 1). À rouvrir si
    quelqu'un veut nommer des visages en série, pas avant.
@@ -128,8 +128,37 @@ une **génération** : le `taskkill` par titre ne tuait rien.
     sans mesure.
 15. **À évaluer (`vision-eval`)** : Florence-2 léger. **Parqué** faute
     d'hypothèse (banc 3b).
-16. **Agent de tagging INCRÉMENTAL, piloté par les événements de
-    connaissance (proposé par Mike, 21/08).** Non pas la re-passe en LOT —
+16. **« La médiathèque s'améliore à chaque information humaine »
+    (Mike, 21/08) — TROIS COUCHES, une seule a besoin d'un LLM.**
+    Le cas : une photo porte Florine et Caline ; quand Flora devient
+    identifiable, sa PRÉSENCE s'ajoute, et peut-être son RÔLE dans la
+    description. **6 287 photos** sont dans ce cas — un nom posé et au moins
+    un visage non couvert, sur 25 020 photos à visage (4 338 n'ont aucun nom,
+    12 565 sont couvertes ; 29 898 visages sans nom, borne haute).
+    (a) **PRÉSENCE — de la PROPAGATION, pas du tagging. À MESURER d'abord.**
+    Le mécanisme existe : un rattachement est `[clé_photo, index_visage]`
+    (niveau VISAGE), les 71 868 visages ont leurs vecteurs, et
+    `build_suggestions()` cherche déjà « visage non attribué proche d'une
+    signature », `exclude` et `confirmed` honorés. Zéro LLM, zéro GPU lourd.
+    **La question ouverte n'est pas quoi construire, c'est ce qu'il propose
+    DÉJÀ** : combien de suggestions sur les 29 898 visages non nommés, combien
+    de justes (échantillon jugé), et repasse-t-il sur tout le fonds quand une
+    fiche gagne un visage ou se contente-t-il d'un cache ? Si la file propose
+    déjà Flora et que personne ne la regarde, le problème est dans l'UI.
+    (b) **FAITS — déjà acquis.** `faits` étant une VUE, `personne:Flora`
+    apparaît instantanément dans la ligne de faits, le filtre et `/sujets`.
+    (c) **RÔLE dans la description — le seul étage LLM, et une hypothèse
+    NEUVE.** Injecter les noms a été rejeté le 31/07 (ignoré 84 %, ×2,6) —
+    mais c'était une LISTE PLATE : le modèle n'avait aucun moyen de savoir qui
+    est qui, donc il ignorait ou inventait. Chaque visage rattaché porte
+    désormais sa `bbox` : « le visage en [x,y,w,h] est Flora » est une autre
+    expérience, jamais tentée. L'hypothèse n'est plus « re-décrire avec plus de
+    faits » (direction mesurée dangereuse : hallucinations doublées) mais
+    **« décrire avec des noms ANCRÉS à des positions »**.
+    Conditions inchangées pour (c) : banc en aveugle sur un ET (apport **et**
+    hallucination), FRONTIÈRE DE PROVENANCE, journal avant/après.
+
+    Le socle reste : agent INCRÉMENTAL sur événement de connaissance — Non pas la re-passe en LOT —
     celle-là reste close (50 h GPU, 147 paires, hallucinations doublées) —
     mais un agent qui re-décrit **les seules photos dont la connaissance a
     changé** : un nom attribué, un lieu corrigé, une espèce confirmée. Le

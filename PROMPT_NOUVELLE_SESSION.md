@@ -36,7 +36,7 @@ route.** « Vérité terrain 0,8 % » mélangeait deux mesures : **18 863** phot
 portent un nom (44,8 %, 352 noms) — le produit est couvert — contre **1 196**
 visages rattachés sur 71 868 (1,66 %) — seul un ALGORITHME en dépend. Et le
 compte oubliait les **1 496 exclusions**, qui sont des étiquettes elles aussi :
-vérité terrain réelle **2 692** décisions. Chantier 9 et mode Flo : PARQUÉS.
+vérité terrain réelle **2 984** décisions. Chantier 9 et mode Flo : PARQUÉS.
 
 ## Prochain pas
 
@@ -48,13 +48,20 @@ vérité terrain réelle **2 692** décisions. Chantier 9 et mode Flo : PARQUÉS
    un `verifier_restauration.py` qui compare le restauré au vivant (entrées,
    noms humains, vecteurs, fiches) et dit ce qui manque. Écrire l'instrument
    d'abord, il rend la manip mesurable au lieu de rassurante.
-2. **Chantier 16 — l'agent de tagging INCRÉMENTAL** (idée de Mike, 21/08) :
-   re-décrire les seules photos dont la connaissance a CHANGÉ. **Un banc AVANT
-   tout code**, jugé en aveugle sur un ET (apport **et** hallucination), et une
-   FRONTIÈRE DE PROVENANCE entre ce que le modèle a vu et ce qu'on lui a dit —
-   sans elle, la concordance du 5ᵉ axe mesure son propre écho. Périmètre plus
-   petit qu'il n'y paraît : `faits` étant une VUE, la médiathèque apprend déjà
-   sans LLM ; seule la prose de la description reste en jeu.
+2. **Chantier 16 — « la médiathèque s'améliore à chaque information
+   humaine » (Mike, 21/08). TROIS COUCHES, et la première ne demande aucun
+   modèle.** Le cas : une photo porte Florine et Caline, Flora devient
+   identifiable, sa présence s'ajoute. **6 287 photos** sont dans ce cas.
+   **Commencer par 16(a), et par une MESURE, pas par du code** : le mécanisme
+   de propagation existe déjà (`build_suggestions()` cherche « visage non
+   attribué proche d'une signature », rattachements au niveau VISAGE
+   `[clé, index]`, 71 868 vecteurs en base). La question est ce qu'il propose
+   DÉJÀ sur les 29 898 visages non nommés, combien de justes, et s'il repasse
+   quand une fiche gagne un visage. Si la file propose déjà Flora sans que
+   personne la regarde, le chantier est dans l'UI. 16(b) est acquis (`faits`
+   est une VUE). 16(c) — le rôle dans la description — est le seul étage LLM,
+   avec une hypothèse NEUVE : les noms ANCRÉS à leur `bbox`, jamais tentés,
+   là où la liste plate du 31/07 était ignorée 84 % du temps.
 3. **Les finitions, en TRAITE AUTONOME** (`commit`, `main` intacte) : UI (11),
    audit I4–I8 / O7–O15, plafond de page à 1 500 sur `espece:chat`. Aucun
    jugement produit là-dedans.
