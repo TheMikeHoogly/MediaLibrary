@@ -420,5 +420,54 @@ class TestOrdreImpose(unittest.TestCase):
         self.assertEqual(p.mois, frozenset({5}))
 
 
+
+class TestJetonEspece(unittest.TestCase):
+    """Le 5ᵉ axe est EXPLICITE (forme A) : un jeton, jamais une promotion
+    silencieuse d'un mot de la phrase. Le vocabulaire est INJECTÉ — le module
+    ne connaît pas les espèces, il reçoit la fonction qui les canonise."""
+
+    @staticmethod
+    def canonique(mot):
+        return {'chat': 'chat', 'chats': 'chat',
+                'mouton': 'mouton'}.get(sans_accents(mot.lower()))
+
+    def test_le_jeton_est_detache_et_le_reste_rendu(self):
+        esp, inc, reste = r.extraire_especes('Luna espece:chat en 2015',
+                                             self.canonique)
+        self.assertEqual((esp, inc, reste), (['chat'], [], 'Luna en 2015'))
+
+    def test_pluriel_accent_et_casse(self):
+        for q in ('espèce:Chats', 'especes:CHAT', 'espece : chats'):
+            esp, inc, _ = r.extraire_especes(q, self.canonique)
+            self.assertEqual((esp, inc), (['chat'], []), q)
+
+    def test_un_mot_nu_reste_du_SENS(self):
+        # « chat » tapé seul part à SigLIP : c'est tout l'intérêt de la forme A.
+        self.assertEqual(r.extraire_especes('un chat sur le canape',
+                                            self.canonique),
+                         ([], [], 'un chat sur le canape'))
+
+    def test_espece_inconnue_est_RENDUE_pas_ignoree(self):
+        # L'ignorer rendrait tout le fonds, et l'utilisateur lirait ce silence
+        # comme un accord.
+        esp, inc, reste = r.extraire_especes('espece:licorne au bord',
+                                             self.canonique)
+        self.assertEqual((esp, inc, reste), ([], ['licorne'], 'au bord'))
+
+    def test_deux_jetons_sans_doublon(self):
+        esp, _, reste = r.extraire_especes(
+            'espece:chat espece:mouton espece:chats', self.canonique)
+        self.assertEqual((esp, reste), (['chat', 'mouton'], ''))
+
+    def test_le_jeton_ne_mange_pas_la_date(self):
+        esp, _, reste = r.extraire_especes('espece:chat en juin 2018',
+                                           self.canonique)
+        p, reste2 = r.extraire_periode(reste)
+        self.assertEqual(esp, ['chat'])
+        self.assertEqual((p.an_min, p.an_max), (2018, 2018))
+        self.assertEqual(p.mois, frozenset({6}))
+        self.assertEqual(reste2, '')
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

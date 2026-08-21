@@ -480,6 +480,53 @@ def _nettoyer_reste(reste):
     return ' '.join(garder)
 
 
+# ─── ESPÈCE — le 5ᵉ axe, et il est EXPLICITE ────────────────────────────────
+# Forme A (choix de Mike, 20/08) : un jeton que l'utilisateur écrit, jamais une
+# promotion silencieuse d'un mot de la phrase. « chat » tapé seul reste du SENS
+# et part à SigLIP ; `espece:chat` est un FILTRE. La différence est mesurée :
+# `q=mouton` rend 1 500 photos dont 28 moutons confirmés, `espece:mouton` en
+# rend 32, tous confirmés par deux regards (21/08).
+#
+# `especes:` au pluriel et `espèce:` accentué sont acceptés : refuser une
+# graphie que l'utilisateur écrira forcément serait une panne, pas une règle.
+_JETON_ESPECE = re.compile(r'esp[eè]ces?\s*:\s*([^\s,;]+)', re.I)
+
+
+def extraire_especes(requete, canonique):
+    """Détache les jetons `espece:` de la requête.
+
+    « Luna espece:chat en 2015 » → (['chat'], [], 'Luna en 2015')
+
+    `canonique` : mot → espèce canonique ou `None` (en prod
+    `faits_vue.espece_canonique`). Le module ne connaît pas le vocabulaire, il
+    le REÇOIT — comme il reçoit ses lecteurs de date. Une seule liste
+    d'espèces dans le projet, et elle vit à côté de la règle qui les lit.
+
+    Rend `(especes, inconnues, reste)`. Les INCONNUES sont rendues au lieu
+    d'être ignorées : `espece:licorne` doit dire « je ne connais pas cette
+    espèce » et ne rien rendre. Les ignorer rendrait TOUTES les photos, et
+    l'utilisateur lirait ce silence comme un accord.
+
+    L'extraction passe AVANT les noms — contrairement à l'ordre des trois
+    autres axes — parce qu'un jeton préfixé n'est ambigu avec rien : personne
+    ne s'appelle « espece:… ». C'est le retirer TARD qui serait risqué.
+    """
+    especes, inconnues = [], []
+
+    def prendre(m):
+        brut = m.group(1)
+        c = canonique(brut)
+        if c:
+            if c not in especes:
+                especes.append(c)
+        elif brut not in inconnues:
+            inconnues.append(brut)
+        return ' '
+
+    reste = _JETON_ESPECE.sub(prendre, requete)
+    return especes, inconnues, ' '.join(reste.split())
+
+
 def filtrer_periode(entrees, periode, epoch_precis, annee_fiable):
     """Restreint des (clé, entrée) à une période. Rend `(clés, sans_date)`.
 

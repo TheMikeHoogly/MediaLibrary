@@ -66,7 +66,9 @@ from renommage_facts import (_sans_accents, date_de_scan_presumee,
 __all__ = ['chemin_relatif', 'lieu_plausible', 'candidats_du_segment',
            'lieux_du_chemin', 'lieu_par_segments', 'lieu_pour', 'epoch_du_nom',
            'date_credible', 'taken_credible', 'date_et_source', 'assertions',
-           'faits', 'OPTIONS_AVANT_14A']
+           'faits', 'OPTIONS_AVANT_14A',
+           'ESPECES_MOTS', 'ESPECES_FORMES', 'especes_connues',
+           'espece_canonique', 'label_de_l_espece', 'dit_l_espece']
 
 
 # Dossiers qui ne sont jamais des lieux (miroir : `server._LIEUX_BRUIT`).
@@ -400,3 +402,79 @@ def faits(cle, entree, **kw):
     champ `faits` écrit par le worker de tagging, produite par la MÊME fonction
     (`tagging_meta.faits_structures`), mais recalculée, donc jamais périmée."""
     return tagging_meta.faits_structures(assertions(cle, entree, **kw))
+
+
+# ─────────────────────────── l'ESPÈCE (5ᵉ axe) ───────────────────────────
+# Le mot que TAPE un humain, pour chaque étiquette COCO que rend YOLO. Ce n'est
+# pas une traduction de dictionnaire, c'est la requête réelle : « oiseau » et
+# non « passereau », « vache » et non « bovin ».
+ESPECES_MOTS = {'cat': 'chat', 'dog': 'chien', 'bird': 'oiseau',
+                'cow': 'vache', 'horse': 'cheval', 'sheep': 'mouton'}
+
+# Les formes qui désignent l'espèce sous la plume du tagueur : le mot et son
+# pluriel, RIEN de plus. La règle ÉLARGIE (poney, brebis, chaton, veau…) a été
+# mesurée le 21/08 et REJETÉE : +43 photos sur 3 134 (1,4 %), pour une liste de
+# synonymes à maintenir par espèce. Le gain tenait dans le bruit.
+ESPECES_FORMES = {
+    'chat': ('chat', 'chats'), 'chien': ('chien', 'chiens'),
+    'oiseau': ('oiseau', 'oiseaux'), 'vache': ('vache', 'vaches'),
+    'cheval': ('cheval', 'chevaux'), 'mouton': ('mouton', 'moutons'),
+}
+
+_ESPECE_PAR_FORME = {f: mot for mot, formes in ESPECES_FORMES.items()
+                     for f in formes}
+
+_MOTS_SPLIT = re.compile(r'[^a-z0-9]+')
+
+
+def especes_connues():
+    """Les six espèces que le jeton `espece:` sait filtrer, triées."""
+    return sorted(ESPECES_FORMES)
+
+
+def espece_canonique(mot):
+    """« Chats », « CHAT », « chat » → 'chat'. `None` si ce n'est pas une des
+    six — et l'appelant doit le DIRE plutôt que de se rabattre en silence : un
+    repli silencieux déguise la cause en symptôme (`eval/METHODE.md`)."""
+    return _ESPECE_PAR_FORME.get(_sans_accents(str(mot).lower().strip()))
+
+
+def label_de_l_espece(mot):
+    """'chat' → 'cat', l'étiquette que rend YOLO. `None` si inconnue."""
+    for label, m in ESPECES_MOTS.items():
+        if m == mot:
+            return label
+    return None
+
+
+def _mots_dits(entree):
+    """Mots ENTIERS prononcés par le tagueur : `kw_fr` et `desc`, découpés,
+    normalisés. Deux ensembles séparés — on veut pouvoir dire LEQUEL parle."""
+    fr = set()
+    for m in (entree.get('kw_fr') or []):
+        fr |= set(_MOTS_SPLIT.split(_sans_accents(str(m).lower())))
+    de = set(_MOTS_SPLIT.split(_sans_accents(str(entree.get('desc') or '').lower())))
+    return fr - {''}, de - {''}
+
+
+def dit_l_espece(entree, mot):
+    """(dans `kw_fr`, dans `desc`) — le tagueur dit-il cette espèce ?
+
+    **Mot ENTIER, jamais sous-chaîne** : « château » ne contient pas un chat.
+    C'est la leçon du 19/08 (« Ins » trouvé dans « Cousins&Cousines »), payée
+    une fois et appliquée ici avant de la repayer.
+
+    Les DEUX sources comptent, et ce n'est pas de la générosité : mesuré le
+    21/08, le mouton se dit surtout dans `desc` (38 des 81 entrées), tandis que
+    le chat se dit presque toujours dans les deux (2 988 sur 3 206). Ne lire
+    que `kw_fr` perdrait les espèces rares — c'est probablement ce qui sépare
+    la concordance de ce banc (3 134) de celle publiée le 20/08 (3 065).
+
+    Cette fonction est l'UNIQUE implémentation de la règle : le filtre de la
+    recherche et le banc `mesure_axe_espece.py` l'appellent tous deux. Deux
+    chemins pour une même question, c'est deux réponses (chantier 14a-iv)."""
+    formes = set(ESPECES_FORMES.get(mot) or ())
+    if not formes:
+        return False, False
+    fr, de = _mots_dits(entree)
+    return bool(formes & fr), bool(formes & de)

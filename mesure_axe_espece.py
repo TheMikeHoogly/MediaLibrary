@@ -77,16 +77,12 @@ from pathlib import Path
 import faits_vue
 import mesure_faits_vue as MFV
 
-# Le mot que TAPE un humain pour chaque étiquette COCO rendue par YOLO.
-MOTS = {'cat': 'chat', 'dog': 'chien', 'bird': 'oiseau',
-        'cow': 'vache', 'horse': 'cheval', 'sheep': 'mouton'}
-
-# Formes STRICTES : le mot et son pluriel, rien d'autre.
-STRICTES = {
-    'chat': ('chat', 'chats'), 'chien': ('chien', 'chiens'),
-    'oiseau': ('oiseau', 'oiseaux'), 'vache': ('vache', 'vaches'),
-    'cheval': ('cheval', 'chevaux'), 'mouton': ('mouton', 'moutons'),
-}
+# Le vocabulaire et la règle STRICTE viennent de `faits_vue` — le banc IMPORTE
+# la prod, il ne la recopie pas (`eval/METHODE.md`, 14/08). C'est ce qui rend
+# ce banc capable de mesurer ce que le FILTRE fera vraiment : une copie de la
+# règle mesurerait un cousin du filtre, jamais le filtre.
+MOTS = faits_vue.ESPECES_MOTS
+STRICTES = faits_vue.ESPECES_FORMES
 
 # Formes ÉLARGIES : ce qu'un humain écrit pour la MÊME bête. Le petit
 # (chaton, agneau) et la variété (poney) comptent ; le genre aussi (jument).
@@ -139,9 +135,16 @@ def formes(mot, elargie=False):
 def dit_l_espece(entree, mot, elargie=False):
     """(dans kw_fr, dans desc) — le tagueur dit-il l'espèce, en MOT ENTIER ?
 
+    La règle STRICTE est celle de la PROD (`faits_vue.dit_l_espece`) : le banc
+    l'appelle au lieu de la refaire, sinon il mesurerait un cousin du filtre.
+    La règle ÉLARGIE, elle, n'existe que dans ce banc — c'est la variante
+    qu'il sert à juger, et elle a été rejetée le 21/08 (+43 photos sur 3 134).
+
     Deux sources séparées parce qu'on veut SAVOIR laquelle porte la
     concordance : si `desc` la portait seule, la règle dépendrait d'un texte
     libre plutôt que de mots-clés, et ce serait à dire avant de graver."""
+    if not elargie:
+        return faits_vue.dit_l_espece(entree, mot)
     fr, de = mots_de(entree)
     f = formes(mot, elargie)
     return bool(f & fr), bool(f & de)

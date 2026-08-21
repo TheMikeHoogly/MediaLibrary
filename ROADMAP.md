@@ -19,6 +19,13 @@ absentes. La fiche fait foi sur l'orthographe (« Luna · luna » a disparu).
 **Portée du filtre : 92,74 %** — nom ou lieu atteint **27 936** des **30 122**
 photos à fait NON-date. Les **2 186** autres n'ont qu'une ESPÈCE.
 
+**Le 5ᵉ axe est LIVRÉ (21/08).** `espece:chat` filtre sur la concordance des
+deux regards ; observé en réel : 2 386 photos concordantes, 0 en trop face à la
+règle, `espece:licorne` rend zéro et le DIT. Le vrai gain est la précision, pas
+le rappel — voir `eval/DECISIONS.md`. La sandbox fabrique désormais sa propre
+copie de la base (`mesure_copie_base.py`) : plus un aller-retour clavier avant
+de mesurer.
+
 **L'espèce est mesurée, et elle a réfuté deux fois.** SigLIP ne rend dans son
 top-1500 que la moitié des détections de YOLO (chat 50,1 %, chien 50,3 %,
 oiseau 48,3 %, cheval 72,6 %) — elles ont pourtant TOUTES un vecteur : mal
@@ -95,8 +102,14 @@ une **génération** : le `taskkill` par titre ne tuait rien.
     (a) **Déterministe — CLOS et OBSERVÉ.** (i)–(iii) le 19/08 : `faits` est une
     VUE, la règle de LIEU est unifiée, la vue s'affiche. (iv) le 20/08 : le
     FILTRE partage l'autorité des noms avec l'affichage.
-    **EN COURS : le 5ᵉ axe `espece:`**, sur la CONCORDANCE YOLO ∧ tagueur
-    (3 065 photos, chat 2 316) — forme A, un jeton explicite.
+    **Le 5ᵉ axe `espece:` : LIVRÉ et OBSERVÉ (21/08)** — jeton explicite
+    (forme A), filtrant sur la CONCORDANCE YOLO ∧ tagueur, règle partagée par
+    le serveur et le banc (`faits_vue.dit_l_espece`). Le gain mesuré n'est pas
+    celui qu'on attendait : **1 018** photos qu'aucun des six mots ne rend, mais
+    surtout la PRÉCISION — `q=mouton` rend 1 500 photos dont 28 moutons,
+    `espece:mouton` en rend 32, tous confirmés. Reste : les **puces** qui
+    insèrent le jeton, et le plafond de page (`espece:chat` rend 1 500 sur
+    2 386 — la limite est celle de `/files?q=`, pas de l'axe).
     (b) ensuite seulement, **escalade ponctuelle** vers un modèle chargé à la
     demande (bail GpuArbiter, déchargé après) — `vision-eval`, jamais câblé
     sans mesure.

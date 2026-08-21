@@ -3218,6 +3218,50 @@ def _cles_portant(tags):
     return out
 
 
+
+# ─── Espèce (5ᵉ axe, chantier 14a) ───────────────────────────────────────────
+# Deux regards INDÉPENDANTS doivent dire la même espèce : YOLO qui l'a détectée
+# dans les pixels, et le tagueur qui l'a écrite en français. C'est la
+# CONCORDANCE, et c'est le choix du 20/08 — pas `det_score`, qui dit « il y a
+# un animal ici » sans dire lequel (`cheval` 0,934 sur un chien).
+
+def _cles_de_l_espece(mots):
+    """Clés dont YOLO **et** le tagueur disent l'espèce — toutes les espèces
+    demandées, comme `_cles_portant` exige tous les noms.
+
+    On part de l'ANIMAL_STORE et non de l'index : seules ~4 750 photos portent
+    une détection, contre 43 000 entrées. Le filtre ne coûte donc pas un
+    balayage du fonds, et il n'a **aucun cache à invalider** — une photo taguée
+    il y a dix secondes est filtrable tout de suite. Un index à rafraîchir
+    aurait été plus rapide et parfois faux ; ici la fraîcheur est gratuite.
+
+    Les 82 photos taguées AVEC les faits en contexte sont GARDÉES, alors que le
+    banc les écarte. Ce n'est pas une divergence : le banc mesure un ACCORD, et
+    un accord obtenu en soufflant la réponse ne prouve rien ; l'utilisateur,
+    lui, cherche sa photo de chat — la lui cacher au nom de la méthode serait
+    absurde."""
+    import faits_vue
+    out = None
+    for mot in mots:
+        label = faits_vue.label_de_l_espece(mot)
+        if label is None:
+            return set()
+        vues = set()
+        for k, ae in list(ANIMAL_STORE.data.items()):
+            if not isinstance(ae, dict):
+                continue
+            if not any(isinstance(a, dict) and a.get('species') == label
+                       for a in (ae.get('animals') or [])):
+                continue
+            e = STORE.data.get(k)
+            if not isinstance(e, dict) or e.get('failed'):
+                continue
+            if any(faits_vue.dit_l_espece(e, mot)):
+                vues.add(k)
+        out = vues if out is None else (out & vues)
+    return out if out is not None else set()
+
+
 # ─── Lieux ───────────────────────────────────────────────────────────────────
 # Seules 2 % des photos portent des coordonnées GPS. Les NOMS DE DOSSIERS, eux,
 # sont une mine : « Danemark », « 07 Voyage en Indonésie », « Bolivie 2015 ».
@@ -3542,18 +3586,31 @@ def semantic_search(requete, limite=80, detail=None):
     """
     sem = _semantic_mod()
     vs = photo_vectors()
-    tags, reste = _extraire_noms(requete)
+    import faits_vue
+    especes, esp_inconnues, reste = recherche.extraire_especes(
+        requete, faits_vue.espece_canonique)
+    tags, reste = _extraire_noms(reste)
     lieux, reste = _extraire_lieux(reste)
     periode, reste = recherche.extraire_periode(reste)
     if detail is not None:
         detail.update(noms=[t.split(':', 1)[-1] for t in tags], lieux=lieux,
                       periode=periode.libelle if periode else '',
+                      especes=especes, especes_inconnues=esp_inconnues,
                       reste=reste, sans_date=0, sans_date_tri=0)
 
     candidats = _cles_portant(tags) if tags else None
     if lieux:
         du_lieu = _cles_du_lieu(lieux)
         candidats = du_lieu if candidats is None else (candidats & du_lieu)
+    if esp_inconnues:
+        # `espece:licorne` : un filtre qu'on ne sait pas satisfaire ne rend
+        # RIEN, et la page le dit. Le laisser passer rendrait tout le fonds,
+        # ce que l'utilisateur lirait comme un accord.
+        return []
+    if especes:
+        de_l_espece = _cles_de_l_espece(especes)
+        candidats = (de_l_espece if candidats is None
+                     else (candidats & de_l_espece))
     if periode is not None:
         # Sur les candidats déjà réduits quand il y en a — sinon sur tout
         # l'index (43 000 entrées, opérations pures : quelques dizaines de ms).
@@ -5386,6 +5443,13 @@ __FOLDERS__
     var bouts = [];
     if (d.noms && d.noms.length) bouts.push(d.noms.join(' + '));
     if (d.lieux && d.lieux.length) bouts.push(d.lieux.join(' + '));
+    // 5e axe : un FILTRE, pas du sens. Le dire evite qu'une requete qui
+    // restreint en silence passe pour un fonds pauvre.
+    if (d.especes && d.especes.length)
+      bouts.push('espece : ' + d.especes.join(' + '));
+    if (d.especes_inconnues && d.especes_inconnues.length)
+      bouts.push('espece inconnue : ' + d.especes_inconnues.join(', ')
+                 + ' (aucune photo)');
     if (d.periode) bouts.push(d.periode);
     if (d.reste) bouts.push(d.reste);
     iaCompris = bouts.join(' \u00b7 ');
@@ -13486,6 +13550,11 @@ class Handler(BaseHTTPRequestHandler):
              'noms': detail.get('noms', []),
              'lieux': detail.get('lieux', []),
              'periode': detail.get('periode', ''),
+             # 5ᵉ axe : ce que le jeton `espece:` a filtré, et ce qu'il n'a
+             # pas su lire. Une espèce inconnue rend zéro photo : le taire
+             # ferait passer un filtre impossible pour un fonds vide.
+             'especes': detail.get('especes', []),
+             'especes_inconnues': detail.get('especes_inconnues', []),
              'sans_date': detail.get('sans_date', 0),
              # `sans_date_tri` : photos RENDUES mais placées sans aucune date
              # sûre — elles vont en fin de liste. Une protection qui s'annule

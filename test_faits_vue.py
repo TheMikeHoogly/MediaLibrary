@@ -378,5 +378,61 @@ class TestDateDeScan(unittest.TestCase):
         self.assertEqual(e, {'taken': self.epoch(2007)})
 
 
+
+class TestEspece(unittest.TestCase):
+    """La règle du 5ᵉ axe : deux regards indépendants, et le MOT ENTIER.
+
+    Elle vit ici parce que le filtre de la recherche ET le banc
+    `mesure_axe_espece.py` l'appellent tous deux. Deux implémentations d'une
+    même question, c'est deux réponses — la régression du 20/08 (13 photos)
+    n'avait pas d'autre cause."""
+
+    def test_les_six_especes_et_leurs_etiquettes(self):
+        self.assertEqual(faits_vue.especes_connues(),
+                         ['chat', 'cheval', 'chien', 'mouton', 'oiseau',
+                          'vache'])
+        self.assertEqual(faits_vue.label_de_l_espece('chat'), 'cat')
+        self.assertEqual(faits_vue.label_de_l_espece('mouton'), 'sheep')
+        self.assertIsNone(faits_vue.label_de_l_espece('licorne'))
+
+    def test_canonique_pluriel_casse_accents(self):
+        for m in ('chat', 'Chats', 'CHAT', 'chats'):
+            self.assertEqual(faits_vue.espece_canonique(m), 'chat', m)
+        self.assertIsNone(faits_vue.espece_canonique('licorne'))
+        self.assertIsNone(faits_vue.espece_canonique(''))
+
+    def test_MOT_ENTIER_jamais_sous_chaine(self):
+        # « Ins » dans « Cousins&Cousines » (19/08), payé une fois.
+        self.assertEqual(faits_vue.dit_l_espece({'kw_fr': ['château']},
+                                                'chat'), (False, False))
+        self.assertEqual(faits_vue.dit_l_espece({'desc': 'un brochet'},
+                                                'chat'), (False, False))
+
+    def test_les_deux_sources_comptent_et_se_distinguent(self):
+        self.assertEqual(faits_vue.dit_l_espece({'kw_fr': ['chien']}, 'chien'),
+                         (True, False))
+        self.assertEqual(faits_vue.dit_l_espece({'desc': 'Un chien.'},
+                                                'chien'), (False, True))
+        self.assertEqual(faits_vue.dit_l_espece(
+            {'kw_fr': ['chien noir'], 'desc': 'chien'}, 'chien'), (True, True))
+
+    def test_dans_un_keyword_compose_et_au_pluriel(self):
+        self.assertTrue(faits_vue.dit_l_espece(
+            {'kw_fr': ['chat gris et blanc']}, 'chat')[0])
+        self.assertTrue(faits_vue.dit_l_espece(
+            {'desc': 'Deux moutons dans un pré.'}, 'mouton')[1])
+
+    def test_une_espece_inconnue_ne_dit_rien(self):
+        self.assertEqual(faits_vue.dit_l_espece({'kw_fr': ['licorne']},
+                                                'licorne'), (False, False))
+
+    def test_les_synonymes_sont_HORS_de_la_regle(self):
+        # Règle élargie mesurée puis REJETÉE le 21/08 : +43 photos sur 3 134.
+        for mot, syn in (('cheval', 'poney'), ('mouton', 'brebis'),
+                         ('chat', 'chaton'), ('vache', 'veau')):
+            self.assertEqual(faits_vue.dit_l_espece({'kw_fr': [syn]}, mot),
+                             (False, False), syn)
+
+
 if __name__ == '__main__':
     unittest.main(verbosity=2)
