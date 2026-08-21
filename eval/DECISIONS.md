@@ -93,6 +93,8 @@
 | Idée / piste | Verdict | Raison |
 |---|---|---|
 | Les noms répétés sous la visionneuse | **RETIRÉS, OBSERVÉ** (19/08, choix de Mike) | La ligne de faits les dit déjà, triés, sans préfixe et avec leur source. État vide RÉDIGÉ : « aucun mot-clé au-delà des noms » — « pas encore de tags » mentirait sur une photo nommée. Le FILTRE de la planche les garde : y chercher « personne:Luna » a du sens. |
+| **Les puces d'espèce INSÈRENT le jeton** | **ADOPTÉ, OBSERVÉ** (21/08) | Six puces sous la barre, en mode IA seulement. Cliquer AJOUTE `espece:chat` à ce qui est tapé au lieu de le remplacer : le jeton se compose avec les autres axes (« Luna » + un clic = 198 photos). Bascule au second clic, `aria-pressed` porté, état pris de ce que le SERVEUR a compris — jamais d'une relecture locale de la requête, qui finirait par contredire le moteur. |
+| **Sur une page de résultats, filtrer dedans MENT** | **CORRIGÉ pour les puces, OUVERT pour la barre** (21/08) | `/files?q=` ne charge que le résultat de la requête précédente ; l'affiner côté client n'intersecte donc que CE sous-ensemble. Observé : après `espece:chat`, cliquer « chien » annonçait **3 photos** — le fonds en a **354**, et le vrai croisement chat ∧ chien en a **5**. Trois chiffres, un seul vrai. Une puce cliquée est une intention explicite : elle RELANCE la requête côté serveur. La barre de recherche garde le défaut (elle cherche à chaque frappe : renaviguer en cours de frappe serait pire) — voir `QUESTIONS_MIKE.md`. |
 | Deux ordres de tri suffisent (Date, Nom) | **FAUX, OBSERVÉ** (19/08) | Il y en a TROIS : celui que rend `/api/search`. Le clic sur « Date » était avalé. **Bouton « Pertinence »**, visible quand un classement existe. |
 
 ## Gouvernance de ce fichier

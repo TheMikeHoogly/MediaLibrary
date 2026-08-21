@@ -5335,6 +5335,16 @@ body { font-family: var(--f-texte);
   </div>
 </div>
 
+<!-- 5e axe : les puces INSERENT le jeton dans la requete au lieu de la
+     remplacer, pour qu'il se compose avec les autres axes (« Luna » + un clic
+     donne « Luna espece:chat »). Visible en mode IA seulement : hors de ce
+     mode la barre filtre des mots-cles, ou le jeton n'a pas de sens. -->
+<div class="selbar" id="especebar" style="display:none">
+  <span class="lbl">Esp&egrave;ce :</span>
+  <span id="especechips"></span>
+  <span class="lbl">filtre exact : la d&eacute;tection ET la description disent la m&ecirc;me b&ecirc;te</span>
+</div>
+
 <div id="pending"></div>
 __FOLDERS__
 <div class="tagbar" id="tagbar"></div>
@@ -5455,7 +5465,91 @@ __FOLDERS__
     iaCompris = bouts.join(' \u00b7 ');
     iaEcartees = d.sans_date || 0;
     iaSansOrdre = d.sans_date_tri || 0;
+    majEspeceChips(d.especes || []);
   }
+  // ── 5e axe : les puces d'espece ──────────────────────────────────────
+  // Les six especes que YOLO sait detecter. La liste vit ici en dur parce que
+  // c'est celle du DETECTEUR, pas une preference : elle ne change qu'avec le
+  // modele. Cote serveur, la meme liste est dans `faits_vue.ESPECES_MOTS`.
+  var ESPECES = ['chat', 'chien', 'oiseau', 'cheval', 'vache', 'mouton'];
+  // Pluriels acceptes a la lecture : l'utilisateur ecrira « espece:chats ».
+  var ESPECE_FORMES = {chat: 'chats', chien: 'chiens', oiseau: 'oiseaux',
+                       cheval: 'chevaux', vache: 'vaches', mouton: 'moutons'};
+  // Motif construit en CHAINE, pas en litteral : cette page vit dans une
+  // chaine Python, ou une classe d'echappement (antislash-s) serait lue comme
+  // une sequence d'echappement invalide. Les espaces suffisent — une requete
+  // tapee n'a pas de tabulations.
+  var RE_ESPECE = 'esp[eè]ces?[ ]*:[ ]*([^ ,;]+)';
+
+  function especeDuJeton(valeur) {
+    var v = String(valeur || '').toLowerCase();
+    for (var i = 0; i < ESPECES.length; i++)
+      if (v === ESPECES[i] || v === ESPECE_FORMES[ESPECES[i]]) return ESPECES[i];
+    return null;                       // inconnue : on la laisse ou elle est
+  }
+
+  // Retire de la requete les jetons qui designent CETTE espece, et rend le
+  // texte nettoye. Ne touche a rien d'autre : les noms, lieux et dates tapes
+  // a cote doivent survivre a un clic sur une puce.
+  function sansEspece(texte, mot) {
+    return texte.replace(new RegExp(RE_ESPECE, 'gi'), function(tout, val) {
+      return especeDuJeton(val) === mot ? ' ' : tout;
+    }).replace(/  +/g, ' ').trim();
+  }
+
+  function basculerEspece(mot) {
+    var avant = qInput.value;
+    var apres = sansEspece(avant, mot);
+    // Rien n'a bouge => l'espece n'y etait pas : on l'AJOUTE a la fin.
+    if (apres === avant.replace(/  +/g, ' ').trim())
+      apres = (apres + ' espece:' + mot).trim();
+    qInput.value = apres;
+    if (qTimer) clearTimeout(qTimer);
+    // Sur une page de RESULTATS servie par le serveur, FILES ne contient que
+    // le resultat de la requete PRECEDENTE : filtrer dedans afficherait
+    // « 3 photos » la ou le fonds en a 349 — un compte qui ment, la forme
+    // d'erreur la plus chere du projet. Une puce cliquee est une intention
+    // EXPLICITE : on relance la requete cote serveur.
+    if (SEARCHQ) { location.href = apres ? '/files?q=' + encodeURIComponent(apres)
+                                         : '/files'; return; }
+    if (apres) rechercheIA(); else { iaResultats = null; majEspeceChips([]);
+                                     oublierPertinence(); }
+  }
+
+  // L'etat des puces vient de ce que le SERVEUR a compris, jamais d'une
+  // relecture locale de la requete : une page qui deduit son propre etat finit
+  // par contredire le moteur — c'est exactement la regression du 20/08.
+  function majEspeceChips(especes) {
+    var actives = {};
+    (especes || []).forEach(function(m) { actives[m] = true; });
+    var box = document.getElementById('especechips');
+    if (!box.firstChild) {
+      ESPECES.forEach(function(mot) {
+        var b = document.createElement('button');
+        b.className = 'chip';
+        b.type = 'button';
+        b.textContent = mot;
+        b.setAttribute('aria-pressed', 'false');
+        b.title = 'Filtre exact : la detection et la description disent « '
+                  + mot + ' »';
+        b.onclick = function() { basculerEspece(mot); };
+        box.appendChild(b);
+        box.appendChild(document.createTextNode(' '));
+      });
+    }
+    var puces = box.getElementsByTagName('button');
+    for (var i = 0; i < puces.length; i++) {
+      var on = !!actives[puces[i].textContent];
+      puces[i].className = 'chip' + (on ? ' on' : '');
+      puces[i].setAttribute('aria-pressed', on ? 'true' : 'false');
+    }
+  }
+
+  function montrerEspeceBar(oui) {
+    document.getElementById('especebar').style.display = oui ? '' : 'none';
+    if (oui) majEspeceChips(null);      // construit les puces au premier appel
+  }
+
   var btnIA = document.getElementById('btn-ia');
   btnIA.addEventListener('click', function() {
     modeIA = !modeIA;
@@ -5463,6 +5557,7 @@ __FOLDERS__
     btnIA.setAttribute('aria-pressed', modeIA ? 'true' : 'false');
     qInput.placeholder = modeIA ? 'Décris la photo…' : 'Recherche tags…';
     iaResultats = null;
+    montrerEspeceBar(modeIA);
     // Sans classement, « Pertinence » n'a plus de sens : on retombe sur la date
     // plutot que de laisser un bouton actif sans ordre derriere lui.
     if (currentSort === 'pertinence') { currentSort = ''; sortAsc = true; }
@@ -5482,7 +5577,8 @@ __FOLDERS__
 
   function rechercheIA() {
     var t = qInput.value.trim();
-    if (!t) { iaResultats = null; oublierPertinence(); return; }
+    if (!t) { iaResultats = null; majEspeceChips([]); oublierPertinence();
+              return; }
     var jeton = ++iaJeton;                 // ignore les reponses hors delai
     var cnt = document.getElementById('cnt');
     cnt.textContent = 'recherche…';
@@ -6524,6 +6620,7 @@ __FOLDERS__
     qInput.placeholder = 'Décris la photo…';
     iaResultats = {};
     FILES.forEach(function(f, i) { iaResultats[f.key] = i; });
+    montrerEspeceBar(true);
     lireDecomposition(SEARCHMETA || {});
     sortBy('pertinence');   // le serveur a deja classe : le bouton le dit
   }

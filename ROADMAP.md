@@ -107,9 +107,13 @@ une **génération** : le `taskkill` par titre ne tuait rien.
     le serveur et le banc (`faits_vue.dit_l_espece`). Le gain mesuré n'est pas
     celui qu'on attendait : **1 018** photos qu'aucun des six mots ne rend, mais
     surtout la PRÉCISION — `q=mouton` rend 1 500 photos dont 28 moutons,
-    `espece:mouton` en rend 32, tous confirmés. Reste : les **puces** qui
-    insèrent le jeton, et le plafond de page (`espece:chat` rend 1 500 sur
-    2 386 — la limite est celle de `/files?q=`, pas de l'axe).
+    `espece:mouton` en rend 32, tous confirmés. **Puces livrées et observées** :
+    six sous la barre, elles INSÈRENT le jeton (il se compose avec les autres
+    axes) et relancent la requête côté serveur. Reste : le plafond de page
+    (`espece:chat` rend 1 500 sur 2 386 — limite de `/files?q=`, pas de l'axe),
+    et **la barre de recherche ment encore sur une page de résultats** (elle
+    filtre dans le résultat précédent : 3 photos annoncées là où le fonds en a
+    354) — `QUESTIONS_MIKE.md`.
     (b) ensuite seulement, **escalade ponctuelle** vers un modèle chargé à la
     demande (bail GpuArbiter, déchargé après) — `vision-eval`, jamais câblé
     sans mesure.
