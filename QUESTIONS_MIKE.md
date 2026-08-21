@@ -6,24 +6,15 @@
 > `eval/DECISIONS.md` si elle tranche, dans `ROADMAP.md` si elle priorise.
 > Protocole : `CLAUDE.md`, « Traite autonome ».
 
-### La barre de recherche sur une page de RÉSULTATS (21/08)
-
-`/files?q=…` ne charge que le résultat de la requête. Taper autre chose dans la
-barre filtre **dans ce sous-ensemble** : après `espece:chat`, chercher
-`espece:chien` annonçait **3 photos** alors que le fonds en a **354**. Le
-défaut est ANCIEN — il vaut pour n'importe quelle requête, pas seulement pour
-le 5ᵉ axe — mais les puces le rendaient facile à rencontrer, donc elles
-relancent désormais la requête côté serveur.
-
-**Ma recommandation** : que la barre fasse pareil, mais seulement sur `Entrée`
-— renaviguer à chaque frappe (elle cherche 450 ms après la dernière touche)
-donnerait une page qui se recharge pendant qu'on tape. Le compte resterait
-faux entre deux `Entrée`, à moins d'afficher « dans ces 1 500 photos » tant
-qu'on n'a pas relancé.
-
-**En attendant** : rien touché à la barre ; les puces, elles, disent vrai.
+*Aucune question en attente.*
 
 ## Réglées
+
+- **21/08 — la barre de recherche mentait sur une page de résultats.**
+  Recommandation suivie : elle cesse de chercher à chaque frappe et attend
+  **Entrée**, qui relance la requête côté serveur ; un indice « ↵ Entrée pour
+  relancer » paraît tant que le texte diffère. Observé — `montagne` tapé sur la
+  page des chats ne touche plus au compte, `Entrée` rend 1 500 photos.
 
 - **20/08 — `eval/DECISIONS.md` à saturation, deuxième fois en deux jours.**
   Recommandation suivie : découpage par DOMAINE, l'outillage part dans

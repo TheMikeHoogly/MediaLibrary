@@ -5323,6 +5323,10 @@ body { font-family: var(--f-texte);
   <button class="tb" id="btn-ia" aria-pressed="false"
           title="Recherche par le sens : d&eacute;cris la photo en fran&ccedil;ais">IA</button>
   <span class="count" id="cnt"></span>
+  <!-- Page de RESULTATS : la barre ne cherche plus a chaque frappe (elle
+       filtrerait dans le resultat precedent). Cet indice dit ce qu'il reste
+       a faire — un compte faux serait pire qu'une touche a presser. -->
+  <span class="count" id="relance" style="display:none">&#8629; Entr&eacute;e pour relancer</span>
   <div class="btn-group">
     <button class="tb active" id="btn-date" aria-pressed="true">Date</button>
     <button class="tb" id="btn-name" aria-pressed="false">Nom A-Z</button>
@@ -5431,8 +5435,37 @@ __FOLDERS__
   var qTimer = null;
   qInput.addEventListener('input', function() {
     if (qTimer) clearTimeout(qTimer);
+    // Sur une page de RESULTATS (`/files?q=`), FILES ne contient que le
+    // resultat de la requete precedente : chercher a chaque frappe
+    // n'intersecterait que CE sous-ensemble — « 3 photos » la ou le fonds en
+    // a 354 (observe le 21/08). On attend une intention explicite. Hors mode
+    // IA, la barre FILTRE des mots-cles dans la planche : la, filtrer dans ce
+    // qui est charge est exactement ce qu'on demande.
+    if (modeIA && SEARCHQ) { majIndiceRelance(); return; }
     qTimer = setTimeout(modeIA ? rechercheIA : applyFilter, modeIA ? 450 : 250);
   });
+  qInput.addEventListener('keydown', function(e) {
+    if (e.key !== 'Enter') return;
+    e.preventDefault();
+    if (qTimer) clearTimeout(qTimer);
+    if (modeIA && SEARCHQ) { relancerCoteServeur(qInput.value); return; }
+    if (modeIA) rechercheIA(); else applyFilter();
+  });
+
+  // Relance la requete COTE SERVEUR : la seule facon d'obtenir un compte vrai
+  // depuis une page de resultats. Un seul chemin, partage par les puces et par
+  // la touche Entree.
+  function relancerCoteServeur(texte) {
+    var t = (texte || '').trim();
+    location.href = t ? '/files?q=' + encodeURIComponent(t) : '/files';
+  }
+
+  function majIndiceRelance() {
+    var el = document.getElementById('relance');
+    if (!el) return;
+    var differe = modeIA && SEARCHQ && qInput.value.trim() !== SEARCHQ;
+    el.style.display = differe ? '' : 'none';
+  }
 
   // ── recherche semantique (SigLIP 2) ──
   // Le filtre habituel compare des mots-cles ; ce mode-ci compare le SENS.
@@ -5510,8 +5543,7 @@ __FOLDERS__
     // « 3 photos » la ou le fonds en a 349 — un compte qui ment, la forme
     // d'erreur la plus chere du projet. Une puce cliquee est une intention
     // EXPLICITE : on relance la requete cote serveur.
-    if (SEARCHQ) { location.href = apres ? '/files?q=' + encodeURIComponent(apres)
-                                         : '/files'; return; }
+    if (SEARCHQ) { relancerCoteServeur(apres); return; }
     if (apres) rechercheIA(); else { iaResultats = null; majEspeceChips([]);
                                      oublierPertinence(); }
   }
@@ -5558,6 +5590,7 @@ __FOLDERS__
     qInput.placeholder = modeIA ? 'Décris la photo…' : 'Recherche tags…';
     iaResultats = null;
     montrerEspeceBar(modeIA);
+    majIndiceRelance();
     // Sans classement, « Pertinence » n'a plus de sens : on retombe sur la date
     // plutot que de laisser un bouton actif sans ordre derriere lui.
     if (currentSort === 'pertinence') { currentSort = ''; sortAsc = true; }
