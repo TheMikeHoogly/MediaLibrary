@@ -75,5 +75,14 @@
   clustering aussi bien qu'un rattachement. Et deux mesures ne doivent jamais porter le même
   nom : « photos nommées » (44,8 %) et « visages étiquetés » (1,66 %) répondent à des
   questions différentes ; les confondre a fait passer le produit pour bloqué.
+- **Répliquer la RÈGLE d'un producteur sans ses GARDE-FOUS, c'est mesurer son cousin** (21/08) :
+  le banc de propagation annonçait **3 698** rattachements en attente ; en appliquant le
+  garde-fou des clés fantômes que `build_suggestions` applique, il en reste **14**. Les 3 684
+  autres pointaient vers des fichiers disparus. Le chiffre juste n'était pas 100 fois plus petit
+  par hasard : il l'était de tout ce que le banc avait omis de refuser.
+- **Un incident clos par son symptôme revient par l'autre bout** (21/08) : la purge du 17/08 a
+  retiré les vecteurs SigLIP de 2 374 clés orphelines — et laissé leurs VISAGES. Quatre jours
+  plus tard, exactement les mêmes 2 374 clés, mesurées par un autre chemin, faisaient re-scorer
+  3 698 visages morts toutes les 240 s. Purger sans avoir trouvé la CAUSE reconduit l'incident.
 - **Fragilité du corpus** : clés corrompues et mutations concurrentes ont invalidé des runs ;
   `--mesurer` alerte au-delà de 15 % de clés mortes.

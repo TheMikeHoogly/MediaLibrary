@@ -6,6 +6,25 @@ dans **git** ; les rejets dans `eval/DECISIONS.md` (photothèque) et
 `eval/METHODE.md` ; l'éphémère dans `PROMPT_NOUVELLE_SESSION.md`. Audits :
 `docs/AUDIT_INTERNE_2026-08.md`, `docs/AUDIT_EXTERNE_2026.md`, `docs/RANGEMENT_2026.md`.
 
+## État (21/08/2026, session 30)
+
+**Le chantier 16(a) est CLOS par la mesure, et il n'y avait rien dedans.** La
+propagation des noms ne dort pas : elle a convergé. Ce que la règle
+rattacherait maintenant, sur 71 461 visages, c'est **14 visages en automatique
+et 24 en file — 33 photos**. Le cas exact du chantier (une photo nommée qui
+garde un visage non couvert) concerne **18 745 photos** et en rendrait **17**.
+Trois nombres du banc contre trois du serveur vivant, identiques (`remove` 13,
+`merge` 1, `add` 24) : c'est ce qui autorise à conclure.
+
+**Ce que la mesure a trouvé à côté vaut plus que ce qu'elle cherchait.** Le
+magasin de visages garde **2 374** fiches dont la clé n'est plus dans l'index —
+**exactement** les 2 374 clés purgées le 17/08 : la purge a emporté leurs
+vecteurs SigLIP et laissé leurs VISAGES. Le curateur re-score depuis quatre
+jours 3 698 visages morts toutes les 240 s, et le garde-fou des clés fantômes
+les rejette en silence. **125 décisions humaines** vivent sur ces clés oubliées
+(104 rattachements, 11 exclusions, 10 confirmations) : elles se sauvent AVANT
+qu'on purge, jamais après.
+
 ## État (20/08/2026, session 28)
 
 **Ce qu'on cherche est ce qu'on voit — 14a-(iv) CLOS et OBSERVÉ.** Le filtre
@@ -51,8 +70,19 @@ une **génération** : le `taskkill` par titre ne tuait rien.
 
 ## À faire — par ordre de valeur
 
-1. **Vérité terrain humaine — PARQUÉE (21/08, choix de Mike), et le chiffre
-   était faux.** Deux mesures portaient le même nom. Ce dont le PRODUIT a
+1. **Vérité terrain — PARQUÉE pour l'algo, mais 125 décisions sont EN DANGER
+   (21/08).** Sur les 2 374 clés que l'index a oubliées et que le magasin de
+   visages garde, **104 rattachements, 11 exclusions et 10 confirmations**
+   (Alix Baudère, Luna…) comptent dans les 2 984. **L'ordre est imposé par la
+   règle 2** : d'abord un instrument qui, pour chacune, cherche si la photo vit
+   sous une AUTRE clé (les doublons `ARZOPA/x` ↔ `…\_Uploads\ARZOPA\x` le
+   suggèrent) et nomme celles qui n'ont pas de jumeau ; le report des noms et
+   la purge — quarantaine réversible, comme le 17/08 — viennent après. Choix de
+   Mike, 21/08. **Et la CAUSE reste à trouver** : pourquoi le scan retire une
+   clé de l'index sans retirer sa fiche de visages ? Purger sans le savoir
+   reconduit l'incident, comme le 17/08 l'a fait sans que ça se voie.
+   **Le reste du point est parqué, et son chiffre avait déjà été corrigé la
+   veille : deux mesures portaient le même nom.** Ce dont le PRODUIT a
    besoin — « qui est sur cette photo » — est à **18 863 photos nommées**
    (44,8 % du fonds vivant, 352 noms, Flo 5 919, Mike 5 566) : les gens qu'on
    connaît sont couverts. Ce dont un ALGORITHME a besoin — « CE visage est
@@ -135,16 +165,16 @@ une **génération** : le `taskkill` par titre ne tuait rien.
     description. **6 287 photos** sont dans ce cas — un nom posé et au moins
     un visage non couvert, sur 25 020 photos à visage (4 338 n'ont aucun nom,
     12 565 sont couvertes ; 29 898 visages sans nom, borne haute).
-    (a) **PRÉSENCE — de la PROPAGATION, pas du tagging. À MESURER d'abord.**
-    Le mécanisme existe : un rattachement est `[clé_photo, index_visage]`
-    (niveau VISAGE), les 71 868 visages ont leurs vecteurs, et
-    `build_suggestions()` cherche déjà « visage non attribué proche d'une
-    signature », `exclude` et `confirmed` honorés. Zéro LLM, zéro GPU lourd.
-    **La question ouverte n'est pas quoi construire, c'est ce qu'il propose
-    DÉJÀ** : combien de suggestions sur les 29 898 visages non nommés, combien
-    de justes (échantillon jugé), et repasse-t-il sur tout le fonds quand une
-    fiche gagne un visage ou se contente-t-il d'un cache ? Si la file propose
-    déjà Flora et que personne ne la regarde, le problème est dans l'UI.
+    (a) **PRÉSENCE — CLOS par la mesure (21/08), et il n'y avait rien dedans.**
+    Le mécanisme existait et il a convergé : **14 rattachements automatiques et
+    24 cartes en file, 33 photos, 38 noms** — et **17** photos dans le cas
+    exact du chantier, sur 18 745 qui y ressemblent. Rien à écrire ni dans le
+    modèle ni dans l'UI. Le réservoir sous le seuil (28 684 visages, meilleur
+    voisin médian **0,21**) n'est pas un gisement de noms : ce sont des gens
+    sans fiche. **Seule suite ouverte** : juger 30 propositions de la tranche
+    0,35–0,40 (1 328 visages, 1 106 photos vivantes) avant de toucher un seuil
+    — choix de Mike, 21/08 ; sans ce jugement, abaisser `CUR_ADD_SIM` est un
+    pari sur des noms, et le plafond de 400 n'en montrerait que 386.
     (b) **FAITS — déjà acquis.** `faits` étant une VUE, `personne:Flora`
     apparaît instantanément dans la ligne de faits, le filtre et `/sujets`.
     (c) **RÔLE dans la description — le seul étage LLM, et une hypothèse
@@ -228,6 +258,8 @@ dossier d'avant 1990 n'y passe. Le **plafond 2100** (`22082010141.jpg` → 2082)
   la recherche.
 - **Mesure** : `mesure_dates_scan.py` (`--lecture`), `mesure_tri_recherche.py`,
   `mesure_faits_backfill.py`, `mesure_faits_vue.py`, `mesure_lieu_visible.py` —
+  `mesure_propagation_noms.py` (la règle d'AJOUT du curateur, garde-fou des
+  clés fantômes compris) —
   lecture seule sur COPIE, jamais sur `photos.db` ; **`mesure_copie_base.py`
   fabrique cette copie** (API `backup`, source en `mode=ro`, copie DATÉE) — plus un
   geste de Mike, plus un aller-retour clavier avant de mesurer.

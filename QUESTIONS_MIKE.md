@@ -10,6 +10,20 @@
 
 ## Réglées
 
+- **21/08 — les 2 374 fiches de visages orphelines, dont 125 portent une
+  décision humaine.** Recommandation suivie : **sauver d'abord, purger
+  ensuite**. Un instrument cherche, pour chacune des 125, si la photo vit sous
+  une autre clé, et nomme celles qui n'ont pas de jumeau ; la purge en
+  quarantaine réversible ne vient qu'après. Mike a aussi retenu qu'il faut
+  chercher la CAUSE — le 17/08 avait purgé un magasin sur deux sans que ça se
+  voie.
+
+- **21/08 — le réservoir de visages sous le seuil de 0,40.** Recommandation
+  suivie : **juger 30 propositions de la tranche 0,35–0,40 avant de toucher un
+  seuil**. 28 684 visages sous le seuil, mais un meilleur voisin médian à 0,21 :
+  le seuil n'est pas ce qui les retient. Abaisser sans jugement serait un pari
+  sur des noms.
+
 - **21/08 — la barre de recherche mentait sur une page de résultats.**
   Recommandation suivie : elle cesse de chercher à chaque frappe et attend
   **Entrée**, qui relance la requête côté serveur ; un indice « ↵ Entrée pour
