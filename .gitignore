@@ -172,3 +172,4 @@ _banc_sortie.txt
 # chemins de photos qui n'ont pas a vivre dans l'historique.
 _propagation.json
 _generation.txt
+_orphelines.json

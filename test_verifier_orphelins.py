@@ -4,6 +4,7 @@ NAS — executable dans le bac a sable.
 
     python test_verifier_orphelins.py
 """
+import os
 from pathlib import Path
 
 import verifier_orphelins as vo
@@ -49,9 +50,17 @@ def test_resoudre():
     # Cle relative -> sous Uploads
     r = vo.resoudre("ARZOPA/E41aNC-x.jpg", up)
     ok &= _check(r == up / "ARZOPA/E41aNC-x.jpg", "cle relative -> sous Uploads")
-    # Cle absolue (POSIX) -> telle quelle
-    ra = vo.resoudre("/mnt/photos/a.jpg", up)
-    ok &= _check(ra == Path("/mnt/photos/a.jpg"), "cle absolue POSIX -> telle quelle")
+    # Cle absolue -> telle quelle. L'exemple DEPEND de la plateforme : sous
+    # Windows, Path("/mnt/x").is_absolute() est FAUX (pas de lecteur), donc un
+    # chemin POSIX y serait traite comme relatif. Le test l'ignorait et ne
+    # passait que dans le bac a sable (constate le 21/08, quand l'agent git a
+    # enfin execute ce module sur la machine reelle). Aucun chemin n'est absolu
+    # des DEUX cotes : on prend celui de la plateforme courante.
+    absolu = r"C:\photos\a.jpg" if os.name == "nt" else "/mnt/photos/a.jpg"
+    ra = vo.resoudre(absolu, up)
+    ok &= _check(ra == Path(absolu), "cle absolue -> telle quelle")
+    ok &= _check(Path(absolu).is_absolute(),
+                 "l'exemple choisi est bien absolu ici")
     return ok
 
 
@@ -151,6 +160,41 @@ def test_orphelins_vecteurs():
     return ok
 
 
+def test_orphelins_hors_index():
+    """Le TROISIEME orphelin : la cle a quitte `tags`, la detection est restee."""
+    ok = True
+    tags = {"a.jpg", "b.jpg"}
+    cles = ["a.jpg", "b.jpg", "ARZOPA/c.jpg", "ARZOPA/d.jpg"]
+    total, humaines, ech = vo.orphelins_hors_index(cles, tags)
+    ok &= _check(total == 2, "compte les cles absentes de tags")
+    ok &= _check(humaines == 0, "aucune decision humaine declaree")
+    ok &= _check(ech == ["ARZOPA/c.jpg", "ARZOPA/d.jpg"], "echantillon")
+
+    # Ce qui DECIDE : une orpheline portant une decision humaine se compte a
+    # part. Le 21/08, 141 des 2 374 etaient dans ce cas.
+    _t, humaines, _e = vo.orphelins_hors_index(
+        cles, tags, decisions={"ARZOPA/c.jpg", "a.jpg"})
+    ok &= _check(humaines == 1,
+                 "seule l'orpheline JUGEE compte (a.jpg est vivante)")
+
+    # Une base saine ne dit rien, et un store vide ne plante pas.
+    ok &= _check(vo.orphelins_hors_index(["a.jpg"], tags) == (0, 0, []),
+                 "rien hors index -> zero")
+    ok &= _check(vo.orphelins_hors_index([], set()) == (0, 0, []),
+                 "store vide -> zero, pas une exception")
+
+    # L'echantillon est BORNE, comme celui des vecteurs : un diagnostic ne
+    # deverse pas 2 374 lignes.
+    beaucoup = [f"x{i}.jpg" for i in range(50)]
+    _t, _h, e2 = vo.orphelins_hors_index(beaucoup, set(), taille_echantillon=3)
+    ok &= _check(len(e2) == 3, "echantillon borne")
+
+    # `tags` vide (base neuve) : tout est hors index, et c'est vrai.
+    total, _h, _e = vo.orphelins_hors_index(cles, set())
+    ok &= _check(total == 4, "tags vide -> tout est hors index")
+    return ok
+
+
 if __name__ == "__main__":
     print("== noms_humains ==")
     a = test_noms_humains()
@@ -166,8 +210,10 @@ if __name__ == "__main__":
     f = test_cles_fantomes_par_collision()
     print("== orphelins_vecteurs ==")
     g = test_orphelins_vecteurs()
+    print("== orphelins_hors_index ==")
+    h = test_orphelins_hors_index()
     print()
-    if a and b and c and d and e and f and g:
+    if a and b and c and d and e and f and g and h:
         print("TOUS LES TESTS PASSENT")
         raise SystemExit(0)
     print("DES TESTS ONT ECHOUE")

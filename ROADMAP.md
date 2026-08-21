@@ -8,6 +8,20 @@ dans **git** ; les rejets dans `eval/DECISIONS.md` (photothèque) et
 
 ## État (21/08/2026, session 30)
 
+**La CAUSE est trouvée, et elle est structurelle.** La cascade de suppression
+est pilotée par l'INDEX : `_sync_dir` calcule ses orphelins à partir de
+`STORE`, donc une clé **déjà** absente de l'index lui est invisible et
+`forget_everywhere` ne sera jamais appelé pour elle. L'autre filet,
+`purge_cles_fantomes`, exige un **jumeau vivant** de même nom de fichier :
+quand les deux jumeaux sont morts, il ne se déclenche jamais. Sur les 2 374 :
+**2 283 « personne ne les voit »**, **91 sous un chemin caché**
+(`.corbeille-rangement`), que la purge de démarrage retire de l'index **sans
+cascade**. Et l'instrument qui aurait dû le voir avait un angle mort exact : il
+comparait les détections au DISQUE et les vecteurs à l'INDEX, jamais les
+détections à l'index. **C'est corrigé** (`verifier_orphelins --sans-disque`,
+0,7 s) : `faces` 2 374 hors index, `animals` 2 377, **120 clés jugées par un
+humain**, **0** vecteur orphelin.
+
 **Le chantier 16(a) est CLOS par la mesure, et il n'y avait rien dedans.** La
 propagation des noms ne dort pas : elle a convergé. Ce que la règle
 rattacherait maintenant, sur 71 461 visages, c'est **14 visages en automatique
@@ -21,9 +35,8 @@ magasin de visages garde **2 374** fiches dont la clé n'est plus dans l'index �
 **exactement** les 2 374 clés purgées le 17/08 : la purge a emporté leurs
 vecteurs SigLIP et laissé leurs VISAGES. Le curateur re-score depuis quatre
 jours 3 698 visages morts toutes les 240 s, et le garde-fou des clés fantômes
-les rejette en silence. **125 décisions humaines** vivent sur ces clés oubliées
-(104 rattachements, 11 exclusions, 10 confirmations) : elles se sauvent AVANT
-qu'on purge, jamais après.
+les rejette en silence. **141 décisions humaines**, portées par **120 clés**,
+vivent là : elles se sauvent AVANT qu'on purge, jamais après.
 
 ## État (20/08/2026, session 28)
 
@@ -70,10 +83,10 @@ une **génération** : le `taskkill` par titre ne tuait rien.
 
 ## À faire — par ordre de valeur
 
-1. **Vérité terrain — PARQUÉE pour l'algo, mais 125 décisions sont EN DANGER
+1. **Vérité terrain — PARQUÉE pour l'algo, mais 141 décisions sont EN DANGER
    (21/08).** Sur les 2 374 clés que l'index a oubliées et que le magasin de
-   visages garde, **104 rattachements, 11 exclusions et 10 confirmations**
-   (Alix Baudère, Luna…) comptent dans les 2 984. **L'ordre est imposé par la
+   visages garde, **141 décisions humaines** (118 rattachements, 13 exclusions,
+   10 confirmations) réparties sur **120 clés** (Alix Baudère, Luna…). **L'ordre est imposé par la
    règle 2** : d'abord un instrument qui, pour chacune, cherche si la photo vit
    sous une AUTRE clé (les doublons `ARZOPA/x` ↔ `…\_Uploads\ARZOPA\x` le
    suggèrent) et nomme celles qui n'ont pas de jumeau ; le report des noms et
@@ -81,6 +94,13 @@ une **génération** : le `taskkill` par titre ne tuait rien.
    Mike, 21/08. **Et la CAUSE reste à trouver** : pourquoi le scan retire une
    clé de l'index sans retirer sa fiche de visages ? Purger sans le savoir
    reconduit l'incident, comme le 17/08 l'a fait sans que ça se voie.
+   **Le sauvetage a été mesuré (21/08)** : sur les 141 décisions portées par ces
+   clés, **13** ont un jumeau vivant, dont **12** portent déjà le nom — il ne
+   reste **qu'une seule** décision à reporter (Luna). Les **128** autres n'ont
+   aucun jumeau : leurs photos n'existent plus nulle part. Et **787** décisions
+   pointent vers des clés inconnues PARTOUT, déjà perdues. La vérité terrain
+   réelle est de **3 364** décisions (1 576 rattachements — 1 196 comptait des
+   CLÉS —, 1 496 exclusions, 292 confirmations).
    **Le reste du point est parqué, et son chiffre avait déjà été corrigé la
    veille : deux mesures portaient le même nom.** Ce dont le PRODUIT a
    besoin — « qui est sur cette photo » — est à **18 863 photos nommées**
@@ -90,7 +110,11 @@ une **génération** : le `taskkill` par titre ne tuait rien.
    chantier 9 en dépend, pas le produit. Et le compte à rouvrir n'est pas
    1 196 : les **1 496 exclusions** sont des étiquettes humaines elles aussi —
    « ce visage n'est PAS Flo » évalue un clustering aussi bien qu'un
-   rattachement. Vérité terrain réelle : **2 984 décisions** (1 196 rattachements, 1 496 exclusions, **292 confirmations** — sous-comptée deux fois le même jour).
+   rattachement. **Vérité terrain réelle : 3 364 décisions** — 1 576
+   rattachements (le « 1 196 » comptait des CLÉS, or un rattachement est
+   `[clé, index]`), 1 496 exclusions, 292 confirmations. Sous-comptée TROIS
+   fois : d'abord sans les négatifs, puis sans les confirmations, puis en
+   confondant clés et visages.
 2. **Observer en réel ce qui est livré** — **fait ✔**. Reste : re-upload = une
    entrée, seek vidéo mobile, test du Z.
 3. **Chaîne « noms → descriptions → recherche » — 3a, 3b, 3c CLOS le 16/08.**
@@ -109,7 +133,7 @@ une **génération** : le `taskkill` par titre ne tuait rien.
 8. **Cross-pipeline (Mutz/Caline)** : outil livré, réversible. Fix auto REJETÉ
    (18 % faux rejets). Relancer si un nom d'animal sort en `personne:`.
 9. **Reconnaissance — algo. PARQUÉ (21/08, choix de Mike).** HDBSCAN /
-   Chinese Whispers / AdaFace restent inévaluables — 2 984 décisions humaines
+   Chinese Whispers / AdaFace restent inévaluables — 3 364 décisions humaines
    sur 71 868 visages. Ce n'est pas une dette : le produit n'en dépend pas, et
    la couverture des noms au niveau PHOTO est déjà là (point 1). À rouvrir si
    quelqu'un veut nommer des visages en série, pas avant.
@@ -244,7 +268,8 @@ dossier d'avant 1990 n'y passe. Le **plafond 2100** (`22082010141.jpg` → 2082)
   noms/date/lieu structurés et sourcés (`faits`), noms JAMAIS via le prompt ;
   `TAGGING_PIPELINE_VERSION` estampillée (`pipe`) — **sur les 81 photos taguées
   DEPUIS**, pas sur le fonds ; 1 lecture exiftool/photo.
-- **Index/vecteurs** : cascade `forget_everywhere` au scan ; **2 374 vecteurs
+- **Index/vecteurs** : cascade `forget_everywhere` au scan — **pilotée par
+  l'index, donc aveugle à une clé déjà oubliée (21/08)** ; **2 374 vecteurs
   orphelins purgés et observés** (0 muet sur 1 600 résultats, contre 2,6 %),
   quarantaine réversible `_corbeille_vecteurs/`.
 - **Observabilité** : boucle scan/backup (O5), `backup_verify`, trois tâches de
@@ -259,7 +284,8 @@ dossier d'avant 1990 n'y passe. Le **plafond 2100** (`22082010141.jpg` → 2082)
 - **Mesure** : `mesure_dates_scan.py` (`--lecture`), `mesure_tri_recherche.py`,
   `mesure_faits_backfill.py`, `mesure_faits_vue.py`, `mesure_lieu_visible.py` —
   `mesure_propagation_noms.py` (la règle d'AJOUT du curateur, garde-fou des
-  clés fantômes compris) —
+  clés fantômes compris), `mesure_visages_orphelins.py` (les décisions
+  humaines posées sur des clés oubliées, et POURQUOI elles survivent) —
   lecture seule sur COPIE, jamais sur `photos.db` ; **`mesure_copie_base.py`
   fabrique cette copie** (API `backup`, source en `mode=ro`, copie DATÉE) — plus un
   geste de Mike, plus un aller-retour clavier avant de mesurer.

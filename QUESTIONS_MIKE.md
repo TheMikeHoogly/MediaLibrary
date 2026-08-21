@@ -10,6 +10,12 @@
 
 ## Réglées
 
+- **21/08 — après le sauvetage : purger, ou chercher la cause d'abord ?**
+  Recommandation suivie : **la CAUSE d'abord**. 787 décisions pointant déjà
+  dans le vide, c'est une fuite active, pas un résidu — purger avant, c'est
+  effacer la scène. La cause a été trouvée le soir même (la cascade suit
+  l'index, qui a déjà oublié la clé) et l'angle mort de l'instrument est bouché.
+
 - **21/08 — les 2 374 fiches de visages orphelines, dont 125 portent une
   décision humaine.** Recommandation suivie : **sauver d'abord, purger
   ensuite**. Un instrument cherche, pour chacune des 125, si la photo vit sous

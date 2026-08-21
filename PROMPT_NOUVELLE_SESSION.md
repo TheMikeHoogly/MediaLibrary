@@ -33,21 +33,44 @@ magasin de visages garde **2 374** fiches dont la clé n'est plus dans l'index :
 **exactement** les 2 374 clés purgées le 17/08 (intersection 2 374 / 2 374
 contre `_corbeille_vecteurs/vecteurs_orphelins_20260817_073335.jsonl`). La
 purge a emporté leurs vecteurs SigLIP et **laissé leurs visages**. Et sur ces
-clés oubliées vivent **125 décisions humaines** — 104 rattachements, 11
-exclusions, 10 confirmations (Alix Baudère, Luna…), comptées dans les 2 984.
+clés oubliées vivent des décisions humaines — **141**, portées par **120 clés**
+(Alix Baudère, Luna…).
+
+**LA CAUSE, trouvée le soir même.** La cascade de suppression est pilotée par
+l'INDEX : `_sync_dir` calcule ses orphelins à partir de `STORE`, donc une clé
+**déjà** absente de l'index lui est invisible — `forget_everywhere` ne sera
+jamais appelé pour elle. L'autre filet, `purge_cles_fantomes`, exige un
+**jumeau vivant** de même nom de fichier : quand les deux jumeaux sont morts
+(`ARZOPA/x` et `…\_Uploads\ARZOPA\x`), il ne se déclenche jamais. Classement
+des 2 374 : **2 283 « personne ne les voit »**, **91 sous un chemin caché**
+(`.corbeille-rangement`), que la purge de démarrage retire de l'index **sans
+cascade**. Et l'instrument avait un angle mort exact : il comparait les
+détections au DISQUE et les vecteurs à l'INDEX, jamais les détections à
+l'index. **Bouché** : `verifier_orphelins.py --sans-disque` (0,7 s, base contre
+base) dit `faces` **2 374** hors index, `animals` **2 377**, **120 clés jugées
+par un humain**, **0** vecteur orphelin.
+
+**Le sauvetage ne rend presque rien, et c'est le résultat.** Sur les 141
+décisions portées par ces clés : **13** ont un jumeau vivant, **12** portent
+déjà le nom, il reste **UNE** décision à reporter (Luna). Les **128** autres
+n'ont aucun jumeau. Et **787** décisions pointent vers des clés inconnues
+PARTOUT — déjà perdues. Vérité terrain réelle : **3 364** décisions (1 576
+rattachements — « 1 196 » comptait des CLÉS —, 1 496 exclusions, 292
+confirmations).
 
 ## Prochain pas
 
-1. **Sauver les 125 avant de purger quoi que ce soit** (choix de Mike, 21/08 —
-   la règle 2 impose l'ordre). D'abord l'INSTRUMENT, pas le geste : pour
-   chacune des 125, chercher si la photo vit sous une AUTRE clé — les doublons
-   `ARZOPA/x` ↔ `…\_Uploads\ARZOPA\x` le suggèrent fortement — et **nommer
-   celles qui n'ont pas de jumeau vivant**. Le report des noms et la purge
-   (quarantaine réversible, comme le 17/08) viennent après, et seulement après.
-2. **Chercher la CAUSE** : pourquoi le scan retire une clé de l'index sans
-   retirer sa fiche de visages ? `forget_everywhere` est un acquis du ROADMAP —
-   il ne couvre visiblement pas ce chemin-là. Purger sans le savoir reconduit
-   l'incident : c'est exactement ce que le 17/08 a fait, sans que ça se voie.
+1. **Le CORRECTIF, maintenant que la cause est connue.** Deux gestes de code,
+   petits et testables : (a) la purge de démarrage
+   (`demarrage:dossiers_caches`) doit appeler `forget_everywhere` au lieu de
+   `STORE.remove_many` — c'est la fuite encore ACTIVE, 91 clés ; (b) un balayage
+   qui rattrape les clés déjà hors index, puisque `_sync_dir` ne peut plus les
+   voir : `analyser_hors_index` sait les trouver, il manque le geste. **Et
+   d'abord reporter la décision de Luna** — la seule qui se sauve.
+2. **Faire SURVIVRE le registre des oublis.** `comptes_index` vit en mémoire :
+   après le redémarrage de 19:31, `par_motif` est vide et la cause des 2 283 ne
+   pourra jamais être établie rétrospectivement. Un compteur qui ne survit pas
+   au redémarrage ne diagnostique rien.
 3. **Juger 30 propositions de la tranche 0,35–0,40** (choix de Mike, 21/08)
    avant de toucher `CUR_ADD_SIM`. 1 328 visages, 1 106 photos vivantes. Sans
    ce jugement, abaisser un seuil est un pari sur des noms — et le plafond de

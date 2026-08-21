@@ -10,6 +10,15 @@ LE PROBLEME (constate le 08/08, cas « ARZOPA »)
     detections orphelines qui gonflent les compteurs et peuvent etre proposees
     au nommage alors que la photo n'existe plus.
 
+TROIS ORPHELINS, PAS UN (le troisieme trouve le 21/08)
+    1. une detection dont le FICHIER a disparu (ci-dessous, un stat par cle) ;
+    2. un VECTEUR dont la cle a quitte l'index (`analyser_vecteurs`) ;
+    3. une DETECTION dont la cle a quitte l'index (`analyser_hors_index`).
+    Le 3 manquait, et c'est lui qui a laisse 2 374 fiches de visages derriere la
+    purge du 17/08 : elle n'avait traite que le 2. Aucun des deux autres
+    controles ne pouvait le voir — l'un regarde le disque, l'autre la table
+    `vectors`.
+
 CE QUE FAIT CE SCRIPT (et RIEN d'autre)
     Il resout chaque cle des tables faces/animals vers son chemin, et compte les
     ORPHELINS (fichier absent). Garde-fou anti-faux-positif : un orphelin n'est
@@ -25,6 +34,7 @@ USAGE (machine reelle, NAS joignable pour un compte fiable)
     .venv\\Scripts\\python.exe verifier_orphelins.py                 # faces + animals
     .venv\\Scripts\\python.exe verifier_orphelins.py --filtre ARZOPA # cible rapide
     .venv\\Scripts\\python.exe verifier_orphelins.py --table faces --echantillon 30
+    .venv\\Scripts\\python.exe verifier_orphelins.py --sans-disque    # base contre base, 1 s
 
     Note : sans filtre, ce script fait un stat par fichier (lent sur SMB pour des
     dizaines de milliers d'entrees). --filtre restreint aux cles contenant un
@@ -188,6 +198,95 @@ def analyser_vecteurs(cx, bavard=True):
     return par_kind, orphelins, ech
 
 
+# ── Detections HORS INDEX : les tables faces/animals contre `tags` ─────────
+# TROISIEME orphelin, trouve le 21/08 et invisible aux deux autres. Ici le
+# fichier peut avoir disparu ou non : ce qui est certain, c'est que l'INDEX a
+# oublie la cle alors que la detection de visages, elle, est restee. Ni le scan
+# ni la purge par collision ne peuvent plus l'atteindre :
+#   * `_sync_dir` calcule ses orphelins A PARTIR de `STORE` — une cle deja
+#     absente de l'index lui est invisible ;
+#   * `purge_cles_fantomes` exige un JUMEAU VIVANT de meme nom de fichier ;
+#     quand les deux jumeaux sont morts, elle ne se declenche jamais.
+# Mesure du 21/08 : 2 374 fiches de visages hors index, EXACTEMENT les 2 374
+# cles dont la purge du 17/08 avait retire les vecteurs SigLIP. La purge avait
+# traite un magasin sur deux, et rien ne le disait — parce que rien ne
+# comparait ces tables-la a l'index. C'est ce trou que la fonction ci-dessous
+# ferme. Base contre base : aucun acces disque, fiable NAS debranche.
+
+def orphelins_hors_index(cles_store, cles_tags, decisions=None,
+                         taille_echantillon=8):
+    """(total, avec_decision_humaine, echantillon) — cles absentes de `tags`.
+
+    `decisions` : ensemble des cles portant une decision humaine (rattachement,
+    exclusion ou confirmation). Ce sont celles qu'une purge PERDRAIT : elles se
+    comptent a part, toujours, parce que la regle 2 du projet interdit de les
+    emporter sans les avoir vues.
+    """
+    decisions = decisions or set()
+    total = humaines = 0
+    echantillon = []
+    for cle in cles_store:
+        if cle in cles_tags:
+            continue
+        total += 1
+        if cle in decisions:
+            humaines += 1
+        if len(echantillon) < taille_echantillon:
+            echantillon.append(cle)
+    return total, humaines, echantillon
+
+
+def decisions_par_cle(cx):
+    """Cles portant une decision humaine, d'apres les fiches people/pets."""
+    out = set()
+    for table in ('people', 'pets'):
+        try:
+            lignes = cx.execute(f'SELECT v FROM {table}')
+        except Exception:                                     # noqa: BLE001
+            continue
+        for (v,) in lignes:
+            try:
+                e = json.loads(v)
+            except (ValueError, TypeError):
+                continue
+            if not isinstance(e, dict) or not e.get('name'):
+                continue
+            for kf in (e.get('faces') or []):
+                if isinstance(kf, list) and len(kf) == 2:
+                    out.add(kf[0])
+            out.update(e.get('exclude') or [])
+            out.update(e.get('confirmed') or [])
+    return out
+
+
+def analyser_hors_index(cx, tables=('faces', 'animals'), bavard=True):
+    """Compte, table par table, les detections dont la cle a quitte l'index."""
+    cles_tags = {k for (k,) in cx.execute('SELECT k FROM tags')}
+    decisions = decisions_par_cle(cx)
+    resultats = {}
+    if bavard:
+        print("-" * 70)
+        print("  Detections HORS INDEX (la cle a quitte `tags`) :")
+    for t in tables:
+        try:
+            cles = [k for (k,) in cx.execute(f'SELECT k FROM {t}')]
+        except Exception:                                     # noqa: BLE001
+            continue
+        total, humaines, ech = orphelins_hors_index(cles, cles_tags, decisions)
+        resultats[t] = (total, humaines, ech)
+        if bavard:
+            print(f"    {t:8s} {total:6d} hors index sur {len(cles)}"
+                  f"   dont {humaines} portant une DECISION HUMAINE")
+            for cle in ech[:4]:
+                print(f"        {cle[:70]}")
+    if bavard:
+        if any(h for _t, h, _e in resultats.values()):
+            print("      -> NE PAS PURGER avant d'avoir traite ces decisions :")
+            print("         mesure_visages_orphelins.py --base copie.db")
+        print()
+    return resultats
+
+
 # ── Configuration (repliquee, SANS importer server.py) ──────────────────────
 
 def _premiere_ligne(nom):
@@ -338,6 +437,7 @@ def main():
     if '--filtre' in args:
         i = args.index('--filtre')
         filtre = args[i + 1] if i + 1 < len(args) else None
+    sans_disque = '--sans-disque' in args
     tables = ['faces', 'animals']
     if '--table' in args:
         i = args.index('--table')
@@ -363,6 +463,18 @@ def main():
     # Passe en premier pour cette raison — le reste depend du NAS.
     if not filtre:
         analyser_vecteurs(cx)
+        analyser_hors_index(cx)
+    if sans_disque:
+        # Les deux controles ci-dessus comparent la base a elle-meme : ils sont
+        # instantanes et fiables NAS debranche. La passe suivante, elle, fait un
+        # stat par cle sur SMB — des dizaines de minutes sur 44 000 entrees.
+        # `--sans-disque` s'arrete ici : c'est la forme lancable par un banc.
+        cx.close()
+        print("=" * 70)
+        print("  --sans-disque : passe disque NON effectuee (aucun stat).")
+        print("  LECTURE SEULE : rien n'a ete modifie.")
+        print()
+        return 0
 
     champ = {'faces': 'faces', 'animals': 'animals'}
     total_orph = total_nom = total_fant = 0

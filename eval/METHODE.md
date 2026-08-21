@@ -84,5 +84,13 @@
   retiré les vecteurs SigLIP de 2 374 clés orphelines — et laissé leurs VISAGES. Quatre jours
   plus tard, exactement les mêmes 2 374 clés, mesurées par un autre chemin, faisaient re-scorer
   3 698 visages morts toutes les 240 s. Purger sans avoir trouvé la CAUSE reconduit l'incident.
+- **Deux contrôles qui ne se croisent pas laissent un angle mort en forme de troisième** (21/08) :
+  le diagnostic comparait les détections au DISQUE et les vecteurs à l'INDEX. Il manquait
+  détections contre INDEX — et c'est là que 2 374 fiches de visages ont vécu quatre jours après
+  une purge « observée ». Quand deux instruments couvrent A-B et B-C, demander qui couvre A-C.
+- **Un compteur qui ne survit pas au redémarrage ne diagnostique rien** (21/08) : `comptes_index`
+  a été bâti pour rendre les −250 explicables après coup ; il vit en mémoire. Au redémarrage
+  suivant, `par_motif` est vide. La cause des 2 283 orphelines ne sera jamais établie
+  rétrospectivement. Compter au moment du geste ne suffit pas : il faut l'ÉCRIRE.
 - **Fragilité du corpus** : clés corrompues et mutations concurrentes ont invalidé des runs ;
   `--mesurer` alerte au-delà de 15 % de clés mortes.
