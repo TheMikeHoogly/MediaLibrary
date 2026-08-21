@@ -17,6 +17,7 @@
 | Idée / piste | Verdict | Raison |
 |---|---|---|
 | Garde humain/animal auto (SigLIP 0-shot) | **REJETÉ** (08/08) | 18 % faux rejets. |
+| **« Vérité terrain 0,8 % » mélangeait deux mesures** | **CORRIGÉ, PARQUÉ** (21/08, choix de Mike) | Ce dont le PRODUIT a besoin : **18 863** photos portent un `personne:` (44,8 % du fonds vivant, 352 noms) — les gens qu'on connaît sont couverts. Ce dont un ALGORITHME a besoin : **1 196** visages rattachés sur **71 868** (1,66 %). Seul le chantier 9 dépend du second. Et le compte était incomplet : les **1 496 exclusions** sont des étiquettes humaines — « ce visage n'est PAS Flo » évalue un clustering aussi bien qu'un rattachement. Vérité terrain réelle : **2 692 décisions**, pas 1 196. On ne comptait que les positifs. |
 | MegaDescriptor plutôt que DINOv2 | **REJETÉ** (31/07) | DINOv2 garde +3,4 pts r1. |
 | `sqlite-vec` ; embeddings INT8 | **REJETÉ** (11/08) | Cosinus numpy sur BLOB suffit ; INT8 recall@10 0,9685. |
 
@@ -29,6 +30,8 @@
 | V2CTX (prompt de PROD) hallucine plus que V0 | **OUVERT** (16/08) | Le banc mesurait la re-passe ; il a mesuré le prompt EN PROD. Adopté sur un 25-15, il DOUBLE les hallucinations. |
 | Faits en contexte pour DOCUMENTS/reçus | **HYPOTHÈSE** (16/08) | Strate « piège » 83 %, seule qui passe — POST-HOC, 30 photos. |
 | Modèle de tagging plus GROS | **PARQUÉ** (16/08) | Plafond DUR de 4 Go partagés. |
+| **Re-passe de tagging INCRÉMENTALE, sur événement de connaissance** | **OUVERT — protocole à écrire** (21/08, proposé par Mike) | Ce qui est CLOS, c'est la re-passe en LOT (50 h GPU). Un agent qui ne re-décrit que les photos dont la connaissance a CHANGÉ est une autre proposition : le goutte-à-goutte lève l'obstacle des 4 Go de VRAM. Trois conditions avant tout code — un banc en aveugle sur un ET (apport **et** hallucination) ; une **frontière de provenance** entre ce que le modèle a VU et ce qu'on lui a DIT, sans quoi la concordance du 5ᵉ axe mesurerait son propre écho ; un journal avant/après. Et le périmètre est plus petit qu'il n'y paraît : `faits` étant une VUE, la médiathèque apprend DÉJÀ sans LLM — seule la prose de la description reste en jeu. |
+| **Injecter les faits fait RÉCITER le modèle** | **MESURÉ, et c'est une contrainte d'architecture** (20-21/08) | Les 82 photos taguées avec les faits en contexte ont dû être écartées du banc d'espèce : leur accord avec YOLO ne prouvait rien, on leur avait soufflé la réponse. Toute reprise du tagging doit donc SÉPARER les deux provenances — c'est la circularité de `METHODE.md`, devenue coûteuse le jour où un axe de recherche s'est mis à dépendre de l'indépendance du tagueur. |
 
 ## Renommage
 

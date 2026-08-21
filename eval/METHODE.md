@@ -70,5 +70,10 @@
   concordance du 20/08 (3 065 photos) ne vivait que dans un tableau de décisions ; réécrite en
   code le lendemain, elle rend 3 134 — même famille, pas le même trait. Écrire le chiffre ET le
   banc, ou ne pas bâtir dessus.
+- **Compter les décisions POSITIVES seulement sous-estime la vérité terrain** (21/08) : 1 196
+  visages rattachés, mais **1 496 exclusions** — « ce visage n'est PAS Flo » évalue un
+  clustering aussi bien qu'un rattachement. Et deux mesures ne doivent jamais porter le même
+  nom : « photos nommées » (44,8 %) et « visages étiquetés » (1,66 %) répondent à des
+  questions différentes ; les confondre a fait passer le produit pour bloqué.
 - **Fragilité du corpus** : clés corrompues et mutations concurrentes ont invalidé des runs ;
   `--mesurer` alerte au-delà de 15 % de clés mortes.

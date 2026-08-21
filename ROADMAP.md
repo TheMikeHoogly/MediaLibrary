@@ -51,9 +51,16 @@ une **génération** : le `taskkill` par titre ne tuait rien.
 
 ## À faire — par ordre de valeur
 
-1. **Vérité terrain humaine — au fil de l'eau, PAS un blocage.** ~0,8 %
-   (91/12 072) : limité par la CONNAISSANCE, pas l'outillage — Flo nommera ce
-   que Mike ne sait pas nommer, quand l'outil sera à ~90 %.
+1. **Vérité terrain humaine — PARQUÉE (21/08, choix de Mike), et le chiffre
+   était faux.** Deux mesures portaient le même nom. Ce dont le PRODUIT a
+   besoin — « qui est sur cette photo » — est à **18 863 photos nommées**
+   (44,8 % du fonds vivant, 352 noms, Flo 5 919, Mike 5 566) : les gens qu'on
+   connaît sont couverts. Ce dont un ALGORITHME a besoin — « CE visage est
+   Flo » — est à **1 196 visages rattachés sur 71 868** (1,66 %). Seul le
+   chantier 9 en dépend, pas le produit. Et le compte à rouvrir n'est pas
+   1 196 : les **1 496 exclusions** sont des étiquettes humaines elles aussi —
+   « ce visage n'est PAS Flo » évalue un clustering aussi bien qu'un
+   rattachement. Vérité terrain réelle : **2 692 décisions**.
 2. **Observer en réel ce qui est livré** — **fait ✔**. Reste : re-upload = une
    entrée, seek vidéo mobile, test du Z.
 3. **Chaîne « noms → descriptions → recherche » — 3a, 3b, 3c CLOS le 16/08.**
@@ -71,8 +78,11 @@ une **génération** : le `taskkill` par titre ne tuait rien.
    parcage explicite (item zombie ; préparatoire fait).
 8. **Cross-pipeline (Mutz/Caline)** : outil livré, réversible. Fix auto REJETÉ
    (18 % faux rejets). Relancer si un nom d'animal sort en `personne:`.
-9. **Reconnaissance — algo.** BARRIÈRE : vérité terrain ≥ ~5 %. HDBSCAN /
-   Chinese Whispers / AdaFace inévaluables à 0,8 %.
+9. **Reconnaissance — algo. PARQUÉ (21/08, choix de Mike).** HDBSCAN /
+   Chinese Whispers / AdaFace restent inévaluables — 2 692 décisions humaines
+   sur 71 868 visages. Ce n'est pas une dette : le produit n'en dépend pas, et
+   la couverture des noms au niveau PHOTO est déjà là (point 1). À rouvrir si
+   quelqu'un veut nommer des visages en série, pas avant.
 10. **Données / finitions**, dans cet ordre :
     (a) **Compter ce que le scan OUBLIE — CLOS (18/08).** Trois constats mineurs
     non traités : un ajout vu PAR LE SCAN est étiqueté `tagging` ; `dict.__ior__`
@@ -118,6 +128,26 @@ une **génération** : le `taskkill` par titre ne tuait rien.
     sans mesure.
 15. **À évaluer (`vision-eval`)** : Florence-2 léger. **Parqué** faute
     d'hypothèse (banc 3b).
+16. **Agent de tagging INCRÉMENTAL, piloté par les événements de
+    connaissance (proposé par Mike, 21/08).** Non pas la re-passe en LOT —
+    celle-là reste close (50 h GPU, 147 paires, hallucinations doublées) —
+    mais un agent qui re-décrit **les seules photos dont la connaissance a
+    changé** : un nom attribué, un lieu corrigé, une espèce confirmée. Le
+    goutte-à-goutte résout l'obstacle des 4 Go de VRAM que le lot ne résolvait
+    pas. **Ce que ça n'a PAS besoin de faire** : la médiathèque apprend déjà
+    sans LLM — `faits` est une VUE recalculée à la lecture, un nom attribué
+    change instantanément la ligne de faits de toutes les photos concernées.
+    Ce que le LLM ajouterait, c'est la seule **prose de la description**.
+    Trois conditions, dans cet ordre :
+    (a) **un banc AVANT tout code** : N photos dont la connaissance a changé,
+    re-décrites, jugées en aveugle sur un ET — apport réel **et** hallucination
+    (la leçon du 16/08 : un critère non appliqué est une intention) ;
+    (b) **une frontière de provenance, non négociable** : ce que le modèle a VU
+    ne se mélange jamais à ce qu'on lui a DIT. Sinon l'agent détruit le 5ᵉ axe
+    en silence — la concordance cesserait d'être deux regards indépendants et
+    mesurerait son propre écho (les 82 photos qui RÉCITENT, 20/08) ;
+    (c) **un journal avant/après** à chaque re-tag — sans l'AVANT, on ne saura
+    jamais si l'agent améliore ou dérive.
 
 ### Résiduels faible valeur (ne pas prioriser)
 **MESURÉ le 15/08, et c'est pourquoi on n'y touche pas** : les deux planchers
@@ -186,9 +216,10 @@ dossier d'avant 1990 n'y passe. Le **plafond 2100** (`22082010141.jpg` → 2082)
 
 ## Réserve — futur, non prioritaire (triée le 12/08)
 
-- **Multi-utilisateur** — **déclencheur nommé** : un « mode Flo » minimal (file
-  de nommage des visages qu'elle seule sait nommer), à ouvrir quand l'outil est à
-  ~90 %. C'est lui qui débloque la vérité terrain.
+- **Multi-utilisateur** — « mode Flo » minimal (file de nommage des visages).
+  **Son déclencheur est tombé le 21/08** : il existait pour débloquer la vérité
+  terrain, or celle-ci ne bloque que le chantier 9, désormais parqué. À rouvrir
+  pour ce qu'il vaut par lui-même — nommer à plusieurs — pas comme préalable.
 - **Vidéo → audio** : coût élevé, valeur incertaine, aucun déclencheur.
 - **Bibliothèque Figma** : le design system vit dans le code ; un miroir serait
   de la doc à double entretien.
