@@ -173,3 +173,5 @@ _banc_sortie.txt
 _propagation.json
 _generation.txt
 _orphelines.json
+# Quarantaine des detections hors index (purge reversible, 21/08).
+_corbeille_detections/

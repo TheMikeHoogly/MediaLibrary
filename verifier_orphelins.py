@@ -35,6 +35,7 @@ USAGE (machine reelle, NAS joignable pour un compte fiable)
     .venv\\Scripts\\python.exe verifier_orphelins.py --filtre ARZOPA # cible rapide
     .venv\\Scripts\\python.exe verifier_orphelins.py --table faces --echantillon 30
     .venv\\Scripts\\python.exe verifier_orphelins.py --sans-disque    # base contre base, 1 s
+    .venv\\Scripts\\python.exe verifier_orphelins.py --sans-disque --simuler-purge
 
     Note : sans filtre, ce script fait un stat par fichier (lent sur SMB pour des
     dizaines de milliers d'entrees). --filtre restreint aux cles contenant un
@@ -236,6 +237,39 @@ def orphelins_hors_index(cles_store, cles_tags, decisions=None,
     return total, humaines, echantillon
 
 
+def cles_hors_index_a_purger(cles_store, cles_tags, proteges,
+                             est_fichier, est_cache):
+    """Selection PURE des detections hors index que personne ne reprendra.
+
+    Trois sorties, et la separation EST le garde-fou :
+      * `a_purger`  : la cle a quitte l'index ET le fichier a disparu, ou son
+        chemin est cache (`.corbeille-rangement`, `@eaDir`) — l'index ne la
+        reprendra jamais, la detection ne peut plus rien produire ;
+      * `proteges`  : la cle porte une DECISION HUMAINE. Jamais purgee, quoi
+        qu'il arrive (regle 2 du projet). 120 cles le 21/08 ;
+      * `en_attente`: la cle a quitte l'index mais son FICHIER existe toujours,
+        sous un chemin normal. C'est le cas transitoire de `scan:modifies`, qui
+        retire l'entree le temps d'un re-tagging : la purger ferait perdre des
+        detections que le scan allait rendre. On la COMPTE au lieu de la
+        toucher — un residu qui grossit est un signal.
+
+    `est_fichier` / `est_cache` : callables cle -> bool, injectes par
+    l'appelant (aucun acces disque ici, donc testable hors machine).
+    """
+    proteges_vus, a_purger, en_attente = [], [], []
+    for cle in cles_store:
+        if cle in cles_tags:
+            continue
+        if cle in proteges:
+            proteges_vus.append(cle)
+            continue
+        if est_cache(cle) or not est_fichier(cle):
+            a_purger.append(cle)
+        else:
+            en_attente.append(cle)
+    return sorted(set(a_purger)), sorted(set(proteges_vus)), sorted(set(en_attente))
+
+
 def decisions_par_cle(cx):
     """Cles portant une decision humaine, d'apres les fiches people/pets."""
     out = set()
@@ -257,6 +291,56 @@ def decisions_par_cle(cx):
             out.update(e.get('exclude') or [])
             out.update(e.get('confirmed') or [])
     return out
+
+
+def simuler_purge(cx, upload_dir, tables=('faces', 'animals'), bavard=True):
+    """DRY-RUN de `server.purge_detections_hors_index` : ce qui partirait.
+
+    Meme selection pure que la prod, memes garde-fous, aucun retrait. Un stat
+    par cle CANDIDATE seulement (pas par entree du store) : le cout est borne
+    par la taille de l'anomalie. A lancer AVANT le redemarrage qui declenchera
+    la vraie purge — deux chemins vers le meme nombre, ou l'ecart est le
+    resultat."""
+    cles_tags = {k for (k,) in cx.execute('SELECT k FROM tags')}
+    proteges = decisions_par_cle(cx)
+
+    def est_fichier(k):
+        try:
+            return resoudre(k, upload_dir).is_file()
+        except OSError:
+            return True                      # doute -> on ne purge pas
+
+    def est_cache(k):
+        try:
+            return any(part.startswith(('.', '@', '#'))
+                       for part in resoudre(k, upload_dir).parts)
+        except OSError:
+            return False
+
+    total = {}
+    if bavard:
+        print("-" * 70)
+        print("  SIMULATION de la purge des detections hors index (rien n'est")
+        print("  retire ; c'est le serveur qui purge, au demarrage) :")
+    for t in tables:
+        try:
+            cles = [k for (k,) in cx.execute(f'SELECT k FROM {t}')]
+        except Exception:                                     # noqa: BLE001
+            continue
+        a_purger, prot, att = cles_hors_index_a_purger(
+            cles, cles_tags, proteges, est_fichier, est_cache)
+        total[t] = (a_purger, prot, att)
+        if bavard:
+            print(f"    {t:8s} purgerait {len(a_purger):5d}   "
+                  f"protegees {len(prot):4d} (decision humaine)   "
+                  f"en attente {len(att):4d} (fichier present, re-tagging)")
+    if bavard:
+        union = sorted({k for v in total.values() for k in v[0]})
+        print(f"    UNION des cles a purger : {len(union)}")
+        for k in union[:4]:
+            print(f"        {k[:70]}")
+        print()
+    return total
 
 
 def analyser_hors_index(cx, tables=('faces', 'animals'), bavard=True):
@@ -438,6 +522,7 @@ def main():
         i = args.index('--filtre')
         filtre = args[i + 1] if i + 1 < len(args) else None
     sans_disque = '--sans-disque' in args
+    simuler = '--simuler-purge' in args
     tables = ['faces', 'animals']
     if '--table' in args:
         i = args.index('--table')
@@ -464,6 +549,8 @@ def main():
     if not filtre:
         analyser_vecteurs(cx)
         analyser_hors_index(cx)
+        if simuler:
+            simuler_purge(cx, upload_dir)
     if sans_disque:
         # Les deux controles ci-dessus comparent la base a elle-meme : ils sont
         # instantanes et fiables NAS debranche. La passe suivante, elle, fait un

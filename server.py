@@ -3120,6 +3120,120 @@ def purge_cles_fantomes(dry_run=False):
     return fantomes
 
 
+# ── Detections HORS INDEX : le TROISIEME orphelin (mesure le 21/08) ─────────
+# 2 374 fiches de visages et 2 377 de detections animales survivaient a des
+# cles que `tags` avait oubliees — exactement les 2 374 cles dont la purge du
+# 17/08 avait retire les vecteurs SigLIP en laissant les visages. Personne
+# n'etait charge de les retirer :
+#   * `_sync_dir` calcule ses orphelins A PARTIR de `STORE` : une cle deja
+#     absente de l'index lui est INVISIBLE, `forget_everywhere` n'est donc
+#     jamais appele pour elle ;
+#   * `purge_cles_fantomes` exige un JUMEAU VIVANT de meme basename, or les
+#     deux jumeaux (`ARZOPA/x` et `...\_Uploads\ARZOPA\x`) etaient morts.
+# Cout mesure : le curateur re-scorait 3 698 visages morts toutes les 240 s,
+# rejetes en silence par le garde-fou des cles fantomes.
+DETECTIONS_TRASH_DIR = SCRIPT_DIR / "_corbeille_detections"
+
+
+def _cles_jugees_par_un_humain():
+    """Cles portant une decision humaine (rattachement, exclusion,
+    confirmation) d'apres les fiches PEOPLE/PETS.
+
+    Les trois comptent : « ce visage n'est PAS Flo » est une etiquette humaine
+    au meme titre qu'un rattachement. Aucune de ces cles ne se purge, meme si
+    sa photo a disparu — regle 2 du projet, et le 21/08 en a denombre 120."""
+    out = set()
+    for st in (PEOPLE_STORE, PETS_STORE):
+        for pe in list(st.data.values()):
+            if not isinstance(pe, dict) or not pe.get('name'):
+                continue
+            for kf in (pe.get('faces') or []):
+                if isinstance(kf, (list, tuple)) and len(kf) == 2:
+                    out.add(kf[0])
+            out.update(pe.get('exclude') or [])
+            out.update(pe.get('confirmed') or [])
+    return out
+
+
+def _quarantaine_detections(lots):
+    """Ecrit les entrees AVANT de les retirer. Une purge sans trace n'est pas
+    reversible — et le 17/08 a prouve que la trace sert : c'est son fichier de
+    quarantaine qui a permis, quatre jours apres, d'etablir que les deux
+    magasins n'avaient pas ete traites pareil."""
+    DETECTIONS_TRASH_DIR.mkdir(parents=True, exist_ok=True)
+    chemin = DETECTIONS_TRASH_DIR / time.strftime(
+        "detections_hors_index_%Y%m%d_%H%M%S.jsonl")
+    n = 0
+    with chemin.open('w', encoding='utf-8') as f:
+        for table, cles in lots.items():
+            st = FACE_STORE if table == 'faces' else ANIMAL_STORE
+            for k in cles:
+                e = st.data.get(k)
+                if e is None:
+                    continue
+                f.write(json.dumps({"table": table, "k": k, "v": dict(e)},
+                                   ensure_ascii=False) + "\n")
+                n += 1
+    return chemin, n
+
+
+def purge_detections_hors_index(dry_run=False):
+    """Retire les detections dont la cle a quitte l'index et n'y reviendra pas.
+
+    DEUX GARDE-FOUS, non negociables :
+      * une cle portant une DECISION HUMAINE n'est jamais touchee ;
+      * on ne retire que ce que l'index ne reprendra JAMAIS : fichier absent,
+        ou chemin cache (`.corbeille-rangement`, `@eaDir`). Une cle dont le
+        fichier existe encore sous un chemin normal est en attente de
+        re-tagging (`scan:modifies` retire l'entree le temps du cycle) : la
+        purger ferait perdre des detections que le scan allait rendre. Elle est
+        COMPTEE, pas touchee — un residu qui grossit est un signal.
+    Ne s'execute que si la racine des uploads est joignable : NAS debranche,
+    tout passerait pour disparu (meme prudence que `_sync_dir`).
+    Quarantaine JSONL avant tout retrait. Renvoie (purgees, protegees, attente).
+    """
+    try:
+        if not UPLOAD_DIR.exists():
+            return [], [], []
+    except OSError:
+        return [], [], []
+    from verifier_orphelins import cles_hors_index_a_purger
+
+    def _est_fichier(k):
+        try:
+            return _resolve_key(k).is_file()
+        except OSError:
+            return True          # doute -> on ne purge pas
+    def _est_cache(k):
+        try:
+            return _is_hidden_path(_resolve_key(k))
+        except OSError:
+            return False
+
+    cles_tags = set(STORE.data)
+    proteges = _cles_jugees_par_un_humain()
+    lots, purgees, protegees, attente = {}, [], [], []
+    for st, table in ((FACE_STORE, 'faces'), (ANIMAL_STORE, 'animals')):
+        a_purger, prot, att = cles_hors_index_a_purger(
+            list(st.data.keys()), cles_tags, proteges, _est_fichier, _est_cache)
+        lots[table] = a_purger
+        purgees += a_purger
+        protegees += prot
+        attente += att
+    purgees = sorted(set(purgees))
+    if purgees and not dry_run:
+        try:
+            chemin, n = _quarantaine_detections(lots)
+            print(f"  \U0001f5c4 quarantaine : {n} detection(s) ecrite(s) dans "
+                  f"{chemin.name}")
+        except OSError as e:                                 # noqa: BLE001
+            # Pas de trace = pas de purge. Le retrait attendra.
+            print(f"  ! quarantaine impossible ({e}) : purge ANNULEE")
+            return [], sorted(set(protegees)), sorted(set(attente))
+        forget_everywhere(purgees, motif='purge:hors_index')
+    return purgees, sorted(set(protegees)), sorted(set(attente))
+
+
 # ─── Operations de fichiers (vue Dossiers) ───────────────────────────────────
 # Logique pure et testee dans fichiers.py (module stdlib, import leger). La
 # re-cle de l'index passe par rekey_everywhere : un deplacement/renommage ne
@@ -4391,12 +4505,17 @@ def maintenance_loop():
     """ExifTool + scan initial, puis re-scan toutes les 5 minutes."""
     global EXIFTOOL
     EXIFTOOL = ensure_exiftool()
-    # purge des entrées de dossiers cachés (.thumbs, @eaDir…) déjà indexées
+    # purge des entrées de dossiers cachés (.thumbs, @eaDir…) déjà indexées.
+    # `forget_everywhere` et NON `STORE.remove_many` : retirer l'entrée d'index
+    # sans la cascade laissait les détections de visages derrière — 91 clés le
+    # 21/08, toutes dans `.corbeille-rangement`, invisibles ensuite à tout le
+    # monde (`_sync_dir` ne voit que ce qui est ENCORE dans l'index). Le motif
+    # reste déclaré au registre : c'est forget_everywhere qui le porte.
     bad = [k for k in list(STORE.data) if _is_hidden_path(_resolve_key(k))]
     if bad:
-        with REGISTRE.motif('demarrage:dossiers_caches'):
-            n = STORE.remove_many(bad)
-        print(f"  🧹 {n} entrée(s) de dossiers cachés retirée(s) de l'index")
+        n = forget_everywhere(bad, motif='demarrage:dossiers_caches')
+        print(f"  🧹 {n} entrée(s) de dossiers cachés retirée(s) de l'index "
+              "(avec leurs détections)")
     # Purge unique des clés fantômes (doublons malformés type « ARZOPA » qui ne
     # résolvent pas mais dont la vraie photo existe sous une clé correcte). Sans
     # risque (aucun nom humain), et peu coûteux (ne stat que les collisions).
@@ -4408,6 +4527,17 @@ def maintenance_loop():
                   f"(doublons malformés, ex. {ex})")
     except Exception as e:                                   # noqa: BLE001
         print(f"  ⚠ purge clés fantômes ignorée : {e}")
+    # Détections dont la clé a quitté l'index : le troisième orphelin (21/08).
+    # Base contre base, puis un stat par clé CANDIDATE seulement — le coût est
+    # borné par la taille de l'anomalie, pas par celle du corpus.
+    try:
+        purgees, protegees, attente = purge_detections_hors_index()
+        if purgees or protegees or attente:
+            print(f"  🧹 hors index : {len(purgees)} détection(s) purgée(s), "
+                  f"{len(protegees)} protégée(s) (décision humaine), "
+                  f"{len(attente)} en attente de re-tagging")
+    except Exception as e:                                   # noqa: BLE001
+        print(f"  ⚠ purge des détections hors index ignorée : {e}")
     first = True
     cycle = 0
     while True:

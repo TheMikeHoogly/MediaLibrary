@@ -94,6 +94,13 @@ une **génération** : le `taskkill` par titre ne tuait rien.
    Mike, 21/08. **Et la CAUSE reste à trouver** : pourquoi le scan retire une
    clé de l'index sans retirer sa fiche de visages ? Purger sans le savoir
    reconduit l'incident, comme le 17/08 l'a fait sans que ça se voie.
+   **Le correctif est LIVRÉ et OBSERVÉ (21/08)** : la purge de démarrage
+   cascade enfin, et un balayage retire au démarrage ce que `_sync_dir` ne peut
+   plus voir — sans jamais toucher une clé jugée par un humain, et seulement
+   quand l'index ne la reprendra jamais. **4 511 détections purgées** (quarantaine
+   réversible `_corbeille_detections/`), `visages` 44 450 → **42 196**, hors index
+   2 374 → **120** — exactement les protégées. Reste à faire : **reporter la
+   décision de Luna** (la seule qui se sauve) et décider du sort des 120.
    **Le sauvetage a été mesuré (21/08)** : sur les 141 décisions portées par ces
    clés, **13** ont un jumeau vivant, dont **12** portent déjà le nom — il ne
    reste **qu'une seule** décision à reporter (Luna). Les **128** autres n'ont

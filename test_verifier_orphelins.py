@@ -195,6 +195,51 @@ def test_orphelins_hors_index():
     return ok
 
 
+def test_cles_hors_index_a_purger():
+    """La selection qui autorise un RETRAIT : ses garde-fous d'abord."""
+    ok = True
+    tags = {"viv.jpg"}
+    proteges = {"jugee.jpg"}
+    absents = {"morte.jpg", "jugee.jpg"}
+    caches = {".corbeille/cachee.jpg"}
+
+    def est_fichier(k):
+        return k not in absents
+
+    def est_cache(k):
+        return k in caches
+
+    cles = ["viv.jpg", "morte.jpg", "jugee.jpg", ".corbeille/cachee.jpg",
+            "en_retagging.jpg"]
+    a_purger, prot, attente = vo.cles_hors_index_a_purger(
+        cles, tags, proteges, est_fichier, est_cache)
+    ok &= _check(a_purger == [".corbeille/cachee.jpg", "morte.jpg"],
+                 "purge le fichier disparu ET le chemin cache")
+    ok &= _check(prot == ["jugee.jpg"],
+                 "une decision humaine n'est JAMAIS purgee, meme disparue")
+    ok &= _check(attente == ["en_retagging.jpg"],
+                 "fichier present + chemin normal = en attente, on ne touche pas")
+
+    # Une cle encore dans l'index n'est jamais candidate, quoi qu'il arrive.
+    a2, p2, e2 = vo.cles_hors_index_a_purger(
+        ["viv.jpg"], tags, set(), est_fichier, est_cache)
+    ok &= _check((a2, p2, e2) == ([], [], []), "cle indexee -> intouchable")
+
+    # NAS debranche : l'appelant passe un est_fichier qui dit « present »
+    # partout ; rien ne doit partir (le garde-fou est chez l'appelant, mais la
+    # fonction ne doit pas le contourner).
+    a3, _p3, e3 = vo.cles_hors_index_a_purger(
+        ["morte.jpg"], tags, set(), lambda k: True, lambda k: False)
+    ok &= _check(a3 == [] and e3 == ["morte.jpg"],
+                 "tout present -> rien a purger")
+
+    # Sans rien hors index, la fonction ne rend rien plutot que de planter.
+    ok &= _check(vo.cles_hors_index_a_purger([], set(), set(), est_fichier,
+                                             est_cache) == ([], [], []),
+                 "store vide -> trois listes vides")
+    return ok
+
+
 if __name__ == "__main__":
     print("== noms_humains ==")
     a = test_noms_humains()
@@ -212,8 +257,10 @@ if __name__ == "__main__":
     g = test_orphelins_vecteurs()
     print("== orphelins_hors_index ==")
     h = test_orphelins_hors_index()
+    print("== cles_hors_index_a_purger ==")
+    i = test_cles_hors_index_a_purger()
     print()
-    if a and b and c and d and e and f and g and h:
+    if a and b and c and d and e and f and g and h and i:
         print("TOUS LES TESTS PASSENT")
         raise SystemExit(0)
     print("DES TESTS ONT ECHOUE")

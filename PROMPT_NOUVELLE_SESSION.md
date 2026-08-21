@@ -58,15 +58,26 @@ PARTOUT — déjà perdues. Vérité terrain réelle : **3 364** décisions (1 5
 rattachements — « 1 196 » comptait des CLÉS —, 1 496 exclusions, 292
 confirmations).
 
+**LE CORRECTIF EST LIVRÉ ET OBSERVÉ.** La purge de démarrage cascade enfin
+(`forget_everywhere` au lieu de `STORE.remove_many` — préventif), et
+`purge_detections_hors_index()` balaie au démarrage ce que `_sync_dir` ne peut
+plus voir. Deux garde-fous : **jamais** une clé portant une décision humaine, et
+**seulement** ce que l'index ne reprendra jamais (fichier absent ou chemin
+caché) — une clé dont le fichier existe est en attente de re-tagging et se
+COMPTE au lieu de se purger. Quarantaine JSONL avant tout retrait. Le dry-run
+(`verifier_orphelins.py --sans-disque --simuler-purge`) annonçait 2 254 + 2 257 ;
+la quarantaine en contient **exactement** 2 254 + 2 257. Observé après
+redémarrage : `visages` **44 450 → 42 196**, hors index **2 374 → 120** (les
+protégées), file du curateur **inchangée** (13/1/24), index intact à 43 065.
+
 ## Prochain pas
 
-1. **Le CORRECTIF, maintenant que la cause est connue.** Deux gestes de code,
-   petits et testables : (a) la purge de démarrage
-   (`demarrage:dossiers_caches`) doit appeler `forget_everywhere` au lieu de
-   `STORE.remove_many` — c'est la fuite encore ACTIVE, 91 clés ; (b) un balayage
-   qui rattrape les clés déjà hors index, puisque `_sync_dir` ne peut plus les
-   voir : `analyser_hors_index` sait les trouver, il manque le geste. **Et
-   d'abord reporter la décision de Luna** — la seule qui se sauve.
+1. **Reporter la décision de Luna**, la seule des 141 qui se sauve : son
+   rattachement sur `…\_Uploads\ARZOPA\KP6XMN-…jpg` va vers
+   `…\Photos Flo\Luna & Inti\20260101_Pheno.jpg` (jumeau retrouvé par le
+   VISAGE à 1,0000). Puis décider du sort des **120 clés protégées** : leurs
+   photos n'existent plus, la décision n'a plus de sujet — les garder coûte un
+   résidu permanent, les purger coûte 141 décisions de vérité terrain.
 2. **Faire SURVIVRE le registre des oublis.** `comptes_index` vit en mémoire :
    après le redémarrage de 19:31, `par_motif` est vide et la cause des 2 283 ne
    pourra jamais être établie rétrospectivement. Un compteur qui ne survit pas
