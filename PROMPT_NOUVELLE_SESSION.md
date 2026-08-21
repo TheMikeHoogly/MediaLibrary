@@ -9,50 +9,49 @@ FUSIONNÉ — ce document, non. Puis `ROADMAP.md`, `eval/DECISIONS.md`,
 `eval/METHODE.md` — et `docs/DECISIONS_OUTILLAGE.md` si le sujet touche aux
 canaux. Débrief en 2–3 lignes, puis on attaque.
 
-## Où on en est (20/08/2026, fin de session 28)
+## Où on en est (21/08/2026, fin de session 29)
 
-**`main` est à `9fc7bd6`, tout est fusionné, rien n'attend.** Sept livraisons
-dans la journée, toutes observées avant d'être gravées.
+**Trois livraisons, toutes observées avant d'être gravées** ; `main` fusionnée
+après chacune. La dernière : `7efc4c0`, les puces d'espèce.
 
-**Chantier 14a-(iv) CLOS** : le filtre des noms de la recherche et la ligne de
-faits partagent enfin l'autorité (`_autorite_des_noms`). 13 photos sortaient
-d'une recherche par un nom retiré ; observé après redémarrage, Silvio
-495 → 494, Danica 325 → 324.
+**Le 5ᵉ axe `espece:` est LIVRÉ, forme A.** Un jeton explicite qui filtre sur
+la CONCORDANCE — YOLO ∧ tagueur, règle UNIQUE (`faits_vue.dit_l_espece`)
+appelée par le serveur ET par le banc. Observé en réel : `espece:chat` rend
+**1 500** sur **2 386** (plafond de page), **0 en trop** face à la règle ;
+`espece:licorne` rend **0** et le DIT ; `espèce:Chats Luna` rend **198**. Six
+puces sous la barre INSÈRENT le jeton — il se compose, il ne remplace pas.
 
-**Tu as un TROISIÈME canal — utilise-le.** `_commande_banc.txt` → le nom d'un
-banc et ses arguments, par exemple `mesure_espece_recherche.py --base copie.db
---exemples 14`. L'agent (fenêtre « MediaLibrary - Bancs ») le lance sous
-Windows et écrit `_banc_sortie.txt`. Il ne lance QUE `mesure_ verifier_
-diagnostic_ comptes_ inventaire_ test_ eval_`, sans shell ni chemin. C'est
-ainsi qu'on mesure ce que la VM ne peut pas atteindre (elle n'a pas le LAN).
+**Le gain n'est pas celui qu'on attendait.** 1 018 photos qu'aucun des six
+mots ne rend, oui — mais surtout la PRÉCISION : `q=mouton` rend **1 500**
+photos dont **28** moutons, `espece:mouton` en rend **32**, tous confirmés par
+deux regards. Le jeton ne gagne pas des photos, il en RETIRE 1 468.
 
-**L'espèce a réfuté deux fois** : SigLIP ne rend que la moitié des détections
-de YOLO, mais `det_score` ne dit pas l'espèce (`cheval` 0,934 sur *chien*).
-Ce qui tient : la **CONCORDANCE** YOLO ∧ tagueur — **3 065** photos, chat
-**2 316**. Les deux réfutations sont venues d'un banc lancé en ENTIER, pas
-d'un échantillon : c'est ce qui a fait naître le troisième canal.
+**La sandbox fabrique sa propre copie de la base** : `mesure_copie_base.py`
+(API `backup`, source en `mode=ro`, copie DATÉE). 276,5 Mo en 0,9 s, et il
+chiffre pourquoi un `copy` était faux — **5,4 Mo** vivaient dans le WAL. Plus
+un aller-retour clavier avant de mesurer.
 
-**Les docs de suivi ont un seul seuil : 50 000 octets** (décision de Mike,
-20/08). Il ne rattrape plus qu'un emballement franc — ce qui tient une doc
-courte est son RÔLE, pas son plafond, et le commentaire de `TRACKING_MD` dit
-lequel pour chacune. Ne pas rogner la précision d'une raison pour gagner des
-octets : c'est le réflexe que ce seuil a fait payer trois fois le 20/08.
+**Un chiffre sans son code n'est pas reproductible.** La concordance du 20/08
+(3 065) ne vivait que dans un tableau ; réécrite en code, elle rend **3 134**.
+Même famille, pas le même trait — le mouton se dit surtout dans `desc`.
 
 ## Prochain pas
 
-1. **Câbler le 5ᵉ axe `espece:`** (forme A, choix de Mike) : un jeton explicite
-   dans la recherche, annoncé dans la ligne « ce que j'ai compris », plus des
-   puces qui l'insèrent. Matière : la concordance, jamais `det_score` seul.
-   Mesurer d'abord ce que le jeton rend, avec le nouveau canal.
+1. **La barre de recherche ment sur une page de résultats** (`QUESTIONS_MIKE.md`,
+   une question en attente) : `/files?q=` ne charge que le résultat précédent,
+   donc y chercher autre chose n'intersecte que CE sous-ensemble — **3** photos
+   annoncées là où le fonds en a **354**. Les puces relancent la requête ; la
+   barre, non. Défaut ANCIEN, pas propre au 5ᵉ axe.
 2. **Gestes Mike** : nettoyer Flo (5 909 photos) ; re-rejeter Caline ;
-   `copie.db` (290 Mo) traîne à la racine, désormais gitignoré.
+   `copie.db` (276 Mo) à la racine, gitignorée.
 3. **Le reste** (`ROADMAP.md`) : prompt de PROD qui hallucine ; doublons
    proches ; UI (11) ; restauration à blanc (12) ; MCP lecture (13).
 
 **Ne pas rouvrir sans chiffre neuf** : `taken` en base ; backfill ÉCRIT de
 `faits` ; index des noms en UNE passe ; filtre des noms sur les `kw` bruts ;
-`det_score` comme critère d'espèce ; agent git dans le serveur ; planchers
-1990 (7 et 0, couplés) ; plafond 2100 (0).
+`det_score` comme critère d'espèce ; règle d'espèce ÉLARGIE (poney, brebis,
+chaton : +43 photos sur 3 134) ; agent git dans le serveur ; planchers 1990
+(7 et 0, couplés) ; plafond 2100 (0).
 
 **Les TROIS canaux, mêmes octets** (CRLF, via `device_bash`, jamais supprimer ;
 `canal.py` les lit tous) : `_commande_serveur.txt` → `redemarrer`, puis
@@ -62,7 +61,9 @@ VÉRIFIER `GET /api/serveur` (`code_a_jour` vrai) ; `_commande_git.txt` →
 LIRE `_banc_sortie.txt`. Trois fenêtres doivent être ouvertes — Serveur, Git,
 Bancs ; un agent est vivant si son `_agent_*_vu.txt` a moins de 30 s.
 
-**Mesurer** : jamais sur `photos.db` (le serveur est l'écrivain unique) — copier
-la base, puis `TZ=Europe/Zurich`. Les bancs IMPORTENT la prod, ils ne la
-recopient pas. Et un banc qui n'a jamais tourné est une promesse : le canal des
-bancs existe pour qu'aucun ne soit livré sans avoir tourné.
+**Mesurer** : jamais sur `photos.db` (le serveur est l'écrivain unique) —
+`mesure_copie_base.py` d'abord, puis `--base copie.db`, `TZ=Europe/Zurich`. Les
+bancs IMPORTENT la prod, ils ne la recopient pas. Et ce que le serveur FAIT ne
+se lit pas dans un banc : `verifier_jeton_espece.py` interroge le serveur
+vivant et compare clé par clé — c'est ce contrôle qui a montré le « 3 » qui
+mentait.
