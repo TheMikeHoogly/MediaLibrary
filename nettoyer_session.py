@@ -165,23 +165,34 @@ def apply_quarantine(cands):
 # --- Volet 2 : lint des *.md de suivi --------------------------------------
 
 # Docs de suivi + seuil de bloat (octets). None = pas de seuil (juste refs/dates).
+# Budget de bloat, en octets. **50 000 partout, décision de Mike (20/08)** —
+# et deux fois dans la même journée, parce que j'ai d'abord cru qu'il parlait
+# d'un seul fichier, puis j'ai gardé `CLAUDE.md` serré « puisqu'il est relu à
+# chaque session ». Non : le seuil est le même pour tous.
+#
+# CE QUE LE SEUIL FAIT ENCORE : rattraper un emballement franc — un fichier
+# qui double, une doc qui devient un journal.
+#
+# CE QU'IL NE FAIT PLUS : tenir les docs courtes. Trois fois le 20/08 il a
+# fallu rogner la PRÉCISION des raisons pour repasser dessous — or c'est
+# exactement ce que le seuil était censé protéger, et la marge retrouvée a
+# servi, les deux fois, à RENDRE ce qui avait été rogné le matin même.
+#
+# CE QUI TIENT LA PLACE : le RÔLE de chaque fichier, pas son plafond.
+#   · `CLAUDE.md` est relu à CHAQUE session — il coûte des tokens à chaque
+#     fois et rivalise pour l'attention : invariants seulement.
+#   · `PROMPT_NOUVELLE_SESSION.md` est réécrit en entier chaque session :
+#     une amorce lean, l'état et le prochain pas, rien d'autre.
+#   · `ROADMAP.md` porte les priorités ; les récits terminés vivent dans git.
+#   · Les DECISIONS sont un tableau : une ligne par verdict, un chiffre ou
+#     une réfutation dans chaque raison. C'est la FORME qui interdit le récit.
+# Un fichier qui approche 50 000 sans avoir trahi son rôle n'a pas de
+# problème de taille ; celui qui devient bavard à 9 000 en a un, et le lint
+# ne le dira pas. C'est au lecteur de le voir.
 TRACKING_MD = {
-    # 8 000 → 8 500 le 20/08 : le troisième canal (les bancs) a ajouté une
-    # ligne au tableau des fichiers et un paragraphe au protocole. Le seuil
-    # reste SERRÉ, et volontairement loin des 50 000 de DECISIONS : ce
-    # fichier-ci est relu à CHAQUE session, il coûte des tokens à chaque fois
-    # et il rivalise avec le reste pour l'attention. Un budget large ici
-    # rendrait le brief bavard, et un brief bavard n'est plus lu.
-    "CLAUDE.md": 8500,
-    "ROADMAP.md": 12000,
-    "PROMPT_NOUVELLE_SESSION.md": 4000,
-    # 9 000 → 12 000 le 19/08, puis 50 000 le 20/08 — deux décisions de Mike,
-    # même raison : chaque session ajoute des verdicts qu'aucune ne peut
-    # retirer, c'est la raison d'être du fichier, et condenser rongeait la
-    # PRÉCISION des raisons, ce que le seuil était censé protéger.
-    # À 50 000 le seuil ne protège plus contre le RÉCIT — il ne rattrape
-    # qu'un emballement franc. Ce qui protège du récit est la FORME : un
-    # tableau, une ligne par verdict, un chiffre dans chaque raison.
+    "CLAUDE.md": 50000,
+    "ROADMAP.md": 50000,
+    "PROMPT_NOUVELLE_SESSION.md": 50000,
     "eval/DECISIONS.md": 50000,
     # Sorti de DECISIONS.md le 20/08 : découpage par DOMAINE, non par statut
     # (l'archive par âge avait été rejetée la veille — elle obligeait à relire
@@ -190,9 +201,8 @@ TRACKING_MD = {
     # pourquoi `taskkill` a échoué.
     "docs/DECISIONS_OUTILLAGE.md": 50000,
     # Sorti de DECISIONS.md le 16/08 : « ce qui a ete tranche » d'un cote,
-    # « comment on tranche » de l'autre. Budget propre pour que le corpus de
-    # methode soit GOUVERNE et non pas soustrait au lint.
-    "eval/METHODE.md": 6000,
+    # « comment on tranche » de l'autre.
+    "eval/METHODE.md": 50000,
     "README.md": None,
     "INSTALLATION.md": None,
 }
