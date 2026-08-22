@@ -55,8 +55,15 @@ PERMUTE deux personnes d'une même photo se refuse des deux côtés (« déjà
 pris »), et une photo que la fiche cite deux fois est « ambiguë ». Le résidu de
 **34 + 1** se juge à l'œil, pas au score.
 
-**Reste le geste de Mike** : `/reglages` → « Rattachements qui désignent le
-mauvais visage » → 2 · Appliquer. Puis juger les 30 sur `/tranche`, et
+**APPLIQUÉ ET OBSERVÉ (22/08, geste de Mike)** : **33 recalages sur 17
+fiches** — 32 au premier passage, plus **1 au second**, le « déjà pris » s'étant
+libéré quand son bloqueur a bougé. Remesuré sur copie fraîche : décalés
+**42 → 9** (3,5 % → 0,8 %), score minimum **−0,13 → +0,06**, sous le seuil de
+faux positif **42 → 13**, désignent le bon visage **997 → 1 030**. Et le
+contrôle qui compte : **1 194 couples avant, 1 194 après** — aucune décision
+humaine perdue en route. Les 9 restants sont exactement les ambigus.
+
+**Reste le geste de Mike** : juger les 30 sur `/tranche`, puis
 `mesure_tranche_seuil.py --bilan`.
 
 ## État (22/08/2026, session 31)

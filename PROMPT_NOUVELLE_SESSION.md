@@ -47,19 +47,19 @@ ailleurs, 41 sur 42. Le premier croisement, bâti sur le drapeau `reemb`, rendai
 **100 %** : instrument mort (le drapeau est aussi posé sur les photos seulement
 EXAMINÉES) ; `reemb_ms` discrimine.
 
-**Réparation LIVRÉE et vérifiée à blanc** : `recale_rattachements.py` (règle
-pure, 27 tests) + trois boutons `/reglages`, quarantaine `_corbeille_recalage/`.
-Aperçu sur le serveur vivant : **32 à recaler, 34 « ambigu », 1 « déjà pris »**
-— mêmes nombres que le banc, deux chemins. La règle refuse plus qu'elle ne
-répare, volontairement : une PERMUTATION entre deux personnes d'une même photo
-se refuse des deux côtés.
+**Réparation LIVRÉE, APPLIQUÉE et OBSERVÉE** : `recale_rattachements.py`
+(règle pure, 27 tests) + trois boutons `/reglages`, quarantaine
+`_corbeille_recalage/`. Aperçu sur le serveur vivant : 32 à recaler, 34
+« ambigu », 1 « déjà pris » — mêmes nombres que le banc, deux chemins. Mike a
+appliqué : **33 recalages sur 17 fiches** (32 au premier passage, 1 au second —
+le « déjà pris » s'était libéré). Remesuré : décalés **42 → 9**, score minimum
+**−0,13 → +0,06**, bon visage **997 → 1 030**, et **1 194 couples avant comme
+après** : aucune décision perdue. La règle refuse plus qu'elle ne répare,
+volontairement — une PERMUTATION entre deux personnes d'une même photo se
+refuse des deux côtés.
 
 ## Prochain pas
 
-0. **`/reglages` → « Rattachements qui désignent le mauvais visage » →
-   2 · Appliquer.** Ça passe avant tout le reste : juger la tranche contre une
-   planche de référence fausse ne mesurerait rien. Puis relancer
-   `mesure_rattachements.py --base copie.db` pour l'observer.
 1. **Juger les 30 sur `http://192.168.0.13:8080/tranche`** (clavier `1` / `2` /
    `3`, `Z` pour revenir), puis `mesure_tranche_seuil.py --bilan` dans
    `_commande_banc.txt`. Le bilan rend le taux **avec son intervalle de
@@ -69,11 +69,11 @@ se refuse des deux côtés.
    *(Une entrée d'essai `__essai_claude__` traîne dans
    `journal_jugements.jsonl` — la vérification du chemin d'écriture. Elle n'est
    pas dans `_tranche_jugements.json`, donc elle ne fausse aucun compte.)*
-1bis. **Le résidu du recalage : 34 « ambigu » + 1 « déjà pris ».** Le score ne
-   les départage pas — soit la personne est vraiment détectée deux fois, soit
-   l'index égaré désigne son voisin. Ils se jugent à l'œil, sur une page, comme
-   la tranche. Et **`PETS` n'a jamais été mesuré** : son magasin porte des
-   empreintes DINOv2 et `assigned_keys` ne le lit pas.
+1bis. **Le résidu du recalage : 34 refus « ambigu », dont 9 réellement
+   décalés.** Le score ne les départage pas — soit la personne est vraiment
+   détectée deux fois, soit l'index égaré désigne son voisin. Ils se jugent à
+   l'œil, sur une page, comme la tranche. Et **`PETS` n'a jamais été mesuré** :
+   son magasin porte des empreintes DINOv2 et `assigned_keys` ne le lit pas.
 2. **Chantier 12 — la répétition** (choix de Mike : ordre 1-4-3-2). Restaurer
    POUR DE VRAI sur un dossier vierge, chronométrer, puis
    `verifier_restauration.py --restaure <dossier>` : il compare les décisions
