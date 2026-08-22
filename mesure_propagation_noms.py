@@ -100,12 +100,17 @@ TRANCHE = 0.05
 
 # ─────────────────────────── lire la prod sans l'exécuter ───────────────────
 
-def seuils_de_server(projet):
-    """Valeurs des seuils du curateur, lues dans le source de `server.py`.
+def lire_constantes(projet, noms):
+    """Valeurs de constantes de `server.py`, lues dans son SOURCE.
 
     Analyse syntaxique, jamais `import server` : importer ouvrirait
     `photos.db` en écriture alors que le serveur tourne (règle 4 du projet).
-    `seuils.txt` est ensuite appliqué comme le fait la prod.
+    Une constante ABSENTE arrête l'appelant : un banc qui invente une valeur
+    ne mesure plus la prod, il mesure son cousin (`eval/METHODE.md`, 14/08).
+
+    Générique parce qu'il y a désormais plus d'un banc à servir : les seuils du
+    curateur (visages) et ceux des animaux (`PET_MATCH_SIM`, `ANIMAL_NAMEABLE`,
+    la version du pipeline) se lisent par le même chemin.
     """
     src = (Path(projet) / 'server.py').read_text(encoding='utf-8', errors='replace')
     arbre = ast.parse(src)
@@ -114,17 +119,26 @@ def seuils_de_server(projet):
         if not isinstance(noeud, ast.Assign):
             continue
         for cible in noeud.targets:
-            if isinstance(cible, ast.Name) and cible.id in SEUILS_ATTENDUS:
+            if isinstance(cible, ast.Name) and cible.id in noms:
                 try:
                     vals[cible.id] = ast.literal_eval(noeud.value)
                 except ValueError:
                     pass
-    manquants = [n for n in SEUILS_ATTENDUS if n not in vals]
+    manquants = [n for n in noms if n not in vals]
     if manquants:
         raise SystemExit("Seuils introuvables dans server.py : "
                          + ', '.join(manquants)
                          + " — la règle a bougé, le banc doit être relu avant "
                            "de produire un chiffre.")
+    return vals
+
+
+def appliquer_seuils_txt(projet, vals, reglables=SEUILS_REGLABLES):
+    """Applique `seuils.txt` par-dessus les valeurs lues, comme le fait la prod.
+
+    Modifie `vals` en place et rend les seules SURCHARGES : un seuil recopié en
+    silence est un banc qui dérive, donc le rapport les affiche.
+    """
     surcharges = {}
     try:
         brut = (Path(projet) / 'seuils.txt').read_text(encoding='utf-8')
@@ -135,20 +149,24 @@ def seuils_de_server(projet):
         if '=' not in ligne:
             continue
         nom, val = (x.strip() for x in ligne.split('=', 1))
-        if nom in SEUILS_REGLABLES:
+        if nom in reglables:
             try:
                 vals[nom] = float(val)
                 surcharges[nom] = float(val)
             except ValueError:
                 pass
-    return vals, surcharges
+    return surcharges
 
 
-def ouvrir_stores(base):
-    """Ouvre la COPIE avec le loader de PROD (vecteurs BLOB réinjectés).
+def seuils_de_server(projet):
+    """Seuils du curateur (visages) : lus dans `server.py`, `seuils.txt` par-dessus."""
+    vals = lire_constantes(projet, SEUILS_ATTENDUS)
+    return vals, appliquer_seuils_txt(projet, vals)
 
-    Refuse `photos.db` : le serveur en est l'écrivain unique.
-    """
+
+def _copie(base):
+    """Le chemin de la COPIE, ou un refus. Le serveur est l'écrivain unique de
+    `photos.db` : aucun banc ne l'ouvre, jamais."""
     p = Path(base)
     if p.name.lower() == 'photos.db':
         raise SystemExit("REFUS : ne jamais mesurer sur photos.db. "
@@ -156,6 +174,29 @@ def ouvrir_stores(base):
                          "puis --base copie.db")
     if not p.exists():
         raise SystemExit(f"Base introuvable : {p}")
+    return p
+
+
+def ouvrir_table(base, table):
+    """Ouvre UNE table de la COPIE avec le loader de PROD.
+
+    `SqliteStore` réinjecte les vecteurs BLOB dans les entrées : la
+    représentation en mémoire redevient exactement celle que `server.py`
+    reçoit (`e['faces'][i]['emb']`, `e['animals'][i]['emb']`, `e['refs'][i]`).
+    C'est ce qui permet à un banc d'IMPORTER la matière de la prod au lieu de
+    la recopier — y compris pour les tables que ce module ne lit pas lui-même
+    (`animals`, `pets`).
+    """
+    from store_sqlite import SqliteStore
+    return SqliteStore(_copie(base), table)
+
+
+def ouvrir_stores(base):
+    """Ouvre la COPIE avec le loader de PROD (vecteurs BLOB réinjectés).
+
+    Refuse `photos.db` : le serveur en est l'écrivain unique.
+    """
+    p = _copie(base)
     from store_sqlite import SqliteStore
     return (SqliteStore(p, 'tags'), SqliteStore(p, 'faces'),
             SqliteStore(p, 'people'))

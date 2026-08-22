@@ -6,6 +6,49 @@ dans **git** ; les rejets dans `eval/DECISIONS.md` (photothèque) et
 `eval/METHODE.md` ; l'éphémère dans `PROMPT_NOUVELLE_SESSION.md`. Audits :
 `docs/AUDIT_INTERNE_2026-08.md`, `docs/AUDIT_EXTERNE_2026.md`, `docs/RANGEMENT_2026.md`.
 
+## État (22/08/2026, session 36)
+
+**`PETS` est mesuré pour la première fois, et le mal n'est pas où on le
+cherchait.** 12 fiches, **351 couples** `[photo, animal]`, 330 mesurables.
+**0 index hors bornes**, et **10 décalés dont 8 sur des photos que la fiche
+cite plusieurs fois** — Mutz cité **7 fois** sur `111-1103_IMG.JPG`, qui porte
+10 animaux : c'est le nommage d'un GROUPE, pas un index qui glisse. Restent
+**2 vrais candidats sur 330 (0,6 %)**, contre 3,5 % côté visages avant
+réparation. Le code disait pourquoi : rien ne ré-embarque une photo déjà connue
+côté animaux (`animal_worker` saute `ANIMAL_STORE.has`), et
+`migrate_animal_pipeline` vide TOUT puis remet `faces = []`. **Porter le
+recalage aux animaux est donc rejeté** : il traiterait 2 couples.
+
+**Le résultat qui compte porte, là encore, sur l'INSTRUMENT.** Sur 330 couples
+**confirmés par des humains**, **122 (37 %) scorent sous `PET_MATCH_SIM =
+0,55`** — médiane 0,603, p10 0,392, min 0,231. Le seuil coupe au MILIEU de la
+distribution des rattachements justes ; la même colonne vaut **1,1 %** côté
+visages. DINOv2 lit une robe, une posture, une lumière — pas une identité.
+C'est ce plafond-là qui limite tout ce qu'on voudrait automatiser sur les
+animaux, et il ne se règle pas sur ce chiffre seul : il faudra des jugements,
+comme pour la tranche 0,35–0,40.
+
+**Deux petits tas précis, pour un geste humain.** **15 clés mortes** (4,3 % —
+Inti 7, Luna 5, Pins 2, Pticon 1), corroborées par un **second chemin** : le
+croisement par le tag `animal:` en rend exactement 15, les mêmes fiches. Et
+**6 couples d'espèce incohérente** — Luna, un chat, posée sur une détection
+**`dog`**, sur 4 photos : faux certains, sans qu'aucun seuil ait à le dire.
+
+**Une réserve, qui n'est pas un défaut : 651 photos portent un nom d'animal
+sans aucun rattachement** (Inti 420, Mutz 111, Luna 94). Puma, Kevin et Le chat
+de Bremblens ont **zéro couple** pour 7, 6 et 2 photos taguées.
+
+**Deux corroborations gratuites.** Toutes les empreintes sont en **768** — la
+protection de dimension du code n'a rien à attraper aujourd'hui. Et **4 628
+détections sur 7 704** portent une empreinte : l'écart de **3 076** est
+*exactement* bird 1 729 + sheep 710 + cow 637, les espèces non nommables. Aucun
+trou.
+
+**Le banc s'est trompé le premier, et c'est son ZÉRO qui l'a dit** : première
+version, « 0 photo taguée » pour les **douze** fiches. Il lisait `kw` ; la prod
+écrit `kw_fr`. Un compte identique sur toutes les lignes d'un tableau accuse la
+COLONNE, pas les lignes.
+
 ## État (22/08/2026, session 35)
 
 **Le chantier des rattachements est CLOS, et son dernier chiffre porte sur
@@ -269,9 +312,12 @@ une **génération** : le `taskkill` par titre ne tuait rien.
    1 194 → 1 192, aucune décision perdue. Ce qui reste est mesuré et sain.
    **Ne pas rouvrir sans chiffre neuf** — et surtout ne pas relire les 13
    « faux positifs » comme des défauts : ils sont jugés JUSTES à 12 sur 13.
-   Seule suite ouverte : **`PETS` n'a jamais été mesuré** (empreintes DINOv2,
-   `assigned_keys` ne le lit pas) — c'est un chantier à part, et personne ne
-   sait encore ce qu'il contient.
+   **`PETS` est mesuré à son tour (22/08) et son index est SAIN** : 0 hors
+   bornes, 2 vrais décalés sur 330. Le recalage n'y sera pas porté. Ce qui
+   reste ouvert côté animaux n'est plus un chantier d'index mais **21 couples
+   pour un geste humain** (15 clés mortes, 6 espèces incohérentes) et le
+   plafond de l'empreinte DINOv2 — 37 % des rattachements confirmés sous le
+   seuil.
 
 0bis. **Le résidu « ambigu » : CLOS (22/08).** Instrument et page livrés,
    15 cas jugés par Mike, **34 confirmés, 0 à retirer**. `mesure_rattachements.py --residu` écrit

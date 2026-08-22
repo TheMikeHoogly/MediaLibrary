@@ -136,6 +136,11 @@
 - **Un score parfait est une alarme — y compris quand c'est le sien** (22/08) : la règle était
   écrite dans `CLAUDE.md` et appliquée à tous les bancs du projet, sauf à celui qui venait de
   servir à contredire un humain. 15/15 aurait dû faire relire l'instrument AVANT la conclusion.
+  **Et un ZÉRO parfait est la même alarme** (22/08) : le banc des animaux rendait « 0 photo
+  taguée » pour les DOUZE fiches — il lisait `kw`, la prod écrit `kw_fr`, et `_kw_has` compare
+  en minuscules. Un compte identique sur toutes les lignes d'un tableau accuse la COLONNE, pas
+  les lignes. Corrigé, le croisement devient utile : il retrouve les **15 clés mortes** fiche
+  par fiche, par un chemin indépendant du premier.
 - **Un écart de score n'est pas une identité fausse** (22/08) : le critère « décalé » dit qu'un
   autre visage de la même photo dépasse le désigné de 0,10 — pas que le désigné soit le mauvais.
   Le chiffre qui sépare les deux est le SCORE DU VISAGE DÉSIGNÉ : les 9 décalés restants tiennent

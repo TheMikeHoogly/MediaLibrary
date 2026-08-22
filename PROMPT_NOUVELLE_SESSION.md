@@ -9,50 +9,57 @@ FUSIONNÉ — ce document, non. Puis `ROADMAP.md`, `eval/DECISIONS.md`,
 `eval/METHODE.md` — et `docs/DECISIONS_OUTILLAGE.md` si le sujet touche aux
 canaux. Débrief en 2–3 lignes, puis on attaque.
 
-## Où on en est (22/08/2026, fin de session 35)
+## Où on en est (22/08/2026, fin de session 36)
 
-**Le chantier des rattachements est CLOS.** Parti de 42 couples
-`[photo, visage]` qui désignaient le mauvais visage : 33 recalages appliqués
-(dont **29 vraies réparations** — l'ancien index scorait sous 0,30, jusqu'à
-−0,13), 28 cas jugés à l'œil par Mike sur `/residu`, **2 retraits**. Couples
-**1 194 → 1 192**, aucune décision humaine perdue. Ce qui reste est mesuré et
-sain : 9 « décalés » qui sont des apparitions multiples (pages d'album,
-montages), 13 « faux positifs » **jugés JUSTES à 12 sur 13**, 155 photos à un
-seul visage.
+**`PETS` est mesuré**, pour la première fois du projet
+(`mesure_rattachements_animaux.py`, 21 tests, lecture seule sur copie).
+12 fiches, **351 couples** `[photo, animal]`, 330 mesurables.
 
-**Le résultat qui compte porte sur l'INSTRUMENT, pas sur le fonds.** La colonne
-« sous le seuil de faux positif » ne dit pas « ce n'est pas elle » mais **« je
-ne la reconnais pas »** : Flo à 0,06, FX à 0,113, Markus à 0,135 — tous
-confirmés par Mike. Elle mesure la cécité de l'empreinte. Ces 13 reviendront
-dans chaque `--residu` tant que leur score sera bas : ils sont JUGÉS, ne pas
-les relire comme 13 défauts.
+**L'index des animaux est SAIN, et le recalage n'y sera pas porté.**
+**0 hors bornes.** **10 décalés, dont 8 sur des photos que la fiche cite
+plusieurs fois** — Mutz cité **7 fois** sur `111-1103_IMG.JPG`, 10 animaux :
+c'est le nommage d'un GROUPE, pas un index qui glisse. Restent **2 vrais
+candidats sur 330 (0,6 %)**, contre 3,5 % côté visages avant réparation. La
+raison est dans le code : rien ne ré-embarque une photo déjà connue côté
+animaux, et `migrate_animal_pipeline` vide tout puis remet `faces = []`.
 
-**Et les 2 seuls vrais retraits étaient une fratrie** : Res confondu avec son
-frère Michael Jordi. Ni le score ni la géométrie ne tranchent une fratrie —
-seulement quelqu'un qui les connaît. C'est exactement ce que la règle de
-recalage refuse d'arbitrer, et elle avait raison.
+**Le résultat qui compte porte sur l'INSTRUMENT.** Sur 330 couples **confirmés
+par des humains**, **122 (37 %) scorent sous `PET_MATCH_SIM = 0,55`** —
+médiane 0,603, p10 0,392, min 0,231. Le seuil coupe au MILIEU de la
+distribution des rattachements JUSTES ; la même colonne vaut **1,1 %** côté
+visages. C'est ce plafond qui limite tout ce qu'on voudrait automatiser sur les
+animaux. **Ne pas y toucher sans jugements humains** — même exigence que la
+tranche 0,35–0,40.
 
-**Avant, le même jour** : la tranche 0,35–0,40 jugée — **92,6 %**, Wilson
-**76,6 %–97,9 %** → file « À vérifier », **jamais l'auto-ajout**, `CUR_ADD_SIM`
-ne bouge pas.
+**Deux tas précis, un geste humain.** **15 clés mortes** (Inti 7, Luna 5,
+Pins 2, Pticon 1), corroborées par un second chemin — le croisement par le tag
+`animal:` en rend exactement 15, les mêmes fiches. Et **6 couples d'espèce
+incohérente** : Luna, un chat, posée sur une détection **`dog`**, sur 4 photos.
+Faux certains, sans qu'aucun seuil ait à le dire.
+
+**Une réserve, pas un défaut : 651 photos portent un nom d'animal sans aucun
+rattachement** (Inti 420, Mutz 111, Luna 94 ; Puma, Kevin et Le chat de
+Bremblens : zéro couple pour 7, 6 et 2 photos taguées).
 
 ## Prochain pas
 
-1. **Chantier 12 — la répétition** (choix de Mike : ordre 1-4-3-2). C'est le
-   test « PC mort lundi, tout revit vendredi », et c'est un **geste de Mike** :
-   restaurer POUR DE VRAI sur un dossier vierge, chronométrer, puis
+1. **Les 21 couples d'animaux à trancher** (15 clés mortes + 6 espèces
+   incohérentes). Les clés mortes se traitent comme le 22/08 côté visages :
+   chercher d'abord si la photo vit sous un AUTRE chemin
+   (`journaux_deplacements.py`, 19 331 déplacements connus) avant d'envisager
+   un retrait. Les 6 « espèce » ne demandent aucune recherche : la détection
+   est un chien, la fiche un chat.
+2. **Chantier 12 — la répétition** (choix de Mike : ordre 1-4-3-2). Test « PC
+   mort lundi, tout revit vendredi », et c'est un **geste de Mike** : restaurer
+   POUR DE VRAI sur un dossier vierge, chronométrer, puis
    `verifier_restauration.py --restaure <dossier>` — il compare les décisions
    humaines **nom par nom**, un total identique ne prouve rien.
-2. **Correctifs d'audit I4–I8.** Dont **I7**, un vrai défaut produit : la casse
+3. **Correctifs d'audit I4–I8.** Dont **I7**, un vrai défaut produit : la casse
    des tags nommés n'est normalisée qu'à trois endroits, donc un
    `personne:nom` importé n'est **jamais** auto-guéri. Puis I4 (code mort
    rejeté), I5/I6 (`/reglages` ment sur le GPU), I8 (routes orphelines).
-3. **MCP lecture seule (13)** : recherche, fiches et `faits` en outils MCP
+4. **MCP lecture seule (13)** : recherche, fiches et `faits` en outils MCP
    locaux (JSON-RPC stdio, zéro dépendance — skill `mcp-builder`).
-4. **`PETS` n'a jamais été mesuré.** Son magasin porte des empreintes DINOv2,
-   et `assigned_keys` ne le lit pas : tout ce qui a été trouvé et réparé côté
-   visages est INCONNU côté animaux. Commencer par un banc, pas par un
-   correctif — réparer un magasin qu'on n'a pas mesuré est un pari.
 
 **Deux pistes ouvertes par Mike (22/08), à instruire** — détail dans
 `ROADMAP.md`, section « Pistes ouvertes par Mike » :
@@ -63,20 +70,22 @@ tagging, à la description ou à la recherche**, ce domaine bouge vite ;
 (b) **ouvrir la médiathèque à toute la famille**, dossiers persos et contrôle
 de qui voit quoi — trois questions à trancher avant la première ligne de code.
 
-**Une décision à cinq secondes qui traîne depuis six sessions** :
+**Une décision à cinq secondes qui traîne depuis sept sessions** :
 l'extraction `ui/` (point 7) — lui donner une session ou la parquer.
 
-**Un repli silencieux repéré, non traité** : `_serve_facecrop` sert le visage
-**0** quand l'index est hors bornes, et `/people` fait pareil pour l'avatar.
-Zéro cas aujourd'hui (mesuré), mais c'est un mensonge muet à l'endroit exact où
-un humain juge. À rendre visible quand on touchera la zone.
+**Un repli silencieux repéré, non traité, et il est DOUBLE** : `_serve_facecrop`
+sert le visage **0** quand l'index est hors bornes, `_serve_animalcrop` fait
+exactement pareil pour l'animal, et `/people` pour l'avatar. Zéro cas
+aujourd'hui des deux côtés (mesuré), mais c'est un mensonge muet à l'endroit
+exact où un humain juge. À rendre visible quand on touchera la zone.
 
-**Ne pas rouvrir sans chiffre neuf** : le chantier des rattachements ;
-abaisser `CUR_ADD_SIM` ; 16(a) ; `taken` en base ; backfill ÉCRIT de `faits` ;
-index des noms en UNE passe ; filtre des noms sur les `kw` bruts ; `det_score`
-comme critère d'espèce ; règle d'espèce ÉLARGIE ; re-passe de tagging en LOT
-(50 h GPU — l'incrémental reste ouvert) ; agent git dans le serveur ;
-planchers 1990 ; plafond 2100.
+**Ne pas rouvrir sans chiffre neuf** : le chantier des rattachements (visages
+ET animaux) ; abaisser `CUR_ADD_SIM` ; porter le recalage aux animaux ;
+16(a) ; `taken` en base ; backfill ÉCRIT de `faits` ; index des noms en UNE
+passe ; filtre des noms sur les `kw` bruts ; `det_score` comme critère
+d'espèce ; règle d'espèce ÉLARGIE ; re-passe de tagging en LOT (50 h GPU —
+l'incrémental reste ouvert) ; agent git dans le serveur ; planchers 1990 ;
+plafond 2100.
 
 **Les TROIS canaux, mêmes octets** (CRLF, via `device_bash`, jamais supprimer ;
 `canal.py` les lit tous) : `_commande_serveur.txt` → `redemarrer`, puis
@@ -91,29 +100,25 @@ agent est vivant si son `_agent_*_vu.txt` a moins de 30 s.
 
 ## Ce que cette journée a coûté, et qu'il ne faut pas repayer
 
-**Un échantillon se FIGE, une référence se LIT MAINTENANT.** Figer le tirage le
-rend uniforme ; figer la référence est faux — elle n'est pas ce qu'on mesure,
-elle est ce CONTRE QUOI on mesure, et elle vieillit précisément là où une
-réparation vient de passer.
+**Un ZÉRO parfait est une alarme, exactement comme un score parfait.** Le banc
+des animaux rendait « 0 photo taguée » pour les DOUZE fiches : il lisait `kw`,
+la prod écrit `kw_fr`, et `_kw_has` compare en minuscules. Un compte identique
+sur toutes les lignes d'un tableau accuse la COLONNE, pas les lignes.
 
-**Un FICHIER n'est pas une SCÈNE.** Pages d'album photographiées, montages,
-flyers : la même personne y paraît plusieurs fois, à des endroits différents.
-Toute règle qui suppose une scène par fichier se trompe — et s'y trompe sur la
-population même qui la fait invoquer.
+**Un banc ne se recopie pas d'un domaine à l'autre.** Les visages passent par
+`classifier.prototypes` (k-moyennes), les animaux par une simple moyenne
+(`cat_centroid`) ; les seuils, les espèces nommables et le champ de tags
+diffèrent aussi. Prendre la règle du voisin mesure un magasin qui n'existe pas.
 
-**Un score parfait est une alarme, y compris quand c'est le sien.** 15/15
-aurait dû faire relire l'instrument AVANT de s'en servir pour contredire un
-humain.
+**Un FICHIER n'est pas une SCÈNE** — et ça vaut aussi pour les animaux : sans
+la colonne « combien de fois la fiche cite cette photo », les 10 décalés se
+lisaient comme 10 avaries. Il y en a 2.
+
+**Un score parfait est une alarme, y compris quand c'est le sien.**
 
 **Un écart de score n'est pas une identité fausse, et un seuil bas nomme une
-cécité.** Le chiffre qui tranche : le SCORE DU VISAGE DÉSIGNÉ. 0,594–0,745 =
-des apparitions multiples ; 0,06–0,295 = des visages que l'empreinte ne sait
-pas lire, pas des erreurs.
-
-**Deux pages jumelles ne partagent jamais des touches de sens opposé.**
-`/tranche` : `1`/`2`/`3` = Oui/Non/Je ne sais pas. `/residu` : lettres `A`–`H`.
-Les chiffres, à dix minutes d'intervalle, ont fait enregistrer quinze réponses
-pour une autre.
+cécité.** Côté visages, 12 des 13 couples sous le seuil étaient JUSTES. Côté
+animaux ils sont 122 sur 330 — la même phrase, à une autre échelle.
 
 **Un test ne doit rien imprimer.** L'agent git CAPTURE la sortie ; sous Windows
 un `print` part dans un tuyau, l'encodage local reprend la main, et le premier
