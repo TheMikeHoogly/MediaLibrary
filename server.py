@@ -830,13 +830,23 @@ class SubjectStore:
             return 0
         oldtag, newtag = f"{self.prefix}:{old}", f"{self.prefix}:{new}"
         n = 0
+        # `deja` : cette photo portait-elle DEJA le nouveau nom ? C'est la
+        # seule information qui permette de defaire la fusion sans mentir.
+        # Renommer Florine en Flo pour revenir en arriere emporterait les 153
+        # photos qui portaient Florine AVANT — un aller-retour ne rend pas ce
+        # qu'il a pris. Voir `annuler_fusion`.
+        touchees = []
         for k, e in list(STORE.data.items()):
             if _kw_has(e, oldtag):
+                deja = 1 if _kw_has(e, newtag) else 0
                 _index_remove_person(k, oldtag)
                 _index_add_person(k, newtag)
                 _enqueue_person_write(k, oldtag, 'del')
                 _enqueue_person_write(k, newtag, 'add')
+                touchees.append([k, deja])
                 n += 1
+        avant_old = copy.deepcopy(self.store.data.get(old.lower()))
+        avant_new = copy.deepcopy(self.store.data.get(new.lower()))
         op = self.store.data.pop(old.lower(), None)
         if op:
             npp = self.store.data.get(new.lower())
@@ -844,14 +854,36 @@ class SubjectStore:
                 npp = self._new_entry(new, op.get("species") if self.species else None)
             npp["name"] = new
             npp["refs"] = ((npp.get("refs") or []) + (op.get("refs") or []))[:80]
-            npp["exclude"] = list(set((npp.get("exclude") or [])
-                                      + (op.get("exclude") or [])))
+            # TOUS les ensembles de décisions humaines, pas seulement `exclude`.
+            # Jusqu'au 22/08, `confirmed` et `nomerge` n'étaient pas transportés :
+            # une fusion emportait en silence les « c'est bien elle » de la fiche
+            # absorbée — 143 pour Flo, et autant à chaque merge du curateur
+            # depuis que la fonction existe. Une exclusion et une confirmation
+            # sont la même matière : un humain a tranché.
+            for champ in ("exclude", "confirmed", "nomerge"):
+                fusion = set(npp.get(champ) or []) | set(op.get(champ) or [])
+                if fusion:
+                    npp[champ] = sorted(fusion)
             npp["faces"] = _merge_assigned(
                 npp.get("faces"),
                 [(x[0], x[1]) for x in (op.get("faces") or [])
                  if isinstance(x, (list, tuple)) and len(x) == 2])
+            # L'avatar de la fiche absorbée vaut mieux que pas d'avatar : une
+            # fiche sans portrait se relit mal, et le curateur mettrait un
+            # cycle entier à en recalculer un.
+            if not npp.get("avatar") and op.get("avatar"):
+                npp["avatar"] = op["avatar"]
+            if self.species and not npp.get("species") and op.get("species"):
+                npp["species"] = op["species"]
+            # La fiche fusionnée date de la PLUS ANCIENNE des deux : c'est
+            # depuis ce jour-là que ce sujet est connu.
+            ats = [x.get("at") for x in (npp, op) if isinstance(x.get("at"), (int, float))]
+            if ats:
+                npp["at"] = min(ats)
             self.store.set(new.lower(), npp)
         STORE.save()
+        _journal_fusion(self.prefix, old, new, touchees, avant_old, avant_new,
+                        copy.deepcopy(self.store.data.get(new.lower())))
         return n
 
     def delete(self, name):
@@ -3345,6 +3377,7 @@ def annuler_recle_decisions(journal=None):
 
 CORBEILLE_RECALAGE = SCRIPT_DIR / "_corbeille_recalage"
 CORBEILLE_RETRAITS = SCRIPT_DIR / "_corbeille_retraits"
+CORBEILLE_FUSIONS = SCRIPT_DIR / "_corbeille_fusions"
 
 
 def _scores_des_visages(pe, cles):
@@ -3653,6 +3686,143 @@ def annuler_recalage(journal=None):
         pass
     return {'ok': True, 'fiches_remises': remises,
             'fiches_modifiees_depuis': modifiees}
+
+
+
+def _journal_fusion(prefix, ancien, nouveau, touchees, avant_old, avant_new,
+                    apres_new):
+    """Note ce qu'une fusion de fiches vient de prendre, pour pouvoir le rendre.
+
+    POURQUOI. Fusionner deux noms est le seul geste de ce projet qui reecrive
+    des MILLIERS de fichiers du fonds — Flo vers Florine, le 22/08 : 5 907
+    photos, 11 814 operations exiftool. Tous les autres gestes destructeurs ont
+    leur quarantaine (`_corbeille_recalage`, `_corbeille_retraits`,
+    `_corbeille_decisions`) ; celui-la, le plus lourd, n'en avait aucune.
+
+    CE QUI EST NOTE, ET POURQUOI CE N'EST PAS UN SIMPLE `rename` INVERSE.
+    Renommer Florine en Flo pour revenir en arriere emporterait aussi les
+    photos qui portaient Florine AVANT la fusion (153 au 22/08, dont 149 qui
+    portaient les deux noms). Un aller-retour ne rend pas ce qu'il a pris. Le
+    journal note donc, photo par photo, si elle portait DEJA le nouveau nom :
+    `annuler_fusion` ne retire le nouveau tag que de celles qui ne l'avaient
+    pas, et rend l'ancien a toutes.
+
+    Les deux fiches sont notees AVANT (pour les rendre) et APRES (pour refuser
+    de passer sur un humain qui aurait juge depuis) — meme prudence que
+    `annuler_retrait` et `annuler_recalage`.
+    """
+    if not touchees and avant_old is None:
+        return None
+    try:
+        CORBEILLE_FUSIONS.mkdir(exist_ok=True)
+        ts = time.strftime('%Y%m%d_%H%M%S')
+        jp = CORBEILLE_FUSIONS / f'fusion_{ts}.jsonl'
+        i = 0
+        while jp.exists():          # deux fusions dans la meme seconde : la
+            i += 1                  # seconde ne doit pas effacer la premiere
+            jp = CORBEILLE_FUSIONS / f'fusion_{ts}_{i}.jsonl'
+        lignes = [json.dumps(
+            {'at': time.time(), 'prefix': prefix, 'ancien': ancien,
+             'nouveau': nouveau, 'photos': len(touchees),
+             'fiche_ancienne': avant_old, 'fiche_cible_avant': avant_new,
+             'fiche_cible_apres': apres_new}, ensure_ascii=False)]
+        for k, deja in touchees:
+            lignes.append(json.dumps({'k': k, 'deja': deja},
+                                     ensure_ascii=False))
+        jp.write_text("\n".join(lignes) + "\n", encoding='utf-8')
+        # ASCII PUR, et ce n'est pas de la coquetterie : c'est la seule ligne
+        # de prod qu'un TEST execute directement, et l'agent git lance les
+        # tests sans PYTHONUTF8 — sur une console cp1252, un « ↻ » leve une
+        # UnicodeEncodeError qui fait passer 11 tests au rouge sans nommer sa
+        # cause (22/08 : deux refus de livraison avant de comprendre). Le banc,
+        # lui, force l'UTF-8 : les deux portes ne jugeaient pas la meme chose.
+        print("  Fusion journalisee : %s -> %s, %d photo(s) - reversible (%s)"
+              % (ancien, nouveau, len(touchees), jp.name))
+        return jp
+    except OSError as e:
+        print(f"  \u26a0 journal de fusion impossible : {e}")
+        return None
+
+
+def fusions_journalisees():
+    """Les journaux de fusion encore annulables, du plus ancien au plus recent."""
+    try:
+        return sorted(CORBEILLE_FUSIONS.glob('fusion_*.jsonl'))
+    except OSError:
+        return []
+
+
+def annuler_fusion(journal=None):
+    """Defait la derniere fusion de fiches : les deux noms reviennent, et
+    chaque photo retrouve le tag qu'elle portait.
+
+    Les tags des FICHIERS repassent par la file d'ecriture XMP : l'annulation
+    coute autant d'operations que la fusion, et ne se voit sur le NAS qu'une
+    fois la file vidée.
+
+    Une fiche cible modifiee depuis la fusion n'est pas ecrasee : elle est
+    comptee et dite. Le reste est quand meme rendu — les tags des photos ne
+    dependent pas de l'etat de la fiche.
+    """
+    js = fusions_journalisees()
+    jp = Path(journal) if journal else (js[-1] if js else None)
+    if not jp or not jp.is_file():
+        return {'ok': False, 'error': 'aucune fusion à annuler.'}
+    try:
+        lignes = jp.read_text(encoding='utf-8').splitlines()
+        entete = json.loads(lignes[0])
+    except (OSError, ValueError, IndexError):
+        return {'ok': False, 'error': f'journal illisible : {jp.name}'}
+    prefix = entete.get('prefix') or 'personne'
+    sujet = SUBJECTS.get(prefix)
+    if sujet is None:
+        return {'ok': False, 'error': f'genre inconnu : {prefix}'}
+    ancien, nouveau = entete.get('ancien') or '', entete.get('nouveau') or ''
+    if not ancien or not nouveau:
+        return {'ok': False, 'error': f'journal incomplet : {jp.name}'}
+    oldtag, newtag = f"{prefix}:{ancien}", f"{prefix}:{nouveau}"
+
+    rendus, absents = 0, 0
+    for ligne in lignes[1:]:
+        if not ligne.strip():
+            continue
+        try:
+            op = json.loads(ligne)
+        except ValueError:
+            continue
+        k = op.get('k')
+        if k not in STORE.data:
+            absents += 1
+            continue
+        _index_add_person(k, oldtag)
+        _enqueue_person_write(k, oldtag, 'add')
+        if not op.get('deja'):
+            _index_remove_person(k, newtag)
+            _enqueue_person_write(k, newtag, 'del')
+        rendus += 1
+
+    st = sujet.store
+    ecrasee = 0
+    if st.data.get(nouveau.lower()) != entete.get('fiche_cible_apres'):
+        ecrasee = 1                       # jugee depuis : on n'y touche pas
+    else:
+        avant = entete.get('fiche_cible_avant')
+        if avant is None:
+            st.data.pop(nouveau.lower(), None)
+        else:
+            st.set(nouveau.lower(), avant, save=False)
+    if entete.get('fiche_ancienne') is not None:
+        st.set(ancien.lower(), entete['fiche_ancienne'], save=False)
+    st.save()
+    STORE.save()
+    _suggest_remove(lambda s: True)
+    try:
+        jp.rename(jp.with_suffix('.jsonl.annule'))
+    except OSError:
+        pass
+    return {'ok': True, 'photos_rendues': rendus, 'photos_disparues': absents,
+            'ancien': ancien, 'nouveau': nouveau,
+            'fiche_cible_jugee_depuis': ecrasee}
 
 
 def forget_everywhere(keys, motif='oubli', label=''):
@@ -11368,6 +11538,18 @@ class Handler(BaseHTTPRequestHandler):
                     + (f", {res['fiches_modifiees_depuis']} laissee(s) telle(s) "
                        f"quelle(s) (jugees depuis)."
                        if res['fiches_modifiees_depuis'] else "."))
+        elif path == '/api/maint/fusion-undo':
+            res = annuler_fusion()
+            if res.get('ok'):
+                res['msg'] = (
+                    f"Fusion defaite : {res['ancien']} rendu a "
+                    f"{res['photos_rendues']} photo(s). Les fichiers du NAS "
+                    f"repassent par la file d'ecriture."
+                    + (f" {res['photos_disparues']} photo(s) ont disparu du "
+                       f"fonds depuis." if res['photos_disparues'] else "")
+                    + (" La fiche cible a ete jugee depuis : elle est laissee "
+                       "telle quelle." if res['fiche_cible_jugee_depuis']
+                       else ""))
         elif path == '/api/maint/recle-apercu':
             res = reparer_decisions_orphelines(dry=True)
             if res.get('ok'):

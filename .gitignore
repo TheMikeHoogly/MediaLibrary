@@ -223,3 +223,9 @@ _corbeille_retraits/
 # serveur local. Utiles a l'oeil, jamais a l'historique.
 _florine_a_juger.json
 _florine_a_juger.html
+
+# --- Quarantaine des fusions de noms (22/08) ------------------------------
+# Ce qu'une fusion Flo -> Florine a pris : les deux fiches et la liste des
+# photos touchees. C'est ce qui rend `Annuler la derniere fusion` possible.
+# Local, jamais versionne : des chemins de photos, et un etat de machine.
+_corbeille_fusions/

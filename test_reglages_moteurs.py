@@ -24,6 +24,11 @@ from pathlib import Path
 
 RACINE = Path(__file__).resolve().parent
 SOURCE = (RACINE / "server.py").read_text(encoding="utf-8")
+# Depuis le 22/08, les pages ne vivent plus dans le monolithe : ce qui relève
+# de l'AFFICHAGE se relit dans son gabarit, pas dans `server.py`. Le test
+# CHANGE de source, il ne baisse pas son exigence.
+from ui_gabarits import gabarit                       # noqa: E402
+REGLAGES = gabarit('REGLAGES_PAGE')
 CLASSIFIER = (RACINE / "classifier.py").read_text(encoding="utf-8")
 ARBRE = ast.parse(SOURCE)
 
@@ -49,9 +54,10 @@ class TestI5MoteurDesVisages(unittest.TestCase):
 
     def test_la_phrase_en_dur_a_disparu(self):
         self.assertNotIn("seul Ollama utilise le GPU", SOURCE)
+        self.assertNotIn("seul Ollama utilise le GPU", REGLAGES)
 
     def test_la_page_a_un_emplacement_qui_se_remplit(self):
-        self.assertIn('id="moteurs"', SOURCE)
+        self.assertIn('id="moteurs"', REGLAGES)
 
     def test_le_serveur_publie_le_dernier_moteur_utilise(self):
         st = source_de('_serve_maint_status')
@@ -80,12 +86,12 @@ class TestI6ArbitreVisible(unittest.TestCase):
         # Sans `ordonnanceur.py`, chaque pipeline décide seul : la carte doit
         # le DIRE. Une carte vide se lirait « aucun bail », c'est-à-dire un
         # arbitre au repos — l'inverse de la vérité.
-        self.assertIn("gpuCard", SOURCE)
-        self.assertIn("Module ordonnanceur absent", SOURCE)
+        self.assertIn("gpuCard", REGLAGES)
+        self.assertIn("Module ordonnanceur absent", REGLAGES)
 
     def test_la_carte_montre_refus_et_evictions(self):
-        i = SOURCE.index("function gpuCard")
-        bloc = SOURCE[i:i + 1400]
+        i = REGLAGES.index("function gpuCard")
+        bloc = REGLAGES[i:i + 1400]
         self.assertIn("refus", bloc)
         self.assertIn("eviction", bloc)
 

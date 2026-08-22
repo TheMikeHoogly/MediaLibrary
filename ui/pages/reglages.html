@@ -138,6 +138,13 @@ td.n, th.n { text-align: right; font-family: var(--f-donnees); }
     </ol>
     <div class="renmsg" id="retr-msg" role="status" aria-live="polite">Clique &laquo;&nbsp;1 &middot; Apercu&nbsp;&raquo; pour voir ce qui partirait.</div>
 
+    <h4 class="subh">Fusion de deux noms</h4>
+    <p class="mut">Fusionner deux noms se fait sur <a href="/people">la page des personnes</a> (ou <a href="/pets">celle des animaux</a>) : renomme la fiche en double avec le nom a garder. C'est le geste le plus lourd du projet &mdash; il reecrit le <b>XMP</b> de chaque photo concernee sur le NAS, par milliers. Depuis le 22/08 il est journalise : les deux fiches et la liste des photos touchees sont notees dans <code>_corbeille_fusions/</code>, avec, pour chaque photo, si elle portait <b>deja</b> le nom d'arrivee. C'est ce detail qui permet de rendre exactement ce qui a ete pris &mdash; un simple renommage inverse emporterait les photos qui portaient deja ce nom.</p>
+    <ol class="stepren">
+      <li><button class="b" id="fusundo">Annuler la derniere fusion</button><span class="mut">Rend l'ancien nom aux photos qui l'avaient, et remet les deux fiches. Les fichiers du NAS repassent par la file d'ecriture.</span></li>
+    </ol>
+    <div class="renmsg" id="fus-msg" role="status" aria-live="polite">Rien n'est annule sans ce bouton.</div>
+
     <p class="mut">Ce que l'outil <b>refuse</b> de reparer se juge a l'oeil, et nulle part ailleurs : quand la fiche cite <b>deux visages de la meme photo</b>, ou la personne y est vraiment detectee deux fois, ou un index a glisse et designe son voisin &mdash; le score ne tranche pas. Ces cas-la sont peu nombreux mais <b>concentres</b> : le 22/08, 15 cas sur 9 fiches, dont 4 sur la seule fiche de Didier. Une page les montre cote a cote : <a href="/residu">juger le residu</a>. Elle ne retire rien &mdash; le retrait revient ici, une fois les verdicts poses.</p>
 
     <h4 class="subh">Decisions humaines restees sur l'ancien chemin</h4>
@@ -380,6 +387,7 @@ document.getElementById('recalundo').onclick=function(){ act('/api/maint/recalag
 document.getElementById('retrcheck').onclick=function(){ act('/api/maint/retrait-apercu', null, 'retr-msg'); };
 document.getElementById('retrapply').onclick=function(){ act('/api/maint/retrait-apply', 'Retirer les rattachements que tu as juges faux ? Les tags des photos ne bougent pas. Entierement reversible.', 'retr-msg'); };
 document.getElementById('retrundo').onclick=function(){ act('/api/maint/retrait-undo', 'Annuler le dernier retrait ?', 'retr-msg'); };
+document.getElementById('fusundo').onclick=function(){ act('/api/maint/fusion-undo', 'Annuler la derniere fusion de noms ? Les tags des photos concernees seront reecrits sur le NAS.', 'fus-msg'); };
 document.getElementById('reclecheck').onclick=function(){ act('/api/maint/recle-apercu', null, 'recle-msg'); };
 document.getElementById('recleapply').onclick=function(){ act('/api/maint/recle-apply', 'Remettre les decisions humaines orphelines sur la photo actuelle ? Aucun fichier touche, entierement reversible.', 'recle-msg'); };
 document.getElementById('recleundo').onclick=function(){ act('/api/maint/recle-undo', 'Annuler le dernier re-cle des decisions ?', 'recle-msg'); };

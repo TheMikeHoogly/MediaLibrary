@@ -55,88 +55,35 @@ essai (`copier_reprise.py` passe en 60 s et REPREND à l'octet) ; et trois
 défauts de `.bat`, dont une parenthèse dans un `echo` au sein d'un bloc, que
 `verifier_bat.py` sait désormais voir.
 
+**Mike a tranché : Flo et Florine sont la même personne.** La préparation de la
+fusion a débusqué un défaut de règle 2 : `SubjectStore.rename` transportait
+`refs`/`exclude`/`faces` mais **pas `confirmed`, `avatar`, `nomerge`** — les
+**143** confirmations de la fiche Flo seraient parties en silence, et le même
+défaut valait pour chaque fusion du curateur depuis l'origine. Corrigé.
+**Et la fusion est devenue réversible** : c'était le seul geste destructeur sans
+quarantaine, et le plus lourd (**11 814 opérations XMP sur 5 907 photos**).
+`_corbeille_fusions/` note les deux fiches et, photo par photo, si elle portait
+**déjà** le nom d'arrivée — sans quoi annuler volerait Florine aux 149 photos
+qui portaient les deux. Bouton `Annuler la derniere fusion` dans `/reglages`,
+35 tests.
+
 ## Prochain pas
 
-1. **Copie HORS SITE (chantier 12 bis)** — le seul manque qui reste à
+1. **La fusion Flo → Florine, par Mike** : `/people` → fiche Flo → Renommer →
+   `Florine`. Écriture sur le fonds, donc son geste, pas celui de la sandbox.
+   Ensuite VÉRIFIER : `/api/names` doit rendre **une** Florine à ~5 911 et plus
+   aucun Flo, ses **143** confirmations intactes ; la file XMP se vide en tâche
+   de fond (des heures). Si quelque chose cloche : `/reglages` →
+   `Annuler la derniere fusion`.
+2. **Copie HORS SITE (chantier 12 bis)** — le seul manque qui reste à
    l'assurance-vie, et il demande une décision avant du code.
-2. **Suite de `ui/`** : le CSS commun (chaque page porte encore son `<style>`)
+3. **Suite de `ui/`** : le CSS commun (chaque page porte encore son `<style>`)
    puis le redesign — deux chantiers SÉPARÉS, exprès (`photo-ui`).
-3. **Reste d'audit** : O7–O9, O11–O15 ; **I1** est maintenant VISIBLE dans
+4. **Reste d'audit** : O7–O9, O11–O15 ; **I1** est maintenant VISIBLE dans
    `/reglages` (`tours: visages 0, animaux 0` — les deux boucles les plus
    lourdes ne passent toujours pas par `creneau()`).
-4. **MCP lecture seule (13)** : recherche, fiches et `faits` en outils MCP
+5. **MCP lecture seule (13)** : recherche, fiches et `faits` en outils MCP
    locaux (JSON-RPC stdio, zéro dépendance — skill `mcp-builder`).
 
-**Une question attend Mike** (`QUESTIONS_MIKE.md`) : `personne:Florine` vit sur
-**153 photos sans aucune fiche**, seul nom du fonds dans ce cas, et **149 de
-ces 153 portent aussi `personne:Flo`**. La galerie propose « Florine » comme
-puce de filtre, `/api/names` l'ignore : deux autorités divergent. Fusion ou
-fiche à créer — jugement humain, geste sur le fonds.
-
-**Le trou des quarantaines est REFERMÉ et vérifié** : la sauvegarde horaire a
-poussé `_corbeille_recalage` et `_corbeille_retraits`, et l'inventaire redit
-« Total exposé : 0 o » — cette fois en parlant des SIX.
-**Un fichier VERSIONNÉ par erreur reste à sortir de l'index**, geste de Mike :
-`git rm --cached "_corbeille_retraits/retrait_20260822_162822.jsonl"` puis
-commit et push. Le `.gitignore` est à jour, mais il ne défait pas le passé.
-
-**Les TROIS canaux, mêmes octets** (CRLF, via `device_bash`, jamais supprimer ;
-`canal.py` les lit tous) : `_commande_serveur.txt` → `redemarrer`, puis
-VÉRIFIER `GET /api/serveur` (`code_a_jour` vrai) ; `_commande_git.txt` →
-`commit` (traite autonome) ou `livrer` (Mike présent), puis VÉRIFIER
-`.git/logs/*`, jamais `_etat_git.json` ; `_commande_banc.txt` → un banc, puis
-LIRE `_banc_sortie.txt`. Trois fenêtres ouvertes — Serveur, Git, Bancs ; un
-agent est vivant si son `_agent_*_vu.txt` a moins de 30 s.
-
-**Un fichier de suivi serre** : `eval/DECISIONS.md` **47 029** octets pour
-50 000 (`ROADMAP.md` est redescendue à 41 000 le 22/08 en condensant les
-sessions 28→35). La prochaine session qui touche aux décisions condense
-d'abord — le détail vit dans git, pas dans les docs.
-
-**Mesurer** : jamais sur `photos.db` — `mesure_copie_base.py` d'abord, puis
-`--base copie.db`.
-
-**Ne pas rouvrir sans chiffre neuf** : le chantier des rattachements (visages
-ET animaux) ; les 15 clés mortes et les 6 espèces ; abaisser `CUR_ADD_SIM` ;
-porter le recalage aux animaux ; 16(a) ; `taken` en base ; backfill ÉCRIT de
-`faits` ; index des noms en UNE passe ; filtre des noms sur les `kw` bruts ;
-`det_score` comme critère d'espèce ; règle d'espèce ÉLARGIE ; re-passe de
-tagging en LOT ; agent git dans le serveur ; planchers 1990 ; plafond 2100.
-
-**Deux pistes ouvertes par Mike (22/08)** — détail dans `ROADMAP.md` :
-(a) **tirer plus du LLM local à matériel constant** — se renseigner à
-l'ouverture de toute session touchant au tagging, à la description ou à la
-recherche ; (b) **ouvrir la médiathèque à la famille**, dossiers persos et
-contrôle de qui voit quoi.
-
-**Un repli silencieux repéré, non traité, et il est TRIPLE** : `_serve_facecrop`
-sert le visage **0** quand l'index est hors bornes, `_serve_animalcrop` fait
-pareil, `/people` aussi pour l'avatar. Zéro cas aujourd'hui (mesuré), mais
-c'est un mensonge muet à l'endroit exact où un humain juge.
-
-## Ce que cette journée a coûté, et qu'il ne faut pas repayer
-
-**Un ZÉRO parfait est une alarme, exactement comme un score parfait — et il y
-en a eu TROIS dans la journée.** « 0 photo taguée » accusait la COLONNE
-(`kw` au lieu de `kw_fr`). « 15 clés mortes sans contrepartie » n'a tenu
-qu'après un troisième chemin, le disque. Et « Total exposé : 0 o » ne parlait
-que des trois quarantaines que l'instrument connaissait, alors que le disque en
-portait six.
-
-**Une liste en dur est toujours en retard d'un chantier.** Trois corbeilles
-listées quand il y en avait six ; six lectures de tags nommés là où une seule
-règle suffisait. Les deux se corrigent pareil : DÉCOUVRIR au lieu d'ÉNUMÉRER,
-et faire lever bruyamment ce qui manque.
-
-**Ce que l'audit annonce, le fonds ne le confirme pas forcément.** I7 était un
-vrai défaut de code et un défaut à 3 tags. Mesurer d'abord change ce qu'on
-écrit ensuite : on livre une robustesse, pas une réparation — et on ne s'en
-attribue pas le mérite.
-
-**Un test qui se rabat en silence ne mesure plus rien, il rassure.** En sortant
-les gabarits, quatre bancs se seraient tus si `ui_gabarits` s'était replié sur
-une copie périmée. Il lève.
-
-**La sandbox ne peut pas écrire sur le fonds.** Tout ce qui MODIFIE l'archive
-se termine par un bouton dans `/reglages` ou un geste de Mike — prévois-le dans
-la conception, sinon le chantier finit en cul-de-sac.
+**Rien n'attend Mike dans `QUESTIONS_MIKE.md`** — la question Florine est
+répondue, et sa réponse est le point 1 ci-dessus.

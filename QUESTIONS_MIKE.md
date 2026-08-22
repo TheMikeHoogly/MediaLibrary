@@ -6,21 +6,21 @@
 > `eval/DECISIONS.md` si elle tranche, dans `ROADMAP.md` si elle priorise.
 > Protocole : `CLAUDE.md`, « Traite autonome ».
 
-- **22/08 — `personne:Florine` : 153 photos, aucune fiche. Qui est-ce ?**
-  Le seul nom du fonds dans ce cas (mesuré sur 37 707 tags nommés). **149 des
-  153 portent aussi `personne:Flo`** — d'où la question : Florine est-elle Flo,
-  ou quelqu'un d'autre ? Aujourd'hui le nom vit à moitié : la galerie le
-  propose comme puce de filtre (les puces viennent des `kw` des photos), mais
-  `/api/names` — donc `/people`, l'autocomplétion et tout curateur — ne le
-  connaît pas ; aucune signature, aucun avatar, aucun rattachement possible.
-  **Recommandation : ne rien faire tant que tu n'as pas regardé.** Ouvre
-  `/files?q=personne:Florine` : si c'est Flo, la fusion existe déjà
-  (`rename_person`, réversible) ; si c'est une autre personne, il lui faut une
-  fiche et elle rejoint le curateur. Les deux gestes sont des écritures sur le
-  fonds — donc les tiens, pas ceux de la sandbox. **En attendant** : rien n'est
-  touché, et l'écart entre les deux autorités est écrit dans `ROADMAP.md`.
+_Rien en attente._
 
 ## Réglées
+
+- **22/08 — `personne:Florine` : 153 photos, aucune fiche. Qui est-ce ?**
+  Réponse de Mike : **c'est Flo.** « Il faut remplacer tous les Flo par Florine
+  dans toute la médiathèque. » Ce que ça explique rétroactivement : le résidu
+  que le curateur n'arrivait pas à trancher (`server.py` : « les visages qu'une
+  deuxième personne dispute — Florine/Flo »), et les scores séparés à 0,03 sur
+  les MÊMES visages notés dans `classifier.py`. Deux noms, une personne : les
+  signatures se partageaient les visages.
+  **Fait avant le geste** : `rename` réparée (elle perdait 143 confirmations),
+  et la fusion rendue réversible (`_corbeille_fusions/`, bouton dans
+  `/reglages`). **Le geste reste à Mike** : `/people` → Flo → Renommer →
+  `Florine` (11 814 opérations XMP sur 5 907 photos, en tâche de fond).
 
 - **22/08 — appliquer le re-clé des 748 décisions ?** Recommandation suivie :
   **appliqué**. Résultat : **787 décisions sur 685 clés, 97 fiches**. Observé —

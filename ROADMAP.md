@@ -6,6 +6,38 @@ dans **git** ; les rejets dans `eval/DECISIONS.md` (photothèque) et
 `eval/METHODE.md` ; l'éphémère dans `PROMPT_NOUVELLE_SESSION.md`. Audits :
 `docs/AUDIT_INTERNE_2026-08.md`, `docs/AUDIT_EXTERNE_2026.md`, `docs/RANGEMENT_2026.md`.
 
+## État (22/08/2026, session 38)
+
+**Mike a tranché : Flo et Florine sont la même personne.** La fusion coûte
+**11 814 opérations XMP sur 5 907 photos** (5 907 portent Flo, 153 Florine,
+149 les deux) — le geste le plus lourd du projet sur le fonds.
+
+**En la préparant, `SubjectStore.rename` s'est révélée perdre des décisions
+humaines.** Elle transportait `refs`, `exclude` et `faces`, mais **pas
+`confirmed`, `avatar`, `nomerge`** : les **143** « oui, c'est bien elle » de la
+fiche Flo seraient partis en silence — et le même défaut valait pour **chaque
+fusion du curateur** depuis que la fonction existe. Règle 2. Corrigé (union des
+trois ensembles, avatar et espèce en repli, date la plus ancienne des deux).
+
+**Et la fusion est désormais RÉVERSIBLE.** C'était le seul geste destructeur du
+projet sans quarantaine — le plus lourd, justement. `_corbeille_fusions/` note
+les deux fiches (avant et après) et, photo par photo, **si elle portait déjà le
+nom d'arrivée** : sans ce détail, annuler rendrait Flo aux 149 photos qui
+portaient les deux noms mais leur volerait Florine. Bouton
+`Annuler la derniere fusion` dans `/reglages`. 35 tests.
+
+**Le geste lui-même appartient à Mike** : `/people` → fiche Flo → Renommer →
+`Florine`. La sandbox n'écrit pas sur le fonds.
+
+**Trouvé en chemin — les deux portes du projet ne jugeaient pas la même
+chose.** Deux livraisons refusées d'affilée sur « FAILED (errors=11) », sans
+que le message nomme sa cause : le banc lance les tests avec `PYTHONUTF8=1`,
+l'agent git SANS. Sur une console cp1252, le « ↻ » de la ligne de journal levait
+une `UnicodeEncodeError` qui faisait tomber 11 tests. La ligne est passée en
+ASCII pur (deux tests la tiennent) — mais **la divergence d'environnement entre
+`banc_agent.py` et `git_agent.py` reste ouverte** : un test vert d'un côté et
+rouge de l'autre n'enseigne rien.
+
 ## État (22/08/2026, session 37)
 
 **Les 21 couples d'animaux « à trancher » ne demandent AUCUN geste sur le
