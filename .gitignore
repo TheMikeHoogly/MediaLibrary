@@ -190,3 +190,13 @@ _comptes_index.json.tmp
 # Sorties des bancs de la session 31 (plan de re-cle, rapport d'orphelines).
 _plan_recle.json
 _report_orphelines.json
+
+# ─── Tranche a juger : l'echantillon et les verdicts (22/08) ────────────────
+# Le tirage depend de CETTE base a CET instant, et les verdicts sont des
+# jugements LOCAUX : les versionner ferait entrer en conflit deux seances qui
+# n'ont rien a se dire. La trace durable vit dans `journal_jugements.jsonl`,
+# que la sauvegarde emporte sur le NAS a chaque snapshot.
+_tranche_a_juger.json
+_tranche_a_juger.tmp
+_tranche_jugements.json
+_tranche_jugements.tmp

@@ -10899,6 +10899,54 @@ def _stats_seance():
             "duree_s": int(duree), "par_minute": par_min}
 
 
+# ────────────── Tranche a juger : mesurer un seuil sans le bouger ────────────
+# `mesure_tranche_seuil.py` tire un echantillon UNIFORME de propositions dont le
+# score tombe dans une tranche donnee (0,35-0,40 : sous CUR_ADD_SIM, donc
+# invisible aujourd'hui) et l'ecrit dans `_tranche_a_juger.json`. La page
+# /tranche le donne a juger — et RIEN D'AUTRE : aucun tag, aucun nom, aucune
+# fiche touchee. Un verdict est une MESURE ; le confondre avec un geste rendrait
+# le chiffre inutilisable, puisqu'on mesurerait un seuil avec des rattachements
+# qu'on vient soi-meme de poser.
+# Le taux et son intervalle se lisent par `mesure_tranche_seuil.py --bilan` :
+# le serveur COLLECTE, le banc CONCLUT. Les memes mots de verdict des deux
+# cotes (juste / faux / indecidable), sinon le banc compterait autre chose.
+TRANCHE_A_JUGER = SCRIPT_DIR / "_tranche_a_juger.json"
+TRANCHE_JUGEMENTS = SCRIPT_DIR / "_tranche_jugements.json"
+TRANCHE_VERDICTS = ('juste', 'faux', 'indecidable')
+TRANCHE_LOCK = threading.Lock()
+
+
+def _tranche_id(key, i, person):
+    """Identite d'une proposition : la photo, LE VISAGE, et le nom propose.
+
+    L'index compte : deux visages de la meme photo peuvent recevoir deux
+    propositions differentes, et les confondre ecraserait un verdict."""
+    return f"{key}|{i}|{person}"
+
+
+def _tranche_lire_jugements():
+    """Verdicts deja poses. Fichier absent ou illisible = seance vierge : une
+    page de jugement ne doit jamais tomber en panne parce qu'un fichier de
+    travail manque."""
+    try:
+        d = json.loads(TRANCHE_JUGEMENTS.read_text(encoding='utf-8'))
+    except (OSError, ValueError):
+        return {}
+    v = d.get('verdicts') if isinstance(d, dict) else None
+    return v if isinstance(v, dict) else {}
+
+
+def _tranche_ecrire_jugements(verdicts):
+    """Ecriture atomique (.tmp puis os.replace, invariant 2), sous TRANCHE_LOCK.
+
+    L'avancement survit a un redemarrage : trente jugements, c'est une seance
+    qu'on ne recommence pas parce que le serveur a redemarre entre deux."""
+    tmp = TRANCHE_JUGEMENTS.with_suffix('.tmp')
+    tmp.write_text(json.dumps({"verdicts": verdicts}, ensure_ascii=False,
+                              indent=1), encoding='utf-8')
+    os.replace(tmp, TRANCHE_JUGEMENTS)
+
+
 def _refs_vecteurs(pe):
     vs = []
     for s in (pe.get('refs') or []):
@@ -11914,6 +11962,224 @@ function bgLoad(){
 }
 setInterval(bgLoad, 1000);
 bgLoad();
+</script>
+</body>
+</html>"""
+
+
+TRANCHE_PAGE = """<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Juger une tranche</title>
+<style>
+/* Surface de TRAVAIL : on decide, donc papier (--papier), et les visages y
+   sont des vignettes de tri, jamais des photos a regarder. Tokens seuls. */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: var(--f-texte); background: var(--salle); color: var(--texte); }
+.bar { display: flex; align-items: center; gap: var(--e-3);
+       padding: var(--e-3) var(--e-4); background: var(--salle-2);
+       border-bottom: var(--trait); flex-wrap: wrap; font-size: var(--t-sm); }
+.bar .sp { margin-left: auto; }
+.compte { font-family: var(--f-donnees); color: var(--texte); }
+.rappel { padding: var(--e-3) var(--e-4); color: var(--graphite);
+          font-size: var(--t-sm); line-height: 1.5; max-width: 62ch; }
+.rappel b { color: var(--texte); }
+.feuille { background: var(--papier); color: var(--texte-papier);
+           border-radius: var(--r-md); padding: var(--e-4);
+           margin: var(--e-3) var(--e-4) var(--e-8); max-width: 720px;
+           box-shadow: 0 1px 0 var(--papier-2), 0 8px 24px #0008; }
+.feuille h2 { font: 600 var(--t-xl)/1.2 var(--f-affichage);
+              letter-spacing: -0.01em; margin-bottom: var(--e-3); }
+.aide { color: var(--graphite-p); font-size: var(--t-sm); line-height: 1.5; }
+.duo { display: grid; grid-template-columns: 1fr 1fr; gap: var(--e-4);
+       margin: var(--e-4) 0; }
+@media (max-width: 560px) { .duo { grid-template-columns: 1fr; } }
+figure figcaption { font-size: var(--t-xs); color: var(--graphite-p);
+                    margin-top: var(--e-2); }
+#visage { width: 100%; aspect-ratio: 1; object-fit: cover;
+          border-radius: var(--r-md); background: var(--papier-2);
+          border: 2px solid var(--texte-papier); display: block; }
+.refs { display: grid; grid-template-columns: repeat(auto-fit, minmax(88px, 1fr));
+        gap: var(--e-2); align-content: start; }
+.refs img { width: 100%; aspect-ratio: 1; object-fit: cover;
+            border-radius: var(--r-md); background: var(--papier-2); display: block; }
+.refs .vide { grid-column: 1 / -1; font-size: var(--t-sm); color: var(--graphite-p); }
+.chiffres { font-family: var(--f-donnees); font-size: var(--t-sm);
+            color: var(--texte-papier); background: var(--papier-2);
+            border-radius: var(--r-sm); padding: var(--e-2) var(--e-3);
+            margin-bottom: var(--e-3); }
+.actes { display: flex; gap: var(--e-2); flex-wrap: wrap; margin: var(--e-4) 0 var(--e-3); }
+.btn { min-height: var(--touch); padding: 0 var(--e-4);
+       font: 500 var(--t-sm)/1 var(--f-texte); border: var(--trait);
+       border-radius: var(--r-md); background: var(--salle-3); color: var(--texte);
+       cursor: pointer; display: inline-flex; align-items: center; gap: var(--e-2); }
+.btn--confirmer { background: var(--fixateur); border-color: var(--fixateur); color: #fff; }
+.btn--destructif { background: transparent; border-color: var(--encre); color: var(--encre); }
+.btn--discret { background: transparent; border-color: var(--papier-2);
+                color: var(--texte-papier); }
+.btn kbd { font: var(--t-xs)/1 var(--f-donnees); border: 1px solid currentColor;
+           border-radius: var(--r-sm); padding: 2px 5px; opacity: 0.75; }
+.pied { display: flex; gap: var(--e-3); flex-wrap: wrap; align-items: center;
+        font-size: var(--t-sm); }
+.pied a, .pied button { color: var(--texte-papier); }
+.pied a { text-decoration: underline; }
+:focus-visible { outline: 2px solid var(--veilleuse); outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important;
+                           transition-duration: .01ms !important; } }
+</style>
+</head>
+<body>
+<!--APPNAV-->
+<div class="bar">
+  <span>Juger une tranche de score</span>
+  <span class="sp"></span>
+  <span class="compte" id="compte">&hellip;</span>
+</div>
+<div class="rappel" id="rappel">Chargement&hellip;</div>
+<section class="feuille" id="carte" hidden>
+  <h2 id="question">&nbsp;</h2>
+  <p class="aide">Ce visage ressemble à cette personne sans qu’on en soit sûr.
+    Compare-le aux visages déjà confirmés, à droite.</p>
+  <div class="duo">
+    <figure>
+      <img id="visage" alt="Visage à juger, recadré">
+      <figcaption>Le visage proposé</figcaption>
+    </figure>
+    <figure>
+      <div class="refs" id="refs"></div>
+      <figcaption id="legref">Visages déjà confirmés</figcaption>
+    </figure>
+  </div>
+  <p class="chiffres" id="chiffres">&nbsp;</p>
+  <div class="actes">
+    <button class="btn btn--confirmer" data-v="juste" id="bouiO">Oui <kbd>1</kbd></button>
+    <button class="btn btn--destructif" data-v="faux">Non <kbd>2</kbd></button>
+    <button class="btn btn--discret" data-v="indecidable">Je ne sais pas <kbd>3</kbd></button>
+  </div>
+  <div class="pied">
+    <a id="photo" href="#" target="_blank" rel="noopener">Voir la photo entière</a>
+    <button class="btn btn--discret" id="prec">Revenir <kbd>Z</kbd></button>
+  </div>
+</section>
+<section class="feuille" id="fin" hidden>
+  <h2>Tranche jugée</h2>
+  <p class="chiffres" id="bilan">&nbsp;</p>
+  <p class="aide">Le taux ne se lit pas ici : trente jugements, ce n’est pas un
+    pourcentage, c’est un intervalle. Lance le banc pour l’obtenir avec sa marge
+    à 95 % : <b>mesure_tranche_seuil.py --bilan</b>. Rien n’a été attribué :
+    aucun nom n’a changé dans la photothèque.</p>
+  <div class="pied">
+    <button class="btn btn--discret" id="revoir">Revoir les jugements</button>
+  </div>
+</section>
+<script>
+function esc(s){return (s||'').replace(/[&<>"]/g,function(c){
+  return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+var ITEMS = [], VERD = {}, pos = 0, BORNES = null;
+
+function chargee(d){
+  ITEMS = d.items || []; VERD = d.verdicts || {}; BORNES = d.bornes || null;
+  var r = document.getElementById('rappel');
+  if (d.absent || !ITEMS.length){
+    r.innerHTML = 'Aucun échantillon à juger. Le banc en tire un : ' +
+      '<b>mesure_tranche_seuil.py --base copie.db --n 30</b>';
+    majCompte(); return;
+  }
+  r.innerHTML = 'Un verdict est une <b>mesure</b>, pas un geste : cette page ' +
+    'n’attribue aucun nom, ne touche ni les fiches ni les fichiers. Elle sert ' +
+    'à savoir ce que vaut la tranche ' +
+    (BORNES ? '<b>' + BORNES.min.toFixed(2) + ' à ' + BORNES.max.toFixed(2) + '</b>' : '') +
+    ' avant de décider si le seuil de proposition doit descendre.';
+  pos = ITEMS.findIndex(function(it){ return !VERD[it.id]; });
+  if (pos < 0) pos = ITEMS.length;
+  montrer();
+}
+
+function majCompte(){
+  var n = 0, c = {juste:0, faux:0, indecidable:0};
+  ITEMS.forEach(function(it){ var v = VERD[it.id]; if (v){ n++; if (c[v.verdict] != null) c[v.verdict]++; } });
+  document.getElementById('compte').textContent =
+    n + ' / ' + ITEMS.length + ' jugés' +
+    (n ? '  ·  ' + c.juste + ' justes  ·  ' + c.faux + ' faux  ·  ' +
+         c.indecidable + ' indécidables' : '');
+  return c;
+}
+
+function montrer(){
+  var carte = document.getElementById('carte'), fin = document.getElementById('fin');
+  var c = majCompte();
+  if (!ITEMS.length){ carte.hidden = true; fin.hidden = true; return; }
+  if (pos >= ITEMS.length){
+    carte.hidden = true; fin.hidden = false;
+    document.getElementById('bilan').textContent =
+      c.juste + ' justes  ·  ' + c.faux + ' faux  ·  ' + c.indecidable +
+      ' indécidables  (sur ' + ITEMS.length + ')';
+    return;
+  }
+  fin.hidden = true; carte.hidden = false;
+  var it = ITEMS[pos];
+  document.getElementById('question').textContent = 'Est-ce ' + it.person + ' ?';
+  document.getElementById('bouiO').innerHTML =
+    'Oui, c’est ' + esc(it.person) + ' <kbd>1</kbd>';
+  document.getElementById('visage').src = it.crop_url;
+  document.getElementById('legref').textContent =
+    'Visages déjà confirmés de ' + it.person;
+  var refs = document.getElementById('refs');
+  refs.innerHTML = (it.refs_urls && it.refs_urls.length)
+    ? it.refs_urls.map(function(u){
+        return '<img src="' + esc(u) + '" alt="Visage confirmé de ' +
+               esc(it.person) + '">'; }).join('')
+    : '<p class="vide">Cette fiche n’a aucun visage rattaché : il n’y a rien ' +
+      'à comparer. Juge sur la photo entière, ou réponds « Je ne sais pas ».</p>';
+  document.getElementById('chiffres').textContent =
+    'score ' + it.sim.toFixed(3) + '  ·  marge ' + it.margin.toFixed(3) +
+    (it.rival ? '  ·  2e plus proche : ' + it.rival + ' (' + it.rival_sim.toFixed(3) + ')' : '');
+  document.getElementById('photo').href = it.url || '#';
+  var deja = VERD[it.id];
+  document.querySelectorAll('.actes .btn').forEach(function(b){
+    b.setAttribute('aria-pressed', String(!!deja && deja.verdict === b.dataset.v));
+  });
+  document.getElementById('prec').disabled = (pos === 0);
+}
+
+function juger(v){
+  var it = ITEMS[pos];
+  if (!it) return;
+  VERD[it.id] = {verdict: v, key: it.key, i: it.i, person: it.person, sim: it.sim};
+  pos++; montrer();
+  fetch('/api/tranche/juger', {method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({key: it.key, i: it.i, person: it.person,
+                          verdict: v, sim: it.sim, margin: it.margin,
+                          rival: it.rival})
+  }).catch(function(){
+    document.getElementById('rappel').innerHTML =
+      'Le serveur n’a pas enregistré ce verdict. Vérifie qu’il tourne, ' +
+      'puis recharge la page : les verdicts déjà écrits sont conservés.';
+  });
+}
+
+document.querySelectorAll('.actes .btn').forEach(function(b){
+  b.addEventListener('click', function(){ juger(b.dataset.v); });
+});
+document.getElementById('prec').addEventListener('click', function(){
+  if (pos > 0){ pos--; montrer(); } });
+document.getElementById('revoir').addEventListener('click', function(){
+  pos = 0; montrer(); });
+document.addEventListener('keydown', function(e){
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+  if (e.key === '1') juger('juste');
+  else if (e.key === '2') juger('faux');
+  else if (e.key === '3') juger('indecidable');
+  else if (e.key === 'z' || e.key === 'Z'){ if (pos > 0){ pos--; montrer(); } }
+});
+fetch('/api/tranche/list').then(function(r){ return r.json(); }).then(chargee)
+  .catch(function(){
+    document.getElementById('rappel').textContent =
+      'Impossible de lire l’échantillon : le serveur n’a pas répondu.'; });
 </script>
 </body>
 </html>"""
@@ -13498,6 +13764,10 @@ class Handler(BaseHTTPRequestHandler):
             self._serve_curator_list()
         elif path == '/api/pets/curator/list':
             self._serve_pets_curator_list()
+        elif path == '/tranche':
+            self._send_html(TRANCHE_PAGE)
+        elif path == '/api/tranche/list':
+            self._serve_tranche_list()
 
         elif path == '/api/status':
             self._serve_status()
@@ -13623,6 +13893,9 @@ class Handler(BaseHTTPRequestHandler):
             return
         if path.startswith('/api/curator/'):
             self._do_curator_post(path)
+            return
+        if path.startswith('/api/tranche/'):
+            self._do_tranche_post(path)
             return
         if path == '/eval/notes':
             self._do_eval_notes()
@@ -14945,6 +15218,75 @@ class Handler(BaseHTTPRequestHandler):
         body = json.dumps({"photos": person_slideshow_list(name)},
                           ensure_ascii=False).encode()
         self._send(200, body, 'application/json')
+
+    def _serve_tranche_list(self):
+        """L'echantillon a juger + les verdicts deja poses. LECTURE SEULE.
+
+        Les vignettes passent par /api/facecrop, qui a son cache disque : juger
+        trente visages ne relit chaque original sur le NAS qu'une seule fois.
+        """
+        try:
+            d = json.loads(TRANCHE_A_JUGER.read_text(encoding='utf-8'))
+        except (OSError, ValueError):
+            self._send(200, json.dumps({
+                "items": [], "verdicts": {}, "absent": True,
+            }, ensure_ascii=False).encode(), 'application/json')
+            return
+        items = []
+        for c in (d.get('items') or []):
+            k = c.get('key', '')
+            try:
+                i = int(c.get('i') or 0)
+            except (TypeError, ValueError):
+                i = 0
+            refs = [r for r in (c.get('refs') or [])
+                    if isinstance(r, (list, tuple)) and len(r) == 2]
+            items.append(dict(c, id=_tranche_id(k, i, c.get('person', '')),
+                              crop_url=_crop_url(k, i), url=_url_for_key(k),
+                              refs_urls=[_crop_url(r[0], int(r[1] or 0))
+                                         for r in refs]))
+        with TRANCHE_LOCK:
+            verdicts = _tranche_lire_jugements()
+        self._send(200, json.dumps({
+            "items": items, "verdicts": verdicts, "bornes": d.get('bornes'),
+            "tirage": d.get('tirage'),
+        }, ensure_ascii=False).encode(), 'application/json')
+
+    def _do_tranche_post(self, path):
+        """Enregistre UN verdict. N'attribue rien : ni tag, ni fiche, ni XMP."""
+        if path != '/api/tranche/juger':
+            self._send(404, b'Not found', 'text/plain')
+            return
+        d = self._read_json_body()
+        verdict = d.get('verdict')
+        key, person = d.get('key') or '', d.get('person') or ''
+        try:
+            i = int(d.get('i') or 0)
+        except (TypeError, ValueError):
+            i = 0
+        if verdict not in TRANCHE_VERDICTS or not key or not person:
+            self._send(400, json.dumps(
+                {"ok": False, "erreur": "verdict ou proposition invalide"},
+                ensure_ascii=False).encode(), 'application/json')
+            return
+        evt = {"verdict": verdict, "key": key, "i": i, "person": person,
+               "sim": d.get('sim'), "margin": d.get('margin'),
+               "rival": d.get('rival'), "ts": round(time.time(), 3)}
+        with TRANCHE_LOCK:
+            verdicts = _tranche_lire_jugements()
+            verdicts[_tranche_id(key, i, person)] = evt
+            _tranche_ecrire_jugements(verdicts)
+            n = len(verdicts)
+        # Le journal garde la trace meme si le fichier de travail disparait, et
+        # c'est LUI que la sauvegarde emporte sur le NAS. Les mots juste/faux/
+        # indecidable ne comptent ni comme « confirmation » ni comme
+        # « erreur_decouverte » dans les stats de seance : c'est voulu, juger
+        # une tranche n'est pas curer le fonds.
+        _journal_jugement({"source": "tranche", "geste": "tranche_" + verdict,
+                           "verdict": verdict, "person": person, "key": key,
+                           "sim": d.get('sim'), "margin": d.get('margin')})
+        self._send(200, json.dumps({"ok": True, "juges": n}).encode(),
+                   'application/json')
 
     def _serve_curator_list(self):
         q = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)

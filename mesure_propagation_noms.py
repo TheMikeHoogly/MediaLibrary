@@ -313,6 +313,40 @@ def couples_rattaches(people):
     return out
 
 
+def noter_visages(E, Cproto, offsets):
+    """(best, second, qui, rival) — chaque visage contre chaque personne.
+
+    Le score d'une personne est le MAXIMUM de ses facettes : `maximum.reduceat`
+    sur des lignes contiguës rend exactement ce que la boucle `np.maximum.at`
+    de `build_suggestions` rend, sans la boucle. UNE seule implémentation —
+    tout banc qui note des visages passe par ici, sinon deux règles portant le
+    même nom finiraient par diverger sans que personne ne le voie.
+
+    `second`/`rival` valent -1 / le gagnant quand il n'existe qu'UNE personne :
+    il n'y a alors pas de concurrent, et la marge n'a pas de sens.
+    """
+    import numpy as np
+    n = E.shape[0]
+    best = np.empty(n, dtype=np.float32)
+    second = np.empty(n, dtype=np.float32)
+    qui = np.empty(n, dtype=np.int32)
+    rival = np.empty(n, dtype=np.int32)
+    PAS = 4096
+    for d in range(0, n, PAS):
+        B = E[d:d + PAS]
+        brut = B @ Cproto.T                                  # (b, facettes)
+        sims = np.maximum.reduceat(brut, offsets, axis=1)    # (b, personnes)
+        ordre = np.argsort(sims, axis=1)
+        j = ordre[:, -1]
+        r = ordre[:, -2] if sims.shape[1] >= 2 else j
+        lig = np.arange(sims.shape[0])
+        best[d:d + PAS] = sims[lig, j]
+        second[d:d + PAS] = sims[lig, r] if sims.shape[1] >= 2 else -1.0
+        qui[d:d + PAS] = j
+        rival[d:d + PAS] = r
+    return best, second, qui, rival
+
+
 # ──────────────────────────────── la mesure ─────────────────────────────────
 
 def mesurer(base, projet, exemples, graine, fichiers=0):
@@ -374,23 +408,7 @@ def _mesurer(tags, faces, people, projet, exemples, graine, fichiers):
     idxs = [i for _k, i, _v in retenus]
     retenus = [(k, i) for k, i, _v in retenus]      # les vecteurs vivent dans E
 
-    best = np.empty(len(retenus), dtype=np.float32)
-    second = np.empty(len(retenus), dtype=np.float32)
-    qui = np.empty(len(retenus), dtype=np.int32)
-    rival = np.empty(len(retenus), dtype=np.int32)
-    PAS = 4096
-    for d in range(0, len(retenus), PAS):
-        B = E[d:d + PAS]
-        brut = B @ Cproto.T                                  # (b, facettes)
-        sims = np.maximum.reduceat(brut, offsets, axis=1)    # (b, personnes)
-        ordre = np.argsort(sims, axis=1)
-        j = ordre[:, -1]
-        r = ordre[:, -2] if sims.shape[1] >= 2 else j
-        lig = np.arange(sims.shape[0])
-        best[d:d + PAS] = sims[lig, j]
-        second[d:d + PAS] = sims[lig, r] if sims.shape[1] >= 2 else -1.0
-        qui[d:d + PAS] = j
-        rival[d:d + PAS] = r
+    best, second, qui, rival = noter_visages(E, Cproto, offsets)
 
     marge = best - second
     add_sim = float(seuils['CUR_ADD_SIM'])

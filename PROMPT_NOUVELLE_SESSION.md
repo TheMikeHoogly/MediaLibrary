@@ -9,70 +9,57 @@ FUSIONNÉ — ce document, non. Puis `ROADMAP.md`, `eval/DECISIONS.md`,
 `eval/METHODE.md` — et `docs/DECISIONS_OUTILLAGE.md` si le sujet touche aux
 canaux. Débrief en 2–3 lignes, puis on attaque.
 
-## Où on en est (22/08/2026, fin de session 31)
+## Où on en est (22/08/2026, fin de session 32)
 
-**Le coupable n'était pas la purge : c'est le RANGEMENT, et il se taisait.**
-`rekey_everywhere` transporte sept magasins quand une photo change de chemin, et
-quatre « stores de sujets » passent dans la même boucle. Mais `PEOPLE` et `PETS`
-sont les seuls keyés par **NOM** : leurs chemins vivent DANS la fiche
-(`faces` = [[chemin, index]], `exclude`, `confirmed`, `avatar`).
-`store.rekey(ancien_chemin, nouveau_chemin)` y cherche une entrée dont la CLÉ
-serait un chemin, n'en trouve jamais, renvoie **faux sans un mot**. La boucle
-avait l'air de couvrir quatre magasins ; elle en couvrait deux. Chaque rangement
-par année et chacun des **7 058** renommages a pu décrocher un jugement.
+**Le chantier des décisions humaines est CLOS** (session 31 : 787 décisions
+re-clées, 0 sans contrepartie, résidu gardé par choix de Mike). Cette session a
+attaqué le **point 1 du prochain pas** — juger la tranche 0,35–0,40 — et elle
+s'arrête là où il fallait qu'elle s'arrête : **l'instrument est prêt, le
+jugement appartient à Mike.**
 
-**Ce que ça coûtait** : sur **3 364** décisions humaines, **928** pointent vers
-une clé absente de l'index (596 rattachements, 249 exclusions, 83
-confirmations), sur **804** clés. Le TAG survivait (index + XMP), donc la photo
-gardait son nom et la règle 2 tenait : c'est la VÉRITÉ TERRAIN qui partait — et
-une exclusion perdue, c'est un faux positif qui revient.
+**Ce qui est LIVRÉ.** `mesure_tranche_seuil.py` (25 tests) n'a pas de règle à
+lui : il importe celle de `mesure_propagation_noms` — seuils lus dans
+`server.py`, stores de prod, facettes, et `noter_visages()` extraite pour être
+partagée — et n'y ajoute que des BORNES. Tirage **uniforme** sur la tranche,
+graine fixe : prendre les 30 meilleurs mesurerait le haut et conclurait sur
+tout, l'erreur exacte du 20/08. La page **`/tranche`** (15 tests) donne
+l'échantillon à juger et **n'attribue RIEN** — ni tag, ni fiche, ni XMP. C'est
+la condition du chiffre : mesurer un seuil avec des rattachements qu'on vient
+soi-même de poser ne mesure rien. Le serveur COLLECTE, le banc CONCLUT.
 
-**« 787 décisions déjà perdues » est RÉFUTÉ**, et c'était un défaut de
-recherche, pas une mesure : personne ne leur avait cherché de jumeau. Les
-**journaux d'annulation** de `docs/` — écrits pour défaire, relus à l'endroit —
-donnent **19 331** déplacements et retrouvent **698** des 804 clés. Trois
-preuves comparées : journal **685**, nom de fichier **346** (36 homonymes
-refusés), vecteur **13** — la purge du 21/08 ayant emporté les détections des
-clés mortes. Bilan : **748 décisions se re-clent**, 56 y sont déjà, **124** sont
-vraiment perdues. Le « une seule décision à reporter (Luna) » tombe avec.
+**Ce qui est MESURÉ.** Dans la tranche, après les garde-fous humains :
+**1 190 candidates** (685 écartées « déjà dit », 64 par une exclusion),
+**22 clés fantômes** retirées, **1 168 vivantes**, **30 tirées**. Observé en
+réel sur le serveur : 30 items servis, vignettes en 200, verdict écrit,
+verdict inconnu refusé en 400.
 
-**LIVRÉ.** `recle_decisions.py` (règle pure, 15 tests) branché dans
-`rekey_everywhere` : une photo qui bouge emmène ses jugements, index de vignette
-compris. `journaux_deplacements.py` (14 tests) : une seule lecture des journaux,
-partagée par le serveur et le banc. Réparation rétroactive dans `/reglages` —
-aperçu / appliquer / annuler, quarantaine `_corbeille_decisions/` — qui passe
-par **la même fonction** que le préventif. Instruments :
-`mesure_report_orphelines.py`, `verifier_recle_decisions.py`.
-
-**APPLIQUÉ ET VÉRIFIÉ** : **787 décisions sur 685 clés, 97 fiches**. Décisions
-sur une clé hors index **928 → 140**. La vérité terrain passe de 3 364 à
-**3 310** — et les 54 manquantes sont des doublons FUSIONNÉS : l'audit de la
-quarantaine (`verifier_recle_decisions.py --quarantaine`) apparie chaque sortie
-à une arrivée de même type et de même index, **788 sorties / 734 appariées / 54
-fusions / 0 sans contrepartie**. Un total ne l'aurait pas dit.
+**Ce qui n'est PAS mesuré, et c'est le point** : le taux. Aucun jugement n'a
+été posé. Le banc le dit lui-même — « un banc sans verdict n'est pas un banc ».
 
 ## Prochain pas
 
-Le chantier des décisions humaines est **CLOS** : le résidu — 140 décisions sans
-destination connue, 120 clés protégées — est **gardé** (choix de Mike, 22/08).
-Le registre des oublis survit, les finitions UI et le plafond de page sont
-faits. Ce qui reste :
-
-1. **Juger 30 propositions de la tranche 0,35–0,40** (choix de Mike, 21/08)
-   avant de toucher `CUR_ADD_SIM`. 1 328 visages, 1 106 photos vivantes. Sans ce
-   jugement, abaisser un seuil est un pari sur des noms.
-2. **Chantier 12 — la répétition, seul geste qui manque.** L'instrument est
-   livré et la sauvegarde emporte désormais tout (« Total exposé : 0 o »).
-   Reste à restaurer POUR DE VRAI sur un dossier vierge, chronométrer, puis
+1. **Juger les 30 sur `http://192.168.0.13:8080/tranche`** (clavier `1` / `2` /
+   `3`, `Z` pour revenir), puis `mesure_tranche_seuil.py --bilan` dans
+   `_commande_banc.txt`. Le bilan rend le taux **avec son intervalle de
+   Wilson** — 30 tirages ne sont pas un pourcentage — et dit ce que
+   l'intervalle autorise à conclure. Si la tranche tient, abaisser
+   `CUR_ADD_SIM` ne demande **aucun code** : une ligne dans `seuils.txt`.
+   *(Une entrée d'essai `__essai_claude__` traîne dans
+   `journal_jugements.jsonl` — la vérification du chemin d'écriture. Elle n'est
+   pas dans `_tranche_jugements.json`, donc elle ne fausse aucun compte.)*
+2. **Chantier 12 — la répétition** (choix de Mike : ordre 1-4-3-2). Restaurer
+   POUR DE VRAI sur un dossier vierge, chronométrer, puis
    `verifier_restauration.py --restaure <dossier>` : il compare les décisions
    humaines **nom par nom** — un total identique ne prouve rien.
-3. **MCP lecture seule (13)** : recherche, fiches et `faits` en outils MCP
+3. **Correctifs d'audit I4–I8.** Dont **I7**, un vrai défaut produit : la casse
+   des tags nommés n'est normalisée qu'à trois endroits, donc un
+   `personne:nom` importé n'est **jamais** auto-guéri. Puis I4 (code mort
+   rejeté), I5/I6 (`/reglages` ment sur le GPU), I8 (routes orphelines).
+4. **MCP lecture seule (13)** : recherche, fiches et `faits` en outils MCP
    locaux (JSON-RPC stdio, zéro dépendance — skill `mcp-builder`).
-4. **En traite autonome** : audit I4–I8 / O7–O15, puis le reste de
-   `ROADMAP.md`.
 
-**Une décision à cinq secondes qui traîne depuis trois sessions** : l'extraction
-`ui/` (point 7) — lui donner une session ou la parquer.
+**Une décision à cinq secondes qui traîne depuis quatre sessions** :
+l'extraction `ui/` (point 7) — lui donner une session ou la parquer.
 
 **Ne pas rouvrir sans chiffre neuf** : 16(a) (mesuré, 17 photos) ; `taken` en
 base ; backfill ÉCRIT de `faits` ; index des noms en UNE passe ; filtre des noms
@@ -92,6 +79,11 @@ agent est vivant si son `_agent_*_vu.txt` a moins de 30 s.
 `--base copie.db`. Et **avant de comparer des noms ou des vecteurs, chercher si
 le geste a laissé une TRACE** : les journaux d'annulation de `docs/` ont rendu
 685 clés là où le nom en rendait 346 et le vecteur 13.
+
+**Un échantillon se tire UNIFORMÉMENT**, jamais par le haut : le 20/08, deux
+échantillons choisis ont porté une conclusion que le banc complet a réfutée.
+Et **un verdict ne se mélange jamais au geste qu'il gouverne** — c'est pour ça
+que `/tranche` n'attribue rien.
 
 **La sandbox ne peut pas écrire sur le fonds.** `POST` de renommage,
 d'attribution ou d'application est refusé côté Claude. Tout ce qui MODIFIE

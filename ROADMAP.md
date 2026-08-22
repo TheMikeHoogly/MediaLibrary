@@ -6,6 +6,31 @@ dans **git** ; les rejets dans `eval/DECISIONS.md` (photothèque) et
 `eval/METHODE.md` ; l'éphémère dans `PROMPT_NOUVELLE_SESSION.md`. Audits :
 `docs/AUDIT_INTERNE_2026-08.md`, `docs/AUDIT_EXTERNE_2026.md`, `docs/RANGEMENT_2026.md`.
 
+## État (22/08/2026, session 32)
+
+**On ne sait toujours pas ce que vaut la tranche 0,35–0,40 — mais l'instrument
+pour le savoir est là, et l'échantillon est tiré.** `mesure_tranche_seuil.py`
+n'a pas de règle à lui : il importe celle de `mesure_propagation_noms` (seuils
+lus dans `server.py`, stores de prod, facettes, `noter_visages` désormais
+partagée) et n'y ajoute que des BORNES. Tirage **uniforme** sur la tranche,
+graine fixe — prendre les 30 meilleurs mesurerait le haut et conclurait sur
+tout, l'erreur exacte du 20/08. Mesuré : **1 190 candidates** dans la tranche
+après les garde-fous humains (685 « déjà dit », 64 exclusions), **22 clés
+fantômes écartées**, **1 168 vivantes**, 30 tirées.
+
+La page **`/tranche`** les donne à juger et **n'attribue rien** — ni tag, ni
+fiche, ni XMP : un verdict est une MESURE, et la confondre avec un geste
+rendrait le chiffre inutile, puisqu'on mesurerait un seuil avec des
+rattachements qu'on vient soi-même de poser. Trois tests tiennent cette
+promesse sur le source. Le serveur COLLECTE (`_tranche_jugements.json`, écriture
+atomique, l'avancement survit au redémarrage), le banc CONCLUT
+(`--bilan`, intervalle de **Wilson** : 30 jugements ne sont pas un pourcentage).
+Observé en réel : 30 items servis, vignettes 200, verdict écrit, verdict
+inconnu refusé en 400.
+
+**Reste le geste de Mike** : juger les 30 sur `/tranche`, puis
+`mesure_tranche_seuil.py --bilan`.
+
 ## État (22/08/2026, session 31)
 
 **Le trou n'était pas la purge : c'est le RANGEMENT qui décrochait les décisions
@@ -269,6 +294,9 @@ une **génération** : le `taskkill` par titre ne tuait rien.
     0,35–0,40 (1 328 visages, 1 106 photos vivantes) avant de toucher un seuil
     — choix de Mike, 21/08 ; sans ce jugement, abaisser `CUR_ADD_SIM` est un
     pari sur des noms, et le plafond de 400 n'en montrerait que 386.
+    **Instrument LIVRÉ et échantillon TIRÉ (22/08)** : `mesure_tranche_seuil.py`
+    (25 tests) + page `/tranche` (15 tests) — 1 168 candidates vivantes, 30
+    tirées uniformément. Reste le JUGEMENT, puis `--bilan`.
     (b) **FAITS — déjà acquis.** `faits` étant une VUE, `personne:Flora`
     apparaît instantanément dans la ligne de faits, le filtre et `/sujets`.
     (c) **RÔLE dans la description — le seul étage LLM, et une hypothèse
