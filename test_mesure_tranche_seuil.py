@@ -156,14 +156,18 @@ class TestCandidate(unittest.TestCase):
             self.assertEqual(c["rival"], 'Zoe')
             self.assertAlmostEqual(c["margin"], c["sim"] - c["rival_sim"], 3)
 
-    def test_porte_des_visages_de_reference_avatar_en_tete(self):
+    def test_le_tirage_ne_porte_aucune_reference(self):
+        """La planche appartient a la PAGE, pas au tirage.
+
+        Le 22/08 elle etait figee ici : tiree a 21:26, elle montrait encore
+        les couples d'avant le recalage de 22:19. Une reference qui voyage
+        avec l'echantillon vieillit avec lui — et elle vieillit exactement la
+        ou une reparation vient de passer. `server._tranche_refs_vivantes` la
+        relit dans la fiche a chaque affichage."""
         with TemporaryDirectory() as d:
             f = Fixture(d, [0.37])
             vives, _ = T.candidates(f.b.db, d, 0.35, 0.40, fichiers=False)
-            refs = vives[0]["refs"]
-            self.assertEqual(refs[0], ['ref/avatar.jpg', 3])
-            self.assertIn(['ref/flo1.jpg', 0], refs)
-            self.assertLessEqual(len(refs), T.REFS_MAX)
+            self.assertNotIn("refs", vives[0])
 
 
 class TestTirage(unittest.TestCase):
@@ -171,7 +175,7 @@ class TestTirage(unittest.TestCase):
     def setUp(self):
         self.pop = [{"key": f'p{n:03d}.jpg', "i": 0, "person": 'Flo',
                      "sim": 0.35 + n / 1000, "margin": 0.01,
-                     "rival": 'Zoe', "rival_sim": 0.1, "refs": []}
+                     "rival": 'Zoe', "rival_sim": 0.1}
                     for n in range(200)]
 
     def test_reproductible_a_graine_egale(self):

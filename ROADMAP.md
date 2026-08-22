@@ -6,6 +6,40 @@ dans **git** ; les rejets dans `eval/DECISIONS.md` (photothèque) et
 `eval/METHODE.md` ; l'éphémère dans `PROMPT_NOUVELLE_SESSION.md`. Audits :
 `docs/AUDIT_INTERNE_2026-08.md`, `docs/AUDIT_EXTERNE_2026.md`, `docs/RANGEMENT_2026.md`.
 
+## État (22/08/2026, session 33)
+
+**La tranche 0,35–0,40 est TRANCHÉE, et l'œil de Mike avait raison deux fois,
+pour deux raisons différentes.**
+
+**Le chiffre.** Ses 30 jugements : **25 justes, 2 faux, 3 indécidables** →
+**92,6 %** sur 27 tranchées, **Wilson 95 % : 76,6 % – 97,9 %**. Ce que
+l'intervalle autorise, et rien de plus : la tranche va dans la file
+**« À vérifier »**, **jamais dans l'auto-ajout**. `CUR_ADD_SIM` ne bouge pas —
+une borne basse à 76,6 % interdit l'automatique, et 30 tirages ne sont pas un
+pourcentage.
+
+**Le défaut, première raison.** « Je n'ai pas constaté d'amélioration :
+certaines photos proposées pour une personne contiennent une AUTRE personne. »
+Le tirage avait été écrit à **21:26**, le recalage appliqué à **22:19**, et la
+page servait les références du FICHIER : l'état d'AVANT la réparation. **3
+planches sur 30 étaient périmées** — Didier, Mathieu, Markus Grossert, dont les
+deux qu'il avait nommés la veille. Sur celles-là aucune amélioration n'était
+possible : c'était l'image d'avant. **Corrigé et OBSERVÉ** :
+`_tranche_refs_vivantes` relit la fiche à chaque affichage, le banc ne tire plus
+de références (elles appartiennent à la PAGE) — après redémarrage
+(`code_a_jour` vrai), **4 références corrigées sur les 3 planches**, les mêmes 4
+que la quarantaine du recalage, deux chemins ; les 30 verdicts ont survécu. La
+légende ne ment plus non plus : « visages déjà **rattachés à** X ».
+
+**Le défaut, seconde raison — et c'est le prochain pas.** Le résidu du recalage
+n'est pas dilué, il est **CONCENTRÉ** : les **9 décalés** et les **34 refus
+« ambigu »** tiennent sur **10 fiches**, et **Didier en porte 4 des 9**. Sa
+fiche cite deux visages de la MÊME photo (i=1 à 0,908 et i=8 à 0,745) : la
+règle refuse exprès de trancher, et ce qu'il faut n'est pas un recalage mais un
+**retrait** — un geste humain. « 0,8 % sur 1 194 couples » se lit comme un fonds
+sain ; sur la fiche de Didier, c'est un intrus à chaque ouverture. Compter par
+FICHE, pas seulement sur le fonds.
+
 ## État (22/08/2026, session 32)
 
 **On ne sait toujours pas ce que vaut la tranche 0,35–0,40 — mais l'instrument
@@ -179,6 +213,17 @@ une **génération** : le `taskkill` par titre ne tuait rien.
 
 ## À faire — par ordre de valeur
 
+0. **Le résidu du recalage se juge à l'ŒIL — 10 fiches, 43 couples (22/08).**
+   9 décalés que la règle laisse et 34 refus « ambigu », **concentrés** :
+   Didier 4 des 9, puis Céline Gauchat, Jenny, Rosario, Val, Flo, Maryline
+   Baudère, Res Jordi, Sylvie Chatelain. Le score ne les départage pas — soit
+   la personne est vraiment détectée deux fois, soit l'index égaré désigne son
+   voisin de la même photo. Une page qui MONTRE les deux visages et demande
+   « lequel est X ? », qui **n'attribue rien et ne retire rien** — même
+   discipline que `/tranche` ; le retrait reste un geste de Mike. Et **`PETS`
+   n'a jamais été mesuré** : son magasin porte des empreintes DINOv2 et
+   `assigned_keys` ne le lit pas.
+
 1. **Vérité terrain — PARQUÉE pour l'algo, mais 141 décisions sont EN DANGER
    (21/08).** Sur les 2 374 clés que l'index a oubliées et que le magasin de
    visages garde, **141 décisions humaines** (118 rattachements, 13 exclusions,
@@ -332,13 +377,13 @@ une **génération** : le `taskkill` par titre ne tuait rien.
     0,35–0,40 (1 328 visages, 1 106 photos vivantes) avant de toucher un seuil
     — choix de Mike, 21/08 ; sans ce jugement, abaisser `CUR_ADD_SIM` est un
     pari sur des noms, et le plafond de 400 n'en montrerait que 386.
-    **Instrument LIVRÉ et échantillon TIRÉ (22/08)** : `mesure_tranche_seuil.py`
-    (25 tests) + page `/tranche` (15 tests) — 1 168 candidates vivantes, 30
-    tirées uniformément. Reste le JUGEMENT, puis `--bilan`.
-    **Et le jugement a d'abord révélé un défaut plus grave** : les
-    rattachements qui désignent le mauvais visage (voir l'État). Juger contre
-    une planche de référence fausse ne mesure rien — le recalage passe donc
-    avant.
+    **CLOS PAR LA MESURE (22/08, session 33)** : 30 propositions jugées par
+    Mike — **92,6 %** justes, **Wilson 76,6 %–97,9 %**. La tranche va dans la
+    file « À vérifier », **jamais dans l'auto-ajout** ; `CUR_ADD_SIM` ne bouge
+    pas. Et le jugement a révélé deux défauts d'instrument, tous deux traités
+    ou nommés : la planche de référence était FIGÉE dans le tirage (corrigé et
+    observé), et le résidu du recalage est CONCENTRÉ sur 10 fiches (point 1bis,
+    ci-dessous).
     (b) **FAITS — déjà acquis.** `faits` étant une VUE, `personne:Flora`
     apparaît instantanément dans la ligne de faits, le filtre et `/sujets`.
     (c) **RÔLE dans la description — le seul étage LLM, et une hypothèse

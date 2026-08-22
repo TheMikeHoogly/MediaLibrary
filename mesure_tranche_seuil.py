@@ -89,7 +89,12 @@ GRAINE_DEFAUT = 20260822
 # Verdicts admis. « indecidable » n'est pas un échec du modèle : c'est un
 # visage qu'un humain ne tranche pas, et le compter comme faux mentirait.
 VERDICTS = ('juste', 'faux', 'indecidable')
-REFS_MAX = 3        # visages de référence montrés à côté de la proposition
+# Les visages de RÉFÉRENCE ne sont pas tirés ici. Le 22/08, ils l'étaient :
+# figés dans le fichier de tirage à 21:26, ils montraient encore les couples
+# d'AVANT le recalage appliqué à 22:19, et trois planches sur trente
+# désignaient quelqu'un d'autre. Un tirage se fige — c'est ce qui le rend
+# uniforme ; une référence se LIT AU MOMENT DU JUGEMENT. Elle appartient donc
+# à la page (`server._tranche_refs_vivantes`), pas au banc.
 
 
 # ────────────────────────────── le tirage ───────────────────────────────────
@@ -123,7 +128,6 @@ def _candidates(tags, faces, people, projet, smin, smax, fichiers, np):
     Cproto, offsets, personnes = M.matrice_facettes(personnes)
     noms = [p["name"] for p in personnes]
     exclus = [p["exclude"] for p in personnes]
-    refs_visages = _refs_par_personne(people, noms)
 
     retenus, ecartes = M.visages_utiles(faces)
     if not retenus:
@@ -161,7 +165,6 @@ def _candidates(tags, faces, people, projet, smin, smax, fichiers, np):
             "sim": round(b, 4), "margin": round(float(marge[n]), 4),
             "rival": noms[int(rival[n])] if len(noms) >= 2 else "",
             "rival_sim": round(float(second[n]), 4),
-            "refs": refs_visages.get(nm, []),
         })
 
     # Tri déterministe AVANT le tirage : l'ordre d'un dict ne doit jamais
@@ -189,39 +192,6 @@ def _candidates(tags, faces, people, projet, smin, smax, fichiers, np):
     vivantes, rapf = _filtre_fichiers(brutes, projet, fichiers)
     rap["fichiers"] = rapf
     return vivantes, rap
-
-
-def _refs_par_personne(people, noms):
-    """Jusqu'à REFS_MAX visages déjà rattachés, par personne — l'avatar d'abord.
-
-    C'est la matière de la comparaison : juger « est-ce Flo ? » sans voir Flo
-    n'est pas juger, c'est deviner.
-    """
-    out = {}
-    voulus = {nm.lower(): nm for nm in noms}
-    for pk, pe in people.data.items():
-        if not isinstance(pe, dict):
-            continue
-        nm = voulus.get(str(pe.get('name', pk)).lower())
-        if nm is None:
-            continue
-        vus, liste = set(), []
-        av = pe.get('avatar')
-        if isinstance(av, (list, tuple)) and len(av) == 2:
-            liste.append([av[0], int(av[1] or 0)])
-            vus.add((av[0], int(av[1] or 0)))
-        for kf in (pe.get('faces') or []):
-            if len(liste) >= REFS_MAX:
-                break
-            if not isinstance(kf, (list, tuple)) or len(kf) != 2:
-                continue
-            couple = (kf[0], int(kf[1] or 0))
-            if couple in vus:
-                continue
-            vus.add(couple)
-            liste.append([couple[0], couple[1]])
-        out[nm] = liste
-    return out
 
 
 def _filtre_fichiers(brutes, projet, actif):

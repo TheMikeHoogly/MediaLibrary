@@ -112,5 +112,18 @@
   a été bâti pour rendre les −250 explicables après coup ; il vit en mémoire. Au redémarrage
   suivant, `par_motif` est vide. La cause des 2 283 orphelines ne sera jamais établie
   rétrospectivement. Compter au moment du geste ne suffit pas : il faut l'ÉCRIRE.
+- **Un échantillon se FIGE, une référence se LIT MAINTENANT** (22/08) : le tirage de la tranche
+  emportait avec lui les visages de référence. Tiré à 21:26, jugé à 22:53, il montrait encore les
+  couples d'avant le recalage appliqué à 22:19 — **3 planches sur 30**, dont Didier et Mathieu,
+  exactement les deux fiches signalées à l'œil la veille. Figer le tirage est ce qui le rend
+  uniforme ; figer la référence est faux, car la référence n'est pas ce qu'on mesure mais ce
+  CONTRE QUOI on mesure. Et elle ne vieillit pas au hasard : elle vieillit précisément là où une
+  réparation vient de passer, donc là où l'on cherche à constater un progrès.
+- **« Aucune amélioration » est un chiffre à chercher, pas un verdict à croire ni à écarter**
+  (22/08) : l'œil disait vrai deux fois pour deux raisons différentes — une planche périmée (3
+  items) ET un résidu réel que la règle refuse de réparer (9 décalés, 34 refus). Un taux global
+  de 0,8 % les cachait tous les deux, parce qu'il est **concentré** : Didier porte 4 des 9.
+  Un défaut réparti se dilue dans un taux ; un défaut concentré se voit à chaque ouverture de la
+  fiche. Compter par FICHE, pas seulement sur le fonds.
 - **Fragilité du corpus** : clés corrompues et mutations concurrentes ont invalidé des runs ;
   `--mesurer` alerte au-delà de 15 % de clés mortes.

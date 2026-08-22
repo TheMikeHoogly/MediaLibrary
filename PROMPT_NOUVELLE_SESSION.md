@@ -9,90 +9,72 @@ FUSIONNÉ — ce document, non. Puis `ROADMAP.md`, `eval/DECISIONS.md`,
 `eval/METHODE.md` — et `docs/DECISIONS_OUTILLAGE.md` si le sujet touche aux
 canaux. Débrief en 2–3 lignes, puis on attaque.
 
-## Où on en est (22/08/2026, fin de session 32)
+## Où on en est (22/08/2026, fin de session 33)
 
-**Le chantier des décisions humaines est CLOS** (session 31 : 787 décisions
-re-clées, 0 sans contrepartie, résidu gardé par choix de Mike). Cette session a
-attaqué le **point 1 du prochain pas** — juger la tranche 0,35–0,40 — et elle
-s'arrête là où il fallait qu'elle s'arrête : **l'instrument est prêt, le
-jugement appartient à Mike.**
+**La tranche 0,35–0,40 est tranchée, et l'œil de Mike avait raison deux fois,
+pour deux raisons différentes.**
 
-**Ce qui est LIVRÉ.** `mesure_tranche_seuil.py` (25 tests) n'a pas de règle à
-lui : il importe celle de `mesure_propagation_noms` — seuils lus dans
-`server.py`, stores de prod, facettes, et `noter_visages()` extraite pour être
-partagée — et n'y ajoute que des BORNES. Tirage **uniforme** sur la tranche,
-graine fixe : prendre les 30 meilleurs mesurerait le haut et conclurait sur
-tout, l'erreur exacte du 20/08. La page **`/tranche`** (15 tests) donne
-l'échantillon à juger et **n'attribue RIEN** — ni tag, ni fiche, ni XMP. C'est
-la condition du chiffre : mesurer un seuil avec des rattachements qu'on vient
-soi-même de poser ne mesure rien. Le serveur COLLECTE, le banc CONCLUT.
+**Le chiffre.** 30 propositions jugées par lui : **25 justes, 2 faux, 3
+indécidables** → **92,6 %** sur 27 tranchées, **Wilson 95 % : 76,6 %–97,9 %**.
+Ce que l'intervalle autorise, et rien de plus : la tranche a sa place dans la
+file **« À vérifier »**, **jamais dans l'auto-ajout**. `CUR_ADD_SIM` ne bouge
+pas.
 
-**Ce qui est MESURÉ.** Dans la tranche, après les garde-fous humains :
-**1 190 candidates** (685 écartées « déjà dit », 64 par une exclusion),
-**22 clés fantômes** retirées, **1 168 vivantes**, **30 tirées**. Observé en
-réel sur le serveur : 30 items servis, vignettes en 200, verdict écrit,
-verdict inconnu refusé en 400.
+**Première raison — la planche était FIGÉE, et c'est corrigé.** Il a dit :
+« je n'ai pas constaté d'amélioration, certaines photos proposées pour une
+personne contiennent une AUTRE personne. » Le tirage datait de **21:26**, le
+recalage avait été appliqué à **22:19**, et la page servait les références du
+FICHIER : l'état d'avant la réparation. **3 planches sur 30** — Didier,
+Mathieu, Markus Grossert, dont les deux qu'il avait nommés la veille.
+`_tranche_refs_vivantes` relit désormais la fiche à chaque affichage, et le
+banc ne tire plus de références du tout : elles appartiennent à la PAGE.
+Observé après redémarrage (`code_a_jour` vrai) : **4 références corrigées sur
+les 3 planches**, les mêmes 4 que la quarantaine du recalage — deux chemins —
+et les 30 verdicts ont survécu. La légende dit maintenant « visages déjà
+**rattachés à** X » : `confirmed` est un autre champ, et une planche qui se dit
+*confirmée* accuse le jugement humain d'une faute qui est celle de l'index.
 
-**Ce qui n'est PAS mesuré, et c'est le point** : le taux. Aucun jugement n'a
-été posé. Le banc le dit lui-même — « un banc sans verdict n'est pas un banc ».
-
-**Et la page a fait tomber plus gros qu'elle.** Mike a vu, à l'œil, une planche
-« visages déjà confirmés de Didier » contenant Laura Waller, une de Mathieu
-contenant Mathilde. Un rattachement est un couple `[photo, index du visage]` ;
-`reembed_one_batch` REMPLACE `e['faces']` quand il ré-analyse une photo, donc
-l'index finit par désigner quelqu'un d'autre **de la même photo**. Mesuré :
-**42 décalés sur 1 194** (3,5 %), minimum **−0,13**, et le croisement nomme la
-cause — **5,4 %** sur les photos réellement re-détectées contre **0,4 %**
-ailleurs, 41 sur 42. Le premier croisement, bâti sur le drapeau `reemb`, rendait
-**100 %** : instrument mort (le drapeau est aussi posé sur les photos seulement
-EXAMINÉES) ; `reemb_ms` discrimine.
-
-**Réparation LIVRÉE, APPLIQUÉE et OBSERVÉE** : `recale_rattachements.py`
-(règle pure, 27 tests) + trois boutons `/reglages`, quarantaine
-`_corbeille_recalage/`. Aperçu sur le serveur vivant : 32 à recaler, 34
-« ambigu », 1 « déjà pris » — mêmes nombres que le banc, deux chemins. Mike a
-appliqué : **33 recalages sur 17 fiches** (32 au premier passage, 1 au second —
-le « déjà pris » s'était libéré). Remesuré : décalés **42 → 9**, score minimum
-**−0,13 → +0,06**, bon visage **997 → 1 030**, et **1 194 couples avant comme
-après** : aucune décision perdue. La règle refuse plus qu'elle ne répare,
-volontairement — une PERMUTATION entre deux personnes d'une même photo se
-refuse des deux côtés.
+**Seconde raison — le résidu est CONCENTRÉ, et c'est le prochain pas.** Les
+**9 décalés** restants et les **34 refus « ambigu »** tiennent sur **10
+fiches**, et **Didier en porte 4 des 9**. « 0,8 % sur 1 194 couples » se lit
+comme un fonds sain ; sur SA fiche, c'est un intrus à chaque ouverture.
 
 ## Prochain pas
 
-1. **Juger les 30 sur `http://192.168.0.13:8080/tranche`** (clavier `1` / `2` /
-   `3`, `Z` pour revenir), puis `mesure_tranche_seuil.py --bilan` dans
-   `_commande_banc.txt`. Le bilan rend le taux **avec son intervalle de
-   Wilson** — 30 tirages ne sont pas un pourcentage — et dit ce que
-   l'intervalle autorise à conclure. Si la tranche tient, abaisser
-   `CUR_ADD_SIM` ne demande **aucun code** : une ligne dans `seuils.txt`.
-   *(Une entrée d'essai `__essai_claude__` traîne dans
-   `journal_jugements.jsonl` — la vérification du chemin d'écriture. Elle n'est
-   pas dans `_tranche_jugements.json`, donc elle ne fausse aucun compte.)*
-1bis. **Le résidu du recalage : 34 refus « ambigu », dont 9 réellement
-   décalés.** Le score ne les départage pas — soit la personne est vraiment
-   détectée deux fois, soit l'index égaré désigne son voisin. Ils se jugent à
-   l'œil, sur une page, comme la tranche. Et **`PETS` n'a jamais été mesuré** :
-   son magasin porte des empreintes DINOv2 et `assigned_keys` ne le lit pas.
-2. **Chantier 12 — la répétition** (choix de Mike : ordre 1-4-3-2). Restaurer
+0. **La page de jugement du résidu (point 0 du `ROADMAP.md`)** — 10 fiches, 43
+   couples : Didier (4 des 9 décalés), Céline Gauchat, Jenny, Rosario, Val,
+   Flo, Maryline Baudère, Res Jordi, Sylvie Chatelain. Sa fiche cite **deux
+   visages de la MÊME photo** (i=1 à 0,908 et i=8 à 0,745) : le score ne
+   tranche pas, et ce qu'il faut n'est pas un recalage mais un **RETRAIT** —
+   donc un geste de Mike. La page MONTRE les deux et demande « lequel est
+   X ? » ; elle **n'attribue rien et ne retire rien**, comme `/tranche`. Et
+   **`PETS` n'a jamais été mesuré** (empreintes DINOv2, `assigned_keys` ne le
+   lit pas).
+1. **Chantier 12 — la répétition** (choix de Mike : ordre 1-4-3-2). Restaurer
    POUR DE VRAI sur un dossier vierge, chronométrer, puis
    `verifier_restauration.py --restaure <dossier>` : il compare les décisions
    humaines **nom par nom** — un total identique ne prouve rien.
-3. **Correctifs d'audit I4–I8.** Dont **I7**, un vrai défaut produit : la casse
+2. **Correctifs d'audit I4–I8.** Dont **I7**, un vrai défaut produit : la casse
    des tags nommés n'est normalisée qu'à trois endroits, donc un
    `personne:nom` importé n'est **jamais** auto-guéri. Puis I4 (code mort
    rejeté), I5/I6 (`/reglages` ment sur le GPU), I8 (routes orphelines).
-4. **MCP lecture seule (13)** : recherche, fiches et `faits` en outils MCP
+3. **MCP lecture seule (13)** : recherche, fiches et `faits` en outils MCP
    locaux (JSON-RPC stdio, zéro dépendance — skill `mcp-builder`).
 
-**Une décision à cinq secondes qui traîne depuis quatre sessions** :
+**Une décision à cinq secondes qui traîne depuis cinq sessions** :
 l'extraction `ui/` (point 7) — lui donner une session ou la parquer.
 
-**Ne pas rouvrir sans chiffre neuf** : 16(a) (mesuré, 17 photos) ; `taken` en
-base ; backfill ÉCRIT de `faits` ; index des noms en UNE passe ; filtre des noms
-sur les `kw` bruts ; `det_score` comme critère d'espèce ; règle d'espèce
-ÉLARGIE ; re-passe de tagging en LOT (50 h GPU — l'incrémental reste ouvert) ;
-agent git dans le serveur ; planchers 1990 ; plafond 2100.
+**Un repli silencieux repéré, non traité** : `_serve_facecrop` sert le visage
+**0** quand l'index est hors bornes, et `/people` fait pareil pour l'avatar.
+Zéro cas aujourd'hui (mesuré), mais c'est un mensonge muet à l'endroit exact où
+un humain juge. À rendre visible quand on touchera la zone.
+
+**Ne pas rouvrir sans chiffre neuf** : abaisser `CUR_ADD_SIM` (tranché le
+22/08) ; 16(a) (mesuré, 17 photos) ; `taken` en base ; backfill ÉCRIT de
+`faits` ; index des noms en UNE passe ; filtre des noms sur les `kw` bruts ;
+`det_score` comme critère d'espèce ; règle d'espèce ÉLARGIE ; re-passe de
+tagging en LOT (50 h GPU — l'incrémental reste ouvert) ; agent git dans le
+serveur ; planchers 1990 ; plafond 2100.
 
 **Les TROIS canaux, mêmes octets** (CRLF, via `device_bash`, jamais supprimer ;
 `canal.py` les lit tous) : `_commande_serveur.txt` → `redemarrer`, puis
@@ -103,26 +85,21 @@ LIRE `_banc_sortie.txt`. Trois fenêtres ouvertes — Serveur, Git, Bancs ; un
 agent est vivant si son `_agent_*_vu.txt` a moins de 30 s.
 
 **Mesurer** : jamais sur `photos.db` — `mesure_copie_base.py` d'abord, puis
-`--base copie.db`. Et **avant de comparer des noms ou des vecteurs, chercher si
-le geste a laissé une TRACE** : les journaux d'annulation de `docs/` ont rendu
-685 clés là où le nom en rendait 346 et le vecteur 13.
+`--base copie.db`.
 
-**Un échantillon se tire UNIFORMÉMENT**, jamais par le haut : le 20/08, deux
-échantillons choisis ont porté une conclusion que le banc complet a réfutée.
-Et **un verdict ne se mélange jamais au geste qu'il gouverne** — c'est pour ça
-que `/tranche` n'attribue rien.
+**Un échantillon se FIGE, une référence se LIT MAINTENANT.** C'est la leçon du
+22/08 : figer le tirage est ce qui le rend uniforme, figer la référence est
+faux — elle n'est pas ce qu'on mesure, elle est ce CONTRE QUOI on mesure, et
+elle vieillit précisément là où une réparation vient de passer.
 
-**Un croisement à 100 % ne croise rien.** Le 22/08, le premier croisement du
-banc des rattachements a rendu « 100 % du fonds est re-embarqué » : ce n'était
-pas un résultat, c'était un drapeau que tout le monde porte. Avant de conclure
-d'un croisement, regarder son DÉNOMINATEUR.
+**Un défaut concentré ne se voit pas dans un taux.** 0,8 % sur le fonds, mais
+4 intrus sur une seule fiche. Compter par FICHE avant de conclure que le fonds
+va bien.
 
 **Un test ne doit rien imprimer.** L'agent git CAPTURE la sortie ; sous Windows
-un `print` part alors dans un tuyau, l'encodage local reprend la main, et le
-premier « é » tue le test par `UnicodeEncodeError`. Deux refus de livraison le
-22/08, pour ça exactement.
+un `print` part dans un tuyau, l'encodage local reprend la main, et le premier
+« é » tue le test par `UnicodeEncodeError`.
 
-**La sandbox ne peut pas écrire sur le fonds.** `POST` de renommage,
-d'attribution ou d'application est refusé côté Claude. Tout ce qui MODIFIE
-l'archive se termine donc par un bouton dans `/reglages` ou un geste de Mike —
-prévois-le dans la conception, sinon le chantier finit en cul-de-sac.
+**La sandbox ne peut pas écrire sur le fonds.** Tout ce qui MODIFIE l'archive
+se termine par un bouton dans `/reglages` ou un geste de Mike — prévois-le dans
+la conception, sinon le chantier finit en cul-de-sac.

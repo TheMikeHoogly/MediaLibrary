@@ -25,6 +25,12 @@ Ce qui est verifie, et pourquoi ce sont ces cas-la
 5. **La page n'attribue rien.** Le test lit le source du gestionnaire et exige
    qu'aucune fonction d'ecriture du fonds n'y apparaisse — c'est la promesse
    qui rend la mesure utilisable, et une promesse non testee se perd.
+6. **La planche de reference est VIVANTE.** Le 22/08 elle etait figee dans le
+   fichier de tirage : tiree a 21:26, elle montrait encore les couples d'avant
+   le recalage applique a 22:19 — trois planches sur trente designaient
+   quelqu'un d'autre, dont Didier et Mathieu, les deux fiches signalees a
+   l'oeil la veille. Juger contre une reference perimee ne mesure rien, et
+   elle se perime precisement la ou une reparation vient de passer.
 
 FUSEAU HORAIRE : sans objet.
 """
@@ -33,6 +39,7 @@ import ast
 import json
 import os
 import unittest
+import urllib.parse
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
@@ -205,6 +212,109 @@ class TestGestionnaire(unittest.TestCase):
         self.assertEqual(tuple(_constante('TRANCHE_VERDICTS')), T.VERDICTS)
 
 
+class FauxStore:
+    def __init__(self, data):
+        self.data = data
+
+
+def espace_planche(fiches):
+    """`_tranche_refs_vivantes` et ses dependances, avec un magasin a nous."""
+    ns = {'PEOPLE_STORE': FauxStore(fiches),
+          'TRANCHE_REFS_MAX': _constante('TRANCHE_REFS_MAX')}
+    for nom in ('_tranche_fiches_par_nom', '_tranche_refs_vivantes'):
+        exec(compile(ast.Module([_noeud(nom)], []), str(SERVER), 'exec'), ns)
+    return ns
+
+
+def refs(fiches, nom):
+    ns = espace_planche(fiches)
+    return ns['_tranche_refs_vivantes'](nom, ns['_tranche_fiches_par_nom']())
+
+
+class TestPlancheVivante(unittest.TestCase):
+
+    FICHES = {'didier': {'name': 'Didier',
+                         'avatar': ['av.jpg', 2],
+                         'faces': [['a.jpg', 1], ['av.jpg', 2],
+                                   ['b.jpg', 3], ['c.jpg', 0]]}}
+
+    def test_l_avatar_vient_en_tete(self):
+        self.assertEqual(refs(self.FICHES, 'Didier')[0], ('av.jpg', 2))
+
+    def test_l_avatar_ne_compte_pas_deux_fois(self):
+        """Il est aussi dans `faces` : le montrer deux fois volerait une place
+        a une reference que la planche n'aurait alors jamais."""
+        r = refs(self.FICHES, 'Didier')
+        self.assertEqual(len(r), len(set(r)))
+        self.assertEqual(r, [('av.jpg', 2), ('a.jpg', 1), ('b.jpg', 3)])
+
+    def test_le_nombre_est_borne(self):
+        self.assertLessEqual(len(refs(self.FICHES, 'Didier')),
+                             _constante('TRANCHE_REFS_MAX'))
+
+    def test_une_fiche_inconnue_rend_une_planche_vide(self):
+        """Une personne sans fiche n'est pas une panne : la proposition reste
+        jugeable, sans reference — et l'absence se VOIT."""
+        self.assertEqual(refs(self.FICHES, 'Personne Qui N Existe Pas'), [])
+
+    def test_la_casse_du_nom_ne_perd_pas_la_fiche(self):
+        self.assertEqual(refs(self.FICHES, 'DIDIER'),
+                         refs(self.FICHES, 'didier'))
+
+    def test_un_couple_abime_est_ignore_sans_panne(self):
+        f = {'didier': {'name': 'Didier', 'avatar': 'pas un couple',
+                        'faces': [['a.jpg', 'x'], ['b.jpg'], ['c.jpg', 4]]}}
+        self.assertEqual(refs(f, 'Didier'), [('c.jpg', 4)])
+
+
+class TestLaPlancheNeVieillitPasAvecLeTirage(unittest.TestCase):
+    """LE cas du 22/08, en un test.
+
+    Le fichier de tirage porte les references d'avant la reparation ; la fiche
+    porte celles d'apres. La page doit servir celles de la FICHE — sinon elle
+    montre le visage que le recalage vient justement de corriger.
+    """
+
+    PERIME = ['\\NAS\Photos\groupe.jpg', 8]      # avant recalage
+    RECALE = ['\\NAS\Photos\groupe.jpg', 1]      # apres recalage
+
+    def _servir(self, dossier):
+        fichier = Path(dossier) / '_tranche_a_juger.json'
+        fichier.write_text(json.dumps({"items": [{
+            "key": 'p.jpg', "i": 0, "person": 'Didier',
+            "sim": 0.37, "refs": [self.PERIME],
+        }]}, ensure_ascii=False), encoding='utf-8')
+        ns = espace_planche({'didier': {'name': 'Didier',
+                                        'faces': [self.RECALE]}})
+        ns.update({'json': json, 'urllib': urllib,
+                   'TRANCHE_A_JUGER': fichier,
+                   'TRANCHE_LOCK': __import__('threading').Lock(),
+                   '_url_for_key': lambda k, *a: '/f/' + k,
+                   'note_heavy_activity': lambda: None})
+        for nom in ('_tranche_id', '_tranche_lire_jugements', '_crop_url'):
+            exec(compile(ast.Module([_noeud(nom)], []), str(SERVER), 'exec'), ns)
+        ns['TRANCHE_JUGEMENTS'] = Path(dossier) / '_tranche_jugements.json'
+        exec(compile(ast.Module([_noeud('_serve_tranche_list')], []),
+                     str(SERVER), 'exec'), ns)
+        faux = FauxSelf(None)
+        ns['_serve_tranche_list'](faux)
+        code, body, _ = faux.reponses[-1]
+        self.assertEqual(code, 200)
+        return json.loads(body.decode('utf-8'))['items'][0]
+
+    def test_la_page_sert_la_reference_RECALEE(self):
+        with TemporaryDirectory() as d:
+            it = self._servir(d)
+            self.assertEqual(it['refs'], [self.RECALE])
+            self.assertIn('i=1', it['refs_urls'][0])
+
+    def test_la_reference_perimee_du_fichier_est_ignoree(self):
+        with TemporaryDirectory() as d:
+            it = self._servir(d)
+            self.assertNotIn(self.PERIME, it['refs'])
+            self.assertNotIn('i=8', it['refs_urls'][0])
+
+
 class TestPromesse(unittest.TestCase):
 
     def test_le_gestionnaire_n_attribue_rien(self):
@@ -218,6 +328,13 @@ class TestPromesse(unittest.TestCase):
         src = ast.get_source_segment(SOURCE, _noeud('_serve_tranche_list')) or ''
         for interdit in ECRITURES_INTERDITES:
             self.assertNotIn(interdit, src)
+
+    def test_la_lecture_ne_reprend_pas_les_refs_du_tirage(self):
+        """Garde contre le retour du defaut : si `_serve_tranche_list` relit
+        `refs` dans le fichier de tirage, la planche re-vieillit avec lui."""
+        src = ast.get_source_segment(SOURCE, _noeud('_serve_tranche_list')) or ''
+        self.assertNotIn("c.get('refs')", src)
+        self.assertIn('_tranche_refs_vivantes', src)
 
     def test_la_page_dit_qu_elle_n_attribue_rien(self):
         """Une promesse tenue par le code mais tue par l'interface se perd :

@@ -11095,9 +11095,13 @@ def _stats_seance():
 # Le taux et son intervalle se lisent par `mesure_tranche_seuil.py --bilan` :
 # le serveur COLLECTE, le banc CONCLUT. Les memes mots de verdict des deux
 # cotes (juste / faux / indecidable), sinon le banc compterait autre chose.
+# La PLANCHE DE REFERENCE, elle, n'est pas dans le tirage : elle est relue
+# dans la fiche a chaque affichage (`_tranche_refs_vivantes`). Un tirage se
+# fige, une reference se lit maintenant.
 TRANCHE_A_JUGER = SCRIPT_DIR / "_tranche_a_juger.json"
 TRANCHE_JUGEMENTS = SCRIPT_DIR / "_tranche_jugements.json"
 TRANCHE_VERDICTS = ('juste', 'faux', 'indecidable')
+TRANCHE_REFS_MAX = 3   # visages de reference montres a cote de la proposition
 TRANCHE_LOCK = threading.Lock()
 
 
@@ -11130,6 +11134,55 @@ def _tranche_ecrire_jugements(verdicts):
     tmp.write_text(json.dumps({"verdicts": verdicts}, ensure_ascii=False,
                               indent=1), encoding='utf-8')
     os.replace(tmp, TRANCHE_JUGEMENTS)
+
+
+def _tranche_fiches_par_nom():
+    """Les fiches de personnes indexees par nom en minuscules, en une passe."""
+    out = {}
+    for pk, pe in PEOPLE_STORE.data.items():
+        if isinstance(pe, dict):
+            out[str(pe.get('name', pk)).lower()] = pe
+    return out
+
+
+def _tranche_refs_vivantes(person, fiches):
+    """Les visages de reference d'une personne, LUS MAINTENANT.
+
+    Le 22/08, l'echantillon avait ete tire a 21:26 et le recalage des
+    rattachements applique a 22:19 : la page servait encore les references
+    d'AVANT la reparation. Trois planches sur trente montraient donc le visage
+    de quelqu'un d'autre — dont Didier et Mathieu, exactement les deux fiches
+    signalees a l'oeil la veille, et sur lesquelles aucune amelioration
+    n'etait possible puisque c'etait l'image d'avant.
+
+    Figer l'ECHANTILLON est juste : c'est le tirage, et un tirage qui bouge
+    n'est plus uniforme. Figer la REFERENCE est faux : la reference n'est pas
+    ce qu'on mesure, c'est ce CONTRE QUOI on mesure, et elle doit dire l'etat
+    du fonds a l'instant du jugement. Une planche perimee ne trompe pas au
+    hasard : elle trompe precisement la ou une reparation vient de passer.
+
+    L'avatar d'abord — c'est le portrait que le curateur juge le plus
+    representatif —, puis les rattachements, sans doublon.
+    """
+    pe = fiches.get(str(person or '').lower())
+    if not isinstance(pe, dict):
+        return []
+    vus, liste = set(), []
+    for source in ((pe.get('avatar'),), (pe.get('faces') or ())):
+        for kf in source:
+            if len(liste) >= TRANCHE_REFS_MAX:
+                break
+            if not isinstance(kf, (list, tuple)) or len(kf) != 2:
+                continue
+            try:
+                couple = (kf[0], int(kf[1] or 0))
+            except (TypeError, ValueError):
+                continue
+            if couple in vus:
+                continue
+            vus.add(couple)
+            liste.append(couple)
+    return liste
 
 
 def _refs_vecteurs(pe):
@@ -12310,12 +12363,15 @@ function montrer(){
   document.getElementById('bouiO').innerHTML =
     'Oui, c’est ' + esc(it.person) + ' <kbd>1</kbd>';
   document.getElementById('visage').src = it.crop_url;
+  // « rattachés », pas « confirmés » : `confirmed` est un AUTRE champ de la
+  // fiche. Une planche qui se dit confirmée et montre un intrus accuse le
+  // jugement humain, alors que c'est l'index du rattachement qui a glissé.
   document.getElementById('legref').textContent =
-    'Visages déjà confirmés de ' + it.person;
+    'Visages déjà rattachés à ' + it.person;
   var refs = document.getElementById('refs');
   refs.innerHTML = (it.refs_urls && it.refs_urls.length)
     ? it.refs_urls.map(function(u){
-        return '<img src="' + esc(u) + '" alt="Visage confirmé de ' +
+        return '<img src="' + esc(u) + '" alt="Visage rattaché à ' +
                esc(it.person) + '">'; }).join('')
     : '<p class="vide">Cette fiche n’a aucun visage rattaché : il n’y a rien ' +
       'à comparer. Juge sur la photo entière, ou réponds « Je ne sais pas ».</p>';
@@ -15418,18 +15474,23 @@ class Handler(BaseHTTPRequestHandler):
             }, ensure_ascii=False).encode(), 'application/json')
             return
         items = []
+        fiches = _tranche_fiches_par_nom()
         for c in (d.get('items') or []):
             k = c.get('key', '')
             try:
                 i = int(c.get('i') or 0)
             except (TypeError, ValueError):
                 i = 0
-            refs = [r for r in (c.get('refs') or [])
-                    if isinstance(r, (list, tuple)) and len(r) == 2]
-            items.append(dict(c, id=_tranche_id(k, i, c.get('person', '')),
+            person = c.get('person', '')
+            # Les references sont RELUES ici, jamais reprises du fichier de
+            # tirage : entre le tirage et le jugement, une reparation a pu
+            # passer (recalage du 22/08). Ce qui est fige, c'est l'echantillon.
+            refs = _tranche_refs_vivantes(person, fiches)
+            c = {ck: cv for ck, cv in c.items() if ck != 'refs'}
+            items.append(dict(c, id=_tranche_id(k, i, person),
                               crop_url=_crop_url(k, i), url=_url_for_key(k),
-                              refs_urls=[_crop_url(r[0], int(r[1] or 0))
-                                         for r in refs]))
+                              refs=[[r[0], r[1]] for r in refs],
+                              refs_urls=[_crop_url(r[0], r[1]) for r in refs]))
         with TRANCHE_LOCK:
             verdicts = _tranche_lire_jugements()
         self._send(200, json.dumps({
