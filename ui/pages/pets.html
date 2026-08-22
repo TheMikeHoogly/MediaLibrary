@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Animaux</title>
+<style>
+  /* Etape A tokenisation « chambre noire ». Anciennes vars nav (--bg/--card/
+     --accent...) remplacees par les tokens. Bouton primaire = papier ; danger
+     = encre ; intrus selectionne = encre ; focus = veilleuse. Cartes/groupes =
+     cellules --salle-3. Structure/espacements inchanges.
+     Etape B (10/08) : espacements/rayons qui EGALENT un token pointent vers lui
+     (rendu identique). Font-sizes en px laissees (px != rem, non equivalent aux
+     tokens --t-*). Noirs/blancs translucides (fonds photo #000, ombres, overlays)
+     laisses : hors palette de tokens, non interdits. */
+  body{font-family:var(--f-texte);margin:0;background:var(--salle);color:var(--texte);}
+  main{padding:var(--e-6) var(--e-4) 90px;max-width:1200px;margin:0 auto;}
+  .strip{display:flex;align-items:center;gap:var(--e-4);flex-wrap:wrap;font-size:var(--t-sm);
+    color:var(--graphite);background:var(--salle-3);border:var(--trait);
+    border-radius:var(--r-md);padding:var(--e-3) var(--e-4);margin-bottom:var(--e-6);}
+  .strip b{color:var(--texte);}
+  .strip .warn{color:var(--veilleuse);}
+  h2{font-size:var(--t-sm);text-transform:uppercase;letter-spacing:.6px;color:var(--graphite);
+    margin:var(--e-6) 0 var(--e-4);font-weight:600;}
+  .row{display:flex;align-items:center;gap:var(--e-3);}
+  /* ancre du lien profond /pets#groupes (onglet Classification de /sujets) */
+  #groupes{scroll-margin-top:118px;}
+  .sp{flex:1;}
+  .btn{padding:var(--e-2) var(--e-4);border-radius:var(--r-md);border:var(--trait);
+    background:#ffffff0d;color:var(--texte);cursor:pointer;font-size:var(--t-sm);font-weight:500;
+    transition:background .15s;}
+  .btn:hover{background:#ffffff1a;}
+  .btn.primary{background:var(--papier);
+    border:none;color:var(--texte-papier);box-shadow:0 2px 10px #0006;}
+  .btn.danger{color:var(--encre);border-color:var(--encre);}
+  .btn:disabled{opacity:.5;cursor:default;}
+  .cats{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:var(--e-4);}
+  .cat{background:var(--salle-3);border:var(--trait);border-radius:var(--r-md);
+    padding:var(--e-3);cursor:pointer;text-align:center;transition:transform .12s,border-color .15s;}
+  .cat:hover{transform:translateY(-3px);border-color:var(--graphite);}
+  .cat .av{width:96px;height:96px;border-radius:50%;object-fit:cover;background:#000;margin:var(--e-1) auto var(--e-3);
+    display:block;box-shadow:0 4px 14px #0008;}
+  .cat .av.ph{background:#000 url('data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'40\' height=\'40\'><text y=\'32\' font-size=\'32\'>🐱</text></svg>') center/40px no-repeat;}
+  .cat .nm{font-weight:600;font-size:var(--t-md);}
+  .cat .ct{color:var(--graphite);font-size:var(--t-xs);margin-top:2px;}
+  .groups{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:var(--e-4);}
+  .group{background:var(--salle-3);border:var(--trait);border-radius:var(--r-md);padding:var(--e-4);}
+  .group .sz{font-size:var(--t-xs);color:var(--graphite);margin-bottom:var(--e-3);}
+  .thumbs{display:flex;flex-wrap:wrap;gap:var(--e-1);margin-bottom:var(--e-3);}
+  .thumbs img{width:58px;height:58px;object-fit:cover;border-radius:var(--r-md);background:var(--salle-3);}
+  /* Rangee de nommage : miroir du .cl .row cote Personnes. flex-wrap + min-width:0
+     pour que, dans une carte etroite de la grille (280px), les boutons ne debordent
+     PAS a droite (bug : « Rejeter le groupe » masque par la cellule voisine, visible
+     seulement sur la derniere carte). Champ pleine largeur, boutons dessous, cibles 44px. */
+  .group .nmrow{display:flex;gap:var(--e-2);flex-wrap:wrap;align-items:center;}
+  .group .nmrow>*{min-width:0;}
+  .group .nmrow .btn{flex:1 1 auto;min-height:44px;}
+  .group input{flex:1 1 100%;min-height:44px;padding:var(--e-2) var(--e-3);background:var(--salle-3);color:var(--texte);
+    border:var(--trait);border-radius:var(--r-md);font-size:var(--t-sm);}
+  .group input:focus{border-color:var(--veilleuse);}
+  .muted{color:var(--graphite);font-size:var(--t-sm);}
+  /* détail */
+  #detail{display:none;}
+  .dhead{display:flex;align-items:center;gap:var(--e-4);flex-wrap:wrap;margin-bottom:var(--e-2);}
+  .dhead .title{font-size:var(--t-xl);font-weight:700;}
+  .dhead .ct{color:var(--graphite);font-size:var(--t-sm);}
+  /* menu de mode du diaporama : le rendu natif des <option> heritait un gris
+     peu lisible ; on force fond sombre + texte contraste (tokens photo-ui). */
+  #d-mode{background:var(--salle-3);color:var(--texte);border:var(--trait);
+    border-radius:var(--r-md);padding:var(--e-2) var(--e-3);font-size:var(--t-sm);cursor:pointer;}
+  #d-mode:focus{border-color:var(--veilleuse);}
+  #d-mode option{background:var(--salle-2);color:var(--texte);}
+  .hint{color:var(--graphite);font-size:var(--t-sm);margin:var(--e-2) 0 var(--e-4);line-height:1.5;}
+  .photos{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:var(--e-3);}
+  .ph{position:relative;border-radius:var(--r-md);overflow:hidden;cursor:pointer;aspect-ratio:1;
+    background:#000;border:2px solid transparent;transition:border-color .12s;}
+  .ph img{width:100%;height:100%;object-fit:cover;display:block;}
+  .ph .sim{position:absolute;left:6px;bottom:6px;font-size:var(--t-xs);padding:2px 6px;border-radius:var(--r-md);
+    background:#000a;color:var(--texte);font-weight:600;font-family:var(--f-donnees);}
+  .ph .zoom{position:absolute;top:5px;right:5px;width:26px;height:26px;border-radius:var(--r-md);
+    background:#000a;color:#fff;border:none;cursor:pointer;font-size:var(--t-sm);line-height:26px;padding:0;}
+  .ph.sel{border-color:var(--encre);}
+  .ph.sel::after{content:'\2713';position:absolute;top:5px;left:5px;width:22px;height:22px;
+    border-radius:50%;background:var(--encre);color:#fff;font-weight:700;text-align:center;line-height:22px;font-size:var(--t-sm);}
+  #selbar{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);display:none;
+    align-items:center;gap:var(--e-4);background:rgba(20,18,15,.93);border:var(--trait);
+    border-radius:var(--r-pill);padding:var(--e-3) var(--e-4);box-shadow:0 8px 30px #000a;z-index:60;backdrop-filter:blur(8px);}
+  #selbar b{color:var(--encre);}
+  #lightbox{position:fixed;inset:0;background:#000e;display:none;align-items:center;justify-content:center;
+    z-index:80;padding:var(--e-6);}
+  #lightbox img{max-width:96vw;max-height:92vh;border-radius:var(--r-md);box-shadow:0 10px 50px #000;}
+  #lightbox .x{position:absolute;top:16px;right:22px;font-size:var(--t-xl);color:#fff;cursor:pointer;line-height:1;}
+  /* diaporama plein ecran */
+  #pshow{position:fixed;inset:0;background:#000;display:none;z-index:90;}
+  #pshow.on{display:block;}
+  #pshow img{position:absolute;inset:0;margin:auto;max-width:100%;max-height:100%;object-fit:contain;}
+  #pshow .x{position:absolute;top:12px;right:18px;font-size:var(--t-xl);color:#fff;cursor:pointer;z-index:3;line-height:1;text-shadow:0 1px 4px #000;}
+  #pshow .pnav{position:absolute;top:0;bottom:0;width:34%;z-index:1;cursor:pointer;}
+  #pshow .pnav.l{left:0;} #pshow .pnav.r{right:0;}
+  #pshow .pmeta{position:absolute;left:0;right:0;bottom:0;z-index:2;padding:var(--e-4);
+    background:linear-gradient(transparent,#000d);color:var(--texte);font-size:var(--t-sm);display:flex;gap:var(--e-3);align-items:center;}
+  #pshow .pcbtn{background:#ffffff1a;border:1px solid #ffffff40;color:#fff;border-radius:var(--r-md);padding:6px var(--e-3);cursor:pointer;font-size:var(--t-md);}
+  #pshow #pshow-name{color:var(--graphite);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:40vw;}
+  #pshow #pshow-folder{color:var(--texte);background:var(--salle-3);border:var(--trait);border-radius:var(--r-md);
+    padding:var(--e-1) var(--e-3);font-size:var(--t-sm);text-decoration:none;white-space:nowrap;max-width:32vw;
+    overflow:hidden;text-overflow:ellipsis;}
+  #pshow #pshow-folder:hover{background:var(--salle-2);}
+  #pshow #pshow-folder.hidden{display:none;}
+</style>
+</head>
+<body>
+<!--APPNAV-->
+<!--SUJETSNAV-->
+<main>
+  <!-- VUE D'ENSEMBLE -->
+  <section id="overview">
+    <div class="strip" id="strip">Chargement&hellip;</div>
+
+    <!-- Harmonisation avec /people (12/08) : la file « A verifier » des animaux
+         vit dans /sujets?vue=classification, a cote de celle des personnes. -->
+    <p class="muted" style="margin:0 0 var(--e-3)">Les propositions &agrave; v&eacute;rifier
+      (animaux reconnus mais incertains, rattachements automatiques &agrave; annuler) se jugent
+      dans <a href="/sujets?vue=classification#verifier-animaux" style="color:var(--texte)">Sujets
+      &rsaquo; Classification</a>, avec celles des personnes.</p>
+
+    <div class="row"><h2 style="margin:0">Animaux</h2><span class="sp"></span></div>
+    <div class="cats" id="named"><span class="muted">Aucun animal nomm&eacute; pour le moment.</span></div>
+
+    <div class="row" style="margin-top:8px"><h2 id="groupes" style="margin:0">Groupes &agrave; identifier</h2>
+      <span class="sp"></span>
+      <button class="btn" id="recalc">&#8635; Recalculer</button></div>
+    <div class="groups" id="clusters"><span class="muted">Chargement des groupes&hellip;</span></div>
+  </section>
+
+  <!-- DÉTAIL D'UN CHAT -->
+  <section id="detail">
+    <div class="dhead">
+      <button class="btn" onclick="showOverview()">&#8592; Retour</button>
+      <span class="title" id="d-name"></span>
+      <span class="ct" id="d-count"></span>
+      <select class="btn" id="d-mode" title="Mode du diaporama">
+        <option value="seq">Chronologique</option>
+        <option value="rnd">Al&eacute;atoire</option>
+        <option value="assoc">Association</option>
+      </select>
+      <button class="btn primary" id="d-play">&#9654; Diaporama</button>
+      <span class="sp"></span>
+      <button class="btn" id="d-find">&#128269; Rechercher plus</button>
+      <button class="btn" id="d-rename">&#9998; Renommer</button>
+      <button class="btn danger" id="d-delete">&#128465; Supprimer</button>
+    </div>
+    <div class="hint">Les photos les <b>moins ressemblantes</b> sont en premier &mdash; ce sont les erreurs probables.
+      Clique une photo pour la <b>s&eacute;lectionner</b> (intrus &agrave; retirer), ou l'ic&ocirc;ne &#9974; pour la voir en grand.</div>
+    <div class="photos" id="d-photos"></div>
+  </section>
+</main>
+
+<div id="selbar">
+  <span><b id="sel-n">0</b> s&eacute;lectionn&eacute;e(s)</span>
+  <button class="btn danger" id="sel-remove">Retirer de cet animal</button>
+  <button class="btn" id="sel-clear">Annuler</button>
+</div>
+<div id="lightbox"><span class="x" onclick="closeLb()">&times;</span><img id="lb-img" src=""></div>
+
+<div id="pshow">
+  <span class="x" onclick="pshowClose()">&times;</span>
+  <div class="pnav l" onclick="pshowStep(-1)"></div>
+  <div class="pnav r" onclick="pshowStep(1)"></div>
+  <img id="pshow-img" src="" alt="">
+  <div class="pmeta">
+    <button class="pcbtn" onclick="pshowStep(-1)" title="Précédent">&#9198;</button>
+    <button class="pcbtn" id="pshow-pp" onclick="pshowToggle()" title="Pause/Lecture">&#9208;</button>
+    <button class="pcbtn" onclick="pshowStep(1)" title="Suivant">&#9197;</button>
+    <span id="pshow-pos"></span><a id="pshow-folder" class="hidden" href="#" title="Ouvrir le dossier d'origine"></a><span class="sp" style="flex:1"></span><span id="pshow-name"></span>
+  </div>
+</div>
+
+<script>
+function esc(s){ return (s||'').replace(/[&<>"]/g,function(c){
+  return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+function post(url,obj){ return fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},
+  body:JSON.stringify(obj||{})}).then(function(r){return r.json();}); }
+
+var CUR=null, SEL={}, CUR_PHOTOS=[];
+
+function loadStatus(){
+  fetch('/api/animals/status').then(function(r){return r.json();}).then(function(d){
+    var el=document.getElementById('strip');
+    el.innerHTML='Photos analys&eacute;es <b>'+d.photos_processed+'</b>'
+      +' &middot; animaux d&eacute;tect&eacute;s <b>'+(d.cats||0)+'</b>'
+      +' &middot; empreintes calcul&eacute;es <b>'+(d.embedded||0)+'</b>'
+      +' &middot; en attente '+d.pending
+      // Le moteur DINOv2 se charge PARESSEUSEMENT (au premier besoin) : tant
+      // qu'aucune erreur n'est remontee, son absence juste apres un redemarrage
+      // est normale — ne pas crier « installe timm » a tort (faux positif vecu).
+      +(d.dino_error?' &middot; <span class="warn">moteur d empreintes en erreur : '
+          +String(d.dino_error).replace(/[&<>"]/g,'')+' (relance &laquo; 10 - Installer nommage des chats.bat &raquo;)</span>'
+        :(d.dino?'':' &middot; moteur d empreintes en veille (charg&eacute; au premier besoin)'));
+  });
+}
+
+function loadNamed(){
+  fetch('/api/pets/list').then(function(r){return r.json();}).then(function(d){
+    var el=document.getElementById('named'); var pets=d.pets||[];
+    if(!pets.length){ el.innerHTML='<span class="muted">Aucun animal nomm&eacute; pour le moment. Identifie un groupe ci-dessous.</span>'; return; }
+    el.innerHTML='';
+    pets.forEach(function(p){
+      var c=document.createElement('div'); c.className='cat';
+      c.innerHTML=(p.crop?'<img class="av" src="'+p.crop+'">':'<div class="av ph"></div>')
+        +'<div class="nm">'+esc(p.name)+'</div><div class="ct">'+p.photos+' photo(s)</div>';
+      c.onclick=function(){ openCat(p.name); };
+      el.appendChild(c);
+    });
+    // Lien profond depuis /sujets : ?name=X ouvre directement la fiche.
+    try{ var _n=new URLSearchParams(location.search).get('name');
+      if(_n && pets.some(function(p){return p.name===_n;})){ openCat(_n); } }catch(e){}
+  });
+}
+
+function loadClusters(rebuild){
+  var el=document.getElementById('clusters');
+  fetch('/api/pets/clusters'+(rebuild?'?rebuild=1':'')).then(function(r){return r.json();}).then(function(d){
+    if(d.building){ el.innerHTML='<span class="muted">Regroupement en cours&hellip;</span>';
+      setTimeout(function(){ loadClusters(false); },4000); return; }
+    var cl=d.clusters||[];
+    if(!cl.length){ el.innerHTML='<span class="muted">Aucun groupe pour l instant (les empreintes se calculent en fond).</span>'; return; }
+    el.innerHTML='';
+    cl.forEach(function(c){ el.appendChild(carteGroupe(c)); });
+  });
+}
+
+/* ---- Attribution unifiée ----------------------------------------------
+   Une seule action remplace « Nommer » et les rejets : un refus n'est qu'une
+   attribution à une cible spéciale. Les vignettes sont sélectionnables, ce
+   qui permet de traiter un groupe mixte sans fonction « scinder ». */
+var SPECIAUX=[
+  {v:'__pas_animal__', t:'Ce n’est pas un animal', d:'peluche, statue, reflet… écarté définitivement'},
+  {v:'__pas_animal__', t:'C’est une personne (pas un animal)', d:'humain détecté comme animal — miroir de « C’est un animal » côté Personnes'},
+  {v:'__inconnu__',    t:'Animal inconnu',            d:'vrai animal, mais pas un des miens'}
+];
+var NOMS_CACHE=null, NOMS_CACHE_INFLIGHT=null;
+function chargerNoms(){
+  if(NOMS_CACHE) return Promise.resolve(NOMS_CACHE);
+  // Deduplication : si plusieurs cartes demandent les noms avant la reponse,
+  // elles partagent la MEME requete au lieu d'en lancer une chacune (miroir de
+  // nomsPersonnes sur /people, qui corrigeait la tempete de /api/names).
+  if(NOMS_CACHE_INFLIGHT) return NOMS_CACHE_INFLIGHT;
+  NOMS_CACHE_INFLIGHT=fetch('/api/names?genre=animal').then(function(r){return r.json();})
+    .then(function(d){ NOMS_CACHE=d.noms||[]; NOMS_CACHE_INFLIGHT=null; return NOMS_CACHE; })
+    .catch(function(){ NOMS_CACHE_INFLIGHT=null; return []; });   // pas de rejet non capture
+  return NOMS_CACHE_INFLIGHT;
+}
+function toast(msg, jeton){
+  var t=document.getElementById('toast');
+  if(!t){ t=document.createElement('div'); t.id='toast';
+    t.style.cssText='position:sticky;bottom:12px;margin:12px auto 0;max-width:520px;'+
+      'display:flex;align-items:center;gap:12px;background:var(--salle-3);'+
+      'border:var(--trait);border-radius:999px;padding:var(--e-3) var(--e-3) var(--e-3) var(--e-4);'+
+      'font-size:var(--t-sm);z-index:60;box-shadow:0 8px 30px #000a';
+    document.querySelector('main').appendChild(t); }
+  t.innerHTML='<span style="flex:1"></span>';
+  t.firstChild.textContent=msg;
+  if(jeton){ var b=document.createElement('button'); b.className='btn'; b.textContent='Annuler';
+    b.onclick=function(){ post('/api/undo',{jeton:jeton}).then(function(){
+      t.remove(); loadClusters(true); loadNamed(); }); };
+    t.appendChild(b); }
+  t.style.display='flex';
+  clearTimeout(t._m); t._m=setTimeout(function(){ t.remove(); },10000);
+}
+function carteGroupe(c){
+  var card=document.createElement('div'); card.className='group';
+  var membres=c.membres||[];
+  var sel=membres.map(function(){return true;});
+  var esp=c.species?(' · '+c.species):'';
+  card.innerHTML='<div class="sz">'+c.size+' apparition(s)'+esp+
+      ' <span style="color:var(--graphite)">— clique pour désélectionner</span></div>'+
+    '<div class="thumbs"></div>'+
+    '<div class="nmrow"><input placeholder="C’est… (« Inti, Luna » si les deux)" autocomplete="off">'+
+    '<button class="btn primary">Attribuer</button>'+
+    '<button class="btn danger rejeter">Rejeter le groupe</button>'+
+    '<button class="btn archiver" title="Sortir ce groupe de la file, à re-tagger plus tard">Archiver (inconnu)</button></div>'+
+    '<div class="props" style="margin-top:6px"></div>';
+  var zone=card.querySelector('.thumbs');
+  (c.crops||[]).forEach(function(u,i){
+    var b=document.createElement('button'); b.type='button';
+    b.style.cssText='padding:0;border:none;background:none;cursor:pointer;position:relative;line-height:0';
+    b.innerHTML='<img loading="lazy" src="'+esc(u)+'">';
+    b.setAttribute('aria-pressed','true');
+    b.onclick=function(){ sel[i]=!sel[i]; b.setAttribute('aria-pressed',sel[i]?'true':'false');
+      b.style.opacity=sel[i]?'1':'.35'; b.style.outline=sel[i]?'2px solid var(--fixateur)':'none';
+      b.style.outlineOffset='-2px'; maj(); };
+    b.style.outline='2px solid var(--fixateur)'; b.style.outlineOffset='-2px';
+    zone.appendChild(b);
+  });
+  var inp=card.querySelector('input'), btn=card.querySelector('button.primary');
+  var rej=card.querySelector('.rejeter');
+  var arch=card.querySelector('.archiver');
+  var props=card.querySelector('.props');
+  function choisis(){ return membres.filter(function(_m,i){return sel[i];}); }
+  function maj(){ btn.textContent='Attribuer '+choisis().length; }
+  // « tous » = rejet du groupe entier (miroir de carteGroupeP côté visages) :
+  // on n'agit pas sur la sélection mais sur tous les membres.
+  function envoyer(cible, tous){
+    var m=tous?membres:choisis(); if(!m.length){ inp.focus(); return; }
+    // Deux animaux sur la même photo : on accepte plusieurs noms séparés
+    // par une virgule ou un « + ». Les deux tags sont posés.
+    if(typeof cible==='string' && /[,+]/.test(cible))
+      cible=cible.split(/\s*[,+]\s*/).filter(Boolean);
+    btn.disabled=true; rej.disabled=true; if(arch) arch.disabled=true;
+    post('/api/assign',{genre:'animal',membres:m,cible:cible}).then(function(r){
+      btn.disabled=false; rej.disabled=false; if(arch) arch.disabled=false;
+      if(!r.ok){ props.textContent=r.erreur||'échec'; return; }
+      toast(r.libelle||'fait', r.jeton);
+      if(m.length>=membres.length){ card.remove(); } else { loadClusters(true); }
+      loadNamed(); loadStatus();
+    }).catch(function(){ btn.disabled=false; rej.disabled=false; if(arch) arch.disabled=false;
+      props.textContent='Le serveur n a pas repondu. Reessaie dans un instant.'; });
+  }
+  function listeProps(){
+    var t=inp.value.trim().toLowerCase();
+    chargerNoms().then(function(noms){
+      props.innerHTML='';
+      noms.filter(function(p){ return !t || p.nom.toLowerCase().indexOf(t)===0; })
+        .slice(0,4).forEach(function(p){
+          props.appendChild(prop(p.nom+' · '+p.n+' photos', p.nom)); });
+      if(t && !noms.some(function(p){return p.nom.toLowerCase()===t;}))
+        props.appendChild(prop('Nouveau : '+inp.value.trim(), inp.value.trim()));
+      if(!t) SPECIAUX.forEach(function(s){ props.appendChild(prop(s.t+' — '+s.d, s.v)); });
+    });
+  }
+  function prop(txt,val){
+    var b=document.createElement('button'); b.className='btn';
+    b.style.cssText='display:block;width:100%;text-align:left;margin:2px 0;font-size:12.5px';
+    b.textContent=txt; b.onclick=function(){ envoyer(val); }; return b;
+  }
+  inp.addEventListener('input',listeProps);
+  // Ne PAS peupler les propositions au chargement : chaque /api/names?genre=animal
+  // parcourt tout l'index cote serveur ; le faire pour chaque groupe en meme temps
+  // saturait le serveur (miroir du correctif /people). On differe au focus / a la
+  // frappe : un seul a la fois.
+  inp.addEventListener('focus',listeProps);
+  inp.addEventListener('keydown',function(e){ if(e.key==='Enter'&&inp.value.trim()) envoyer(inp.value.trim()); });
+  btn.onclick=function(){ if(inp.value.trim()) envoyer(inp.value.trim()); else inp.focus(); };
+  // Rejeter le groupe entier : vrais animaux mais cluster non nommable
+  // (nuques, profils). Réversible via le toast d'annulation. Miroir des visages.
+  rej.onclick=function(){ envoyer('__non_group__', true); };
+  // Archiver (inconnu) : vrai animal mais pas un des miens. Miroir du bouton
+  // cote Personnes ; le backend gere deja __inconnu__ pour genre:animal (SPECIAUX).
+  if(arch) arch.onclick=function(){ envoyer('__inconnu__', true); };
+  maj();
+  return card;
+}
+
+/* ---- détail d'un animal ---- */
+function showOverview(){ document.getElementById('detail').style.display='none';
+  document.getElementById('overview').style.display='block'; CUR=null; clearSel();
+  loadNamed(); loadStatus(); }
+
+function openCat(name){
+  CUR=name; CUR_PHOTOS=[]; clearSel();
+  document.getElementById('overview').style.display='none';
+  document.getElementById('detail').style.display='block';
+  document.getElementById('d-name').textContent=name;
+  document.getElementById('d-count').textContent='chargement…';
+  document.getElementById('d-play').disabled=true;
+  var g=document.getElementById('d-photos'); g.innerHTML='<span class="muted">Chargement&hellip;</span>';
+  window.scrollTo(0,0);
+  fetch('/api/pets/photos?name='+encodeURIComponent(name))
+    .then(function(r){ if(!r.ok) throw new Error('http '+r.status); return r.json(); })
+    .then(function(d){
+    if(d.error) throw new Error(d.error);
+    var ph=d.photos||[]; CUR_PHOTOS=ph;
+    document.getElementById('d-count').textContent=ph.length+' photo(s)';
+    document.getElementById('d-play').disabled=!ph.length;
+    if(!ph.length){ g.innerHTML='<span class="muted">Aucune photo. Utilise &laquo; Rechercher plus &raquo;.</span>'; return; }
+    g.innerHTML='';
+    // rendu léger : les vignettes se chargent progressivement (lazy) au défilement
+    ph.forEach(function(p){
+      var d1=document.createElement('div'); d1.className='ph'; d1.dataset.key=p.key;
+      var sim=(p.sim==null?'':'<span class="sim">'+p.sim+'</span>');
+      d1.innerHTML='<img loading="lazy" decoding="async" src="'+(p.crop_url||p.url)+'">'+sim
+        +'<button class="zoom" title="Voir en grand">&#9974;</button>';
+      d1.onclick=function(ev){ if(ev.target.classList.contains('zoom')){ openLb(p.url); return; } toggleSel(d1,p.key); };
+      g.appendChild(d1);
+    });
+  }).catch(function(){
+    // Cause la plus frequente : le serveur etait occupe (analyse IA en fond) et
+    // la requete a expire. On ne laisse pas un message mort : on propose de
+    // reessayer, le geste attendu.
+    document.getElementById('d-count').textContent='';
+    document.getElementById('d-play').disabled=true;
+    g.innerHTML='';
+    var w=document.createElement('span'); w.className='muted';
+    w.textContent='Chargement interrompu (le serveur est peut-etre occupe). ';
+    var b=document.createElement('button'); b.className='btn'; b.textContent='Reessayer';
+    b.style.marginLeft='6px'; b.onclick=function(){ openCat(name); };
+    w.appendChild(b); g.appendChild(w);
+  });
+}
+
+/* ---- diaporama d'un animal (chronologique / aléatoire / association) ---- */
+// Chronologique = du plus ANCIEN au plus recent (date de prise). Les photos sans
+// date fiable (taken absent) vont a la fin plutot qu'au debut.
+function seqPhotos(a){ return a.slice().sort(function(x,y){
+  return (x.taken||Infinity)-(y.taken||Infinity); }); }
+function shufflePhotos(a){ a=a.slice(); for(var i=a.length-1;i>0;i--){ var j=Math.floor(Math.random()*(i+1)); var t=a[i];a[i]=a[j];a[j]=t; } return a; }
+function assocPhotos(a){
+  if(a.length<3) return a.slice();
+  var pool=a.slice(), out=[]; var cur=pool.splice(Math.floor(Math.random()*pool.length),1)[0]; out.push(cur);
+  while(pool.length){ var ck=cur.kw||[], bi=0, bs=-1;
+    for(var i=0;i<pool.length;i++){ var s=0, kw=pool[i].kw||[]; for(var j=0;j<kw.length;j++){ if(ck.indexOf(kw[j])>=0) s++; } if(s>bs){ bs=s; bi=i; } }
+    cur=pool.splice(bi,1)[0]; out.push(cur); }
+  return out;
+}
+document.getElementById('d-play').onclick=function(){
+  if(!CUR_PHOTOS.length) return;
+  var m=document.getElementById('d-mode').value;
+  var list=(m==='rnd')?shufflePhotos(CUR_PHOTOS):(m==='assoc')?assocPhotos(CUR_PHOTOS):seqPhotos(CUR_PHOTOS);
+  pshowStart(list);
+};
+
+/* lecteur plein écran (images complètes, chargées au fil de la lecture) */
+var PSHOW={list:[],i:0,timer:null,playing:false};
+function pshowStart(list){ if(!list.length) return; PSHOW.list=list; PSHOW.i=0; PSHOW.playing=true;
+  document.getElementById('pshow').classList.add('on'); document.getElementById('pshow-pp').innerHTML='&#9208;'; pshowRender(); pshowTick(); }
+function pshowRender(){ var p=PSHOW.list[PSHOW.i];
+  // Vignettes serveur (audit O1) : 1600 px au lieu de l'original NAS.
+  document.getElementById('pshow-img').src=p.key?'/api/thumb?key='+encodeURIComponent(p.key)+'&s=1600':p.url;
+  document.getElementById('pshow-pos').textContent=(PSHOW.i+1)+' / '+PSHOW.list.length;
+  document.getElementById('pshow-name').textContent=p.name||'';
+  var pf=document.getElementById('pshow-folder');
+  if(p.gurl){ pf.href=p.gurl; pf.textContent='📁 '+(p.folder||'Dossier'); pf.classList.remove('hidden'); }
+  else{ pf.classList.add('hidden'); } }
+function pshowTick(){ clearTimeout(PSHOW.timer); if(PSHOW.playing) PSHOW.timer=setTimeout(function(){ pshowStep(1); },4500); }
+function pshowStep(d){ if(!PSHOW.list.length) return; PSHOW.i=(PSHOW.i+d+PSHOW.list.length)%PSHOW.list.length; pshowRender(); pshowTick(); }
+function pshowToggle(){ PSHOW.playing=!PSHOW.playing; document.getElementById('pshow-pp').innerHTML=PSHOW.playing?'&#9208;':'&#9654;'; pshowTick(); }
+function pshowClose(){ clearTimeout(PSHOW.timer); PSHOW.playing=false; document.getElementById('pshow').classList.remove('on'); document.getElementById('pshow-img').src=''; }
+document.addEventListener('keydown',function(e){
+  if(!document.getElementById('pshow').classList.contains('on')) return;
+  if(e.key==='ArrowLeft') pshowStep(-1); else if(e.key==='ArrowRight') pshowStep(1);
+  else if(e.key===' '){ e.preventDefault(); pshowToggle(); } else if(e.key==='Escape') pshowClose();
+});
+(function(){ var sw=document.getElementById('pshow'), sx=0, sy=0;
+  sw.addEventListener('touchstart',function(e){ if(e.touches.length===1){ sx=e.touches[0].clientX; sy=e.touches[0].clientY; } },{passive:true});
+  sw.addEventListener('touchend',function(e){ var t=e.changedTouches[0], dx=t.clientX-sx, dy=t.clientY-sy;
+    if(Math.abs(dx)>45 && Math.abs(dx)>Math.abs(dy)*1.5) pshowStep(dx<0?1:-1); },{passive:true});
+})();
+
+function toggleSel(el,key){ if(SEL[key]){ delete SEL[key]; el.classList.remove('sel'); }
+  else { SEL[key]=1; el.classList.add('sel'); } updateSelbar(); }
+function clearSel(){ SEL={}; document.querySelectorAll('.ph.sel').forEach(function(e){e.classList.remove('sel');}); updateSelbar(); }
+function updateSelbar(){ var n=Object.keys(SEL).length; document.getElementById('sel-n').textContent=n;
+  document.getElementById('selbar').style.display=n?'flex':'none'; }
+
+document.getElementById('sel-clear').onclick=clearSel;
+document.getElementById('sel-remove').onclick=function(){
+  var keys=Object.keys(SEL); if(!keys.length||!CUR) return;
+  post('/api/pets/untag',{name:CUR,keys:keys}).then(function(){ openCat(CUR); });
+};
+document.getElementById('d-find').onclick=function(){
+  var b=this; b.disabled=true; b.textContent='Recherche…';
+  post('/api/pets/find',{name:CUR}).then(function(d){
+    var props=d.proposals||[]; b.disabled=false; b.innerHTML='&#128269; Rechercher plus';
+    if(!props.length){ alert('Aucune nouvelle photo trouvee.'); return; }
+    if(confirm(CUR+' : '+props.length+' photo(s) proposee(s). Toutes les attribuer ?')){
+      post('/api/pets/confirm',{name:CUR,keys:props.map(function(p){return p.key;})}).then(function(){ openCat(CUR); });
+    }
+  });
+};
+document.getElementById('d-rename').onclick=function(){
+  var nn=prompt('Nouveau nom pour '+CUR+' :',CUR); if(!nn||nn===CUR) return;
+  post('/api/pets/rename',{old:CUR,new:nn}).then(function(){ openCat(nn); });
+};
+document.getElementById('d-delete').onclick=function(){
+  if(!confirm('Supprimer '+CUR+' ? Le tag sera retire de toutes ses photos.')) return;
+  post('/api/pets/delete',{name:CUR}).then(function(){ showOverview(); });
+};
+
+function openLb(url){ document.getElementById('lb-img').src=url; document.getElementById('lightbox').style.display='flex'; }
+function closeLb(){ document.getElementById('lightbox').style.display='none'; document.getElementById('lb-img').src=''; }
+document.getElementById('lightbox').onclick=function(e){ if(e.target.id==='lightbox') closeLb(); };
+document.addEventListener('keydown',function(e){ if(e.key==='Escape') closeLb(); });
+
+document.getElementById('recalc').onclick=function(){ post('/api/pets/recluster',{}).then(function(){ loadClusters(false); }); };
+
+loadStatus(); loadNamed(); loadClusters(false);
+setInterval(function(){ if(!CUR) loadStatus(); },15000);
+// Lien profond /pets#groupes (onglet Classification) : la grille des animaux
+// nommés au-dessus se peint en async — cible mouvante. Re-viser 2,5 s,
+// stop à la première interaction (même remède que /people).
+(function(){
+  if((location.hash||'')!=='#groupes') return;
+  var stop=false, t0=Date.now();
+  ['wheel','touchstart','keydown','mousedown'].forEach(function(ev){
+    window.addEventListener(ev, function(){ stop=true; }, {passive:true, once:true});
+  });
+  (function vise(){
+    if(stop) return;
+    var el=document.getElementById('groupes');
+    if(el) el.scrollIntoView({block:'start'});
+    if(Date.now()-t0<2500) setTimeout(vise, 400);
+  })();
+})();
+</script>
+</body>
+</html>

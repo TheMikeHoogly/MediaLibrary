@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Le residu a juger</title>
+<style>
+/* Surface de TRAVAIL : on decide, donc papier. Tokens seuls.
+   La PHOTO, elle, se regarde : fond salle, comme partout ailleurs. */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: var(--f-texte); background: var(--salle); color: var(--texte); }
+.bar { display: flex; align-items: center; gap: var(--e-3);
+       padding: var(--e-3) var(--e-4); background: var(--salle-2);
+       border-bottom: var(--trait); flex-wrap: wrap; font-size: var(--t-sm); }
+.bar .sp { margin-left: auto; }
+.compte { font-family: var(--f-donnees); color: var(--texte); }
+.rappel { padding: var(--e-3) var(--e-4); color: var(--graphite);
+          font-size: var(--t-sm); line-height: 1.5; max-width: 62ch; }
+.rappel b { color: var(--texte); }
+.feuille { background: var(--papier); color: var(--texte-papier);
+           border-radius: var(--r-md); padding: var(--e-4);
+           margin: var(--e-3) var(--e-4) var(--e-8); max-width: 900px;
+           box-shadow: 0 1px 0 var(--papier-2), 0 8px 24px #0008; }
+.feuille h2 { font: 600 var(--t-xl)/1.2 var(--f-affichage);
+              letter-spacing: -0.01em; margin-bottom: var(--e-3); }
+.aide { color: var(--graphite-p); font-size: var(--t-sm); line-height: 1.5; }
+/* La SCENE : la photo entiere, cadres poses en pourcentage. C'est elle qui
+   dit si le fichier est une scene ou une page d'album — un crop isole ne le
+   dit jamais, et le 22/08 ca a coute une conclusion fausse. */
+.scene { position: relative; display: inline-block; max-width: 100%;
+         margin: var(--e-3) 0; background: var(--salle);
+         border-radius: var(--r-sm); line-height: 0; }
+.scene img { max-width: 100%; max-height: 46vh; width: auto; display: block;
+             border-radius: var(--r-sm); }
+.cadre { position: absolute; border: 2px solid var(--veilleuse);
+         border-radius: var(--r-sm); box-shadow: 0 0 0 1px #000A;
+         pointer-events: none; }
+.cadre[data-oui="1"] { border-color: var(--fixateur); }
+.cadre b { position: absolute; top: -1px; left: -1px;
+           font: 700 var(--t-xs)/1 var(--f-donnees); color: #000;
+           background: var(--veilleuse); padding: 3px 5px;
+           border-radius: var(--r-sm) 0 var(--r-sm) 0; }
+.cadre[data-oui="1"] b { background: var(--fixateur); color: #fff; }
+.choix { display: grid; gap: var(--e-3); margin: var(--e-3) 0;
+         grid-template-columns: repeat(auto-fit, minmax(132px, 190px)); }
+.cand { display: block; width: 100%; padding: var(--e-2); cursor: pointer;
+        background: var(--papier-2); border: 2px solid transparent;
+        border-radius: var(--r-md); color: var(--texte-papier);
+        font: 500 var(--t-sm)/1.3 var(--f-texte); text-align: center; }
+.cand img { width: 100%; aspect-ratio: 1; object-fit: cover; display: block;
+            border-radius: var(--r-sm); background: var(--papier); }
+.cand .mes { font: var(--t-xs)/1.4 var(--f-donnees); color: var(--graphite-p);
+             display: block; margin-top: var(--e-1); }
+.cand kbd { font: var(--t-xs)/1 var(--f-donnees); border: 1px solid currentColor;
+            border-radius: var(--r-sm); padding: 1px 5px; margin-left: var(--e-1);
+            opacity: 0.7; }
+.cand[aria-pressed="true"] { border-color: var(--fixateur);
+                             background: var(--fixateur); color: #fff; }
+.cand[aria-pressed="true"] .mes { color: #fff; opacity: 0.9; }
+.refs { display: grid; grid-template-columns: repeat(auto-fit, minmax(88px, 120px));
+        gap: var(--e-2); margin-top: var(--e-2); }
+.refs img { width: 100%; aspect-ratio: 1; object-fit: cover; display: block;
+            border-radius: var(--r-md); background: var(--papier-2); }
+.refs .vide { grid-column: 1 / -1; font-size: var(--t-sm); color: var(--graphite-p); }
+.bloc { margin: var(--e-4) 0; }
+.bloc h3 { font: 600 var(--t-md)/1.2 var(--f-affichage); margin-bottom: var(--e-2); }
+.chiffres { font-family: var(--f-donnees); font-size: var(--t-sm);
+            color: var(--texte-papier); background: var(--papier-2);
+            border-radius: var(--r-sm); padding: var(--e-2) var(--e-3); }
+.suite { margin: var(--e-3) 0 0; font-size: var(--t-sm); font-weight: 600; }
+.actes { display: flex; gap: var(--e-2); flex-wrap: wrap; margin: var(--e-3) 0; }
+.btn { min-height: var(--touch); padding: 0 var(--e-4);
+       font: 500 var(--t-sm)/1 var(--f-texte); border: var(--trait);
+       border-radius: var(--r-md); background: var(--salle-3); color: var(--texte);
+       cursor: pointer; display: inline-flex; align-items: center; gap: var(--e-2); }
+.btn--confirmer { background: var(--fixateur); border-color: var(--fixateur); color: #fff; }
+.btn--destructif { background: transparent; border-color: var(--encre); color: var(--encre); }
+.btn--discret { background: transparent; border-color: var(--papier-2);
+                color: var(--texte-papier); }
+.btn kbd { font: var(--t-xs)/1 var(--f-donnees); border: 1px solid currentColor;
+           border-radius: var(--r-sm); padding: 2px 5px; opacity: 0.75; }
+.pied { display: flex; gap: var(--e-3); flex-wrap: wrap; align-items: center;
+        font-size: var(--t-sm); }
+.pied a { color: var(--texte-papier); text-decoration: underline; }
+:focus-visible { outline: 2px solid var(--veilleuse); outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important;
+                           transition-duration: .01ms !important; } }
+</style>
+</head>
+<body>
+<!--APPNAV-->
+<div class="bar">
+  <span>Le r&eacute;sidu &agrave; juger</span>
+  <span class="sp"></span>
+  <span class="compte" id="compte">&hellip;</span>
+</div>
+<div class="rappel" id="rappel">Chargement&hellip;</div>
+<section class="feuille" id="carte" hidden>
+  <h2 id="question">&nbsp;</h2>
+  <p class="aide" id="pourquoi">&nbsp;</p>
+  <div class="scene" id="scene"><img id="photo-img" alt="La photo enti&egrave;re, visages encadr&eacute;s"></div>
+  <div class="bloc">
+    <div class="choix" id="choix"></div>
+  </div>
+  <div class="bloc">
+    <h3 id="legref">Visages d&eacute;j&agrave; rattach&eacute;s</h3>
+    <div class="refs" id="refs"></div>
+  </div>
+  <p class="chiffres" id="chiffres">&nbsp;</p>
+  <p class="suite" id="suite">&nbsp;</p>
+  <div class="actes">
+    <button class="btn btn--confirmer" id="valider">Valider <kbd>Entr&eacute;e</kbd></button>
+    <button class="btn btn--discret" id="sais-pas">Je ne sais pas <kbd>0</kbd></button>
+  </div>
+  <div class="pied">
+    <a id="photo" href="#" target="_blank" rel="noopener">Ouvrir la photo en grand</a>
+    <button class="btn btn--discret" id="prec">Revenir <kbd>Z</kbd></button>
+  </div>
+</section>
+<section class="feuille" id="fin" hidden>
+  <h2>R&eacute;sidu jug&eacute;</h2>
+  <p class="chiffres" id="bilan">&nbsp;</p>
+  <p class="aide">Rien n&rsquo;a &eacute;t&eacute; retir&eacute; : cette page
+    <b>collecte</b>, elle n&rsquo;agit pas. Le plan de retrait se lit par
+    <b>mesure_rattachements.py --bilan-residu</b>, et le geste reste le tien.</p>
+  <div class="pied">
+    <button class="btn btn--discret" id="revoir">Revoir les jugements</button>
+  </div>
+</section>
+<script>
+function esc(s){return (s||'').replace(/[&<>"]/g,function(c){
+  return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+// Des LETTRES, pas des chiffres : /tranche utilise 1/2/3 pour Oui/Non/Je ne
+// sais pas. Les memes touches a dix minutes d'intervalle, avec des sens
+// opposes, ont deja fait enregistrer quinze reponses pour une autre.
+var LETTRES = 'ABCDEFGH';
+var CAS = [], VERD = {}, pos = 0, SEL = {};
+
+function chargee(d){
+  CAS = d.cas || []; VERD = d.verdicts || {};
+  var r = document.getElementById('rappel');
+  if (d.absent || !CAS.length){
+    r.innerHTML = 'Aucun cas &agrave; juger. Le banc les tire : ' +
+      '<b>mesure_rattachements.py --base copie.db --residu</b>';
+    majCompte(); return;
+  }
+  r.innerHTML = 'Ces rattachements sont ceux qu&rsquo;aucune r&egrave;gle ne ' +
+    'peut trancher : soit la fiche cite plusieurs visages d&rsquo;une m&ecirc;me ' +
+    'photo, soit le visage d&eacute;sign&eacute; ne ressemble &agrave; personne. ' +
+    'La photo enti&egrave;re est l&agrave; parce qu&rsquo;un fichier n&rsquo;est ' +
+    'pas toujours une sc&egrave;ne &mdash; une page d&rsquo;album porte la ' +
+    'm&ecirc;me personne plusieurs fois. Cette page ne retire rien et ' +
+    'n&rsquo;attribue rien.';
+  pos = CAS.findIndex(function(c){ return !VERD[c.id]; });
+  if (pos < 0) pos = CAS.length;
+  montrer();
+}
+
+function majCompte(){
+  var n = 0, ind = 0;
+  CAS.forEach(function(c){ var v = VERD[c.id];
+    if (v){ n++; if (v.verdict === 'indecidable') ind++; } });
+  document.getElementById('compte').textContent =
+    n + ' / ' + CAS.length + ' jugés' +
+    (ind ? '  ·  ' + ind + ' indécidables' : '');
+  return {n: n, ind: ind};
+}
+
+function majSuite(){
+  var c = CAS[pos]; if (!c) return;
+  var l = SEL[c.id] || [];
+  var cites = c.candidats.filter(function(k){ return k.cite; });
+  var gardes = cites.filter(function(k){ return l.indexOf(k.i) >= 0; }).length;
+  var retires = cites.length - gardes;
+  var ajouts = l.filter(function(i){
+    return !c.candidats.some(function(k){ return k.i === i && k.cite; }); }).length;
+  // Dire la CONSEQUENCE avant le clic, pas le nombre de cases cochees : c'est
+  // ce que la validation produira qui compte, et c'est ce qu'on relit mal.
+  var mots = [];
+  mots.push(gardes + ' gardé' + (gardes > 1 ? 's' : ''));
+  if (retires) mots.push(retires + ' à RETIRER');
+  if (ajouts) mots.push(ajouts + ' à proposer en ajout');
+  document.getElementById('suite').textContent = 'Valider écrira : ' + mots.join('  ·  ');
+  var b = document.getElementById('valider');
+  b.className = 'btn ' + (retires ? 'btn--destructif' : 'btn--confirmer');
+  document.querySelectorAll('.cadre').forEach(function(e){
+    e.setAttribute('data-oui', l.indexOf(+e.dataset.i) >= 0 ? '1' : '0'); });
+}
+
+function basculer(i){
+  var c = CAS[pos]; if (!c) return;
+  var l = SEL[c.id] || (SEL[c.id] = []);
+  var k = l.indexOf(i);
+  if (k < 0) l.push(i); else l.splice(k, 1);
+  document.querySelectorAll('.cand').forEach(function(b){
+    b.setAttribute('aria-pressed', String(l.indexOf(+b.dataset.i) >= 0)); });
+  majSuite();
+}
+
+function montrer(){
+  var carte = document.getElementById('carte'), fin = document.getElementById('fin');
+  var s = majCompte();
+  if (!CAS.length){ carte.hidden = true; fin.hidden = true; return; }
+  if (pos >= CAS.length){
+    carte.hidden = true; fin.hidden = false;
+    document.getElementById('bilan').textContent =
+      s.n + ' cas jugés sur ' + CAS.length +
+      (s.ind ? '  ·  ' + s.ind + ' laissés indécidables' : '');
+    return;
+  }
+  fin.hidden = true; carte.hidden = false;
+  var c = CAS[pos];
+  if (!SEL[c.id]){
+    var v = VERD[c.id];
+    // Rien n'est preselectionne pour un cas neuf : cocher d'avance ce que la
+    // fiche affirme ferait valider l'erreur d'un clic.
+    SEL[c.id] = (v && v.oui) ? v.oui.slice() : [];
+  }
+  var seul = (c.candidats.length === 1);
+  document.getElementById('question').textContent = seul
+    ? 'Ce visage est-il ' + c.person + ' ?'
+    : 'Lequel de ces visages est ' + c.person + ' ?';
+  var manque = c.photo_lisible ? ''
+    : ' Le fichier de cette photo est introuvable sur le NAS : ni vignette, ni ' +
+      'cadres. Juge sur les visages ci-dessous, ou réponds « Je ne sais pas ».';
+  document.getElementById('pourquoi').textContent = (seul
+    ? 'La fiche dit que ce visage est ' + c.person + ', mais il ne ressemble ' +
+      'à personne selon le modèle. Si ce n’est pas elle, le laisser décoché ' +
+      'le marque à retirer.'
+    : 'Cette fiche cite plusieurs visages de la même photo. Regarde la scène : ' +
+      'si c’est une page d’album ou un montage, la même personne peut y être ' +
+      'plusieurs fois, et plusieurs réponses sont justes.') + manque;
+  var img = document.getElementById('photo-img');
+  var scene = document.getElementById('scene');
+  scene.hidden = !c.photo_lisible;
+  img.src = c.photo_lisible ? (c.photo_url || '') : '';
+  img.alt = 'La photo entière, ' + c.candidats.length + ' visage(s) encadré(s)';
+  scene.querySelectorAll('.cadre').forEach(function(e){ e.remove(); });
+  c.candidats.forEach(function(k, n){
+    if (!k.boite) return;
+    var e = document.createElement('div');
+    e.className = 'cadre'; e.dataset.i = k.i; e.setAttribute('data-oui', '0');
+    e.style.left = k.boite[0] + '%'; e.style.top = k.boite[1] + '%';
+    e.style.width = k.boite[2] + '%'; e.style.height = k.boite[3] + '%';
+    e.innerHTML = '<b>' + LETTRES[n] + '</b>';
+    scene.appendChild(e);
+  });
+  document.getElementById('choix').innerHTML = c.candidats.map(function(k, n){
+    return '<button type="button" class="cand" data-i="' + k.i + '" ' +
+      'aria-pressed="false"><img src="' + esc(k.crop_url) + '" alt="Visage ' +
+      LETTRES[n] + ' de la photo, à juger"><span>Visage ' + LETTRES[n] +
+      ' <kbd>' + LETTRES[n] + '</kbd></span><span class="mes">i=' + k.i +
+      '  ·  score ' + (k.sim == null ? '—' : k.sim.toFixed(3)) +
+      (k.cite ? '  ·  cité' : '  ·  non cité') + '</span></button>'; }).join('');
+  document.querySelectorAll('.cand').forEach(function(b){
+    b.addEventListener('click', function(){ basculer(+b.dataset.i); }); });
+  document.getElementById('legref').textContent =
+    'Visages déjà rattachés à ' + c.person + ' (sur d’autres photos)';
+  var refs = document.getElementById('refs');
+  refs.innerHTML = (c.refs_urls && c.refs_urls.length)
+    ? c.refs_urls.map(function(u){
+        return '<img src="' + esc(u) + '" alt="Visage rattaché à ' +
+               esc(c.person) + '">'; }).join('')
+    : '<p class="vide">Aucun visage rattaché ailleurs : juge sur la photo ' +
+      'entière, ou réponds « Je ne sais pas ».</p>';
+  document.getElementById('chiffres').textContent =
+    c.visages + ' visage(s) sur la photo  ·  ' + c.candidats.length +
+    ' candidat(s)  ·  ' + c.pourquoi;
+  document.getElementById('photo').href = c.url || '#';
+  document.querySelectorAll('.cand').forEach(function(b){
+    b.setAttribute('aria-pressed',
+                   String(SEL[c.id].indexOf(+b.dataset.i) >= 0)); });
+  majSuite();
+  document.getElementById('prec').disabled = (pos === 0);
+}
+
+function envoyer(c, verdict, oui){
+  VERD[c.id] = {verdict: verdict, key: c.key, person: c.person, oui: oui};
+  pos++; montrer();
+  fetch('/api/residu/juger', {method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({key: c.key, person: c.person, verdict: verdict,
+                          oui: oui, candidats: c.candidats.map(function(k){
+                            return k.i; })})
+  }).catch(function(){
+    document.getElementById('rappel').innerHTML =
+      'Le serveur n&rsquo;a pas enregistr&eacute; ce jugement. V&eacute;rifie ' +
+      'qu&rsquo;il tourne, puis recharge : ce qui est &eacute;crit est gard&eacute;.';
+  });
+}
+
+document.getElementById('valider').addEventListener('click', function(){
+  var c = CAS[pos]; if (c) envoyer(c, 'juge', (SEL[c.id] || []).slice()); });
+document.getElementById('sais-pas').addEventListener('click', function(){
+  var c = CAS[pos]; if (c) envoyer(c, 'indecidable', []); });
+document.getElementById('prec').addEventListener('click', function(){
+  if (pos > 0){ pos--; montrer(); } });
+document.getElementById('revoir').addEventListener('click', function(){
+  pos = 0; montrer(); });
+document.addEventListener('keydown', function(e){
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+  var c = CAS[pos];
+  var n = LETTRES.indexOf((e.key || '').toUpperCase());
+  if (n >= 0 && !e.ctrlKey && !e.metaKey && !e.altKey){
+    if (!c) return;
+    var k = c.candidats[n];
+    if (k){ e.preventDefault(); basculer(k.i); }
+  } else if (e.key === 'Enter'){
+    if (c) envoyer(c, 'juge', (SEL[c.id] || []).slice());
+  } else if (e.key === '0'){
+    if (c) envoyer(c, 'indecidable', []);
+  } else if (e.key === 'z' || e.key === 'Z'){
+    if (pos > 0){ pos--; montrer(); }
+  }
+});
+fetch('/api/residu/list').then(function(r){ return r.json(); }).then(chargee)
+  .catch(function(){
+    document.getElementById('rappel').textContent =
+      'Impossible de lire les cas : le serveur n\u2019a pas répondu.'; });
+</script>
+</body>
+</html>

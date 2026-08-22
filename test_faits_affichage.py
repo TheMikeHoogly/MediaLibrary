@@ -25,6 +25,8 @@ import io
 import os
 import unittest
 
+import ui_gabarits
+
 SERVER = os.path.join(os.path.dirname(os.path.abspath(__file__)), "server.py")
 
 
@@ -182,8 +184,13 @@ class TestCablage(unittest.TestCase):
     oublié, et la ligne disparaît sans erreur — sur une page seulement."""
 
     def setUp(self):
+        # Le source du serveur ET les gabarits : depuis le point 7, le JS des
+        # pages vit dans `ui/pages/`. Chercher une ligne de JS dans le seul
+        # `server.py` ne prouverait plus rien — le test passerait au vert le
+        # jour où la page aurait disparu.
         with io.open(SERVER, encoding="utf-8") as f:
             self.src = f.read()
+        self.src += "\n".join(ui_gabarits.tous().values())
 
     def test_les_quatre_constructeurs_portent_les_faits(self):
         self.assertEqual(self.src.count("'jour': _jour_de("),

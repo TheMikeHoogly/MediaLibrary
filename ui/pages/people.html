@@ -1,0 +1,872 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Personnes</title>
+<style>
+/* Etape A tokenisation « chambre noire ». Barre/cartes/clusters = tokens
+   (--salle-2 barre, --salle-3 cellules). Bouton primaire = papier ; focus =
+   veilleuse ; boutons destructifs (warn, retrait) = encre. Panneaux de nommage
+   gardes en sombre pour l'etape A (le passage « papier » = redesign etape B).
+   Structure/espacements/12a inchanges.
+   Etape B (10/08) : espacements/rayons/tailles qui EGALENT un token pointent
+   vers lui (rendu identique). Divergences design tranchees : #222 (fond de
+   vignette, gris froid) -> --salle-3 (placeholder d'image standard) ; #f0a35b
+   (« hesite avec X ») -> --veilleuse (incertitude IA) — voir le JS. */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: var(--f-texte);
+       background: var(--salle); color: var(--texte); }
+.bar { display: flex; align-items: center; gap: var(--e-3); padding: var(--e-3) var(--e-4);
+       background: var(--salle-2); border-bottom: var(--trait); flex-wrap: wrap; }
+.bar a { color: var(--texte); text-decoration: none; font-size: var(--t-md); }
+.bar .sp { margin-left: auto; }
+h2 { font-size: var(--t-md); padding: var(--e-4) var(--e-4) 6px; color: var(--texte); }
+h2 .c { color: var(--graphite); font-size: var(--t-sm); font-weight: normal; }
+.msg { padding: var(--e-2) var(--e-4); color: var(--graphite); font-size: var(--t-sm); }
+button { font-family: inherit; }
+.btn { padding: var(--e-2) var(--e-4); border: var(--trait); border-radius: var(--r-md);
+       background: var(--salle-3); color: var(--texte); font-size: var(--t-sm); cursor: pointer; }
+.btn.prim { background: var(--papier); border-color: var(--papier); color: var(--texte-papier); }
+.people { display: flex; flex-wrap: wrap; gap: var(--e-3); padding: var(--e-2) var(--e-4) var(--e-3); }
+.pcard { background: var(--salle-3); border: var(--trait); border-radius: var(--r-md);
+         padding: var(--e-3); width: 150px; text-align: center; }
+.pcard img { width: 90px; height: 90px; object-fit: cover; border-radius: 50%;
+             background: var(--salle-3); }
+.pcard .nm { margin-top: var(--e-2); font-weight: 600; font-size: var(--t-md); }
+.pcard .ct { color: var(--graphite); font-size: var(--t-xs); margin-bottom: var(--e-2); }
+.clus { padding: var(--e-2) var(--e-4); }
+.cl { background: var(--salle-3); border: var(--trait); border-radius: var(--r-md);
+      padding: var(--e-3); margin-bottom: var(--e-3); }
+/* Tri au clavier : la carte « en cours de decision » porte l'anneau veilleuse. */
+.cl.active { outline: 2px solid var(--veilleuse); outline-offset: 2px; }
+.kbd-hint { color: var(--graphite); font-size: var(--t-xs); font-family: var(--f-donnees); }
+.kbd-hint b { color: var(--texte); font-weight: 600; }
+.cl .faces { display: flex; flex-wrap: wrap; gap: var(--e-1); margin-bottom: var(--e-2); }
+.cl .faces img { width: 66px; height: 66px; object-fit: cover; border-radius: var(--r-md);
+                 background: var(--salle-3); }
+.cl .row { display: flex; gap: var(--e-2); align-items: center; flex-wrap: wrap; }
+/* 12a — la rangee d'actions ne doit jamais deborder : enfants qui retrecissent,
+   champ elastique, et repli vertical (actions pleine largeur) sous 900px. */
+.cl .row > * { min-width: 0; }
+.cl .row .sz { color: var(--graphite); font-size: var(--t-sm); flex: 1 1 12rem; margin-right: auto;
+               overflow-wrap: anywhere; }
+.cl .row .qui { flex: 1 1 150px; min-width: 120px; }
+.cl .row input[type=text] { flex: 1 1 12rem; }
+.cl .row .btn, .cl .row .qui, .cl .row input[type=text] { min-height: 44px; }
+@media (max-width: 900px) {
+  .cl .row { align-items: stretch; }
+  .cl .row .sz { flex-basis: 100%; }
+  .cl .row .btn, .cl .row .qui, .cl .row input[type=text] { flex-basis: 100%; width: 100%; }
+  .cl .row > img { align-self: flex-start; }
+}
+/* Cible aussi .qui : un des inputs .qui n'a pas d'attribut type, donc
+   input[type=text] seul le ratait -> champ blanc par defaut (bug reel). */
+input[type=text], input.qui { padding: var(--e-2) var(--e-3); border-radius: var(--r-md); border: var(--trait);
+                   background: var(--salle-3); color: var(--texte); font-size: var(--t-sm); }
+input[type=text]:focus, input.qui:focus { border-color: var(--veilleuse); }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(90px,1fr));
+        gap: var(--e-1); }
+.prop { position: relative; }
+.prop img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: var(--r-md);
+            background: var(--salle-3); display: block; }
+.prop input { position: absolute; top: 4px; left: 4px; width: 18px; height: 18px; }
+.prop .s { position: absolute; bottom: 2px; right: 4px; font-size: var(--t-xs); font-family: var(--f-donnees);
+           color: var(--texte); background: rgba(0,0,0,.55); padding: 0 3px; border-radius: var(--r-sm); }
+.note { padding: var(--e-2) var(--e-4) var(--e-6); color: var(--graphite); font-size: var(--t-sm); line-height: 1.5; }
+/* scroll-margin : la nav sticky (z50) ne doit pas recouvrir le haut du panneau
+   quand scrollIntoView l'amene en haut de l'ecran. */
+#panel { margin: 0 var(--e-4) var(--e-3); scroll-margin-top: 72px; }
+/* ancres des files de travail (liens profonds depuis /sujets Classification) :
+   meme protection contre la nav sticky (+ sous-nav Sujets). */
+#groupes, #inconnus { scroll-margin-top: 118px; }
+#panel .box { background: var(--salle-3); border: var(--trait); border-radius: var(--r-md);
+              padding: var(--e-3); }
+#panel h3 { font-size: var(--t-md); margin-bottom: var(--e-1); }
+#panel .acts { display: flex; gap: var(--e-2); flex-wrap: wrap; margin: var(--e-2) 0; }
+.btn.warn { background: transparent; border-color: var(--encre); color: var(--encre); }
+.prop .x { position: absolute; top: 3px; right: 4px; background: var(--encre);
+           color: #fff; border: none; border-radius: var(--r-sm); font-size: var(--t-xs);
+           padding: 1px 5px; cursor: pointer; }
+.pcard { cursor: pointer; }
+/* ── diaporama d'une personne ── */
+#pslide { display: none; position: fixed; inset: 0; z-index: 500; background: #000;
+          flex-direction: column; }
+#pslide.open { display: flex; }
+#ps-img { flex: 1; min-height: 0; width: 100%; object-fit: contain; }
+#ps-bar { display: flex; align-items: center; gap: var(--e-3); padding: var(--e-3) var(--e-4);
+          background: var(--salle); }
+#ps-cap { flex: 1; color: var(--graphite); font-size: var(--t-sm); overflow: hidden;
+          text-overflow: ellipsis; white-space: nowrap; }
+#ps-folder { color: var(--texte); background: var(--salle-3); border: var(--trait);
+             border-radius: var(--r-md); padding: 6px var(--e-3); font-size: var(--t-sm);
+             text-decoration: none; white-space: nowrap; flex-shrink: 0;
+             max-width: 40vw; overflow: hidden; text-overflow: ellipsis; }
+#ps-folder:hover { background: var(--salle-2); }
+#ps-folder.hidden { display: none; }
+#ps-seek { display: none; position: absolute; left: 16px; bottom: 60px; z-index: 3;
+           width: 38vw; max-width: 420px; accent-color: var(--veilleuse); cursor: pointer;
+           background: rgba(0,0,0,0.35); border-radius: var(--r-md); }
+#ps-bar button { background: var(--salle-3); color: #fff; border: var(--trait);
+                 border-radius: var(--r-md); padding: var(--e-2) var(--e-4); font-size: var(--t-md); cursor: pointer; }
+/* ── nommer rapidement ── */
+#quickname { display: none; position: fixed; inset: 0; z-index: 600;
+             background: rgba(0,0,0,.85); padding: 20px; overflow: auto; }
+#quickname.open { display: block; }
+/* Etape B — deux registres : la modale « nommer rapidement » est une SURFACE
+   DE TRAVAIL (papier), posee sur un scrim sombre. Champ clair, boutons adaptes
+   au fond clair ; « Nommer » = fixateur (confirmation humaine). */
+.qn-card { max-width: 900px; margin: 20px auto; background: var(--papier);
+           color: var(--texte-papier); border: 1px solid var(--papier-2);
+           border-radius: var(--r-md); padding: var(--e-4);
+           box-shadow: 0 1px 0 var(--papier-2), 0 12px 40px #000a; }
+.qn-h { font-size: var(--t-md); color: var(--texte-papier); margin-bottom: var(--e-3); }
+.qn-faces { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px,1fr));
+            gap: var(--e-1); margin-bottom: var(--e-3); }
+.qn-faces img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: var(--r-md); background: var(--papier-2); }
+#qn-actions { display: flex; gap: var(--e-2); align-items: center; flex-wrap: wrap; }
+#qn-input { flex: 1; min-width: 200px; padding: var(--e-2) var(--e-3); border-radius: var(--r-md);
+            border: 1px solid var(--papier-2); background: #fff; color: var(--texte-papier); font-size: var(--t-md); }
+#qn-input:focus { border-color: var(--veilleuse); }
+/* Controles sur papier : boutons a contour, primaire = fixateur (confirmer). */
+.qn-card .btn { background: transparent; border-color: var(--graphite-p); color: var(--texte-papier); }
+.qn-card .btn.prim { background: var(--fixateur); border-color: var(--fixateur); color: #fff; }
+</style>
+</head>
+<body>
+<!--APPNAV-->
+<!--SUJETSNAV-->
+<div class="bar">
+  <span class="sp"></span>
+  <button class="btn" id="recluster">&#128260; Regrouper</button>
+</div>
+
+<!-- Personnes deja identifiees EN TETE : c'est le point de depart de la revue
+     (voir un nom connu, puis le corriger). Le panneau de correction #panel est
+     place AVANT la grille : la grille se peint par lots au scroll
+     (renderInBatches), donc tout element place APRES elle recule a chaque lot —
+     le scrollIntoView de « Gerer » chassait une cible mouvante et n'atterrissait
+     jamais (regression signalee 12/08 : « plus rien ne se passe »). Avant la
+     grille, la position du panneau est stable ; les lots se peignent dessous.
+     Les files de travail (groupes / inconnus) restent SOUS ce bloc, pour la
+     meme raison (un lot peint toujours sous la zone de travail). La file
+     « A verifier » a migre vers /sujets?vue=classification (12/08).
+     Le filtre garde la liste compacte malgre les ~324 fiches, et l'ancre
+     « Aller aux groupes » evite de tout scroller. -->
+<h2 style="display:flex;align-items:center;gap:var(--e-2);flex-wrap:wrap">Personnes nommées <span class="c" id="pc"></span>
+  <input type="text" id="pfilter" placeholder="Filtrer par nom&hellip;" autocomplete="off"
+         aria-label="Filtrer les personnes par nom" style="flex:0 1 220px;max-width:220px">
+  <a href="#groupes" class="btn" style="font-size:var(--t-xs);padding:var(--e-1) var(--e-2);margin-left:auto;text-decoration:none">Aller aux groupes &#8595;</a></h2>
+<div id="panel"></div>
+<div class="people" id="people"></div>
+
+<div class="note">Clique une personne pour voir ses photos et corriger les faux
+  positifs. Fiche polluée (ex. trop de faux positifs apr&egrave;s avoir tagu&eacute; des
+  profils) ? &laquo;&nbsp;&#129529; Nettoyer (r&eacute;f&eacute;rence)&nbsp;&raquo; recalcule sa signature &agrave;
+  partir de 3 &agrave; 6 photos nettes, puis retire d'un coup les photos sous le seuil
+  de ressemblance.</div>
+
+<!-- La file « À vérifier » a QUITTÉ cette page (12/08) : elle vit maintenant
+     dans /sujets?vue=classification, aux côtés de celle des animaux — un seul
+     endroit où juger, un seul compteur de séance. Cette page garde ce qui lui
+     est propre : fiches, correction, groupes, inconnus. -->
+<div class="note">Les propositions &agrave; v&eacute;rifier (visages incertains, faux positifs,
+  fusions) se jugent d&eacute;sormais dans
+  <a href="/sujets?vue=classification#verifier" style="color:var(--texte)">Sujets &rsaquo; Classification</a>,
+  avec celles des animaux.</div>
+
+<h2 id="groupes">Groupes à nommer <span class="c" id="cc"></span>
+  <button class="btn" id="quickbtn" style="font-size:var(--t-xs);padding:var(--e-1) var(--e-2);margin-left:var(--e-2)">&#9889; Nommer rapidement</button></h2>
+<div class="msg" id="clmsg">Chargement&hellip;</div>
+<div class="clus" id="clusters"></div>
+
+<h2 id="inconnus">Inconnus (archiv&eacute;s) <span class="c" id="inc"></span>
+  <button class="btn" id="inbtn" style="font-size:var(--t-xs);padding:var(--e-1) var(--e-2);margin-left:var(--e-2)">Afficher</button></h2>
+<div class="msg" id="inmsg">Visages mis de c&ocirc;t&eacute; pour un re-tag ult&eacute;rieur. Nommer un groupe le sort des inconnus ; &laquo;&nbsp;R&eacute;activer&nbsp;&raquo; le renvoie dans &laquo;&nbsp;Groupes &agrave; nommer&nbsp;&raquo;.</div>
+<div class="clus" id="inconnus"></div>
+
+<div id="pslide">
+  <img id="ps-img" alt="">
+  <input type="range" id="ps-seek" min="0" value="0" step="1" title="Aller à une photo">
+  <div id="ps-bar">
+    <span id="ps-cap"></span>
+    <a id="ps-folder" class="hidden" href="#" title="Ouvrir le dossier d'origine"></a>
+    <button id="ps-prev" title="Précédente">&#9664;</button>
+    <button id="ps-pause" title="Pause">&#10073;&#10073;</button>
+    <button id="ps-next" title="Suivante">&#9654;</button>
+    <button id="ps-close" title="Fermer">&#10005;</button>
+  </div>
+</div>
+
+<div id="quickname">
+  <div class="qn-card">
+    <div id="qn-body"></div>
+    <div id="qn-actions">
+      <input type="text" id="qn-input" placeholder="Nom de la personne (ou vide pour ignorer)" autocomplete="off">
+      <button class="btn prim" id="qn-name">Nommer &amp; suivant</button>
+      <button class="btn" id="qn-skip">Ignorer</button>
+      <button class="btn" id="qn-close" style="margin-left:auto">Fermer</button>
+    </div>
+  </div>
+</div>
+
+<script>
+function esc(s){return (s||'').replace(/[&<>"]/g,function(c){
+  return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+function post(url,obj){return fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},
+  body:JSON.stringify(obj||{})}).then(function(r){return r.json();});}
+
+function carteP(p){
+  var d=document.createElement('div'); d.className='pcard';
+  d.innerHTML=(p.crop?'<img loading="lazy" src="'+esc(p.crop)+'">':'<div style="height:90px"></div>')+
+    '<div class="nm">'+esc(p.name)+'</div>'+
+    '<div class="ct">'+p.photos+' photo'+(p.photos>1?'s':'')+'</div>'+
+    '<button class="btn">Gérer</button>';
+  d.onclick=function(){openPerson(p);};
+  return d;
+}
+// Liste complete gardee en memoire : le filtre re-rend un SOUS-ENSEMBLE sans
+// refrapper le serveur. Filtre insensible casse ET accents (normalize NFD).
+var ALL_PEOPLE=[];
+function _norm(s){ return (s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,''); }
+function renderPeople(){
+  var q=_norm(document.getElementById('pfilter').value.trim());
+  var list=q?ALL_PEOPLE.filter(function(p){return _norm(p.name).indexOf(q)>=0;}):ALL_PEOPLE;
+  var el=document.getElementById('people'); el.innerHTML='';
+  if(!list.length){ el.innerHTML='<div class="msg">'+(q?'Aucune personne ne correspond au filtre.':'Aucune personne nommée pour l\'instant.')+'</div>'; return; }
+  renderInBatches(el, list, carteP);
+}
+function loadPeople(){
+  fetch('/api/people/list').then(function(r){return r.json();}).then(function(d){
+    ALL_PEOPLE=d.people||[];
+    document.getElementById('pc').textContent=ALL_PEOPLE.length?('('+ALL_PEOPLE.length+')'):'';
+    renderPeople();
+    // Lien profond depuis /sujets : ?name=X ouvre directement la fiche.
+    try{ var _n=new URLSearchParams(location.search).get('name');
+      if(_n){ var _nl=_n.toLowerCase();
+        var _p=ALL_PEOPLE.filter(function(x){return String(x.name).toLowerCase()===_nl;})[0];
+        if(_p){ openPerson(_p);
+          var _pn=document.getElementById('panel');
+          if(_pn){ try{ _pn.scrollIntoView({block:'start'}); }catch(e){} } } } }catch(e){}
+  });
+}
+
+function openPerson(p){
+  var panel=document.getElementById('panel');
+  panel.innerHTML='<div class="box"><h3>'+esc(p.name)+' <span style="color:var(--graphite);font-weight:normal;font-size:var(--t-sm)">'+
+    p.photos+' photo'+(p.photos>1?'s':'')+'</span></h3>'+
+    '<div class="acts">'+
+    '<button class="btn prim" id="a-ss">▶ Chronologique</button>'+
+    '<button class="btn" id="a-ssr">🔀 Aléatoire</button>'+
+    '<button class="btn" id="a-ssa">🔗 Association</button>'+
+    '<button class="btn" id="a-find">Chercher d\'autres photos</button>'+
+    '<button class="btn" id="a-corr">Corriger (retirer des photos)</button>'+
+    '<button class="btn" id="a-clean">🧹 Nettoyer (référence)</button>'+
+    '<button class="btn" id="a-ren">Renommer</button>'+
+    '<button class="btn warn" id="a-del">Supprimer</button>'+
+    '<button class="btn" id="a-close" style="margin-left:auto">Fermer</button>'+
+    '</div><div id="a-box"></div></div>';
+  var box=document.getElementById('a-box');
+  document.getElementById('a-ss').onclick=function(){startPersonSlideshow(p.name,'seq');};
+  document.getElementById('a-ssr').onclick=function(){startPersonSlideshow(p.name,'rnd');};
+  document.getElementById('a-ssa').onclick=function(){startPersonSlideshow(p.name,'assoc');};
+  document.getElementById('a-find').onclick=function(){findMore(p.name,box);};
+  document.getElementById('a-corr').onclick=function(){correctPhotos(p.name,box);};
+  document.getElementById('a-clean').onclick=function(){cleanPerson(p.name,box);};
+  document.getElementById('a-close').onclick=function(){panel.innerHTML='';};
+  document.getElementById('a-ren').onclick=function(){
+    var nn=prompt('Nouveau nom pour « '+p.name+' » :',p.name); if(!nn||!nn.trim())return;
+    post('/api/people/rename',{old:p.name,new:nn.trim()}).then(function(r){
+      panel.innerHTML=''; loadPeople();
+    });
+  };
+  document.getElementById('a-del').onclick=function(){
+    if(!confirm('Supprimer « '+p.name+' » et retirer son nom de toutes ses photos ?'))return;
+    post('/api/people/delete',{name:p.name}).then(function(r){ panel.innerHTML=''; loadPeople(); });
+  };
+  panel.scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+// Carte photo cochable (label + case + vignette + score). Construite en noeuds
+// DOM (pas de innerHTML) : compatible rendu par lots renderInBatches, et pas de
+// souci d'echappement. `checked` = etat initial de la case.
+function _photoCard(f, checked){
+  var lab=document.createElement('label'); lab.className='prop';
+  var cb=document.createElement('input'); cb.type='checkbox'; cb.checked=!!checked;
+  cb.setAttribute('data-k', f.key); if(f.sim!=null) cb.setAttribute('data-s', f.sim);
+  var a=document.createElement('a'); a.href=f.url||'#'; a.target='_blank'; a.rel='noopener';
+  a.addEventListener('click', function(e){ e.stopPropagation(); });
+  var img=document.createElement('img'); img.loading='lazy'; img.src=f.crop_url||f.url;
+  a.appendChild(img); lab.appendChild(cb); lab.appendChild(a);
+  if(f.sim!=null){ var s=document.createElement('span'); s.className='s'; s.textContent=f.sim; lab.appendChild(s); }
+  return lab;
+}
+
+// Vue partagee « retirer par seuil » : liste triee du moins au plus
+// ressemblant, seuil ajustable, compteur en direct, retrait de masse PILOTE PAR
+// LES DONNEES (fiable meme si la grille n'est peinte que par lots). Utilisee par
+// « Nettoyer (reference) » (signature propre) et « Corriger » (signature
+// actuelle). `container` = element ou tout est rendu ; `note` = entete optionnel.
+function scoredRemoval(container, name, ph, defThr, noteHtml){
+  container.innerHTML=(noteHtml||'')+
+    '<div class="msg" style="color:var(--graphite)">'+ph.length+
+    ' photo(s), du moins au plus ressemblant. Seuil '+
+    '<input type="number" id="thr" value="'+defThr+'" step="0.05" min="0" max="1" style="width:74px"> '+
+    '&rarr; <b id="belowc">0</b> sous le seuil (cochées ci-dessous, décoche pour épargner).</div>'+
+    '<div class="grid" id="cgrid"></div>'+
+    '<button class="btn warn" id="rm" style="margin-top:8px">Retirer &laquo; '+esc(name)+' &raquo; des photos sous le seuil</button>';
+  var cg=container.querySelector('#cgrid');
+  function below(){ var t=parseFloat(container.querySelector('#thr').value)||0;
+    return ph.filter(function(f){ return (f.sim!=null?f.sim:1)<t; }); }
+  function refresh(){ var b=below(); container.querySelector('#belowc').textContent=b.length;
+    renderInBatches(cg, b, function(f){ return _photoCard(f, true); }); }
+  container.querySelector('#thr').addEventListener('input', refresh);
+  container.querySelector('#rm').onclick=function(){
+    // Cartes peintes : on respecte leur case (decochee = epargnee). Cartes non
+    // encore peintes (rendu par lots) : incluses par defaut.
+    var painted={}; cg.querySelectorAll('input').forEach(function(c){ painted[c.getAttribute('data-k')]=c.checked; });
+    var keys=[]; below().forEach(function(f){ if(!(f.key in painted) || painted[f.key]) keys.push(f.key); });
+    if(!keys.length) return;
+    if(!confirm('Retirer « '+name+' » de '+keys.length+' photo(s) sous le seuil ?\nCes photos ne seront plus re-proposées automatiquement.')) return;
+    var btn=container.querySelector('#rm'); btn.disabled=true; btn.textContent='Retrait en cours…';
+    post('/api/people/untag',{name:name,keys:keys}).then(function(r){
+      container.innerHTML='<div class="msg">&#10003; '+r.removed+' photo(s) retir&eacute;e(s). Elles n\'apparaissent plus et ne seront pas re-taggu&eacute;es.</div>'; loadPeople();
+    });
+  };
+  refresh();
+}
+
+function cleanPerson(name,box){
+  box.innerHTML='<div class="msg">Choisis <b>3 à 6</b> photos <b>nettes et de face</b> de '+esc(name)+
+    ' comme référence (clique dessus) — ci-dessous, ses photos <b>les plus ressemblantes d\'abord</b>, donc les vraies. Elles redéfinissent sa signature « propre », sans les profils. Puis « Analyser ».</div>'+
+    '<div class="grid" id="refgrid"><div class="msg">Chargement des photos les plus ressemblantes&hellip;</div></div>'+
+    '<button class="btn prim" id="anz" style="margin-top:8px">Analyser avec cette référence</button>'+
+    '<div id="clean-res"></div>';
+  var sel={};
+  // order=best : les photos les PLUS ressemblantes d'abord. Sur une fiche
+  // polluee, un echantillon « pire d'abord » ne montrerait que des faux
+  // positifs -> impossible d'y choisir une vraie photo de reference.
+  fetch('/api/people/photos?name='+encodeURIComponent(name)+'&limit=80&order=best').then(function(r){return r.json();}).then(function(d){
+    var g=document.getElementById('refgrid'); g.innerHTML='';
+    var photos=d.photos||[];
+    if(!photos.length){ g.innerHTML='<div class="msg">Aucune photo &agrave; afficher.</div>'; return; }
+    photos.forEach(function(f){
+      var img=f.crop_url||f.url; var el=document.createElement('div'); el.className='prop';
+      el.innerHTML='<img loading="lazy" src="'+esc(img)+'">';
+      el.onclick=function(){
+        if(sel[f.key]){ delete sel[f.key]; el.style.outline=''; }
+        else { if(Object.keys(sel).length>=6) return; sel[f.key]=1; el.style.outline='3px solid var(--fixateur)'; }
+      };
+      g.appendChild(el);
+    });
+  }).catch(function(){
+    document.getElementById('refgrid').innerHTML='<div class="msg">Impossible de charger l\'&eacute;chantillon. R&eacute;essaie.</div>';
+  });
+  document.getElementById('anz').onclick=function(){
+    var refs=Object.keys(sel);
+    if(!refs.length){ alert('Choisis au moins une photo de référence.'); return; }
+    var res=document.getElementById('clean-res');
+    res.innerHTML='<div class="msg" style="display:flex;align-items:center;gap:var(--e-2)">'+
+      '<span class="netbusy__s"></span><span>Analyse de <b>'+esc(name)+'</b> en cours&hellip; on re-score '+
+      '<b>toutes</b> ses photos avec la nouvelle référence. Le sablier en bas à droite confirme que ça travaille.</span></div>';
+    res.scrollIntoView({behavior:'smooth',block:'center'});
+    post('/api/people/setref',{name:name,ref_keys:refs}).then(function(){
+      return post('/api/people/refscore',{name:name,ref_keys:refs});
+    }).then(function(d){
+      scoredRemoval(res, name, (d.photos||[]), 0.35, null);
+    }).catch(function(e){
+      res.innerHTML='<div class="msg">Échec de l\'analyse : '+esc(String((e&&e.message)||e))+'. R&eacute;essaie.</div>';
+    });
+  };
+}
+
+function correctPhotos(name,box){
+  box.innerHTML='<div class="msg" style="display:flex;align-items:center;gap:var(--e-2)"><span class="netbusy__s"></span>'+
+    '<span>Chargement et scoring de <b>toutes</b> les photos de '+esc(name)+'&hellip;</span></div>';
+  // On charge TOUTE la fiche (le scoring est vectorise -> rapide), en mode leger
+  // (pas de dossier/mots-cles : inutiles ici), pour que le tri par seuil couvre
+  // l'ensemble, pas seulement un sous-ensemble.
+  fetch('/api/people/photos?name='+encodeURIComponent(name)+'&limit=50000&light=1').then(function(r){return r.json();}).then(function(d){
+    var ph=d.photos||[];
+    if(!ph.length){ box.innerHTML='<div class="msg">Aucune photo.</div>'; return; }
+    var note='<div class="msg">Scores selon la signature <b>actuelle</b> de '+esc(name)+
+      ' (encore polluée). Règle le seuil pour cocher d\'un coup les faux positifs sous ce score, puis retire. '+
+      'Pour une séparation plus fine, &laquo; &#129529; Nettoyer (r&eacute;f&eacute;rence) &raquo; recalcule d\'abord une signature propre.</div>';
+    scoredRemoval(box, name, ph, 0.2, note);
+  }).catch(function(e){
+    box.innerHTML='<div class="msg">Échec du chargement : '+esc(String((e&&e.message)||e))+'. R&eacute;essaie.</div>';
+  });
+}
+
+function findMore(name,box){
+  box.innerHTML='<div class="msg">Recherche&hellip;</div>';
+  post('/api/people/find',{name:name}).then(function(d){
+    var pr=d.proposals||[];
+    if(!pr.length){ box.innerHTML='<div class="msg">Aucune nouvelle photo trouvée.</div>'; return; }
+    var html='<div style="margin:var(--e-2) 0;font-size:var(--t-sm);color:var(--graphite)">'+pr.length+
+      ' proposition(s) — décoche les erreurs :</div><div class="grid">';
+    pr.forEach(function(f,i){
+      html+='<label class="prop"><input type="checkbox" checked data-k="'+esc(f.key)+'">'+
+        '<img loading="lazy" src="'+esc(f.crop_url)+'"><span class="s">'+f.sim+'</span></label>';
+    });
+    html+='</div><button class="btn prim" style="margin-top:8px">Valider la sélection</button>';
+    box.innerHTML=html;
+    box.querySelector('button').onclick=function(){
+      var keys=[]; box.querySelectorAll('input:checked').forEach(function(c){keys.push(c.getAttribute('data-k'));});
+      if(!keys.length){ box.innerHTML='<div class="msg">Rien de sélectionné.</div>'; return; }
+      post('/api/people/confirm',{name:name,keys:keys}).then(function(r){
+        box.innerHTML='<div class="msg">✓ '+r.tagged+' photo(s) attribuée(s) à '+esc(name)+'.</div>';
+        loadPeople();
+      });
+    };
+  });
+}
+
+/* ---- Attribution unifiée des groupes (miroir de la page Animaux) --------
+   Vignettes sélectionnables : on traite un groupe mixte (nuques + découpes de
+   chat) sans « scinder ». Un rejet est une attribution à une cible spéciale :
+   « Ce n'est pas un visage » (découpe de chat/objet → hors pipeline visages),
+   « Rejeter le groupe » (vrais visages non regroupables). Tout est réversible. */
+/* Cibles spéciales de rejet, dans l'ordre d'affichage. « C'est un animal »
+   et « Ce n'est pas un visage » pointent la même cible (__pas_visage__, écart
+   réversible du pipeline visages) : deux libellés d'INTENTION distincts pour le
+   même geste. Le premier traite explicitement le cas Mutz (chien/chat détecté
+   comme visage), miroir du « C'est une personne » ajouté côté Animaux. */
+var SPECIAUX_P=[
+  {v:'__pas_visage__', t:'C’est un animal (pas une personne)',
+   d:'chien ou chat détecté comme visage — ex. Mutz'},
+  {v:'__pas_visage__', t:'Ce n’est pas un visage',
+   d:'objet, statue, reflet — écarté du pipeline visages'},
+  {v:'__inconnu__', t:'C’est un inconnu (archiver)',
+   d:'vrai visage, personne non reconnue — à re-tagger plus tard'}
+];
+function carteGroupeP(c){
+  var el=document.createElement('div'); el.className='cl';
+  var membres=c.membres||[];
+  var sel=membres.map(function(){return true;});
+  el.innerHTML='<div class="sz" style="color:var(--graphite);font-size:var(--t-sm);margin-bottom:var(--e-2)">'+c.size+
+      ' visage(s) <span style="color:var(--graphite)">— clique une vignette pour la désélectionner</span></div>'+
+    '<div class="faces"></div>'+
+    '<div class="row"><input type="text" class="qui" placeholder="C’est… (nom de la personne)" autocomplete="off">'+
+    '<button class="btn prim nommer">Attribuer</button>'+
+    '<button class="btn warn rejeter">Rejeter le groupe</button>'+
+    '<button class="btn archiver" title="Sortir ce groupe de la file, à re-tagger plus tard">Archiver (inconnu)</button></div>'+
+    '<div class="props2" style="margin-top:6px"></div>';
+  var zone=el.querySelector('.faces');
+  (c.crops||[]).forEach(function(u,i){
+    var b=document.createElement('button'); b.type='button';
+    b.style.cssText='padding:0;border:none;background:none;cursor:pointer;position:relative;line-height:0';
+    b.innerHTML='<img loading="lazy" src="'+esc(u)+'" alt="">';
+    function paint(){ b.setAttribute('aria-pressed',sel[i]?'true':'false');
+      b.style.opacity=sel[i]?'1':'.35';
+      b.style.outline=sel[i]?'2px solid var(--fixateur)':'none'; b.style.outlineOffset='-2px'; }
+    b.onclick=function(){ sel[i]=!sel[i]; paint(); maj(); };
+    paint(); zone.appendChild(b);
+  });
+  var inp=el.querySelector('input'), btn=el.querySelector('.nommer'),
+      rej=el.querySelector('.rejeter'), arch=el.querySelector('.archiver'),
+      props=el.querySelector('.props2');
+  function choisis(){ return membres.filter(function(_m,i){return sel[i];}); }
+  function maj(){ btn.textContent='Attribuer '+choisis().length; }
+  function envoyer(cible, tous){
+    var m=tous?membres:choisis();
+    if(!m.length){ inp.focus(); return; }
+    // Deux personnes sur la même vignette : plusieurs noms séparés par « , » ou « + ».
+    if(typeof cible==='string' && /[,+]/.test(cible))
+      cible=cible.split(/\s*[,+]\s*/).filter(Boolean);
+    btn.disabled=true; rej.disabled=true; if(arch) arch.disabled=true;
+    post('/api/assign',{genre:'visage',membres:m,cible:cible}).then(function(r){
+      btn.disabled=false; rej.disabled=false; if(arch) arch.disabled=false;
+      if(!r.ok){ props.textContent=r.erreur||'échec'; return; }
+      toastP(r.libelle||'fait', r.jeton, function(){ loadClusters(true); loadPeople(); loadInconnus(true); });
+      if(m.length>=membres.length){ el.remove(); } else { loadClusters(true); }
+      loadPeople(); loadInconnus(true);
+    }).catch(function(e){ btn.disabled=false; rej.disabled=false; if(arch) arch.disabled=false;
+      props.textContent='Le serveur n a pas repondu. Reessaie dans un instant.'; });
+  }
+  function listeProps(){
+    var t=inp.value.trim().toLowerCase();
+    nomsPersonnes().then(function(noms){
+      props.innerHTML='';
+      noms.filter(function(p){return !t||p.nom.toLowerCase().indexOf(t)===0;})
+        .slice(0,4).forEach(function(p){ props.appendChild(prop(p.nom+' · '+p.n, p.nom)); });
+      if(t && !noms.some(function(p){return p.nom.toLowerCase()===t;}))
+        props.appendChild(prop('Nouveau : '+inp.value.trim(), inp.value.trim()));
+      if(!t) SPECIAUX_P.forEach(function(s){ props.appendChild(prop(s.t+' — '+s.d, s.v)); });
+    });
+  }
+  function prop(txt,val){
+    var b=document.createElement('button'); b.className='btn';
+    b.style.cssText='display:block;width:100%;text-align:left;margin:2px 0;font-size:12.5px';
+    b.textContent=txt; b.onclick=function(){ envoyer(val,false); }; return b;
+  }
+  inp.addEventListener('input',listeProps);
+  // IMPORTANT : ne PAS peupler les propositions au chargement. Chaque appel a
+  // /api/names?genre=personne declenche un scan lourd cote serveur ; le faire
+  // pour chaque groupe en meme temps saturait le serveur (facecrop/assign en
+  // « Failed to fetch »). On differe au focus / a la frappe : un seul a la fois.
+  inp.addEventListener('focus',listeProps);
+  inp.addEventListener('keydown',function(e){ if(e.key==='Enter'&&inp.value.trim()) envoyer(inp.value.trim(),false); });
+  btn.onclick=function(){ if(inp.value.trim()) envoyer(inp.value.trim(),false); else inp.focus(); };
+  rej.onclick=function(){ envoyer('__non_group__', true); };
+  if(arch) arch.onclick=function(){ envoyer('__inconnu__', true); };
+  maj();
+  return el;
+}
+// Rendu incremental : construire les ~2000 groupes (>11 000 vignettes) d'un
+// coup figeait le rendu. On pose un lot de cartes, puis le suivant quand une
+// sentinelle approche du bas de l'ecran (IntersectionObserver, marge 600px).
+// carteGroupeP / carteInconnu restent inchanges ; les cartes sont de vrais
+// noeuds DOM (remove() individuel apres nommage marche toujours). Repli sans
+// IntersectionObserver (navigateurs anciens) : tout rendre.
+function renderInBatches(box, items, makeCard, batch){
+  batch = batch || 24;
+  box.innerHTML='';
+  var i=0, obs=null;
+  var sentinel=document.createElement('div');
+  sentinel.className='batch-sentinel'; sentinel.setAttribute('aria-hidden','true');
+  function paint(){
+    var end=Math.min(i+batch, items.length);
+    var frag=document.createDocumentFragment();
+    for(; i<end; i++){ frag.appendChild(makeCard(items[i])); }
+    if(sentinel.parentNode) box.insertBefore(frag, sentinel); else box.appendChild(frag);
+    if(i>=items.length){ if(obs) obs.disconnect(); sentinel.remove(); }
+  }
+  box.appendChild(sentinel);
+  if('IntersectionObserver' in window){
+    obs=new IntersectionObserver(function(entries){
+      if(entries.some(function(e){return e.isIntersecting;})) paint();
+    }, {rootMargin:'600px'});
+    obs.observe(sentinel);
+    paint();
+  } else {
+    while(i<items.length) paint();
+  }
+}
+function loadClusters(rebuild){
+  fetch('/api/people/clusters'+(rebuild?'?rebuild=1':'')).then(function(r){return r.json();}).then(function(d){
+    var msg=document.getElementById('clmsg'), box=document.getElementById('clusters');
+    document.getElementById('cc').textContent=d.count?('('+d.count+')'):'';
+    if(d.building){ msg.textContent='Regroupement en cours… (quelques secondes à une minute)';
+      box.innerHTML=''; setTimeout(function(){loadClusters(false);},4000); return; }
+    if(!d.clusters.length){ msg.textContent='Aucun groupe. Clique « Regrouper » (le scan des visages doit être avancé).'; box.innerHTML=''; return; }
+    msg.textContent='';
+    box.innerHTML='';
+    renderInBatches(box, d.clusters, carteGroupeP);
+  });
+}
+
+document.getElementById('recluster').onclick=function(){
+  document.getElementById('clmsg').textContent='Regroupement demandé…';
+  post('/api/people/recluster',{}).then(function(){ setTimeout(function(){loadClusters(false);},1500); });
+};
+
+// ── Inconnus (archivés) : file de re-tag, chargée à la demande ──
+// Vue paresseuse : on ne construit les groupes d'inconnus (potentiellement
+// nombreux) que si l'utilisateur ouvre la section. Nommer un groupe lève
+// l'archive (côté serveur, _nommer_membres_visages) ; « Réactiver » le renvoie
+// dans « Groupes à nommer » sans lui donner de nom (/api/people/desarchiver).
+var INCONNU_SHOWN=false;
+function loadInconnus(rebuild){
+  if(!INCONNU_SHOWN) return;
+  fetch('/api/people/inconnus'+(rebuild?'?rebuild=1':'')).then(function(r){return r.json();}).then(function(d){
+    var box=document.getElementById('inconnus');
+    document.getElementById('inc').textContent=d.count?('('+d.count+')'):'';
+    if(d.building){ box.innerHTML='<span style="color:var(--graphite);padding:var(--e-2)">Regroupement des inconnus…</span>';
+      setTimeout(function(){loadInconnus(false);},3000); return; }
+    box.innerHTML='';
+    if(!d.clusters.length){ box.innerHTML='<span style="color:var(--graphite);padding:var(--e-2)">Aucun visage archivé.</span>'; return; }
+    renderInBatches(box, d.clusters, carteInconnu);
+  });
+}
+function carteInconnu(c){
+  var el=document.createElement('div'); el.className='cl';
+  var membres=c.membres||[];
+  var sel=membres.map(function(){return true;});
+  el.innerHTML='<div class="sz" style="color:var(--graphite);font-size:var(--t-sm);margin-bottom:var(--e-2)">'+c.size+
+      ' visage(s) archivé(s) <span style="color:var(--graphite)">— nomme le groupe pour l’identifier, ou réactive-le</span></div>'+
+    '<div class="faces"></div>'+
+    '<div class="row"><input type="text" class="qui" placeholder="C’est… (nom de la personne)" autocomplete="off">'+
+    '<button class="btn prim nommer">Attribuer</button>'+
+    '<button class="btn reactiver" title="Renvoyer ce groupe dans Groupes à nommer">Réactiver</button></div>'+
+    '<div class="props2" style="margin-top:6px"></div>';
+  var zone=el.querySelector('.faces');
+  (c.crops||[]).forEach(function(u,i){
+    var b=document.createElement('button'); b.type='button';
+    b.style.cssText='padding:0;border:none;background:none;cursor:pointer;position:relative;line-height:0';
+    b.innerHTML='<img loading="lazy" src="'+esc(u)+'" alt="">';
+    function paint(){ b.setAttribute('aria-pressed',sel[i]?'true':'false');
+      b.style.opacity=sel[i]?'1':'.35';
+      b.style.outline=sel[i]?'2px solid var(--fixateur)':'none'; b.style.outlineOffset='-2px'; }
+    b.onclick=function(){ sel[i]=!sel[i]; paint(); };
+    paint(); zone.appendChild(b);
+  });
+  var inp=el.querySelector('input'), btn=el.querySelector('.nommer'),
+      rea=el.querySelector('.reactiver'), props=el.querySelector('.props2');
+  function choisis(){ return membres.filter(function(_m,i){return sel[i];}); }
+  function nommer(noms){
+    var m=choisis(); if(!m.length){ inp.focus(); return; }
+    var cible=noms;
+    if(typeof cible==='string' && /[,+]/.test(cible)) cible=cible.split(/\s*[,+]\s*/).filter(Boolean);
+    btn.disabled=true; rea.disabled=true;
+    post('/api/assign',{genre:'visage',membres:m,cible:cible}).then(function(r){
+      btn.disabled=false; rea.disabled=false;
+      if(!r.ok){ props.textContent=r.erreur||'échec'; return; }
+      toastP(r.libelle||'fait', r.jeton, function(){ loadInconnus(true); loadClusters(false); loadPeople(); });
+      loadInconnus(true); loadPeople();
+    }).catch(function(){ btn.disabled=false; rea.disabled=false;
+      props.textContent='Le serveur n a pas repondu. Reessaie dans un instant.'; });
+  }
+  function reactiver(){
+    btn.disabled=true; rea.disabled=true;
+    post('/api/people/desarchiver',{membres:membres}).then(function(r){
+      btn.disabled=false; rea.disabled=false;
+      if(!r.ok){ props.textContent=(r&&r.erreur)||'échec'; return; }
+      toastP(r.libelle||'réactivé', r.jeton, function(){ loadInconnus(true); loadClusters(true); });
+      el.remove(); loadClusters(true);
+    }).catch(function(){ btn.disabled=false; rea.disabled=false;
+      props.textContent='Le serveur n a pas repondu. Reessaie dans un instant.'; });
+  }
+  function prop(txt,val){
+    var b=document.createElement('button'); b.className='btn';
+    b.style.cssText='display:block;width:100%;text-align:left;margin:2px 0;font-size:12.5px';
+    b.textContent=txt; b.onclick=function(){ nommer(val); }; return b;
+  }
+  function listeProps(){
+    var t=inp.value.trim().toLowerCase();
+    nomsPersonnes().then(function(noms){
+      props.innerHTML='';
+      noms.filter(function(p){return !t||p.nom.toLowerCase().indexOf(t)===0;})
+        .slice(0,4).forEach(function(p){ props.appendChild(prop(p.nom+' · '+p.n, p.nom)); });
+      if(t && !noms.some(function(p){return p.nom.toLowerCase()===t;}))
+        props.appendChild(prop('Nouveau : '+inp.value.trim(), inp.value.trim()));
+    });
+  }
+  inp.addEventListener('input',listeProps);
+  inp.addEventListener('focus',listeProps);
+  inp.addEventListener('keydown',function(e){ if(e.key==='Enter'&&inp.value.trim()) nommer(inp.value.trim()); });
+  btn.onclick=function(){ if(inp.value.trim()) nommer(inp.value.trim()); else inp.focus(); };
+  rea.onclick=reactiver;
+  return el;
+}
+document.getElementById('inbtn').onclick=function(){
+  var box=document.getElementById('inconnus'), b=document.getElementById('inbtn');
+  if(INCONNU_SHOWN){ INCONNU_SHOWN=false; box.innerHTML=''; document.getElementById('inc').textContent=''; b.textContent='Afficher'; return; }
+  INCONNU_SHOWN=true; b.textContent='Masquer';
+  box.innerHTML='<span style="color:var(--graphite);padding:var(--e-2)">Regroupement des inconnus…</span>';
+  loadInconnus(true);
+};
+
+// ── file « À vérifier » (curateur) ──
+/* Attribution unifiée côté personnes : le même geste que sur la page Animaux. */
+var NOMS_P=null, NOMS_P_INFLIGHT=null;
+function nomsPersonnes(){
+  if(NOMS_P) return Promise.resolve(NOMS_P);
+  // Deduplication : si plusieurs appels arrivent avant la reponse (ex. plusieurs
+  // groupes), ils partagent la MEME requete au lieu d'en lancer une chacun.
+  if(NOMS_P_INFLIGHT) return NOMS_P_INFLIGHT;
+  NOMS_P_INFLIGHT=fetch('/api/names?genre=personne').then(function(r){return r.json();})
+    .then(function(d){ NOMS_P=d.noms||[]; NOMS_P_INFLIGHT=null; return NOMS_P; })
+    .catch(function(){ NOMS_P_INFLIGHT=null; return []; });   // pas de rejet non capture
+  return NOMS_P_INFLIGHT;
+}
+function toastP(msg, jeton, apres){
+  var t=document.getElementById('toastp');
+  if(!t){ t=document.createElement('div'); t.id='toastp';
+    t.setAttribute('role','status'); t.setAttribute('aria-live','polite');
+    t.style.cssText='position:sticky;bottom:12px;margin:12px auto 0;max-width:520px;display:flex;'+
+      'align-items:center;gap:12px;background:var(--salle-3);border:var(--trait);border-radius:999px;'+
+      'padding:var(--e-3) var(--e-3) var(--e-3) var(--e-4);font-size:var(--t-sm);z-index:60';
+    document.body.appendChild(t); }
+  t.innerHTML='<span style="flex:1"></span>'; t.firstChild.textContent=msg;
+  if(jeton){ var b=document.createElement('button'); b.className='btn'; b.textContent='Annuler';
+    b.onclick=function(){ fetch('/api/undo',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({jeton:jeton})}).then(function(){ t.remove();
+        if(apres){ apres(); } }); };
+    t.appendChild(b); }
+  clearTimeout(t._m); t._m=setTimeout(function(){ t.remove(); },10000);
+}
+// ── diaporama des photos d'une personne (à la suite / aléatoire) ──
+var psPhotos=[], psOrder=[], psIdx=0, psName='', psTimer=null, psPaused=false, psDur=6000, psMode='seq';
+function psApplyOrder(mode){
+  psOrder=psPhotos.map(function(_,i){return i;});
+  if(mode==='rnd'){
+    for(var i=psOrder.length-1;i>0;i--){ var j=Math.floor(Math.random()*(i+1)); var t=psOrder[i]; psOrder[i]=psOrder[j]; psOrder[j]=t; }
+  } else if(mode==='assoc'){
+    // chaîne d'association : chaque photo partage un max de mots-clés avec la précédente
+    var pool=psOrder.slice(), ord=[]; var cur=pool.splice(Math.floor(Math.random()*pool.length),1)[0]; ord.push(cur);
+    while(pool.length){ var ck=psPhotos[cur].kw||[], bi=0, bs=-1;
+      for(var i=0;i<pool.length;i++){ var s=0, kw=psPhotos[pool[i]].kw||[]; for(var j=0;j<kw.length;j++){ if(ck.indexOf(kw[j])>=0) s++; } if(s>bs){ bs=s; bi=i; } }
+      cur=pool.splice(bi,1)[0]; ord.push(cur); }
+    psOrder=ord;
+  } else {
+    // diaporama normal = chronologique, du plus ANCIEN au plus recent (date de
+    // prise) ; photos sans date fiable en fin.
+    psOrder.sort(function(a,b){ return (psPhotos[a].taken||Infinity)-(psPhotos[b].taken||Infinity); });
+  }
+}
+function startPersonSlideshow(name, mode){
+  // ouverture INSTANTANÉE de l'écran (réactif), puis chargement léger en tâche
+  // de fond via un endpoint sans calcul de visages → 1ère photo quasi immédiate.
+  if(psTimer){ clearTimeout(psTimer); psTimer=null; }
+  psName=name; psMode=mode; psPaused=false; psPhotos=[]; psOrder=[]; psIdx=0;
+  var el=document.getElementById('pslide'); el.classList.add('open');
+  var req=el.requestFullscreen||el.webkitRequestFullscreen||el.msRequestFullscreen;
+  if(req){ try{ req.call(el).catch(function(){}); }catch(e){} }
+  document.getElementById('ps-pause').innerHTML='&#10073;&#10073;';
+  document.getElementById('ps-img').removeAttribute('src');
+  document.getElementById('ps-cap').textContent='Chargement…';
+  document.getElementById('ps-folder').classList.add('hidden');
+  var seek=document.getElementById('ps-seek'); if(seek) seek.style.display='none';
+  fetch('/api/people/slideshow?name='+encodeURIComponent(name)).then(function(r){return r.json();}).then(function(d){
+    if(!document.getElementById('pslide').classList.contains('open')) return; // fermé entre-temps
+    var ph=(d.photos||[]).filter(function(f){return f.url;});
+    if(!ph.length){ psClose(); alert('Aucune photo pour '+name+'.'); return; }
+    psPhotos=ph; psApplyOrder(mode); psIdx=0;
+    if(seek){ seek.max=(psPhotos.length-1); seek.value=0; seek.style.display=(psPhotos.length>1?'block':'none'); }
+    psShow();
+  }).catch(function(){ psClose(); });
+}
+var psSeekTimer=null;
+// MAJ légère (légende + chip + position du slider), SANS charger l'image
+function psRenderMeta(){
+  if(!psPhotos.length) return;
+  var f=psPhotos[psOrder[psIdx]];
+  document.getElementById('ps-cap').textContent=psName+'  —  '+(psIdx+1)+' / '+psPhotos.length+'   ·   '+(f.name||'');
+  var fl=document.getElementById('ps-folder');
+  if(f.gurl){ fl.href=f.gurl; fl.textContent='📁 '+(f.folder||'Dossier'); fl.classList.remove('hidden'); }
+  else{ fl.classList.add('hidden'); }
+  var sk=document.getElementById('ps-seek');
+  if(sk && document.activeElement!==sk){ sk.value=psIdx; }
+}
+function psShow(){
+  if(psTimer){ clearTimeout(psTimer); psTimer=null; }
+  if(psSeekTimer){ clearTimeout(psSeekTimer); psSeekTimer=null; }
+  if(!psPhotos.length) return;
+  var f=psPhotos[psOrder[psIdx]];
+  // Vignettes serveur (audit O1) : 1600 px suffit au plein écran, l'original
+  // (2-6 Mo NAS) n'est plus lu ; /api/thumb redirige s'il ne sait pas.
+  document.getElementById('ps-img').src=f.key?'/api/thumb?key='+encodeURIComponent(f.key)+'&s=1600':f.url;
+  psRenderMeta();
+  var nx=psPhotos[psOrder[(psIdx+1)%psOrder.length]]; if(nx){ var pr=new Image(); pr.src=nx.key?'/api/thumb?key='+encodeURIComponent(nx.key)+'&s=1600':nx.url; }
+  if(!psPaused) psTimer=setTimeout(function(){ psNext(1); }, psDur);
+}
+function psNext(d){ if(!psOrder.length) return; psIdx=(psIdx+d+psOrder.length)%psOrder.length; psShow(); }
+function psSeekTo(v){
+  if(!psPhotos.length) return;
+  psIdx=Math.max(0,Math.min(psPhotos.length-1,parseInt(v,10)||0));
+  // pendant le glissement du slider : on met à jour la légende instantanément
+  // (données déjà en mémoire), mais on DIFFÈRE le chargement de l'image pour ne
+  // pas déclencher une requête réseau par photo survolée. L'image ne se charge
+  // que ~180 ms après l'arrêt du curseur → réactivité conservée jusqu'à la fin.
+  if(psTimer){ clearTimeout(psTimer); psTimer=null; }
+  psRenderMeta();
+  if(psSeekTimer) clearTimeout(psSeekTimer);
+  psSeekTimer=setTimeout(function(){ psSeekTimer=null; psShow(); }, 180);
+}
+function psClose(){ if(psTimer){clearTimeout(psTimer);psTimer=null;} document.getElementById('pslide').classList.remove('open');
+  if(document.fullscreenElement){ try{ document.exitFullscreen(); }catch(e){} } }
+function psTogglePause(){ psPaused=!psPaused; document.getElementById('ps-pause').innerHTML=psPaused?'&#9654;':'&#10073;&#10073;';
+  if(!psPaused) psShow(); else if(psTimer){ clearTimeout(psTimer); psTimer=null; } }
+document.getElementById('ps-next').onclick=function(){ psNext(1); };
+document.getElementById('ps-prev').onclick=function(){ psNext(-1); };
+document.getElementById('ps-pause').onclick=psTogglePause;
+document.getElementById('ps-close').onclick=psClose;
+(function(){ var sk=document.getElementById('ps-seek');
+  if(sk){ sk.addEventListener('input',function(){ psSeekTo(this.value); }); } })();
+document.addEventListener('keydown',function(e){
+  if(!document.getElementById('pslide').classList.contains('open')) return;
+  if(e.key==='Escape') psClose();
+  else if(e.key==='ArrowRight') psNext(1);
+  else if(e.key==='ArrowLeft') psNext(-1);
+  else if(e.key===' '){ e.preventDefault(); psTogglePause(); }
+});
+
+// ── nommer rapidement : les plus gros groupes anonymes, un par un ──
+var qnList=[], qnIdx=0;
+function quickNameStart(){
+  fetch('/api/people/clusters').then(function(r){return r.json();}).then(function(d){
+    if(d.building){ alert('Regroupement en cours — réessaie dans un instant.'); return; }
+    qnList=(d.clusters||[]).slice(); qnIdx=0;
+    if(!qnList.length){ alert('Aucun groupe anonyme à nommer pour le moment.'); return; }
+    document.getElementById('quickname').classList.add('open');
+    document.getElementById('qn-actions').style.display='flex';
+    qnShow();
+  });
+}
+function qnShow(){
+  var body=document.getElementById('qn-body');
+  if(qnIdx>=qnList.length){
+    body.innerHTML='<div class="msg">Terminé ! Tous les groupes ont été passés en revue. 🎉</div>';
+    document.getElementById('qn-actions').style.display='none'; loadClusters(false); return;
+  }
+  var c=qnList[qnIdx];
+  var imgs=(c.crops||[]).map(function(u){return '<img loading="lazy" src="'+esc(u)+'">';}).join('');
+  body.innerHTML='<div class="qn-h">Groupe '+(qnIdx+1)+' / '+qnList.length+' — <b>'+c.size+' visages</b></div>'+
+    '<div class="qn-faces">'+imgs+'</div>';
+  var inp=document.getElementById('qn-input'); inp.value=''; setTimeout(function(){inp.focus();},30);
+  bgLoad();
+}
+function qnName(){
+  if(qnIdx>=qnList.length) return;
+  var c=qnList[qnIdx], nm=document.getElementById('qn-input').value.trim();
+  if(!nm){ qnIdx++; qnShow(); return; }
+  var btn=document.getElementById('qn-name'); btn.disabled=true;
+  post('/api/people/name',{cid:c.cid,name:nm}).then(function(){ btn.disabled=false; loadPeople(); qnIdx++; qnShow(); })
+    .catch(function(){ btn.disabled=false; qnIdx++; qnShow(); });
+}
+document.getElementById('quickbtn').onclick=quickNameStart;
+document.getElementById('qn-name').onclick=qnName;
+document.getElementById('qn-skip').onclick=function(){ qnIdx++; qnShow(); };
+document.getElementById('qn-close').onclick=function(){ document.getElementById('quickname').classList.remove('open'); loadClusters(false); };
+document.getElementById('qn-input').addEventListener('keydown',function(e){ if(e.key==='Enter') qnName(); });
+
+document.getElementById('pfilter').addEventListener('input', renderPeople);
+loadPeople();
+loadClusters(false);
+
+// ── chargement de fond progressif des vignettes (sans attendre le scroll) ──
+var _lq=[], _lqActive=0, _LQ_CONC=4;
+function loadQueue(){
+  while(_lqActive<_LQ_CONC && _lq.length){
+    var el=_lq.shift(); _lqActive++;
+    (function(im){
+      im.onload=im.onerror=function(){ _lqActive--; im.onload=im.onerror=null; loadQueue(); };
+      im.src=im.getAttribute('data-src'); im.removeAttribute('data-src');
+    })(el);
+  }
+}
+function bgLoad(){
+  document.querySelectorAll('img[loading="lazy"]').forEach(function(el){
+    el.removeAttribute('loading');
+    if(el.complete && el.naturalWidth>0) return;   // déjà chargée
+    var s=el.getAttribute('src');
+    if(s){ el.setAttribute('data-src', s); el.removeAttribute('src'); }
+  });
+  document.querySelectorAll('img[data-src]').forEach(function(el){ if(_lq.indexOf(el)<0) _lq.push(el); });
+  loadQueue();
+}
+setInterval(bgLoad, 1000);
+bgLoad();
+// Liens profonds des sections de travail (onglet Classification de /sujets) :
+// la grille des personnes se peint PAR LOTS au-dessus de ces ancres — cible de
+// scroll mouvante (même mode de panne que la régression « Gérer » du 12/08).
+// Remède : re-viser l'ancre pendant 2,5 s, en s'arrêtant dès que l'utilisateur
+// interagit (molette, toucher, clavier).
+(function(){
+  var h=(location.hash||'').replace('#','');
+  if(['groupes','inconnus'].indexOf(h)<0) return;
+  var stop=false, t0=Date.now();
+  ['wheel','touchstart','keydown','mousedown'].forEach(function(ev){
+    window.addEventListener(ev, function(){ stop=true; }, {passive:true, once:true});
+  });
+  (function vise(){
+    if(stop) return;
+    var el=document.getElementById(h);
+    if(el) el.scrollIntoView({block:'start'});
+    if(Date.now()-t0<2500) setTimeout(vise, 400);
+  })();
+})();
+</script>
+</body>
+</html>

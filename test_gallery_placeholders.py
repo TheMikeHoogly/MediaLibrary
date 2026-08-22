@@ -28,6 +28,8 @@ import subprocess
 import tempfile
 import unittest
 
+import ui_gabarits
+
 SERVER = os.path.join(os.path.dirname(os.path.abspath(__file__)), "server.py")
 # Un marqueur n'est jamais precede d'un point : `window.__BROWSE_CTX__` est un
 # VRAI identifiant JS, pas un trou a remplir. Sans ce garde, le test signalait un
@@ -40,18 +42,14 @@ def _arbre():
         return ast.parse(f.read())
 
 
-def _pages(arbre):
-    """{nom: texte} des constantes de page (`GALLERY_PAGE`, `HTML_PAGE`, …)."""
-    out = {}
-    for n in arbre.body:
-        if not isinstance(n, ast.Assign) or len(n.targets) != 1:
-            continue
-        cible = n.targets[0]
-        if not isinstance(cible, ast.Name) or not cible.id.endswith("PAGE"):
-            continue
-        if isinstance(n.value, ast.Constant) and isinstance(n.value.value, str):
-            out[cible.id] = n.value.value
-    return out
+def _pages(arbre=None):
+    """{nom: texte} des gabarits — désormais lus dans `ui/pages/` (point 7).
+
+    Les pages ont quitté `server.py` ; les CLÉS gardent l'ancien nom de
+    constante (`GALLERY_PAGE`…), qui reste la façon dont ce projet désigne
+    chaque page. `arbre` est accepté et ignoré : la signature ne change pas
+    pour les appelants."""
+    return ui_gabarits.tous()
 
 
 def _remplaces(arbre):

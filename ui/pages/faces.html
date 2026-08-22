@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Visages détectés</title>
+<style>
+/* Etape A tokenisation « chambre noire ». Grille de visages = planche contact
+   (cellules --salle-3). Score de detection = donnee (texte vif). Avertissement
+   moteur = encre.
+   Passe DESIGN (11/08) : valeurs restantes calees sur les tokens, memes
+   mappings que les autres pages (0.9rem -> --t-md, 0.8/0.85rem -> --t-sm,
+   0.68rem -> --t-xs, radius 8px -> --r-md, espacements -> echelle 4px). */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: var(--f-texte);
+       background: var(--salle); color: var(--texte); }
+.bar { display: flex; align-items: center; gap: var(--e-3); padding: var(--e-3) var(--e-4);
+       background: var(--salle-2); border-bottom: var(--trait); flex-wrap: wrap; }
+.bar a { color: var(--texte); text-decoration: none; font-size: var(--t-md); }
+.bar .sp { margin-left: auto; }
+#stat { padding: var(--e-3) var(--e-4); background: var(--salle-2); border-bottom: var(--trait);
+        color: var(--graphite); font-size: var(--t-sm); line-height: 1.5; }
+#stat b { color: var(--texte); }
+.warn { color: var(--encre); }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+        gap: var(--e-2); padding: var(--e-3); }
+.face { background: var(--salle-3); border-radius: var(--r-md); overflow: hidden; }
+.face a { display: block; }
+.face img { width: 100%; aspect-ratio: 1; object-fit: cover; display: block;
+            background: var(--salle-3); }
+.face .m { padding: var(--e-1) var(--e-2) var(--e-2); font-size: var(--t-xs); color: var(--graphite);
+           white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.face .sc { color: var(--texte); font-family: var(--f-donnees); }
+.note { padding: 0 var(--e-4) var(--e-6); color: var(--graphite); font-size: var(--t-sm); line-height: 1.5; }
+</style>
+</head>
+<body>
+<!--APPNAV-->
+<div class="bar">
+  <span class="sp"></span>
+  <button onclick="location.reload()" style="padding:6px 12px;border:var(--trait);
+    border-radius:8px;background:var(--salle-3);color:var(--texte);cursor:pointer;">Actualiser</button>
+</div>
+<div id="stat">Chargement&hellip;</div>
+<div class="grid" id="grid"></div>
+<div class="note">Phase 1 : détection uniquement. Chaque vignette est un visage
+  trouvé par l'IA (recadré). Objectif : vérifier que la détection est correcte
+  sur tes photos. Le nommage des personnes et l'écriture du tag
+  « personne:Nom » arriveront en Phase 2.</div>
+<script>
+function esc(s){return (s||'').replace(/[&<>"]/g,function(c){
+  return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+fetch('/api/faces/status').then(function(r){return r.json();}).then(function(s){
+  var el = document.getElementById('stat');
+  if (!s.engine) {
+    el.innerHTML = '<span class="warn">Moteur de reconnaissance non chargé.</span><br>' +
+      esc(s.error || '') + '<br>Lance « 7 - Installer reconnaissance visages.bat » ' +
+      'puis relance le serveur.';
+    return;
+  }
+  el.innerHTML = 'Moteur : <b>' + esc(s.provider) + '</b> &middot; ' +
+    'Photos analysées : <b>' + s.photos_processed + '</b> &middot; ' +
+    'Photos avec visage(s) : <b>' + s.photos_with_faces + '</b> &middot; ' +
+    'Visages détectés : <b>' + s.total_faces + '</b> &middot; ' +
+    'En attente : <b>' + s.pending + '</b>' +
+    (s.pending ? ' — l\'analyse tourne en arrière-plan, actualise dans un moment.' : '') +
+    '<br>' + hwLine(s);
+}).catch(function(){});
+function hwLine(s){
+  var h = s.hw || {}, parts = [];
+  parts.push('CPU : <b>' + (h.cpu_count || '?') + ' cœurs' +
+             (h.cpu_percent != null ? ' · ' + Math.round(h.cpu_percent) + '%' : '') + '</b>');
+  if (h.ram_total_gb != null) parts.push('RAM : <b>' + h.ram_avail_gb + ' / ' + h.ram_total_gb + ' Go libres</b>');
+  if (h.gpu) parts.push('GPU : <b>' + esc(h.gpu.name) + ' · ' + h.gpu.vram_free_mb + '/' + h.gpu.vram_total_mb + ' Mo libres · ' + h.gpu.util + '%</b>');
+  else parts.push('GPU : <b>non détecté</b>');
+  parts.push('Ré-embedding : <b>' + (s.reembedded || 0) + ' photos traitées</b>');
+  parts.push('Moteur visages : <b>' + esc(s.face_engine_last || 'CPU') + '</b>' +
+             (s.gpu_faces_ready ? ' (GPU dispo)' : ''));
+  if (!h.psutil) parts.push('<span style="color:var(--graphite)">(installe psutil pour CPU/RAM en direct)</span>');
+  return '<span style="color:var(--graphite)">🖥 ' + parts.join(' &middot; ') + '</span>';
+}
+fetch('/api/faces/list?limit=400').then(function(r){return r.json();}).then(function(d){
+  var g = document.getElementById('grid');
+  (d.faces || []).forEach(function(f){
+    var div = document.createElement('div');
+    div.className = 'face';
+    div.innerHTML = '<a href="' + esc(f.photo_url) + '" target="_blank" rel="noopener">' +
+      '<img loading="lazy" src="' + esc(f.crop_url) + '"></a>' +
+      '<div class="m"><span class="sc">' + f.score + '</span> &middot; ' +
+      esc(f.name) + '</div>';
+    g.appendChild(div);
+  });
+}).catch(function(){});
+// chargement de fond progressif des vignettes (sans attendre le scroll)
+var _lq=[], _lqActive=0, _LQ_CONC=4;
+function loadQueue(){
+  while(_lqActive<_LQ_CONC && _lq.length){
+    var el=_lq.shift(); _lqActive++;
+    (function(im){
+      im.onload=im.onerror=function(){ _lqActive--; im.onload=im.onerror=null; loadQueue(); };
+      im.src=im.getAttribute('data-src'); im.removeAttribute('data-src');
+    })(el);
+  }
+}
+function bgLoad(){
+  document.querySelectorAll('img[loading="lazy"]').forEach(function(el){
+    el.removeAttribute('loading');
+    if(el.complete && el.naturalWidth>0) return;
+    var s=el.getAttribute('src');
+    if(s){ el.setAttribute('data-src', s); el.removeAttribute('src'); }
+  });
+  document.querySelectorAll('img[data-src]').forEach(function(el){ if(_lq.indexOf(el)<0) _lq.push(el); });
+  loadQueue();
+}
+setInterval(bgLoad, 1000);
+bgLoad();
+</script>
+</body>
+</html>

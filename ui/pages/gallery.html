@@ -1,0 +1,1594 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Galerie photos</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+/* Etape A tokenisation « chambre noire ». Filtres actifs (personne, tag, tri,
+   geo) = fixateur (selection humaine) ; bandeau IA + barre de progression =
+   veilleuse (en cours) ; « Tout effacer » = encre ; boutons primaires = papier ;
+   focus = veilleuse. Grille repeat(5) laissee telle quelle (planche contact
+   auto-fill = redesign etape B, point 11). Structure/espacements inchanges.
+   Etape B (10/08) : les espacements/rayons/tailles qui EGALENT deja un token
+   pointent vers lui (12px->--e-3, 8px->--e-2, 16px->--e-4, 0.75rem->--t-xs,
+   0.85rem->--t-sm, 999px->--r-pill) — rendu identique, valeurs calculees
+   prouvees. .pchip et .chip fusionnes en un seul jeu (fin de la divergence
+   connue : ils etaient deux forks identiques).
+   Passe DESIGN (11/08) : valeurs hors echelle calees sur les tokens, memes
+   mappings que PEOPLE/PETS/MAP (0.8-0.82rem/13px -> --t-sm, 0.65-0.7rem ->
+   --t-xs, 0.9rem -> --t-md, 1.1rem -> --t-lg, radius 8/10px -> --r-md,
+   gaps/paddings -> echelle 4px : 5px -> --e-1, 6/7px -> --e-2, 10px -> --e-3,
+   14/18px -> --e-4). Divergences tranchees : outline:none de #q RETIRE (le
+   plancher base.css fournit l'anneau focus) ; .pchip/.chip alignes sur le chip
+   canonique (min-height 32px, comme .mchip). Tailles fixes (180px, 300px,
+   positions) non tokenisees. */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: var(--f-texte);
+        background: var(--salle); color: var(--texte); min-height: 100vh; }
+/* -- filtres personnes + geo -- */
+.selbar { display: flex; align-items: center; gap: var(--e-2); padding: var(--e-2) var(--e-4);
+          background: var(--salle-2); border-bottom: var(--trait); flex-wrap: wrap; }
+.selbar .lbl { color: var(--graphite); font-size: var(--t-xs); margin-right: 2px; }
+/* .pchip + .chip : jeu unique, selecteurs groupes (rendu inchange). */
+.pchip, .chip { min-height: 32px; padding: var(--e-1) var(--e-3); border-radius: var(--r-pill); border: var(--trait);
+         background: var(--salle-3); color: var(--graphite); font-size: var(--t-sm); cursor: pointer;
+         user-select: none; }
+.pchip.on, .chip.on { background: var(--fixateur); border-color: var(--fixateur); color: #fff; }
+.pchip .n, .chip .n { color: var(--graphite); font-size: var(--t-xs); margin-left: var(--e-1); font-family: var(--f-donnees); }
+.pchip.on .n, .chip.on .n { color: #fff; }
+.geobtn { padding: var(--e-1) var(--e-3); border-radius: var(--r-md); border: var(--trait);
+          background: var(--salle-3); color: var(--texte); font-size: var(--t-sm); cursor: pointer; }
+.geobtn.on { background: var(--fixateur); border-color: var(--fixateur); color: #fff; }
+#geopanel { display: none; padding: var(--e-3) var(--e-4); background: var(--salle);
+            border-bottom: var(--trait); }
+#geopanel.open { display: block; }
+#geomap { height: 300px; border-radius: var(--r-md); overflow: hidden; background: var(--salle-3); }
+.georow { display: flex; align-items: center; gap: var(--e-3); margin-top: var(--e-2); flex-wrap: wrap; }
+.georow input[type=range] { flex: 1; min-width: 140px; accent-color: var(--fixateur); }
+.georow .cnt { color: var(--graphite); font-size: var(--t-sm); font-family: var(--f-donnees); }
+.georow button { padding: var(--e-2) var(--e-3); border-radius: var(--r-md); border: var(--trait);
+                 background: var(--salle-3); color: var(--texte); font-size: var(--t-sm); cursor: pointer; }
+.georow button.prim { background: var(--papier); border-color: var(--papier); color: var(--texte-papier); }
+
+/* -- toolbar -- */
+.bar { display: flex; align-items: center; gap: var(--e-3); padding: var(--e-4);
+        background: var(--salle-2); border-bottom: var(--trait); flex-wrap: wrap; }
+.back { color: var(--texte); text-decoration: none; font-size: var(--t-md); margin-right: auto; }
+.btn-group { display: flex; gap: var(--e-2); }
+.tb { padding: var(--e-2) var(--e-4); border: var(--trait); border-radius: var(--r-md);
+       background: var(--salle-3); color: var(--texte); font-size: var(--t-sm); cursor: pointer; }
+.tb.active { background: var(--fixateur); border-color: var(--fixateur); color: #fff; }
+.tb.demo { background: var(--salle-3); border-color: var(--graphite); }
+.tb.demo.on { background: var(--fixateur); border-color: var(--fixateur); color: #fff; }
+.count { color: var(--graphite); font-size: var(--t-sm); font-family: var(--f-donnees); }
+#q { padding: var(--e-2) var(--e-3); border-radius: var(--r-md); border: var(--trait);
+     background: var(--salle-3); color: var(--texte); font-size: var(--t-sm); width: 180px; }
+#q:focus { border-color: var(--veilleuse); }
+
+/* ── bandeau IA ── */
+#pending { display: none; padding: var(--e-2) var(--e-4); background: var(--salle-2); color: var(--veilleuse);
+           font-size: var(--t-sm); border-bottom: 1px solid var(--veilleuse-d); }
+#pending a { color: var(--veilleuse); }
+
+/* -- barre de tags -- */
+.tagbar { display: flex; align-items: center; gap: var(--e-2); padding: var(--e-3) var(--e-4);
+          background: var(--salle-2); border-bottom: var(--trait); flex-wrap: wrap; }
+.chip.mode { background: var(--salle-3); border-color: var(--graphite); color: var(--texte); }
+.chip.clear { background: transparent; border-color: var(--encre); color: var(--encre); display: none; }
+.tagbar-label { color: var(--graphite); font-size: var(--t-xs); margin-right: var(--e-1); }
+.tagchips { display: flex; flex-wrap: wrap; gap: var(--e-2); width: 100%; margin-top: var(--e-2); }
+.tagchips.hidden { display: none; }
+
+/* -- barre de dossiers -- */
+.folders { display: flex; flex-wrap: wrap; gap: var(--e-2); padding: var(--e-3) var(--e-4);
+           background: var(--salle-2); border-bottom: var(--trait); }
+.fchip { padding: var(--e-2) var(--e-3); border-radius: var(--r-md); background: var(--salle-3); color: var(--texte);
+         text-decoration: none; font-size: var(--t-sm); border: var(--trait); }
+.fchip.up { background: var(--salle-3); border-color: var(--graphite); color: var(--graphite); }
+
+/* ── grid ── */
+/* Etape B : planche contact. Densite par auto-fill + clamp (jamais un nombre
+   de colonnes en dur), gouttiere serree facon film. content-visibility sur les
+   cellules pour tenir les grandes planches sans virtual scroll. */
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(clamp(96px, 18vw, 168px), 1fr));
+        gap: var(--e-1); padding: var(--e-2); background: var(--salle); }
+
+.cell { background: var(--salle-3); border-radius: var(--r-sm); overflow: hidden; cursor: pointer;
+        content-visibility: auto; contain-intrinsic-size: auto 210px; }
+.cell .ph { position: relative; aspect-ratio: 1; overflow: hidden; background: var(--salle-3); }
+.cell img { width: 100%; height: 100%; object-fit: cover; display: block;
+             opacity: 0; transition: opacity 0.3s, transform 0.2s; }
+.cell img.loaded { opacity: 1; }
+/* Millesime en mode « meme jour » : une DONNEE sur la photo -> --f-donnees,
+   comme le numero de vue d'une planche contact. */
+.cell .an { position: absolute; bottom: 2px; left: 4px; font-family: var(--f-donnees);
+            font-size: var(--t-xs); line-height: 1; color: var(--texte);
+            text-shadow: 0 1px 2px #000; }
+.cell:hover img { transform: scale(1.05); }
+.caption { padding: var(--e-1) var(--e-2) var(--e-2); font-size: var(--t-xs); line-height: 1.25; color: var(--graphite);
+           min-height: 2.3em; display: -webkit-box; -webkit-line-clamp: 2;
+           -webkit-box-orient: vertical; overflow: hidden; }
+.caption.empty { color: var(--graphite); font-style: italic; }
+/* Faits : ce que le serveur SAIT de la photo (date . lieu . noms), par
+   opposition a `.caption`, qui est ce qu'un modele en a DIT. Deux lignes
+   distinctes et dans cet ordre : le fait porte sa provenance, la description
+   non. Une seule ligne, jamais deux -- la planche vit de sa densite.
+   Les noms passent en --texte et non --fixateur : #4A8C7B sur --salle-3
+   mesure 4,45:1, sous le plancher AA de 4,5:1 a cette taille. */
+.faits { padding: var(--e-1) var(--e-2) 0; font-size: var(--t-xs); line-height: 1.3;
+         color: var(--graphite); white-space: nowrap; overflow: hidden;
+         text-overflow: ellipsis; }
+.faits .d { font-family: var(--f-donnees); }
+.faits .n { color: var(--texte); }
+
+/* -- lightbox -- */
+#lb { display: none; position: fixed; inset: 0; background: #000;
+       z-index: 100; flex-direction: column; }
+#lb.open { display: flex; }
+#lb-img { flex: 1; object-fit: contain; width: 100%; min-height: 0; }
+#lb-meta { background: var(--salle-2); padding: var(--e-3) var(--e-4) 0; }
+#lb-tags { font-size: var(--t-md); color: var(--texte); line-height: 1.4; }
+#lb-tags.none { color: var(--graphite); font-style: italic; }
+#lb-desc { font-size: var(--t-sm); color: var(--graphite); margin-top: var(--e-1); font-style: italic; }
+/* Visionneuse : une photo a la fois, donc la place de DIRE la provenance
+   (exif / nom du fichier / annee du dossier -- gps / chemin). C'est la
+   promesse du projet : aucun fait affirme sans provenance. */
+#lb-faits { font-size: var(--t-sm); color: var(--graphite); line-height: 1.5;
+             margin-bottom: var(--e-2); }
+#lb-faits .d { font-family: var(--f-donnees); color: var(--texte); }
+#lb-faits .n { color: var(--texte); }
+#lb-faits .src { font-size: var(--t-xs); color: var(--graphite); }
+#lb-faits.none { font-style: italic; }
+#lb-bar { background: var(--salle-2); padding: var(--e-3) var(--e-4); display: flex;
+           align-items: center; gap: var(--e-3); flex-shrink: 0; }
+#lb-name { flex: 1; font-size: var(--t-sm); color: var(--graphite);
+            overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#lb-close { color: #fff; background: var(--salle-3); border: none; border-radius: var(--r-md);
+             padding: var(--e-2) var(--e-4); cursor: pointer; font-size: var(--t-md); }
+/* -- semblables / meme jour : navigation, pas une action -- neutre, cible 44px.
+   Deux portes de sortie de la visionneuse : par le SENS (vecteur SigLIP) et par
+   la DATE (meme mois-jour, toutes annees). Meme poids visuel, donc meme regle. */
+#lb-sim, #lb-jour { min-height: var(--touch); padding: 0 var(--e-4); border-radius: var(--r-md);
+          background: var(--salle-3); border: var(--trait); color: var(--texte);
+          cursor: pointer; font-size: var(--t-md); }
+#lb-sim:hover, #lb-jour:hover { background: var(--salle-2); }
+#lb-jour[hidden] { display: none; }
+/* Millesime d'une annee dans le bandeau « meme jour » : une MESURE, donc
+   --f-donnees (plancher photo-ui : les nombres s'alignent et se comparent). */
+.fchip.jour-an { font-family: var(--f-donnees); color: var(--graphite); }
+.fchip.jour-an b { color: var(--texte); font-weight: 600; }
+/* Plancher d'accessibilite n. 1 : focus visible. La page n'avait AUCUNE regle
+   :focus-visible -- ecart releve en ajoutant « Meme jour », corrige ici pour
+   toute la galerie plutot que pour le seul bouton neuf. */
+:focus-visible { outline: 2px solid var(--veilleuse); outline-offset: 2px; }
+/* #ss-fill exclu : sa transition n'est pas un ornement, c'est la seule
+   indication du temps restant dans le diaporama. */
+@media (prefers-reduced-motion: reduce) {
+  *:not(#ss-fill), *::before, *::after { transition-duration: 0.01ms !important;
+                                         animation-duration: 0.01ms !important; }
+}
+#lb-prev, #lb-next { color: #fff; background: var(--salle-3); border: none;
+                      border-radius: var(--r-md); padding: var(--e-2) var(--e-3); cursor: pointer; font-size: var(--t-lg); }
+
+/* -- slideshow -- */
+#ss { display: none; position: fixed; inset: 0; background: #000;
+       z-index: 200; flex-direction: column; }
+#ss.open { display: flex; }
+#ss-img { flex: 1; object-fit: contain; width: 100%; min-height: 0; }
+#ss-footer { background: var(--salle); padding: var(--e-3) var(--e-4); flex-shrink: 0; }
+#ss-name { font-size: var(--t-sm); color: var(--graphite); text-align: center; margin-bottom: var(--e-2);
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#ss-folderwrap { text-align: center; margin-bottom: var(--e-2); }
+#ss-folder { display: inline-block; color: var(--texte); background: var(--salle-3);
+            border: var(--trait); border-radius: var(--r-md); padding: var(--e-1) var(--e-3);
+            font-size: var(--t-sm); text-decoration: none; max-width: 80vw;
+            overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#ss-folder:hover { background: var(--salle-2); }
+#ss-folder.hidden { display: none; }
+#ss-track { height: 4px; background: var(--salle-3); border-radius: 2px; overflow: hidden; }
+#ss-fill { height: 100%; background: var(--veilleuse); width: 0%; transition: width linear; }
+#ss-stop { position: absolute; top: 14px; right: 14px; background: rgba(0,0,0,0.6);
+            color: #fff; border: var(--trait); border-radius: var(--r-md);
+            padding: var(--e-2) var(--e-4); cursor: pointer; font-size: var(--t-sm); z-index: 201; }
+
+/* -- barre de filtre par motif (point 21) : regroupe la vue par regle. Actif =
+   fixateur (choix humain), coherent avec les chips personnes/tags. -- */
+.motifbar { display: none; align-items: center; gap: var(--e-2); padding: var(--e-2) var(--e-4);
+            background: var(--salle-2); border-bottom: var(--trait); flex-wrap: wrap; }
+.motifbar.show { display: flex; }
+.motifbar .lbl { color: var(--graphite); font-size: var(--t-xs); margin-right: 2px; }
+.mchip { min-height: 32px; padding: var(--e-1) var(--e-3); border-radius: var(--r-pill); border: var(--trait);
+         background: var(--salle-3); color: var(--graphite); font-size: var(--t-sm);
+         cursor: pointer; text-decoration: none; }
+.mchip.on { background: var(--fixateur); border-color: var(--fixateur); color: #fff; }
+.mchip .n { font-family: var(--f-donnees); font-size: var(--t-xs); margin-left: var(--e-1); opacity: 0.75; }
+.mchip.on .n { opacity: 1; }
+
+/* -- bouton supprimer dans la visionneuse : destructif = encre, cible 44px -- */
+#lb-del { min-height: var(--touch); padding: 0 var(--e-4); border-radius: var(--r-md);
+          background: transparent; border: 1px solid var(--encre); color: var(--encre);
+          cursor: pointer; font-size: var(--t-md); }
+#lb-del:hover { background: var(--encre); color: #fff; }
+
+/* -- toast d'annulation 10s (meme registre que /browse et /people) -- */
+.gtoast { position: fixed; left: 50%; bottom: var(--e-4); transform: translateX(-50%);
+          z-index: 300; display: none; gap: var(--e-3); align-items: center;
+          max-width: 90vw; background: var(--salle-3); border: var(--trait);
+          border-radius: var(--r-pill); padding: var(--e-3) var(--e-3) var(--e-3) var(--e-4); font-size: var(--t-sm);
+          color: var(--texte); box-shadow: 0 8px 24px #0008; }
+.gtoast.show { display: flex; }
+.gtoast .b { min-height: 36px; padding: 0 var(--e-4); border-radius: var(--r-pill); border: var(--trait);
+             background: var(--salle-2); color: var(--texte); cursor: pointer; }
+</style>
+</head>
+<body>
+<!--APPNAV-->
+
+<div class="bar">
+  <input type="search" id="q" placeholder="Recherche tags&hellip;">
+  <button class="tb" id="btn-ia" aria-pressed="false"
+          title="Recherche par le sens : d&eacute;cris la photo en fran&ccedil;ais">IA</button>
+  <span class="count" id="cnt"></span>
+  <!-- Page de RESULTATS : la barre ne cherche plus a chaque frappe (elle
+       filtrerait dans le resultat precedent). Cet indice dit ce qu'il reste
+       a faire — un compte faux serait pire qu'une touche a presser. -->
+  <span class="count" id="relance" style="display:none">&#8629; Entr&eacute;e pour relancer</span>
+  <div class="btn-group">
+    <button class="tb active" id="btn-date" aria-pressed="true">Date</button>
+    <button class="tb" id="btn-name" aria-pressed="false">Nom A-Z</button>
+    <button class="tb" id="btn-rel" aria-pressed="false" style="display:none">Pertinence</button>
+  </div>
+  <div class="btn-group">
+    <button class="tb demo" id="btn-seq">&#9654; Demo</button>
+    <button class="tb demo" id="btn-rnd">&#9654; Aleatoire</button>
+    <button class="tb demo" id="btn-asc" title="Chaque photo partage un tag avec la precedente">&#9654; Association</button>
+  </div>
+</div>
+
+<!-- 5e axe : les puces INSERENT le jeton dans la requete au lieu de la
+     remplacer, pour qu'il se compose avec les autres axes (« Luna » + un clic
+     donne « Luna espece:chat »). Visible en mode IA seulement : hors de ce
+     mode la barre filtre des mots-cles, ou le jeton n'a pas de sens. -->
+<div class="selbar" id="especebar" style="display:none">
+  <span class="lbl">Esp&egrave;ce :</span>
+  <span id="especechips"></span>
+  <span class="lbl">filtre exact : la d&eacute;tection ET la description disent la m&ecirc;me b&ecirc;te</span>
+</div>
+
+<div id="pending" role="status" aria-live="polite"></div>
+__FOLDERS__
+<div class="tagbar" id="tagbar"></div>
+<div class="motifbar" id="motifbar"></div>
+
+<div class="selbar" id="selbar">
+  <span class="lbl">Personnes :</span>
+  <span id="personchips"></span>
+  <button class="geobtn" id="geotoggle">&#128506; Géo</button>
+  <span class="lbl" id="selinfo"></span>
+</div>
+<div id="geopanel">
+  <div id="geomap"></div>
+  <div class="georow">
+    <span class="lbl">Rayon :</span>
+    <input type="range" id="georadius" min="1" max="500" value="25">
+    <span class="cnt" id="georadlbl">25 km</span>
+    <span class="cnt" id="geocount"></span>
+    <button class="prim" id="geoapply">Appliquer</button>
+    <button id="geoclear">Effacer</button>
+  </div>
+  <div class="lbl" style="margin-top:var(--e-2)">Clique un point sur la carte pour définir le centre, règle le rayon, puis « Appliquer ».</div>
+</div>
+
+<div class="grid" id="grid"></div>
+
+<!-- lightbox -->
+<div id="lb">
+  <img id="lb-img" src="" alt="">
+  <div id="lb-meta">
+    <div id="lb-faits"></div>
+    <div id="lb-tags"></div>
+    <div id="lb-desc"></div>
+  </div>
+  <div id="lb-bar">
+    <button id="lb-prev">&#8592;</button>
+    <span id="lb-name"></span>
+    <button id="lb-next">&#8594;</button>
+    <button id="lb-sim" aria-label="Voir les photos semblables">&#128269; Semblables</button>
+    <button id="lb-jour" aria-label="Voir les photos du m&ecirc;me jour, toutes ann&eacute;es">&#128197; M&ecirc;me jour</button>
+    <button id="lb-del" aria-label="Supprimer cette photo">&#128465;&#65039; Supprimer</button>
+    <button id="lb-close">Fermer</button>
+  </div>
+</div>
+
+<!-- toast d'annulation (suppression reversible, 10 s) -->
+<div class="gtoast" id="gtoast" role="status" aria-live="polite"></div>
+
+<!-- slideshow -->
+<div id="ss">
+  <button id="ss-stop">&#9632; Arreter</button>
+  <img id="ss-img" src="" alt="">
+  <div id="ss-footer">
+    <div id="ss-name"></div>
+    <div id="ss-folderwrap"><a id="ss-folder" class="hidden" href="#" title="Ouvrir le dossier d'origine"></a></div>
+    <div id="ss-track"><div id="ss-fill"></div></div>
+  </div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+(function() {
+  var FILES = __FILE_JSON__;
+  var INITIAL_TAGGED = __TAGGED__;
+  var REC = __REC__;
+  var HASSUBS = __HASSUBS__;
+  var DIRQ = __DIRQ__;
+  var SEARCHQ = __SEARCHQ__;   // requete si /files?q= (page de resultats globale), sinon ''
+  var SEARCHMETA = __SEARCHMETA__;  // ce que le serveur a compris de SEARCHQ ({} sinon)
+  var MOTIFS = __MOTIFS__;
+  var sorted = FILES.slice();
+  var visible = FILES.slice();
+  var currentSort = '';     // defini au premier appel de sortBy
+  var sortAsc = true;       // chronologique par defaut : du plus ancien au plus recent
+  var observer;
+  var lbIdx = 0;
+  var TAGDATA = __TAGDATA__;
+  var selTags = (TAGDATA.sel || []).slice();
+  var mode = TAGDATA.mode === 'or' ? 'or' : 'and';
+  var selPersons = [];      // tags "personne:Nom" sélectionnés (filtre client, ET)
+  var geoFilter = null;     // {lat, lon, km} ou null
+  var qInput = document.getElementById('q');
+  qInput.value = new URLSearchParams(location.search).get('q') || '';
+  var qTimer = null;
+  qInput.addEventListener('input', function() {
+    if (qTimer) clearTimeout(qTimer);
+    // Sur une page de RESULTATS (`/files?q=`), FILES ne contient que le
+    // resultat de la requete precedente : chercher a chaque frappe
+    // n'intersecterait que CE sous-ensemble — « 3 photos » la ou le fonds en
+    // a 354 (observe le 21/08). On attend une intention explicite. Hors mode
+    // IA, la barre FILTRE des mots-cles dans la planche : la, filtrer dans ce
+    // qui est charge est exactement ce qu'on demande.
+    if (modeIA && SEARCHQ) { majIndiceRelance(); return; }
+    qTimer = setTimeout(modeIA ? rechercheIA : applyFilter, modeIA ? 450 : 250);
+  });
+  qInput.addEventListener('keydown', function(e) {
+    if (e.key !== 'Enter') return;
+    e.preventDefault();
+    if (qTimer) clearTimeout(qTimer);
+    if (modeIA && SEARCHQ) { relancerCoteServeur(qInput.value); return; }
+    if (modeIA) rechercheIA(); else applyFilter();
+  });
+
+  // Relance la requete COTE SERVEUR : la seule facon d'obtenir un compte vrai
+  // depuis une page de resultats. Un seul chemin, partage par les puces et par
+  // la touche Entree.
+  function relancerCoteServeur(texte) {
+    var t = (texte || '').trim();
+    location.href = t ? '/files?q=' + encodeURIComponent(t) : '/files';
+  }
+
+  function majIndiceRelance() {
+    var el = document.getElementById('relance');
+    if (!el) return;
+    var differe = modeIA && SEARCHQ && qInput.value.trim() !== SEARCHQ;
+    el.style.display = differe ? '' : 'none';
+  }
+
+  // ── recherche semantique (SigLIP 2) ──
+  // Le filtre habituel compare des mots-cles ; ce mode-ci compare le SENS.
+  // « chat endormi sur le canape » fonctionne sans qu'aucun de ces mots
+  // n'apparaisse dans les tags.
+  var modeIA = false, iaResultats = null, iaJeton = 0, iaCompris = '',
+      iaEcartees = 0, iaSansOrdre = 0, iaTronque = 0, iaTotal = 0;
+
+  // Lit la decomposition renvoyee par le serveur (/api/search ou __SEARCHMETA__)
+  // et remplit les trois variables d'affichage. UNE seule implementation : les
+  // deux chemins arrivent sur la meme page et doivent dire la meme chose.
+  //   iaCompris   — ce qui a ete compris (qui, ou, quand, puis le sens) ;
+  //   iaEcartees  — photos EXCLUES faute d'une date assez precise ;
+  //   iaSansOrdre — photos RENDUES mais sans aucune date sure : elles sont en
+  //                 fin de liste, et le taire ferait passer un classement
+  //                 degrade pour un classement.
+  function lireDecomposition(d) {
+    var bouts = [];
+    if (d.noms && d.noms.length) bouts.push(d.noms.join(' + '));
+    if (d.lieux && d.lieux.length) bouts.push(d.lieux.join(' + '));
+    // 5e axe : un FILTRE, pas du sens. Le dire evite qu'une requete qui
+    // restreint en silence passe pour un fonds pauvre.
+    if (d.especes && d.especes.length)
+      bouts.push('espece : ' + d.especes.join(' + '));
+    if (d.especes_inconnues && d.especes_inconnues.length)
+      bouts.push('espece inconnue : ' + d.especes_inconnues.join(', ')
+                 + ' (aucune photo)');
+    if (d.periode) bouts.push(d.periode);
+    if (d.reste) bouts.push(d.reste);
+    iaCompris = bouts.join(' · ');
+    iaEcartees = d.sans_date || 0;
+    iaSansOrdre = d.sans_date_tri || 0;
+    iaTronque = d.tronque || 0;
+    iaTotal = d.total || 0;
+    majEspeceChips(d.especes || []);
+  }
+  // ── 5e axe : les puces d'espece ──────────────────────────────────────
+  // Les six especes que YOLO sait detecter. La liste vit ici en dur parce que
+  // c'est celle du DETECTEUR, pas une preference : elle ne change qu'avec le
+  // modele. Cote serveur, la meme liste est dans `faits_vue.ESPECES_MOTS`.
+  var ESPECES = ['chat', 'chien', 'oiseau', 'cheval', 'vache', 'mouton'];
+  // Pluriels acceptes a la lecture : l'utilisateur ecrira « espece:chats ».
+  var ESPECE_FORMES = {chat: 'chats', chien: 'chiens', oiseau: 'oiseaux',
+                       cheval: 'chevaux', vache: 'vaches', mouton: 'moutons'};
+  // Motif construit en CHAINE, pas en litteral : cette page vit dans une
+  // chaine Python, ou une classe d'echappement (antislash-s) serait lue comme
+  // une sequence d'echappement invalide. Les espaces suffisent — une requete
+  // tapee n'a pas de tabulations.
+  var RE_ESPECE = 'esp[eè]ces?[ ]*:[ ]*([^ ,;]+)';
+
+  function especeDuJeton(valeur) {
+    var v = String(valeur || '').toLowerCase();
+    for (var i = 0; i < ESPECES.length; i++)
+      if (v === ESPECES[i] || v === ESPECE_FORMES[ESPECES[i]]) return ESPECES[i];
+    return null;                       // inconnue : on la laisse ou elle est
+  }
+
+  // Retire de la requete les jetons qui designent CETTE espece, et rend le
+  // texte nettoye. Ne touche a rien d'autre : les noms, lieux et dates tapes
+  // a cote doivent survivre a un clic sur une puce.
+  function sansEspece(texte, mot) {
+    return texte.replace(new RegExp(RE_ESPECE, 'gi'), function(tout, val) {
+      return especeDuJeton(val) === mot ? ' ' : tout;
+    }).replace(/  +/g, ' ').trim();
+  }
+
+  function basculerEspece(mot) {
+    var avant = qInput.value;
+    var apres = sansEspece(avant, mot);
+    // Rien n'a bouge => l'espece n'y etait pas : on l'AJOUTE a la fin.
+    if (apres === avant.replace(/  +/g, ' ').trim())
+      apres = (apres + ' espece:' + mot).trim();
+    qInput.value = apres;
+    if (qTimer) clearTimeout(qTimer);
+    // Sur une page de RESULTATS servie par le serveur, FILES ne contient que
+    // le resultat de la requete PRECEDENTE : filtrer dedans afficherait
+    // « 3 photos » la ou le fonds en a 349 — un compte qui ment, la forme
+    // d'erreur la plus chere du projet. Une puce cliquee est une intention
+    // EXPLICITE : on relance la requete cote serveur.
+    if (SEARCHQ) { relancerCoteServeur(apres); return; }
+    if (apres) rechercheIA(); else { iaResultats = null; majEspeceChips([]);
+                                     oublierPertinence(); }
+  }
+
+  // L'etat des puces vient de ce que le SERVEUR a compris, jamais d'une
+  // relecture locale de la requete : une page qui deduit son propre etat finit
+  // par contredire le moteur — c'est exactement la regression du 20/08.
+  function majEspeceChips(especes) {
+    var actives = {};
+    (especes || []).forEach(function(m) { actives[m] = true; });
+    var box = document.getElementById('especechips');
+    if (!box.firstChild) {
+      ESPECES.forEach(function(mot) {
+        var b = document.createElement('button');
+        b.className = 'chip';
+        b.type = 'button';
+        b.textContent = mot;
+        b.setAttribute('aria-pressed', 'false');
+        b.title = 'Filtre exact : la detection et la description disent « '
+                  + mot + ' »';
+        b.onclick = function() { basculerEspece(mot); };
+        box.appendChild(b);
+        box.appendChild(document.createTextNode(' '));
+      });
+    }
+    var puces = box.getElementsByTagName('button');
+    for (var i = 0; i < puces.length; i++) {
+      var on = !!actives[puces[i].textContent];
+      puces[i].className = 'chip' + (on ? ' on' : '');
+      puces[i].setAttribute('aria-pressed', on ? 'true' : 'false');
+    }
+  }
+
+  function montrerEspeceBar(oui) {
+    document.getElementById('especebar').style.display = oui ? '' : 'none';
+    if (oui) majEspeceChips(null);      // construit les puces au premier appel
+  }
+
+  var btnIA = document.getElementById('btn-ia');
+  btnIA.addEventListener('click', function() {
+    modeIA = !modeIA;
+    btnIA.className = 'tb' + (modeIA ? ' active' : '');
+    btnIA.setAttribute('aria-pressed', modeIA ? 'true' : 'false');
+    qInput.placeholder = modeIA ? 'Décris la photo…' : 'Recherche tags…';
+    iaResultats = null;
+    montrerEspeceBar(modeIA);
+    majIndiceRelance();
+    // Sans classement, « Pertinence » n'a plus de sens : on retombe sur la date
+    // plutot que de laisser un bouton actif sans ordre derriere lui.
+    if (currentSort === 'pertinence') { currentSort = ''; sortAsc = true; }
+    if (modeIA && qInput.value.trim()) rechercheIA();
+    else if (currentSort === '') sortBy('date');
+    else { updateSortButtons(); applyFilter(); }
+    if (modeIA) qInput.focus();
+  });
+
+  // Un classement qui disparait (requete vidée, erreur, sortie du mode IA)
+  // doit emporter le bouton qui le nomme, sinon « Pertinence » reste allume
+  // devant une liste qu'il ne classe plus.
+  function oublierPertinence() {
+    if (currentSort === 'pertinence') { currentSort = ''; sortAsc = true; sortBy('date'); }
+    else { updateSortButtons(); applyFilter(); }
+  }
+
+  function rechercheIA() {
+    var t = qInput.value.trim();
+    if (!t) { iaResultats = null; majEspeceChips([]); oublierPertinence();
+              return; }
+    var jeton = ++iaJeton;                 // ignore les reponses hors delai
+    var cnt = document.getElementById('cnt');
+    cnt.textContent = 'recherche…';
+    fetch('/api/search?q=' + encodeURIComponent(t) + '&n=200')
+      .then(function(r) { return r.json(); })
+      .then(function(d) {
+        if (jeton !== iaJeton) return;
+        if (d.error) { cnt.textContent = d.error; iaResultats = null;
+                       updateSortButtons(); return; }
+        iaResultats = {};
+        (d.results || []).forEach(function(x, i) { iaResultats[x.key] = i; });
+        currentSort = 'pertinence';    // et le bouton le DIT
+        updateSortButtons();
+        // Rend visible ce que la requete a compris. Les trois premieres
+        // dimensions sont des FILTRES EXACTS (qui, ou, quand), la derniere du
+        // SENS. L'afficher n'est pas cosmetique : sans ca, une requete qui
+        // filtre en silence est une requete qu'on n'ose plus croire.
+        // Avant le 15/08 seul « qui » etait montre : une recherche par lieu
+        // seul filtrait sans jamais le dire.
+        lireDecomposition(d);
+        applyFilter();
+      })
+      .catch(function() {
+        if (jeton === iaJeton) cnt.textContent = 'recherche indisponible';
+      });
+  }
+
+  function esc(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+  // ── sort (reversible) ──
+  // « Date » = date de PRISE (taken, repli mtime), du plus ancien au plus recent
+  // par defaut ; un reclic sur le meme bouton inverse le sens. « Nom » de meme
+  // (A-Z par defaut, reclic = Z-A). Le diaporama « Demo » suit ensuite cet ordre.
+  function photoTime(f){ return f.taken || f.mtime || 0; }
+  // `sd` : le serveur a marque cette photo comme n'ayant AUCUNE date sure
+  // (ni precise, ni annee de dossier). Absent = datee.
+  function sansDate(f){ return !!f.sd; }
+  // Trois ordres possibles, jamais deux : 'date', 'name' et 'pertinence' —
+  // celui que le SERVEUR a rendu pour une requete. Avant le 19/08 il n'avait
+  // pas de nom : la page de resultats affichait « Date ↑ » allume alors que
+  // l'ordre venait de /api/search, et cliquer sur « Date » ne changeait rien
+  // (applyFilter re-triait par pertinence derriere). Un bouton qui ment est
+  // pire qu'un bouton absent.
+  function updateSortButtons() {
+    var d = document.getElementById('btn-date'), n = document.getElementById('btn-name'),
+        p = document.getElementById('btn-rel');
+    // « Pertinence » n'existe que quand un classement a ete rendu : proposer un
+    // ordre qu'on ne saurait pas produire serait un troisieme mensonge.
+    p.style.display = iaResultats ? '' : 'none';
+    p.className = 'tb' + (currentSort==='pertinence' ? ' active' : '');
+    p.title = 'Ordre rendu par la recherche : la photo la plus proche de la requete en tete';
+    d.className = 'tb' + (currentSort==='date' ? ' active' : '');
+    n.className = 'tb' + (currentSort==='name' ? ' active' : '');
+    d.setAttribute('aria-pressed', currentSort==='date' ? 'true' : 'false');
+    n.setAttribute('aria-pressed', currentSort==='name' ? 'true' : 'false');
+    p.setAttribute('aria-pressed', currentSort==='pertinence' ? 'true' : 'false');
+    d.textContent = 'Date ' + (currentSort==='date' ? (sortAsc ? '↑' : '↓') : '');
+    n.textContent = currentSort==='name' ? ('Nom ' + (sortAsc ? 'A→Z' : 'Z→A')) : 'Nom A-Z';
+    d.title = currentSort==='date'
+      ? 'Chronologique — ' + (sortAsc ? 'du plus ancien au plus recent' : 'du plus recent au plus ancien') + ' (reclic pour inverser)'
+      : 'Trier par date de prise';
+    n.title = 'Trier par nom' + (currentSort==='name' ? ' (reclic pour inverser)' : '');
+  }
+  function sortBy(m) {
+    if (m === 'pertinence') {          // l'ordre vient du serveur : rien a trier
+      currentSort = 'pertinence';
+      updateSortButtons();
+      applyFilter();
+      return;
+    }
+    if (m === currentSort) sortAsc = !sortAsc;     // reclic = inverse le sens
+    else { currentSort = m; sortAsc = true; }       // nouveau tri = sens par defaut
+    updateSortButtons();
+    var s = FILES.slice();
+    if (m === 'date') {
+      // Une photo sans aucune date sure n'est ni recente ni ancienne : elle est
+      // INCONNUE. La classer par `photoTime` revient a la dater de son dernier
+      // tagging (2026) — invisible en ordre croissant, ou elle tombe en fin par
+      // accident, mais elle passait EN TETE au reclic. On la range donc en fin
+      // dans les DEUX sens, par nom pour que la page soit reproductible.
+      var datees = [], muettes = [];
+      s.forEach(function(f) { (sansDate(f) ? muettes : datees).push(f); });
+      datees.sort(function(a,b){ return photoTime(a) - photoTime(b); });
+      if (!sortAsc) datees.reverse();
+      muettes.sort(function(a,b){ return a.name.localeCompare(b.name); });
+      s = datees.concat(muettes);
+    } else {
+      s.sort(function(a,b){ return a.name.localeCompare(b.name); });
+      if (!sortAsc) s.reverse();
+    }
+    sorted = s;
+    applyFilter();
+  }
+
+  // ── tags (barre repliable, tags du dossier + sous-dossiers via l'index) ──
+  function tagNavUrl(tags, m) {
+    var p = ['dir=' + encodeURIComponent(DIRQ || '0')];
+    if (tags.length) {
+      p.push('tags=' + encodeURIComponent(tags.join(',')));
+      p.push('tmode=' + m);
+    }
+    return '/files?' + p.join('&');
+  }
+
+  function buildTagbar() {
+    var tagsArr;
+    if (TAGDATA.counts && TAGDATA.counts.length) {
+      tagsArr = TAGDATA.counts;           // index serveur : récursif
+    } else {
+      var counts = {};
+      FILES.forEach(function(f) {
+        (f.kw || []).forEach(function(t) { counts[t] = (counts[t] || 0) + 1; });
+      });
+      tagsArr = Object.keys(counts)
+        .sort(function(a, b) { return counts[b] - counts[a]; })
+        .slice(0, 40)
+        .map(function(t) { return [t, counts[t]]; });
+    }
+    var bar = document.getElementById('tagbar');
+    bar.innerHTML = '';
+    if (!tagsArr.length) {
+      bar.innerHTML = '<span class="tagbar-label">Aucun mot-cl&eacute; pour le moment &mdash; le tagging IA les ajoute automatiquement.</span>';
+      return;
+    }
+    // navigation serveur quand la page ne contient pas toutes les photos du sous-arbre
+    var srvNav = selTags.length > 0 || (HASSUBS && !REC);
+
+    var collapsed = true;
+    try { collapsed = localStorage.getItem('tagbarOpen') !== '1'; } catch (e) {}
+    if (selTags.length) collapsed = false;
+
+    var toggle = document.createElement('span');
+    toggle.className = 'chip mode';
+    var wrap = document.createElement('div');
+    wrap.className = 'tagchips' + (collapsed ? ' hidden' : '');
+
+    function updToggle() {
+      toggle.textContent = (collapsed ? '▸' : '▾') + ' Filtres'
+        + (selTags.length ? ' — ' + selTags.length + ' actif' + (selTags.length > 1 ? 's' : '') : '')
+        + ' (' + tagsArr.length + ' tags)';
+    }
+    toggle.onclick = function() {
+      collapsed = !collapsed;
+      wrap.className = 'tagchips' + (collapsed ? ' hidden' : '');
+      try { localStorage.setItem('tagbarOpen', collapsed ? '0' : '1'); } catch (e) {}
+      updToggle();
+    };
+    bar.appendChild(toggle);
+
+    var modeBtn = document.createElement('span');
+    modeBtn.className = 'chip mode';
+    modeBtn.id = 'modeBtn';
+    modeBtn.textContent = (mode === 'and') ? 'ET' : 'OU';
+    modeBtn.title = 'Combiner les mots-cles en ET ou en OU';
+    modeBtn.onclick = function() {
+      mode = (mode === 'and') ? 'or' : 'and';
+      modeBtn.textContent = (mode === 'and') ? 'ET' : 'OU';
+      if (srvNav && selTags.length) { location.href = tagNavUrl(selTags, mode); return; }
+      applyFilter();
+    };
+    wrap.appendChild(modeBtn);
+
+    tagsArr.forEach(function(tn) {
+      var t = tn[0], n = tn[1];
+      var c = document.createElement('span');
+      var on = selTags.indexOf(t) >= 0;
+      c.className = 'chip' + (on ? ' on' : '');
+      c.innerHTML = esc(t) + '<span class="n">' + n + '</span>';
+      c.onclick = function() {
+        var i = selTags.indexOf(t);
+        if (srvNav) {
+          var ns = selTags.slice();
+          if (i >= 0) ns.splice(ns.indexOf(t), 1); else ns.push(t);
+          location.href = tagNavUrl(ns, mode);
+          return;
+        }
+        if (i >= 0) selTags.splice(i, 1); else selTags.push(t);
+        c.className = 'chip' + (i < 0 ? ' on' : '');
+        document.getElementById('clearBtn').style.display = selTags.length ? 'inline-block' : 'none';
+        updToggle();
+        applyFilter();
+      };
+      wrap.appendChild(c);
+    });
+
+    var clr = document.createElement('span');
+    clr.className = 'chip clear';
+    clr.id = 'clearBtn';
+    clr.textContent = 'Tout effacer';
+    clr.style.display = selTags.length ? 'inline-block' : 'none';
+    clr.onclick = function() {
+      if (srvNav) { location.href = tagNavUrl([], mode); return; }
+      selTags = [];
+      var chips = wrap.querySelectorAll('.chip.on');
+      for (var i = 0; i < chips.length; i++) chips[i].className = 'chip';
+      clr.style.display = 'none';
+      updToggle();
+      applyFilter();
+    };
+    wrap.appendChild(clr);
+
+    bar.appendChild(wrap);
+    updToggle();
+  }
+
+  function applyFilter() {
+    var words = (modeIA ? [] : qInput.value.trim().toLowerCase()
+                 .split(/[\s,;]+/).filter(Boolean));
+    visible = sorted.filter(function(f) {
+      var kw = f.kw || [];
+      // En mode IA, seules les photos rapportees par /api/search passent ;
+      // les filtres chips, personnes et geo restent cumulables.
+      if (modeIA && iaResultats && iaResultats[f.key] === undefined) return false;
+      if (selTags.length) {
+        var okChips = (mode === 'and')
+          ? selTags.every(function(t) { return kw.indexOf(t) >= 0; })
+          : selTags.some(function(t) { return kw.indexOf(t) >= 0; });
+        if (!okChips) return false;
+      }
+      if (selPersons.length) {
+        for (var pp = 0; pp < selPersons.length; pp++) {
+          if (kw.indexOf(selPersons[pp]) < 0) return false;
+        }
+      }
+      if (geoFilter) {
+        if (!f.gps) return false;
+        if (haversine(geoFilter.lat, geoFilter.lon, f.gps[0], f.gps[1]) > geoFilter.km) return false;
+      }
+      if (words.length) {
+        var hay = kw.join(' ') + ' ' + f.name.toLowerCase() + ' ' + (f.desc || '').toLowerCase();
+        for (var i = 0; i < words.length; i++) {
+          if (hay.indexOf(words[i]) < 0) return false;
+        }
+      }
+      return true;
+    });
+    // Le classement par pertinence est l'ordre PAR DEFAUT d'une recherche —
+    // c'est ce que l'utilisateur attend quand il vient de formuler une requete.
+    // Mais il ne s'impose plus : jusqu'au 19/08, `modeIA && iaResultats`
+    // suffisait, donc un clic sur « Date » etait avale sans rien dire.
+    if (currentSort === 'pertinence' && iaResultats) {
+      visible.sort(function(a, b) {
+        return iaResultats[a.key] - iaResultats[b.key];
+      });
+    }
+    renderGrid();
+  }
+
+  // ── vignettes serveur (audit O1) ──
+  // La grille chargeait les ORIGINAUX (2-6 Mo/case lus sur le NAS) ; /api/thumb
+  // sert un JPEG 512 px (grille) ou 1600 px (diaporama) avec cache disque, et
+  // REDIRIGE vers l'original quand il ne sait pas (vidéo, format exotique) —
+  // aucun cas particulier ici. La visionneuse (lightbox) garde l'original.
+  function thumbUrl(f, s) {
+    if (!f || !f.key) return f ? f.url : '';
+    return '/api/thumb?key=' + encodeURIComponent(f.key) + '&s=' + (s || 512);
+  }
+
+  // ── grid ──
+  // « date . lieu . noms » -- les faits que le serveur SAIT, calcules a la
+  // demande (`faits_vue`), jamais lus dans un champ grave : sur les 81 photos
+  // qui portent un `faits` en base, 12 divergent deja de l'index.
+  // UN seul producteur pour la planche et la visionneuse : deux rendus du
+  // meme fait finissent par se contredire, et c'est l'ecran qui ment.
+  // `avecSrc` est la seule difference -- la planche est dense, la visionneuse
+  // ne montre qu'une photo et a donc la place de dire la provenance.
+  function faitsHtml(f, avecSrc) {
+    var fa = f.faits;
+    if (!fa) return '';
+    function src(s) {
+      return (avecSrc && s) ? ' <span class="src">(' + esc(s) + ')</span>' : '';
+    }
+    var p = [];
+    if (fa.date) p.push('<span class="d">' + esc(fa.date) + '</span>' + src(fa.date_src));
+    if (fa.lieu) p.push(esc(fa.lieu) + src(fa.lieu_src));
+    if (fa.noms && fa.noms.length)
+      p.push('<span class="n">' + esc(fa.noms.join(', ')) + '</span>');
+    return p.join(' · ');
+  }
+
+  function renderGrid() {
+    var grid = document.getElementById('grid');
+    grid.innerHTML = '';
+    if (observer) observer.disconnect();
+
+    observer = new IntersectionObserver(function(entries) {
+      entries.forEach(function(e) {
+        if (e.isIntersecting) {
+          var img = e.target.querySelector('img');
+          if (img && img.dataset.src) {
+            img.src = img.dataset.src;
+            img.onload = function() { img.classList.add('loaded'); };
+            img.onerror = function() {
+              // vignette serveur KO (clé qui ne résout pas, cas rares) :
+              // retenter UNE fois avec l'original avant de masquer la case.
+              var fb = img.dataset.fb;
+              if (fb && img.src.indexOf('/api/thumb') >= 0) {
+                img.src = fb;
+                return;
+              }
+              var c = img.closest('.cell');
+              if (c) c.style.display = 'none';
+            };
+            delete img.dataset.src;
+            observer.unobserve(e.target);
+          }
+        }
+      });
+    }, { rootMargin: '200px' });
+
+    visible.forEach(function(f, i) {
+      var cell = document.createElement('div');
+      cell.className = 'cell';
+      var cap = f.desc || '';
+      var fh = faitsHtml(f, false);
+      cell.innerHTML = '<div class="ph"><img data-src="' + thumbUrl(f, 512)
+                     + '" data-fb="' + esc(f.url) + '" alt="" title="' + esc(f.name) + '">'
+                     // `annee` n'est envoye qu'en mode « meme jour » : c'est la
+                     // que le millesime porte le recit (2008, 2011, 2019).
+                     + (f.annee ? '<span class="an">' + f.annee + '</span>' : '')
+                     + '</div>'
+                     // Rien a dire -> pas de ligne : une ligne vide sous
+                     // chaque vignette couterait 43 064 fois la hauteur d'un
+                     // fait absent.
+                     + (fh ? '<div class="faits">' + fh + '</div>' : '')
+                     + '<div class="caption' + (cap ? '' : ' empty') + '">'
+                     + (cap ? esc(cap) : 'pas encore analysée') + '</div>';
+      cell.onclick = function() { openLb(i); };
+      grid.appendChild(cell);
+      observer.observe(cell);
+    });
+
+    var txt = visible.length + ' photo(s)';
+    if (selTags.length) txt += ' / ' + FILES.length;
+    // C'est le tri par DATE qui range les muettes en fin : on le DIT, sinon la
+    // fin de planche passe pour de vieilles photos. Le critere est l'ordre reel,
+    // pas le mode : trier des resultats IA par date range les muettes ici aussi.
+    // Quand l'ordre est la pertinence, le meme fait est porte par `iaSansOrdre`,
+    // plus bas — jamais les deux.
+    if (currentSort === 'date') {
+      var nsd = 0;
+      for (var vi = 0; vi < visible.length; vi++) if (visible[vi].sd) nsd++;
+      if (nsd) txt += ' · ' + nsd + ' sans date connue, en fin de liste';
+    }
+    if (modeIA && iaCompris) txt += ' — ' + iaCompris;
+    // Deux chiffres, deux sens : `iaEcartees` compte des photos ABSENTES de la
+    // liste, `iaSansOrdre` des photos PRESENTES mais qu'aucune date ne permet
+    // de classer. Les confondre serait pire que les taire.
+    if (modeIA && iaEcartees)
+      txt += ' (' + iaEcartees + ' sans date assez précise)';
+    if (currentSort === 'pertinence' && iaSansOrdre)
+      txt += ' · ' + iaSansOrdre + ' sans date connue, en fin de liste';
+    // Un plafond qui ne se dit pas se lit comme une exhaustivite. Il n'apparait
+    // que s'il a REELLEMENT coupe, et il donne le total, pas un « … ».
+    if (modeIA && iaTronque)
+      txt += ' · ' + iaTronque + ' de plus non affichées (sur ' + iaTotal
+             + ' au total)';
+    document.getElementById('cnt').textContent = txt;
+  }
+
+  // ── lightbox ──
+  function openLb(i) {
+    lbIdx = i;
+    document.getElementById('lb').classList.add('open');
+    showLb();
+  }
+  function showLb() {
+    var f = visible[lbIdx];
+    document.getElementById('lb-img').src = f.url;
+    document.getElementById('lb-name').textContent = f.name + '  (' + f.size + ')';
+    // Les faits AVANT les tags : les premiers portent leur source, les
+    // seconds sortent d'un modele. L'ordre de lecture dit lequel engage le
+    // projet.
+    var fx = document.getElementById('lb-faits');
+    var fh = faitsHtml(f, true);
+    fx.innerHTML = fh || 'ni date, ni lieu, ni nom connus';
+    fx.className = fh ? '' : 'none';
+    // Les noms sont DEJA dans la ligne de faits, triés, sans préfixe et avec
+    // leur source : les répéter en « personne:Cédric Baudin » sous cette ligne
+    // était du bruit, et le préfixe est un détail d'implémentation qui n'a
+    // rien à faire sous les yeux de la famille. Le FILTRE de la planche, lui,
+    // garde les tags nommés : y chercher « personne:Luna » a du sens.
+    var t = document.getElementById('lb-tags');
+    var libres = (f.kw || []).filter(function(k) {
+      var kl = String(k).toLowerCase();
+      return kl.indexOf('personne:') !== 0 && kl.indexOf('animal:') !== 0;
+    });
+    if (libres.length) { t.textContent = libres.join(' · '); t.className = ''; }
+    // Etat vide RÉDIGÉ (plancher photo-ui n° 7) : « pas encore de tags »
+    // mentirait sur une photo qui n'a QUE des noms — elle a bien été nommée.
+    else if (f.kw && f.kw.length) {
+      t.textContent = 'aucun mot-clé au-delà des noms';
+      t.className = 'none';
+    } else { t.textContent = 'pas encore de tags'; t.className = 'none'; }
+    document.getElementById('lb-desc').textContent = f.desc || '';
+    // Pas de date au jour pres -> pas de bouton (29 % de la photothèque en
+    // est la). Le libelle porte le jour : « Même jour (14 août) », accent
+    // compris — c'est ce que la page d'arrivee affiche.
+    var jb = document.getElementById('lb-jour');
+    jb.hidden = !f.jour;
+    if (f.jour) jb.textContent = '📅 Même jour (' + jourLisible(f.jour) + ')';
+  }
+  // « 08-14 » -> « 14 aout ». Sans locale : toLocaleDateString depend du poste.
+  // Les MOIS viennent du serveur (meme_jour.MOIS_FR, accentue) : la page
+  // d'arrivee ecrit « 14 aout » avec son accent, le bouton qui y mene doit
+  // ecrire le meme mot. Deux tableaux recopies avaient deja diverge.
+  var MOIS_JOUR = __MOIS_JOUR__;
+  function jourLisible(j) {
+    var m = /^(\d{2})-(\d{2})$/.exec(j || '');
+    return m ? (parseInt(m[2], 10) + ' ' + MOIS_JOUR[parseInt(m[1], 10) - 1]) : '';
+  }
+  function lbMove(d) {
+    if (!visible.length) return;
+    lbIdx = (lbIdx + d + visible.length) % visible.length;
+    showLb();
+  }
+  function closeLb() { document.getElementById('lb').classList.remove('open'); }
+
+  document.getElementById('lb').addEventListener('click', function(e) {
+    if (e.target === this) closeLb();
+  });
+
+  // « Semblables » : navigation (page /files?sim=), pas un filtre client --
+  // les résultats couvrent TOUTE la photothèque, pas le dossier courant.
+  document.getElementById('lb-sim').addEventListener('click', function() {
+    var f = visible[lbIdx];
+    if (f && f.key) location.href = '/files?sim=' + encodeURIComponent(f.key);
+  });
+
+  // « Meme jour » : meme geste de navigation, mais par la DATE. On passe la
+  // CLE (pas le jour) : le serveur en deduit le mois-jour ET ecarte la photo
+  // de reference de ses propres resultats.
+  document.getElementById('lb-jour').addEventListener('click', function() {
+    var f = visible[lbIdx];
+    if (f && f.key && f.jour) location.href = '/files?jour=' + encodeURIComponent(f.key);
+  });
+
+  // 5 bandes verticales : seules les bandes des bords (20%) naviguent
+  document.getElementById('lb-img').addEventListener('click', function(e) {
+    var w = this.clientWidth;
+    if (e.offsetX < w / 5) lbMove(-1);
+    else if (e.offsetX > w * 4 / 5) lbMove(1);
+  });
+
+  // swipe gauche/droite
+  var tsX = null, tsY = null;
+  var lbEl = document.getElementById('lb');
+  lbEl.addEventListener('touchstart', function(e) {
+    if (e.touches.length === 1) {
+      tsX = e.touches[0].clientX;
+      tsY = e.touches[0].clientY;
+    }
+  }, { passive: true });
+  lbEl.addEventListener('touchend', function(e) {
+    if (tsX === null) return;
+    var dx = e.changedTouches[0].clientX - tsX;
+    var dy = e.changedTouches[0].clientY - tsY;
+    tsX = null;
+    if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5) {
+      lbMove(dx < 0 ? 1 : -1);
+    }
+  }, { passive: true });
+
+  document.addEventListener('keydown', function(e) {
+    if (document.getElementById('lb').classList.contains('open')) {
+      if (e.key === 'ArrowLeft') lbMove(-1);
+      if (e.key === 'ArrowRight') lbMove(1);
+      if (e.key === 'Escape') closeLb();
+    }
+    if (document.getElementById('ss').classList.contains('open')) {
+      if (e.key === 'ArrowLeft') { e.preventDefault(); ssMove(-1); }
+      if (e.key === 'ArrowRight') { e.preventDefault(); ssMove(1); }
+      if (e.key === ' ') { e.preventDefault(); ssTogglePause(); }
+      if (e.key === 'Escape') stopSlideshow();
+    }
+  });
+
+  // ── slideshow (respecte le filtre actif) ──
+  var ssTimer = null;
+  var ssIdx = 0;
+  var ssMode = 'seq';
+  var ssOrder = [];
+  var DURATION = 10000;
+
+  // met à jour le chip « dossier d'origine » du diaporama
+  function ssSetFolder(it) {
+    var fl = document.getElementById('ss-folder');
+    if (it && it.gurl) {
+      fl.href = it.gurl;
+      fl.textContent = '📁 ' + (it.folder || 'Dossier');
+      fl.classList.remove('hidden');
+    } else {
+      fl.classList.add('hidden');
+    }
+  }
+
+  function buildOrder(m) {
+    var arr = visible.map(function(_, i) { return i; });
+    if (m === 'rnd') {
+      for (var i = arr.length - 1; i > 0; i--) {
+        var j = Math.floor(Math.random() * (i + 1));
+        var tmp = arr[i]; arr[i] = arr[j]; arr[j] = tmp;
+      }
+    }
+    // m === 'seq' : « Demo » suit l'ordre courant de la planche (tri + sens
+    // choisis par l'utilisateur). arr est deja 0..n-1 dans l'ordre de `visible`,
+    // donc on ne re-trie pas : on joue exactement ce que l'on voit.
+    return arr;
+  }
+
+  function ssOpen() {
+    var el = document.getElementById('ss');
+    el.classList.add('open');
+    var req = el.requestFullscreen || el.webkitRequestFullscreen || el.mozRequestFullScreen || el.msRequestFullscreen;
+    if (req) { try { req.call(el).catch(function() {}); } catch (e) {} }
+  }
+
+  // ── aléatoire en flux : démarrage instantané, photos piochées au fil de l'eau ──
+  var rndStream = false;
+  var rndHist = [];
+  var rndPos = -1;
+  var rndLoopMode = 'rnd';   // 'rnd' | 'seq' | 'asc' — comportement en fin de playlist
+  var ssPaused = false;
+
+  function shuffleItems(a) {
+    for (var i = a.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var t = a[i]; a[i] = a[j]; a[j] = t;
+    }
+    return a;
+  }
+
+  function fetchPlaylist(mode, cb) {
+    var d = new URLSearchParams(location.search).get('dir') || '0';
+    fetch('/api/playlist?dir=' + encodeURIComponent(d) + '&mode=' + mode)
+      .then(function(r) { return r.json(); })
+      .then(function(j) { cb((j && j.items) ? j.items : []); })
+      .catch(function() { cb([]); });
+  }
+
+  function ssTogglePause() {
+    ssPaused = !ssPaused;
+    var nameEl = document.getElementById('ss-name');
+    if (ssPaused) {
+      if (ssTimer) clearTimeout(ssTimer);
+      ssTimer = null;
+      // gèle la barre de progression à sa position actuelle
+      var fill = document.getElementById('ss-fill');
+      var w = getComputedStyle(fill).width;
+      fill.style.transition = 'none';
+      fill.style.width = w;
+      nameEl.textContent = '⏸ ' + nameEl.textContent.replace(/^⏸ /, '');
+    } else {
+      // reprise : cycle complet sur la photo courante
+      if (rndStream) {
+        if (rndPos >= 0) rndShow(rndHist[rndPos]); else rndNext();
+      } else {
+        showSlide();
+      }
+    }
+  }
+
+  var streamMode = 'rnd';
+  var rndErr = 0;
+
+  function fetchRandom(cb) {
+    var d = new URLSearchParams(location.search).get('dir') || '0';
+    fetch('/api/random?dir=' + encodeURIComponent(d))
+      .then(function(r) { return r.json(); })
+      .then(function(j) { cb(j && j.url ? j : null); })
+      .catch(function() { cb(null); });
+  }
+
+  function rndFetch(cb) {
+    var last = (rndPos >= 0 && rndHist[rndPos]) ? rndHist[rndPos] : null;
+    if (streamMode === 'asc' && last && last.key) {
+      var ex = rndHist.slice(-15).map(function(it) { return it.key || ''; }).join('|');
+      fetch('/api/assoc?prev=' + encodeURIComponent(last.key)
+            + '&exclude=' + encodeURIComponent(ex))
+        .then(function(r) { return r.json(); })
+        .then(function(j) {
+          if (j && j.url) cb(j);
+          else fetchRandom(cb);  // pas d'association possible → pioche aléatoire
+        })
+        .catch(function() { fetchRandom(cb); });
+      return;
+    }
+    fetchRandom(cb);
+  }
+
+  function rndShow(item) {
+    var img = document.getElementById('ss-img');
+    img.style.opacity = 0;
+    img.src = thumbUrl(item, 1600);
+    img.onload = function() {
+      rndErr = 0;
+      img.style.transition = 'opacity 0.5s';
+      img.style.opacity = 1;
+    };
+    img.onerror = function() {
+      // vignette serveur KO : retenter une fois l'original avant de passer
+      if (item.url && img.src.indexOf('/api/thumb') >= 0) { img.src = item.url; return; }
+      // image endommagée : on passe à la suivante sans l'afficher
+      rndErr++;
+      if (rndErr < 10) setTimeout(rndNext, 400);
+    };
+    var label = item.name || '';
+    if (item.via && item.via.length) {
+      label += '   —   lien : ' + item.via.join(' · ');
+    }
+    document.getElementById('ss-name').textContent = (ssPaused ? '⏸ ' : '') + label;
+    ssSetFolder(item);
+    ssStartFill();
+    if (ssTimer) clearTimeout(ssTimer);
+    ssTimer = ssPaused ? null : setTimeout(rndNext, DURATION);
+  }
+
+  function rndNext() {
+    if (rndPos < rndHist.length - 1) {
+      rndPos++;
+      rndShow(rndHist[rndPos]);
+      return;
+    }
+    // fin de la playlist pré-chargée
+    if (!rndHist.length) {
+      if (ssTimer) clearTimeout(ssTimer);
+      ssTimer = setTimeout(rndNext, 2000);   // playlist pas encore prête
+      return;
+    }
+    // on reboucle : re-mélange en aléatoire, ordre conservé sinon
+    if (rndLoopMode === 'rnd') rndHist = shuffleItems(rndHist.slice());
+    rndPos = 0;
+    rndShow(rndHist[0]);
+  }
+
+  function rndPrev() {
+    if (rndPos > 0) {
+      rndPos--;
+      rndShow(rndHist[rndPos]);
+    }
+  }
+
+  function buildAssocOrder() {
+    // ordonne 'visible' pour que chaque photo partage un tag avec la précédente
+    var idx = visible.map(function(_, i) { return i; });
+    if (idx.length < 2) return idx;
+    var order = [idx[0]], used = {}; used[idx[0]] = 1;
+    var cur = idx[0];
+    while (order.length < idx.length) {
+      var curkw = visible[cur].kw || [];
+      var best = -1;
+      for (var t = 0; t < idx.length; t++) {
+        var j = idx[t];
+        if (used[j]) continue;
+        var kw = visible[j].kw || [];
+        if (kw.some(function(x) { return curkw.indexOf(x) >= 0; })) { best = j; break; }
+      }
+      if (best < 0) {
+        for (var u = 0; u < idx.length; u++) { if (!used[idx[u]]) { best = idx[u]; break; } }
+      }
+      order.push(best); used[best] = 1; cur = best;
+    }
+    return order;
+  }
+
+  function startSlideshow(m) {
+    var localSel = selPersons.length > 0 || geoFilter != null;
+    if (localSel) {
+      // sélection personnes/géo : on joue toujours l'ensemble filtré localement
+      if (!visible.length) return;
+      ssPaused = false;
+      rndStream = false;
+      ssMode = m;
+      ssOrder = (m === 'asc') ? buildAssocOrder() : buildOrder(m);
+      ssIdx = 0;
+      ssOpen();
+      showSlide();
+      return;
+    }
+    var filtered = selTags.length > 0 || qInput.value.trim() !== '';
+    ssPaused = false;
+    if (!filtered) {
+      // Aucun filtre → on joue TOUTE la portée via une playlist ordonnée une
+      // seule fois : aucune répétition (fini la pioche avec remise), seq
+      // chronologique, association calculée sur l'ensemble.
+      var plMode = (m === 'asc') ? 'assoc' : (m === 'rnd') ? 'rnd' : 'seq';
+      rndStream = true;
+      rndLoopMode = m;
+      rndHist = [];
+      rndPos = -1;
+      rndErr = 0;
+      ssOpen();
+      document.getElementById('ss-name').textContent = 'Chargement…';
+      fetchPlaylist(plMode, function(items) {
+        if (!items.length) { document.getElementById('ss-name').textContent = 'Aucune photo'; return; }
+        rndHist = items;
+        rndPos = -1;
+        rndNext();
+      });
+      return;
+    }
+    if (!visible.length) return;
+    rndStream = false;
+    ssMode = m;
+    ssOrder = buildOrder(m);
+    ssIdx = 0;
+    ssOpen();
+    showSlide();
+  }
+
+  function ssStartFill() {
+    var fill = document.getElementById('ss-fill');
+    fill.style.transition = 'none';
+    fill.style.width = '0%';
+    if (ssPaused) return;
+    setTimeout(function() {
+      fill.style.transition = 'width ' + DURATION + 'ms linear';
+      fill.style.width = '100%';
+    }, 50);
+  }
+
+  function showSlide() {
+    if (ssTimer) clearTimeout(ssTimer);
+    ssTimer = null;
+
+    var f = visible[ssOrder[ssIdx]];
+    var img = document.getElementById('ss-img');
+    img.style.opacity = 0;
+    img.src = thumbUrl(f, 1600);
+    img.onload = function() {
+      img.style.transition = 'opacity 0.5s';
+      img.style.opacity = 1;
+    };
+    img.onerror = function() {
+      // vignette serveur KO : retenter une fois l'original avant de passer
+      if (f.url && img.src.indexOf('/api/thumb') >= 0) { img.src = f.url; return; }
+      if (!ssPaused) setTimeout(function() { ssMove(1); }, 300);
+    };
+    document.getElementById('ss-name').textContent = (ssPaused ? '⏸ ' : '') + f.name;
+    ssSetFolder(f);
+
+    ssStartFill();
+    if (!ssPaused) {
+      ssTimer = setTimeout(function() {
+        ssIdx = (ssIdx + 1) % ssOrder.length;
+        if (ssIdx === 0 && ssMode === 'rnd') ssOrder = buildOrder('rnd');
+        showSlide();
+      }, DURATION);
+    }
+  }
+
+  function stopSlideshow() {
+    rndStream = false;
+    ssPaused = false;
+    if (ssTimer) clearTimeout(ssTimer);
+    ssTimer = null;
+    document.getElementById('ss').classList.remove('open');
+    var ex = document.exitFullscreen || document.webkitExitFullscreen || document.mozCancelFullScreen || document.msExitFullscreen;
+    if (ex && (document.fullscreenElement || document.webkitFullscreenElement)) {
+      try { ex.call(document).catch(function() {}); } catch (e) {}
+    }
+  }
+
+  // navigation manuelle pendant le diaporama : il continue de tourner
+  function ssMove(d) {
+    if (rndStream) {
+      if (d < 0) rndPrev(); else rndNext();
+      return;
+    }
+    if (!ssOrder.length) return;
+    ssIdx = (ssIdx + d + ssOrder.length) % ssOrder.length;
+    showSlide();  // relance aussi le minuteur et la barre de progression
+  }
+
+  // 5 bandes verticales : bords = précédent/suivant, milieu = pause
+  document.getElementById('ss-img').addEventListener('click', function(e) {
+    var w = this.clientWidth;
+    if (e.offsetX < w / 5) ssMove(-1);
+    else if (e.offsetX > w * 4 / 5) ssMove(1);
+    else ssTogglePause();
+  });
+
+  // swipe gauche/droite sur tout l'écran du diaporama
+  var ssTX = null, ssTY = null;
+  var ssEl2 = document.getElementById('ss');
+  ssEl2.addEventListener('touchstart', function(e) {
+    if (e.touches.length === 1) {
+      ssTX = e.touches[0].clientX;
+      ssTY = e.touches[0].clientY;
+    }
+  }, { passive: true });
+  ssEl2.addEventListener('touchend', function(e) {
+    if (ssTX === null) return;
+    var dx = e.changedTouches[0].clientX - ssTX;
+    var dy = e.changedTouches[0].clientY - ssTY;
+    ssTX = null;
+    if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5) {
+      ssMove(dx < 0 ? 1 : -1);
+    }
+  }, { passive: true });
+
+  document.addEventListener('fullscreenchange', function() {
+    if (!document.fullscreenElement && !document.webkitFullscreenElement && ssTimer) {
+      stopSlideshow();
+    }
+  });
+  document.addEventListener('webkitfullscreenchange', function() {
+    if (!document.webkitFullscreenElement && !document.fullscreenElement && ssTimer) {
+      stopSlideshow();
+    }
+  });
+
+  // ── bandeau tagging IA ──
+  // Il s'ANNONCE (role="status") : il apparait sans que rien n'ait ete clique,
+  // et un lecteur d'ecran ne verrait sinon jamais passer l'analyse.
+  // Et il ne se tait plus pour de bon : l'ancienne version ne se re-programmait
+  // QUE tant qu'il restait des photos en attente — une fois la file vide, plus
+  // aucun sondage, donc un envoi depuis le telephone n'allumait plus rien
+  // jusqu'au prochain rechargement. On ralentit au lieu de s'arreter.
+  function poll() {
+    fetch('/api/status').then(function(r) { return r.json(); }).then(function(s) {
+      var el = document.getElementById('pending');
+      if (s.pending > 0) {
+        el.style.display = 'block';
+        el.textContent = '\u{1F3F7} ' + s.pending + ' photo(s) en cours d\'analyse IA\u2026';
+        setTimeout(poll, 10000);
+      } else if (s.tagged > INITIAL_TAGGED) {
+        el.style.display = 'block';
+        el.innerHTML = '\u2713 Nouveaux mots-cl\u00e9s disponibles \u2014 <a href="/files">actualiser la galerie</a>';
+        setTimeout(poll, 60000);
+      } else {
+        el.style.display = 'none';
+        setTimeout(poll, 60000);
+      }
+    }).catch(function() { setTimeout(poll, 60000); });
+  }
+
+  // ── init ──
+  document.getElementById('btn-date').onclick = function() { sortBy('date'); };
+  document.getElementById('btn-name').onclick = function() { sortBy('name'); };
+  document.getElementById('btn-rel').onclick  = function() { sortBy('pertinence'); };
+  document.getElementById('btn-seq').onclick  = function() { startSlideshow('seq'); };
+  document.getElementById('btn-rnd').onclick  = function() { startSlideshow('rnd'); };
+  document.getElementById('btn-asc').onclick  = function() { startSlideshow('asc'); };
+  document.getElementById('lb-prev').onclick  = function() { lbMove(-1); };
+  document.getElementById('lb-next').onclick  = function() { lbMove(1); };
+  document.getElementById('lb-close').onclick = function() { closeLb(); };
+  document.getElementById('ss-stop').onclick  = function() { stopSlideshow(); };
+
+  buildTagbar();
+  sortBy('date');
+  poll();
+
+  // ── filtre par motif (point 21) : navigation serveur (?motif=), lecture
+  //    seule. Chips = liens ; actif en fixateur. Jamais une etiquette « rebut ».
+  function motifNavUrl(m) {
+    var params = new URLSearchParams(location.search);
+    if (m) params.set('motif', m); else params.delete('motif');
+    var qs = params.toString();
+    return location.pathname + (qs ? '?' + qs : '');
+  }
+  function buildMotifbar() {
+    var bar = document.getElementById('motifbar');
+    var counts = (MOTIFS && MOTIFS.counts) || {};
+    var sel = (MOTIFS && MOTIFS.sel) || '';
+    var LABELS = {capture: "Captures d'\u00e9cran", document: 'Documents / scans',
+                  facture: 'Re\u00e7us / factures'};
+    var order = ['capture', 'document', 'facture'];
+    var present = order.filter(function(k) { return counts[k]; });
+    if (!present.length && !sel) { bar.className = 'motifbar'; return; }
+    bar.innerHTML = '<span class="lbl">Motif :</span>';
+    present.forEach(function(k) {
+      var a = document.createElement('a');
+      a.className = 'mchip' + (sel === k ? ' on' : '');
+      a.href = motifNavUrl(sel === k ? '' : k);
+      if (sel === k) a.setAttribute('aria-current', 'true');
+      a.innerHTML = esc(LABELS[k] || k) + '<span class="n">' + counts[k] + '</span>';
+      bar.appendChild(a);
+    });
+    if (sel) {
+      var c = document.createElement('a');
+      c.className = 'mchip'; c.href = motifNavUrl('');
+      c.textContent = 'Tout afficher';
+      bar.appendChild(c);
+    }
+    bar.className = 'motifbar show';
+  }
+  buildMotifbar();
+
+  // ── suppression reversible depuis la visionneuse (point 21) ──
+  // Le fichier part immediatement en quarantaine (.corbeille-rangement/, cote
+  // serveur, re-cle de l'index compris) ; le toast offre l'annulation 10 s.
+  var gToastEl = document.getElementById('gtoast'), gToastT = null;
+  function gToast(msg, avecUndo) {
+    gToastEl.innerHTML = '';
+    var s = document.createElement('span'); s.textContent = msg;
+    gToastEl.appendChild(s);
+    if (avecUndo) {
+      var b = document.createElement('button');
+      b.className = 'b'; b.textContent = 'Annuler';
+      b.onclick = function() {
+        fetch('/api/files/undo', {method: 'POST',
+          headers: {'Content-Type': 'application/json'}, body: '{}'})
+          .then(function(r) { return r.json(); })
+          .then(function(r) {
+            if (r.ok) location.reload();
+            else gToast(r.error || 'Rien \u00e0 annuler.', false);
+          })
+          .catch(function() { gToast('Le serveur n a pas r\u00e9pondu.', false); });
+      };
+      gToastEl.appendChild(b);
+    }
+    gToastEl.className = 'gtoast show';
+    if (gToastT) clearTimeout(gToastT);
+    gToastT = setTimeout(function() { gToastEl.className = 'gtoast'; },
+                         avecUndo ? 10000 : 4000);
+  }
+
+  function removeCurrent() {
+    var f = visible[lbIdx];
+    function drop(arr) { var i = arr.indexOf(f); if (i >= 0) arr.splice(i, 1); }
+    drop(FILES); drop(sorted); drop(visible);
+    if (!visible.length) { closeLb(); renderGrid(); return; }
+    if (lbIdx >= visible.length) lbIdx = visible.length - 1;
+    renderGrid();
+    showLb();
+  }
+
+  document.getElementById('lb-del').onclick = function() {
+    var f = visible[lbIdx];
+    if (!f) return;
+    var btn = this; btn.disabled = true;
+    fetch('/api/files/delete', {method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({key: f.key})})
+      .then(function(r) { return r.json(); })
+      .then(function(r) {
+        btn.disabled = false;
+        if (!r.ok) { gToast(r.error || 'Echec de la suppression.', false); return; }
+        removeCurrent();
+        gToast('Photo d\u00e9plac\u00e9e vers la corbeille.', true);
+      })
+      .catch(function() {
+        btn.disabled = false;
+        gToast('Le serveur n a pas r\u00e9pondu.', false);
+      });
+  };
+
+  // ── filtres personnes + géo ──
+  function haversine(la1, lo1, la2, lo2) {
+    var R = 6371, d2r = Math.PI / 180;
+    var dLa = (la2 - la1) * d2r, dLo = (lo2 - lo1) * d2r;
+    var a = Math.sin(dLa / 2) * Math.sin(dLa / 2) +
+            Math.cos(la1 * d2r) * Math.cos(la2 * d2r) * Math.sin(dLo / 2) * Math.sin(dLo / 2);
+    return 2 * R * Math.asin(Math.sqrt(a));
+  }
+  function updateSelInfo() {
+    var parts = [];
+    if (selPersons.length) parts.push(selPersons.length + ' personne(s)');
+    if (geoFilter) parts.push('zone ' + geoFilter.km + ' km');
+    document.getElementById('selinfo').textContent = parts.length ? ('· sélection : ' + parts.join(' + ')) : '';
+  }
+  var PERSONS = (function() {
+    var s = {};
+    FILES.forEach(function(f) {
+      (f.kw || []).forEach(function(k) { if (k.indexOf('personne:') === 0) s[k] = 1; });
+    });
+    return Object.keys(s).sort();
+  })();
+  function renderPersonChips() {
+    var box = document.getElementById('personchips'); box.innerHTML = '';
+    if (!PERSONS.length) { box.innerHTML = '<span class="lbl">(aucune ici)</span>'; return; }
+    PERSONS.forEach(function(tag) {
+      var b = document.createElement('span');
+      b.className = 'pchip' + (selPersons.indexOf(tag) >= 0 ? ' on' : '');
+      b.textContent = tag.slice(9);
+      b.onclick = function() {
+        var i = selPersons.indexOf(tag);
+        if (i >= 0) selPersons.splice(i, 1); else selPersons.push(tag);
+        renderPersonChips(); updateSelInfo(); applyFilter();
+      };
+      box.appendChild(b);
+    });
+  }
+  renderPersonChips();
+
+  var geoMap = null, geoCenter = null, geoMarker = null, geoCircle = null;
+  function geoInit() {
+    if (geoMap) { setTimeout(function() { geoMap.invalidateSize(); }, 60); return; }
+    geoMap = L.map('geomap').setView([46.8, 8.2], 4);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+                { maxZoom: 19, attribution: '&copy; OpenStreetMap' }).addTo(geoMap);
+    var pts = [];
+    FILES.forEach(function(f) {
+      if (f.gps) {
+        L.circleMarker([f.gps[0], f.gps[1]], { radius: 3, color: '#4A8C7B', weight: 1, fillOpacity: 0.6 }).addTo(geoMap);  /* --fixateur */
+        pts.push([f.gps[0], f.gps[1]]);
+      }
+    });
+    if (pts.length) geoMap.fitBounds(L.latLngBounds(pts), { padding: [30, 30] });
+    geoMap.on('click', function(e) { setGeoCenter(e.latlng.lat, e.latlng.lng); });
+    setTimeout(function() { geoMap.invalidateSize(); }, 60);
+  }
+  function setGeoCenter(lat, lon) {
+    geoCenter = [lat, lon];
+    if (geoMarker) geoMap.removeLayer(geoMarker);
+    geoMarker = L.marker([lat, lon]).addTo(geoMap);
+    drawGeoCircle();
+  }
+  function drawGeoCircle() {
+    if (!geoCenter) return;
+    var km = parseInt(document.getElementById('georadius').value, 10);
+    if (geoCircle) geoMap.removeLayer(geoCircle);
+    geoCircle = L.circle(geoCenter, { radius: km * 1000, color: '#4A8C7B', fillOpacity: 0.08 }).addTo(geoMap);  /* --fixateur (zone) */
+    var n = 0;
+    FILES.forEach(function(f) {
+      if (f.gps && haversine(geoCenter[0], geoCenter[1], f.gps[0], f.gps[1]) <= km) n++;
+    });
+    document.getElementById('geocount').textContent = '· ' + n + ' photo(s) dans la zone';
+  }
+  document.getElementById('geotoggle').onclick = function() {
+    var p = document.getElementById('geopanel');
+    var open = p.classList.toggle('open');
+    this.classList.toggle('on', open);
+    if (open) geoInit();
+  };
+  document.getElementById('georadius').oninput = function() {
+    document.getElementById('georadlbl').textContent = this.value + ' km';
+    drawGeoCircle();
+  };
+  document.getElementById('geoapply').onclick = function() {
+    if (!geoCenter) { alert('Clique d\'abord un point sur la carte.'); return; }
+    var km = parseInt(document.getElementById('georadius').value, 10);
+    geoFilter = { lat: geoCenter[0], lon: geoCenter[1], km: km };
+    updateSelInfo(); applyFilter();
+  };
+  document.getElementById('geoclear').onclick = function() {
+    geoFilter = null;
+    document.getElementById('geocount').textContent = '';
+    updateSelInfo(); applyFilter();
+  };
+
+  // Page de resultats globale (/files?q=..., depuis un Lieu de /sujets ou un
+  // marqueur de Carte) : le serveur a deja rempli la grille avec le resultat
+  // de la recherche, dans l'ordre de pertinence. On se met en mode IA — pas de
+  // filtre par mot-cle, tri par pertinence — pour que la barre reflete la
+  // requete et qu'affiner reste possible. iaResultats = tout FILES (chaque
+  // photo passe le test d'appartenance), rang = position renvoyee par le serveur.
+  if (SEARCHQ) {
+    qInput.value = SEARCHQ;
+    modeIA = true;
+    btnIA.className = 'tb active';
+    btnIA.setAttribute('aria-pressed', 'true');
+    qInput.placeholder = 'Décris la photo…';
+    iaResultats = {};
+    FILES.forEach(function(f, i) { iaResultats[f.key] = i; });
+    montrerEspeceBar(true);
+    lireDecomposition(SEARCHMETA || {});
+    sortBy('pertinence');   // le serveur a deja classe : le bouton le dit
+  }
+
+  // lancement auto du diaporama après redirection récursive
+  var pl = new URLSearchParams(location.search).get('play');
+  if (pl === 'seq' || pl === 'rnd') {
+    setTimeout(function() { startSlideshow(pl); }, 300);
+  }
+})();
+</script>
+</body>
+</html>

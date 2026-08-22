@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Reglages &amp; maintenance</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: var(--f-texte); background: var(--salle); color: var(--texte); min-height: 100vh; }
+.wrap { max-width: 1000px; margin: 0 auto; padding: var(--e-2) var(--e-4) 60px; }
+h2 { font: 600 var(--t-lg)/1.2 var(--f-affichage); margin: 22px 0 10px; }
+.hd { display: flex; align-items: center; gap: 10px; margin: var(--e-2) 0 2px; }
+.hd .t { color: var(--graphite); font-family: var(--f-donnees); font-size: var(--t-xs); }
+.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+.card { background: var(--salle-3); border: var(--trait); border-radius: 10px; padding: var(--e-3); }
+.card .k { color: var(--graphite); font-size: 0.72rem; }
+.card .v { font: 600 var(--t-lg)/1.1 var(--f-donnees); margin-top: var(--e-1); }
+.card .tv { color: var(--graphite); font-size: var(--t-xs); margin-top: var(--e-1); }
+a.card { text-decoration: none; color: inherit; display: block; transition: border-color .15s, background .15s; }
+a.card:hover { border-color: var(--graphite); background: var(--salle-2); }
+a.card .k { font-size: var(--t-md); color: var(--texte); }
+table { width: 100%; border-collapse: collapse; font-size: var(--t-sm); }
+td, th { text-align: left; padding: 6px var(--e-2); border-bottom: var(--trait); }
+td.n, th.n { text-align: right; font-family: var(--f-donnees); }
+.mut { color: var(--graphite); font-size: 0.8rem; }
+.panel { background: var(--papier); color: var(--texte-papier); border: 1px solid var(--papier-2);
+         border-radius: var(--r-md); padding: 14px; margin: 10px 0; box-shadow: 0 6px 30px #000a; }
+.panel h3 { font: 600 var(--t-md)/1.2 var(--f-affichage); margin-bottom: var(--e-2); }
+.panel td, .panel th { border-color: var(--papier-2); }
+/* --graphite est le gris des surfaces SOMBRES : sur le papier il tombait a
+   2,2:1 (plancher a11y = 4,5:1). --graphite-p sur --papier donne 5,9:1. */
+.panel .mut { color: var(--graphite-p); }
+.rowf { display: flex; gap: var(--e-2); align-items: center; flex-wrap: wrap; }
+.b { min-height: var(--touch); padding: 0 14px; border-radius: 8px; border: 1px solid var(--graphite-p);
+     background: transparent; color: var(--texte-papier); font: 500 var(--t-sm) var(--f-texte); cursor: pointer; }
+.b.prim { background: var(--fixateur); border-color: var(--fixateur); color: #fff; }
+.badge { font-family: var(--f-donnees); font-size: 0.72rem; padding: 2px var(--e-2); border-radius: var(--r-pill);
+         border: 1px solid var(--graphite-p); color: var(--graphite-p); }
+.badge.on { color: #fff; background: var(--fixateur); border-color: var(--fixateur); }
+.badge.paused { color: #fff; background: var(--veilleuse); border-color: var(--veilleuse); }
+/* --encre = erreur (semantique stricte des accents) : un ecart inexplique
+   dans les comptes de l'index n'est pas une attente, c'est une anomalie. */
+.badge.alerte { color: #fff; background: var(--encre); border-color: var(--encre); }
+.oubmsg { margin-top: 10px; padding: var(--e-2) var(--e-3); border-radius: var(--r-md);
+          background: var(--papier-2); color: var(--texte-papier);
+          font: 500 0.82rem var(--f-donnees); }
+.oubmsg.alerte { border-left: 3px solid var(--encre); }
+.subh { font: 600 var(--t-sm)/1.2 var(--f-affichage); margin: 16px 0 2px; letter-spacing: -0.01em; }
+.stepren { list-style: none; display: flex; flex-direction: column; gap: var(--e-2); margin-top: var(--e-2); }
+.stepren li { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.stepren > li > .b { flex: 0 0 auto; min-width: 12rem; }
+.stepren .mut { flex: 1 1 14rem; min-width: 0; }
+.renmsg { margin-top: 10px; padding: var(--e-2) var(--e-3); border-radius: var(--r-md); background: var(--papier-2);
+          color: var(--texte-papier); font: 500 0.82rem var(--f-donnees); }
+</style>
+</head>
+<body>
+<!--APPNAV-->
+<div class="wrap">
+  <div class="hd">
+    <h2 style="margin:0">Reglages &amp; maintenance</h2>
+    <span class="t" id="clock"></span>
+    <button class="b" id="refresh" style="margin-left:auto;border-color:var(--graphite);color:var(--texte)">Rafraichir</button>
+  </div>
+  <p class="mut" id="moteurs" role="status" aria-live="polite">Reconnaissance des visages&nbsp;: <b>&hellip;</b>. Cette page se rafraichit toute seule.</p>
+
+  <h2>Outils &amp; pages</h2>
+  <div class="cards">
+    <a class="card" href="/files"><div class="k">&#128247; Galerie</div><div class="tv">Planche contact, recherche par tags</div></a>
+    <a class="card" href="/browse"><div class="k">&#128193; Dossiers</div><div class="tv">Parcourir + gerer les fichiers (deplacer, renommer)</div></a>
+    <a class="card" href="/map"><div class="k">&#128506;&#65039; Carte</div><div class="tv">Photos geolocalisees</div></a>
+    <a class="card" href="/people"><div class="k">&#128101; Personnes</div><div class="tv">Nommer, verifier, tri au clavier</div></a>
+    <a class="card" href="/pets"><div class="k">&#128062; Animaux</div><div class="tv">Animaux nommes, groupes</div></a>
+    <a class="card" href="/"><div class="k">&#128228; Envoyer des photos</div><div class="tv">Upload depuis le telephone</div></a>
+    <a class="card" href="/sante"><div class="k">&#129658; Sante</div><div class="tv">Fichiers a probleme (EXIF, illisibles)</div></a>
+  </div>
+
+  <h2>Etat en direct</h2>
+  <div class="cards" id="live"></div>
+
+  <h2>Bibliotheque</h2>
+  <div class="cards" id="lib"></div>
+
+  <div class="panel">
+    <h3>Comptes de l&#39;index <span class="badge" id="oub-badge"></span></h3>
+    <p class="mut">Qui retire des entrees de l&#39;index, et combien. L&#39;<b>ecart inexplique</b>
+       compte les entrees dont l&#39;index a varie <em>sans</em> qu&#39;aucune operation declaree ne
+       l&#39;explique : c&#39;est exactement le chiffre qui manquait le 17 aout, quand 250 entrees ont
+       disparu de la memoire sans laisser de trace. Zero = tout s&#39;explique.</p>
+    <div id="oublis"></div>
+  </div>
+
+  <div class="panel">
+    <h3>Maintenance <span class="badge" id="maint-badge"></span></h3>
+    <div class="rowf" style="margin-bottom:10px">
+      <button class="b prim" id="run">Lancer un cycle maintenant</button>
+      <button class="b" id="pause">Pause</button>
+      <button class="b" id="census">Recensement (lecture seule)</button>
+      <button class="b" id="planyear">Plan de rangement par annee</button>
+      <span class="mut" id="maint-msg"></span>
+    </div>
+    <table id="steps"><thead><tr><th>Etape</th><th>Autonomie</th><th class="n">Cadence</th><th>Dernier passage</th></tr></thead><tbody></tbody></table>
+    <p class="mut" style="margin-top:8px">Autonomie : <b>auto</b> = executee seule quand due (sur/reversible) ; <b>propose</b> = plan prepare, pas applique ; <b>off</b> = desactivee.</p>
+
+    <h4 class="subh">Renommage intelligent des fichiers</h4>
+    <p class="mut">Renomme les fichiers bruts (Screenshot_, IMG_, exports WhatsApp&hellip;) en noms dates et lisibles, EN PLACE sur le NAS. Entierement reversible. Suis les 4 etapes dans l'ordre :</p>
+    <ol class="stepren">
+      <li><button class="b" id="planren">1 &middot; Generer le plan</button><span class="mut">Ecrit <b>docs/plan_renommage.md</b> &mdash; a relire avant d'appliquer.</span></li>
+      <li><button class="b" id="rencheck">2 &middot; Verifier a blanc</button><span class="mut">Simulation : compte les renommages applicables, ne touche aucun fichier.</span></li>
+      <li><button class="b prim" id="renapply">3 &middot; Appliquer un lot</button><span class="mut">Renomme reellement jusqu'a 200 fichiers. Reclique pour le lot suivant, jusqu'a 0 restant.</span></li>
+      <li><button class="b" id="renundo">4 &middot; Annuler le dernier lot</button><span class="mut">Defait le dernier lot applique.</span></li>
+    </ol>
+    <div class="renmsg" id="ren-msg" role="status" aria-live="polite">Clique &laquo;&nbsp;1 &middot; Generer le plan&nbsp;&raquo; pour commencer.</div>
+
+    <h4 class="subh">Reclassement des animaux mal classes</h4>
+    <p class="mut">Des photos d'animaux (Mutz, Caline&hellip;) portent encore un tag <b>personne:</b> au lieu de <b>animal:</b>, parfois avec une fiche personne en double. Cet outil corrige le prefixe SANS changer le nom, et retire la fiche en double. Entierement reversible. Les tags sans prefixe (l'adjectif &laquo; caline &raquo;) ne sont pas touches.</p>
+    <ol class="stepren">
+      <li><button class="b" id="reclcheck">1 &middot; Apercu (a blanc)</button><span class="mut">Compte les photos <b>personne:</b> a passer en <b>animal:</b> ; ne touche a rien.</span></li>
+      <li><button class="b prim" id="reclapply">2 &middot; Appliquer</button><span class="mut">Reclasse les photos listees + retire les fiches en double. Reversible.</span></li>
+      <li><button class="b" id="reclundo">3 &middot; Annuler le dernier reclassement</button><span class="mut">Remet les tags <b>personne:</b> et restaure les fiches.</span></li>
+    </ol>
+    <div class="renmsg" id="recl-msg" role="status" aria-live="polite">Clique &laquo;&nbsp;1 &middot; Apercu&nbsp;&raquo; pour voir ce qui serait reclasse.</div>
+
+    <h4 class="subh">Rattachements qui designent le mauvais visage</h4>
+    <p class="mut">Un rattachement dit &laquo;&nbsp;<b>ce visage-la</b>, sur cette photo, est cette personne&nbsp;&raquo; en retenant sa POSITION dans la liste des visages detectes. Quand une photo est re-analysee, cette liste est refaite : l'ordre change, et la position ne designe plus le bon visage &mdash; sur une photo de groupe, elle finit par designer quelqu'un d'autre qui est sur la meme photo. Mesure le 22/08 : <b>42</b> rattachements sur 1 194, dont 41 sur des photos re-analysees. Cet outil remet chacun sur le visage de la MEME photo qui ressemble le plus a la personne, et refuse de bouger des qu'il hesite. Entierement reversible ; aucun fichier n'est touche. Les animaux ne sont pas traites : leur magasin n'a pas encore ete mesure.</p>
+    <ol class="stepren">
+      <li><button class="b" id="recalcheck">1 &middot; Apercu (a blanc)</button><span class="mut">Compte ce qui serait recale et ce qui est refuse, avec le motif ; ne touche a rien.</span></li>
+      <li><button class="b prim" id="recalapply">2 &middot; Appliquer</button><span class="mut">Recale les rattachements surs. Reversible.</span></li>
+      <li><button class="b" id="recalundo">3 &middot; Annuler le dernier recalage</button><span class="mut">Remet les fiches telles qu'elles etaient.</span></li>
+    </ol>
+    <div class="renmsg" id="recal-msg" role="status" aria-live="polite">Clique &laquo;&nbsp;1 &middot; Apercu&nbsp;&raquo; pour voir ce qui serait recale.</div>
+    <h4 class="subh">Rattachements que tu as juges faux</h4>
+    <p class="mut">Ce que le recalage refuse de trancher, tu l'as juge a l'oeil sur <a href="/residu">la page du residu</a>. Cet outil applique TON verdict : il retire les couples <b>photo + visage</b> dont tu as dit que ce n'est pas cette personne. C'est le seul outil de cette page qui EFFACE une decision humaine au lieu de la deplacer &mdash; il ne bouge donc rien sans un verdict explicite sur ce couple precis. Les <b>tags</b> des photos ne changent pas (ils vivent dans l'index et dans le XMP) : ce qui part, c'est la vérité terrain &laquo;&nbsp;CE visage est elle&nbsp;&raquo;. Les visages que tu as reconnus mais qui ne sont PAS rattaches ne sont pas touches ici : ajouter un nom est un autre geste. Entierement reversible.</p>
+    <ol class="stepren">
+      <li><button class="b" id="retrcheck">1 &middot; Apercu (a blanc)</button><span class="mut">Compte ce qui partirait, ce que tu as confirme, et ce qui reste a juger.</span></li>
+      <li><button class="b prim" id="retrapply">2 &middot; Appliquer</button><span class="mut">Retire les rattachements juges faux. Reversible.</span></li>
+      <li><button class="b" id="retrundo">3 &middot; Annuler le dernier retrait</button><span class="mut">Remet les fiches telles qu'elles etaient.</span></li>
+    </ol>
+    <div class="renmsg" id="retr-msg" role="status" aria-live="polite">Clique &laquo;&nbsp;1 &middot; Apercu&nbsp;&raquo; pour voir ce qui partirait.</div>
+
+    <p class="mut">Ce que l'outil <b>refuse</b> de reparer se juge a l'oeil, et nulle part ailleurs : quand la fiche cite <b>deux visages de la meme photo</b>, ou la personne y est vraiment detectee deux fois, ou un index a glisse et designe son voisin &mdash; le score ne tranche pas. Ces cas-la sont peu nombreux mais <b>concentres</b> : le 22/08, 15 cas sur 9 fiches, dont 4 sur la seule fiche de Didier. Une page les montre cote a cote : <a href="/residu">juger le residu</a>. Elle ne retire rien &mdash; le retrait revient ici, une fois les verdicts poses.</p>
+
+    <h4 class="subh">Decisions humaines restees sur l'ancien chemin</h4>
+    <p class="mut">Quand une photo est rangee ou renommee, son <b>tag</b> la suit (il vit dans l'index et dans le XMP). Mais les jugements &mdash; <b>quel visage</b> est cette personne, quelles photos ont ete <b>ecartees</b> d'un nom, lesquelles ont ete <b>confirmees</b> &mdash; vivent dans la fiche et y sont restes accroches a l'ANCIEN chemin. Cet outil les remet sur la bonne photo en suivant les journaux d'annulation, qui disent ou chaque fichier est parti. Entierement reversible ; aucun fichier n'est touche.</p>
+    <ol class="stepren">
+      <li><button class="b" id="reclecheck">1 &middot; Apercu (a blanc)</button><span class="mut">Compte les cles a re-cler et celles dont la destination est inconnue ; ne touche a rien.</span></li>
+      <li><button class="b prim" id="recleapply">2 &middot; Appliquer</button><span class="mut">Remet les decisions sur la photo actuelle, index de vignette compris. Reversible.</span></li>
+      <li><button class="b" id="recleundo">3 &middot; Annuler le dernier re-cle</button><span class="mut">Restaure les fiches telles qu'elles etaient, sauf celles jugees depuis.</span></li>
+    </ol>
+    <div class="renmsg" id="recle-msg" role="status" aria-live="polite">Clique &laquo;&nbsp;1 &middot; Apercu&nbsp;&raquo; pour voir ce qui serait re-cle.</div>
+  </div>
+
+  <h2>Dedoublonnage &amp; rangement</h2>
+  <div id="dedup"></div>
+
+  <h2>Reglages (lecture seule)</h2>
+  <div id="config"></div>
+</div>
+<script>
+function j(u,o){ return fetch(u,o).then(function(r){return r.json();}); }
+function esc(s){ return (''+s).replace(/[&<>]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;'}[c];}); }
+function card(k,v){ return '<div class="card"><div class="k">'+esc(k)+'</div><div class="v">'+esc(v)+'</div></div>'; }
+function human(n){ if(n==null) return '?'; var u=['o','Ko','Mo','Go','To'],i=0; while(n>=1024&&i<4){n/=1024;i++;} return n.toFixed(i?1:0)+' '+u[i]; }
+function tstamp(t){ if(!t) return 'jamais'; return new Date(t*1000).toLocaleString('fr-FR'); }
+function kv(obj){ var r=''; Object.keys(obj||{}).forEach(function(k){ r+='<tr><td>'+esc(k)+'</td><td class="n">'+esc(obj[k])+'</td></tr>'; });
+  return r ? ('<table>'+r+'</table>') : '<span class="mut">aucune donnee (lance le recensement)</span>'; }
+function load(){
+  j('/api/maint/status').then(function(s){
+    document.getElementById('clock').textContent = new Date().toLocaleTimeString('fr-FR');
+    var hw=s.hw||{}, g=hw.gpu||null, q=s.queues||{}, c=s.counts||{}, m=s.maint||{};
+    document.getElementById('live').innerHTML=[
+      card('CPU', hw.cpu_percent!=null?Math.round(hw.cpu_percent)+' %':'?'),
+      card('RAM libre', hw.ram_avail_gb!=null?(hw.ram_avail_gb+' / '+hw.ram_total_gb+' Go'):'?'),
+      card('GPU VRAM', g?(g.vram_free_mb+' / '+g.vram_total_mb+' Mo'):'\u2014'),
+      card('Occupe', s.busy?'oui':'non'),
+      card('File tagging', q.tag||0),
+      card('File visages', q.faces||0),
+      card('File animaux', q.animaux||0),
+      card('Ecritures noms', q.personnes||0),
+      card('Empreintes animaux', s.pets_vec!=null?s.pets_vec:(s.pets_embed!=null?s.pets_embed:'?'))
+    ].join('');
+    // I5 : le moteur des visages se DIT, il ne s'affirme plus. « CPU » etait
+    // ecrit en dur et faux depuis le GPU adaptatif ; ici c'est le dernier
+    // moteur REELLEMENT utilise, avec la raison quand le GPU n'est pas pris.
+    var mo=s.moteurs||{}, mot=mo.visages||'CPU', pourquoi='';
+    if(mot!=='GPU'){
+      pourquoi = mo.visages_gpu_erreur ? ' — GPU indisponible : '+mo.visages_gpu_erreur
+        : (mo.visages_gpu_voulu===false ? ' — choix delibere : la VRAM va au tagging (Ollama)'
+                                        : ' — GPU pas encore pris');
+    }
+    document.getElementById('moteurs').innerHTML =
+      'Reconnaissance des visages : <b>'+esc(mot)+'</b>'+esc(pourquoi)
+      +'. Cette page se rafraichit toute seule.';
+    // Boucle scan/backup (audit O5) : un crash silencieux devient visible ici.
+    var bo=s.boucle||{}, bv=s.backup_verify||{};
+    function heure(t){ if(!t) return 'jamais'; return new Date(t*1000).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}); }
+    var scanTxt=heure(bo.dernier_scan);
+    if(bo.derniere_erreur && (bo.erreur_at||0)>=(bo.dernier_scan||0)) scanTxt='\u26a0 erreur';
+    var scanTv=bo.derniere_erreur?('Derniere erreur ('+heure(bo.erreur_at)+') : '+bo.derniere_erreur):'Scan + sauvegarde NAS';
+    // Verification de sauvegarde (assurance-vie de la verite terrain, audit A).
+    // ok=true : verifiee saine ; ok=false : integrity_check NON ok (alerte) ;
+    // ok=null : verification impossible (ne PAS incriminer la sauvegarde).
+    var bvTxt = !bv.at ? 'jamais'
+      : bv.ok===true ? 'ok '+heure(bv.at)
+      : bv.ok===false ? '\u26a0 suspecte'
+      : 'verif. impossible';
+    var bvTv = bv.at
+      ? ('Restauration a blanc : '+(bv.confirmes!=null?bv.confirmes+' confirmes, '+bv.exclusions+' exclusions':'?')
+         +(bv.detail?' \u00b7 '+bv.detail:'')
+         +(bv.jugements_exportes?' \u00b7 jugements exportes '+heure(bv.jugements_exportes):''))
+      : 'Apres la 1re sauvegarde horaire';
+    // Lecture des dates/GPS dans les fichiers : la tache mourait au demarrage
+    // sans rien dire (12 407 photos sans date au jour pres). Elle rend
+    // desormais des comptes ici.
+    var bf=s.backfill||{};
+    // I6 : les baux VRAM, les refus et les evictions ne vivaient que dans
+    // `/api/search/status`. Un arbitre qu'on ne voit pas ne se diagnostique
+    // pas : un modele qui n'obtient jamais son bail ressemble a un modele
+    // lent, et on cherche au mauvais endroit.
+    function gpuCard(g, ordo){
+      if(!g) return '<div class="card"><div class="k">Arbitre VRAM</div><div class="v">—</div>'
+        +'<div class="tv">Module ordonnanceur absent : chaque pipeline decide seul.</div></div>';
+      var baux=Object.keys(g.baux||{});
+      var nRefus=0, nEv=0;
+      Object.keys(g.refus||{}).forEach(function(k){ nRefus+=g.refus[k]; });
+      Object.keys(g.evictions||{}).forEach(function(k){ nEv+=g.evictions[k]; });
+      var v = baux.length ? baux.join(', ') : 'aucun bail';
+      var tv = (g.libre_mb!=null?g.libre_mb+' Mo libres · ':'')
+             +nRefus+' refus · '+nEv+' eviction(s)';
+      if(ordo && ordo.actif) tv += ' · en cours : '+ordo.actif;
+      else if(ordo && (ordo.attente||[]).length) tv += ' · en attente : '+ordo.attente.join(', ');
+      return '<div class="card"><div class="k">Arbitre VRAM</div><div class="v">'+esc(v)+'</div>'
+        +'<div class="tv">'+esc(tv)+'</div></div>';
+    }
+    function bfCard(titre, o){
+      o=o||{};
+      var v = o.etat==='en cours' ? (o.faits||0)+' / '+(o.todo||0)
+            : o.etat==='termine'  ? (o.trouves||0)+' lues'
+            : (o.etat||'?');
+      var muets = o.muets ? (' \u00b7 \u26a0 '+o.muets+' fichiers muets (a relire au prochain demarrage)') : '';
+      var tv = o.erreur ? ('\u26a0 '+o.erreur)
+             : o.etat==='termine' ? ('Termine a '+heure(o.fini_at)+' \u00b7 '+(o.todo||0)+' fichiers relus'+muets)
+             : o.etat==='en cours' ? ((o.trouves||0)+' trouvees jusqu\'ici'+muets)
+             : 'Lecture ExifTool en tache de fond';
+      return '<div class="card"><div class="k">'+esc(titre)+'</div><div class="v">'+esc(v)+'</div><div class="tv">'+esc(tv)+'</div></div>';
+    }
+    document.getElementById('live').innerHTML+=[
+      '<div class="card"><div class="k">Dernier scan</div><div class="v">'+esc(scanTxt)+'</div><div class="tv">'+esc(scanTv)+'</div></div>',
+      '<div class="card"><div class="k">Sauvegarde verifiee</div><div class="v">'+esc(bvTxt)+'</div><div class="tv">'+esc(bvTv)+'</div></div>',
+      bfCard('Dates de prise de vue', bf.dates),
+      bfCard('Coordonnees GPS', bf.gps),
+      bfCard('Noms relus dans les fichiers', bf.noms),
+      gpuCard(s.gpu, s.ordonnanceur)
+    ].join('');
+    document.getElementById('lib').innerHTML=[
+      card('Entrees', c.entrees||0), card('Taguees', c.tagues||0),
+      card('Personnes', c.personnes||0), card('Animaux', c.animaux||0),
+      card('Visages', c.visages||0)
+    ].join('');
+    // Comptes de l'index (chantier 10a) : ce que le scan OUBLIE, enfin compte.
+    // Le badge dit l'essentiel en un mot ; le detail sert a trancher.
+    var ou=s.oublis||{}, ob=document.getElementById('oub-badge'), od=document.getElementById('oublis');
+    if(!ou.actif){
+      ob.textContent='indisponible'; ob.className='badge';
+      od.innerHTML='<p class="mut">Index non instrumente (repli JSON) : aucun compte n\'est tenu. '
+        +'Mieux vaut pas de chiffre qu\'un chiffre faux.</p>';
+    } else {
+      var ine=ou.inexplique_cumul||0, ncy=ou.cycles_inexpliques||0;
+      if(ine||ncy){ ob.textContent='ecart '+(ine>0?'+':'')+ine; ob.className='badge alerte'; }
+      // « reconcilie » ne se dit qu'apres au moins un cycle : avant, il n'y a
+      // rien a reconcilier, et l'annoncer serait une fausse assurance.
+      else if(!ou.cycles_vus){ ob.textContent='en attente'; ob.className='badge'; }
+      else { ob.textContent='reconcilie'; ob.className='badge on'; }
+      var h='';
+      // 1) Le dernier cycle de scan, en clair.
+      var cy=(ou.cycles||[])[0];
+      if(cy){
+        var d=cy.fin-cy.debut, sgn=(d>0?'+':'');
+        h+='<div class="oubmsg'+(cy.inexplique?' alerte':'')+'" role="status" aria-live="polite">'
+          +'Dernier scan ('+esc(tstamp(cy.at))+') : index '+cy.debut+' \u2192 '+cy.fin+' ('+sgn+d+')'
+          +' \u00b7 '+cy.ajouts+' ajout(s), '+cy.retraits+' retrait(s) declares'
+          +(cy.inexplique
+              ? ' \u00b7 \u26a0 ECART INEXPLIQUE '+(cy.inexplique>0?'+':'')+cy.inexplique
+              : ' \u00b7 tout s\'explique')
+          +'</div>';
+      } else {
+        h+='<p class="mut" style="margin-top:10px">Aucun cycle de scan termine depuis le '
+          +'demarrage. Le premier arrive au prochain scan.</p>';
+      }
+      // 2) Qui retire quoi, depuis le demarrage.
+      var pm=ou.par_motif||{}, mk=Object.keys(pm), rows='';
+      mk.forEach(function(k){
+        rows+='<tr><td>'+esc(k)+'</td><td class="n">'+(pm[k].retraits||0)+'</td>'
+             +'<td class="n">'+(pm[k].ajouts||0)+'</td></tr>';
+      });
+      h+= rows
+        ? ('<table style="margin-top:10px"><thead><tr><th>Motif</th><th class="n">Retraits</th>'
+           +'<th class="n">Ajouts</th></tr></thead><tbody>'+rows+'</tbody></table>')
+        : '<p class="mut" style="margin-top:10px">Rien n\'est entre ni sorti de l\'index depuis le demarrage.</p>';
+      // 3) Les retraits que PERSONNE n'a declares : le bucket qui compte.
+      if(ou.non_declares){
+        var ex=(ou.non_declares_exemples||[]).map(function(e){return e.cle;}).slice(0,3);
+        h+='<div class="oubmsg alerte">'+ou.non_declares+' retrait(s) sans motif declare'
+          +(ex.length?' \u00b7 ex. '+esc(ex.join(', ')):'')+'</div>';
+      }
+      // 4) Les derniers gestes, pour dater une anomalie.
+      var evs=(ou.evenements||[]).slice(0,5), erows='';
+      evs.forEach(function(e){
+        // « x200 » : blocs consecutifs de meme motif, fusionnes en une ligne.
+        erows+='<tr><td>'+esc(tstamp(e.at))+'</td><td>'+esc(e.motif)
+             +((e.n||1)>1?' \u00d7'+e.n:'')+'</td>'
+             +'<td>'+esc(e.label||'')+'</td><td class="n">'+e.retraits+'</td>'
+             +'<td class="n">'+e.ajouts+'</td></tr>';
+      });
+      if(erows){
+        h+='<h4 class="subh">Derniers mouvements</h4><table><thead><tr><th>Quand</th>'
+          +'<th>Motif</th><th>Ou</th><th class="n">Retraits</th><th class="n">Ajouts</th>'
+          +'</tr></thead><tbody>'+erows+'</tbody></table>';
+      }
+      od.innerHTML=h;
+    }
+    var badge=document.getElementById('maint-badge');
+    if(m.paused){ badge.textContent='en pause'; badge.className='badge paused'; }
+    else if(m.auto){ badge.textContent='auto'; badge.className='badge on'; }
+    else { badge.textContent='off'; badge.className='badge'; }
+    document.getElementById('pause').textContent = m.paused?'Reprendre':'Pause';
+    var au=m.autonomy||{}, itv=m.intervals||{}, st=m.state||{};
+    var tb=document.querySelector('#steps tbody'); tb.innerHTML='';
+    Object.keys(itv).forEach(function(k){
+      var jours=Math.round((itv[k]||0)/86400*10)/10;
+      tb.innerHTML+='<tr><td>'+esc(k)+'</td><td>'+esc(au[k]||'?')+'</td><td class="n">'+jours+' j</td><td>'+esc(tstamp(st[k]))+'</td></tr>';
+    });
+    var pa=s.plan_annee||{}, pae='';
+    if(pa.total_a_ranger!=null){
+      pae='<div class="k">A ranger : <b>'+pa.total_a_ranger+'</b> \u00b7 sans date : <b>'+(pa.sans_date||0)+'</b> \u00b7 conflits : <b>'+(pa.conflits||0)+'</b></div>';
+      var yr=pa.par_annee||{}, keys=Object.keys(yr);
+      if(keys.length){ pae+='<table style="margin-top:6px"><tr><th>Annee</th><th class="n">A ranger</th></tr>';
+        keys.forEach(function(k){ pae+='<tr><td>'+esc(k)+'</td><td class="n">'+esc(yr[k])+'</td></tr>'; }); pae+='</table>'; }
+    } else { pae='<span class="mut">Clique \u00ab Plan de rangement par annee \u00bb pour le generer (lecture seule).</span>'; }
+    document.getElementById('dedup').innerHTML=
+      '<div class="cards"><div class="card" style="grid-column:1/-1"><div class="k">Recensement (doublons par contenu)</div>'+kv(s.recensement)+'</div>'+
+      '<div class="card" style="grid-column:1/-1"><div class="k">Plan de rangement (dedoublonnage)</div>'+kv(s.plan)+'</div>'+
+      '<div class="card" style="grid-column:1/-1"><div class="k">Rangement par annee (_A TRIER)</div>'+pae+'</div></div>';
+    var cf=s.config||{}, rows='';
+    rows+='<tr><td>Modele tagging</td><td>'+esc(cf.MODEL||'?')+'</td></tr>';
+    rows+='<tr><td>Pipeline animaux</td><td>'+esc(cf.ANIMAL_PIPELINE_VERSION||'?')+'</td></tr>';
+    var tp=cf.tagging_pipe||{}, tps=Object.keys(tp).sort().map(function(k){return esc(k)+' : '+tp[k];}).join(' \u00b7 ');
+    rows+='<tr><td>Pipeline tagging</td><td>'+esc(cf.TAGGING_PIPELINE_VERSION||'?')+(tps?'<br><span class="mut">'+tps+'</span>':'')+'</td></tr>';
+    rows+='<tr><td>Seuil match visages</td><td>'+esc(cf.FACE_MATCH_SIM)+'</td></tr>';
+    rows+='<tr><td>Seuil match animaux</td><td>'+esc(cf.PET_MATCH_SIM)+'</td></tr>';
+    rows+='<tr><td>Dossier Uploads</td><td>'+esc(cf.UPLOAD_DIR||'')+'</td></tr>';
+    (cf.racines||[]).forEach(function(r){ rows+='<tr><td>Racine \u00ab '+esc(r[0])+' \u00bb</td><td>'+esc(r[1])+'</td></tr>'; });
+    document.getElementById('config').innerHTML='<table>'+rows+'</table>';
+  }).catch(function(){});
+}
+function act(u, warn, msgId){
+  if(warn && !confirm(warn)) return;
+  var el=document.getElementById(msgId||'maint-msg');
+  el.textContent='\u2026';
+  j(u,{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'}).then(function(r){
+    el.textContent = r.msg || (r.paused!=null?(r.paused?'Maintenance en pause.':'Maintenance reprise.'):(r.ok?'OK.':(r.error||'Echec.')));
+    setTimeout(load, 800);
+  }).catch(function(){ el.textContent='Le serveur n a pas repondu.'; });
+}
+document.getElementById('refresh').onclick=load;
+document.getElementById('run').onclick=function(){ act('/api/maint/run'); };
+document.getElementById('pause').onclick=function(){ act('/api/maint/toggle'); };
+document.getElementById('census').onclick=function(){ act('/api/maint/census', 'Lancer le recensement complet ? Lecture seule mais ~4 h et sollicite le NAS.'); };
+document.getElementById('planyear').onclick=function(){ act('/api/maint/plan-annee'); };
+document.getElementById('planren').onclick=function(){ act('/api/maint/plan-renommage', null, 'ren-msg'); };
+document.getElementById('rencheck').onclick=function(){ act('/api/maint/rename-check', null, 'ren-msg'); };
+document.getElementById('renapply').onclick=function(){ act('/api/maint/rename-apply', 'Appliquer un lot de renommage (max 200 fichiers, EN PLACE sur le NAS) ? Reversible via Annuler.', 'ren-msg'); };
+document.getElementById('renundo').onclick=function(){ act('/api/maint/rename-undo', 'Annuler le dernier lot de renommage ?', 'ren-msg'); };
+document.getElementById('reclcheck').onclick=function(){ act('/api/maint/reclass-apercu', null, 'recl-msg'); };
+document.getElementById('reclapply').onclick=function(){ act('/api/maint/reclass-apply', 'Reclasser les photos personne: en animal: pour les noms d animaux connus, et retirer les fiches en double ? Reversible via Annuler.', 'recl-msg'); };
+document.getElementById('reclundo').onclick=function(){ act('/api/maint/reclass-undo', 'Annuler le dernier reclassement ?', 'recl-msg'); };
+document.getElementById('recalcheck').onclick=function(){ act('/api/maint/recalage-apercu', null, 'recal-msg'); };
+document.getElementById('recalapply').onclick=function(){ act('/api/maint/recalage-apply', 'Remettre les rattachements sur le bon visage de leur photo ? Aucun fichier touche, entierement reversible.', 'recal-msg'); };
+document.getElementById('recalundo').onclick=function(){ act('/api/maint/recalage-undo', 'Annuler le dernier recalage ?', 'recal-msg'); };
+document.getElementById('retrcheck').onclick=function(){ act('/api/maint/retrait-apercu', null, 'retr-msg'); };
+document.getElementById('retrapply').onclick=function(){ act('/api/maint/retrait-apply', 'Retirer les rattachements que tu as juges faux ? Les tags des photos ne bougent pas. Entierement reversible.', 'retr-msg'); };
+document.getElementById('retrundo').onclick=function(){ act('/api/maint/retrait-undo', 'Annuler le dernier retrait ?', 'retr-msg'); };
+document.getElementById('reclecheck').onclick=function(){ act('/api/maint/recle-apercu', null, 'recle-msg'); };
+document.getElementById('recleapply').onclick=function(){ act('/api/maint/recle-apply', 'Remettre les decisions humaines orphelines sur la photo actuelle ? Aucun fichier touche, entierement reversible.', 'recle-msg'); };
+document.getElementById('recleundo').onclick=function(){ act('/api/maint/recle-undo', 'Annuler le dernier re-cle des decisions ?', 'recle-msg'); };
+load(); setInterval(load, 6000);
+</script>
+</body>
+</html>

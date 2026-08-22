@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Carte des photos</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css">
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css">
+<style>
+/* Etape A tokenisation « chambre noire ». Zone definie par l'utilisateur
+   (cercle, slider, halo, bouton actif) = fixateur (selection). Popups Leaflet
+   sur fond blanc par defaut : texte en tokens papier. Visionneuse plein ecran =
+   vrai noir (salle de projection). Structure/espacements inchanges.
+   Etape B (10/08) : espacements/rayons/tailles qui EGALENT un token pointent
+   vers lui (rendu identique). #4a8c7b des cercles/halo Leaflet (script) RESTE
+   en dur : l'API Leaflet n'accepte pas var(). Blancs/noirs translucides de la
+   visionneuse plein ecran laisses tels quels (overlays, hors palette tokens).
+   Passe DESIGN (11/08) : valeurs hors echelle calees sur les tokens, memes
+   mappings que PEOPLE/PETS (0.8-0.82rem -> --t-sm, 0.78rem -> --t-xs,
+   0.9/1rem -> --t-md, radius 8px -> --r-md, gaps/paddings -> echelle 4px).
+   Positions et tailles fixes (130px, 220px, top/right, 34%) non tokenisees.
+   Recherche (11/08) : meme vocabulaire que la galerie (noms + lieux + sens,
+   /api/search) ; le champ filtre les marqueurs, la zone/diaporama composent. */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: var(--f-texte);
+       background: var(--salle); color: var(--texte);
+       height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+.bar { display: flex; align-items: center; gap: var(--e-3); padding: var(--e-3) var(--e-4);
+       background: var(--salle-2); border-bottom: var(--trait); flex-wrap: wrap; flex: 0 0 auto; }
+.bar a { color: var(--texte); text-decoration: none; font-size: var(--t-md); }
+.bar .sp { margin-left: auto; }
+.count { color: var(--graphite); font-size: var(--t-sm); }
+.tb { padding: var(--e-2) var(--e-3); border: var(--trait); border-radius: var(--r-md);
+      background: var(--salle-3); color: var(--texte); font-size: var(--t-sm); cursor: pointer; }
+#q { flex: 0 1 240px; min-width: 130px; padding: var(--e-2) var(--e-3); border: var(--trait);
+     border-radius: var(--r-pill); background: var(--salle-3); color: var(--texte);
+     font-size: var(--t-sm); font-family: inherit; }
+#q::placeholder { color: var(--graphite); }
+#map { flex: 1 1 auto; min-height: 0; background: var(--salle-3); }
+#empty { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+         max-width: 420px; padding: var(--e-6); text-align: center; color: var(--graphite); display: none; }
+.leaflet-popup-content { margin: var(--e-2) var(--e-3); }
+.pop img { width: 220px; max-width: 60vw; height: auto; border-radius: var(--r-md);
+           display: block; background: var(--salle-3); }
+.pop .fn { font-size: var(--t-sm); color: var(--texte-papier); margin-top: var(--e-2); word-break: break-word; }
+.pop .fo { font-size: var(--t-xs); margin-top: var(--e-1); }
+.pop .fo a { color: var(--texte-papier); text-decoration: none; }
+.pop .de { font-size: var(--t-xs); color: var(--graphite-p); margin-top: var(--e-1); font-style: italic; }
+.pop .op { display: inline-block; margin-top: var(--e-2); font-size: var(--t-xs); color: var(--texte-papier);
+           text-decoration: none; }
+/* -- zone + diaporama -- */
+.tb.active { background: var(--fixateur); color: #fff; border-color: transparent; }
+#zctrls { display: flex; align-items: center; gap: var(--e-2); flex-wrap: wrap; }
+#zctrls.hidden { display: none; }
+#zrad { width: 130px; accent-color: var(--fixateur); }
+#zinfo { font-size: var(--t-sm); color: var(--graphite); min-width: 118px; }
+#zcount { font-size: var(--t-sm); color: var(--texte); font-weight: 600; }
+#zhint { position: fixed; bottom: 26px; left: 50%; transform: translateX(-50%); z-index: 500;
+  background: rgba(20,18,15,.9); border: var(--trait); color: var(--texte); padding: var(--e-2) var(--e-4);
+  border-radius: var(--r-pill); font-size: var(--t-sm); display: none; }
+.zcircle-mk { filter: drop-shadow(0 0 4px var(--fixateur)); }
+#show { position: fixed; inset: 0; background: #000; display: none; z-index: 1000; }
+#show.on { display: block; }
+#show img { position: absolute; inset: 0; margin: auto; max-width: 100%; max-height: 100%; object-fit: contain; }
+#show .x { position: absolute; top: 12px; right: 18px; font-size: 34px; color: #fff; cursor: pointer;
+  z-index: 3; line-height: 1; text-shadow: 0 1px 4px #000; }
+#show .nav { position: absolute; top: 0; bottom: 0; width: 34%; z-index: 1; cursor: pointer; }
+#show .nav.l { left: 0; } #show .nav.r { right: 0; }
+#show .meta { position: absolute; left: 0; right: 0; bottom: 0; z-index: 2; padding: var(--e-4);
+  background: linear-gradient(transparent, #000d); color: var(--texte); font-size: var(--t-sm);
+  display: flex; gap: var(--e-3); align-items: center; }
+#show .meta .sp { flex: 1; }
+#show .cbtn { background: #ffffff1a; border: 1px solid #ffffff40; color: #fff; border-radius: var(--r-md);
+  padding: var(--e-2) var(--e-3); cursor: pointer; font-size: var(--t-md); }
+#show .cbtn:hover { background: #ffffff30; }
+#show #show-name { color: var(--graphite); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 40vw; }
+</style>
+</head>
+<body>
+<!--APPNAV-->
+<div class="bar">
+  <input type="search" id="q" placeholder="Rechercher (noms, lieux, sens)&hellip;"
+         aria-label="Rechercher des photos sur la carte (noms, lieux, sens de l'image)">
+  <span class="count" id="cnt">Chargement&hellip;</span>
+  <button class="tb" id="zone">&#128205; D&eacute;finir une zone</button>
+  <span id="zctrls" class="hidden">
+    <input type="range" id="zrad" min="0" max="100" value="35">
+    <span id="zinfo">rayon</span>
+    <span id="zcount">0 photo</span>
+    <select class="tb" id="zmode" title="Mode du diaporama">
+      <option value="seq">Chronologique</option>
+      <option value="rand">Al&eacute;atoire</option>
+      <option value="assoc">Association</option>
+    </select>
+    <button class="tb active" id="zplay">&#9654; Diaporama</button>
+    <button class="tb" id="zclear" title="Effacer la zone">&#10005;</button>
+  </span>
+  <span class="sp"></span>
+  <button class="tb" id="fit">Recentrer</button>
+</div>
+<div id="zhint">Appuie sur la carte et fais glisser pour d&eacute;finir le centre puis le rayon</div>
+<div id="map"></div>
+<div id="empty">Aucune photo géolocalisée pour l'instant.<br><br>
+  Le serveur lit les coordonnées GPS des photos en tâche de fond au démarrage
+  (backfill). Reviens dans quelques minutes, ou tague de nouvelles photos
+  prises avec la géolocalisation activée.</div>
+
+<div id="show">
+  <span class="x" onclick="showClose()">&times;</span>
+  <div class="nav l" onclick="showStep(-1)"></div>
+  <div class="nav r" onclick="showStep(1)"></div>
+  <img id="show-img" src="" alt="">
+  <div class="meta">
+    <button class="cbtn" onclick="showStep(-1)" title="Précédent">&#9198;</button>
+    <button class="cbtn" id="show-pp" onclick="showToggle()" title="Pause/Lecture">&#9208;</button>
+    <button class="cbtn" onclick="showStep(1)" title="Suivant">&#9197;</button>
+    <span id="show-pos"></span>
+    <span class="sp"></span>
+    <span id="show-name"></span>
+  </div>
+</div>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+<script>
+var map = L.map('map', { preferCanvas: true }).setView([46.8, 8.2], 4);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  maxZoom: 19,
+  attribution: '&copy; OpenStreetMap'
+}).addTo(map);
+var cluster = L.markerClusterGroup({ chunkedLoading: true, maxClusterRadius: 50 });
+map.addLayer(cluster);
+// La carte est dimensionnée par flexbox : on force Leaflet à recalculer sa
+// taille après la mise en page (sinon tuiles/centrage peuvent être décalés).
+setTimeout(function(){ map.invalidateSize(); }, 150);
+window.addEventListener('resize', function(){ map.invalidateSize(); });
+var bounds = null;
+var ALL = [];        // toutes les photos géolocalisées
+
+// Vignettes serveur (audit O1) : les popups et le diaporama de zone chargeaient
+// les ORIGINAUX (2-6 Mo/photo sur le NAS). /api/thumb redirige vers l'original
+// s'il ne sait pas produire la vignette — aucun cas particulier ici.
+function mapThumb(p, s){
+  if (!p || !p.key) return p ? p.url : '';
+  return '/api/thumb?key=' + encodeURIComponent(p.key) + '&s=' + (s || 512);
+}
+var PTS = [];        // sous-ensemble affiché (filtre de recherche appliqué)
+var FILTER_Q = '';   // requête active, '' = pas de filtre
+
+function esc(s) {
+  return (s || '').replace(/[&<>"]/g, function(c) {
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];
+  });
+}
+
+// Rendu (ré)appliqué à chaque changement de filtre. La zone et le diaporama
+// travaillent sur PTS : ils composent donc naturellement avec la recherche
+// (« Luna à Bremblens » puis zone puis diaporama).
+function render(pts){
+  PTS = pts;
+  cluster.clearLayers();
+  var latlngs = [];
+  pts.forEach(function(p){
+    var m = L.marker([p.lat, p.lon]);
+    var html = '<div class="pop">' +
+      '<a href="' + esc(p.url) + '" target="_blank" rel="noopener">' +
+      '<img loading="lazy" src="' + esc(mapThumb(p, 512)) + '"></a>' +
+      '<div class="fn">' + esc(p.name) + '</div>' +
+      (p.lieu ? '<div class="fo">📍 ' + esc(p.lieu) + '</div>' : '') +
+      '<div class="fo">📁 <a href="' + esc(p.gurl) + '">' + esc(p.folder) + '</a></div>' +
+      (p.desc ? '<div class="de">' + esc(p.desc) + '</div>' : '') +
+      '<a class="op" href="' + esc(p.url) + '" target="_blank" rel="noopener">' +
+      'Ouvrir l\'image ↗</a></div>';
+    m.bindPopup(html, { minWidth: 220, maxWidth: 300 });
+    cluster.addLayer(m);
+    latlngs.push([p.lat, p.lon]);
+  });
+  bounds = latlngs.length ? L.latLngBounds(latlngs) : null;
+  if (bounds) map.fitBounds(bounds, { padding: [40, 40] });
+  var s = pts.length > 1 ? 's' : '';
+  document.getElementById('cnt').textContent = FILTER_Q
+    ? pts.length + ' / ' + ALL.length + ' photo' + s + ' — « ' + FILTER_Q + ' »'
+    : pts.length + ' photo' + s + ' géolocalisée' + s;
+  recompute();   // la zone éventuelle recompte sur le sous-ensemble affiché
+}
+
+fetch('/api/geo').then(function(r){ return r.json(); }).then(function(d){
+  ALL = d.points || [];
+  if (!ALL.length) {
+    document.getElementById('cnt').textContent = '0 photo géolocalisée';
+    document.getElementById('empty').style.display = 'block';
+    return;
+  }
+  render(ALL);
+}).catch(function(e){
+  document.getElementById('cnt').textContent = 'Erreur de chargement';
+});
+
+document.getElementById('fit').onclick = function(){
+  if (bounds) map.fitBounds(bounds, { padding: [40, 40] });
+};
+
+/* ===== Recherche : même vocabulaire que la galerie (noms + lieux + sens) =====
+   /api/search rend les mêmes urls que /api/geo (_url_for_key) : on filtre les
+   marqueurs par appartenance, sans dupliquer la logique côté client. */
+var qEl = document.getElementById('q');
+function doSearch(){
+  var q = qEl.value.trim();
+  if (!q){ FILTER_Q = ''; render(ALL); return; }
+  fetch('/api/search?q=' + encodeURIComponent(q) + '&n=1500')
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      var urls = {};
+      (d.results || []).forEach(function(x){ urls[x.url] = 1; });
+      FILTER_Q = q;
+      render(ALL.filter(function(p){ return urls[p.url]; }));
+    })
+    .catch(function(){
+      document.getElementById('cnt').textContent = 'Recherche indisponible';
+    });
+}
+qEl.addEventListener('keydown', function(e){
+  if (e.key === 'Enter') doSearch();
+  else if (e.key === 'Escape'){ qEl.value = ''; doSearch(); }
+});
+qEl.addEventListener('search', doSearch);   // croix native du champ type=search
+
+/* ===== Zone : point + rayon (clic-glissé, souris + tactile) ===== */
+var zoneOn = false, center = null, circle = null, cmark = null, inZone = [], drawing = false;
+var R_MIN = 100, R_MAX = 100000;   // rayon : 100 m … 100 km
+
+function sliderToR(v){ return Math.round(R_MIN * Math.pow(R_MAX / R_MIN, v/100)); }
+function rToSlider(r){ r = Math.max(R_MIN, Math.min(R_MAX, r)); return 100 * Math.log(r/R_MIN) / Math.log(R_MAX/R_MIN); }
+function radiusM(){ return sliderToR(+document.getElementById('zrad').value); }
+function fmtDist(m){ return m >= 1000 ? (m/1000).toFixed(m < 10000 ? 1 : 0) + ' km' : Math.round(m) + ' m'; }
+function hav(a, b){
+  var R = 6371000, t = Math.PI/180;
+  var dLat = (b[0]-a[0])*t, dLon = (b[1]-a[1])*t, la1 = a[0]*t, la2 = b[0]*t;
+  var x = Math.sin(dLat/2)*Math.sin(dLat/2) + Math.cos(la1)*Math.cos(la2)*Math.sin(dLon/2)*Math.sin(dLon/2);
+  return 2*R*Math.asin(Math.min(1, Math.sqrt(x)));
+}
+
+var mapEl = document.getElementById('map');
+
+document.getElementById('zone').onclick = function(){ setArmed(!zoneOn); };
+
+function setArmed(on){
+  zoneOn = on;
+  document.getElementById('zone').classList.toggle('active', on);
+  document.getElementById('zhint').style.display = (on && !center) ? 'block' : 'none';
+  mapEl.style.cursor = on ? 'crosshair' : '';
+  mapEl.style.touchAction = on ? 'none' : '';   // laisse passer le glissé tactile
+  if (on) map.dragging.disable(); else map.dragging.enable();
+}
+
+function placeCircle(ll){
+  center = [ll.lat, ll.lng];
+  document.getElementById('zhint').style.display = 'none';
+  if (!circle){
+    circle = L.circle(ll, { radius: radiusM(), color: '#4A8C7B', weight: 2, fillColor: '#4A8C7B', fillOpacity: 0.12 }).addTo(map);  /* --fixateur (zone selectionnee) */
+    cmark = L.marker(ll, { draggable: true }).addTo(map);
+    cmark.on('drag', function(ev){ center = [ev.latlng.lat, ev.latlng.lng]; circle.setLatLng(ev.latlng); recompute(); });
+  } else { circle.setLatLng(ll); cmark.setLatLng(ll); }
+  document.getElementById('zctrls').classList.remove('hidden');
+  recompute();
+}
+
+function setRadiusFromMeters(r){
+  r = Math.max(R_MIN, Math.min(R_MAX, Math.round(r)));
+  document.getElementById('zrad').value = rToSlider(r);
+  if (circle) circle.setRadius(r);
+  recompute();
+}
+
+function evLatLng(ev){
+  var rect = mapEl.getBoundingClientRect();
+  return map.containerPointToLatLng(L.point(ev.clientX - rect.left, ev.clientY - rect.top));
+}
+// clic/tap-glissé : pose le centre au contact, puis étire le rayon en glissant
+mapEl.addEventListener('pointerdown', function(ev){
+  if (!zoneOn) return;
+  drawing = true;
+  try { mapEl.setPointerCapture(ev.pointerId); } catch(e){}
+  placeCircle(evLatLng(ev));
+  ev.preventDefault();
+}, true);
+mapEl.addEventListener('pointermove', function(ev){
+  if (!drawing || !zoneOn || !center) return;
+  var ll = evLatLng(ev);
+  setRadiusFromMeters(hav(center, [ll.lat, ll.lng]));
+  ev.preventDefault();
+}, true);
+function endDraw(ev){
+  if (!drawing) return;
+  drawing = false;
+  try { mapEl.releasePointerCapture(ev.pointerId); } catch(e){}
+  setArmed(false);   // fin du geste : on rend la carte à la navigation normale
+}
+mapEl.addEventListener('pointerup', endDraw, true);
+mapEl.addEventListener('pointercancel', endDraw, true);
+
+document.getElementById('zrad').oninput = function(){ if (circle) circle.setRadius(radiusM()); recompute(); };
+
+function recompute(){
+  var r = radiusM();
+  inZone = center ? PTS.filter(function(p){ return hav(center, [p.lat, p.lon]) <= r; }) : [];
+  document.getElementById('zinfo').textContent = 'rayon ' + fmtDist(r);
+  document.getElementById('zcount').textContent = inZone.length + ' photo' + (inZone.length > 1 ? 's' : '');
+  var pb = document.getElementById('zplay');
+  pb.disabled = !inZone.length; pb.style.opacity = inZone.length ? 1 : 0.5;
+}
+
+document.getElementById('zclear').onclick = function(){
+  if (circle){ map.removeLayer(circle); map.removeLayer(cmark); circle = cmark = null; }
+  center = null; inZone = [];
+  document.getElementById('zctrls').classList.add('hidden');
+  setArmed(false);
+};
+
+/* ordres de lecture */
+function shuffle(a){ a = a.slice(); for (var i=a.length-1;i>0;i--){ var j=Math.floor(Math.random()*(i+1)); var t=a[i]; a[i]=a[j]; a[j]=t; } return a; }
+function seqOrder(a){ return a.slice().sort(function(x,y){ return (y.taken||0) - (x.taken||0); }); }
+function assocOrder(a){
+  if (a.length < 3) return a.slice();
+  var pool = a.slice(), out = [];
+  var cur = pool.splice(Math.floor(Math.random()*pool.length), 1)[0]; out.push(cur);
+  while (pool.length){
+    var ck = cur.kw || [], bi = 0, bs = -1;
+    for (var i=0;i<pool.length;i++){
+      var s = 0, kw = pool[i].kw || [];
+      for (var j=0;j<kw.length;j++){ if (ck.indexOf(kw[j]) >= 0) s++; }
+      if (s > bs){ bs = s; bi = i; }
+    }
+    cur = pool.splice(bi, 1)[0]; out.push(cur);
+  }
+  return out;
+}
+
+document.getElementById('zplay').onclick = function(){
+  if (!inZone.length) return;
+  var mode = document.getElementById('zmode').value;
+  var list = mode === 'rand' ? shuffle(inZone) : mode === 'assoc' ? assocOrder(inZone) : seqOrder(inZone);
+  showStart(list);
+};
+
+/* ===== Diaporama plein écran ===== */
+var SHOW = { list: [], i: 0, timer: null, playing: false };
+function showStart(list){
+  SHOW.list = list; SHOW.i = 0; SHOW.playing = true;
+  document.getElementById('show').classList.add('on');
+  document.getElementById('show-pp').innerHTML = '&#9208;';
+  showRender(); showTick();
+}
+function showRender(){
+  var p = SHOW.list[SHOW.i];
+  document.getElementById('show-img').src = mapThumb(p, 1600);
+  document.getElementById('show-pos').textContent = (SHOW.i+1) + ' / ' + SHOW.list.length;
+  document.getElementById('show-name').textContent = p.name;
+}
+function showTick(){ clearTimeout(SHOW.timer); if (SHOW.playing) SHOW.timer = setTimeout(function(){ showStep(1); }, 4500); }
+function showStep(d){ if (!SHOW.list.length) return; SHOW.i = (SHOW.i + d + SHOW.list.length) % SHOW.list.length; showRender(); showTick(); }
+function showToggle(){ SHOW.playing = !SHOW.playing; document.getElementById('show-pp').innerHTML = SHOW.playing ? '&#9208;' : '&#9654;'; showTick(); }
+function showClose(){ clearTimeout(SHOW.timer); SHOW.playing = false; document.getElementById('show').classList.remove('on'); document.getElementById('show-img').src = ''; }
+document.addEventListener('keydown', function(e){
+  if (!document.getElementById('show').classList.contains('on')) return;
+  if (e.key === 'ArrowLeft') showStep(-1);
+  else if (e.key === 'ArrowRight') showStep(1);
+  else if (e.key === ' ') { e.preventDefault(); showToggle(); }
+  else if (e.key === 'Escape') showClose();
+});
+// balayage tactile gauche/droite dans le diaporama
+(function(){
+  var sw = document.getElementById('show'), sx = 0, sy = 0;
+  sw.addEventListener('touchstart', function(e){ if (e.touches.length === 1){ sx = e.touches[0].clientX; sy = e.touches[0].clientY; } }, { passive: true });
+  sw.addEventListener('touchend', function(e){
+    var t = e.changedTouches[0], dx = t.clientX - sx, dy = t.clientY - sy;
+    if (Math.abs(dx) > 45 && Math.abs(dx) > Math.abs(dy) * 1.5) showStep(dx < 0 ? 1 : -1);
+  }, { passive: true });
+})();
+</script>
+</body>
+</html>

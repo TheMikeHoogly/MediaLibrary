@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Envoyer des photos v10</title>
+<style>
+  /* Etape A tokenisation « chambre noire » : couleurs/police en dur -> tokens.
+     Bouton d'envoi = papier (principal neutre) ; barre de progression =
+     veilleuse (travail en cours) ; etats ok/err = fixateur/encre.
+     Passe DESIGN (11/08) : valeurs hors echelle calees sur les tokens, memes
+     mappings que les autres pages (0.9/1rem -> --t-md, 1.1rem -> --t-lg,
+     1.6rem -> --t-xl, radius 8-14px -> --r-md ou --r-pill (piste de
+     progression), espacements -> echelle 4px). outline:none RETIRE (plancher
+     base.css). Radius 20px des grandes cartes d'envoi et tailles d'icones
+     (2/3rem) conserves : signature de la page, hors gamme des tokens. */
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: var(--f-texte);
+    background: var(--salle);
+    color: var(--texte);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: var(--e-6) var(--e-4) 40px;
+  }
+  h1 { font-size: var(--t-xl); margin-bottom: var(--e-2); text-align: center; }
+  .subtitle { color: var(--graphite); font-size: var(--t-md); margin-bottom: var(--e-8); text-align: center; }
+
+  .pick-btn {
+    display: block;
+    width: 100%;
+    max-width: 480px;
+    padding: 40px var(--e-6);
+    background: var(--salle-3);
+    border: 2px dashed var(--graphite);
+    border-radius: 20px;
+    text-align: center;
+    cursor: pointer;
+    color: var(--texte);
+    font-size: var(--t-md);
+  }
+  .pick-btn:active { background: var(--salle-2); }
+  .pick-btn--dossier { margin-top: var(--e-3); padding: var(--e-6) var(--e-6); }
+  .pick-icon { font-size: 3rem; margin-bottom: var(--e-3); }
+  .pick-btn--dossier .pick-icon { font-size: 2rem; margin-bottom: var(--e-2); }
+  .pick-label { font-size: var(--t-lg); font-weight: 600; margin-bottom: var(--e-2); }
+  .pick-hint { color: var(--graphite); font-size: var(--t-sm); }
+
+  .summary { width: 100%; max-width: 480px; margin-top: var(--e-4); font-size: var(--t-md);
+             color: var(--graphite); font-variant-numeric: tabular-nums; }
+  .summary b { color: var(--texte); }
+
+  /* Plancher d'accessibilite : focus visible + mouvement reduit. */
+  .pick-btn:focus-visible, .btn:focus-visible, .gallery-link:focus-visible,
+  .search-row input:focus-visible, .search-row button:focus-visible {
+    outline: 2px solid var(--veilleuse); outline-offset: 2px;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { transition-duration: 0.01ms !important;
+                             animation-duration: 0.01ms !important; }
+  }
+
+  .btn {
+    display: block;
+    width: 100%;
+    max-width: 480px;
+    margin-top: var(--e-4);
+    padding: var(--e-4);
+    background: var(--papier);
+    color: var(--texte-papier);
+    border: none;
+    border-radius: var(--r-md);
+    font-size: var(--t-lg);
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .btn:active { opacity: 0.85; }
+  .btn:disabled { background: var(--salle-3); color: var(--graphite); cursor: default; }
+
+  #status { width: 100%; max-width: 480px; margin-top: var(--e-6); font-size: var(--t-md); }
+  .file-item {
+    display: flex; align-items: center; gap: var(--e-3);
+    padding: var(--e-3) var(--e-4); background: var(--salle-3); border-radius: var(--r-md); margin-bottom: var(--e-2);
+  }
+  .file-item .name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--t-md); }
+  .file-item .state { flex-shrink: 0; font-size: var(--t-sm); }
+  .state.ok { color: var(--fixateur); }
+  .state.err { color: var(--encre); }
+  .state.pending { color: var(--graphite); }
+
+  .progress-bar-wrap { width: 100%; max-width: 480px; margin-top: var(--e-4); background: var(--salle-3); border-radius: var(--r-pill); height: 8px; display: none; }
+  .progress-bar { height: 100%; border-radius: var(--r-pill); background: var(--veilleuse); width: 0%; transition: width 0.2s; }
+
+  .gallery-link { margin-top: var(--e-6); color: var(--texte); text-decoration: none; font-size: var(--t-md); }
+
+  .search-row { display: flex; gap: var(--e-2); width: 100%; max-width: 480px; margin-top: var(--e-8); }
+  .search-row input { flex: 1; padding: var(--e-3) var(--e-4); border-radius: var(--r-md); border: var(--trait);
+                      background: var(--salle-3); color: var(--texte); font-size: var(--t-md); }
+  .search-row input:focus { border-color: var(--veilleuse); }
+  .search-row button { padding: var(--e-3) var(--e-4); border-radius: var(--r-md); border: none;
+                       background: var(--salle-3); color: var(--texte); font-size: var(--t-md); cursor: pointer; }
+</style>
+</head>
+<body>
+<!--APPNAV-->
+
+<h1>Envoyer des photos</h1>
+<p style="color:var(--graphite);font-size:var(--t-xs);margin-bottom:var(--e-1)">v10 &middot; tagging IA</p>
+<p class="subtitle">Meme reseau WiFi &middot; Aucune inscription requise</p>
+
+<input type="file" id="fileInput" multiple accept="image/*,video/*" style="display:none">
+<input type="file" id="dirInput" webkitdirectory multiple style="display:none">
+
+<label for="fileInput" class="pick-btn" id="pickBtn">
+  <div class="pick-icon">&#128247;</div>
+  <div class="pick-label">Choisir des photos</div>
+  <div class="pick-hint">Une ou plusieurs images &middot; videos</div>
+</label>
+
+<label for="dirInput" class="pick-btn pick-btn--dossier" id="pickDirBtn">
+  <div class="pick-icon">&#128193;</div>
+  <div class="pick-label">Choisir un dossier</div>
+  <div class="pick-hint">Tout un album, sous-dossiers compris</div>
+</label>
+
+<div class="progress-bar-wrap" id="progressWrap">
+  <div class="progress-bar" id="progressBar"></div>
+</div>
+
+<div id="summary" class="summary" style="display:none"></div>
+
+<button class="btn" id="uploadBtn" disabled>Envoyer</button>
+
+<div id="status"></div>
+
+<div class="search-row">
+  <input type="search" id="searchInput" placeholder="Rechercher (noms, lieux, sens&hellip;)"
+         aria-label="Rechercher des photos (noms, lieux, sens de l'image)">
+  <button id="searchBtn">&#128269;</button>
+</div>
+
+<div>
+  <a class="gallery-link" href="/files">Voir toute la galerie</a>
+  &nbsp;&middot;&nbsp;
+  <a class="gallery-link" href="/browse">Explorer les dossiers</a>
+</div>
+
+<script>
+(function() {
+  var input = document.getElementById('fileInput');
+  var dirInput = document.getElementById('dirInput');
+  var btn = document.getElementById('uploadBtn');
+  var list = document.getElementById('status');
+  var summary = document.getElementById('summary');
+  var progressWrap = document.getElementById('progressWrap');
+  var progressBar = document.getElementById('progressBar');
+  var files = [];
+  var MAX_ROWS = 60;    // au-dela, on n'affiche qu'un resume (un album peut etre gros)
+
+  function esc(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  function relOf(f) { return f.webkitRelativePath || f.name; }
+
+  function onPick(picked) {
+    files = Array.prototype.slice.call(picked);
+    if (files.length <= MAX_ROWS) {
+      list.innerHTML = files.map(function(f, i) {
+        return '<div class="file-item"><span class="name">' + esc(relOf(f)) + '</span>'
+             + '<span class="state pending" id="s' + i + '">En attente</span></div>';
+      }).join('');
+    } else {
+      list.innerHTML = '';
+    }
+    summary.style.display = files.length ? 'block' : 'none';
+    summary.innerHTML = '<b>' + files.length + '</b> fichier(s) prets a envoyer.';
+    btn.disabled = files.length === 0;
+    btn.textContent = 'Envoyer';
+  }
+
+  input.onchange = function() { onPick(input.files); };
+  dirInput.onchange = function() { onPick(dirInput.files); };
+
+  function setState(i, txt, cls) {
+    var el = document.getElementById('s' + i);
+    if (el) { el.textContent = txt; el.className = 'state ' + cls; }
+  }
+
+  btn.onclick = function() {
+    if (!files.length) return;
+    btn.disabled = true;
+    progressWrap.style.display = 'block';
+    var done = 0, ok = 0, skip = 0, err = 0;
+
+    function tick(i, txt, cls) {
+      done++;
+      progressBar.style.width = (done / files.length * 100) + '%';
+      setState(i, txt, cls);
+      summary.innerHTML = 'Envoyees <b>' + ok + '</b> &middot; ignorees <b>' + skip
+        + '</b> &middot; erreurs <b>' + err + '</b> &middot; ' + done + '/' + files.length;
+    }
+
+    function next(i) {
+      if (i >= files.length) {
+        btn.textContent = 'Envoyer d\'autres ?';
+        btn.disabled = false;
+        btn.onclick = function() { location.reload(); };
+        return;
+      }
+      setState(i, 'Envoi...', 'pending');
+      var fd = new FormData();
+      fd.append('file', files[i], files[i].name);
+      fd.append('relpath', relOf(files[i]));
+      fetch('/upload', { method: 'POST', body: fd })
+        .then(function(r) { return r.text().then(function(t) {
+          return { ok: r.ok, status: r.status, body: t }; }); })
+        .then(function(res) {
+          if (res.ok && res.body === 'SKIP') { skip++; tick(i, 'Deja present', 'ok'); }
+          else if (res.ok) { ok++; tick(i, 'OK', 'ok'); }
+          else { err++; tick(i, 'Erreur ' + res.status, 'err'); }
+          next(i + 1);
+        })
+        .catch(function(e) { err++; tick(i, 'Echec reseau', 'err'); next(i + 1); });
+    }
+    next(0);
+  };
+
+  var si = document.getElementById('searchInput');
+  function goSearch() {
+    var q = si.value.trim();
+    location.href = q ? '/files?q=' + encodeURIComponent(q) : '/files';
+  }
+  document.getElementById('searchBtn').onclick = goSearch;
+  si.addEventListener('keydown', function(e) { if (e.key === 'Enter') goSearch(); });
+})();
+</script>
+</body>
+</html>

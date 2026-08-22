@@ -35,6 +35,8 @@ import urllib.parse
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
+import ui_gabarits
+
 SERVER = Path(__file__).resolve().parent / "server.py"
 SOURCE = SERVER.read_text(encoding="utf-8")
 ARBRE = ast.parse(SOURCE)
@@ -54,6 +56,11 @@ def _noeud(nom):
 
 
 def _constante(nom):
+    # Les GABARITS ont quitté `server.py` pour `ui/pages/` (point 7) : une
+    # page se lit là, tout le reste dans le source, et la signature ne change
+    # pas pour les tests qui appellent cette fonction.
+    if nom.endswith('_PAGE'):
+        return ui_gabarits.gabarit(nom)
     for n in ARBRE.body:
         if isinstance(n, ast.Assign) and len(n.targets) == 1 \
                 and isinstance(n.targets[0], ast.Name) and n.targets[0].id == nom:

@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sujets</title>
+<style>
+  /* « Sujets » (ROADMAP #4) : ENTREE UNIQUE des entites nommees (personnes,
+     animaux, lieux) depuis la fusion — les onglets Personnes/Animaux ont quitte
+     la nav ; /people et /pets restent des vues specialisees (files de travail,
+     correction), atteintes par la rangee « Files de travail » ci-dessous ou par
+     les cartes (?name=). Tout en tokens « chambre noire ». */
+  body{font-family:var(--f-texte);margin:0;background:var(--salle);color:var(--texte);}
+  main{padding:var(--e-6) var(--e-4) 90px;max-width:1200px;margin:0 auto;}
+  h1{font:600 var(--t-xl)/1.1 var(--f-affichage);letter-spacing:-.01em;margin:0 0 var(--e-2);}
+  .intro{color:var(--graphite);font-size:var(--t-sm);line-height:1.5;
+    margin:0 0 var(--e-6);max-width:62ch;}
+  .barre{display:flex;gap:var(--e-3);align-items:center;flex-wrap:wrap;margin-bottom:var(--e-6);}
+  .barre input{flex:1;min-width:220px;min-height:var(--touch);padding:0 var(--e-4);
+    font:var(--t-md)/1 var(--f-texte);background:var(--salle-3);color:var(--texte);
+    border:var(--trait);border-radius:var(--r-md);}
+  .barre input::placeholder{color:var(--graphite);}
+  .filtres{display:flex;gap:var(--e-2);}
+  .chip{min-height:36px;padding:0 var(--e-4);border-radius:var(--r-pill);border:var(--trait);
+    background:var(--salle-3);color:var(--graphite);cursor:pointer;
+    font:500 var(--t-sm)/1 var(--f-texte);}
+  .chip .n{font-family:var(--f-donnees);font-size:var(--t-xs);opacity:.7;margin-left:6px;}
+  .chip[aria-pressed="true"]{background:var(--fixateur);border-color:var(--fixateur);color:#fff;}
+  .chip[aria-pressed="true"] .n{opacity:.85;}
+  .grille{display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(clamp(120px,20vw,180px),1fr));
+    gap:var(--e-4);}
+  .sc{display:flex;flex-direction:column;background:var(--salle-3);border:var(--trait);
+    border-radius:var(--r-md);overflow:hidden;text-decoration:none;color:var(--texte);}
+  .sc .vig{aspect-ratio:1;background:var(--salle-2);position:relative;overflow:hidden;}
+  .sc .vig img{width:100%;height:100%;object-fit:cover;display:block;}
+  .sc .vig .ph{width:100%;height:100%;display:flex;align-items:center;
+    justify-content:center;font-size:2rem;color:var(--graphite);}
+  .sc .badge{position:absolute;top:var(--e-2);left:var(--e-2);background:#000a;
+    color:var(--texte);border-radius:var(--r-pill);padding:2px 8px;font-size:var(--t-xs);}
+  .sc .meta{padding:var(--e-3);}
+  .sc .nm{font:600 var(--t-md)/1.2 var(--f-affichage);letter-spacing:-.01em;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .sc .ct{font-family:var(--f-donnees);font-size:var(--t-xs);color:var(--graphite);margin-top:2px;}
+  .msg{color:var(--graphite);padding:var(--e-8) 0;text-align:center;}
+  /* Onglet Classification : cartes de files de travail. Compteur en monospace
+     (--f-donnees, plancher photo-ui : une mesure se compare) ; > 0 = veilleuse
+     (travail en attente), 0 = graphite. Toute la carte est cliquable (cible
+     >= 44 px), c'est un lien de navigation (<a>), pas un bouton. */
+  .ctype h2{font:600 var(--t-lg)/1.2 var(--f-affichage);letter-spacing:-.01em;
+    margin:var(--e-6) 0 var(--e-3);}
+  .cgrid{display:grid;gap:var(--e-3);
+    grid-template-columns:repeat(auto-fill,minmax(240px,1fr));}
+  .qc{display:flex;flex-direction:column;gap:var(--e-1);min-height:var(--touch);
+    padding:var(--e-4);background:var(--salle-3);border:var(--trait);
+    border-radius:var(--r-md);color:var(--texte);text-decoration:none;}
+  .qc .k{font:500 var(--t-md)/1.2 var(--f-texte);}
+  .qc .n{font:600 var(--t-xl)/1.1 var(--f-donnees);color:var(--graphite);}
+  .qc.attente .n{color:var(--veilleuse);}
+  .qc .tv{color:var(--graphite);font-size:var(--t-sm);line-height:1.4;}
+  @media(hover:hover){.sc:hover,.qc:hover{border-color:var(--papier-2);}}
+  /* Files « À vérifier » incarnées ICI (déplacées de /people, harmonisées
+     avec les animaux) : mêmes classes que sur /people (.cl, .row, .qui,
+     bande auto .grid/.prop) pour garder un seul vocabulaire visuel. */
+  .ctype h3{display:flex;align-items:center;gap:var(--e-2);flex-wrap:wrap;
+    font:600 var(--t-md)/1.2 var(--f-affichage);letter-spacing:-.01em;
+    margin:var(--e-4) 0 var(--e-2);}
+  .ctype h3 .c{color:var(--graphite);font-family:var(--f-donnees);
+    font-size:var(--t-sm);font-weight:normal;}
+  .qmsg{color:var(--graphite);font-size:var(--t-sm);margin:0 0 var(--e-2);}
+  .kbd-hint{color:var(--graphite);font-size:var(--t-xs);font-family:var(--f-donnees);}
+  .kbd-hint b{color:var(--texte);font-weight:600;}
+  .btn{min-height:var(--touch);padding:var(--e-2) var(--e-4);border:var(--trait);
+    border-radius:var(--r-md);background:var(--salle-3);color:var(--texte);
+    font:500 var(--t-sm)/1 var(--f-texte);cursor:pointer;}
+  .btn.prim{background:var(--papier);border-color:var(--papier);color:var(--texte-papier);}
+  .btn.warn{background:transparent;border-color:var(--encre);color:var(--encre);}
+  .ctype h3 .btn{min-height:0;font-size:var(--t-xs);padding:var(--e-1) var(--e-2);}
+  .cl{background:var(--salle-3);border:var(--trait);border-radius:var(--r-md);
+    padding:var(--e-3);margin-bottom:var(--e-3);}
+  /* Tri au clavier : la carte « en cours de décision » porte l'anneau veilleuse. */
+  .cl.active{outline:2px solid var(--veilleuse);outline-offset:2px;}
+  .cl .row{display:flex;gap:var(--e-2);align-items:center;flex-wrap:wrap;}
+  .cl .row > *{min-width:0;}
+  .cl .row .sz{color:var(--graphite);font-size:var(--t-sm);flex:1 1 12rem;
+    margin-right:auto;overflow-wrap:anywhere;}
+  .cl .row .qui{flex:1 1 150px;min-width:120px;}
+  .cl .row .btn,.cl .row .qui{min-height:44px;}
+  @media(max-width:900px){
+    .cl .row{align-items:stretch;}
+    .cl .row .sz{flex-basis:100%;}
+    .cl .row .btn,.cl .row .qui{flex-basis:100%;width:100%;}
+    .cl .row > img{align-self:flex-start;}
+  }
+  input.qui{padding:var(--e-2) var(--e-3);border-radius:var(--r-md);
+    border:var(--trait);background:var(--salle-3);color:var(--texte);
+    font-size:var(--t-sm);font-family:var(--f-texte);}
+  input.qui:focus{border-color:var(--veilleuse);}
+  .cl .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));
+    gap:var(--e-1);}
+  .prop{position:relative;}
+  .prop img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:var(--r-md);
+    background:var(--salle-3);display:block;}
+  .prop .s{position:absolute;bottom:2px;right:4px;font-size:var(--t-xs);
+    font-family:var(--f-donnees);color:var(--texte);background:rgba(0,0,0,.55);
+    padding:0 3px;border-radius:var(--r-sm);}
+  .prop .x{position:absolute;top:3px;right:4px;background:var(--encre);color:#fff;
+    border:none;border-radius:var(--r-sm);font-size:var(--t-xs);padding:1px 5px;
+    cursor:pointer;}
+  .ctype .cgrid{margin-top:var(--e-3);}
+  .btn:focus-visible,input.qui:focus-visible,.qc:focus-visible,.sc:focus-visible{
+    outline:2px solid var(--veilleuse);outline-offset:2px;}
+  /* Ancres des files : la nav (app + sous-nav Sujets, sticky) ne doit pas
+     recouvrir le titre quand scrollIntoView l'amene en haut. */
+  #verifier,#verifier-animaux{scroll-margin-top:118px;}
+  @media(prefers-reduced-motion:reduce){
+    *,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important;}
+  }
+</style>
+</head>
+<body>
+<!--APPNAV-->
+<!--SUJETSNAV-->
+<main>
+  <h1>Sujets</h1>
+  <div id="vue-annuaire">
+  <p class="intro">Toutes les personnes, les animaux et les lieux, au m&ecirc;me endroit.
+    Ouvre une personne ou un animal pour sa fiche compl&egrave;te (photos, correction,
+    renommage) ; un lieu ouvre la galerie filtr&eacute;e sur ce lieu. Le travail en
+    attente (&agrave; v&eacute;rifier, groupes &agrave; nommer) vit dans l&rsquo;onglet
+    <a href="/sujets?vue=classification" style="color:var(--texte)">Classification</a>.</p>
+  <div class="barre">
+    <input id="q" type="search" placeholder="Filtrer par nom&hellip;" autocomplete="off"
+      aria-label="Filtrer les sujets par nom">
+    <div class="filtres" role="group" aria-label="Type de sujet">
+      <button class="chip" data-f="tous" aria-pressed="true">Tous<span class="n" id="n-tous"></span></button>
+      <button class="chip" data-f="personne" aria-pressed="false">Personnes<span class="n" id="n-personne"></span></button>
+      <button class="chip" data-f="animal" aria-pressed="false">Animaux<span class="n" id="n-animal"></span></button>
+      <button class="chip" data-f="lieu" aria-pressed="false">Lieux<span class="n" id="n-lieu"></span></button>
+    </div>
+  </div>
+  <div class="grille" id="grille"></div>
+  <div class="msg" id="msg">Chargement&hellip;</div>
+  </div>
+
+  <!-- Onglet Classification : GUICHET UNIQUE du travail en attente. Les files
+       « À vérifier » (personnes ET animaux, harmonisées) se jugent ICI —
+       déplacées de /people le 12/08 ; les cartes restantes ouvrent les vues
+       spécialisées (groupes, inconnus) par lien profond ancré. -->
+  <div id="vue-classif" hidden>
+  <p class="intro">Le travail de classification en attente, s&eacute;par&eacute; par type.
+    Les propositions &laquo;&nbsp;&Agrave; v&eacute;rifier&nbsp;&raquo; se jugent ici m&ecirc;me
+    (personnes et animaux) ; les cartes ouvrent directement la bonne section.</p>
+  <div class="qmsg"><span class="kbd-hint">Raccourcis : <b>Espace</b>/<b>Entr&eacute;e</b> = oui &middot; <b>X</b> = non &middot; <b>Z</b> = annuler &middot; une lettre = corriger le nom</span></div>
+  <div class="qmsg" id="curstats" hidden><span class="kbd-hint" id="curstats-txt"></span></div>
+  <section class="ctype" aria-labelledby="ct-p">
+    <h2 id="ct-p">&#128100; Personnes</h2>
+    <h3 id="verifier">&Agrave; v&eacute;rifier <span class="c" id="curc"></span>
+      <button class="btn" id="curref">&#8635; Rafra&icirc;chir</button></h3>
+    <div class="qmsg" id="curmsg">Chargement&hellip;</div>
+    <div id="autowrap"></div>
+    <div id="curbox"></div>
+    <div class="cgrid" id="c-personnes"></div>
+  </section>
+  <section class="ctype" aria-labelledby="ct-a">
+    <h2 id="ct-a">&#128062; Animaux</h2>
+    <h3 id="verifier-animaux">&Agrave; v&eacute;rifier <span class="c" id="petcurc"></span>
+      <button class="btn" id="petcurref">&#8635; Rafra&icirc;chir</button></h3>
+    <div class="qmsg" id="petcurmsg">Chargement&hellip;</div>
+    <div id="petautowrap"></div>
+    <div id="petcurbox"></div>
+    <div class="cgrid" id="c-animaux"></div>
+  </section>
+  <section class="ctype" aria-labelledby="ct-l">
+    <h2 id="ct-l">&#128205; Lieux</h2>
+    <div class="cgrid" id="c-lieux"></div>
+  </section>
+  </div>
+</main>
+<script>
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){
+  return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+function _norm(s){return String(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');}
+var ALL=[], FILT='tous';
+function href(s){
+  // Personne/animal -> fiche detail (?name=) ; lieu -> galerie filtree (?q=),
+  // qui gere deja le filtrage par lieu (semantic_search / _extraire_lieux).
+  if(s.type==='lieu') return '/files?q='+encodeURIComponent(s.name);
+  return (s.type==='animal'?'/pets':'/people')+'?name='+encodeURIComponent(s.name);
+}
+function typeMot(t){return t==='animal'?'animal':t==='lieu'?'lieu':'personne';}
+function carte(s){
+  var badge=s.type==='animal'?'\ud83d\udc3e':s.type==='lieu'?'\ud83d\udccd':'\ud83d\udc64';
+  var vig=s.crop
+    ? '<img loading="lazy" src="'+esc(s.crop)+'" alt="">'
+    : '<div class="ph" aria-hidden="true">'+badge+'</div>';
+  var a=document.createElement('a');
+  a.className='sc'; a.href=href(s);
+  a.setAttribute('aria-label', s.name+' — '+s.photos+' photo'+(s.photos>1?'s':'')+
+    ' ('+typeMot(s.type)+')');
+  a.innerHTML='<div class="vig">'+vig+'<span class="badge" aria-hidden="true">'+badge+'</span></div>'+
+    '<div class="meta"><div class="nm">'+esc(s.name)+'</div>'+
+    '<div class="ct">'+s.photos+' photo'+(s.photos>1?'s':'')+'</div></div>';
+  return a;
+}
+function rendre(){
+  var q=_norm(document.getElementById('q').value.trim());
+  var list=ALL.filter(function(s){
+    if(FILT!=='tous' && s.type!==FILT) return false;
+    if(q && _norm(s.name).indexOf(q)<0) return false;
+    return true;
+  });
+  var g=document.getElementById('grille'), m=document.getElementById('msg');
+  g.innerHTML='';
+  if(!list.length){ m.textContent=ALL.length?'Aucun sujet ne correspond au filtre.':'Aucun sujet nomm\u00e9 pour le moment.'; return; }
+  m.textContent='';
+  var frag=document.createDocumentFragment();
+  list.forEach(function(s){ frag.appendChild(carte(s)); });
+  g.appendChild(frag);
+}
+document.querySelectorAll('.chip').forEach(function(c){
+  c.onclick=function(){
+    FILT=c.getAttribute('data-f');
+    document.querySelectorAll('.chip').forEach(function(x){
+      x.setAttribute('aria-pressed', x===c?'true':'false'); });
+    rendre();
+  };
+});
+document.getElementById('q').addEventListener('input', rendre);
+
+// ── Bascule Annuaire / Classification (?vue=classification) ──
+var VUE=(new URLSearchParams(location.search).get('vue')==='classification')?'classif':'annuaire';
+if(VUE==='classif'){
+  document.getElementById('vue-annuaire').hidden=true;
+  document.getElementById('vue-classif').hidden=false;
+  chargerClassif();
+}
+// Pré-sélection d'un type dans l'annuaire (?type=lieu depuis Classification).
+var TYPEQ=new URLSearchParams(location.search).get('type');
+if(VUE==='annuaire' && ['personne','animal','lieu'].indexOf(TYPEQ)>=0){
+  FILT=TYPEQ;
+  document.querySelectorAll('.chip').forEach(function(x){
+    x.setAttribute('aria-pressed', x.getAttribute('data-f')===TYPEQ?'true':'false'); });
+}
+
+function qcarte(cible, opts){
+  // Carte de file de travail : lien vers la section de la vue specialisee.
+  var a=document.createElement('a');
+  a.className='qc'; a.href=opts.href;
+  a.innerHTML='<span class="k">'+esc(opts.titre)+'</span>'+
+    '<span class="n">&hellip;</span>'+
+    '<span class="tv">'+esc(opts.desc)+'</span>';
+  document.getElementById(cible).appendChild(a);
+  return a;
+}
+function qmaj(a, n, building, extra, neutre){
+  var el=a.querySelector('.n');
+  el.textContent = building ? 'calcul\u2026' : String(n);
+  // veilleuse = « travail en attente » ; un simple compte (lieux) reste neutre
+  a.classList.toggle('attente', !neutre && !building && n>0);
+  if(extra){ var tv=a.querySelector('.tv'); tv.textContent=tv.textContent+' \u00b7 '+extra; }
+}
+function chargerClassif(){
+  var cGrp=qcarte('c-personnes',{titre:'Groupes \u00e0 nommer', href:'/people#groupes',
+    desc:'Visages regroup\u00e9s automatiquement, en attente d\u2019un nom.'});
+  var cInc=qcarte('c-personnes',{titre:'Inconnus (archiv\u00e9s)', href:'/people#inconnus',
+    desc:'Visages mis de c\u00f4t\u00e9 \u2014 r\u00e9activables pour un re-tri.'});
+  var cPets=qcarte('c-animaux',{titre:'Groupes \u00e0 identifier', href:'/pets#groupes',
+    desc:'Chats d\u00e9tect\u00e9s regroup\u00e9s par ressemblance, \u00e0 nommer.'});
+  var cLieux=qcarte('c-lieux',{titre:'Lieux nomm\u00e9s', href:'/sujets?type=lieu',
+    desc:'Lieux reconnus (lieux.txt + dossiers). Le g\u00e9ocodage GPS (gps_place) s\u2019active depuis R\u00e9glages.'});
+  function j(u){ return fetch(u).then(function(r){ return r.json(); }); }
+  j('/api/people/clusters').then(function(d){ qmaj(cGrp, d.count||0, d.building); })
+    .catch(function(){ qmaj(cGrp,'?',false); });
+  j('/api/people/inconnus').then(function(d){ qmaj(cInc, d.count||0, d.building); })
+    .catch(function(){ qmaj(cInc,'?',false); });
+  j('/api/pets/clusters').then(function(d){ qmaj(cPets, (d.clusters||[]).length||d.count||0, d.building); })
+    .catch(function(){ qmaj(cPets,'?',false); });
+  j('/api/sujets/list').then(function(d){ qmaj(cLieux, (d.lieux||[]).length, false, null, true); })
+    .catch(function(){ qmaj(cLieux,'?',false, null, true); });
+  loadCurator(false);
+  loadPetCurator(false);
+}
+
+// ── Files « À vérifier » — DÉPLACÉES de /people, harmonisées animaux (12/08).
+//    Personnes : merge/remove/add via /api/curator + /api/assign (genre visage).
+//    Animaux : add via /api/assign (genre animal) — « Aucun » = __inconnu__,
+//    « Pas un animal » = __pas_animal__, tout est réversible (undo) et
+//    journalisé (compteur de séance commun aux deux files). ──
+function post(url,obj){return fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},
+  body:JSON.stringify(obj||{})}).then(function(r){return r.json();});}
+var NOMS_CACHE={};
+function nomsDe(genre){
+  // Cache de la PROMESSE (anti-tempête de /api/names, leçon /pets du 11/08).
+  if(NOMS_CACHE[genre]) return NOMS_CACHE[genre];
+  NOMS_CACHE[genre]=fetch('/api/names?genre='+genre).then(function(r){return r.json();})
+    .then(function(d){ return d.noms||[]; })
+    .catch(function(){ NOMS_CACHE[genre]=null; return []; });
+  return NOMS_CACHE[genre];
+}
+function toastP(msg, jeton, apres){
+  var t=document.getElementById('toastp');
+  if(!t){ t=document.createElement('div'); t.id='toastp';
+    t.setAttribute('role','status'); t.setAttribute('aria-live','polite');
+    t.style.cssText='position:fixed;left:50%;bottom:18px;transform:translateX(-50%);display:flex;'+
+      'align-items:center;gap:12px;background:var(--salle-3);border:var(--trait);border-radius:999px;'+
+      'padding:var(--e-3) var(--e-3) var(--e-3) var(--e-4);font-size:var(--t-sm);z-index:60';
+    document.body.appendChild(t); }
+  t.innerHTML='<span style="flex:1"></span>'; t.firstChild.textContent=msg;
+  if(jeton){ var b=document.createElement('button'); b.className='btn'; b.textContent='Annuler';
+    b.onclick=function(){ post('/api/undo',{jeton:jeton}).then(function(){ t.remove();
+        if(apres){ apres(); } else { loadCurator(true); loadPetCurator(true); } }); };
+    t.appendChild(b); }
+  clearTimeout(t._m); t._m=setTimeout(function(){ t.remove(); },10000);
+}
+// Compteur de séance : rythme et erreurs découvertes, calculés côté serveur
+// (journal des jugements — COMMUN personnes + animaux). Masqué sans geste récent.
+function majStats(st){
+  var w=document.getElementById('curstats'), t=document.getElementById('curstats-txt');
+  if(!w||!t) return;
+  if(!st||!st.n){ w.hidden=true; return; }
+  var s='S\u00e9ance : <b>'+st.n+'</b> jugement'+(st.n>1?'s':'');
+  if(st.par_minute!=null) s+=' \u00b7 <b>'+String(st.par_minute).replace('.',',')+'</b>/min';
+  s+=' \u00b7 <b>'+st.erreurs+'</b> erreur'+(st.erreurs>1?'s':'')+' d\u00e9couverte'+(st.erreurs>1?'s':'');
+  t.innerHTML=s; w.hidden=false;
+}
+function curCount(){
+  var n=document.querySelectorAll('#curbox > .cl').length;
+  document.getElementById('curc').textContent=n?('('+n+')'):'';
+  if(!n) document.getElementById('curmsg').textContent='Rien \u00e0 v\u00e9rifier pour le moment.';
+}
+function petCount(){
+  var n=document.querySelectorAll('#petcurbox > .cl').length;
+  document.getElementById('petcurc').textContent=n?('('+n+')'):'';
+  if(!n) document.getElementById('petcurmsg').textContent='Rien \u00e0 v\u00e9rifier pour le moment.';
+}
+// Une carte ne se juge QU'UNE fois : le retrait n'a lieu qu'au retour du
+// serveur, et deux pressions rapides d'Espace (plus rapides que l'aller-retour)
+// envoyaient deux jugements pour la même photo. Verrou local, relâché en cas
+// d'échec pour que le geste reste rejouable.
+function _prend(el){ if(el._jug) return false; el._jug=true; el.style.opacity=.5; return true; }
+function _rend(el){ el._jug=false; el.style.opacity=''; }
+function assigner(s, el, cible){
+  if(!_prend(el)) return;
+  post('/api/assign',{genre:'visage',cle:s.key,i:s.i,cible:cible,propose:s.person,
+                      sim:s.sim,marge:s.margin})
+    .then(function(r){
+      if(!r.ok){ _rend(el); toastP(r.erreur||'Echec de l attribution.'); return; }
+      if(r.stats) majStats(r.stats);
+      toastP(r.libelle||'fait', r.jeton, function(){ loadCurator(true); });
+      el.remove(); NOMS_CACHE['personne']=null; curCount(); curMark();
+    }).catch(function(){ _rend(el); toastP('Le serveur n a pas repondu. Reessaie dans un instant.'); });
+}
+function assignerA(s, el, cible){
+  if(!_prend(el)) return;
+  post('/api/assign',{genre:'animal',membres:[[s.key,s.i]],cible:cible,propose:s.animal,
+                      sim:s.sim,marge:s.margin})
+    .then(function(r){
+      if(!r.ok){ _rend(el); toastP(r.erreur||'Echec de l attribution.'); return; }
+      if(r.stats) majStats(r.stats);
+      toastP(r.libelle||'fait', r.jeton, function(){ loadPetCurator(true); });
+      el.remove(); NOMS_CACHE['animal']=null; petCount(); curMark();
+    }).catch(function(){ _rend(el); toastP('Le serveur n a pas repondu. Reessaie dans un instant.'); });
+}
+function propose2(champ, zone, genre, agir){
+  var t=champ.value.trim().toLowerCase();
+  nomsDe(genre).then(function(noms){
+    zone.innerHTML='';
+    noms.filter(function(p){return !t||p.nom.toLowerCase().indexOf(t)===0;})
+      .slice(0,4).forEach(function(p){
+        var b=document.createElement('button'); b.className='btn';
+        b.style.cssText='margin:2px 4px 0 0;font-size:12.5px';
+        b.textContent=p.nom+' \u00b7 '+p.n;
+        b.onclick=function(){ agir(p.nom); };
+        zone.appendChild(b); });
+    if(t && !noms.some(function(p){return p.nom.toLowerCase()===t;})){
+      var nb=document.createElement('button'); nb.className='btn';
+      nb.style.cssText='margin:2px 4px 0 0;font-size:12.5px';
+      nb.textContent='Nouveau : '+champ.value.trim();
+      nb.onclick=function(){ agir(champ.value.trim()); };
+      zone.appendChild(nb); }
+  });
+}
+function curResolve(action, sug, el){
+  if(!_prend(el)) return;
+  post('/api/curator/resolve',{action:action,sug:sug}).then(function(r){
+    if(r&&r.stats) majStats(r.stats);
+    el.remove(); curCount(); curMark();
+  }).catch(function(){ _rend(el); toastP('Le serveur n a pas repondu. Reessaie dans un instant.'); });
+}
+function loadCurator(rebuild){
+  fetch('/api/curator/list'+(rebuild?'?rebuild=1':'')).then(function(r){return r.json();}).then(function(d){
+    var msg=document.getElementById('curmsg'), box=document.getElementById('curbox');
+    majStats(d.stats||null);
+    if(d.building){ msg.textContent='Analyse des visages en cours\u2026'; box.innerHTML=''; setTimeout(function(){loadCurator(false);},4000); return; }
+    var auto=d.auto||[], aw=document.getElementById('autowrap');
+    if(!auto.length){ aw.innerHTML=''; }
+    else{
+      var ah='<div class="cl"><div style="font-size:var(--t-sm);color:var(--graphite);margin-bottom:var(--e-2)">\ud83e\udd16 Ajout\u00e9s automatiquement r\u00e9cemment ('+auto.length+') \u2014 v\u00e9rifie, annule (\u2717) en cas d\u2019erreur :</div><div class="grid">';
+      auto.forEach(function(a){
+        ah+='<label class="prop" style="cursor:default"><a href="'+esc(a.url)+'" target="_blank" rel="noopener"><img loading="lazy" src="'+esc(a.crop_url)+'" alt=""></a>'+
+          '<span class="s">'+esc(a.person)+' '+a.sim+'</span>'+
+          '<button class="x" title="Annuler" data-p="'+esc(a.person)+'" data-k="'+esc(a.key)+'">\u2717</button></label>';
+      });
+      ah+='</div></div>'; aw.innerHTML=ah;
+      aw.querySelectorAll('button.x').forEach(function(b){
+        b.onclick=function(){
+          var p=b.getAttribute('data-p'), k=b.getAttribute('data-k'), cell=b.closest('.prop');
+          cell.style.opacity=.4;
+          post('/api/people/untag',{name:p,keys:[k]}).then(function(){ cell.remove(); });
+        };
+      });
+    }
+    var items=d.items||[];
+    document.getElementById('curc').textContent=items.length?('('+items.length+')'):'';
+    if(!items.length){ msg.textContent=auto.length?'':'Rien \u00e0 v\u00e9rifier pour le moment.'; box.innerHTML=''; curMark(); return; }
+    msg.textContent='';
+    box.innerHTML='';
+    items.forEach(function(s){
+      var el=document.createElement('div'); el.className='cl'; var html='';
+      var crop='<img loading="lazy" src="'+esc(s.crop_url)+'" style="width:80px;height:80px;object-fit:cover;border-radius:var(--r-md);background:var(--salle-3)" alt="">';
+      if(s.type==='merge'){
+        html='<div class="row"><span class="sz">M\u00eame personne ? <b>'+esc(s.a)+'</b> et <b>'+esc(s.b)+'</b> (sim '+s.sim+')</span>'+
+          '<button class="btn prim">\u2713 Fusionner</button><button class="btn">\u2717 Diff\u00e9rents</button></div>';
+      } else if(s.type==='remove'){
+        var labelR='<b>Faux positif ?</b> visage tagu\u00e9 <b>'+esc(s.person)+'</b> \u2014 score '+s.sim;
+        html='<div class="row" style="align-items:center">'+crop+
+          '<a href="'+esc(s.url)+'" target="_blank" rel="noopener" class="sz" style="text-decoration:none;color:var(--graphite)">'+labelR+'</a>'+
+          '<button class="btn prim">\u2713 Oui, c\u2019est '+esc(s.person)+'</button>'+
+          '<button class="btn warn">\u2717 Retirer le tag</button>'+
+          '<input class="qui" placeholder="ou : c\u2019est\u2026" autocomplete="off">'+
+          '<button class="btn">Pas un visage</button>'+
+          '<button class="btn anim">C\u2019est un animal</button></div>'+
+          '<div class="props2" style="margin-top:6px"></div>';
+      } else {
+        var doute=s.rival
+          ? (' <span style="color:var(--veilleuse)">\u00b7 h\u00e9site avec <b>'+esc(s.rival)+
+             '</b> ('+s.rival_sim+', \u00e9cart '+s.margin+')</span>') : '';
+        var label='<b>Ajouter \u00e0 '+esc(s.person)+' ?</b> \u2014 score '+s.sim+doute;
+        html='<div class="row" style="align-items:center">'+crop+
+          '<a href="'+esc(s.url)+'" target="_blank" rel="noopener" class="sz" style="text-decoration:none;color:var(--graphite)">'+label+'</a>'+
+          '<button class="btn prim">\u2713 Oui, '+esc(s.person)+'</button>'+
+          '<input class="qui" placeholder="ou : c\u2019est\u2026" autocomplete="off">'+
+          '<button class="btn">\u2717 Aucun</button>'+
+          '<button class="btn anim">C\u2019est un animal</button></div>'+
+          '<div class="props2" style="margin-top:6px"></div>';
+      }
+      el.innerHTML=html;
+      var b=el.querySelectorAll('button');
+      if(s.type==='merge'){
+        b[0].onclick=function(){curResolve('accept',s,el);};
+        b[1].onclick=function(){curResolve('reject',s,el);};
+      } else if(s.type==='remove'){
+        b[0].onclick=function(){ curResolve('reject',s,el); };
+        b[1].onclick=function(){ curResolve('accept',s,el); };
+        b[2].onclick=function(){ assigner(s, el, '__pas_visage__'); };
+        var baR=el.querySelector('.anim');
+        if(baR) baR.onclick=function(){ assigner(s, el, '__pas_visage__'); };
+        var qr=el.querySelector('.qui'), prr=el.querySelector('.props2');
+        if(qr){
+          qr.addEventListener('input',function(){ propose2(qr,prr,'personne',function(nom){ assigner(s,el,nom); }); });
+          qr.addEventListener('keydown',function(e){
+            if(e.key==='Enter'&&qr.value.trim()) assigner(s,el,qr.value.trim()); });
+        }
+      } else {
+        b[0].onclick=function(){curResolve('accept',s,el);};
+        b[1].onclick=function(){ assigner(s, el, '__pas_visage__'); };
+        var baA=el.querySelector('.anim');
+        if(baA) baA.onclick=function(){ assigner(s, el, '__pas_visage__'); };
+        var q=el.querySelector('.qui'), pr=el.querySelector('.props2');
+        if(q){
+          q.addEventListener('input',function(){ propose2(q,pr,'personne',function(nom){ assigner(s,el,nom); }); });
+          q.addEventListener('keydown',function(e){
+            if(e.key==='Enter'&&q.value.trim()) assigner(s,el,q.value.trim()); });
+        }
+      }
+      box.appendChild(el);
+    });
+    curMark();
+  }).catch(function(){});
+}
+function loadPetCurator(rebuild){
+  fetch('/api/pets/curator/list'+(rebuild?'?rebuild=1':'')).then(function(r){return r.json();}).then(function(d){
+    var msg=document.getElementById('petcurmsg'), box=document.getElementById('petcurbox');
+    majStats(d.stats||null);
+    if(d.building){ msg.textContent='Analyse des chats en cours\u2026'; box.innerHTML=''; setTimeout(function(){loadPetCurator(false);},4000); return; }
+    var auto=d.auto||[], aw=document.getElementById('petautowrap');
+    if(!auto.length){ aw.innerHTML=''; }
+    else{
+      var ah='<div class="cl"><div style="font-size:var(--t-sm);color:var(--graphite);margin-bottom:var(--e-2)">\ud83e\udd16 Ajout\u00e9s automatiquement r\u00e9cemment ('+auto.length+') \u2014 v\u00e9rifie, annule (\u2717) en cas d\u2019erreur :</div><div class="grid">';
+      auto.forEach(function(a){
+        ah+='<label class="prop" style="cursor:default"><a href="'+esc(a.url)+'" target="_blank" rel="noopener"><img loading="lazy" src="'+esc(a.crop_url)+'" alt=""></a>'+
+          '<span class="s">'+esc(a.animal)+' '+a.sim+'</span>'+
+          '<button class="x" title="Annuler" data-p="'+esc(a.animal)+'" data-k="'+esc(a.key)+'">\u2717</button></label>';
+      });
+      ah+='</div></div>'; aw.innerHTML=ah;
+      aw.querySelectorAll('button.x').forEach(function(b){
+        b.onclick=function(){
+          var p=b.getAttribute('data-p'), k=b.getAttribute('data-k'), cell=b.closest('.prop');
+          cell.style.opacity=.4;
+          post('/api/pets/untag',{name:p,keys:[k]}).then(function(){ cell.remove(); });
+        };
+      });
+    }
+    var items=d.items||[];
+    document.getElementById('petcurc').textContent=items.length?('('+items.length+')'):'';
+    if(!items.length){ msg.textContent=auto.length?'':'Rien \u00e0 v\u00e9rifier pour le moment.'; box.innerHTML=''; curMark(); return; }
+    msg.textContent='';
+    box.innerHTML='';
+    items.forEach(function(s){
+      var el=document.createElement('div'); el.className='cl';
+      var crop='<img loading="lazy" src="'+esc(s.crop_url)+'" style="width:80px;height:80px;object-fit:cover;border-radius:var(--r-md);background:var(--salle-3)" alt="">';
+      var doute=s.rival
+        ? (' <span style="color:var(--veilleuse)">\u00b7 h\u00e9site avec <b>'+esc(s.rival)+
+           '</b> ('+s.rival_sim+', \u00e9cart '+s.margin+')</span>') : '';
+      var label='<b>Ajouter \u00e0 '+esc(s.animal)+' ?</b> \u2014 score '+s.sim+doute;
+      el.innerHTML='<div class="row" style="align-items:center">'+crop+
+        '<a href="'+esc(s.url)+'" target="_blank" rel="noopener" class="sz" style="text-decoration:none;color:var(--graphite)">'+label+'</a>'+
+        '<button class="btn prim">\u2713 Oui, '+esc(s.animal)+'</button>'+
+        '<input class="qui" placeholder="ou : c\u2019est\u2026" autocomplete="off">'+
+        '<button class="btn">\u2717 Aucun</button>'+
+        '<button class="btn">Pas un animal</button></div>'+
+        '<div class="props2" style="margin-top:6px"></div>';
+      var b=el.querySelectorAll('button');
+      b[0].onclick=function(){ assignerA(s, el, s.animal); };
+      b[1].onclick=function(){ assignerA(s, el, '__inconnu__'); };
+      b[2].onclick=function(){ assignerA(s, el, '__pas_animal__'); };
+      var q=el.querySelector('.qui'), pr=el.querySelector('.props2');
+      q.addEventListener('input',function(){ propose2(q,pr,'animal',function(nom){ assignerA(s,el,nom); }); });
+      q.addEventListener('keydown',function(e){
+        if(e.key==='Enter'&&q.value.trim()) assignerA(s,el,q.value.trim()); });
+      box.appendChild(el);
+    });
+    curMark();
+  }).catch(function(){});
+}
+// ── Tri au clavier UNIFIÉ : la 1re carte (personnes d'abord, puis animaux)
+//    porte l'anneau veilleuse ; les touches agissent dessus. ──
+function curMark(scroll){
+  var rows=document.querySelectorAll('#curbox > .cl, #petcurbox > .cl');
+  rows.forEach(function(r,i){ r.classList.toggle('active', i===0); });
+  if(scroll && rows[0]){ try{ rows[0].scrollIntoView({block:'center'}); }catch(e){} }
+}
+function curUndo(){
+  var b=document.querySelector('#toastp button'); if(b){ b.click(); return; }
+  fetch('/api/undo',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'})
+    .then(function(){ loadCurator(true); loadPetCurator(true); }).catch(function(){});
+}
+document.addEventListener('keydown', function(e){
+  if(VUE!=='classif') return;
+  var tag=(e.target.tagName||'').toLowerCase();
+  if(tag==='input'||tag==='textarea'||tag==='select'){ if(e.key==='Escape') e.target.blur(); return; }
+  var row=document.querySelector('#curbox > .cl.active, #petcurbox > .cl.active'); if(!row) return;
+  var bs=row.querySelectorAll('button');
+  if(e.key===' '||e.key==='Enter'||e.key==='o'||e.key==='O'){
+    e.preventDefault(); if(bs[0]) bs[0].click(); setTimeout(function(){curMark(true);},150);
+  } else if(e.key==='x'||e.key==='X'||e.key==='Delete'){
+    e.preventDefault(); if(bs[1]) bs[1].click(); setTimeout(function(){curMark(true);},150);
+  } else if(e.key==='z'||e.key==='Z'){
+    e.preventDefault(); curUndo();
+  } else if(/^[a-zA-Z]$/.test(e.key)){
+    var inp=row.querySelector('.qui');
+    if(inp){ e.preventDefault(); inp.focus(); inp.value+=e.key; inp.dispatchEvent(new Event('input')); }
+  }
+});
+document.getElementById('curref').onclick=function(){ document.getElementById('curmsg').textContent='Analyse demand\u00e9e\u2026'; loadCurator(true); };
+document.getElementById('petcurref').onclick=function(){ document.getElementById('petcurmsg').textContent='Analyse demand\u00e9e\u2026'; loadPetCurator(true); };
+
+// Lien profond vers une file (#verifier / #verifier-animaux) : les cartes se
+// peignent APRES le fetch, donc la cible bouge — meme mode de panne que la
+// regression « Gerer » du 12/08. Remede identique : re-viser 2,5 s, en
+// s'arretant des que l'utilisateur interagit.
+(function(){
+  var h=(location.hash||'').replace('#','');
+  if(['verifier','verifier-animaux'].indexOf(h)<0) return;
+  var stop=false, t0=Date.now();
+  ['wheel','touchstart','keydown','mousedown'].forEach(function(ev){
+    window.addEventListener(ev, function(){ stop=true; }, {passive:true, once:true});
+  });
+  (function vise(){
+    if(stop) return;
+    var el=document.getElementById(h);
+    if(el) el.scrollIntoView({block:'start'});
+    if(Date.now()-t0<2500) setTimeout(vise, 400);
+  })();
+})();
+
+fetch('/api/sujets/list').then(function(r){return r.json();}).then(function(d){
+  var P=(d.personnes||[]).map(function(x){x.type='personne';return x;});
+  var A=(d.animaux||[]).map(function(x){x.type='animal';return x;});
+  var L=(d.lieux||[]).map(function(x){x.type='lieu';return x;});
+  ALL=P.concat(A).concat(L).sort(function(a,b){return (b.photos||0)-(a.photos||0);});
+  document.getElementById('n-tous').textContent=ALL.length;
+  document.getElementById('n-personne').textContent=P.length;
+  document.getElementById('n-animal').textContent=A.length;
+  document.getElementById('n-lieu').textContent=L.length;
+  rendre();
+}).catch(function(){
+  document.getElementById('msg').textContent='Impossible de charger les sujets. Le serveur n a pas r\u00e9pondu. R\u00e9essaie dans un instant.';
+});
+</script>
+</body>
+</html>

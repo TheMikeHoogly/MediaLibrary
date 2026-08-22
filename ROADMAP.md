@@ -285,13 +285,22 @@ qui en découle : éditer → redémarrer → **observer** → livrer.
    avant et après ; `/sante` et `/browse/0`, qui partagent le gabarit, servent
    aussi. 13 tests neufs tiennent les trois pannes muettes (fichier non
    déployé, gabarit non cuit, marqueur `__ROWS__` perdu).
-   **Reste : 10 gabarits**, dans l'ordre du plus simple au plus gros — `faces`
-   (121 l.), `tranche` (221), `html` (240), `residu` (324), `subjects` (605),
-   `reglages` (611), `map`, `pets`, `people`, `gallery` (1 597). Le geste est
-   désormais mécanique : extraire la VALEUR de la constante (jamais son source
-   — les `\\u00e0` du JavaScript y sont échappés deux fois), écrire le
-   fichier, remplacer les usages par `ui_page('<nom>')`, comparer l'empreinte
-   de la page servie avant/après.
+   **LES ONZE GABARITS SONT SORTIS (22/08)** : `server.py` passe de **~17 200
+   à 11 986 lignes**, et **les onze pages sont identiques au caractère près** —
+   `/`, `/files`, `/browse`, `/reglages`, `/map`, `/pets`, `/faces`,
+   `/tranche`, `/residu`, `/sujets`, `/people`, mêmes longueurs et mêmes
+   empreintes avant et après. Le geste, pour mémoire : extraire la VALEUR de la
+   constante (jamais son source — les `\\u00e0` du JavaScript y sont échappés
+   deux fois), écrire `ui/pages/<nom>.html`, remplacer les usages par
+   `ui_page('<nom>')`, comparer l'empreinte de la page servie.
+   **Ce que ça a déplacé, et qu'il fallait rattraper** : quatre bancs lisaient
+   les gabarits DANS le source du serveur (`test_gallery_placeholders`,
+   `test_tranche_jugements`, `test_residu_jugements`, `test_faits_affichage`).
+   Ils passent par `ui_gabarits.py`, qui **lève** quand un gabarit manque au
+   lieu de se replier : un test qui se rabat en silence sur une copie périmée
+   ne mesure plus rien, il rassure. Les quatre sont verts (78 cas).
+   **Reste** : le CSS commun (chaque page porte encore son `<style>`), et le
+   redesign — deux chantiers SÉPARÉS de celui-ci, exprès.
 8. **Cross-pipeline (Mutz/Caline)** : outil livré, réversible. Fix auto REJETÉ
    (18 % faux rejets). Relancer si un nom d'animal sort en `personne:`.
 9. **Reconnaissance — algo. PARQUÉ (21/08, choix de Mike).** *Chiffre neuf
