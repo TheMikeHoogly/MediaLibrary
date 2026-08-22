@@ -45,9 +45,19 @@ boutons dans `/reglages` (aperçu / appliquer / annuler), quarantaine
 804 clés mortes, **685 à re-clé**, 119 sans destination, **0 hors bornes** —
 les mêmes nombres que le banc, deux chemins.
 
-**RESTE À FAIRE, et c'est un clic de Mike** : `/reglages` → « Décisions humaines
-restées sur l'ancien chemin » → **2 · Appliquer**. La sandbox n'a pas le droit
-d'écrire sur le fonds ; l'aperçu et l'annulation sont là pour encadrer le geste.
+**APPLIQUÉ ET VÉRIFIÉ (22/08, geste de Mike)** : **787 décisions sur 685 clés,
+97 fiches**. Observé — décisions posées sur une clé hors index **928 → 140**.
+Et le contrôle qui compte : la vérité terrain passe de 3 364 à **3 310**, mais
+les 54 manquantes ne sont pas perdues. L'audit de la quarantaine apparie chaque
+SORTIE à une ARRIVÉE de même type et de même index — **788 sorties, 734
+appariées, 54 fusions de doublons, 0 sans contrepartie**. Un total ne l'aurait
+jamais dit ; c'est la contrepartie qui distingue « déplacé » de « perdu ».
+
+**Le résidu est GARDÉ (choix de Mike, 22/08)** : 140 décisions sur des clés dont
+aucun journal ne connaît la destination, plus les 120 clés protégées de la purge
+du 21/08. Il ne coûte plus rien de mesurable, et le jour même 787 décisions dites
+« déjà perdues » se sont révélées récupérables dès qu'une preuve neuve est
+apparue.
 
 ## État (21/08/2026, session 30)
 

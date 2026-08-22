@@ -39,6 +39,12 @@
   comparer des noms ou des vecteurs, chercher si le geste a laissé une trace. Les journaux
   d'annulation de `docs/`, écrits pour DÉFAIRE, relus à l'endroit disent où chaque photo est
   partie — 685 clés retrouvées là où le nom en rendait 346 et le vecteur 13.
+- **Un déplacement en masse se vérifie par CONTREPARTIE, pas par un total**
+  (22/08) : après avoir re-clé 787 décisions humaines, le total est passé de
+  3 364 à 3 310. Un total ne dit pas si les 54 manquantes ont fusionné ou
+  disparu. L'audit de la quarantaine apparie chaque SORTIE à une ARRIVÉE de
+  même type et de même index — 734 appariées, 54 fusions, **0 sans
+  contrepartie**. C'est la seule forme qui distingue « déplacé » de « perdu ».
 - **Un garde-fou qui ne se déclenche jamais est aussi une mesure** (22/08) : « 0 index hors
   bornes » sur 462 rattachements n'est pas un contrôle inutile, c'est une corroboration — un
   jumeau faux aurait fait déborder les index.

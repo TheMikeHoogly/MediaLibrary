@@ -19,6 +19,14 @@ D'où cet instrument, qui répond à deux questions :
     fragment, et dans quel CHAMP (`faces` avec son index, `exclude`,
     `confirmed`, `avatar`) ? À lancer AVANT puis APRÈS un renommage : les mêmes
     décisions doivent réapparaître sous le NOUVEAU chemin, index compris.
+  * `--quarantaine <fichier.jsonl>` : l'AUDIT du re-clé. Le journal garde
+    l'état AVANT et APRÈS de chaque fiche touchée ; on vérifie que **chaque
+    décision sortie a une contrepartie** — soit une arrivée de même type et de
+    même index sous un autre chemin (un re-clé), soit une cible qui existait
+    déjà dans la fiche (une fusion de doublon). Une sortie sans contrepartie
+    serait une décision humaine PERDUE, ce que la règle 2 interdit. C'est le
+    seul contrôle qui distingue « 787 décisions déplacées » de « 787 décisions
+    déplacées et quelques-unes tombées en route ».
   * sans argument : le compte global — combien de décisions pointent vers une
     clé que l'index n'a plus. C'est le nombre qui doit rester STABLE après un
     déplacement (avant le correctif, il montait).
@@ -39,6 +47,7 @@ USAGE
 """
 
 import argparse
+import json
 import sys
 from collections import Counter
 from pathlib import Path
@@ -81,6 +90,80 @@ def citations(st, fragment=None):
     return out
 
 
+def decisions_d_un_etat(etat):
+    """{(type, chemin, index)} d'un état de fiche journalisé.
+
+    L'avatar est DÉRIVÉ (le curateur le recalcule) : il n'entre pas dans le
+    compte, sinon un avatar recalculé passerait pour une décision perdue."""
+    s = set()
+    for kf in (etat.get('faces') or []):
+        if isinstance(kf, (list, tuple)) and len(kf) == 2:
+            s.add(('rattachement', kf[0], int(kf[1] or 0)))
+    for champ in ('exclude', 'confirmed'):
+        for cle in (etat.get(champ) or []):
+            s.add((champ, cle, None))
+    return s
+
+
+def auditer_quarantaine(chemin):
+    """Chaque décision sortie a-t-elle une contrepartie ? (rapport, lignes)."""
+    fiches, entete = [], {}
+    for i, ligne in enumerate(Path(chemin).read_text(
+            encoding='utf-8').splitlines()):
+        if not ligne.strip():
+            continue
+        try:
+            op = json.loads(ligne)
+        except ValueError:
+            continue
+        if i == 0 and 'fiche' not in op:
+            entete = op
+        elif 'fiche' in op:
+            fiches.append(op)
+
+    sorties = arrivees = appariees = fusionnees = 0
+    orphelines = []
+    for f in fiches:
+        av = decisions_d_un_etat(f.get('avant') or {})
+        ap = decisions_d_un_etat(f.get('apres') or {})
+        parties, venues = av - ap, list(ap - av)
+        sorties += len(parties)
+        arrivees += len(ap - av)
+        for x in sorted(parties):
+            # Le re-clé ne change QUE le chemin : le type et l'index sont
+            # l'empreinte qui permet d'apparier une sortie à une arrivée.
+            m = [y for y in venues if y[0] == x[0] and y[2] == x[2]]
+            if m:
+                venues.remove(m[0])
+                appariees += 1
+            elif any(y[0] == x[0] and y[2] == x[2] and y != x for y in ap):
+                fusionnees += 1
+            else:
+                orphelines.append((f.get('fiche'), x))
+    return {'fichier': str(chemin), 'entete': entete, 'fiches': len(fiches),
+            'sorties': sorties, 'arrivees': arrivees, 'appariees': appariees,
+            'fusionnees': fusionnees, 'sans_contrepartie': len(orphelines),
+            'exemples': orphelines[:5]}
+
+
+def afficher_audit(r):
+    L = [f"AUDIT DE LA QUARANTAINE — {r['fichier']}",
+         f"Annoncé par le serveur : {r['entete'].get('decisions')} décision(s) "
+         f"sur {r['entete'].get('paires')} clé(s)",
+         f"Fiches journalisées : {r['fiches']}",
+         f"Sorties {r['sorties']} · arrivées {r['arrivees']} · "
+         f"appariées {r['appariees']} · fusionnées (cible déjà présente) "
+         f"{r['fusionnees']}"]
+    if r['sans_contrepartie']:
+        L.append(f"⚠ {r['sans_contrepartie']} décision(s) SANS CONTREPARTIE — "
+                 f"règle 2 violée, annuler (bouton 3) et diagnostiquer :")
+        for fiche, x in r['exemples']:
+            L.append(f"    {fiche} · {x}")
+    else:
+        L.append("SANS CONTREPARTIE : 0 — aucune décision humaine perdue.")
+    return "\n".join(L)
+
+
 def rapport(base, fragment=None):
     st = ouvrir(base)
     try:
@@ -120,9 +203,14 @@ def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.split('\n')[1])
     ap.add_argument('--base', default='copie.db')
     ap.add_argument('--contient', default='')
+    ap.add_argument('--quarantaine', default='',
+                    help="journal JSONL d'un re-clé, à auditer")
     a = ap.parse_args(argv)
     import os
     os.chdir(Path(__file__).resolve().parent)
+    if a.quarantaine:
+        print(afficher_audit(auditer_quarantaine(a.quarantaine)))
+        print()
     print(rapport(a.base, a.contient or None))
     return 0
 

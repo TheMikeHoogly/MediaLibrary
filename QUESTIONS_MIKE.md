@@ -6,39 +6,24 @@
 > `eval/DECISIONS.md` si elle tranche, dans `ROADMAP.md` si elle priorise.
 > Protocole : `CLAUDE.md`, « Traite autonome ».
 
-- **22/08 — 748 décisions humaines attendent un clic.** Le rangement les avait
-  décrochées de leur photo (cause trouvée et corrigée : `rekey_everywhere` ne
-  re-clait pas les fiches `PEOPLE`/`PETS`, keyées par NOM). La réparation est
-  livrée, l'aperçu à blanc a tourné sur le serveur vivant — **804 clés mortes,
-  685 à re-clé, 119 sans destination connue, 0 hors bornes**, mêmes nombres que
-  le banc. **Ma recommandation : appliquer.** Aucun fichier n'est touché, rien
-  n'est inventé (les journaux d'annulation disent où chaque photo est partie),
-  et c'est entièrement réversible — quarantaine `_corbeille_decisions/`, bouton
-  « 3 · Annuler ». **Le geste** : `/reglages` → « Décisions humaines restées sur
-  l'ancien chemin » → **2 · Appliquer**. Puis, pour observer :
-  `verifier_recle_decisions.py --base copie.db` doit passer de **928** décisions
-  hors index à **~180**.
-  *En attendant* : je n'écris rien sur le fonds (la sandbox n'en a pas le
-  droit), et je passe aux points suivants.
-
-- **22/08 — que faire du résidu, une fois le re-clé appliqué ?** Il restera deux
-  poches : **124 décisions sur 106 clés** dont aucun journal ne connaît la
-  destination, et les **120 clés** que la purge du 21/08 a protégées parce
-  qu'elles portaient un jugement, alors que leurs photos n'existent plus.
-  **Ma recommandation : les GARDER, et ne pas rouvrir le sujet.** Trois raisons.
-  (1) Le résidu est passé de 2 374 clés à 120 : il ne coûte plus rien de
-  mesurable. (2) Ce sont des décisions humaines, et la règle 2 dit qu'elles ne
-  se perdent jamais — les purger est irréversible, les garder ne l'est pas.
-  (3) Surtout, aujourd'hui même, **787 décisions déclarées « déjà perdues » se
-  sont révélées récupérables à 685** dès qu'une source de preuve nouvelle est
-  apparue (les journaux d'annulation). Déclarer une décision définitivement
-  morte est un pari que ce projet vient de perdre une fois.
-  *En attendant* : rien n'est purgé, et `verifier_orphelins.py --sans-disque`
-  continue de les compter.
-
-*Aucune autre question en attente.*
+*Aucune question en attente.*
 
 ## Réglées
+
+- **22/08 — appliquer le re-clé des 748 décisions ?** Recommandation suivie :
+  **appliqué**. Résultat : **787 décisions sur 685 clés, 97 fiches**. Observé —
+  décisions posées sur une clé hors index **928 → 140**. L'audit de la
+  quarantaine dit le reste : 788 sorties, **734 arrivées appariées** (même type,
+  même index, autre chemin), **54 fusions** de doublons, **0 sans
+  contrepartie** — aucune décision humaine perdue, règle 2 tenue.
+
+- **22/08 — que faire du résidu ?** Recommandation suivie : **le garder**. Il
+  reste **140 décisions** (117 rattachements, 13 exclusions, 10 confirmations)
+  sur des clés dont aucun journal ne connaît la destination, et les **120 clés**
+  protégées de la purge du 21/08. Rien n'est purgé : le résidu ne coûte plus
+  rien de mesurable, et le jour même, 787 décisions déclarées « déjà perdues »
+  se sont révélées récupérables dès qu'une source de preuve nouvelle est
+  apparue.
 
 - **21/08 — après le sauvetage : purger, ou chercher la cause d'abord ?**
   Recommandation suivie : **la CAUSE d'abord**. 787 décisions pointant déjà

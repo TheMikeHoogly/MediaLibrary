@@ -44,38 +44,32 @@ aperçu / appliquer / annuler, quarantaine `_corbeille_decisions/` — qui passe
 par **la même fonction** que le préventif. Instruments :
 `mesure_report_orphelines.py`, `verifier_recle_decisions.py`.
 
-**Observé sur le serveur vivant** : `POST /api/maint/recle-apercu` rend 804 clés
-mortes, **685 à re-clé**, 119 sans destination, **0 hors bornes** — les mêmes
-nombres que le banc, deux chemins. Le « 0 hors bornes » est une corroboration :
-un jumeau faux ferait déborder les index.
+**APPLIQUÉ ET VÉRIFIÉ** : **787 décisions sur 685 clés, 97 fiches**. Décisions
+sur une clé hors index **928 → 140**. La vérité terrain passe de 3 364 à
+**3 310** — et les 54 manquantes sont des doublons FUSIONNÉS : l'audit de la
+quarantaine (`verifier_recle_decisions.py --quarantaine`) apparie chaque sortie
+à une arrivée de même type et de même index, **788 sorties / 734 appariées / 54
+fusions / 0 sans contrepartie**. Un total ne l'aurait pas dit.
 
 ## Prochain pas
 
-1. **UN CLIC DE MIKE, et c'est le plus rentable de la liste** : `/reglages` →
-   « Décisions humaines restées sur l'ancien chemin » → **2 · Appliquer**. La
-   sandbox n'a pas le droit d'écrire sur le fonds — l'aperçu et l'annulation
-   sont là pour encadrer le geste. Pour observer ensuite :
-   `mesure_copie_base.py` puis `verifier_recle_decisions.py --base copie.db`,
-   qui doit passer de **928** décisions hors index à **~180**.
-2. **Ce qui reste vraiment perdu** : **124** décisions sur 106 clés dont aucun
-   journal ne connaît la destination, plus **120** clés protégées de la purge du
-   21/08 dont les photos n'existent plus. Décider de leur sort — les garder
-   coûte un résidu permanent, les purger coûte de la vérité terrain.
-3. **Le registre des oublis SURVIT — fait et observé (22/08).**
-   `_comptes_index.json`, écrit dès le démarrage puis à chaque cycle ;
-   `redemarrages` 0 → 1 sur deux relances, `depuis` conservé. La prochaine
-   anomalie de l'index sera donc diagnosticable APRÈS coup, ce qui manquait aux
-   −250 du 17/08 comme aux 2 283 du 21/08.
-4. **Juger 30 propositions de la tranche 0,35–0,40** (choix de Mike, 21/08)
-   avant de toucher `CUR_ADD_SIM`. 1 328 visages, 1 106 photos vivantes.
-5. **Chantier 12 — l'instrument est livré, la répétition reste à faire.**
-   `verifier_restauration.py` a nommé **9 artefacts irrécupérables présents
-   nulle part ailleurs (19,9 Mo)**, dont `docs/undo_*.json` et les trois
-   quarantaines ; `backup_artefacts()` les pousse désormais sur le NAS à chaque
-   sauvegarde — observé : 61 fichiers, 20,4 Mo, « Total exposé : 0 o ». Reste le geste de Mike : restaurer pour de vrai sur un dossier
-   vierge, chronométrer, puis `verifier_restauration.py --restaure <dossier>`.
-6. **Finitions UI et plafond de page : FAITES et observées (22/08).** Reste
-   l'audit I4–I8 / O7–O15, puis **MCP lecture seule (13)**.
+Le chantier des décisions humaines est **CLOS** : le résidu — 140 décisions sans
+destination connue, 120 clés protégées — est **gardé** (choix de Mike, 22/08).
+Le registre des oublis survit, les finitions UI et le plafond de page sont
+faits. Ce qui reste :
+
+1. **Juger 30 propositions de la tranche 0,35–0,40** (choix de Mike, 21/08)
+   avant de toucher `CUR_ADD_SIM`. 1 328 visages, 1 106 photos vivantes. Sans ce
+   jugement, abaisser un seuil est un pari sur des noms.
+2. **Chantier 12 — la répétition, seul geste qui manque.** L'instrument est
+   livré et la sauvegarde emporte désormais tout (« Total exposé : 0 o »).
+   Reste à restaurer POUR DE VRAI sur un dossier vierge, chronométrer, puis
+   `verifier_restauration.py --restaure <dossier>` : il compare les décisions
+   humaines **nom par nom** — un total identique ne prouve rien.
+3. **MCP lecture seule (13)** : recherche, fiches et `faits` en outils MCP
+   locaux (JSON-RPC stdio, zéro dépendance — skill `mcp-builder`).
+4. **En traite autonome** : audit I4–I8 / O7–O15, puis le reste de
+   `ROADMAP.md`.
 
 **Une décision à cinq secondes qui traîne depuis trois sessions** : l'extraction
 `ui/` (point 7) — lui donner une session ou la parquer.
