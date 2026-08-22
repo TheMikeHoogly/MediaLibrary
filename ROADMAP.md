@@ -311,7 +311,29 @@ qui en découle : éditer → redémarrer → **observer** → livrer.
     (le pipeline reconnaît six espèces, la page disait « chat ») ; et
     « Même jour (30 juillet) » porte ses accents, le tableau des mois venant
     désormais du serveur (`meme_jour.MOIS_FR`) au lieu d'être recopié.
-12. **Assurance-vie : l'INSTRUMENT est livré, la répétition reste à faire
+12. **Assurance-vie : le PROTOCOLE de la répétition est écrit
+    (`docs/REPETITION_RESTAURATION.md`), et l'écrire a fait sortir un trou.**
+    L'inventaire annonçait **« Total exposé : 0 o »** en ne regardant que
+    **trois** quarantaines sur les **six** du disque : les deux nées le 22/08 —
+    `_corbeille_recalage` (33 rattachements recalés) et `_corbeille_retraits`
+    (2 couples retirés) — n'étaient sauvegardées **nulle part**. Un geste
+    annoncé RÉVERSIBLE dont la réversibilité tient à un dossier qu'aucune
+    sauvegarde n'emporte est une promesse qu'un disque mort annule en silence.
+    **Corrigé des DEUX côtés (22/08, 12 tests)** : le producteur
+    (`backup_artefacts`) et l'instrument découvrent les quarantaines par MOTIF
+    (`_corbeille_*`) au lieu de les lister — une liste en dur est toujours en
+    retard d'un chantier — et l'exclusion volontaire (`_corbeille_session`,
+    rebut du ménage) reste VISIBLE dans le tableau, parce qu'une exclusion tue
+    ne se distingue pas d'un oubli. Observé : l'inventaire dit désormais
+    **281,2 Ko exposés**. Le trou se referme à la prochaine sauvegarde horaire.
+    *Un zéro parfait est une alarme, encore — et c'est le troisième de la
+    journée.*
+    **Reste le geste de Mike** : suivre `docs/REPETITION_RESTAURATION.md` —
+    restaurer pour de vrai dans un dossier vierge, chronométrer, puis
+    `verifier_restauration.py --restaure <dossier>`, qui compare les décisions
+    humaines **nom par nom** (un total identique ne prouve rien).
+
+    *Historique* : **l'INSTRUMENT était livré, la répétition restait à faire
     (22/08).** `verifier_restauration.py` a tourné et NOMMÉ les manques :
     **9 artefacts irrécupérables présents nulle part ailleurs, 19,9 Mo** —
     `docs/undo_*.json` (la carte des 19 331 déplacements, devenue porteuse le

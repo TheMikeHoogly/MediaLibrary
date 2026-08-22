@@ -5444,8 +5444,28 @@ ARTEFACTS_A_SAUVER = (
     'dossier_uploads.txt', 'dossiers_a_taguer.txt', 'dossiers_a_explorer.txt',
     'gps_places.json',
 )
-DOSSIERS_A_SAUVER = ('_corbeille_detections', '_corbeille_vecteurs',
-                     '_corbeille_decisions')
+# Les quarantaines se DÉCOUVRENT, elles ne se listent plus. Une liste en dur
+# est toujours en retard d'un chantier : celle-ci nommait trois corbeilles
+# quand le projet en avait six, et les deux nées le 22/08
+# (`_corbeille_recalage`, `_corbeille_retraits`) — celles qui rendent
+# annulables le recalage de 33 rattachements et le retrait de 2 couples —
+# n'étaient sauvées NULLE PART. L'instrument du chantier 12 annonçait quand
+# même « Total exposé : 0 o », parce qu'il lisait la même liste. Un geste
+# annoncé RÉVERSIBLE dont la réversibilité tient à un dossier qu'aucune
+# sauvegarde n'emporte est une promesse qu'un disque mort annule en silence.
+QUARANTAINE_MOTIF = '_corbeille_*'
+# Exclue, et pour une raison qui s'écrit : `_corbeille_session` est le rebut du
+# ménage de fin de session (fichiers de travail, versionnés pour la plupart).
+# Elle grossit de ~2 Mo par session et ne porte aucune décision humaine.
+QUARANTAINES_NON_SAUVEES = ('_corbeille_session',)
+
+
+def quarantaines(racine=None):
+    """Les dossiers de quarantaine à sauver, découverts sur le disque."""
+    base = Path(racine or SCRIPT_DIR)
+    return tuple(sorted(
+        d.name for d in base.glob(QUARANTAINE_MOTIF)
+        if d.is_dir() and d.name not in QUARANTAINES_NON_SAUVEES))
 
 
 def _copier_si_different(src, dst):
@@ -5479,8 +5499,8 @@ def backup_artefacts():
     """Copie sur le NAS ce que `photos.db` ne porte PAS (chantier 12).
 
     Les réglages saisis à la main (racines scannées, vocabulaires de lieux et de
-    tags), les libellés de géocodage, les JOURNAUX DE DÉPLACEMENT et les trois
-    quarantaines. Sans eux, un PC neuf ne redémarre pas le projet : sans
+    tags), les libellés de géocodage, les JOURNAUX DE DÉPLACEMENT et TOUTES les
+    quarantaines présentes sur le disque (découvertes, jamais listées). Sans eux, un PC neuf ne redémarre pas le projet : sans
     `dossiers_a_taguer.txt` le serveur ne voit plus rien, sans `docs/undo_*`
     plus aucune décision décrochée n'est réparable, et sans les corbeilles les
     purges cessent d'être réversibles.
@@ -5498,7 +5518,7 @@ def backup_artefacts():
             o = _copier_si_different(src, cible / 'docs' / src.name)
             n += 1 if o else 0
             octets += o
-        for dossier in DOSSIERS_A_SAUVER:
+        for dossier in quarantaines():
             racine = SCRIPT_DIR / dossier
             if not racine.is_dir():
                 continue

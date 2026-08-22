@@ -104,16 +104,6 @@ ARTEFACTS = (
     ('dossiers_a_explorer.txt', IRRECUPERABLE,
      "les racines navigables",
      None),
-    ('_corbeille_detections', IRRECUPERABLE,
-     "la quarantaine des détections purgées le 21/08 — c'est elle qui rend "
-     "la purge réversible",
-     None),
-    ('_corbeille_vecteurs', IRRECUPERABLE,
-     "la quarantaine des vecteurs purgés le 17/08",
-     None),
-    ('_corbeille_decisions', IRRECUPERABLE,
-     "la quarantaine du re-clé des décisions (22/08)",
-     None),
     ('_comptes_index.json', RECALCULABLE,
      "le carnet de comptes de l'index (repart à zéro, sans plus)",
      None),
@@ -130,6 +120,39 @@ ARTEFACTS = (
     ('server.py', DANS_GIT, "le serveur", 'GitHub (dépôt privé)'),
     ('requirements.txt', DANS_GIT, "les dépendances", 'GitHub'),
 )
+
+# Les quarantaines ne se listent PAS : elles se découvrent. Cette liste-ci en
+# nommait trois quand le disque en portait six, et l'inventaire annonçait
+# « Total exposé : 0 o » — un zéro qui ne parlait que des dossiers qu'il
+# connaissait. Les deux quarantaines nées le 22/08 (`_corbeille_recalage`,
+# `_corbeille_retraits`), celles qui rendent annulables le recalage de 33
+# rattachements et le retrait de 2 couples, n'étaient sauvegardées nulle part.
+# La règle est celle du PRODUCTEUR (`server.backup_artefacts`) : même motif,
+# même exclusion — sinon l'instrument mesure un cousin de la sauvegarde.
+QUARANTAINE_MOTIF = '_corbeille_*'
+QUARANTAINES_NON_SAUVEES = ('_corbeille_session',)
+
+
+def artefacts_quarantaines(racine=RACINE):
+    """Les quarantaines PRÉSENTES, ajoutées à l'inventaire dans l'ordre.
+
+    Celles qui ne sont volontairement pas sauvées y figurent aussi, avec la
+    raison : une exclusion tue ne se distingue pas d'un oubli."""
+    out = []
+    for d in sorted(Path(racine).glob(QUARANTAINE_MOTIF)):
+        if not d.is_dir():
+            continue
+        if d.name in QUARANTAINES_NON_SAUVEES:
+            out.append((d.name, RECALCULABLE,
+                        "rebut du menage de fin de session — hors sauvegarde, "
+                        "volontairement (fichiers de travail, versionnes)",
+                        None))
+        else:
+            out.append((d.name, IRRECUPERABLE,
+                        "quarantaine : c'est elle qui rend le geste reversible",
+                        None))
+    return tuple(out)
+
 
 # Ce que la base porte, table par table. Les deux dernières sont celles qui
 # comptent : elles ne se refabriquent pas.
@@ -227,7 +250,7 @@ def inventaire(racine=RACINE, sauvegarde=None):
     piège que `backup_verify` avait été écrit pour fermer."""
     out = []
     sv = Path(sauvegarde) if sauvegarde else None
-    for motif, gravite, role, declare in ARTEFACTS:
+    for motif, gravite, role, declare in ARTEFACTS + artefacts_quarantaines(racine):
         ok, octets, n = presence(racine, motif)
         copie, oc, nc = ('hors sujet', 0, 0)
         if gravite == DANS_GIT:
