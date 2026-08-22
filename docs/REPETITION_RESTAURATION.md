@@ -50,7 +50,23 @@ quarantaines. Si une ligne dit `AUCUNE COPIE` en face d'un `IRRECUPERABLE`,
 **arrête-toi là** : la sauvegarde a un trou, la répétition mesurerait ce trou
 au lieu de mesurer la procédure.
 
-## La répétition — chronométrer du début à la fin
+## Le raccourci : `30 - Repetition de restauration.bat`
+
+Tout ce qui suit tient dans un double-clic. Le lanceur enchaîne clone,
+copie de la base, copie des artefacts, chronométrage, puis la comparaison — et
+s'arrête avec un message clair à la première étape qui échoue.
+
+Ce qu'il ne fait **pas**, exprès : il ne touche ni à la base vivante, ni au NAS,
+ni au dossier du projet ; il ne supprime rien (sauf la base d'un essai
+PRÉCÉDENT, dans le dossier d'essai, pour pouvoir être relancé) ; et il ne
+télécharge pas les modèles YOLO ni le gazetteer — re-téléchargeables, ils ne
+mettent aucune décision humaine en jeu et fausseraient le chrono.
+
+Le dossier d'essai et l'adresse du NAS se changent en tête du fichier
+(`set "CIBLE=…"`). La suite de ce document décrit **les mêmes gestes à la
+main** — utile si le lanceur cale, ou pour comprendre ce qu'il fait.
+
+## À la main — chronométrer du début à la fin
 
 **Démarre le chrono maintenant.** Le chiffre qui compte n'est pas « ça marche »
 mais « combien de temps entre un PC mort et une médiathèque qui répond ».

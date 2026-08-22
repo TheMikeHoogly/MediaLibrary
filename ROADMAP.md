@@ -375,7 +375,11 @@ qui en découle : éditer → redémarrer → **observer** → livrer.
     l'intégrité, les tables, le nombre de noms ET chaque nom concordent — deux
     bases vides ne passent pas. 14 tests (`test_verifier_restauration.py`).
 
-    **Reste le geste de Mike** : suivre `docs/REPETITION_RESTAURATION.md` —
+    **Reste le geste de Mike**, et il tient dans un double-clic :
+    **`30 - Repetition de restauration.bat`** (ASCII pur, contrôlé) enchaîne
+    clone, base, artefacts, chrono et comparaison, et s'arrête net à la
+    première étape qui échoue. Le pas-à-pas manuel reste dans
+    `docs/REPETITION_RESTAURATION.md` —
     restaurer pour de vrai dans un dossier vierge, chronométrer, puis
     `verifier_restauration.py --restaure <dossier>`, qui compare les décisions
     humaines **nom par nom** (un total identique ne prouve rien).
