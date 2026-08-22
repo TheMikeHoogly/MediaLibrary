@@ -13,6 +13,7 @@ seule l'observation en réel le dit.
 """
 
 import threading
+import json
 import unittest
 
 from comptes_index import MOTIF_NON_DECLARE, RegistreOublis
@@ -456,6 +457,120 @@ class TestBranchementStore(unittest.TestCase):
         self.st.save()
         self.assertEqual((self.reg.ajouts, self.reg.retraits), (0, 0))
         self.assertNotIn('z.jpg', self.st.data)
+
+
+class SurvivreAuRedemarrageTest(unittest.TestCase):
+    """Le carnet doit traverser un redemarrage.
+
+    C'est la lecon du 21/08 : `comptes_index` avait ete bati pour rendre les
+    -250 diagnosticables APRES coup, mais il vivait en memoire — au redemarrage
+    de 19:31, `par_motif` etait vide et la cause des 2 283 cles oubliees n'a
+    jamais pu etre etablie. Un compteur qui ne survit pas ne diagnostique rien.
+    """
+
+    def _carnet_use(self):
+        r = RegistreOublis()
+        with r.motif('scan:disparus'):
+            r.cle_retiree('a.jpg')
+            r.cle_retiree('b.jpg')
+        with r.motif('rekey'):
+            r.cle_ajoutee('c.jpg')
+        r.cle_retiree('sans-motif.jpg')
+        r.debut_cycle(10)
+        r.fin_cycle(12)          # +2 non explique
+        return r
+
+    def test_les_cumuls_reprennent_ou_ils_en_etaient(self):
+        etat = self._carnet_use().etat()
+        neuf = RegistreOublis()
+        self.assertTrue(neuf.restaurer(etat))
+        self.assertEqual(neuf.retraits, 3)
+        self.assertEqual(neuf.ajouts, 1)
+        self.assertEqual(neuf.par_motif['scan:disparus']['retraits'], 2)
+        self.assertEqual(neuf.par_motif[MOTIF_NON_DECLARE]['retraits'], 1)
+
+    def test_l_ecart_inexplique_survit(self):
+        etat = self._carnet_use().etat()
+        neuf = RegistreOublis()
+        neuf.restaurer(etat)
+        self.assertEqual(neuf.cycles_inexpliques, 1)
+        self.assertEqual(neuf.inexplique_cumul, 2)
+        self.assertEqual(len(neuf.anomalies), 1)
+
+    def test_les_motifs_s_additionnent_entre_deux_vies(self):
+        etat = self._carnet_use().etat()
+        neuf = RegistreOublis()
+        neuf.restaurer(etat)
+        with neuf.motif('scan:disparus'):
+            neuf.cle_retiree('d.jpg')
+        self.assertEqual(neuf.par_motif['scan:disparus']['retraits'], 3)
+
+    def test_le_nombre_de_vies_est_compte(self):
+        r = RegistreOublis()
+        self.assertEqual(r.resume()['redemarrages'], 0)
+        for attendu in (1, 2, 3):
+            etat = r.etat()
+            r = RegistreOublis()
+            r.restaurer(etat)
+            self.assertEqual(r.resume()['redemarrages'], attendu)
+
+    def test_cycles_vus_ne_plafonne_plus(self):
+        # `cycles` est bornee a 10 : sa longueur affichait « 10 » a vie.
+        r = RegistreOublis()
+        for i in range(25):
+            r.debut_cycle(i)
+            r.fin_cycle(i)
+        res = r.resume()
+        self.assertEqual(res['cycles_vus'], 25)
+        self.assertEqual(res['cycles_gardes'], 10)
+        etat = r.etat()
+        neuf = RegistreOublis()
+        neuf.restaurer(etat)
+        self.assertEqual(neuf.resume()['cycles_vus'], 25)
+
+    def test_les_listes_restent_bornees(self):
+        r = RegistreOublis()
+        for i in range(25):
+            r.debut_cycle(i)
+            r.fin_cycle(i + 1)       # chaque cycle est une anomalie
+        etat = r.etat()
+        self.assertLessEqual(len(etat['cycles']), r.max_cycles)
+        neuf = RegistreOublis()
+        neuf.restaurer(etat)
+        self.assertLessEqual(len(neuf.cycles), neuf.max_cycles)
+        self.assertLessEqual(len(neuf.anomalies), neuf.max_cycles)
+
+    def test_le_premier_depart_est_garde(self):
+        r = RegistreOublis()
+        r.depuis = 1000.0
+        neuf = RegistreOublis()
+        neuf.restaurer(r.etat())
+        self.assertEqual(neuf.depuis, 1000.0)
+
+    def test_un_cycle_ouvert_ne_traverse_pas(self):
+        # Le reprendre ferait porter au cycle suivant les mutations de deux.
+        r = RegistreOublis()
+        r.debut_cycle(10)
+        neuf = RegistreOublis()
+        neuf.restaurer(r.etat())
+        self.assertIsNone(neuf.fin_cycle(10))
+
+    def test_etat_absent_ou_casse_ne_fait_rien_exploser(self):
+        r = RegistreOublis()
+        self.assertFalse(r.restaurer(None))
+        self.assertFalse(r.restaurer('bizarre'))
+        self.assertTrue(r.restaurer({}))
+        self.assertTrue(r.restaurer({'ajouts': 'pas un nombre',
+                                     'par_motif': 'pas un dict',
+                                     'cycles': 'pas une liste'}))
+        self.assertEqual(r.ajouts, 0)
+
+    def test_etat_est_serialisable_en_json(self):
+        etat = self._carnet_use().etat()
+        rejoue = json.loads(json.dumps(etat, ensure_ascii=False))
+        neuf = RegistreOublis()
+        neuf.restaurer(rejoue)
+        self.assertEqual(neuf.retraits, 3)
 
 
 if __name__ == '__main__':

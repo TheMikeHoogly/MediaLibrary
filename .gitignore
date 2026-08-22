@@ -175,3 +175,18 @@ _generation.txt
 _orphelines.json
 # Quarantaine des detections hors index (purge reversible, 21/08).
 _corbeille_detections/
+
+# ─── Quarantaine du re-cle des decisions humaines (22/08) ───────────────────
+# Ce que `reparer_decisions_orphelines` a deplace, fiche par fiche, AVANT/APRES.
+# C'est ce qui rend le bouton « 3 - Annuler » possible : local, jamais versionne.
+_corbeille_decisions/
+
+# ─── Carnet de comptes de l'index, qui survit desormais au redemarrage ──────
+# Etat LOCAL de cette machine (cumuls, motifs, cycles inexpliques) : le
+# versionner ferait entrer en conflit deux histoires qui n'ont rien a se dire.
+_comptes_index.json
+_comptes_index.json.tmp
+
+# Sorties des bancs de la session 31 (plan de re-cle, rapport d'orphelines).
+_plan_recle.json
+_report_orphelines.json

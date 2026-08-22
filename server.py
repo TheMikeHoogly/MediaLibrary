@@ -490,16 +490,70 @@ class _RegistreInerte:
     def ligne_motifs(self):
         return ''
 
+    def etat(self):
+        return {}
+
+    def restaurer(self, *a):
+        return False
+
 
 try:
     from comptes_index import RegistreOublis
 except ImportError:                     # module absent → instrument inerte
     RegistreOublis = None
 
+# Le carnet de comptes SURVIT au redémarrage (22/08). Sans ça il ne
+# diagnostique rien : le 21/08, la cause des 2 283 clés oubliées n'a pas pu être
+# établie parce que `par_motif` était reparti à zéro au redémarrage de 19:31 —
+# l'instrument bâti POUR ça n'avait rien gardé. Le module reste PUR (aucune
+# E/S) : il rend un dict, c'est ici qu'on l'écrit.
+COMPTES_FILE = SCRIPT_DIR / "_comptes_index.json"
+
+
+def charger_comptes():
+    """Reprend le carnet de la vie précédente. Silencieux si absent ou illisible :
+    un instrument ne doit jamais empêcher le serveur de démarrer."""
+    try:
+        etat = json.loads(COMPTES_FILE.read_text(encoding='utf-8'))
+    except (OSError, ValueError):
+        return False
+    try:
+        return bool(REGISTRE.restaurer(etat))
+    except Exception:                                        # noqa: BLE001
+        return False
+
+
+def sauver_comptes():
+    """Écrit le carnet, atomiquement (tmp + replace) comme les index : une
+    coupure au mauvais moment laisserait sinon un JSON tronqué, et le carnet
+    repartirait de zéro — exactement ce qu'on corrige."""
+    try:
+        etat = REGISTRE.etat()
+        if not etat:
+            return False
+        tmp = COMPTES_FILE.with_suffix('.json.tmp')
+        tmp.write_text(json.dumps(etat, ensure_ascii=False), encoding='utf-8')
+        os.replace(tmp, COMPTES_FILE)
+        return True
+    except Exception as e:                                   # noqa: BLE001
+        print(f"  ⚠ Comptes de l'index non sauvés : {e}")
+        return False
+
+
 if RegistreOublis is not None and hasattr(STORE, 'brancher_registre'):
     REGISTRE = RegistreOublis()
     STORE.brancher_registre(REGISTRE)
-    print(f"  📒 Comptes de l'index actifs — départ à {len(STORE.data)} entrées")
+    _repris = charger_comptes()
+    print(f"  📒 Comptes de l'index actifs — départ à {len(STORE.data)} entrées"
+          + (f" (carnet repris, {REGISTRE.redemarrages} redémarrage(s), "
+             f"{REGISTRE.retraits} retrait(s) au total)" if _repris else
+             " (carnet neuf)"))
+    # Écrire TOUT DE SUITE, sans attendre un cycle : un premier scan dure des
+    # minutes, et deux redémarrages rapprochés n'en laissaient jamais finir un.
+    # C'est exactement comme ça que le carnet du 21/08 est resté vide — la même
+    # leçon que `_backup_du()`, dont l'échéance se lit sur le FICHIER et non sur
+    # un compteur de tours qui ne survit pas.
+    sauver_comptes()
 else:
     REGISTRE = _RegistreInerte()
     if RegistreOublis is None:
@@ -4827,6 +4881,9 @@ def maintenance_loop():
                 _ligne = REGISTRE.ligne_cycle(_res)
                 if _ligne:
                     print(f"  📒 {_ligne}")
+                # Le carnet part sur disque À CHAQUE cycle : un redémarrage
+                # perdrait au pire le cycle en cours, jamais l'historique.
+                sauver_comptes()
             first = False
             MAINT_LOOP_STATE["dernier_scan"] = time.time()
         except Exception as e:                                # noqa: BLE001

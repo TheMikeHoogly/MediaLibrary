@@ -178,9 +178,11 @@ une **génération** : le `taskkill` par titre ne tuait rien.
    la couverture des noms au niveau PHOTO est déjà là (point 1). À rouvrir si
    quelqu'un veut nommer des visages en série, pas avant.
 10. **Données / finitions**, dans cet ordre :
-    (a) **Compter ce que le scan OUBLIE — CLOS (18/08).** Trois constats mineurs
-    non traités : un ajout vu PAR LE SCAN est étiqueté `tagging` ; `dict.__ior__`
-    non redéfini dans `TrackedDict` ; `cycles_vus` affiche « 10 » à vie.
+    (a) **Compter ce que le scan OUBLIE — CLOS (18/08), et le carnet SURVIT
+    désormais au redémarrage (22/08, observé).** `_comptes_index.json`, écrit
+    atomiquement dès le démarrage puis à chaque cycle ; `cycles_vus` ne plafonne
+    plus à 10. Deux constats mineurs restent : un ajout vu PAR LE SCAN est
+    étiqueté `tagging` ; `dict.__ior__` non redéfini dans `TrackedDict`.
     (b) **Garde-fou du repli sur le NOM + noms périmés — CLOS (19/08), observé.**
     **`taken` en base : REJETÉ (19/08)** — le garde-fou est passé à la LECTURE
     (voir l'État). Rien n'est écrit.

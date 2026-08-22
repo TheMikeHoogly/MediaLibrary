@@ -33,6 +33,15 @@ CE QU'IL FAIT
        exactement le diagnostic qui manquait aux −250. Le nombre lui-même est
        la piste : il dit COMBIEN d'entrées se sont évaporées hors du goulot.
 
+    4. **Il SURVIT au redémarrage.** Un carnet de comptes qui se vide à chaque
+       relance ne diagnostique rien : le 21/08, la cause des 2 283 clés
+       oubliées n'a pas pu être établie rétrospectivement parce que `par_motif`
+       était reparti à zéro au redémarrage de 19:31 — l'instrument bâti POUR ça
+       n'avait rien gardé. `etat()` rend un instantané JSON-able, `restaurer()`
+       le reprend. Les cumuls repartent d'où ils s'étaient arrêtés, les listes
+       bornées gardent le plus récent, et `redemarrages` dit combien de vies ce
+       carnet a déjà eues.
+
 CE QU'IL NE FAIT PAS
     Il ne corrige rien, ne supprime rien, ne bloque rien. Il n'a pas d'opinion
     sur ce qui est légitime : « scan:disparus » qui retire 4 000 clés est normal
@@ -41,7 +50,10 @@ CE QU'IL NE FAIT PAS
 
 CONTRAINTES
     Module PUR : stdlib seule (`threading`, `time`), aucun import lourd, aucune
-    E/S, aucun état global. Testable hors serveur (`test_comptes_index.py`).
+    E/S, aucun état global — la PERSISTANCE elle-même reste dehors : `etat()` et
+    `restaurer()` échangent un dict, c'est l'appelant qui l'écrit sur disque.
+    Un instrument qui ouvre des fichiers finit par échouer pour une raison qui
+    n'a rien à voir avec ce qu'il observe. Testable hors serveur (`test_comptes_index.py`).
     Coût : un `Lock` et quelques incréments par clé — négligé devant l'écriture
     SQLite qui suit. Toutes les listes exposées sont BORNÉES (le résumé part
     dans `/api/maint/status`, il ne doit pas grossir sans fin).
@@ -106,6 +118,12 @@ class RegistreOublis:
         self.anomalies = []             # cycles à écart non nul
         self.inexplique_cumul = 0       # somme SIGNÉE des écarts
         self.cycles_inexpliques = 0
+        # `cycles` est BORNÉE (10) : sa longueur ne peut pas dire combien de
+        # cycles ont eu lieu. Elle affichait « 10 » à vie — un compteur qui
+        # plafonne est un compteur qui ment.
+        self.cycles_total = 0
+        self.redemarrages = 0
+        self.depuis = time.time()       # premier départ de ce carnet
         self._cycle = None
 
     # ─────────────────────────── motifs ───────────────────────────
@@ -245,6 +263,7 @@ class RegistreOublis:
                    'attendu': attendu, 'inexplique': fin - attendu}
             self.cycles.insert(0, res)
             del self.cycles[self.max_cycles:]
+            self.cycles_total += 1
             if res['inexplique']:
                 self.inexplique_cumul += res['inexplique']
                 self.cycles_inexpliques += 1
@@ -274,8 +293,73 @@ class RegistreOublis:
                 'anomalies': list(self.anomalies),
                 'inexplique_cumul': self.inexplique_cumul,
                 'cycles_inexpliques': self.cycles_inexpliques,
-                'cycles_vus': len(self.cycles),
+                'cycles_vus': self.cycles_total,
+                'cycles_gardes': len(self.cycles),
+                'redemarrages': self.redemarrages,
+                'depuis': self.depuis,
             }
+
+    # ───────────────────── survivre au redémarrage ─────────────────────
+
+    # Ce que le carnet emporte d'une vie à l'autre. Les cumuls s'additionnent,
+    # les listes bornées gardent le plus récent. `_cycle` n'en fait PAS partie :
+    # un cycle ouvert au moment de l'arrêt n'a pas de fin, et le reprendre
+    # ferait porter au cycle suivant les mutations de deux — l'instrument qui
+    # ment (cf. le `finally` de la boucle de maintenance).
+    CUMULS = ('ajouts', 'retraits', 'inexplique_cumul', 'cycles_inexpliques',
+              'cycles_total')
+    LISTES = ('evenements', 'non_declares', 'cycles', 'anomalies')
+
+    def etat(self):
+        """Instantané JSON-able du carnet — à écrire sur disque par l'appelant."""
+        with self._lock:
+            etat = {c: getattr(self, c) for c in self.CUMULS}
+            etat['par_motif'] = {m: dict(v)
+                                 for m, v in sorted(self.par_motif.items())}
+            for nom in self.LISTES:
+                etat[nom] = list(getattr(self, nom))
+            etat['redemarrages'] = self.redemarrages
+            etat['depuis'] = self.depuis
+            etat['version'] = 1
+            return etat
+
+    def restaurer(self, etat):
+        """Reprend un carnet écrit par `etat()`. Rien n'est exigé : un état
+        absent, tronqué ou d'une autre version laisse le carnet neuf plutôt que
+        de casser le démarrage du serveur.
+
+        Compte un REDÉMARRAGE de plus : c'est ce qui distingue « aucun cycle
+        inexpliqué » de « le carnet vient de naître ».
+        """
+        if not isinstance(etat, dict):
+            return False
+        with self._lock:
+            for c in self.CUMULS:
+                v = etat.get(c)
+                if isinstance(v, int):
+                    setattr(self, c, getattr(self, c) + v)
+            pm = etat.get('par_motif')
+            if isinstance(pm, dict):
+                for m, v in pm.items():
+                    if not isinstance(v, dict):
+                        continue
+                    d = self.par_motif.setdefault(str(m), {'ajouts': 0,
+                                                           'retraits': 0})
+                    d['ajouts'] += int(v.get('ajouts') or 0)
+                    d['retraits'] += int(v.get('retraits') or 0)
+            for nom in self.LISTES:
+                v = etat.get(nom)
+                if isinstance(v, list):
+                    borne = (self.max_non_declares if nom == 'non_declares'
+                             else self.max_evenements if nom == 'evenements'
+                             else self.max_cycles)
+                    getattr(self, nom).extend(v[:borne])
+                    del getattr(self, nom)[borne:]
+            d = etat.get('depuis')
+            if isinstance(d, (int, float)) and d > 0:
+                self.depuis = min(self.depuis, float(d))
+            self.redemarrages = int(etat.get('redemarrages') or 0) + 1
+            return True
 
     def ligne_cycle(self, res):
         """Une ligne lisible pour le résumé de scan. `res` = retour de

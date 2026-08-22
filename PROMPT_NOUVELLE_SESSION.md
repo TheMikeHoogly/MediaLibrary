@@ -61,9 +61,11 @@ un jumeau faux ferait déborder les index.
    journal ne connaît la destination, plus **120** clés protégées de la purge du
    21/08 dont les photos n'existent plus. Décider de leur sort — les garder
    coûte un résidu permanent, les purger coûte de la vérité terrain.
-3. **Faire SURVIVRE le registre des oublis.** `comptes_index` vit en mémoire :
-   après chaque redémarrage, `par_motif` repart à vide. Un compteur qui ne
-   survit pas au redémarrage ne diagnostique rien.
+3. **Le registre des oublis SURVIT — fait et observé (22/08).**
+   `_comptes_index.json`, écrit dès le démarrage puis à chaque cycle ;
+   `redemarrages` 0 → 1 sur deux relances, `depuis` conservé. La prochaine
+   anomalie de l'index sera donc diagnosticable APRÈS coup, ce qui manquait aux
+   −250 du 17/08 comme aux 2 283 du 21/08.
 4. **Juger 30 propositions de la tranche 0,35–0,40** (choix de Mike, 21/08)
    avant de toucher `CUR_ADD_SIM`. 1 328 visages, 1 106 photos vivantes.
 5. **Chantier 12 — la restauration à blanc.** Toujours le seul item dont l'échec
