@@ -6,6 +6,30 @@ dans **git** ; les rejets dans `eval/DECISIONS.md` (photothèque) et
 `eval/METHODE.md` ; l'éphémère dans `PROMPT_NOUVELLE_SESSION.md`. Audits :
 `docs/AUDIT_INTERNE_2026-08.md`, `docs/AUDIT_EXTERNE_2026.md`, `docs/RANGEMENT_2026.md`.
 
+## État (22/08/2026, session 35)
+
+**Le chantier des rattachements est CLOS, et son dernier chiffre porte sur
+l'INSTRUMENT, pas sur le fonds.**
+
+**Le geste.** Les 28 cas de `/residu` jugés par Mike : **2 retirés, 45
+confirmés**, 0 ajout, 0 indécidable. Appliqué et OBSERVÉ — couples **1 194 →
+1 192**, exactement les deux, quarantaine `_corbeille_retraits/`, et un second
+aperçu qui les compte « déjà absents » (le geste est idempotent). Les deux
+étaient `Res Jordi` sur `Bei Michael Jordi.jpg` et `…2.jpg` : une confusion
+avec son **frère Michael** — exactement ce que la règle de recalage refuse
+d'arbitrer, et ce qu'aucun score ni aucune géométrie ne tranche.
+
+**Le résultat qui compte.** Sur les 13 couples dont le visage désigné scorait
+**0,06–0,295**, Mike en a confirmé **12**. La colonne « sous le seuil de faux
+positif » ne dit donc pas « ce n'est pas elle » mais **« je ne la reconnais
+pas »** : elle mesure la cécité de l'empreinte, pas une faute du fonds. Ces 13
+reviendront dans chaque `--residu` tant que leur score sera bas ; ils sont
+JUGÉS, et il ne faut pas les relire comme 13 défauts.
+
+**Ce qui reste, et c'est peu.** 9 « décalés » (0,8 %) qui sont des apparitions
+multiples sur pages d'album et montages, 13 « faux positifs » jugés justes,
+155 photos à un seul visage. Le fonds des rattachements est sain.
+
 ## État (22/08/2026, session 34)
 
 **Le résidu est jugé, il n'y avait rien à retirer — et c'est le banc qui avait
@@ -240,32 +264,14 @@ une **génération** : le `taskkill` par titre ne tuait rien.
 
 ## À faire — par ordre de valeur
 
-0. **Les 13 couples SOUS LE SEUIL DE FAUX POSITIF : la page est LIVRÉE et
-   OBSERVÉE, reste le JUGEMENT de Mike (22/08).** `/residu` sert désormais
-   **28 cas — 15 `ambigu` (déjà jugés) + 13 `faux_positif`** — et porte les
-   trois corrections que la séance de jugement a rendues nécessaires :
-   (a) **la photo entière avec les visages encadrés** en pourcentage
-   (`_dimensions_photo` lit l'orientation EXIF, les `bbox` vivant dans
-   l'espace redressé) — c'est elle qui aurait rendu la page d'album évidente
-   en une seconde, aux deux bouts ; (b) des **lettres A–H** au lieu des
-   chiffres, `/tranche` utilisant `1`/`2`/`3` pour Oui/Non/Je ne sais pas ;
-   (c) le bouton annonce la **CONSÉQUENCE** — « Valider écrira : 0 gardé ·
-   1 à RETIRER » — plutôt que le nombre de cases cochées. Une photo
-   introuvable (clé fantôme) est **dite**, pas affichée cassée. Observé en
-   réel : 28 cas servis, cadres posés, premier cas = un visage de **dessin
-   animé sur une diapositive projetée** rattaché à Danica, à 0,278.
-   **JUGÉ par Mike (22/08) — 28 cas sur 28.** Résultat : **2 à retirer, 45
-   confirmés, 0 à ajouter, 0 indécidable**. Et **12 des 13 « faux positifs »
-   sont JUSTES** : la colonne ne nommait pas des erreurs, elle nommait la
-   cécité de l'empreinte. Les 2 retraits sont `Res Jordi` sur
-   `Bei Michael Jordi.jpg` et `…2.jpg` — une confusion avec son **frère
-   Michael**, exactement le cas que la règle de recalage refuse d'arbitrer.
-   **RETRAIT LIVRÉ** : `retrait_rattachements.py` (règle pure, 13 tests) +
-   greffe serveur (10 tests) + trois boutons `/reglages`, quarantaine
-   `_corbeille_retraits/`. Aperçu sur le serveur vivant : **2 à retirer, 45
-   confirmés** — les mêmes nombres que le banc, deux chemins.
-   **Reste un clic de Mike** : `/reglages` → « Rattachements que tu as juges
-   faux » → 2 · Appliquer.
+0. **Chantier des rattachements : CLOS (22/08).** Recalage appliqué (33, dont
+   29 vraies réparations), résidu jugé (28 cas), retrait appliqué (2). Couples
+   1 194 → 1 192, aucune décision perdue. Ce qui reste est mesuré et sain.
+   **Ne pas rouvrir sans chiffre neuf** — et surtout ne pas relire les 13
+   « faux positifs » comme des défauts : ils sont jugés JUSTES à 12 sur 13.
+   Seule suite ouverte : **`PETS` n'a jamais été mesuré** (empreintes DINOv2,
+   `assigned_keys` ne le lit pas) — c'est un chantier à part, et personne ne
+   sait encore ce qu'il contient.
 
 0bis. **Le résidu « ambigu » : CLOS (22/08).** Instrument et page livrés,
    15 cas jugés par Mike, **34 confirmés, 0 à retirer**. `mesure_rattachements.py --residu` écrit

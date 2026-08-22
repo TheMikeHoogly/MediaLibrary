@@ -330,42 +330,6 @@
    ]
   },
   {
-   "person": "Res Jordi",
-   "key": "\\\\NAS-Bremblens\\home\\Photos\\Photos Papa\\1986\\Sept Agnes Fritz Frankfurt\\Bei Michael Jordi.jpg",
-   "visages": 9,
-   "pourquoi": "ambigu",
-   "candidats": [
-    {
-     "i": 1,
-     "sim": 0.682,
-     "cite": true
-    },
-    {
-     "i": 2,
-     "sim": 0.691,
-     "cite": true
-    }
-   ]
-  },
-  {
-   "person": "Res Jordi",
-   "key": "\\\\NAS-Bremblens\\home\\Photos\\Photos Papa\\1986\\Sept Agnes Fritz Frankfurt\\Bei Michael Jordi2.jpg",
-   "visages": 10,
-   "pourquoi": "ambigu",
-   "candidats": [
-    {
-     "i": 2,
-     "sim": 0.662,
-     "cite": true
-    },
-    {
-     "i": 3,
-     "sim": 0.687,
-     "cite": true
-    }
-   ]
-  },
-  {
    "person": "Rosario",
    "key": "\\\\NAS-Bremblens\\home\\Photos\\Photos Papa\\1999\\19990910 Mainau mit Arturo.JPG",
    "visages": 3,

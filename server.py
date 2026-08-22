@@ -16566,10 +16566,17 @@ class Handler(BaseHTTPRequestHandler):
         elif path == '/api/maint/retrait-apercu':
             res = retirer_rattachements(dry=True)
             if res.get('ok'):
+                # « 2 a retirer » apres coup se lit comme « il reste 2 a
+                # faire ». Un apercu doit dire l'ETAT, pas repeter le plan.
+                deja = (res['a_retirer'] and not res['retires']
+                        and res['deja_absents'] >= res['a_retirer'])
                 res['msg'] = (
-                    f"A blanc : {res['a_retirer']} rattachement(s) juge(s) faux "
-                    f"sur {res['fiches']} fiche(s). Confirmes par toi : "
-                    f"{res['confirmes']}. "
+                    (f"Deja fait : les {res['a_retirer']} rattachement(s) "
+                     f"juge(s) faux ne sont plus dans les fiches. "
+                     if deja else
+                     f"A blanc : {res['a_retirer']} rattachement(s) juge(s) faux "
+                     f"sur {res['fiches']} fiche(s). ")
+                    + f"Confirmes par toi : {res['confirmes']}. "
                     + (f"{res['a_ajouter']} visage(s) reconnu(s) mais NON "
                        f"rattache(s) ne sont PAS touches ici : ajouter un nom "
                        f"est un autre geste. "
