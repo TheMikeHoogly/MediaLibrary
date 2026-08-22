@@ -36,6 +36,13 @@ echo     Sauvegarde lue  : %NAS%
 echo.
 echo   Prevois environ 300 Mo et quelques minutes de copie reseau.
 echo.
+echo   CONSEIL : arrete le serveur pendant la repetition. Un PC neuf
+echo   n'en a pas, et surtout le serveur pousse 276 Mo sur le NAS
+echo   toutes les heures - deux gros transferts qui se disputent le
+echo   meme partage SMB, c'est l'ERREUR 59 assuree.
+echo   Pour l'arreter : ecris "arret" dans _commande_serveur.txt,
+echo   ou ferme sa fenetre.
+echo.
 
 REM --- Garde-fous : tout ce qui peut manquer se dit AVANT d'ecrire ---
 if /i not "%CIBLE%"=="%CD%" goto :cible_ok
@@ -104,10 +111,49 @@ echo.
 echo --------------------------------------------------------------
 echo   Etape 2/4 : la BASE et le journal des jugements
 echo --------------------------------------------------------------
-robocopy "%NAS%" "%CIBLE%" photos.db.bak journal_jugements.jsonl /NJH /NJS /NP /R:2 /W:5
-if %ERRORLEVEL% LSS 8 goto :base_copiee
+robocopy "%NAS%" "%CIBLE%" journal_jugements.jsonl /NJH /NJS /NP /R:2 /W:5
+if %ERRORLEVEL% LSS 8 goto :journal_ok
 echo.
-echo   La copie depuis le NAS a echoue.
+echo   La copie du journal des jugements a echoue.
+goto :fin_erreur
+
+:journal_ok
+echo.
+echo   La base fait 250 Mo. Copie NON BUFFERISEE ^(/J^) : c'est le mode
+echo   recommande pour les gros fichiers sur SMB, et il evite une
+echo   bonne part des "ERREUR 59".
+echo.
+REM La date du fichier AVANT et APRES : si elle change, c'est la
+REM sauvegarde horaire du serveur qui a remplace photos.db.bak sous la
+REM poignee ouverte - `backup_to` fait un os.replace atomique cote NAS.
+REM Deviner la cause coute plus cher que la mesurer.
+for %%f in ("%NAS%\photos.db.bak") do set "BAK_AVANT=%%~tf"
+robocopy "%NAS%" "%CIBLE%" photos.db.bak /J /NJH /NJS /NP /R:3 /W:10
+set "RC=%ERRORLEVEL%"
+for %%f in ("%NAS%\photos.db.bak") do set "BAK_APRES=%%~tf"
+if %RC% LSS 8 goto :base_copiee
+echo.
+echo   La copie de la base a echoue.
+if not "%BAK_AVANT%"=="%BAK_APRES%" goto :cause_sauvegarde
+echo.
+echo   La date de photos.db.bak n'a pas bouge pendant la copie :
+echo   ce n'est donc PAS la sauvegarde horaire. Reste une coupure de
+echo   session SMB - l'ERREUR 59 classique sur un transfert long.
+echo   Relance ce lanceur : il est re-entrant, le clone sera saute.
+echo   Si ca recommence, copie photos.db.bak a la main dans
+echo   l'explorateur, renomme-le photos.db, puis relance.
+goto :fin_erreur
+
+:cause_sauvegarde
+echo.
+echo   CAUSE TROUVEE : photos.db.bak a change pendant la copie.
+echo      avant : %BAK_AVANT%
+echo      apres : %BAK_APRES%
+echo   C'est la sauvegarde horaire du serveur : elle remplace le
+echo   fichier d'un seul coup sur le NAS, et la copie en cours perd
+echo   sa poignee. Attends deux minutes et relance - ou arrete le
+echo   serveur le temps de la repetition, ce qu'un PC neuf fait de
+echo   toute facon.
 goto :fin_erreur
 
 :base_copiee

@@ -50,6 +50,17 @@ quarantaines. Si une ligne dit `AUCUNE COPIE` en face d'un `IRRECUPERABLE`,
 **arrête-toi là** : la sauvegarde a un trou, la répétition mesurerait ce trou
 au lieu de mesurer la procédure.
 
+## Arrête le serveur d'abord
+
+Il pousse **276 Mo sur le NAS toutes les heures** (`backup_db`), et il remplace
+`photos.db.bak` d'un seul coup — `os.replace` atomique côté NAS. Deux gros
+transferts sur le même partage SMB, ou un fichier remplacé sous la poignée
+ouverte de la copie, donnent la même chose : **ERREUR 59, « erreur réseau
+inattendue »**, à 250 Mo du but. Payé le 22/08, trois tentatives de suite.
+
+`arret` dans `_commande_serveur.txt`, ou ferme sa fenêtre. Un PC neuf n'a pas
+de serveur qui tourne : l'arrêter rend la répétition **plus** fidèle, pas moins.
+
 ## Le raccourci : `30 - Repetition de restauration.bat`
 
 Tout ce qui suit tient dans un double-clic. Le lanceur enchaîne clone,

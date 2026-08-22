@@ -385,7 +385,15 @@ qui en découle : éditer → redémarrer → **observer** → livrer.
     inattendu »). Le troisième a fait grandir l'instrument : `verifier_bat.py`
     voit désormais ce cas (15 tests), et les 18 `.bat` du projet passent —
     aucun autre ne le portait. Le lanceur, lui, n'a plus un seul bloc : que
-    des `goto`. Le pas-à-pas manuel reste dans
+    des `goto`. **Quatrième défaut, celui-ci sur le NAS** : la copie des 250 Mo
+    de `photos.db.bak` meurt en `ERREUR 59` — le serveur pousse 276 Mo sur le
+    même partage toutes les heures ET remplace le `.bak` par un `os.replace`
+    atomique, ce qui arrache la poignée de la copie en cours. Le lanceur copie
+    désormais la base seule et **non bufferisée** (`/J`, le mode fait pour les
+    gros fichiers SMB), relève la date du `.bak` avant et après, et **DIT
+    laquelle des deux causes** a frappé au lieu de laisser deviner. Il conseille
+    aussi d'arrêter le serveur — un PC neuf n'en a pas, donc la répétition en
+    devient plus fidèle. Le pas-à-pas manuel reste dans
     `docs/REPETITION_RESTAURATION.md` —
     restaurer pour de vrai dans un dossier vierge, chronométrer, puis
     `verifier_restauration.py --restaure <dossier>`, qui compare les décisions
