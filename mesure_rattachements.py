@@ -72,6 +72,7 @@ from collections import Counter
 from pathlib import Path
 
 import mesure_propagation_noms as M
+import recale_rattachements as recale
 
 # Un autre visage de la même photo doit dépasser le désigné d'AU MOINS ça pour
 # qu'on parle de décalage. Deux visages proches (frère et sœur, même personne
@@ -101,7 +102,7 @@ def _fiches(store):
         if P is None or not len(P):
             sans += 1
             continue
-        out.append((nom, P, couples))
+        out.append((nom, P, couples, pe))
     return out, sans
 
 
@@ -162,7 +163,15 @@ def _mesurer(faces, people, projet, ecart, exemples):
         cle_p = '0' if n == 0 else ('1' if n == 1 else ('2' if n == 2 else '3+'))
         postes.setdefault(cle_p, Counter())[verdict] += 1
 
-    for nom, P, couples in fiches:
+    # Le PLAN de reparation, calcule par la regle de prod elle-meme : le banc
+    # ne redit pas ce que `recale_rattachements` decide, il l'appelle. Sinon on
+    # mesurerait une reparation qui n'est pas celle qui sera appliquee.
+    pris = recale.rattachements_pris(f for _n, _P, _c, f in fiches)
+    plan = Counter()
+    exemples_plan, exemples_refus = [], []
+
+    for nom, P, couples, pe in fiches:
+        scores_fiche = {}
         for rang, (cle, i) in enumerate(couples):
             c['couples'] += 1
             liste, reemb, presente = visages_de(cle)
@@ -175,6 +184,10 @@ def _mesurer(faces, people, projet, ecart, exemples):
                 poste(rang, 'sans_matiere')
                 continue
             if i >= len(liste) or i < 0:
+                if cle not in scores_fiche:
+                    scores_fiche[cle] = [
+                        float(np.max(P @ v)) if v is not None else None
+                        for v in liste]
                 c['index_hors_bornes'] += 1
                 if len(exemples_hb) < exemples:
                     exemples_hb.append({"person": nom, "key": cle, "i": i,
@@ -183,9 +196,11 @@ def _mesurer(faces, people, projet, ecart, exemples):
                 poste(rang, 'hors_bornes')
                 continue
             # Score de CHAQUE visage de la photo contre la signature.
-            par_visage = []
-            for v in liste:
-                par_visage.append(float(np.max(P @ v)) if v is not None else None)
+            par_visage = scores_fiche.get(cle)
+            if par_visage is None:
+                par_visage = [float(np.max(P @ v)) if v is not None else None
+                              for v in liste]
+                scores_fiche[cle] = par_visage
             s_i = par_visage[i]
             if s_i is None:
                 c['visage_designe_sans_vecteur'] += 1
@@ -218,12 +233,27 @@ def _mesurer(faces, people, projet, ecart, exemples):
                 croise['juste_reemb' if reemb else 'juste_sans_reemb'] += 1
                 poste(rang, 'juste')
 
+        _champs, recalages, refus = recale.recaler_fiche(
+            pe, scores_fiche, ecart=ecart, deja_pris=pris)
+        for r in recalages:
+            plan['recale_hors_bornes' if r.get('hors_bornes') else 'recale'] += 1
+            if r.get('fusion'):
+                plan['dont_fusion'] += 1
+            if len(exemples_plan) < exemples:
+                exemples_plan.append(dict(r, person=nom))
+        for r in refus:
+            plan['refus_' + r['pourquoi']] += 1
+            if len(exemples_refus) < exemples:
+                exemples_refus.append(dict(r, person=nom))
+
     rap = {"seuils": {"CUR_FP_SIM": fp_sim, "ecart": ecart},
            "fiches": {"avec_signature_et_couples": len(fiches),
                       "avec_couples_sans_signature": sans_signature},
            "comptes": dict(c), "croisement_reemb": dict(croise),
            "par_poste": {k: dict(v) for k, v in sorted(postes.items())},
-           "exemples_decales": decales, "exemples_hors_bornes": exemples_hb}
+           "exemples_decales": decales, "exemples_hors_bornes": exemples_hb,
+           "plan": dict(plan), "exemples_plan": exemples_plan,
+           "exemples_refus": exemples_refus}
     if scores:
         a = np.asarray(scores, dtype=np.float32)
         rap["scores"] = {"n": len(scores),
@@ -323,6 +353,19 @@ def afficher(r):
             L.append(f"    {e['person'][:18]:<18} i={e['i']} ({e['sim']}) -> "
                      f"i={e['mieux']} ({e['sim_mieux']}) sur {e['visages']} "
                      f"visage(s)  reemb={e['reemb']}  {Path(e['key']).name[:30]}")
+    pl = r.get("plan") or {}
+    L.append("")
+    L.append("CE QUE LA REPARATION FERAIT (regle de prod, appelee telle quelle) :")
+    if not pl:
+        L.append("    rien a recaler")
+    for cle in sorted(pl):
+        L.append(f"    {cle:<32} {pl[cle]:>7}")
+    for e in (r.get("exemples_plan") or []):
+        L.append(f"    recale : {e['person'][:16]:<16} i={e['de']} -> i={e['vers']}"
+                 f"  ({e['sim']} -> {e['sim_vers']})  {Path(e['key']).name[:30]}")
+    for e in (r.get("exemples_refus") or []):
+        L.append(f"    refus  : {e['person'][:16]:<16} i={e['i']}  "
+                 f"{e['pourquoi']}  {Path(e['key']).name[:30]}")
     L.append("")
     L.append("BORNE BASSE : une empreinte faussement confirmee est entree dans la")
     L.append("signature et rend son propre couple « juste ». Il y en a au moins")

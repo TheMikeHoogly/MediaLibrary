@@ -208,6 +208,55 @@ class TestCroisement(unittest.TestCase):
             self.assertEqual(r["fonds"]["dont_reembarquees"], 2)
 
 
+class TestPlan(unittest.TestCase):
+    """Le banc n'invente pas la reparation : il APPELLE la regle de prod."""
+
+    def test_le_plan_recale_le_couple_decale(self):
+        with TemporaryDirectory() as d:
+            f = Fabrique(d)
+            f.fiche([('a.jpg', 1)])
+            f.photo('a.jpg', [f.flo, f.autre])
+            r = mesurer(d, f)
+            self.assertEqual(r["plan"]["recale"], 1)
+            e = r["exemples_plan"][0]
+            self.assertEqual((e["de"], e["vers"]), (1, 0))
+            self.assertIn("REPARATION", R.afficher(r))
+
+    def test_le_plan_refuse_ce_que_la_regle_refuse(self):
+        """Un couple decale n'est pas forcement reparable : si le meilleur
+        visage de la photo ne ressemble a personne, on ne deplace rien."""
+        with TemporaryDirectory() as d:
+            f = Fabrique(d)
+            faible = f.flo * 0.15 + f.autre * 0.99
+            faible = faible / np.linalg.norm(faible)
+            f.fiche([('a.jpg', 1)])
+            f.photo('a.jpg', [faible, f.autre])
+            r = mesurer(d, f)
+            self.assertNotIn("recale", r["plan"])
+            self.assertTrue(any(k.startswith("refus_") for k in r["plan"]))
+
+    def test_deux_personnes_qui_ont_echange_leurs_visages_sont_REFUSEES(self):
+        """La limite de la regle, et il faut la connaitre AVANT d'appliquer.
+
+        Sur une photo de deux personnes, un decalage d'index les PERMUTE :
+        Flo designe le visage de Laura et Laura celui de Flo. Chacune veut
+        alors le visage que l'autre possede deja, et la regle refuse des deux
+        cotes — « deja pris ». C'est le comportement voulu : echanger deux
+        decisions humaines d'un geste automatique demande plus qu'un score, et
+        un conflit muet vaut moins qu'un decalage visible. Mais cela veut dire
+        que ce cas-la n'est pas reparable ainsi : le chiffre du plan doit se
+        lire avec ca en tete.
+        """
+        with TemporaryDirectory() as d:
+            f = Fabrique(d)
+            f.fiche([('a.jpg', 1)])                                 # Flo -> Laura
+            f.b.personne('Laura', [f.autre], faces=[['a.jpg', 0]])  # Laura -> Flo
+            f.photo('a.jpg', [f.flo, f.autre])
+            r = mesurer(d, f)
+            self.assertEqual(r["plan"].get("refus_deja_pris"), 2)
+            self.assertNotIn("recale", r["plan"])
+
+
 class TestRefus(unittest.TestCase):
 
     def test_refuse_photos_db(self):

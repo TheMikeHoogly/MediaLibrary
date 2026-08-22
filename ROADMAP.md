@@ -28,7 +28,35 @@ atomique, l'avancement survit au redémarrage), le banc CONCLUT
 Observé en réel : 30 items servis, vignettes 200, verdict écrit, verdict
 inconnu refusé en 400.
 
-**Reste le geste de Mike** : juger les 30 sur `/tranche`, puis
+**Et la planche de jugement a fait tomber autre chose — Mike l'a vu à l'œil.**
+La planche « visages déjà confirmés de Didier » contenait Laura Waller ; celle
+de Mathieu, Mathilde. Un rattachement est un couple `[photo, index du visage]`,
+et `reembed_one_batch` REMPLACE `e['faces']` quand il ré-analyse une photo :
+l'ordre change, le couple survit, sa cible non — sur une photo de groupe,
+l'index finit par désigner quelqu'un d'autre **qui est sur la même photo**.
+Mesuré (`mesure_rattachements.py`, 1 194 couples, 104 fiches) : **42 décalés**
+(3,5 %), 0 hors bornes, score médian 0,767 mais minimum **−0,13**. Le
+croisement nomme la cause : **5,4 %** de décalage sur les photos réellement
+re-détectées contre **0,4 %** ailleurs — 41 des 42. Le garde-fou `assigned_keys`
+protège l'avenir depuis un correctif antérieur ; il n'a jamais réparé le passé,
+et il ne lit pas `PETS`.
+**Premier croisement RÉFUTÉ par lui-même** : bâti sur le drapeau `reemb`, il
+rendait **100 %** — ce drapeau est aussi posé sur les photos seulement
+EXAMINÉES. Un drapeau que tout le monde porte ne croise rien ; `reemb_ms`
+discrimine.
+**RÉPARATION LIVRÉE** : `recale_rattachements.py` (règle pure, 27 tests) —
+le bon index est le visage de la MÊME photo le plus proche de la signature —
+plus trois boutons dans `/reglages` (aperçu / appliquer / annuler, quarantaine
+`_corbeille_recalage/`) qui passent par **la même fonction** que le banc.
+Aperçu à blanc sur le serveur vivant : **32 à recaler, 34 refus « ambigu »,
+1 « déjà pris »** — les mêmes nombres que le banc, deux chemins.
+La règle refuse plus qu'elle ne répare, et c'est voulu : un décalage qui
+PERMUTE deux personnes d'une même photo se refuse des deux côtés (« déjà
+pris »), et une photo que la fiche cite deux fois est « ambiguë ». Le résidu de
+**34 + 1** se juge à l'œil, pas au score.
+
+**Reste le geste de Mike** : `/reglages` → « Rattachements qui désignent le
+mauvais visage » → 2 · Appliquer. Puis juger les 30 sur `/tranche`, et
 `mesure_tranche_seuil.py --bilan`.
 
 ## État (22/08/2026, session 31)
@@ -207,7 +235,10 @@ une **génération** : le `taskkill` par titre ne tuait rien.
    parcage explicite (item zombie ; préparatoire fait).
 8. **Cross-pipeline (Mutz/Caline)** : outil livré, réversible. Fix auto REJETÉ
    (18 % faux rejets). Relancer si un nom d'animal sort en `personne:`.
-9. **Reconnaissance — algo. PARQUÉ (21/08, choix de Mike).** HDBSCAN /
+9. **Reconnaissance — algo. PARQUÉ (21/08, choix de Mike).** *Chiffre neuf
+   (22/08) : 3,5 % des rattachements désignaient le mauvais visage — une
+   vérité terrain bruitée à ce point aurait faussé toute évaluation de
+   clustering. À relire si le point se rouvre.* HDBSCAN /
    Chinese Whispers / AdaFace restent inévaluables — 3 364 décisions humaines
    sur 71 868 visages. Ce n'est pas une dette : le produit n'en dépend pas, et
    la couverture des noms au niveau PHOTO est déjà là (point 1). À rouvrir si
@@ -297,6 +328,10 @@ une **génération** : le `taskkill` par titre ne tuait rien.
     **Instrument LIVRÉ et échantillon TIRÉ (22/08)** : `mesure_tranche_seuil.py`
     (25 tests) + page `/tranche` (15 tests) — 1 168 candidates vivantes, 30
     tirées uniformément. Reste le JUGEMENT, puis `--bilan`.
+    **Et le jugement a d'abord révélé un défaut plus grave** : les
+    rattachements qui désignent le mauvais visage (voir l'État). Juger contre
+    une planche de référence fausse ne mesure rien — le recalage passe donc
+    avant.
     (b) **FAITS — déjà acquis.** `faits` étant une VUE, `personne:Flora`
     apparaît instantanément dans la ligne de faits, le filtre et `/sujets`.
     (c) **RÔLE dans la description — le seul étage LLM, et une hypothèse

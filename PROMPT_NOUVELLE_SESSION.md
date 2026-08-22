@@ -36,8 +36,30 @@ verdict inconnu refusé en 400.
 **Ce qui n'est PAS mesuré, et c'est le point** : le taux. Aucun jugement n'a
 été posé. Le banc le dit lui-même — « un banc sans verdict n'est pas un banc ».
 
+**Et la page a fait tomber plus gros qu'elle.** Mike a vu, à l'œil, une planche
+« visages déjà confirmés de Didier » contenant Laura Waller, une de Mathieu
+contenant Mathilde. Un rattachement est un couple `[photo, index du visage]` ;
+`reembed_one_batch` REMPLACE `e['faces']` quand il ré-analyse une photo, donc
+l'index finit par désigner quelqu'un d'autre **de la même photo**. Mesuré :
+**42 décalés sur 1 194** (3,5 %), minimum **−0,13**, et le croisement nomme la
+cause — **5,4 %** sur les photos réellement re-détectées contre **0,4 %**
+ailleurs, 41 sur 42. Le premier croisement, bâti sur le drapeau `reemb`, rendait
+**100 %** : instrument mort (le drapeau est aussi posé sur les photos seulement
+EXAMINÉES) ; `reemb_ms` discrimine.
+
+**Réparation LIVRÉE et vérifiée à blanc** : `recale_rattachements.py` (règle
+pure, 27 tests) + trois boutons `/reglages`, quarantaine `_corbeille_recalage/`.
+Aperçu sur le serveur vivant : **32 à recaler, 34 « ambigu », 1 « déjà pris »**
+— mêmes nombres que le banc, deux chemins. La règle refuse plus qu'elle ne
+répare, volontairement : une PERMUTATION entre deux personnes d'une même photo
+se refuse des deux côtés.
+
 ## Prochain pas
 
+0. **`/reglages` → « Rattachements qui désignent le mauvais visage » →
+   2 · Appliquer.** Ça passe avant tout le reste : juger la tranche contre une
+   planche de référence fausse ne mesurerait rien. Puis relancer
+   `mesure_rattachements.py --base copie.db` pour l'observer.
 1. **Juger les 30 sur `http://192.168.0.13:8080/tranche`** (clavier `1` / `2` /
    `3`, `Z` pour revenir), puis `mesure_tranche_seuil.py --bilan` dans
    `_commande_banc.txt`. Le bilan rend le taux **avec son intervalle de
@@ -47,6 +69,11 @@ verdict inconnu refusé en 400.
    *(Une entrée d'essai `__essai_claude__` traîne dans
    `journal_jugements.jsonl` — la vérification du chemin d'écriture. Elle n'est
    pas dans `_tranche_jugements.json`, donc elle ne fausse aucun compte.)*
+1bis. **Le résidu du recalage : 34 « ambigu » + 1 « déjà pris ».** Le score ne
+   les départage pas — soit la personne est vraiment détectée deux fois, soit
+   l'index égaré désigne son voisin. Ils se jugent à l'œil, sur une page, comme
+   la tranche. Et **`PETS` n'a jamais été mesuré** : son magasin porte des
+   empreintes DINOv2 et `assigned_keys` ne le lit pas.
 2. **Chantier 12 — la répétition** (choix de Mike : ordre 1-4-3-2). Restaurer
    POUR DE VRAI sur un dossier vierge, chronométrer, puis
    `verifier_restauration.py --restaure <dossier>` : il compare les décisions
@@ -84,6 +111,16 @@ le geste a laissé une TRACE** : les journaux d'annulation de `docs/` ont rendu
 échantillons choisis ont porté une conclusion que le banc complet a réfutée.
 Et **un verdict ne se mélange jamais au geste qu'il gouverne** — c'est pour ça
 que `/tranche` n'attribue rien.
+
+**Un croisement à 100 % ne croise rien.** Le 22/08, le premier croisement du
+banc des rattachements a rendu « 100 % du fonds est re-embarqué » : ce n'était
+pas un résultat, c'était un drapeau que tout le monde porte. Avant de conclure
+d'un croisement, regarder son DÉNOMINATEUR.
+
+**Un test ne doit rien imprimer.** L'agent git CAPTURE la sortie ; sous Windows
+un `print` part alors dans un tuyau, l'encodage local reprend la main, et le
+premier « é » tue le test par `UnicodeEncodeError`. Deux refus de livraison le
+22/08, pour ça exactement.
 
 **La sandbox ne peut pas écrire sur le fonds.** `POST` de renommage,
 d'attribution ou d'application est refusé côté Claude. Tout ce qui MODIFIE

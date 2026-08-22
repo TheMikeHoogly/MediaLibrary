@@ -3329,6 +3329,179 @@ def annuler_recle_decisions(journal=None):
             modifiees}
 
 
+CORBEILLE_RECALAGE = SCRIPT_DIR / "_corbeille_recalage"
+
+
+def _scores_des_visages(pe, cles):
+    """{cle: [score de chaque detection]} — chaque visage d'une photo contre la
+    signature de la fiche.
+
+    MEME comparaison que `build_suggestions` : le maximum des facettes. Une cle
+    absente du magasin de visages n'entre PAS dans le resultat, et la regle de
+    recalage n'y touchera donc jamais — ne rien savoir n'autorise pas a bouger
+    une decision humaine.
+    """
+    import numpy as np
+    P = person_prototypes(pe)
+    if P is None or not len(P):
+        return {}
+    out = {}
+    for k in cles:
+        e = FACE_STORE.data.get(k)
+        if not isinstance(e, dict) or e.get('failed'):
+            continue
+        scores = []
+        for f in (e.get('faces') or []):
+            emb = f.get('emb') if isinstance(f, dict) else None
+            v = None
+            if emb:
+                try:
+                    v = _emb_from_b64(emb)
+                except Exception:                                  # noqa: BLE001
+                    v = None
+            scores.append(float(np.max(P @ v)) if v is not None else None)
+        out[k] = scores
+    return out
+
+
+def recaler_rattachements(dry=True):
+    """Remet sur le BON VISAGE les rattachements dont l'index a glisse.
+
+    LE DEFAUT. Un rattachement est un couple [photo, index du visage], et
+    l'index designe une POSITION dans `FACE_STORE[photo]['faces']`. Or
+    `reembed_one_batch` REMPLACE cette liste quand il re-analyse une photo :
+    l'ordre et le nombre changent, le couple survit, sa cible non. Sur une
+    photo de groupe, l'index de Didier finit par designer quelqu'un d'autre
+    qui est sur la meme photo. Le garde-fou `assigned_keys` protege desormais
+    l'avenir ; il n'a jamais repare le passe.
+
+    MESURE (22/08/2026, `mesure_rattachements.py`, 1 194 couples) : **42
+    decales**, dont **41 sur des photos reellement re-detectees** — 5,4 % la
+    contre 0,4 % ailleurs. C'est une BORNE BASSE : une empreinte faussement
+    confirmee est entree dans la signature et blanchit son propre couple.
+
+    LA REGLE EST PURE ET PARTAGEE. `recale_rattachements.recaler_fiche` decide,
+    ici comme dans le banc — l'apercu et l'application sont le MEME appel, donc
+    l'apercu ne peut pas mentir. Ce module refuse de bouger des qu'il n'est pas
+    sur, et chaque refus porte un nom (ecart insuffisant, sous le plancher,
+    deja pris, ambigu).
+
+    LES ANIMAUX NE SONT PAS TRAITES ICI. `PETS` porte des empreintes DINOv2,
+    pas des visages, et personne ne l'a encore mesure. Reparer un magasin qu'on
+    n'a pas mesure serait un pari — c'est un chantier a part.
+
+    Reversible : chaque fiche touchee est journalisee AVANT/APRES dans
+    `_corbeille_recalage/`, et `annuler_recalage()` la remet.
+    """
+    import recale_rattachements as recale
+    pris = recale.rattachements_pris(
+        pe for pe in PEOPLE_STORE.data.values() if isinstance(pe, dict))
+
+    plan, refus_par_motif, avant = [], {}, {}
+    for pk, pe in list(PEOPLE_STORE.data.items()):
+        if not isinstance(pe, dict):
+            continue
+        cles = recale.photos_citees(pe)
+        if not cles:
+            continue
+        scores = _scores_des_visages(pe, cles)
+        if not scores:
+            continue
+        champs, recalages, refus = recale.recaler_fiche(
+            pe, scores, deja_pris=pris)
+        for r in refus:
+            refus_par_motif[r['pourquoi']] = refus_par_motif.get(
+                r['pourquoi'], 0) + 1
+        if not champs:
+            continue
+        for r in recalages:
+            plan.append(dict(r, person=pe.get('name', pk),
+                             crop_de=_crop_url(r['key'], r['de']),
+                             crop_vers=_crop_url(r['key'], r['vers'])))
+        if not dry:
+            avant[pk] = {c: copy.deepcopy(pe.get(c)) for c in CHAMPS_FICHE}
+            for c, v in champs.items():
+                pe[c] = v
+            PEOPLE_STORE.set(pk, pe, save=False)
+
+    res = {'ok': True, 'dry': dry, 'a_recaler': len(plan),
+           'fiches': len(avant) if not dry else None,
+           'refus': refus_par_motif,
+           'exemples': plan[:20]}
+    if dry or not plan:
+        return res
+
+    PEOPLE_STORE.save()
+    lignes = [json.dumps({'at': time.time(), 'recalages': len(plan)},
+                         ensure_ascii=False)]
+    for pk, etat in avant.items():
+        pe = PEOPLE_STORE.data.get(pk) or {}
+        lignes.append(json.dumps(
+            {'magasin': 'people', 'fiche': pk, 'avant': etat,
+             'apres': {c: pe.get(c) for c in CHAMPS_FICHE}},
+            ensure_ascii=False))
+    try:
+        CORBEILLE_RECALAGE.mkdir(exist_ok=True)
+        ts = time.strftime('%Y%m%d_%H%M%S')
+        (CORBEILLE_RECALAGE / f'recalage_{ts}.jsonl').write_text(
+            "\n".join(lignes) + "\n", encoding='utf-8')
+    except OSError as e:
+        print(f"  ⚠ quarantaine du recalage impossible : {e}")
+    # Les signatures et les avatars sont derives des rattachements : la file du
+    # curateur doit se refaire, sinon elle continue de proposer sur l'ancienne
+    # carte. On la vide plutot que de la recalculer ici (l'UI la reconstruit).
+    _suggest_remove(lambda s: True)
+    print(f"  🎯 Recalage : {len(plan)} rattachement(s) remis sur le bon "
+          f"visage, {len(avant)} fiche(s) — réversible (_corbeille_recalage/)")
+    return res
+
+
+def annuler_recalage(journal=None):
+    """Remet les fiches telles qu'elles etaient avant le dernier recalage.
+
+    Ne restaure une fiche que si son etat ACTUEL est bien celui que le journal
+    a note en sortie : si un humain a juge depuis, on ne lui passe pas dessus —
+    on le compte et on le dit."""
+    try:
+        js = sorted(CORBEILLE_RECALAGE.glob('recalage_*.jsonl'))
+    except OSError:
+        js = []
+    jp = Path(journal) if journal else (js[-1] if js else None)
+    if not jp or not jp.is_file():
+        return {'ok': False, 'error': 'aucun recalage à annuler.'}
+    remises, modifiees = 0, 0
+    for i, ligne in enumerate(jp.read_text(encoding='utf-8').splitlines()):
+        if not ligne.strip():
+            continue
+        try:
+            op = json.loads(ligne)
+        except ValueError:
+            continue
+        if i == 0 and 'fiche' not in op:
+            continue
+        pe = PEOPLE_STORE.data.get(op.get('fiche'))
+        if not isinstance(pe, dict):
+            continue
+        if {c: pe.get(c) for c in CHAMPS_FICHE} != op.get('apres'):
+            modifiees += 1
+            continue
+        for champ, valeur in (op.get('avant') or {}).items():
+            if valeur is None:
+                pe.pop(champ, None)
+            else:
+                pe[champ] = valeur
+        PEOPLE_STORE.set(op['fiche'], pe, save=False)
+        remises += 1
+    PEOPLE_STORE.save()
+    _suggest_remove(lambda s: True)
+    try:
+        jp.rename(jp.with_suffix('.jsonl.annule'))
+    except OSError:
+        pass
+    return {'ok': True, 'fiches_remises': remises,
+            'fiches_modifiees_depuis': modifiees}
+
+
 def forget_everywhere(keys, motif='oubli', label=''):
     """Inverse de `rekey_everywhere` : OUBLIE completement des cles dont le
     FICHIER a disparu. Sans elle, la purge du scan (`_sync_dir` etape 4) ne
@@ -7490,6 +7663,15 @@ td.n, th.n { text-align: right; font-family: var(--f-donnees); }
     </ol>
     <div class="renmsg" id="recl-msg" role="status" aria-live="polite">Clique &laquo;&nbsp;1 &middot; Apercu&nbsp;&raquo; pour voir ce qui serait reclasse.</div>
 
+    <h4 class="subh">Rattachements qui designent le mauvais visage</h4>
+    <p class="mut">Un rattachement dit &laquo;&nbsp;<b>ce visage-la</b>, sur cette photo, est cette personne&nbsp;&raquo; en retenant sa POSITION dans la liste des visages detectes. Quand une photo est re-analysee, cette liste est refaite : l'ordre change, et la position ne designe plus le bon visage &mdash; sur une photo de groupe, elle finit par designer quelqu'un d'autre qui est sur la meme photo. Mesure le 22/08 : <b>42</b> rattachements sur 1 194, dont 41 sur des photos re-analysees. Cet outil remet chacun sur le visage de la MEME photo qui ressemble le plus a la personne, et refuse de bouger des qu'il hesite. Entierement reversible ; aucun fichier n'est touche. Les animaux ne sont pas traites : leur magasin n'a pas encore ete mesure.</p>
+    <ol class="stepren">
+      <li><button class="b" id="recalcheck">1 &middot; Apercu (a blanc)</button><span class="mut">Compte ce qui serait recale et ce qui est refuse, avec le motif ; ne touche a rien.</span></li>
+      <li><button class="b prim" id="recalapply">2 &middot; Appliquer</button><span class="mut">Recale les rattachements surs. Reversible.</span></li>
+      <li><button class="b" id="recalundo">3 &middot; Annuler le dernier recalage</button><span class="mut">Remet les fiches telles qu'elles etaient.</span></li>
+    </ol>
+    <div class="renmsg" id="recal-msg" role="status" aria-live="polite">Clique &laquo;&nbsp;1 &middot; Apercu&nbsp;&raquo; pour voir ce qui serait recale.</div>
+
     <h4 class="subh">Decisions humaines restees sur l'ancien chemin</h4>
     <p class="mut">Quand une photo est rangee ou renommee, son <b>tag</b> la suit (il vit dans l'index et dans le XMP). Mais les jugements &mdash; <b>quel visage</b> est cette personne, quelles photos ont ete <b>ecartees</b> d'un nom, lesquelles ont ete <b>confirmees</b> &mdash; vivent dans la fiche et y sont restes accroches a l'ANCIEN chemin. Cet outil les remet sur la bonne photo en suivant les journaux d'annulation, qui disent ou chaque fichier est parti. Entierement reversible ; aucun fichier n'est touche.</p>
     <ol class="stepren">
@@ -7692,6 +7874,9 @@ document.getElementById('renundo').onclick=function(){ act('/api/maint/rename-un
 document.getElementById('reclcheck').onclick=function(){ act('/api/maint/reclass-apercu', null, 'recl-msg'); };
 document.getElementById('reclapply').onclick=function(){ act('/api/maint/reclass-apply', 'Reclasser les photos personne: en animal: pour les noms d animaux connus, et retirer les fiches en double ? Reversible via Annuler.', 'recl-msg'); };
 document.getElementById('reclundo').onclick=function(){ act('/api/maint/reclass-undo', 'Annuler le dernier reclassement ?', 'recl-msg'); };
+document.getElementById('recalcheck').onclick=function(){ act('/api/maint/recalage-apercu', null, 'recal-msg'); };
+document.getElementById('recalapply').onclick=function(){ act('/api/maint/recalage-apply', 'Remettre les rattachements sur le bon visage de leur photo ? Aucun fichier touche, entierement reversible.', 'recal-msg'); };
+document.getElementById('recalundo').onclick=function(){ act('/api/maint/recalage-undo', 'Annuler le dernier recalage ?', 'recal-msg'); };
 document.getElementById('reclecheck').onclick=function(){ act('/api/maint/recle-apercu', null, 'recle-msg'); };
 document.getElementById('recleapply').onclick=function(){ act('/api/maint/recle-apply', 'Remettre les decisions humaines orphelines sur la photo actuelle ? Aucun fichier touche, entierement reversible.', 'recle-msg'); };
 document.getElementById('recleundo').onclick=function(){ act('/api/maint/recle-undo', 'Annuler le dernier re-cle des decisions ?', 'recle-msg'); };
@@ -15603,6 +15788,32 @@ class Handler(BaseHTTPRequestHandler):
                                   f"[{', '.join(res['noms_traites']) or 'aucun'}] ; "
                                   f"{len(res['fiches_retirees'])} fiche(s) en double retiree(s). "
                                   f"Reversible (Annuler).")
+        elif path == '/api/maint/recalage-apercu':
+            res = recaler_rattachements(dry=True)
+            if res.get('ok'):
+                r = res['refus']
+                res['msg'] = (
+                    f"A blanc : {res['a_recaler']} rattachement(s) a recaler. "
+                    + ("Refuses : " + ", ".join(
+                        f"{v} {k.replace('_', ' ')}" for k, v in sorted(r.items()))
+                       + "." if r else "Aucun refus.")
+                    + " Un refus n'est pas un echec : la regle ne bouge une "
+                      "decision humaine que lorsqu'elle est sure.")
+        elif path == '/api/maint/recalage-apply':
+            res = recaler_rattachements(dry=False)
+            if res.get('ok'):
+                res['msg'] = (
+                    f"Recale : {res['a_recaler']} rattachement(s) remis sur le "
+                    f"bon visage, {res.get('fiches', 0)} fiche(s) touchee(s). "
+                    f"Reversible (Annuler).")
+        elif path == '/api/maint/recalage-undo':
+            res = annuler_recalage()
+            if res.get('ok'):
+                res['msg'] = (
+                    f"Annulation : {res['fiches_remises']} fiche(s) remise(s)"
+                    + (f", {res['fiches_modifiees_depuis']} laissee(s) telle(s) "
+                       f"quelle(s) (jugees depuis)."
+                       if res['fiches_modifiees_depuis'] else "."))
         elif path == '/api/maint/recle-apercu':
             res = reparer_decisions_orphelines(dry=True)
             if res.get('ok'):
