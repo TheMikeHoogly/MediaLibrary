@@ -254,9 +254,18 @@ une **génération** : le `taskkill` par titre ne tuait rien.
    introuvable (clé fantôme) est **dite**, pas affichée cassée. Observé en
    réel : 28 cas servis, cadres posés, premier cas = un visage de **dessin
    animé sur une diapositive projetée** rattaché à Danica, à 0,278.
-   **Ensuite** : `--bilan-residu`, puis les trois boutons de RETRAIT dans
-   `/reglages` — non écrits, volontairement : un plan de suppression sans
-   jugement n'est qu'une promesse.
+   **JUGÉ par Mike (22/08) — 28 cas sur 28.** Résultat : **2 à retirer, 45
+   confirmés, 0 à ajouter, 0 indécidable**. Et **12 des 13 « faux positifs »
+   sont JUSTES** : la colonne ne nommait pas des erreurs, elle nommait la
+   cécité de l'empreinte. Les 2 retraits sont `Res Jordi` sur
+   `Bei Michael Jordi.jpg` et `…2.jpg` — une confusion avec son **frère
+   Michael**, exactement le cas que la règle de recalage refuse d'arbitrer.
+   **RETRAIT LIVRÉ** : `retrait_rattachements.py` (règle pure, 13 tests) +
+   greffe serveur (10 tests) + trois boutons `/reglages`, quarantaine
+   `_corbeille_retraits/`. Aperçu sur le serveur vivant : **2 à retirer, 45
+   confirmés** — les mêmes nombres que le banc, deux chemins.
+   **Reste un clic de Mike** : `/reglages` → « Rattachements que tu as juges
+   faux » → 2 · Appliquer.
 
 0bis. **Le résidu « ambigu » : CLOS (22/08).** Instrument et page livrés,
    15 cas jugés par Mike, **34 confirmés, 0 à retirer**. `mesure_rattachements.py --residu` écrit

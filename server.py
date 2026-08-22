@@ -3330,6 +3330,7 @@ def annuler_recle_decisions(journal=None):
 
 
 CORBEILLE_RECALAGE = SCRIPT_DIR / "_corbeille_recalage"
+CORBEILLE_RETRAITS = SCRIPT_DIR / "_corbeille_retraits"
 
 
 def _scores_des_visages(pe, cles):
@@ -3454,6 +3455,144 @@ def recaler_rattachements(dry=True):
     print(f"  🎯 Recalage : {len(plan)} rattachement(s) remis sur le bon "
           f"visage, {len(avant)} fiche(s) — réversible (_corbeille_recalage/)")
     return res
+
+
+def retirer_rattachements(dry=True):
+    """Retire les rattachements qu'un HUMAIN a jugés faux sur `/residu`.
+
+    CE GESTE EFFACE UNE DECISION HUMAINE — c'est ce qui le separe du recalage,
+    qui ne fait que la deplacer. Rien ne part sans un verdict EXPLICITE portant
+    sur ce couple precis : le module `retrait_rattachements` lit les cas et les
+    verdicts, et c'est LUI qui decide, ici comme dans le banc (`--bilan-residu`).
+    L'apercu et l'application sont le MEME appel : l'apercu ne peut pas mentir.
+
+    CE QUI N'EST PAS FAIT ICI, VOLONTAIREMENT. Les visages reconnus mais NON
+    cites (« a ajouter ») sont comptes et laisses : ce serait une ATTRIBUTION,
+    un autre geste et un autre risque, et le glisser dans un bouton nomme
+    « retirer » serait poser un nom en douce.
+
+    Le TAG de la photo ne bouge pas : il vit dans l'index et dans le XMP
+    (regle 2). Ce qui part, c'est la vérité terrain « CE visage est elle » —
+    et c'est precisement ce que l'humain vient de dire faux.
+
+    Reversible : chaque fiche touchee est journalisee AVANT/APRES dans
+    `_corbeille_retraits/`, et `annuler_retrait()` la remet.
+    """
+    import retrait_rattachements as retrait
+    try:
+        cas = json.loads(RESIDU_A_JUGER.read_text(encoding='utf-8')).get('cas') or []
+    except (OSError, ValueError):
+        return {'ok': False, 'error': "aucun cas à juger : lance "
+                                      "mesure_rattachements.py --residu."}
+    with RESIDU_LOCK:
+        verdicts = _residu_lire_jugements()
+    if not verdicts:
+        return {'ok': False, 'error': "aucun verdict : la page /residu n'a "
+                                      "encore rien recueilli. Un plan de "
+                                      "suppression sans jugement n'est qu'une "
+                                      "promesse."}
+    plan = retrait.plan_depuis_verdicts(cas, verdicts)
+    comptes = plan['comptes']
+    groupes = retrait.par_fiche(plan['retraits'])
+
+    exemples, avant, faits, absents = [], {}, 0, 0
+    for pk, couples in groupes.items():
+        pe = PEOPLE_STORE.data.get(pk)
+        if not isinstance(pe, dict):
+            absents += len(couples)
+            continue
+        champs, bilan = retrait.retirer_de_la_fiche(pe, couples)
+        absents += bilan['deja_absents']
+        for c in couples:
+            if len(exemples) < 30:
+                exemples.append(dict(c, crop=_crop_url(c['key'], c['i'])))
+        if not champs:
+            continue
+        faits += bilan['retires']
+        if not dry:
+            avant[pk] = {ch: copy.deepcopy(pe.get(ch)) for ch in CHAMPS_FICHE}
+            for ch, v in champs.items():
+                pe[ch] = v
+            PEOPLE_STORE.set(pk, pe, save=False)
+
+    res = {'ok': True, 'dry': dry, 'a_retirer': comptes['a_retirer'],
+           'retires': faits, 'deja_absents': absents,
+           'confirmes': comptes['confirmes'],
+           'a_ajouter': comptes['a_ajouter'],
+           'non_juges': comptes['non_juges'],
+           'indecidables': comptes['indecidables'],
+           'fiches': len(avant) if not dry else len(groupes),
+           'exemples': exemples}
+    if dry or not faits:
+        return res
+
+    PEOPLE_STORE.save()
+    lignes = [json.dumps({'at': time.time(), 'retraits': faits},
+                         ensure_ascii=False)]
+    for pk, etat in avant.items():
+        pe = PEOPLE_STORE.data.get(pk) or {}
+        lignes.append(json.dumps(
+            {'magasin': 'people', 'fiche': pk, 'avant': etat,
+             'apres': {ch: pe.get(ch) for ch in CHAMPS_FICHE}},
+            ensure_ascii=False))
+    try:
+        CORBEILLE_RETRAITS.mkdir(exist_ok=True)
+        ts = time.strftime('%Y%m%d_%H%M%S')
+        (CORBEILLE_RETRAITS / f'retrait_{ts}.jsonl').write_text(
+            "\n".join(lignes) + "\n", encoding='utf-8')
+    except OSError as e:
+        print(f"  ⚠ quarantaine du retrait impossible : {e}")
+    # Signatures et avatars derivent des rattachements : la file du curateur
+    # se refait, sinon elle continue de proposer sur l'ancienne carte.
+    _suggest_remove(lambda s: True)
+    print(f"  ✂ Retrait : {faits} rattachement(s) juge(s) faux retire(s), "
+          f"{len(avant)} fiche(s) — réversible (_corbeille_retraits/)")
+    return res
+
+
+def annuler_retrait(journal=None):
+    """Remet les fiches telles qu'elles etaient avant le dernier retrait.
+
+    Meme prudence que `annuler_recalage` : une fiche modifiee depuis n'est pas
+    ecrasee, elle est comptee et dite."""
+    try:
+        js = sorted(CORBEILLE_RETRAITS.glob('retrait_*.jsonl'))
+    except OSError:
+        js = []
+    jp = Path(journal) if journal else (js[-1] if js else None)
+    if not jp or not jp.is_file():
+        return {'ok': False, 'error': 'aucun retrait à annuler.'}
+    remises, modifiees = 0, 0
+    for i, ligne in enumerate(jp.read_text(encoding='utf-8').splitlines()):
+        if not ligne.strip():
+            continue
+        try:
+            op = json.loads(ligne)
+        except ValueError:
+            continue
+        if i == 0 and 'fiche' not in op:
+            continue
+        pe = PEOPLE_STORE.data.get(op.get('fiche'))
+        if not isinstance(pe, dict):
+            continue
+        if {ch: pe.get(ch) for ch in CHAMPS_FICHE} != op.get('apres'):
+            modifiees += 1
+            continue
+        for champ, valeur in (op.get('avant') or {}).items():
+            if valeur is None:
+                pe.pop(champ, None)
+            else:
+                pe[champ] = valeur
+        PEOPLE_STORE.set(op['fiche'], pe, save=False)
+        remises += 1
+    PEOPLE_STORE.save()
+    _suggest_remove(lambda s: True)
+    try:
+        jp.rename(jp.with_suffix('.jsonl.annule'))
+    except OSError:
+        pass
+    return {'ok': True, 'fiches_remises': remises,
+            'fiches_modifiees_depuis': modifiees}
 
 
 def annuler_recalage(journal=None):
@@ -7671,6 +7810,15 @@ td.n, th.n { text-align: right; font-family: var(--f-donnees); }
       <li><button class="b" id="recalundo">3 &middot; Annuler le dernier recalage</button><span class="mut">Remet les fiches telles qu'elles etaient.</span></li>
     </ol>
     <div class="renmsg" id="recal-msg" role="status" aria-live="polite">Clique &laquo;&nbsp;1 &middot; Apercu&nbsp;&raquo; pour voir ce qui serait recale.</div>
+    <h4 class="subh">Rattachements que tu as juges faux</h4>
+    <p class="mut">Ce que le recalage refuse de trancher, tu l'as juge a l'oeil sur <a href="/residu">la page du residu</a>. Cet outil applique TON verdict : il retire les couples <b>photo + visage</b> dont tu as dit que ce n'est pas cette personne. C'est le seul outil de cette page qui EFFACE une decision humaine au lieu de la deplacer &mdash; il ne bouge donc rien sans un verdict explicite sur ce couple precis. Les <b>tags</b> des photos ne changent pas (ils vivent dans l'index et dans le XMP) : ce qui part, c'est la vérité terrain &laquo;&nbsp;CE visage est elle&nbsp;&raquo;. Les visages que tu as reconnus mais qui ne sont PAS rattaches ne sont pas touches ici : ajouter un nom est un autre geste. Entierement reversible.</p>
+    <ol class="stepren">
+      <li><button class="b" id="retrcheck">1 &middot; Apercu (a blanc)</button><span class="mut">Compte ce qui partirait, ce que tu as confirme, et ce qui reste a juger.</span></li>
+      <li><button class="b prim" id="retrapply">2 &middot; Appliquer</button><span class="mut">Retire les rattachements juges faux. Reversible.</span></li>
+      <li><button class="b" id="retrundo">3 &middot; Annuler le dernier retrait</button><span class="mut">Remet les fiches telles qu'elles etaient.</span></li>
+    </ol>
+    <div class="renmsg" id="retr-msg" role="status" aria-live="polite">Clique &laquo;&nbsp;1 &middot; Apercu&nbsp;&raquo; pour voir ce qui partirait.</div>
+
     <p class="mut">Ce que l'outil <b>refuse</b> de reparer se juge a l'oeil, et nulle part ailleurs : quand la fiche cite <b>deux visages de la meme photo</b>, ou la personne y est vraiment detectee deux fois, ou un index a glisse et designe son voisin &mdash; le score ne tranche pas. Ces cas-la sont peu nombreux mais <b>concentres</b> : le 22/08, 15 cas sur 9 fiches, dont 4 sur la seule fiche de Didier. Une page les montre cote a cote : <a href="/residu">juger le residu</a>. Elle ne retire rien &mdash; le retrait revient ici, une fois les verdicts poses.</p>
 
     <h4 class="subh">Decisions humaines restees sur l'ancien chemin</h4>
@@ -7878,6 +8026,9 @@ document.getElementById('reclundo').onclick=function(){ act('/api/maint/reclass-
 document.getElementById('recalcheck').onclick=function(){ act('/api/maint/recalage-apercu', null, 'recal-msg'); };
 document.getElementById('recalapply').onclick=function(){ act('/api/maint/recalage-apply', 'Remettre les rattachements sur le bon visage de leur photo ? Aucun fichier touche, entierement reversible.', 'recal-msg'); };
 document.getElementById('recalundo').onclick=function(){ act('/api/maint/recalage-undo', 'Annuler le dernier recalage ?', 'recal-msg'); };
+document.getElementById('retrcheck').onclick=function(){ act('/api/maint/retrait-apercu', null, 'retr-msg'); };
+document.getElementById('retrapply').onclick=function(){ act('/api/maint/retrait-apply', 'Retirer les rattachements que tu as juges faux ? Les tags des photos ne bougent pas. Entierement reversible.', 'retr-msg'); };
+document.getElementById('retrundo').onclick=function(){ act('/api/maint/retrait-undo', 'Annuler le dernier retrait ?', 'retr-msg'); };
 document.getElementById('reclecheck').onclick=function(){ act('/api/maint/recle-apercu', null, 'recle-msg'); };
 document.getElementById('recleapply').onclick=function(){ act('/api/maint/recle-apply', 'Remettre les decisions humaines orphelines sur la photo actuelle ? Aucun fichier touche, entierement reversible.', 'recle-msg'); };
 document.getElementById('recleundo').onclick=function(){ act('/api/maint/recle-undo', 'Annuler le dernier re-cle des decisions ?', 'recle-msg'); };
@@ -16406,6 +16557,38 @@ class Handler(BaseHTTPRequestHandler):
                     f"Reversible (Annuler).")
         elif path == '/api/maint/recalage-undo':
             res = annuler_recalage()
+            if res.get('ok'):
+                res['msg'] = (
+                    f"Annulation : {res['fiches_remises']} fiche(s) remise(s)"
+                    + (f", {res['fiches_modifiees_depuis']} laissee(s) telle(s) "
+                       f"quelle(s) (jugees depuis)."
+                       if res['fiches_modifiees_depuis'] else "."))
+        elif path == '/api/maint/retrait-apercu':
+            res = retirer_rattachements(dry=True)
+            if res.get('ok'):
+                res['msg'] = (
+                    f"A blanc : {res['a_retirer']} rattachement(s) juge(s) faux "
+                    f"sur {res['fiches']} fiche(s). Confirmes par toi : "
+                    f"{res['confirmes']}. "
+                    + (f"{res['a_ajouter']} visage(s) reconnu(s) mais NON "
+                       f"rattache(s) ne sont PAS touches ici : ajouter un nom "
+                       f"est un autre geste. "
+                       if res['a_ajouter'] else "")
+                    + (f"{res['non_juges']} cas pas encore juge(s). "
+                       if res['non_juges'] else "")
+                    + (f"{res['indecidables']} laisse(s) indecidable(s). "
+                       if res['indecidables'] else ""))
+        elif path == '/api/maint/retrait-apply':
+            res = retirer_rattachements(dry=False)
+            if res.get('ok'):
+                res['msg'] = (
+                    f"Retire : {res['retires']} rattachement(s) juge(s) faux, "
+                    f"{res.get('fiches', 0)} fiche(s) touchee(s). "
+                    + (f"{res['deja_absents']} etai(en)t deja parti(s). "
+                       if res['deja_absents'] else "")
+                    + "Les tags des photos n'ont pas bouge. Reversible (Annuler).")
+        elif path == '/api/maint/retrait-undo':
+            res = annuler_retrait()
             if res.get('ok'):
                 res['msg'] = (
                     f"Annulation : {res['fiches_remises']} fiche(s) remise(s)"

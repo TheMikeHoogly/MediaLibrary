@@ -144,5 +144,10 @@
   **29 réparations** (ancien score sous 0,30, jusqu'à **−0,13**) contre **4 rebrassages**. La
   règle avait tranché presque exactement au bon endroit — mais ce n'est pas le mot « décalé »
   qui le disait, c'est le score.
+- **Un seuil bas ne nomme pas une erreur, il nomme une cécité** (22/08) : sur les 13
+  rattachements dont le visage désigné scorait 0,06–0,295, l'humain en a confirmé **12**. Le
+  seuil ne disait pas « ce n'est pas elle », il disait « je ne la reconnais pas » — deux
+  phrases différentes, et seule la seconde est vraie. Avant de traiter un score faible comme un
+  défaut du fonds, se demander s'il n'est pas un aveu de l'instrument.
 - **Fragilité du corpus** : clés corrompues et mutations concurrentes ont invalidé des runs ;
   `--mesurer` alerte au-delà de 15 % de clés mortes.

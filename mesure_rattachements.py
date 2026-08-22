@@ -638,6 +638,7 @@ def bilan_residu(fichier_cas, fichier_jugements):
 
     Aucune écriture. Le banc conclut, il n'agit pas.
     """
+    import retrait_rattachements as retrait
     cas = json.loads(Path(fichier_cas).read_text(encoding='utf-8'))['cas']
     try:
         brut = json.loads(Path(fichier_jugements).read_text(encoding='utf-8'))
@@ -645,29 +646,14 @@ def bilan_residu(fichier_cas, fichier_jugements):
     except (OSError, ValueError):
         verdicts = {}
 
-    c = Counter()
-    retraits, ajouts = [], []
-    for k in cas:
-        ident = f"{k['key']}|{k['person']}"
-        v = verdicts.get(ident)
-        if not v:
-            c['non_juges'] += 1
-            continue
-        if v.get('verdict') != 'juge':
-            c['indecidables'] += 1
-            continue
-        c['juges'] += 1
-        oui = set(int(x) for x in (v.get('oui') or []))
-        cites = {int(d['i']) for d in k['candidats'] if d.get('cite')}
-        for i in sorted(cites - oui):
-            c['a_retirer'] += 1
-            retraits.append({"person": k['person'], "key": k['key'], "i": i})
-        c['confirmes'] += len(cites & oui)
-        for i in sorted(oui - cites):
-            c['a_ajouter'] += 1
-            ajouts.append({"person": k['person'], "key": k['key'], "i": i})
-        if not (cites & oui):
-            c['photos_ou_personne_n_est_pas'] += 1
+    # La REGLE vit dans `retrait_rattachements`, que le serveur importe aussi :
+    # le bilan et le bouton « Appliquer » ne peuvent pas diverger, parce qu'ils
+    # appellent la meme fonction. Le projet a deja paye deux fois le prix de
+    # deux implementations d'une meme regle.
+    plan = retrait.plan_depuis_verdicts(cas, verdicts)
+    retraits, ajouts = plan['retraits'], plan['ajouts']
+    c = Counter(plan['comptes'])
+    c['photos_ou_personne_n_est_pas'] = c.pop('photos_sans_personne', 0)
 
     L = ["=" * 78,
          "BILAN DU RESIDU — ce que le jugement humain autorise",

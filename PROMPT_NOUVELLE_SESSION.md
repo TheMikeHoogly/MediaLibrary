@@ -34,18 +34,16 @@ l'auto-ajout**, `CUR_ADD_SIM` ne bouge pas. Et la planche de référence de
 
 ## Prochain pas
 
-0. **Juger les 13 cas `faux_positif` sur
-   `http://192.168.0.13:8080/residu`** (lettres `A`–`H` pour cocher, `Entrée`
-   pour valider, `0` je ne sais pas, `Z` revenir). La page sert **28 cas** :
-   les 15 `ambigu` déjà jugés et les **13 `faux_positif`**, ceux dont le
-   visage désigné ne ressemble à personne (0,06–0,295) — Flo à 0,06, Linda sur
-   `Sanchez Laura.jpg`, Markus sur `117-1798_HUM Mutz.JPG` (un nom d'ANIMAL),
-   et un visage de **dessin animé projeté sur un écran** rattaché à Danica.
-   Puis `mesure_rattachements.py --base copie.db --bilan-residu`.
-   **Ensuite, à écrire** : les trois boutons de RETRAIT dans `/reglages`
-   (aperçu / appliquer / annuler, quarantaine réversible), passant par la même
-   fonction que le bilan. Volontairement non écrits tant qu'aucun verdict
-   n'existe : un plan de suppression sans jugement n'est qu'une promesse.
+0. **Un clic de Mike** : `/reglages` → « Rattachements que tu as juges faux »
+   → **2 · Appliquer**. Les 28 cas de `/residu` sont jugés : **2 à retirer**
+   (`Res Jordi` sur `Bei Michael Jordi.jpg` et `…2.jpg` — il l'avait confondu
+   avec son frère Michael), **45 confirmés**, 0 à ajouter, 0 indécidable.
+   Aperçu vérifié sur le serveur vivant, mêmes nombres que `--bilan-residu`.
+   Réversible (`_corbeille_retraits/`, bouton 3).
+   **Et le résultat qui compte n'est pas le retrait** : **12 des 13 « faux
+   positifs » étaient JUSTES** (0,06–0,295). Cette colonne ne nomme pas des
+   rattachements faux, elle nomme les visages sur lesquels l'empreinte échoue.
+   À relire avant de rouvrir quoi que ce soit sur la reconnaissance.
 1. **Chantier 12 — la répétition** (choix de Mike : ordre 1-4-3-2). Restaurer
    POUR DE VRAI sur un dossier vierge, chronométrer, puis
    `verifier_restauration.py --restaure <dossier>` : il compare les décisions
