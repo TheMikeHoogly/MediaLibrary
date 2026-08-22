@@ -42,10 +42,18 @@ CE QU'ON CROIT SAVOIR, ET CE QUE CHAQUE CHIFFRE DÉCIDERA
       porté que sur les décisions retrouvées. Un couple dont la clé n'est plus
       dans l'index est une décision humaine qui ne montre plus rien.
 
-  H4  **L'ESPÈCE tranche sans seuil.** Un couple qui désigne une détection
-      `dog` sur la fiche d'un chat est faux, et aucun score n'a besoin de le
-      dire. C'est le seul verdict de ce banc qui ne dépende d'aucune valeur
-      réglable — donc le plus solide.
+  H4  **L'ESPÈCE tranche sans seuil — RÉFUTÉE le 22/08, 6 fois sur 6.**
+      L'hypothèse disait : un couple qui désigne une détection `dog` sur la
+      fiche d'un chat est faux, et aucun score n'a besoin de le dire. C'était
+      « le seul verdict qui ne dépende d'aucune valeur réglable, donc le plus
+      solide » — et c'est celui qui est tombé. Les six couples ont été
+      REGARDÉS : six chats crème, dont un vu deux fois sous deux chemins, et
+      deux boîtes qui se recouvrent sur le même animal. **C'est l'ÉTIQUETTE
+      d'espèce de YOLO qui ment, pas le rattachement.** La population reste
+      séparée — une espèce contredite est un vrai signal, et elle range Luna
+      sous « chien » dans l'axe espèce — mais elle ne se lit plus comme un
+      compte de fautes du fonds. Un score parfait est une alarme, y compris
+      quand c'est le sien.
 
   H5  **Un score bas nomme une CÉCITÉ, pas une faute** (`eval/METHODE.md`,
       22/08 : sur 13 couples de visages sous le seuil, Mike en a confirmé 12).
@@ -82,6 +90,33 @@ CE QUE LE CHIFFRE NE PEUT PAS DIRE, ET IL FAUT LE SAVOIR
   * Un couple juste sur une photo dont le fichier a disparu du disque reste
     « juste » ici : le banc ne touche pas au NAS.
 
+LES 21 COUPLES À TRANCHER (`--a-juger`)
+
+Deux populations que la mesure a isolées et qu'aucun seuil ne tranchera : les
+clés MORTES (la photo n'est plus dans l'index) et les couples d'ESPÈCE
+incohérente. Ce mode ne juge rien et ne répare rien : il cherche la
+CONTREPARTIE de chaque couple et rend l'indice, nommé.
+
+  * clé morte → où la photo est-elle passée ? Les JOURNAUX d'annulation
+    d'abord (`journaux_deplacements`) : le geste lui-même, écrit par le
+    programme qui l'a fait. À défaut, une clé vivante de MÊME nom de fichier —
+    preuve faible, donc exigée corroborée DEUX fois : la cible porte le tag
+    `animal:Nom`, et la détection d'indice `i` y existe avec la bonne espèce.
+    Ni l'une ni l'autre → le couple RESTE. Il ne se purge pas : le 22/08, 787
+    décisions déclarées perdues sont revenues dès qu'une source de preuve
+    nouvelle est apparue, et le résidu des visages a été gardé pour ça.
+  * espèce incohérente → la photo porte-t-elle un animal de l'espèce de la
+    FICHE ? Un seul → l'index à viser est nommé (un recalage, pas un retrait) ;
+    plusieurs → à l'œil ; aucun → ni recalage ni certitude.
+
+L'index est CONSERVÉ par une re-clé, et ce n'est pas un pari : `rekey_everywhere`
+déplace l'entrée d'`ANIMAL_STORE` en bloc, l'ordre des détections avec
+(`recle_decisions`). Une contrepartie trouvée par le NOM du fichier, elle, mène
+à une AUTRE entrée, calculée à part : d'où les deux corroborations exigées.
+
+Le score du candidat est RAPPORTÉ, jamais décisif : 37 % des rattachements
+confirmés par un humain scorent sous `PET_MATCH_SIM` (22/08).
+
 Aucune écriture : ni base, ni tag, ni fichier (hors `--json`, sur demande).
 Lecture seule sur COPIE.
 
@@ -91,6 +126,7 @@ USAGE
     python mesure_copie_base.py
     python mesure_rattachements_animaux.py --base copie.db
     python mesure_rattachements_animaux.py --base copie.db --exemples 20
+    python mesure_rattachements_animaux.py --base copie.db --a-juger
     python mesure_rattachements_animaux.py --base copie.db --json r.json
 """
 
@@ -100,7 +136,9 @@ import sys
 from collections import Counter, defaultdict
 from pathlib import Path
 
+import journaux_deplacements as J
 import mesure_propagation_noms as M
+from verifier_orphelins import basename_cle
 
 # Un autre animal de la MÊME photo doit dépasser le désigné d'au moins ça pour
 # qu'on parle de décalage. Même valeur que le banc des visages, et pour la même
@@ -114,6 +152,13 @@ CONSTANTES = ('PET_MATCH_SIM', 'PET_CLUSTER_SIM', 'ANIMAL_NAMEABLE',
               'ANIMAL_PIPELINE_VERSION')
 # Ce que `seuils.txt` peut redéfinir parmi elles (liste de la prod).
 REGLABLES = ('PET_MATCH_SIM', 'PET_CLUSTER_SIM')
+
+# Les deux populations de `--a-juger` sont petites (21 couples le 22/08). Le
+# plafond n'est là que pour qu'un emballement ne noie pas un rapport — et ce
+# qu'il coupe se COMPTE, jamais en silence.
+PLAFOND_A_JUGER = 500
+PREUVE_JOURNAL = 'journal'
+PREUVE_MEME_NOM = 'meme_nom'
 
 
 # ─────────────────────────── la règle de prod, importée ──────────────────────
@@ -155,15 +200,186 @@ def nommable(a, nameable):
     return a.get('species') in nameable
 
 
+# ────────────────── l'enquête sur les couples à trancher ─────────────────────
+# Règles PURES : elles ne prennent que des dicts et des fonctions. C'est ce qui
+# les rend testables sans base — et réutilisables par le serveur le jour où le
+# geste existera, plutôt que réécrites une seconde fois.
+
+def index_par_basename(cles):
+    """{nom de fichier: [clés]} — ici la COLLISION est le signal, pas le bruit.
+
+    `basename_cle` est importé de `verifier_orphelins` : le projet a déjà payé
+    le prix de deux implémentations d'une même règle.
+    """
+    out = defaultdict(list)
+    for k in cles:
+        out[basename_cle(k)].append(k)
+    return out
+
+
+def contrepartie(cle, chaine, vivantes, par_basename):
+    """(cible vivante, preuve) pour une clé morte, ou (None, None).
+
+    Deux sources, dans cet ordre de force. Les JOURNAUX disent le geste qui a
+    été fait ; le NOM DE FICHIER ne dit qu'une ressemblance, et n'est retenu
+    que s'il désigne UNE seule clé vivante — deux candidates, c'est un choix,
+    et un choix n'est pas une preuve.
+    """
+    cible = J.suivre(chaine, cle, vivantes)
+    if cible:
+        return cible, PREUVE_JOURNAL
+    memes = [k for k in par_basename.get(basename_cle(cle), ())
+             if k != cle and k in vivantes]
+    if len(memes) == 1:
+        return memes[0], PREUVE_MEME_NOM
+    return None, None
+
+
+def corroborer(cible, i, nom, espece_fiche, entree_tag, liste, nameable):
+    """(ce qui confirme, ce qui refuse) — pour une cible et un index donnés.
+
+    `liste` est la liste `(détection, vecteur)` de la CIBLE, telle que le banc
+    la décode ; `entree_tag` son entrée d'index (ou None). Aucun score n'entre
+    ici : un score bas nomme une cécité de l'empreinte, pas une faute.
+    """
+    pour, contre = [], []
+    kws = [str(x).lower() for x in ((entree_tag or {}).get('kw_fr') or [])]
+    if f'animal:{nom}'.lower() in kws:
+        pour.append('porte_le_tag')
+    else:
+        contre.append('pas_de_tag')
+    if not liste or i < 0 or i >= len(liste):
+        # Re-cler là-dessus fabriquerait un index hors bornes, c'est-à-dire le
+        # mensonge muet de `_serve_animalcrop`. Jamais.
+        contre.append('index_absent_chez_la_cible')
+        return pour, contre
+    a, _v = liste[i]
+    sp = a.get('species')
+    if espece_fiche and sp and sp != espece_fiche:
+        contre.append('espece_contredite')
+    elif not nommable(a, nameable):
+        contre.append('detection_non_nommable')
+    else:
+        pour.append('index_et_espece_tiennent')
+    return pour, contre
+
+
+def verdict_cle_morte(preuve, pour, contre):
+    """Le verdict, et rien de plus que ce que les indices autorisent."""
+    if not preuve:
+        return 'sans_contrepartie'
+    if 'index_absent_chez_la_cible' in contre:
+        return 'a_l_oeil'
+    if preuve == PREUVE_JOURNAL:
+        return 'recle_par_journal'
+    return 'recle_par_meme_nom' if not contre else 'a_l_oeil'
+
+
+def candidats_de_l_espece(liste, espece_fiche, nameable, P=None):
+    """Les indices des détections nommables de l'espèce de la FICHE.
+
+    Le score n'est là que pour être LU : il ne choisit pas, il ne filtre pas.
+    """
+    out = []
+    for j, (a, v) in enumerate(liste or ()):
+        if a.get('species') != espece_fiche or not nommable(a, nameable):
+            continue
+        s = None
+        if P is not None and v is not None and v.shape[0] == P.shape[0]:
+            s = round(float(P @ v), 3)
+        out.append({'i': j, 'sim': s})
+    return out
+
+
+def score_designe(liste, i, P):
+    """Le score de la détection DÉSIGNÉE contre la signature de la fiche.
+
+    C'est lui qui départage les deux lectures d'une espèce incohérente : un
+    `dog` qui ressemble beaucoup au chat de la fiche est un chat mal
+    ÉTIQUETÉ — le rattachement est juste et c'est l'espèce qui ment ; un
+    `dog` qui ne lui ressemble pas est un rattachement faux. Sans ce
+    chiffre, H4 (« faux sans qu'aucun seuil ait à le dire ») se croit sur
+    parole.
+    """
+    if P is None or not liste or i < 0 or i >= len(liste):
+        return None
+    _a, v = liste[i]
+    if v is None or v.shape[0] != P.shape[0]:
+        return None
+    return round(float(P @ v), 3)
+
+
+def verdict_espece(candidats):
+    if not candidats:
+        return 'aucune_detection_de_l_espece'
+    return 'recalage_evident' if len(candidats) == 1 else 'a_l_oeil_plusieurs'
+
+
+def instruire(morts, especes, tags, animaux_de, fiches_par_nom, signatures,
+              nameable, projet):
+    """Le dossier des couples à trancher — contrepartie et indices, nommés.
+
+    Ne juge pas, ne répare rien, n'écrit rien. Le verdict qu'il pose est le
+    verdict d'un INSTRUMENT : « voilà ce que les indices autorisent », pas
+    « voilà ce qu'il faut faire ».
+    """
+    chaine = J.chaines(Path(projet) / 'docs')
+    vivantes = set(tags.data)
+    parbn = index_par_basename(vivantes)
+
+    def _liste(cle):
+        liste, presente, echec = animaux_de(cle)
+        return [] if (not presente or echec) else liste
+
+    cas_morts, cas_esp, verdicts = [], [], Counter()
+    for m in morts:
+        nom, cle, i = m['pet'], m['key'], m['i']
+        esp = (fiches_par_nom.get(nom) or {}).get('species')
+        cible, preuve = contrepartie(cle, chaine, vivantes, parbn)
+        pour, contre = [], []
+        if cible:
+            pour, contre = corroborer(cible, i, nom, esp,
+                                      tags.data.get(cible), _liste(cible),
+                                      nameable)
+        v = verdict_cle_morte(preuve, pour, contre)
+        verdicts[v] += 1
+        cas_morts.append({'pet': nom, 'key': cle, 'i': i, 'cible': cible,
+                          'preuve': preuve, 'pour': pour, 'contre': contre,
+                          # Les détections ont-elles survécu à la purge sous
+                          # l'ancien chemin ? Si oui, la vignette existe encore
+                          # et un humain peut REGARDER ce couple.
+                          'detections_restantes': len(_liste(cle)),
+                          'verdict': v})
+
+    for e in especes:
+        nom, cle, i = e['pet'], e['key'], e['i']
+        esp = (fiches_par_nom.get(nom) or {}).get('species')
+        liste = _liste(cle)
+        P = signatures.get(nom)
+        cands = candidats_de_l_espece(liste, esp, nameable, P)
+        v = verdict_espece(cands)
+        verdicts[v] += 1
+        cas_esp.append({'pet': nom, 'key': cle, 'i': i, 'espece_fiche': esp,
+                        'espece_detection': e.get('espece_detection'),
+                        'sim_designe': score_designe(liste, i, P),
+                        'detections': len(liste),
+                        'candidats': cands, 'verdict': v})
+
+    return {'deplacements_connus': len(chaine),
+            'cles_mortes': cas_morts, 'especes': cas_esp,
+            'verdicts': dict(verdicts)}
+
+
 # ─────────────────────────────── la mesure ───────────────────────────────────
 
-def mesurer(base, projet, ecart, exemples):
+def mesurer(base, projet, ecart, exemples, a_juger=False):
     tags = animaux = pets = None
     try:
         tags = M.ouvrir_table(base, 'tags')
         animaux = M.ouvrir_table(base, 'animals')
         pets = M.ouvrir_table(base, 'pets')
-        return _mesurer(tags, animaux, pets, projet, ecart, exemples)
+        return _mesurer(tags, animaux, pets, projet, ecart, exemples,
+                        a_juger)
     finally:
         for st in (tags, animaux, pets):
             try:
@@ -183,7 +399,7 @@ def _fiches(pets):
     return out, ecartes
 
 
-def _mesurer(tags, animaux, pets, projet, ecart, exemples):
+def _mesurer(tags, animaux, pets, projet, ecart, exemples, a_juger=False):
     import numpy as np
     vals = M.lire_constantes(projet, CONSTANTES)
     surcharges = M.appliquer_seuils_txt(projet, vals, REGLABLES)
@@ -220,7 +436,17 @@ def _mesurer(tags, animaux, pets, projet, ecart, exemples):
     par_fiche = {}
     scores = []
     ex_hors_bornes, ex_decales, ex_espece, ex_bas, ex_mortes = [], [], [], [], []
+    # Les deux populations que `--a-juger` instruit sont gardées EN ENTIER,
+    # hors du plafond des exemples : on ne peut pas trancher 21 couples en
+    # n'en voyant que 12.
+    tous_morts, tous_especes, signatures = [], [], {}
     fiches_mesurees = 0
+
+    def garder(liste, cas, debordement):
+        if len(liste) < PLAFOND_A_JUGER:
+            liste.append(cas)
+        else:
+            c[debordement] += 1
 
     for nom, pe in fiches:
         couples_bruts = [(kf[0], int(kf[1] or 0)) for kf in (pe.get('faces') or [])
@@ -248,6 +474,7 @@ def _mesurer(tags, animaux, pets, projet, ecart, exemples):
             c['couples_de_fiche_sans_signature'] += len(couples)
             continue
         fiches_mesurees += 1
+        signatures[nom] = P
         espece_fiche = pe.get('species')
         # Combien de fois CETTE fiche cite CETTE photo. Un décalage sur une
         # photo citée une seule fois est un index qui a glissé ; sur une photo
@@ -262,6 +489,8 @@ def _mesurer(tags, animaux, pets, projet, ecart, exemples):
             if cle not in tags.data:
                 c['cle_absente_de_l_index'] += 1
                 f['cle_morte'] += 1
+                garder(tous_morts, {"pet": nom, "key": cle, "i": i},
+                       'cles_mortes_non_listees')
                 if len(ex_mortes) < exemples:
                     ex_mortes.append({"pet": nom, "key": cle, "i": i})
                 continue
@@ -292,6 +521,10 @@ def _mesurer(tags, animaux, pets, projet, ecart, exemples):
                 # H4 : faux sans qu'aucun seuil ait à le dire.
                 c['espece_incoherente'] += 1
                 f['espece'] += 1
+                garder(tous_especes, {"pet": nom, "key": cle, "i": i,
+                                      "espece_fiche": espece_fiche,
+                                      "espece_detection": sp},
+                       'especes_non_listees')
                 if len(ex_espece) < exemples:
                     ex_espece.append({"pet": nom, "key": cle, "i": i,
                                       "espece_fiche": espece_fiche,
@@ -413,6 +646,10 @@ def _mesurer(tags, animaux, pets, projet, ecart, exemples):
            "exemples_espece": ex_espece,
            "exemples_sous_le_seuil": ex_bas,
            "exemples_cles_mortes": ex_mortes}
+    if a_juger:
+        rap["a_juger"] = instruire(tous_morts, tous_especes, tags, animaux_de,
+                                   {n: pe for n, pe in fiches}, signatures,
+                                   nameable, projet)
     if scores:
         a = np.asarray(scores, dtype=np.float32)
         rap["scores"] = {"n": len(scores),
@@ -458,6 +695,9 @@ def afficher(r):
         L.append("    (rien)")
 
     L += ["", "Sur les couples examines :"]
+    # `espece_incoherente` a longtemps voulu dire « faux certain ». Les six
+    # cas ont ete REGARDES le 22/08 : six chats etiquetes `dog`. Le mot doit
+    # dire ce que la mesure a trouve, sinon le rapport reconduit l'erreur.
     for cle in ('mesurables', 'index_hors_bornes', 'cle_absente_de_l_index',
                 'espece_incoherente', 'detection_non_nommable',
                 'photo_sans_fiche_animaux', 'fiche_animaux_en_echec',
@@ -473,6 +713,11 @@ def afficher(r):
             L.append(f"    {cle:<36} {c[cle]:>7}   {part(c[cle], m)}")
     L.append("    `sous_le_seuil_de_match` n'est PAS un compte de fautes : il")
     L.append("    mesure la cecite de l'empreinte DINOv2, pas le fonds (22/08).")
+    if c.get('espece_incoherente'):
+        L.append("    `espece_incoherente` non plus : les 6 cas du 22/08 ont ete")
+        L.append("    regardes, 6 sur 6 etaient des chats etiquetes `dog`. Le")
+        L.append("    defaut est dans l'ETIQUETTE de YOLO — il range l'animal")
+        L.append("    sous la mauvaise espece — pas dans le rattachement.")
     if c.get('decale'):
         L += ["", "    Le decalage se separe en DEUX, et un seul serait une avarie :",
               f"        photo citee UNE fois par la fiche      "
@@ -529,7 +774,7 @@ def afficher(r):
             ("HORS BORNES — _serve_animalcrop sert l'animal 0, en silence",
              "exemples_hors_bornes",
              lambda e: f"i={e['i']:<4} sur {e['animaux']} animal(aux)"),
-            ("ESPECE INCOHERENTE — faux sans qu'aucun seuil ait a le dire",
+            ("ESPECE INCOHERENTE — l'etiquette de YOLO, pas le rattachement",
              "exemples_espece",
              lambda e: f"i={e['i']:<4} fiche={e['espece_fiche']} "
                        f"detection={e['espece_detection']}"),
@@ -552,7 +797,69 @@ def afficher(r):
             L.append(f"    {e['pet'][:18]:<18} {ligne(e):<44} "
                      f"{Path(e['key']).name[:34]}")
 
+    L += lignes_a_juger(r.get("a_juger"))
     return "\n".join(L)
+
+
+def lignes_a_juger(aj):
+    """Le dossier des couples a trancher. ASCII pur : la sortie part dans une
+    console Windows et l'agent git la capture."""
+    if not aj:
+        return []
+    morts, esp = aj.get('cles_mortes') or [], aj.get('especes') or []
+    L = ["", "=" * 78,
+         "LES COUPLES A TRANCHER — la contrepartie, pas le verdict",
+         "=" * 78,
+         f"Journaux d'annulation : {aj.get('deplacements_connus', 0)} "
+         "deplacements connus"]
+
+    L += ["", f"CLES MORTES ({len(morts)}) — ou la photo est-elle passee ?"]
+    if not morts:
+        L.append("    (aucune)")
+    for e in morts:
+        cible = Path(e['cible']).name[:30] if e.get('cible') else "-"
+        indices = "+".join(e.get('pour') or []) or "-"
+        refus = "-".join(e.get('contre') or []) or ""
+        L.append(f"    {e['pet'][:12]:<12} i={e['i']:<3} "
+                 f"{e['verdict']:<20} {str(e.get('preuve') or '-'):<9} "
+                 f"{cible:<30} {indices}{(' !' + refus) if refus else ''}")
+        L.append(f"        depuis {Path(e['key']).name[:56]}"
+                 f"  [{e.get('detections_restantes', 0)} det.]")
+    L += ["    Une contrepartie par le NOM du fichier n'est retenue que",
+          "    corroboree DEUX fois : le tag, puis l'index et l'espece chez la",
+          "    cible. Ce qui n'a AUCUNE contrepartie ne se purge pas — le 22/08,",
+          "    787 decisions declarees perdues sont revenues avec une preuve",
+          "    nouvelle, et le residu des visages a ete garde pour cette raison."]
+
+    L += ["", f"ESPECE INCOHERENTE ({len(esp)}) — la photo porte-t-elle "
+          "l'espece de la fiche ?"]
+    if not esp:
+        L.append("    (aucune)")
+    for e in esp:
+        cands = ", ".join(f"i={x['i']}"
+                          + (f" ({x['sim']})" if x.get('sim') is not None else "")
+                          for x in (e.get('candidats') or [])) or "aucun"
+        sim = e.get('sim_designe')
+        L.append(f"    {e['pet'][:12]:<12} i={e['i']:<3} "
+                 f"fiche={e.get('espece_fiche')} detection="
+                 f"{e.get('espece_detection')}  {e['verdict']:<28} "
+                 f"{Path(e['key']).name[:28]}")
+        L.append(f"        designe : {sim if sim is not None else '?'} sur "
+                 f"{e.get('detections')} detection(s)  |  candidats "
+                 f"{e.get('espece_fiche')} : {cands}")
+    L += ["    Le score DESIGNE departage les deux lectures : haut, la",
+          "    detection est un sujet mal ETIQUETE et le rattachement tient ;",
+          "    bas, il ne tient pas. Il ne DECIDE pas pour autant — le 22/08,",
+          "    un couple a 0.441 s'est revele JUSTE a l'oeil : un seuil bas",
+          "    nomme une cecite. Et un `recalage_evident` a +0.036 etait deux",
+          "    BOITES du meme chat : verifier avant de recaler."]
+
+    L += ["", "VERDICTS :"]
+    for k, v in sorted((aj.get('verdicts') or {}).items()):
+        L.append(f"    {k:<36} {v:>5}")
+    L.append("    Un verdict d'INSTRUMENT dit ce que les indices autorisent,")
+    L.append("    pas ce qu'il faut faire. Le geste reste a Mike.")
+    return L
 
 
 def main(argv=None):
@@ -561,11 +868,13 @@ def main(argv=None):
     ap.add_argument('--projet', default='.')
     ap.add_argument('--ecart', type=float, default=ECART_DEFAUT)
     ap.add_argument('--exemples', type=int, default=12)
+    ap.add_argument('--a-juger', dest='a_juger', action='store_true',
+                    help="instruire les cles mortes et les especes incoherentes")
     ap.add_argument('--json', dest='sortie_json')
     a = ap.parse_args(argv)
     if not a.base:
         ap.error("--base est requis (une COPIE : mesure_copie_base.py)")
-    rap = mesurer(a.base, a.projet, a.ecart, a.exemples)
+    rap = mesurer(a.base, a.projet, a.ecart, a.exemples, a.a_juger)
     print(afficher(rap))
     if a.sortie_json:
         Path(a.sortie_json).write_text(

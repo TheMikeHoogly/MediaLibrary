@@ -200,6 +200,9 @@ _tranche_a_juger.json
 _tranche_a_juger.tmp
 _tranche_jugements.json
 _tranche_jugements.tmp
+# Dossier des couples d'animaux a trancher : sortie d'un banc, refaite
+# a chaque mesure. Le RESULTAT vit dans ROADMAP.md et eval/DECISIONS.md.
+_animaux_a_juger.json
 
 # ─── Quarantaine du recalage des rattachements (22/08) ──────────────────────
 # Ce que `recaler_rattachements` a deplace, fiche par fiche, AVANT/APRES : ce

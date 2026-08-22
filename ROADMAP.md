@@ -6,6 +6,40 @@ dans **git** ; les rejets dans `eval/DECISIONS.md` (photothèque) et
 `eval/METHODE.md` ; l'éphémère dans `PROMPT_NOUVELLE_SESSION.md`. Audits :
 `docs/AUDIT_INTERNE_2026-08.md`, `docs/AUDIT_EXTERNE_2026.md`, `docs/RANGEMENT_2026.md`.
 
+## État (22/08/2026, session 37)
+
+**Les 21 couples d'animaux « à trancher » ne demandent AUCUN geste sur le
+fonds — et c'est l'instrument qui avait tort.** `--a-juger` (17 tests neufs)
+cherche la contrepartie de chaque couple ; ce qu'il a trouvé retourne les deux
+tas.
+
+**Les 6 « espèce incohérente » sont JUSTES, 6 sur 6. H4 est réfutée.** Le banc
+tenait l'espèce pour son verdict le plus solide — « faux sans qu'aucun seuil
+ait à le dire ». Le score de la détection DÉSIGNÉE, qui manquait, dit
+l'inverse : **0,441 / 0,594 / 0,604 / 0,623 / 0,666** contre une médiane de
+**0,603** sur les couples confirmés. Les six crops ouverts dans
+`/api/animalcrop` : **six chats crème**, dont un vu deux fois sous deux
+chemins. **C'est l'ÉTIQUETTE d'espèce de YOLO qui ment, pas le rattachement.**
+Et l'erreur est VISIBLE : ces photos rangent Luna sous « chien » dans l'axe
+espèce. Deux détails qui valent leçon : un couple à **0,441** — sous le
+seuil — est juste (un seuil bas nomme une cécité, encore) ; et le seul
+« recalage évident », i=0 → i=1 à **+0,036**, était deux BOÎTES du même chat —
+recaler aurait été un rebrassage, exactement l'erreur que le 22/08 avait déjà
+nommée côté visages.
+
+**Les 15 clés mortes n'ont aucune contrepartie, et trois chemins le disent.**
+Les journaux d'annulation (19 331 déplacements) n'en connaissent aucune ;
+aucune clé VIVANTE ne porte le même nom de fichier ; et le DISQUE tranche —
+`verifier_orphelins --filtre ARZOPA --table animals` rend **115 entrées, 0
+présente, 115 « disparu »**, dont 12 jugées par un humain. Ces photos
+n'existent plus nulle part. Suite du choix du 22/08 sur le résidu des visages :
+on **garde**. Leurs détections survivent sous l'ancien chemin — un humain peut
+encore les regarder, ce qu'une purge lui retirerait pour rien.
+
+**Ce que ça ouvre** : l'étiquette d'espèce se trompe au moins **6 fois sur 351**
+couples d'animaux nommés (1,7 %), en silence, et l'axe espèce en dépend. Aucun
+instrument ne mesure aujourd'hui cette erreur-là sur le fonds entier.
+
 ## État (22/08/2026, session 36)
 
 **`PETS` est mesuré pour la première fois, et le mal n'est pas où on le
@@ -314,10 +348,14 @@ une **génération** : le `taskkill` par titre ne tuait rien.
    « faux positifs » comme des défauts : ils sont jugés JUSTES à 12 sur 13.
    **`PETS` est mesuré à son tour (22/08) et son index est SAIN** : 0 hors
    bornes, 2 vrais décalés sur 330. Le recalage n'y sera pas porté. Ce qui
-   reste ouvert côté animaux n'est plus un chantier d'index mais **21 couples
-   pour un geste humain** (15 clés mortes, 6 espèces incohérentes) et le
-   plafond de l'empreinte DINOv2 — 37 % des rattachements confirmés sous le
-   seuil.
+   **Les 21 couples « à trancher » sont TRANCHÉS (22/08, `--a-juger`) et ne
+   demandent aucun geste** : les 6 « espèce » sont justes 6 sur 6 (chats
+   étiquetés `dog` — H4 réfutée), les 15 clés mortes n'ont aucune contrepartie
+   (journaux, même nom, disque : 115 entrées ARZOPA, 0 présente) et sont
+   GARDÉES. Ce qui reste ouvert côté animaux : le plafond de l'empreinte
+   DINOv2 — 37 % des rattachements confirmés sous le seuil — et **l'étiquette
+   d'espèce de YOLO, fausse au moins 6 fois sur 351, jamais mesurée sur le
+   fonds entier**.
 
 0bis. **Le résidu « ambigu » : CLOS (22/08).** Instrument et page livrés,
    15 cas jugés par Mike, **34 confirmés, 0 à retirer**. `mesure_rattachements.py --residu` écrit

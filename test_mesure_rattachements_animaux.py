@@ -12,6 +12,7 @@ le premier accent tue le test par UnicodeEncodeError (`eval/METHODE.md`).
 
 import base64
 import copy
+import json
 import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -77,9 +78,10 @@ class Bati:
                                   "faces": [list(x) for x in couples]}
         return self
 
-    def mesurer(self, projet, ecart=0.10, exemples=12):
+    def mesurer(self, projet, ecart=0.10, exemples=12, a_juger=False):
         return A._mesurer(FauxStore(self.tags), FauxStore(self.animaux),
-                          FauxStore(self.pets), projet, ecart, exemples)
+                          FauxStore(self.pets), projet, ecart, exemples,
+                          a_juger)
 
 
 class BancTest(unittest.TestCase):
@@ -282,6 +284,201 @@ class BancTest(unittest.TestCase):
         texte = A.afficher(b.mesurer(self.projet))
         self.assertIn('RATTACHEMENTS ANIMAUX', texte)
         self.assertIn('PAR FICHE', texte)
+
+
+class AJugerTest(unittest.TestCase):
+    """Le mode `--a-juger` : la contrepartie d'un couple, et rien de plus.
+
+    Chaque verdict a son cas, et deux tests portent sur ce que l'instrument
+    REFUSE de conclure — c'est la moitie qui compte.
+    """
+
+    def setUp(self):
+        self._tmp = TemporaryDirectory()
+        self.projet = self._tmp.name
+        (Path(self.projet) / 'server.py').write_text(SERVER_FACTICE,
+                                                     encoding='utf-8')
+        self.addCleanup(self._tmp.cleanup)
+
+    def journal(self, ancienne, nouvelle):
+        d = Path(self.projet) / 'docs'
+        d.mkdir(exist_ok=True)
+        (d / 'undo_rangement_1.json').write_text(
+            json.dumps({"operations": [{"old_key": ancienne,
+                                        "new_key": nouvelle}]}),
+            encoding='utf-8')
+
+    def morte(self, r):
+        return r["a_juger"]["cles_mortes"][0]
+
+    # ── la preuve FORTE : le geste, ecrit par le programme qui l'a fait ────
+    def test_le_journal_donne_la_contrepartie_et_l_index_est_conserve(self):
+        v = vecteur(1)
+        b = (Bati()
+             .photo('neuf/a.jpg', [detection(v)], tags_kw=['animal:Inti'])
+             .fiche('Inti', [v], [('vieux/a.jpg', 0), ('neuf/a.jpg', 0)]))
+        b.animaux['vieux/a.jpg'] = {"animals": [], "n": 0}
+        self.journal('vieux/a.jpg', 'neuf/a.jpg')
+        cas = self.morte(b.mesurer(self.projet, a_juger=True))
+        self.assertEqual(cas['verdict'], 'recle_par_journal')
+        self.assertEqual(cas['cible'], 'neuf/a.jpg')
+        self.assertEqual(cas['i'], 0)
+
+    # ── la preuve FAIBLE : elle n'est retenue que corroboree deux fois ─────
+    def test_le_meme_nom_corrobore_deux_fois_suffit(self):
+        v = vecteur(1)
+        b = (Bati()
+             .photo('vivant/a.jpg', [detection(v)], tags_kw=['animal:Inti'])
+             .fiche('Inti', [v], [('mort/a.jpg', 0), ('vivant/a.jpg', 0)]))
+        cas = self.morte(b.mesurer(self.projet, a_juger=True))
+        self.assertEqual(cas['verdict'], 'recle_par_meme_nom')
+        self.assertEqual(cas['preuve'], A.PREUVE_MEME_NOM)
+
+    def test_le_meme_nom_sans_le_tag_reste_a_l_oeil(self):
+        v = vecteur(1)
+        b = (Bati()
+             .photo('vivant/a.jpg', [detection(v)])
+             .fiche('Inti', [v], [('mort/a.jpg', 0), ('vivant/a.jpg', 0)]))
+        cas = self.morte(b.mesurer(self.projet, a_juger=True))
+        self.assertEqual(cas['verdict'], 'a_l_oeil')
+        self.assertIn('pas_de_tag', cas['contre'])
+
+    def test_un_index_absent_chez_la_cible_interdit_la_recle(self):
+        """Re-cler la-dessus fabriquerait le mensonge muet de
+        `_serve_animalcrop` : un index hors bornes qui sert l'animal 0."""
+        v = vecteur(1)
+        b = (Bati()
+             .photo('vivant/a.jpg', [detection(v)], tags_kw=['animal:Inti'])
+             .fiche('Inti', [v], [('mort/a.jpg', 5), ('vivant/a.jpg', 0)]))
+        cas = self.morte(b.mesurer(self.projet, a_juger=True))
+        self.assertEqual(cas['verdict'], 'a_l_oeil')
+        self.assertIn('index_absent_chez_la_cible', cas['contre'])
+
+    def test_deux_candidates_de_meme_nom_ne_sont_pas_une_preuve(self):
+        v = vecteur(1)
+        b = (Bati()
+             .photo('x/a.jpg', [detection(v)], tags_kw=['animal:Inti'])
+             .photo('y/a.jpg', [detection(v)], tags_kw=['animal:Inti'])
+             .fiche('Inti', [v], [('mort/a.jpg', 0), ('x/a.jpg', 0)]))
+        cas = self.morte(b.mesurer(self.projet, a_juger=True))
+        self.assertEqual(cas['verdict'], 'sans_contrepartie')
+        self.assertIsNone(cas['cible'])
+
+    def test_sans_contrepartie_rien_n_est_propose(self):
+        v = vecteur(1)
+        b = (Bati().photo('vivant/b.jpg', [detection(v)])
+             .fiche('Inti', [v], [('mort/a.jpg', 0), ('vivant/b.jpg', 0)]))
+        cas = self.morte(b.mesurer(self.projet, a_juger=True))
+        self.assertEqual(cas['verdict'], 'sans_contrepartie')
+        self.assertEqual(cas['pour'], [])
+
+    # ── l'espece : un recalage, pas un retrait ────────────────────────────
+    def test_une_seule_detection_de_la_bonne_espece_nomme_l_index_a_viser(self):
+        v = vecteur(1)
+        b = (Bati()
+             .photo('a.jpg', [detection(v, species='dog'), detection(v)])
+             .fiche('Inti', [v], [('a.jpg', 0)], species='cat'))
+        cas = b.mesurer(self.projet, a_juger=True)["a_juger"]["especes"][0]
+        self.assertEqual(cas['verdict'], 'recalage_evident')
+        self.assertEqual([x['i'] for x in cas['candidats']], [1])
+        self.assertIsNotNone(cas['candidats'][0]['sim'])
+
+    def test_deux_detections_de_la_bonne_espece_partent_a_l_oeil(self):
+        v = vecteur(1)
+        b = (Bati()
+             .photo('a.jpg', [detection(v, species='dog'), detection(v),
+                              detection(vecteur(2))])
+             .fiche('Inti', [v], [('a.jpg', 0)], species='cat'))
+        cas = b.mesurer(self.projet, a_juger=True)["a_juger"]["especes"][0]
+        self.assertEqual(cas['verdict'], 'a_l_oeil_plusieurs')
+
+    def test_le_score_du_designe_departage_les_deux_lectures(self):
+        """Un `dog` qui ressemble au chat de la fiche est un chat mal
+        ETIQUETE ; sans ce chiffre, H4 se croit sur parole."""
+        v = vecteur(1)
+        b = (Bati()
+             .photo('a.jpg', [detection(v, species='dog')])
+             .fiche('Inti', [v], [('a.jpg', 0)], species='cat'))
+        cas = b.mesurer(self.projet, a_juger=True)["a_juger"]["especes"][0]
+        self.assertGreater(cas['sim_designe'], 0.9)
+        self.assertEqual(cas['detections'], 1)
+
+    def test_un_designe_sans_vecteur_ne_fabrique_pas_de_score(self):
+        v = vecteur(1)
+        b = (Bati()
+             .photo('a.jpg', [detection(None, species='dog')])
+             .fiche('Inti', [v], [('a.jpg', 0)], species='cat'))
+        cas = b.mesurer(self.projet, a_juger=True)["a_juger"]["especes"][0]
+        self.assertIsNone(cas['sim_designe'])
+
+    def test_une_cle_morte_dit_si_ses_detections_ont_survecu(self):
+        v = vecteur(1)
+        b = (Bati().photo('vivant.jpg', [detection(v)])
+             .fiche('Inti', [v], [('mort/a.jpg', 0), ('vivant.jpg', 0)]))
+        b.animaux['mort/a.jpg'] = {"animals": [detection(v)], "n": 1}
+        cas = self.morte(b.mesurer(self.projet, a_juger=True))
+        self.assertEqual(cas['detections_restantes'], 1)
+
+    def test_aucune_detection_de_l_espece_ne_propose_aucun_recalage(self):
+        v = vecteur(1)
+        b = (Bati()
+             .photo('a.jpg', [detection(v, species='dog')])
+             .fiche('Inti', [v], [('a.jpg', 0)], species='cat'))
+        cas = b.mesurer(self.projet, a_juger=True)["a_juger"]["especes"][0]
+        self.assertEqual(cas['verdict'], 'aucune_detection_de_l_espece')
+        self.assertEqual(cas['candidats'], [])
+
+    def test_une_detection_non_nommable_n_est_pas_un_candidat(self):
+        v = vecteur(1)
+        b = (Bati()
+             .photo('a.jpg', [detection(v, species='dog'),
+                              detection(v, suspect=True)])
+             .fiche('Inti', [v], [('a.jpg', 0)], species='cat'))
+        cas = b.mesurer(self.projet, a_juger=True)["a_juger"]["especes"][0]
+        self.assertEqual(cas['verdict'], 'aucune_detection_de_l_espece')
+
+    # ── ce que le plafond coupe se COMPTE ─────────────────────────────────
+    def test_le_plafond_ne_coupe_jamais_en_silence(self):
+        v = vecteur(1)
+        couples = [(f'mort/{i}.jpg', 0) for i in range(4)]
+        b = (Bati().photo('vivant.jpg', [detection(v)])
+             .fiche('Inti', [v], couples + [('vivant.jpg', 0)]))
+        ancien = A.PLAFOND_A_JUGER
+        A.PLAFOND_A_JUGER = 2
+        try:
+            r = b.mesurer(self.projet, a_juger=True)
+        finally:
+            A.PLAFOND_A_JUGER = ancien
+        self.assertEqual(len(r["a_juger"]["cles_mortes"]), 2)
+        self.assertEqual(r["comptes"]['cles_mortes_non_listees'], 2)
+
+    # ── l'instrument reste un instrument ──────────────────────────────────
+    def test_a_juger_n_ecrit_rien(self):
+        v = vecteur(1)
+        b = (Bati().photo('vivant/a.jpg', [detection(v)], tags_kw=['animal:Inti'])
+             .fiche('Inti', [v], [('mort/a.jpg', 0), ('vivant/a.jpg', 0)]))
+        avant = copy.deepcopy((b.tags, b.animaux, b.pets))
+        b.mesurer(self.projet, a_juger=True)
+        self.assertEqual(avant, (b.tags, b.animaux, b.pets))
+
+    def test_sans_le_drapeau_le_dossier_n_existe_pas(self):
+        v = vecteur(1)
+        b = (Bati().photo('a.jpg', [detection(v)])
+             .fiche('Inti', [v], [('a.jpg', 0)]))
+        self.assertNotIn('a_juger', b.mesurer(self.projet))
+
+    def test_le_rapport_nomme_chaque_cas_et_son_verdict(self):
+        v = vecteur(1)
+        b = (Bati()
+             .photo('vivant/a.jpg', [detection(v, species='dog')],
+                    tags_kw=['animal:Inti'])
+             .fiche('Inti', [v], [('mort/a.jpg', 0), ('vivant/a.jpg', 0)],
+                    species='cat'))
+        texte = A.afficher(b.mesurer(self.projet, a_juger=True))
+        self.assertIn('LES COUPLES A TRANCHER', texte)
+        self.assertIn('a_l_oeil', texte)
+        self.assertIn('a.jpg', texte)
+        self.assertIn('VERDICTS', texte)
 
 
 if __name__ == '__main__':
