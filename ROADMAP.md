@@ -97,8 +97,8 @@ faux positif **42 → 13**, désignent le bon visage **997 → 1 030**. Et le
 contrôle qui compte : **1 194 couples avant, 1 194 après** — aucune décision
 humaine perdue en route. Les 9 restants sont exactement les ambigus.
 
-**Reste le geste de Mike** : juger les 30 sur `/tranche`, puis
-`mesure_tranche_seuil.py --bilan`.
+**Reste le geste de Mike** : juger les 15 cas sur `/residu`, puis
+`mesure_rattachements.py --bilan-residu`.
 
 ## État (22/08/2026, session 31)
 
@@ -213,16 +213,23 @@ une **génération** : le `taskkill` par titre ne tuait rien.
 
 ## À faire — par ordre de valeur
 
-0. **Le résidu du recalage se juge à l'ŒIL — 10 fiches, 43 couples (22/08).**
-   9 décalés que la règle laisse et 34 refus « ambigu », **concentrés** :
-   Didier 4 des 9, puis Céline Gauchat, Jenny, Rosario, Val, Flo, Maryline
-   Baudère, Res Jordi, Sylvie Chatelain. Le score ne les départage pas — soit
-   la personne est vraiment détectée deux fois, soit l'index égaré désigne son
-   voisin de la même photo. Une page qui MONTRE les deux visages et demande
-   « lequel est X ? », qui **n'attribue rien et ne retire rien** — même
-   discipline que `/tranche` ; le retrait reste un geste de Mike. Et **`PETS`
-   n'a jamais été mesuré** : son magasin porte des empreintes DINOv2 et
-   `assigned_keys` ne le lit pas.
+0. **Le résidu du recalage : instrument et page LIVRÉS et OBSERVÉS (22/08),
+   reste le JUGEMENT de Mike.** `mesure_rattachements.py --residu` écrit
+   **15 cas sur 9 fiches, 34 couples cités** — Didier 4 cas, Res Jordi 4, puis
+   Céline Gauchat, Flo, Jenny, Maryline Baudère, Rosario, Sylvie Chatelain,
+   Val. Le rapport NOMME ce qu'il écarte (autres motifs de refus : aucun
+   aujourd'hui). La page **`/residu`** (18 tests) montre les visages candidats
+   côte à côte avec la planche de référence — **planche VIVANTE, et la photo en
+   cause en est retirée** : le visage qu'on juge ne peut pas servir de référence
+   à son propre jugement. Elle **n'attribue rien et ne retire rien** ; un
+   verdict ne peut désigner qu'un visage MONTRÉ (refusé en 400 sinon). « Aucun
+   n'est X » est un verdict à part entière, et le bouton le DIT avant le clic.
+   Observé en réel (`code_a_jour` vrai) : 15 cas servis, planches vivantes,
+   bascule sans écriture (0 verdict écrit après sélection). Ensuite :
+   `--bilan-residu` sépare **à retirer** / **confirmé** / **à AJOUTER** (une
+   attribution, autre geste, hors plan de retrait), et le retrait revient dans
+   `/reglages`, geste de Mike. Et **`PETS` n'a jamais été mesuré** : son
+   magasin porte des empreintes DINOv2 et `assigned_keys` ne le lit pas.
 
 1. **Vérité terrain — PARQUÉE pour l'algo, mais 141 décisions sont EN DANGER
    (21/08).** Sur les 2 374 clés que l'index a oubliées et que le magasin de

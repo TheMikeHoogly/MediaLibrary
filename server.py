@@ -7671,6 +7671,7 @@ td.n, th.n { text-align: right; font-family: var(--f-donnees); }
       <li><button class="b" id="recalundo">3 &middot; Annuler le dernier recalage</button><span class="mut">Remet les fiches telles qu'elles etaient.</span></li>
     </ol>
     <div class="renmsg" id="recal-msg" role="status" aria-live="polite">Clique &laquo;&nbsp;1 &middot; Apercu&nbsp;&raquo; pour voir ce qui serait recale.</div>
+    <p class="mut">Ce que l'outil <b>refuse</b> de reparer se juge a l'oeil, et nulle part ailleurs : quand la fiche cite <b>deux visages de la meme photo</b>, ou la personne y est vraiment detectee deux fois, ou un index a glisse et designe son voisin &mdash; le score ne tranche pas. Ces cas-la sont peu nombreux mais <b>concentres</b> : le 22/08, 15 cas sur 9 fiches, dont 4 sur la seule fiche de Didier. Une page les montre cote a cote : <a href="/residu">juger le residu</a>. Elle ne retire rien &mdash; le retrait revient ici, une fois les verdicts poses.</p>
 
     <h4 class="subh">Decisions humaines restees sur l'ancien chemin</h4>
     <p class="mut">Quand une photo est rangee ou renommee, son <b>tag</b> la suit (il vit dans l'index et dans le XMP). Mais les jugements &mdash; <b>quel visage</b> est cette personne, quelles photos ont ete <b>ecartees</b> d'un nom, lesquelles ont ete <b>confirmees</b> &mdash; vivent dans la fiche et y sont restes accroches a l'ANCIEN chemin. Cet outil les remet sur la bonne photo en suivant les journaux d'annulation, qui disent ou chaque fichier est parti. Entierement reversible ; aucun fichier n'est touche.</p>
@@ -11136,6 +11137,47 @@ def _tranche_ecrire_jugements(verdicts):
     os.replace(tmp, TRANCHE_JUGEMENTS)
 
 
+# ───────────── Le RESIDU du recalage : ce qui ne se juge qu'a l'oeil ────────
+# `recale_rattachements` REFUSE de reparer un couple quand la fiche cite
+# plusieurs visages de la MEME photo : ou la personne y est vraiment detectee
+# deux fois, ou un index a glisse et designe son voisin. Le score ne departage
+# pas, et trancher au hasard deplacerait un jugement humain.
+# `mesure_rattachements.py --residu` ecrit ces cas, la page /residu les donne a
+# juger, et le RETRAIT reste un geste de Mike : la page COLLECTE, le banc
+# CONCLUT (`--bilan-residu`). Meme partage que la tranche, et pour la meme
+# raison — un verdict melange au geste qu'il gouverne ne mesure plus rien.
+RESIDU_A_JUGER = SCRIPT_DIR / "_residu_a_juger.json"
+RESIDU_JUGEMENTS = SCRIPT_DIR / "_residu_jugements.json"
+RESIDU_VERDICTS = ('juge', 'indecidable')
+RESIDU_LOCK = threading.Lock()
+
+
+def _residu_id(key, person):
+    """Identite d'un cas : la photo ET la personne.
+
+    Pas le visage : le cas porte sur TOUS les visages cites de cette photo par
+    cette fiche — c'est justement leur mise en concurrence qui est la question.
+    """
+    return f"{key}|{person}"
+
+
+def _residu_lire_jugements():
+    try:
+        d = json.loads(RESIDU_JUGEMENTS.read_text(encoding='utf-8'))
+    except (OSError, ValueError):
+        return {}
+    v = d.get('verdicts') if isinstance(d, dict) else None
+    return v if isinstance(v, dict) else {}
+
+
+def _residu_ecrire_jugements(verdicts):
+    """Ecriture atomique (.tmp puis os.replace, invariant 2), sous RESIDU_LOCK."""
+    tmp = RESIDU_JUGEMENTS.with_suffix('.tmp')
+    tmp.write_text(json.dumps({"verdicts": verdicts}, ensure_ascii=False,
+                              indent=1), encoding='utf-8')
+    os.replace(tmp, RESIDU_JUGEMENTS)
+
+
 def _tranche_fiches_par_nom():
     """Les fiches de personnes indexees par nom en minuscules, en une passe."""
     out = {}
@@ -12425,6 +12467,272 @@ fetch('/api/tranche/list').then(function(r){ return r.json(); }).then(chargee)
 </body>
 </html>"""
 
+
+RESIDU_PAGE = '''<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Le residu a juger</title>
+<style>
+/* Surface de TRAVAIL : on decide, donc papier. Tokens seuls, aucune valeur
+   en dur — meme systeme que /tranche, dont cette page est la jumelle. */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: var(--f-texte); background: var(--salle); color: var(--texte); }
+.bar { display: flex; align-items: center; gap: var(--e-3);
+       padding: var(--e-3) var(--e-4); background: var(--salle-2);
+       border-bottom: var(--trait); flex-wrap: wrap; font-size: var(--t-sm); }
+.bar .sp { margin-left: auto; }
+.compte { font-family: var(--f-donnees); color: var(--texte); }
+.rappel { padding: var(--e-3) var(--e-4); color: var(--graphite);
+          font-size: var(--t-sm); line-height: 1.5; max-width: 62ch; }
+.rappel b { color: var(--texte); }
+.feuille { background: var(--papier); color: var(--texte-papier);
+           border-radius: var(--r-md); padding: var(--e-4);
+           margin: var(--e-3) var(--e-4) var(--e-8); max-width: 860px;
+           box-shadow: 0 1px 0 var(--papier-2), 0 8px 24px #0008; }
+.feuille h2 { font: 600 var(--t-xl)/1.2 var(--f-affichage);
+              letter-spacing: -0.01em; margin-bottom: var(--e-3); }
+.aide { color: var(--graphite-p); font-size: var(--t-sm); line-height: 1.5; }
+/* Les candidats et les references doivent se comparer d'un coup d'oeil : on
+   BORNE leur taille au lieu de laisser 1fr les etirer. Deux vignettes de
+   420 px poussent la planche sous le pli, et on juge alors de memoire. */
+.choix { display: grid; gap: var(--e-3); margin: var(--e-4) 0;
+         grid-template-columns: repeat(auto-fit, minmax(132px, 200px)); }
+.cand { display: block; width: 100%; padding: var(--e-2); cursor: pointer;
+        background: var(--papier-2); border: 2px solid transparent;
+        border-radius: var(--r-md); color: var(--texte-papier);
+        font: 500 var(--t-sm)/1.3 var(--f-texte); text-align: center; }
+.cand img { width: 100%; aspect-ratio: 1; object-fit: cover; display: block;
+            border-radius: var(--r-sm); background: var(--papier); }
+.cand .mes { font: var(--t-xs)/1.4 var(--f-donnees); color: var(--graphite-p);
+             display: block; margin-top: var(--e-1); }
+.cand kbd { font: var(--t-xs)/1 var(--f-donnees); border: 1px solid currentColor;
+            border-radius: var(--r-sm); padding: 1px 5px; margin-left: var(--e-1);
+            opacity: 0.7; }
+.cand[aria-pressed="true"] { border-color: var(--fixateur);
+                             background: var(--fixateur); color: #fff; }
+.cand[aria-pressed="true"] .mes { color: #fff; opacity: 0.9; }
+.refs { display: grid; grid-template-columns: repeat(auto-fit, minmax(88px, 132px));
+        gap: var(--e-2); margin-top: var(--e-2); }
+.refs img { width: 100%; aspect-ratio: 1; object-fit: cover; display: block;
+            border-radius: var(--r-md); background: var(--papier-2); }
+.refs .vide { grid-column: 1 / -1; font-size: var(--t-sm); color: var(--graphite-p); }
+.bloc { margin: var(--e-4) 0; }
+.bloc h3 { font: 600 var(--t-md)/1.2 var(--f-affichage); margin-bottom: var(--e-2); }
+.chiffres { font-family: var(--f-donnees); font-size: var(--t-sm);
+            color: var(--texte-papier); background: var(--papier-2);
+            border-radius: var(--r-sm); padding: var(--e-2) var(--e-3); }
+.actes { display: flex; gap: var(--e-2); flex-wrap: wrap; margin: var(--e-4) 0 var(--e-3); }
+.btn { min-height: var(--touch); padding: 0 var(--e-4);
+       font: 500 var(--t-sm)/1 var(--f-texte); border: var(--trait);
+       border-radius: var(--r-md); background: var(--salle-3); color: var(--texte);
+       cursor: pointer; display: inline-flex; align-items: center; gap: var(--e-2); }
+.btn--confirmer { background: var(--fixateur); border-color: var(--fixateur); color: #fff; }
+.btn--destructif { background: transparent; border-color: var(--encre); color: var(--encre); }
+.btn--discret { background: transparent; border-color: var(--papier-2);
+                color: var(--texte-papier); }
+.btn kbd { font: var(--t-xs)/1 var(--f-donnees); border: 1px solid currentColor;
+           border-radius: var(--r-sm); padding: 2px 5px; opacity: 0.75; }
+.pied { display: flex; gap: var(--e-3); flex-wrap: wrap; align-items: center;
+        font-size: var(--t-sm); }
+.pied a { color: var(--texte-papier); text-decoration: underline; }
+:focus-visible { outline: 2px solid var(--veilleuse); outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important;
+                           transition-duration: .01ms !important; } }
+</style>
+</head>
+<body>
+<!--APPNAV-->
+<div class="bar">
+  <span>Le r&eacute;sidu &agrave; juger</span>
+  <span class="sp"></span>
+  <span class="compte" id="compte">&hellip;</span>
+</div>
+<div class="rappel" id="rappel">Chargement&hellip;</div>
+<section class="feuille" id="carte" hidden>
+  <h2 id="question">&nbsp;</h2>
+  <p class="aide">Cette fiche cite <b>plusieurs visages de la m&ecirc;me
+    photo</b>. Ou la personne y est vraiment d&eacute;tect&eacute;e deux fois,
+    ou un index a gliss&eacute; et d&eacute;signe son voisin. Le score ne le
+    dit pas ; toi, oui. S&eacute;lectionne <b>chaque</b> visage qui est bien
+    cette personne.</p>
+  <div class="bloc">
+    <div class="choix" id="choix"></div>
+  </div>
+  <div class="bloc">
+    <h3 id="legref">Visages d&eacute;j&agrave; rattach&eacute;s</h3>
+    <div class="refs" id="refs"></div>
+  </div>
+  <p class="chiffres" id="chiffres">&nbsp;</p>
+  <div class="actes">
+    <button class="btn btn--confirmer" id="valider">Valider <kbd>Entr&eacute;e</kbd></button>
+    <button class="btn btn--discret" id="sais-pas">Je ne sais pas <kbd>0</kbd></button>
+  </div>
+  <div class="pied">
+    <a id="photo" href="#" target="_blank" rel="noopener">Voir la photo enti&egrave;re</a>
+    <button class="btn btn--discret" id="prec">Revenir <kbd>Z</kbd></button>
+  </div>
+</section>
+<section class="feuille" id="fin" hidden>
+  <h2>R&eacute;sidu jug&eacute;</h2>
+  <p class="chiffres" id="bilan">&nbsp;</p>
+  <p class="aide">Rien n&rsquo;a &eacute;t&eacute; retir&eacute; : cette page
+    <b>collecte</b>, elle n&rsquo;agit pas. Le plan de retrait se lit par
+    <b>mesure_rattachements.py --base copie.db --bilan-residu</b>, et le geste
+    reste le tien.</p>
+  <div class="pied">
+    <button class="btn btn--discret" id="revoir">Revoir les jugements</button>
+  </div>
+</section>
+<script>
+function esc(s){return (s||'').replace(/[&<>"]/g,function(c){
+  return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+var CAS = [], VERD = {}, pos = 0, SEL = {};
+
+function chargee(d){
+  CAS = d.cas || []; VERD = d.verdicts || {};
+  var r = document.getElementById('rappel');
+  if (d.absent || !CAS.length){
+    r.innerHTML = 'Aucun cas &agrave; juger. Le banc les tire : ' +
+      '<b>mesure_rattachements.py --base copie.db --residu</b>';
+    majCompte(); return;
+  }
+  r.innerHTML = 'Ces cas sont ceux que la r&egrave;gle de recalage a ' +
+    '<b>refus&eacute;</b> de r&eacute;parer, expr&egrave;s : d&eacute;placer ' +
+    'un jugement humain au hasard serait pire que de ne rien faire. Cette page ' +
+    'ne retire rien et n&rsquo;attribue rien &mdash; elle recueille ton avis.';
+  pos = CAS.findIndex(function(c){ return !VERD[c.id]; });
+  if (pos < 0) pos = CAS.length;
+  montrer();
+}
+
+function majCompte(){
+  var n = 0, ind = 0;
+  CAS.forEach(function(c){ var v = VERD[c.id];
+    if (v){ n++; if (v.verdict === 'indecidable') ind++; } });
+  document.getElementById('compte').textContent =
+    n + ' / ' + CAS.length + ' jugés' +
+    (ind ? '  ·  ' + ind + ' indécidables' : '');
+  return {n: n, ind: ind};
+}
+
+function majValider(){
+  var c = CAS[pos]; if (!c) return;
+  var n = (SEL[c.id] || []).length;
+  var b = document.getElementById('valider');
+  b.innerHTML = (n ? 'Valider ' + n + ' visage' + (n > 1 ? 's' : '')
+                   : 'Aucun n\\u2019est ' + esc(c.person)) +
+                ' <kbd>Entrée</kbd>';
+  b.className = 'btn ' + (n ? 'btn--confirmer' : 'btn--destructif');
+}
+
+function basculer(i){
+  var c = CAS[pos]; if (!c) return;
+  var l = SEL[c.id] || (SEL[c.id] = []);
+  var k = l.indexOf(i);
+  if (k < 0) l.push(i); else l.splice(k, 1);
+  document.querySelectorAll('.cand').forEach(function(b){
+    b.setAttribute('aria-pressed', String(l.indexOf(+b.dataset.i) >= 0)); });
+  majValider();
+}
+
+function montrer(){
+  var carte = document.getElementById('carte'), fin = document.getElementById('fin');
+  var s = majCompte();
+  if (!CAS.length){ carte.hidden = true; fin.hidden = true; return; }
+  if (pos >= CAS.length){
+    carte.hidden = true; fin.hidden = false;
+    document.getElementById('bilan').textContent =
+      s.n + ' cas jugés sur ' + CAS.length +
+      (s.ind ? '  ·  ' + s.ind + ' laissés indécidables' : '');
+    return;
+  }
+  fin.hidden = true; carte.hidden = false;
+  var c = CAS[pos];
+  if (!SEL[c.id]){
+    var v = VERD[c.id];
+    // Rien n'est preselectionne pour un cas neuf : cocher d'avance ce que la
+    // fiche affirme ferait valider l'erreur d'un clic.
+    SEL[c.id] = (v && v.oui) ? v.oui.slice() : [];
+  }
+  document.getElementById('question').textContent =
+    'Lequel de ces visages est ' + c.person + ' ?';
+  document.getElementById('choix').innerHTML = c.candidats.map(function(k, n){
+    return '<button type="button" class="cand" data-i="' + k.i + '" ' +
+      'aria-pressed="false"><img src="' + esc(k.crop_url) + '" alt="Visage ' +
+      (n + 1) + ' de la photo, à juger"><span>Visage ' + (n + 1) +
+      ' <kbd>' + (n + 1) + '</kbd></span><span class="mes">i=' + k.i +
+      '  ·  score ' + (k.sim == null ? '—' : k.sim.toFixed(3)) +
+      (k.cite ? '  ·  cité' : '  ·  non cité') + '</span></button>'; }).join('');
+  document.querySelectorAll('.cand').forEach(function(b){
+    b.addEventListener('click', function(){ basculer(+b.dataset.i); }); });
+  document.getElementById('legref').textContent =
+    'Visages déjà rattachés à ' + c.person + ' (ailleurs)';
+  var refs = document.getElementById('refs');
+  refs.innerHTML = (c.refs_urls && c.refs_urls.length)
+    ? c.refs_urls.map(function(u){
+        return '<img src="' + esc(u) + '" alt="Visage rattaché à ' +
+               esc(c.person) + '">'; }).join('')
+    : '<p class="vide">Aucun visage rattaché ailleurs : juge sur la photo ' +
+      'entière, ou réponds « Je ne sais pas ».</p>';
+  document.getElementById('chiffres').textContent =
+    c.visages + ' visages sur la photo  ·  ' + c.candidats.length +
+    ' candidat(s)  ·  ' + c.pourquoi;
+  document.getElementById('photo').href = c.url || '#';
+  document.querySelectorAll('.cand').forEach(function(b){
+    b.setAttribute('aria-pressed',
+                   String(SEL[c.id].indexOf(+b.dataset.i) >= 0)); });
+  majValider();
+  document.getElementById('prec').disabled = (pos === 0);
+}
+
+function envoyer(c, verdict, oui){
+  VERD[c.id] = {verdict: verdict, key: c.key, person: c.person, oui: oui};
+  pos++; montrer();
+  fetch('/api/residu/juger', {method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({key: c.key, person: c.person, verdict: verdict,
+                          oui: oui, candidats: c.candidats.map(function(k){
+                            return k.i; })})
+  }).catch(function(){
+    document.getElementById('rappel').innerHTML =
+      'Le serveur n&rsquo;a pas enregistr&eacute; ce jugement. V&eacute;rifie ' +
+      'qu&rsquo;il tourne, puis recharge : ce qui est &eacute;crit est gard&eacute;.';
+  });
+}
+
+document.getElementById('valider').addEventListener('click', function(){
+  var c = CAS[pos]; if (c) envoyer(c, 'juge', (SEL[c.id] || []).slice()); });
+document.getElementById('sais-pas').addEventListener('click', function(){
+  var c = CAS[pos]; if (c) envoyer(c, 'indecidable', []); });
+document.getElementById('prec').addEventListener('click', function(){
+  if (pos > 0){ pos--; montrer(); } });
+document.getElementById('revoir').addEventListener('click', function(){
+  pos = 0; montrer(); });
+document.addEventListener('keydown', function(e){
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+  var c = CAS[pos];
+  if (e.key >= '1' && e.key <= '9'){
+    if (!c) return;
+    var k = c.candidats[+e.key - 1];
+    if (k) basculer(k.i);
+  } else if (e.key === 'Enter'){
+    if (c) envoyer(c, 'juge', (SEL[c.id] || []).slice());
+  } else if (e.key === '0'){
+    if (c) envoyer(c, 'indecidable', []);
+  } else if (e.key === 'z' || e.key === 'Z'){
+    if (pos > 0){ pos--; montrer(); }
+  }
+});
+fetch('/api/residu/list').then(function(r){ return r.json(); }).then(chargee)
+  .catch(function(){
+    document.getElementById('rappel').textContent =
+      'Impossible de lire les cas : le serveur n\\u2019a pas répondu.'; });
+</script>
+</body>
+</html>'''
 
 SUBJECTS_PAGE = """<!DOCTYPE html>
 <html lang="fr">
@@ -14009,6 +14317,10 @@ class Handler(BaseHTTPRequestHandler):
             self._send_html(TRANCHE_PAGE)
         elif path == '/api/tranche/list':
             self._serve_tranche_list()
+        elif path == '/residu':
+            self._send_html(RESIDU_PAGE)
+        elif path == '/api/residu/list':
+            self._serve_residu_list()
 
         elif path == '/api/status':
             self._serve_status()
@@ -14137,6 +14449,9 @@ class Handler(BaseHTTPRequestHandler):
             return
         if path.startswith('/api/tranche/'):
             self._do_tranche_post(path)
+            return
+        if path.startswith('/api/residu/'):
+            self._do_residu_post(path)
             return
         if path == '/eval/notes':
             self._do_eval_notes()
@@ -15459,6 +15774,100 @@ class Handler(BaseHTTPRequestHandler):
         body = json.dumps({"photos": person_slideshow_list(name)},
                           ensure_ascii=False).encode()
         self._send(200, body, 'application/json')
+
+    def _serve_residu_list(self):
+        """Les cas a juger + les verdicts deja poses. LECTURE SEULE.
+
+        Les vignettes des candidats ET la planche de reference sont calculees
+        ICI, depuis les fiches vivantes : le fichier de tirage ne porte que des
+        index. Une reference figee vieillit avec le tirage, et elle vieillit
+        exactement la ou une reparation vient de passer (defaut du 22/08).
+        """
+        try:
+            d = json.loads(RESIDU_A_JUGER.read_text(encoding='utf-8'))
+        except (OSError, ValueError):
+            self._send(200, json.dumps({
+                "cas": [], "verdicts": {}, "absent": True,
+            }, ensure_ascii=False).encode(), 'application/json')
+            return
+        fiches = _tranche_fiches_par_nom()
+        cas = []
+        for c in (d.get('cas') or []):
+            k = c.get('key', '')
+            person = c.get('person', '')
+            cands = []
+            for x in (c.get('candidats') or []):
+                try:
+                    i = int(x.get('i'))
+                except (TypeError, ValueError):
+                    continue
+                cands.append(dict(x, i=i, crop_url=_crop_url(k, i)))
+            if not cands:
+                continue
+            # La planche montre les rattachements d'AILLEURS : ceux de CETTE
+            # photo sont precisement ce qui est en cause, et les remontrer
+            # comme reference ferait juger la piece a conviction contre
+            # elle-meme.
+            refs = [r for r in _tranche_refs_vivantes(person, fiches)
+                    if r[0] != k]
+            cas.append(dict(c, id=_residu_id(k, person), person=person,
+                            candidats=cands, url=_url_for_key(k),
+                            refs_urls=[_crop_url(r[0], r[1]) for r in refs]))
+        with RESIDU_LOCK:
+            verdicts = _residu_lire_jugements()
+        self._send(200, json.dumps({
+            "cas": cas, "verdicts": verdicts, "ecartes": d.get('ecartes'),
+        }, ensure_ascii=False).encode(), 'application/json')
+
+    def _do_residu_post(self, path):
+        """Enregistre un jugement. N'ATTRIBUE ET NE RETIRE RIEN."""
+        if path != '/api/residu/juger':
+            self._send(404, b'Not found', 'text/plain')
+            return
+        d = self._read_json_body() or {}
+        key = str(d.get('key') or '')
+        person = str(d.get('person') or '')
+        verdict = str(d.get('verdict') or '')
+        if not key or not person:
+            self._send(400, b'key et person requis', 'text/plain')
+            return
+        if verdict not in RESIDU_VERDICTS:
+            self._send(400, ("verdict inconnu : " + verdict).encode(),
+                       'text/plain')
+            return
+        offerts = []
+        for x in (d.get('candidats') or []):
+            try:
+                offerts.append(int(x))
+            except (TypeError, ValueError):
+                pass
+        oui = []
+        for x in (d.get('oui') or []):
+            try:
+                oui.append(int(x))
+            except (TypeError, ValueError):
+                pass
+        # Un verdict ne peut designer qu'un visage que la page a MONTRE. Sinon
+        # le banc conclurait sur un visage que personne n'a regarde — et une
+        # decision humaine se poserait sur une vue qui n'a pas eu lieu.
+        hors = [i for i in oui if i not in offerts]
+        if hors:
+            self._send(400, ("visage hors du cas : "
+                             + ",".join(str(i) for i in hors)).encode(),
+                       'text/plain')
+            return
+        oui = sorted(set(oui))
+        evt = {"verdict": verdict, "key": key, "person": person,
+               "oui": oui, "non": sorted(i for i in set(offerts)
+                                         if i not in oui),
+               "ts": time.time()}
+        with RESIDU_LOCK:
+            verdicts = _residu_lire_jugements()
+            verdicts[_residu_id(key, person)] = evt
+            _residu_ecrire_jugements(verdicts)
+        _journal_jugement({"source": "residu", "geste": "residu_" + verdict,
+                           "key": key, "person": person, "oui": oui})
+        self._send(200, json.dumps({"ok": True}).encode(), 'application/json')
 
     def _serve_tranche_list(self):
         """L'echantillon a juger + les verdicts deja poses. LECTURE SEULE.

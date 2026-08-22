@@ -39,17 +39,27 @@ et les 30 verdicts ont survécu. La légende dit maintenant « visages déjà
 fiches**, et **Didier en porte 4 des 9**. « 0,8 % sur 1 194 couples » se lit
 comme un fonds sain ; sur SA fiche, c'est un intrus à chaque ouverture.
 
+**La page du résidu est LIVRÉE (fin de session 33).**
+`mesure_rattachements.py --base copie.db --residu` écrit **15 cas sur 9
+fiches, 34 couples cités** ; la page **`/residu`** (18 tests) les montre côte à
+côte avec la planche de référence — vivante, et **la photo en cause en est
+retirée** : le visage qu'on juge ne peut pas être sa propre référence. Elle
+n'attribue rien et ne retire rien ; un verdict ne peut désigner qu'un visage
+MONTRÉ. Observé en réel : 15 cas servis, sélection sans écriture. Un lien y
+mène depuis `/reglages`, sous les boutons du recalage.
+
 ## Prochain pas
 
-0. **La page de jugement du résidu (point 0 du `ROADMAP.md`)** — 10 fiches, 43
-   couples : Didier (4 des 9 décalés), Céline Gauchat, Jenny, Rosario, Val,
-   Flo, Maryline Baudère, Res Jordi, Sylvie Chatelain. Sa fiche cite **deux
-   visages de la MÊME photo** (i=1 à 0,908 et i=8 à 0,745) : le score ne
-   tranche pas, et ce qu'il faut n'est pas un recalage mais un **RETRAIT** —
-   donc un geste de Mike. La page MONTRE les deux et demande « lequel est
-   X ? » ; elle **n'attribue rien et ne retire rien**, comme `/tranche`. Et
-   **`PETS` n'a jamais été mesuré** (empreintes DINOv2, `assigned_keys` ne le
-   lit pas).
+0. **Juger les 15 cas sur `http://192.168.0.13:8080/residu`** (clavier `1`–`9`
+   pour cocher, `Entrée` pour valider, `0` je ne sais pas, `Z` revenir), puis
+   `mesure_rattachements.py --base copie.db --bilan-residu`. Le bilan sépare
+   **à retirer** (cité, jugé pas elle), **confirmé**, et **à AJOUTER** (jugé
+   elle mais non cité — une attribution, autre geste, hors plan de retrait).
+   Le retrait est DESTRUCTIF : quarantaine réversible et geste de Mike, comme
+   le recalage. **Il reste à ÉCRIRE** — les trois boutons dans `/reglages`,
+   passant par la même fonction que le bilan.
+   Et **`PETS` n'a jamais été mesuré** (empreintes DINOv2, `assigned_keys` ne
+   le lit pas).
 1. **Chantier 12 — la répétition** (choix de Mike : ordre 1-4-3-2). Restaurer
    POUR DE VRAI sur un dossier vierge, chronométrer, puis
    `verifier_restauration.py --restaure <dossier>` : il compare les décisions

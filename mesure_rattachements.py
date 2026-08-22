@@ -63,6 +63,7 @@ USAGE
     python mesure_copie_base.py
     python mesure_rattachements.py --base copie.db
     python mesure_rattachements.py --base copie.db --ecart 0.05 --exemples 20
+    python mesure_rattachements.py --base copie.db --residu
 """
 
 import argparse
@@ -78,6 +79,13 @@ import recale_rattachements as recale
 # qu'on parle de décalage. Deux visages proches (frère et sœur, même personne
 # détectée deux fois) ne doivent pas compter comme une erreur.
 ECART_DEFAUT = 0.10
+
+# Le RÉSIDU : ce que la règle de recalage REFUSE de réparer, et qui ne se
+# départage donc qu'à l'œil. `--residu` l'écrit ici, la page `/residu` le
+# donne à juger. Le banc PRODUIT la matière, la page COLLECTE, le geste de
+# retrait reste humain — même partage que la tranche.
+RESIDU_DEFAUT = '_residu_a_juger.json'
+RESIDU_JUGEMENTS_DEFAUT = '_residu_jugements.json'
 
 
 def _fiches(store):
@@ -169,6 +177,7 @@ def _mesurer(faces, people, projet, ecart, exemples):
     pris = recale.rattachements_pris(f for _n, _P, _c, f in fiches)
     plan = Counter()
     exemples_plan, exemples_refus = [], []
+    residu = []
 
     for nom, P, couples, pe in fiches:
         scores_fiche = {}
@@ -241,10 +250,46 @@ def _mesurer(faces, people, projet, ecart, exemples):
                 plan['dont_fusion'] += 1
             if len(exemples_plan) < exemples:
                 exemples_plan.append(dict(r, person=nom))
+        par_photo = {}
         for r in refus:
             plan['refus_' + r['pourquoi']] += 1
             if len(exemples_refus) < exemples:
                 exemples_refus.append(dict(r, person=nom))
+            if r['pourquoi'] == 'ambigu':
+                par_photo.setdefault(r['key'], []).append(int(r['i']))
+
+        # Un cas AMBIGU = une photo que la fiche cite plusieurs fois. Soit la
+        # personne y est vraiment detectee deux fois, soit un index egare
+        # designe son voisin — le score ne le dit pas, et c'est pour ca que la
+        # regle refuse. Un humain le voit d'un coup d'oeil.
+        for cle, idx in par_photo.items():
+            par_visage = scores_fiche.get(cle) or []
+            if not par_visage:
+                continue
+            liste, _reemb, _presente = visages_de(cle)
+            cites = sorted(set(idx))
+            candidats = []
+            for j in cites:
+                sj = par_visage[j] if 0 <= j < len(par_visage) else None
+                candidats.append({"i": j, "sim": None if sj is None else round(sj, 3),
+                                  "cite": True})
+            connus = {cnd['i'] for cnd in candidats}
+            autres = [(sj, j) for j, sj in enumerate(par_visage)
+                      if sj is not None and j not in connus]
+            # Le meilleur visage NON cite n'est montre que s'il est un vrai
+            # PRETENDANT : au-dessus du plus faible des couples cites. En
+            # dessous, ce n'est pas un candidat, c'est une vignette de plus a
+            # regarder — et sur une page de jugement, l'attention est la
+            # ressource rare.
+            faibles = [d['sim'] for d in candidats if d['sim'] is not None]
+            if autres and faibles:
+                s_best, j_best = max(autres)
+                if s_best > min(faibles):
+                    candidats.append({"i": j_best, "sim": round(s_best, 3),
+                                      "cite": False})
+            residu.append({"person": nom, "key": cle, "visages": len(liste),
+                           "pourquoi": "ambigu",
+                           "candidats": sorted(candidats, key=lambda d: d['i'])})
 
     rap = {"seuils": {"CUR_FP_SIM": fp_sim, "ecart": ecart},
            "fiches": {"avec_signature_et_couples": len(fiches),
@@ -253,7 +298,21 @@ def _mesurer(faces, people, projet, ecart, exemples):
            "par_poste": {k: dict(v) for k, v in sorted(postes.items())},
            "exemples_decales": decales, "exemples_hors_bornes": exemples_hb,
            "plan": dict(plan), "exemples_plan": exemples_plan,
-           "exemples_refus": exemples_refus}
+           "exemples_refus": exemples_refus,
+           "residu": {
+               "cas": residu,
+               "couples_cites": sum(
+                   1 for c_ in residu for d in c_['candidats'] if d['cite']),
+               "fiches": len({c_['person'] for c_ in residu}),
+               # Nommer ce qui n'est PAS dedans : un refus « deja_pris » est une
+               # PERMUTATION entre deux fiches, une autre question (« a qui est
+               # ce visage ? ») ; « ecart_insuffisant » et « sous_le_plancher »
+               # ne citent pas deux fois la meme photo et ne se tranchent pas de
+               # la meme facon. Une population ecartee sans etre nommee devient
+               # une conclusion.
+               "ecartes": {k[len('refus_'):]: v for k, v in plan.items()
+                           if k.startswith('refus_') and k != 'refus_ambigu'},
+           }}
     if scores:
         a = np.asarray(scores, dtype=np.float32)
         rap["scores"] = {"n": len(scores),
@@ -366,6 +425,21 @@ def afficher(r):
     for e in (r.get("exemples_refus") or []):
         L.append(f"    refus  : {e['person'][:16]:<16} i={e['i']}  "
                  f"{e['pourquoi']}  {Path(e['key']).name[:30]}")
+    res = r.get("residu") or {}
+    if res.get("cas"):
+        L.append("")
+        L.append("LE RESIDU, A JUGER A L'OEIL (--residu pour l'ecrire) :")
+        L.append(f"    {len(res['cas'])} cas sur {res['fiches']} fiche(s), "
+                 f"{res['couples_cites']} couples cites")
+        L.append("    Un cas = une photo que la fiche cite plusieurs fois. Le")
+        L.append("    score ne tranche pas ; un humain, oui.")
+        par_fiche = Counter(c_['person'] for c_ in res['cas'])
+        for nom, n in par_fiche.most_common():
+            L.append(f"      {nom[:22]:<22} {n} cas")
+        ec = res.get("ecartes") or {}
+        L.append("    ECARTES de ce compte (autres refus, autres questions) : "
+                 + (", ".join(f"{k} {v}" for k, v in sorted(ec.items()))
+                    if ec else "aucun"))
     L.append("")
     L.append("BORNE BASSE : une empreinte faussement confirmee est entree dans la")
     L.append("signature et rend son propre couple « juste ». Il y en a au moins")
@@ -373,16 +447,119 @@ def afficher(r):
     return "\n".join(L)
 
 
+def bilan_residu(fichier_cas, fichier_jugements):
+    """Ce que les jugements humains AUTORISENT — pas ce qu'on fera.
+
+    Un cas jugé dit, pour une photo et une personne, quels visages SONT elle.
+    Trois populations en sortent, et elles ne se mélangent pas :
+
+      * **à retirer** — cité par la fiche, jugé « ce n'est pas elle ». C'est le
+        geste que le recalage n'a pas su faire, et il est destructif : il
+        supprime une décision humaine périmée, donc quarantaine réversible et
+        main de Mike.
+      * **confirmé** — cité et jugé « c'est elle ». Rien à faire, et c'est le
+        résultat le plus utile : il transforme un rattachement douteux en
+        vérité terrain.
+      * **à ajouter** — jugé « c'est elle » mais PAS cité. C'est une
+        ATTRIBUTION, une autre question et un autre geste ; le compte est
+        rendu à part et n'entre dans aucun plan de retrait.
+
+    Aucune écriture. Le banc conclut, il n'agit pas.
+    """
+    cas = json.loads(Path(fichier_cas).read_text(encoding='utf-8'))['cas']
+    try:
+        brut = json.loads(Path(fichier_jugements).read_text(encoding='utf-8'))
+        verdicts = brut.get('verdicts') or {}
+    except (OSError, ValueError):
+        verdicts = {}
+
+    c = Counter()
+    retraits, ajouts = [], []
+    for k in cas:
+        ident = f"{k['key']}|{k['person']}"
+        v = verdicts.get(ident)
+        if not v:
+            c['non_juges'] += 1
+            continue
+        if v.get('verdict') != 'juge':
+            c['indecidables'] += 1
+            continue
+        c['juges'] += 1
+        oui = set(int(x) for x in (v.get('oui') or []))
+        cites = {int(d['i']) for d in k['candidats'] if d.get('cite')}
+        for i in sorted(cites - oui):
+            c['a_retirer'] += 1
+            retraits.append({"person": k['person'], "key": k['key'], "i": i})
+        c['confirmes'] += len(cites & oui)
+        for i in sorted(oui - cites):
+            c['a_ajouter'] += 1
+            ajouts.append({"person": k['person'], "key": k['key'], "i": i})
+        if not (cites & oui):
+            c['photos_ou_personne_n_est_pas'] += 1
+
+    L = ["=" * 78,
+         "BILAN DU RESIDU — ce que le jugement humain autorise",
+         "=" * 78,
+         f"Cas : {len(cas)}   juges {c['juges']}   "
+         f"indecidables {c['indecidables']}   non juges {c['non_juges']}"]
+    if not c['juges']:
+        L.append("")
+        L.append("Aucun cas juge : un bilan sans verdict n'est pas un bilan.")
+        L.append("La page /residu est la pour ca.")
+        return "\n".join(L)
+    L += ["",
+          f"    a retirer (cite, juge PAS elle)      {c['a_retirer']:>5}",
+          f"    confirme  (cite, juge bien elle)     {c['confirmes']:>5}",
+          f"    a AJOUTER (juge elle, NON cite)      {c['a_ajouter']:>5}"
+          "   <- attribution, autre geste",
+          f"    photos ou aucun visage n'est elle    "
+          f"{c['photos_ou_personne_n_est_pas']:>5}",
+          "",
+          "Le retrait est DESTRUCTIF (il supprime une decision humaine devenue",
+          "fausse) : quarantaine reversible et geste de Mike, jamais la sandbox."]
+    if retraits:
+        L.append("")
+        L.append("A retirer :")
+        for r in retraits:
+            L.append(f"    {r['person'][:20]:<20} i={r['i']:<3} "
+                     f"{Path(r['key']).name[:34]}")
+    if ajouts:
+        L.append("")
+        L.append("A ajouter (hors plan de retrait) :")
+        for r in ajouts:
+            L.append(f"    {r['person'][:20]:<20} i={r['i']:<3} "
+                     f"{Path(r['key']).name[:34]}")
+    return "\n".join(L)
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.split('\n')[1])
-    ap.add_argument('--base', required=True, help="COPIE de photos.db")
+    ap.add_argument('--base', help="COPIE de photos.db")
     ap.add_argument('--projet', default='.')
     ap.add_argument('--ecart', type=float, default=ECART_DEFAUT)
     ap.add_argument('--exemples', type=int, default=12)
     ap.add_argument('--json', dest='sortie_json')
+    ap.add_argument('--residu', nargs='?', const=RESIDU_DEFAUT, default=None,
+                    help="ecrit le residu a juger (defaut : "
+                         + RESIDU_DEFAUT + ")")
+    ap.add_argument('--bilan-residu', dest='bilan_residu', nargs='?',
+                    const=RESIDU_JUGEMENTS_DEFAUT, default=None,
+                    help="conclut sur les jugements de la page /residu")
     a = ap.parse_args(argv)
+    if a.bilan_residu:
+        print(bilan_residu(a.residu or RESIDU_DEFAUT, a.bilan_residu))
+        return 0
+    if not a.base:
+        ap.error("--base est requis (une COPIE : mesure_copie_base.py)")
     rap = mesurer(a.base, a.projet, a.ecart, a.exemples)
     print(afficher(rap))
+    if a.residu:
+        r = rap['residu']
+        Path(a.residu).write_text(json.dumps(
+            {"seuils": rap['seuils'], "cas": r['cas'], "ecartes": r['ecartes']},
+            ensure_ascii=False, indent=1), encoding='utf-8')
+        print(f"\n{len(r['cas'])} cas ecrits dans {a.residu} "
+              f"({r['couples_cites']} couples cites, {r['fiches']} fiche(s)).")
     if a.sortie_json:
         Path(a.sortie_json).write_text(
             json.dumps(rap, ensure_ascii=False, indent=2), encoding='utf-8')

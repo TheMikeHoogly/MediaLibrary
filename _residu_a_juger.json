@@ -1,0 +1,299 @@
+{
+ "seuils": {
+  "CUR_FP_SIM": 0.3,
+  "ecart": 0.1
+ },
+ "cas": [
+  {
+   "person": "Céline Gauchat",
+   "key": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\40 ans Flo\\20260607_161245.jpg",
+   "visages": 22,
+   "pourquoi": "ambigu",
+   "candidats": [
+    {
+     "i": 7,
+     "sim": 0.808,
+     "cite": true
+    },
+    {
+     "i": 19,
+     "sim": 0.594,
+     "cite": true
+    }
+   ]
+  },
+  {
+   "person": "Didier",
+   "key": "ARZOPA/UJAn0k-20260628_012444597.jpg",
+   "visages": 12,
+   "pourquoi": "ambigu",
+   "candidats": [
+    {
+     "i": 1,
+     "sim": 0.908,
+     "cite": true
+    },
+    {
+     "i": 8,
+     "sim": 0.745,
+     "cite": true
+    }
+   ]
+  },
+  {
+   "person": "Didier",
+   "key": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\70 ans Papa\\20240330_Didier-et-Nicolas-Laser.jpg",
+   "visages": 12,
+   "pourquoi": "ambigu",
+   "candidats": [
+    {
+     "i": 1,
+     "sim": 0.908,
+     "cite": true
+    },
+    {
+     "i": 8,
+     "sim": 0.745,
+     "cite": true
+    }
+   ]
+  },
+  {
+   "person": "Didier",
+   "key": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\70 ans Papa\\20240330_Didier-et-Nicolas-Laser-2.jpg",
+   "visages": 13,
+   "pourquoi": "ambigu",
+   "candidats": [
+    {
+     "i": 3,
+     "sim": 0.871,
+     "cite": true
+    },
+    {
+     "i": 11,
+     "sim": 0.665,
+     "cite": true
+    }
+   ]
+  },
+  {
+   "person": "Didier",
+   "key": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Famille\\20240330_104808.jpg",
+   "visages": 11,
+   "pourquoi": "ambigu",
+   "candidats": [
+    {
+     "i": 1,
+     "sim": 0.896,
+     "cite": true
+    },
+    {
+     "i": 9,
+     "sim": 0.715,
+     "cite": true
+    }
+   ]
+  },
+  {
+   "person": "Flo",
+   "key": "\\\\NAS-Bremblens\\home\\Photos\\2025\\20250922_152638.jpg",
+   "visages": 4,
+   "pourquoi": "ambigu",
+   "candidats": [
+    {
+     "i": 0,
+     "sim": 0.583,
+     "cite": true
+    },
+    {
+     "i": 1,
+     "sim": 0.565,
+     "cite": true
+    },
+    {
+     "i": 2,
+     "sim": 0.611,
+     "cite": true
+    }
+   ]
+  },
+  {
+   "person": "Jenny",
+   "key": "\\\\NAS-Bremblens\\home\\Photos\\FUN\\Friends\\Flyer_Jenny.jpg",
+   "visages": 4,
+   "pourquoi": "ambigu",
+   "candidats": [
+    {
+     "i": 0,
+     "sim": 0.796,
+     "cite": true
+    },
+    {
+     "i": 1,
+     "sim": 0.686,
+     "cite": true
+    },
+    {
+     "i": 2,
+     "sim": 0.805,
+     "cite": true
+    },
+    {
+     "i": 3,
+     "sim": 0.641,
+     "cite": true
+    }
+   ]
+  },
+  {
+   "person": "Maryline Baudère",
+   "key": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\40 ans Flo\\20260607-145629_Flo-et-Maryline-Baudere.jpeg",
+   "visages": 12,
+   "pourquoi": "ambigu",
+   "candidats": [
+    {
+     "i": 2,
+     "sim": 0.793,
+     "cite": true
+    },
+    {
+     "i": 9,
+     "sim": 0.718,
+     "cite": true
+    }
+   ]
+  },
+  {
+   "person": "Res Jordi",
+   "key": "\\\\NAS-Bremblens\\home\\Photos\\Photos Papa\\1984\\1984_09-1\\07_mit Jeff bei Agnes.jpg",
+   "visages": 9,
+   "pourquoi": "ambigu",
+   "candidats": [
+    {
+     "i": 0,
+     "sim": 0.66,
+     "cite": true
+    },
+    {
+     "i": 2,
+     "sim": 0.568,
+     "cite": true
+    }
+   ]
+  },
+  {
+   "person": "Res Jordi",
+   "key": "\\\\NAS-Bremblens\\home\\Photos\\Photos Papa\\1984\\1984_09-1\\08_bei Agnes mit Jeff.jpg",
+   "visages": 9,
+   "pourquoi": "ambigu",
+   "candidats": [
+    {
+     "i": 1,
+     "sim": 0.596,
+     "cite": true
+    },
+    {
+     "i": 2,
+     "sim": 0.581,
+     "cite": true
+    }
+   ]
+  },
+  {
+   "person": "Res Jordi",
+   "key": "\\\\NAS-Bremblens\\home\\Photos\\Photos Papa\\1986\\Sept Agnes Fritz Frankfurt\\Bei Michael Jordi.jpg",
+   "visages": 9,
+   "pourquoi": "ambigu",
+   "candidats": [
+    {
+     "i": 1,
+     "sim": 0.682,
+     "cite": true
+    },
+    {
+     "i": 2,
+     "sim": 0.691,
+     "cite": true
+    }
+   ]
+  },
+  {
+   "person": "Res Jordi",
+   "key": "\\\\NAS-Bremblens\\home\\Photos\\Photos Papa\\1986\\Sept Agnes Fritz Frankfurt\\Bei Michael Jordi2.jpg",
+   "visages": 10,
+   "pourquoi": "ambigu",
+   "candidats": [
+    {
+     "i": 2,
+     "sim": 0.662,
+     "cite": true
+    },
+    {
+     "i": 3,
+     "sim": 0.687,
+     "cite": true
+    }
+   ]
+  },
+  {
+   "person": "Rosario",
+   "key": "\\\\NAS-Bremblens\\home\\Photos\\Photos Papa\\1999\\19990910 Mainau mit Arturo.JPG",
+   "visages": 3,
+   "pourquoi": "ambigu",
+   "candidats": [
+    {
+     "i": 0,
+     "sim": 0.732,
+     "cite": true
+    },
+    {
+     "i": 1,
+     "sim": 0.834,
+     "cite": true
+    },
+    {
+     "i": 2,
+     "sim": 0.78,
+     "cite": true
+    }
+   ]
+  },
+  {
+   "person": "Sylvie Chatelain",
+   "key": "\\\\NAS-Bremblens\\home\\Photos\\2022\\20220410_135647_07.jpg",
+   "visages": 7,
+   "pourquoi": "ambigu",
+   "candidats": [
+    {
+     "i": 1,
+     "sim": 0.879,
+     "cite": true
+    },
+    {
+     "i": 2,
+     "sim": 0.814,
+     "cite": true
+    }
+   ]
+  },
+  {
+   "person": "Val",
+   "key": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Sista\\40 ans Val et Thierry\\20210425_115207.jpg",
+   "visages": 8,
+   "pourquoi": "ambigu",
+   "candidats": [
+    {
+     "i": 5,
+     "sim": 0.734,
+     "cite": true
+    },
+    {
+     "i": 6,
+     "sim": 0.852,
+     "cite": true
+    }
+   ]
+  }
+ ],
+ "ecartes": {}
+}

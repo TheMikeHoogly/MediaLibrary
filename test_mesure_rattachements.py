@@ -14,6 +14,7 @@ dans un tuyau tue le test sous Windows (constate le 22/08, deux fois).
 
 import contextlib
 import io
+import json
 import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -275,6 +276,77 @@ class TestRapport(unittest.TestCase):
             txt = R.afficher(mesurer(d, f))
             self.assertIn("BORNE BASSE", txt)
             self.assertIn("decale", txt)
+
+
+class TestBilanResidu(unittest.TestCase):
+    """Le banc CONCLUT sur les jugements de la page /residu.
+
+    Trois populations qui ne se melangent pas : ce qu'on retire (cite, juge
+    pas elle), ce qu'on confirme, et ce qu'on AJOUTERAIT (juge elle, non cite)
+    — ce dernier est une attribution, un autre geste, et le confondre avec un
+    retrait ferait poser un nom sous couvert de reparation.
+    """
+
+    CAS = [{"key": r"\\NAS\p\a.jpg", "person": 'Didier', "visages": 12,
+            "pourquoi": 'ambigu',
+            "candidats": [{"i": 1, "sim": 0.9, "cite": True},
+                          {"i": 8, "sim": 0.7, "cite": True},
+                          {"i": 3, "sim": 0.8, "cite": False}]},
+           {"key": r"\\NAS\p\b.jpg", "person": 'Flo', "visages": 4,
+            "pourquoi": 'ambigu',
+            "candidats": [{"i": 0, "sim": 0.8, "cite": True},
+                          {"i": 2, "sim": 0.7, "cite": True}]}]
+
+    def bilan(self, dossier, verdicts):
+        cas = Path(dossier) / 'cas.json'
+        jug = Path(dossier) / 'jug.json'
+        cas.write_text(json.dumps({"cas": self.CAS}), encoding='utf-8')
+        jug.write_text(json.dumps({"verdicts": verdicts}), encoding='utf-8')
+        return R.bilan_residu(str(cas), str(jug))
+
+    def verdict(self, cas, oui, verdict='juge'):
+        return {f"{cas['key']}|{cas['person']}":
+                {"verdict": verdict, "oui": oui}}
+
+    def test_sans_verdict_le_bilan_le_DIT_au_lieu_de_conclure(self):
+        with TemporaryDirectory() as d:
+            txt = self.bilan(d, {})
+            self.assertIn("Aucun cas juge", txt)
+            self.assertNotIn("a retirer (cite", txt)
+
+    def test_le_couple_cite_non_retenu_part_au_retrait(self):
+        with TemporaryDirectory() as d:
+            txt = self.bilan(d, self.verdict(self.CAS[0], [1]))
+            self.assertIn("a retirer (cite, juge PAS elle)          1", txt)
+            self.assertIn("confirme  (cite, juge bien elle)         1", txt)
+
+    def test_un_visage_NON_cite_juge_elle_est_un_AJOUT_pas_un_retrait(self):
+        with TemporaryDirectory() as d:
+            txt = self.bilan(d, self.verdict(self.CAS[0], [1, 3]))
+            self.assertIn("a AJOUTER (juge elle, NON cite)          1", txt)
+            self.assertIn("attribution, autre geste", txt)
+
+    def test_aucun_n_est_elle_retire_tous_les_couples_cites(self):
+        with TemporaryDirectory() as d:
+            txt = self.bilan(d, self.verdict(self.CAS[1], []))
+            self.assertIn("a retirer (cite, juge PAS elle)          2", txt)
+            self.assertIn("photos ou aucun visage n'est elle        1", txt)
+
+    def test_un_indecidable_ne_compte_ni_dans_l_un_ni_dans_l_autre(self):
+        with TemporaryDirectory() as d:
+            txt = self.bilan(d, self.verdict(self.CAS[0], [], 'indecidable'))
+            self.assertIn("indecidables 1", txt)
+            self.assertIn("Aucun cas juge", txt)
+
+    def test_les_cas_non_juges_sont_comptes_a_part(self):
+        with TemporaryDirectory() as d:
+            txt = self.bilan(d, self.verdict(self.CAS[0], [1]))
+            self.assertIn("non juges 1", txt)
+
+    def test_le_bilan_rappelle_que_le_retrait_est_un_geste_humain(self):
+        with TemporaryDirectory() as d:
+            txt = self.bilan(d, self.verdict(self.CAS[0], [1]))
+            self.assertIn("geste de Mike", txt)
 
 
 if __name__ == '__main__':
