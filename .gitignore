@@ -208,3 +208,18 @@ _animaux_a_juger.json
 # Ce que `recaler_rattachements` a deplace, fiche par fiche, AVANT/APRES : ce
 # qui rend le bouton « 3 - Annuler » possible. Local, jamais versionne.
 _corbeille_recalage/
+
+
+# ─── Quarantaine des retraits de rattachements (22/08) ──────────────────────
+# Meme raison que les cinq autres corbeilles : c'est ce qui rend le retrait
+# annulable, c'est LOCAL, et ca porte des chemins de photos. Un fichier y est
+# deja entre avant cette ligne (`retrait_20260822_162822.jsonl`) : le sortir de
+# l'index est un geste de Mike (`git rm --cached`), le .gitignore ne defait
+# rien tout seul.
+_corbeille_retraits/
+
+# ─── Florine : la liste et la planche de jugement (22/08) ───────────────────
+# Sorties d'un banc : des chemins de photos et une page qui pointe vers le
+# serveur local. Utiles a l'oeil, jamais a l'historique.
+_florine_a_juger.json
+_florine_a_juger.html

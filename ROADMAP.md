@@ -349,8 +349,14 @@ qui en découle : éditer → redémarrer → **observer** → livrer.
     (`_corbeille_*`) au lieu de les lister — une liste en dur est toujours en
     retard d'un chantier — et l'exclusion volontaire (`_corbeille_session`,
     rebut du ménage) reste VISIBLE dans le tableau, parce qu'une exclusion tue
-    ne se distingue pas d'un oubli. Observé : l'inventaire dit désormais
-    **281,2 Ko exposés**. Le trou se referme à la prochaine sauvegarde horaire.
+    ne se distingue pas d'un oubli. Observé : l'inventaire est passé
+    à **281,2 Ko exposés**, puis la sauvegarde horaire a poussé les deux
+    corbeilles et il redit **« Total exposé : 0 o »** (22/08, 20:18) — cette
+    fois en parlant des SIX. `_corbeille_session` y figure « AUCUNE COPIE,
+    recalculable » : l'exclusion est visible, pas tue.
+    **Au passage** : `_corbeille_retraits/` était VERSIONNÉE (un fichier déjà
+    dans l'index git). Ajoutée au `.gitignore` ; la sortir de l'index est un
+    geste de Mike (`git rm --cached`), le `.gitignore` ne défait rien seul.
     *Un zéro parfait est une alarme, encore — et c'est le troisième de la
     journée.*
     **Reste le geste de Mike** : suivre `docs/REPETITION_RESTAURATION.md` —
