@@ -336,84 +336,37 @@ qui en découle : éditer → redémarrer → **observer** → livrer.
     (le pipeline reconnaît six espèces, la page disait « chat ») ; et
     « Même jour (30 juillet) » porte ses accents, le tableau des mois venant
     désormais du serveur (`meme_jour.MOIS_FR`) au lieu d'être recopié.
-12. **Assurance-vie : le PROTOCOLE de la répétition est écrit
-    (`docs/REPETITION_RESTAURATION.md`), et l'écrire a fait sortir un trou.**
-    L'inventaire annonçait **« Total exposé : 0 o »** en ne regardant que
-    **trois** quarantaines sur les **six** du disque : les deux nées le 22/08 —
-    `_corbeille_recalage` (33 rattachements recalés) et `_corbeille_retraits`
-    (2 couples retirés) — n'étaient sauvegardées **nulle part**. Un geste
-    annoncé RÉVERSIBLE dont la réversibilité tient à un dossier qu'aucune
-    sauvegarde n'emporte est une promesse qu'un disque mort annule en silence.
-    **Corrigé des DEUX côtés (22/08, 12 tests)** : le producteur
-    (`backup_artefacts`) et l'instrument découvrent les quarantaines par MOTIF
-    (`_corbeille_*`) au lieu de les lister — une liste en dur est toujours en
-    retard d'un chantier — et l'exclusion volontaire (`_corbeille_session`,
-    rebut du ménage) reste VISIBLE dans le tableau, parce qu'une exclusion tue
-    ne se distingue pas d'un oubli. Observé : l'inventaire est passé
-    à **281,2 Ko exposés**, puis la sauvegarde horaire a poussé les deux
-    corbeilles et il redit **« Total exposé : 0 o »** (22/08, 20:18) — cette
-    fois en parlant des SIX. `_corbeille_session` y figure « AUCUNE COPIE,
-    recalculable » : l'exclusion est visible, pas tue.
-    **Au passage** : `_corbeille_retraits/` était VERSIONNÉE (un fichier déjà
-    dans l'index git). Ajoutée au `.gitignore` ; la sortir de l'index est un
-    geste de Mike (`git rm --cached`), le `.gitignore` ne défait rien seul.
-    *Un zéro parfait est une alarme, encore — et c'est le troisième de la
-    journée.*
-    **LE PREMIER ESSAI RÉEL (22/08, 20:21) A TROUVÉ TROIS DÉFAUTS D'INSTRUMENT,
-    et c'est exactement ce que la répétition existe pour trouver.** (1) Le
-    garde-fou « ne jamais ouvrir `photos.db` » testait le NOM du fichier : il
-    refusait donc aussi la base RESTAURÉE, qui s'appelle forcément comme ça —
-    **la comparaison nom par nom, seul juge du chantier, n'avait jamais pu
-    tourner une seule fois**, et le refus tuait le programme (`SystemExit`) au
-    lieu de rendre un rapport. Il vise désormais LE `photos.db` de ce projet, et
-    lui seul. (2) Sur un dossier restauré VIDE, l'inventaire annonçait
-    « Total exposé : 0 o » — il compte ce qui est présent SANS copie, or rien
-    n'était présent : **une restauration ratée se lisait comme une réussite**.
-    Le côté restauré a maintenant sa propre lecture (« RIEN N'A ÉTÉ RESTAURÉ
-    ICI », artefacts irrécupérables manquants, « Revenus : n / 19 »). (3) Le
-    rapport ne CONCLUAIT pas : il dit « RÉPÉTITION RÉUSSIE » seulement si
-    l'intégrité, les tables, le nombre de noms ET chaque nom concordent — deux
-    bases vides ne passent pas. 14 tests (`test_verifier_restauration.py`).
+12. **Assurance-vie : CHANTIER CLOS (22/08, 22:51). La répétition a eu lieu,
+    et elle est RÉUSSIE.** Base restaurée depuis le NAS sur un dossier neuf,
+    puis comparée au vivant : **intégrité ok**, les **six tables identiques**
+    (tags 43 065, faces 42 195, animals 42 195, vectors 123 294, people 351,
+    pets 12), **363 noms des deux côtés**, et **AUCUN écart de décision, nom
+    par nom**. « On a une sauvegarde » a cessé d'être une promesse.
+    Coût mesuré : **60 s** pour les 250 Mo de la base, quelques secondes pour
+    les artefacts, hors clone et hors modèles re-téléchargeables. Les 6
+    artefacts absents du dossier restauré sont tous *recalculables* ou
+    *re-téléchargeables* — **tous les IRRÉCUPÉRABLES sont revenus.**
+    **Un écart qui n'en est pas un, et que le rapport EXPLIQUE désormais** :
+    la base restaurée pèse 249,5 Mo contre 276,5 vivants. C'est `VACUUM INTO`
+    (la sauvegarde est compactée) face à une base vivante qui porte son espace
+    libre et son WAL. Sans cette ligne, 27 Mo d'écart se lisent comme une perte.
+    **Ce que la répétition a trouvé en chemin — c'est pour ça qu'elle existe.**
+    (1) L'inventaire ne regardait que **3 quarantaines sur 6** : deux nées le
+    matin même n'étaient sauvegardées nulle part, et il annonçait quand même
+    « Total exposé : 0 o ». Les deux côtés découvrent par motif désormais.
+    (2) Le garde-fou « ne jamais ouvrir `photos.db` » testait le NOM du
+    fichier : il refusait donc la base RESTAURÉE — **la comparaison nom par
+    nom n'avait jamais pu tourner une seule fois**. (3) Sur un dossier vide, le
+    rapport disait « 0 o exposé » au lieu de « rien n'a été restauré ».
+    (4) `robocopy` meurt en `ERREUR 59` après ~72 s sur les 250 Mo, quatre fois
+    de suite, serveur arrêté ou non, avec `/J` comme sans — et il RECOMMENCE à
+    chaque essai. `copier_reprise.py` (11 tests) passe en 60 s, zéro reprise,
+    et REPREND à l'octet si le partage lâche. (5) Trois défauts de lanceur
+    `.bat`, dont une parenthèse dans un `echo` au sein d'un bloc — que
+    `verifier_bat.py` sait maintenant voir (15 tests).
+    **Ce qui reste ouvert, et c'est un choix de Mike** : la copie **hors site**.
+    Un sinistre qui emporte le PC ET le NAS emporte tout.
 
-    **Reste le geste de Mike**, et il tient dans un double-clic :
-    **`30 - Repetition de restauration.bat`** enchaîne
-    clone, base, artefacts, chrono et comparaison, et s'arrête net à la
-    première étape qui échoue. **Trois défauts de lanceur ont été payés pour
-    y arriver** (python inline aux guillemets imbriqués ; lecteur `D:` absent
-    diagnostiqué comme un dossier non vide ; et une parenthèse dans un `echo`
-    au sein d'un bloc, qui FERME le bloc et tue `cmd` sur « ou etait
-    inattendu »). Le troisième a fait grandir l'instrument : `verifier_bat.py`
-    voit désormais ce cas (15 tests), et les 18 `.bat` du projet passent —
-    aucun autre ne le portait. Le lanceur, lui, n'a plus un seul bloc : que
-    des `goto`. **Quatrième défaut, celui-ci sur le NAS** : la copie des 250 Mo
-    de `photos.db.bak` meurt en `ERREUR 59` — le serveur pousse 276 Mo sur le
-    même partage toutes les heures ET remplace le `.bak` par un `os.replace`
-    atomique, ce qui arrache la poignée de la copie en cours. Le lanceur copie
-    désormais la base seule et **non bufferisée** (`/J`, le mode fait pour les
-    gros fichiers SMB), relève la date du `.bak` avant et après, et **DIT
-    laquelle des deux causes** a frappé au lieu de laisser deviner. Il conseille
-    aussi d'arrêter le serveur — un PC neuf n'en a pas, donc la répétition en
-    devient plus fidèle. Le pas-à-pas manuel reste dans
-    `docs/REPETITION_RESTAURATION.md` —
-    restaurer pour de vrai dans un dossier vierge, chronométrer, puis
-    `verifier_restauration.py --restaure <dossier>`, qui compare les décisions
-    humaines **nom par nom** (un total identique ne prouve rien).
-
-    *Historique* : **l'INSTRUMENT était livré, la répétition restait à faire
-    (22/08).** `verifier_restauration.py` a tourné et NOMMÉ les manques :
-    **9 artefacts irrécupérables présents nulle part ailleurs, 19,9 Mo** —
-    `docs/undo_*.json` (la carte des 19 331 déplacements, devenue porteuse le
-    22/08), les trois quarantaines, et les six fichiers de réglages saisis à la
-    main dont `dossiers_a_taguer.txt`, sans lequel un PC neuf ne voit plus
-    aucune photo. **Correctif livré ET OBSERVÉ** : `backup_artefacts()` les
-    pousse sur le NAS à chaque sauvegarde, incrémental — 20 Mo à côté d'un
-    snapshot de 276. Première sauvegarde réelle : **61 fichiers, 20,4 Mo**, et
-    l'instrument relancé annonce **« Total exposé : 0 o »**, chaque ligne passée
-    de « AUCUNE COPIE » à « OUI · artefacts/… ».
-    Reste le geste de Mike : restaurer pour de vrai sur un dossier vierge,
-    chronométrer, puis `verifier_restauration.py --restaure <dossier>` — il
-    compare les décisions humaines **nom par nom** (un total identique ne prouve
-    rien : deux erreurs se compensent).
 13. **Serveur exposé en MCP, lecture seule d'abord (PROMU 12/08).** Recherche,
     fiches et `faits` en outils MCP locaux (JSON-RPC stdio, zéro dépendance —
     skill `mcp-builder`). Écriture plus tard. Briques de 14a.

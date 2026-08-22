@@ -38,13 +38,27 @@ identiques au caractère près** (mêmes longueurs, mêmes empreintes avant/apr�
 deux manquent. Les quatre bancs qui lisaient les pages dans le source passent
 par `ui_gabarits.py`, qui **lève** au lieu de se replier.
 
+**LE CHANTIER 12 EST CLOS : la répétition a eu lieu, et elle est RÉUSSIE
+(22/08, 22:51).** Base restaurée depuis le NAS sur un dossier neuf, comparée au
+vivant : intégrité ok, six tables identiques, **363 noms des deux côtés, AUCUN
+écart de décision nom par nom**. 60 s pour les 250 Mo de la base. Tous les
+artefacts IRRÉCUPÉRABLES sont revenus. La sauvegarde a cessé d'être une
+promesse. **Reste ouvert, et c'est un choix de Mike : la copie HORS SITE** —
+un sinistre qui emporte le PC ET le NAS emporte tout.
+
+**Ce que la répétition a trouvé en chemin — cinq défauts, tous muets** :
+l'inventaire ne voyait que 3 quarantaines sur 6 ; le garde-fou « ne jamais
+ouvrir photos.db » refusait la base RESTAURÉE (la comparaison nom par nom
+n'avait jamais pu tourner) ; un dossier vide se lisait « 0 o exposé » ;
+`robocopy` meurt en ERREUR 59 après ~72 s sur 250 Mo et recommence à chaque
+essai (`copier_reprise.py` passe en 60 s et REPREND à l'octet) ; et trois
+défauts de `.bat`, dont une parenthèse dans un `echo` au sein d'un bloc, que
+`verifier_bat.py` sait désormais voir.
+
 ## Prochain pas
 
-1. **Chantier 12 — la répétition, et c'est un geste de Mike.** Le protocole est
-   écrit : `docs/REPETITION_RESTAURATION.md`, à suivre tel quel (restaurer pour
-   de vrai dans un dossier vierge, chronométrer, puis
-   `verifier_restauration.py --restaure <dossier>` — il compare les décisions
-   humaines **nom par nom**, un total identique ne prouve rien).
+1. **Copie HORS SITE (chantier 12 bis)** — le seul manque qui reste à
+   l'assurance-vie, et il demande une décision avant du code.
 2. **Suite de `ui/`** : le CSS commun (chaque page porte encore son `<style>`)
    puis le redesign — deux chantiers SÉPARÉS, exprès (`photo-ui`).
 3. **Reste d'audit** : O7–O9, O11–O15 ; **I1** est maintenant VISIBLE dans
@@ -59,13 +73,12 @@ ces 153 portent aussi `personne:Flo`**. La galerie propose « Florine » comme
 puce de filtre, `/api/names` l'ignore : deux autorités divergent. Fusion ou
 fiche à créer — jugement humain, geste sur le fonds.
 
-**À VÉRIFIER À LA REPRISE** : la sauvegarde des quarantaines. L'inventaire du
-chantier 12 disait « Total exposé : 0 o » en ne regardant que **3 corbeilles
-sur 6** ; il dit maintenant **281,2 Ko** (`_corbeille_recalage`,
-`_corbeille_retraits`). Les deux côtés découvrent par motif désormais, mais le
-trou ne se referme qu'à la première sauvegarde horaire APRÈS le correctif —
-relancer `verifier_restauration.py --vivant copie.db` et confirmer le retour à
-zéro. *Un zéro parfait est une alarme : c'était le troisième de la journée.*
+**Le trou des quarantaines est REFERMÉ et vérifié** : la sauvegarde horaire a
+poussé `_corbeille_recalage` et `_corbeille_retraits`, et l'inventaire redit
+« Total exposé : 0 o » — cette fois en parlant des SIX.
+**Un fichier VERSIONNÉ par erreur reste à sortir de l'index**, geste de Mike :
+`git rm --cached "_corbeille_retraits/retrait_20260822_162822.jsonl"` puis
+commit et push. Le `.gitignore` est à jour, mais il ne défait pas le passé.
 
 **Les TROIS canaux, mêmes octets** (CRLF, via `device_bash`, jamais supprimer ;
 `canal.py` les lit tous) : `_commande_serveur.txt` → `redemarrer`, puis

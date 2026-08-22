@@ -119,51 +119,22 @@ goto :fin_erreur
 
 :journal_ok
 echo.
-echo   La base fait 250 Mo. Copie NON BUFFERISEE ^(/J^) : c'est le mode
-echo   recommande pour les gros fichiers sur SMB, et il evite une
-echo   bonne part des "ERREUR 59".
+echo   La base fait 250 Mo, et elle NE passe PAS par robocopy.
+echo   Mesure du 22/08 : robocopy meurt en "ERREUR 59" apres ~72 s,
+echo   quatre fois de suite, serveur arrete ou non, avec ou sans /J -
+echo   et il RECOMMENCE du debut a chaque essai, donc il ne converge
+echo   jamais. La meme copie en blocs de 4 Mo est passee en 60 s, du
+echo   premier coup. Et si le partage coupe, celle-ci REPREND a
+echo   l'octet ou elle en etait au lieu de tout refaire.
 echo.
-REM La date du fichier AVANT et APRES : si elle change, c'est la
-REM sauvegarde horaire du serveur qui a remplace photos.db.bak sous la
-REM poignee ouverte - `backup_to` fait un os.replace atomique cote NAS.
-REM Deviner la cause coute plus cher que la mesurer.
-for %%f in ("%NAS%\photos.db.bak") do set "BAK_AVANT=%%~tf"
-robocopy "%NAS%" "%CIBLE%" photos.db.bak /J /NJH /NJS /NP /R:3 /W:10
-set "RC=%ERRORLEVEL%"
-for %%f in ("%NAS%\photos.db.bak") do set "BAK_APRES=%%~tf"
-if %RC% LSS 8 goto :base_copiee
-echo.
-echo   La copie de la base a echoue.
-if not "%BAK_AVANT%"=="%BAK_APRES%" goto :cause_sauvegarde
-echo.
-echo   La date de photos.db.bak n'a pas bouge pendant la copie :
-echo   ce n'est donc PAS la sauvegarde horaire. Reste une coupure de
-echo   session SMB - l'ERREUR 59 classique sur un transfert long.
-echo   Relance ce lanceur : il est re-entrant, le clone sera saute.
-echo   Si ca recommence, copie photos.db.bak a la main dans
-echo   l'explorateur, renomme-le photos.db, puis relance.
-goto :fin_erreur
-
-:cause_sauvegarde
-echo.
-echo   CAUSE TROUVEE : photos.db.bak a change pendant la copie.
-echo      avant : %BAK_AVANT%
-echo      apres : %BAK_APRES%
-echo   C'est la sauvegarde horaire du serveur : elle remplace le
-echo   fichier d'un seul coup sur le NAS, et la copie en cours perd
-echo   sa poignee. Attends deux minutes et relance - ou arrete le
-echo   serveur le temps de la repetition, ce qu'un PC neuf fait de
-echo   toute facon.
-goto :fin_erreur
-
-:base_copiee
-REM Relance du lanceur : la base d'un essai PRECEDENT gene le renommage.
-REM Seul fichier que ce script efface, et il vit dans le dossier d'essai.
-if exist "%CIBLE%\photos.db" del /q "%CIBLE%\photos.db"
-ren "%CIBLE%\photos.db.bak" "photos.db"
+"%PY%" copier_reprise.py "%NAS%\photos.db.bak" "%CIBLE%\photos.db"
 if not errorlevel 1 goto :artefacts
 echo.
-echo   Impossible de renommer photos.db.bak en photos.db.
+echo   La copie de la base a echoue meme avec reprise. Le partage ne
+echo   rend plus rien de suivi : verifie le reseau et le NAS, et que
+echo   \\nas-bremblens\home\Uploads\photos.db.bak existe toujours.
+echo   La copie partielle est conservee : relancer reprendra ou elle
+echo   s'est arretee.
 goto :fin_erreur
 
 :artefacts

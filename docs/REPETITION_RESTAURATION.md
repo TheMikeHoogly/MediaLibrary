@@ -50,6 +50,20 @@ quarantaines. Si une ligne dit `AUCUNE COPIE` en face d'un `IRRECUPERABLE`,
 **arrête-toi là** : la sauvegarde a un trou, la répétition mesurerait ce trou
 au lieu de mesurer la procédure.
 
+## La base ne passe pas par robocopy — et c'est une mesure
+
+Le 22/08, `robocopy` a échoué **quatre fois de suite** sur les 250 Mo de
+`photos.db.bak` : `ERREUR 59`, toujours après ~72 secondes, serveur arrêté ou
+non, avec `/J` comme sans. Et à chaque tentative il **recommence du début** :
+dans un tuyau qui coupe avant la fin, ça ne converge jamais.
+
+La même copie en blocs de 4 Mo (`copier_reprise.py`) est passée en **60 s, du
+premier coup, zéro reprise**. Ce n'était donc pas le réseau : c'était robocopy
+et sa façon de lire. Le lanceur copie désormais la base avec `copier_reprise`,
+qui reprend à l'octet près si le partage lâche, vérifie la taille finale, et
+refuse de coller deux sources différentes (témoin `.reprise`). robocopy reste
+pour les petits fichiers et l'arbre des artefacts, où il n'a jamais fauté.
+
 ## Arrête le serveur d'abord
 
 Il pousse **276 Mo sur le NAS toutes les heures** (`backup_db`), et il remplace

@@ -123,6 +123,19 @@ class TestVerdict(unittest.TestCase):
         r.setdefault('ecarts', [])
         return r
 
+    def test_l_ecart_de_TAILLE_est_explique_au_lieu_d_inquieter(self):
+        # 22/08 : 249,5 Mo restaurés contre 276,5 vivants. Ce n'est pas une
+        # perte, c'est `VACUUM INTO` — mais il faut que le rapport le dise.
+        txt = V.afficher_comparaison(self.base({'octets_vivant': 276_500_000,
+                                                'octets_restaure': 249_500_000}))
+        self.assertIn('VACUUM INTO', txt)
+        self.assertIn('ATTENDU', txt)
+        self.assertIn('RÉPÉTITION RÉUSSIE', txt)   # l'écart n'invalide rien
+
+    def test_sans_les_tailles_le_rapport_tient_quand_meme(self):
+        self.assertIn('RÉPÉTITION RÉUSSIE',
+                      V.afficher_comparaison(self.base({})))
+
     def test_tout_concorde_le_dit(self):
         self.assertIn('RÉPÉTITION RÉUSSIE',
                       V.afficher_comparaison(self.base({})))

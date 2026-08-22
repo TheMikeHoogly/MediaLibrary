@@ -359,9 +359,17 @@ def comparer(vivant, restaure_base):
                                     'confirmations': 0})
         if va != vb:
             ecarts.append({'nom': nom, 'vivant': va, 'restaure': vb})
-    return {'tables': {'vivant': a['tables'], 'restaure': b['tables']},
+    def _octets(c):
+        try:
+            return Path(c).stat().st_size
+        except OSError:
+            return None
+    return {'tables': {'tables_vivant': a['tables'], 'vivant': a['tables'],
+                       'restaure': b['tables']},
             'integrite_restauree': b['integrite'],
             'noms_vivant': len(a['par_nom']), 'noms_restaure': len(b['par_nom']),
+            'octets_vivant': _octets(vivant),
+            'octets_restaure': _octets(restaure_base),
             'ecarts': ecarts}, None
 
 
@@ -437,6 +445,20 @@ def afficher_comparaison(r):
         marque = '   ' if v == b else ' ⚠ '
         L.append(f"{marque}{table:<10} vivant {v}  restauré {b}")
     L.append("")
+    # La taille des DEUX fichiers, avec sa raison. Sans cette ligne, l'écart
+    # (250 Mo restaurés contre 276 vivants, 22/08) se lit comme une perte —
+    # or c'est `VACUUM INTO` qui produit la sauvegarde : elle est COMPACTÉE,
+    # tandis que la base vivante porte son espace libre et son WAL. Un chiffre
+    # qu'on laisse se lire de travers coûte une soirée d'enquête.
+    ov, orr = r.get('octets_vivant'), r.get('octets_restaure')
+    if ov and orr:
+        L.append("Taille du fichier : vivant %s · restauré %s"
+                 % (humain(ov), humain(orr)))
+        if orr < ov:
+            L.append("  L'écart est ATTENDU : la sauvegarde sort d'un "
+                     "`VACUUM INTO` (base compactée), la vivante porte son "
+                     "espace libre et son WAL. Ce sont les lignes au-dessus "
+                     "qui jugent, pas les octets.")
     L.append(f"Noms : vivant {r['noms_vivant']} · restauré {r['noms_restaure']}")
     if not r['ecarts']:
         L.append("Décisions humaines : AUCUN écart, nom par nom.")
