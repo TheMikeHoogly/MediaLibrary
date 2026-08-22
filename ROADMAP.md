@@ -195,12 +195,25 @@ une **génération** : le `taskkill` par titre ne tuait rien.
     **sauf** l'effacement, réservé à Classification ; (d) zoom pinch + molette —
     `maximum-scale=1` retiré ✔ ; (e) **boutons de tri : CLOS (19/08), observé** — l'ordre du serveur
     s'appelle « Pertinence », un seul ordre allumé, le clic n'est plus avalé.
-    Reste : bandeau `#pending`, libellé `/pets`, « Meme jour (14 aout) » là où
-    la page dit « 14 août ».
-12. **Assurance-vie : restauration à blanc (PROMU 12/08).** « PC mort lundi,
-    tout revit vendredi » : restaurer le snapshot NAS sur un dossier vierge,
-    chronométrer, noter chaque manque (dont la copie hors-site de
-    `journal_jugements.jsonl`). Tant qu'il n'a pas tourné, c'est une promesse.
+    **(f) Les trois derniers écarts sont CLOS (22/08), observés** : le bandeau
+    `#pending` s'annonce (`role="status"`) et ne se tait plus définitivement —
+    il ne se re-programmait QUE tant que la file n'était pas vide, donc un envoi
+    depuis le téléphone n'allumait plus rien ; `/pets` parle d'ANIMAUX partout
+    (le pipeline reconnaît six espèces, la page disait « chat ») ; et
+    « Même jour (30 juillet) » porte ses accents, le tableau des mois venant
+    désormais du serveur (`meme_jour.MOIS_FR`) au lieu d'être recopié.
+12. **Assurance-vie : l'INSTRUMENT est livré, la répétition reste à faire
+    (22/08).** `verifier_restauration.py` a tourné et NOMMÉ les manques :
+    **9 artefacts irrécupérables présents nulle part ailleurs, 19,9 Mo** —
+    `docs/undo_*.json` (la carte des 19 331 déplacements, devenue porteuse le
+    22/08), les trois quarantaines, et les six fichiers de réglages saisis à la
+    main dont `dossiers_a_taguer.txt`, sans lequel un PC neuf ne voit plus
+    aucune photo. **Correctif livré** : `backup_artefacts()` les pousse sur le
+    NAS à chaque sauvegarde, incrémental — 20 Mo à côté d'un snapshot de 276.
+    Reste le geste de Mike : restaurer pour de vrai sur un dossier vierge,
+    chronométrer, puis `verifier_restauration.py --restaure <dossier>` — il
+    compare les décisions humaines **nom par nom** (un total identique ne prouve
+    rien : deux erreurs se compensent).
 13. **Serveur exposé en MCP, lecture seule d'abord (PROMU 12/08).** Recherche,
     fiches et `faits` en outils MCP locaux (JSON-RPC stdio, zéro dépendance —
     skill `mcp-builder`). Écriture plus tard. Briques de 14a.
@@ -215,8 +228,10 @@ une **génération** : le `taskkill` par titre ne tuait rien.
     surtout la PRÉCISION — `q=mouton` rend 1 500 photos dont 28 moutons,
     `espece:mouton` en rend 32, tous confirmés. **Puces livrées et observées** :
     six sous la barre, elles INSÈRENT le jeton (il se compose avec les autres
-    axes) et relancent la requête côté serveur. Reste : le plafond de page
-    (`espece:chat` rend 1 500 sur 2 386 — limite de `/files?q=`, pas de l'axe),
+    axes) et relancent la requête côté serveur. **Le plafond de page se DÉCLARE (22/08, observé)** :
+    `espece:chat` affiche « 1500 photo(s) … 886 de plus non affichées (sur 2386
+    au total) ». Le filtre déterministe connaît son total avant de couper ; un
+    plafond silencieux se lisait comme une exhaustivité.
     La barre de recherche ne ment plus sur une page de résultats : elle attend
     **Entrée** et relance côté serveur (choix de Mike, 21/08).
     (b) ensuite seulement, **escalade ponctuelle** vers un modèle chargé à la

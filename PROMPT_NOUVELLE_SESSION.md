@@ -68,11 +68,14 @@ un jumeau faux ferait déborder les index.
    −250 du 17/08 comme aux 2 283 du 21/08.
 4. **Juger 30 propositions de la tranche 0,35–0,40** (choix de Mike, 21/08)
    avant de toucher `CUR_ADD_SIM`. 1 328 visages, 1 106 photos vivantes.
-5. **Chantier 12 — la restauration à blanc.** Toujours le seul item dont l'échec
-   serait irréversible, et il n'a jamais tourné. La restauration est un geste de
-   Mike, la sandbox écrit l'INSTRUMENT (`verifier_restauration.py`).
-6. **Les finitions, en TRAITE AUTONOME** : UI (11), audit I4–I8 / O7–O15,
-   plafond de page à 1 500 sur `espece:chat`. Puis **MCP lecture seule (13)**.
+5. **Chantier 12 — l'instrument est livré, la répétition reste à faire.**
+   `verifier_restauration.py` a nommé **9 artefacts irrécupérables présents
+   nulle part ailleurs (19,9 Mo)**, dont `docs/undo_*.json` et les trois
+   quarantaines ; `backup_artefacts()` les pousse désormais sur le NAS à chaque
+   sauvegarde. Reste le geste de Mike : restaurer pour de vrai sur un dossier
+   vierge, chronométrer, puis `verifier_restauration.py --restaure <dossier>`.
+6. **Finitions UI et plafond de page : FAITES et observées (22/08).** Reste
+   l'audit I4–I8 / O7–O15, puis **MCP lecture seule (13)**.
 
 **Une décision à cinq secondes qui traîne depuis trois sessions** : l'extraction
 `ui/` (point 7) — lui donner une session ou la parquer.

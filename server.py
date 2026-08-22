@@ -4067,6 +4067,12 @@ def semantic_search(requete, limite=80, detail=None):
                 _epoch_precis, _annee_fiable)
             if detail is not None:
                 detail['sans_date_tri'] = sans_date_tri
+                # Un plafond SILENCIEUX se lit comme une exhaustivité :
+                # `espece:chat` rend 2 386 photos et la page en affichait
+                # 1 500 sans le dire — 886 disparues sans un mot. Le filtre
+                # déterministe connaît son total AVANT de couper : il le dit.
+                detail['total'] = len(ordre)
+                detail['tronque'] = max(0, len(ordre) - int(limite))
             return [(k, 1.0) for k in ordre[:limite]]
         with SEMANTIC_LOCK:
             q = sem.encoder_textes([reste])[0]
@@ -5012,6 +5018,9 @@ def backup_db():
             # export du journal des jugements — le tout best-effort.
             backup_verify()
             export_jugements()
+            # Ce que la base ne porte pas et qui ne se refabrique pas
+            # (chantier 12) : 20 Mo à côté d'un snapshot de 276.
+            backup_artefacts()
     except Exception as e:                                  # noqa: BLE001
         print(f"  ⚠ Sauvegarde de la base impossible : {e}")
 
@@ -5094,6 +5103,91 @@ def backup_verify():
         res["detail"] = str(e)[:200]
         print(f"  ⚠ Vérification de la sauvegarde impossible : {e}")
     BACKUP_VERIFY_STATE.update(res)
+
+
+# Ce que la sauvegarde du 22/08 a cessé d'oublier. `backup_db()` ne poussait que
+# `photos.db` et le journal des jugements ; `verifier_restauration.py` a nommé
+# **9 artefacts IRRÉCUPÉRABLES sans aucune copie**, pour 20 Mo au total — dont
+# `docs/undo_*.json`, la carte des 19 331 déplacements par laquelle 748
+# décisions humaines ont retrouvé leur photo. Perdre 20 Mo à côté d'un snapshot
+# de 276 Mo n'avait aucune raison d'être.
+ARTEFACTS_A_SAUVER = (
+    'lieux.txt', 'lieux_locaux.txt', 'vocabulaire_tags.txt',
+    'dossier_uploads.txt', 'dossiers_a_taguer.txt', 'dossiers_a_explorer.txt',
+    'gps_places.json',
+)
+DOSSIERS_A_SAUVER = ('_corbeille_detections', '_corbeille_vecteurs',
+                     '_corbeille_decisions')
+
+
+def _copier_si_different(src, dst):
+    """Copie `src` vers `dst` seulement si taille ou date diffèrent.
+
+    Renommage atomique à l'arrivée : jamais de fichier à moitié écrit sur le
+    NAS — même contrat que `export_jugements` et que l'écriture des index.
+    Renvoie les octets copiés, 0 si rien à faire."""
+    try:
+        st = src.stat()
+    except OSError:
+        return 0
+    try:
+        d = dst.stat()
+        if d.st_size == st.st_size and int(d.st_mtime) >= int(st.st_mtime):
+            return 0
+    except OSError:
+        pass
+    try:
+        dst.parent.mkdir(parents=True, exist_ok=True)
+        tmp = dst.with_suffix(dst.suffix + '.tmp')
+        shutil.copy2(src, tmp)
+        os.replace(tmp, dst)
+        return st.st_size
+    except OSError as e:
+        print(f"  ⚠ Sauvegarde de {src.name} impossible : {e}")
+        return 0
+
+
+def backup_artefacts():
+    """Copie sur le NAS ce que `photos.db` ne porte PAS (chantier 12).
+
+    Les réglages saisis à la main (racines scannées, vocabulaires de lieux et de
+    tags), les libellés de géocodage, les JOURNAUX DE DÉPLACEMENT et les trois
+    quarantaines. Sans eux, un PC neuf ne redémarre pas le projet : sans
+    `dossiers_a_taguer.txt` le serveur ne voit plus rien, sans `docs/undo_*`
+    plus aucune décision décrochée n'est réparable, et sans les corbeilles les
+    purges cessent d'être réversibles.
+
+    Incrémental (taille + date), best-effort : ne fait jamais échouer le backup.
+    """
+    cible = DB_BACKUP.parent / 'artefacts'
+    n = octets = 0
+    try:
+        for nom in ARTEFACTS_A_SAUVER:
+            o = _copier_si_different(SCRIPT_DIR / nom, cible / nom)
+            n += 1 if o else 0
+            octets += o
+        for src in sorted((SCRIPT_DIR / 'docs').glob('undo_*.json')):
+            o = _copier_si_different(src, cible / 'docs' / src.name)
+            n += 1 if o else 0
+            octets += o
+        for dossier in DOSSIERS_A_SAUVER:
+            racine = SCRIPT_DIR / dossier
+            if not racine.is_dir():
+                continue
+            for src in sorted(racine.rglob('*')):
+                if src.is_file():
+                    o = _copier_si_different(
+                        src, cible / dossier / src.relative_to(racine))
+                    n += 1 if o else 0
+                    octets += o
+    except Exception as e:                                   # noqa: BLE001
+        print(f"  ⚠ Sauvegarde des artefacts interrompue : {e}")
+    BACKUP_VERIFY_STATE['artefacts'] = {'at': time.time(), 'fichiers': n,
+                                        'octets': octets}
+    if n:
+        print(f"  🧰 Artefacts hors base sauvés : {n} fichier(s), "
+              f"{octets / 1048576:.1f} Mo")
+    return n
 
 
 def export_jugements():
@@ -5794,7 +5888,7 @@ body { font-family: var(--f-texte);
   <span class="lbl">filtre exact : la d&eacute;tection ET la description disent la m&ecirc;me b&ecirc;te</span>
 </div>
 
-<div id="pending"></div>
+<div id="pending" role="status" aria-live="polite"></div>
 __FOLDERS__
 <div class="tagbar" id="tagbar"></div>
 <div class="motifbar" id="motifbar"></div>
@@ -5833,7 +5927,7 @@ __FOLDERS__
     <span id="lb-name"></span>
     <button id="lb-next">&#8594;</button>
     <button id="lb-sim" aria-label="Voir les photos semblables">&#128269; Semblables</button>
-    <button id="lb-jour" aria-label="Voir les photos du meme jour, toutes annees">&#128197; Meme jour</button>
+    <button id="lb-jour" aria-label="Voir les photos du m&ecirc;me jour, toutes ann&eacute;es">&#128197; M&ecirc;me jour</button>
     <button id="lb-del" aria-label="Supprimer cette photo">&#128465;&#65039; Supprimer</button>
     <button id="lb-close">Fermer</button>
   </div>
@@ -5917,7 +6011,7 @@ __FOLDERS__
   // « chat endormi sur le canape » fonctionne sans qu'aucun de ces mots
   // n'apparaisse dans les tags.
   var modeIA = false, iaResultats = null, iaJeton = 0, iaCompris = '',
-      iaEcartees = 0, iaSansOrdre = 0;
+      iaEcartees = 0, iaSansOrdre = 0, iaTronque = 0, iaTotal = 0;
 
   // Lit la decomposition renvoyee par le serveur (/api/search ou __SEARCHMETA__)
   // et remplit les trois variables d'affichage. UNE seule implementation : les
@@ -5943,6 +6037,8 @@ __FOLDERS__
     iaCompris = bouts.join(' \u00b7 ');
     iaEcartees = d.sans_date || 0;
     iaSansOrdre = d.sans_date_tri || 0;
+    iaTronque = d.tronque || 0;
+    iaTotal = d.total || 0;
     majEspeceChips(d.especes || []);
   }
   // ── 5e axe : les puces d'espece ──────────────────────────────────────
@@ -6409,6 +6505,11 @@ __FOLDERS__
       txt += ' (' + iaEcartees + ' sans date assez précise)';
     if (currentSort === 'pertinence' && iaSansOrdre)
       txt += ' · ' + iaSansOrdre + ' sans date connue, en fin de liste';
+    // Un plafond qui ne se dit pas se lit comme une exhaustivite. Il n'apparait
+    // que s'il a REELLEMENT coupe, et il donne le total, pas un « … ».
+    if (modeIA && iaTronque)
+      txt += ' · ' + iaTronque + ' de plus non affichées (sur ' + iaTotal
+             + ' au total)';
     document.getElementById('cnt').textContent = txt;
   }
 
@@ -6448,15 +6549,17 @@ __FOLDERS__
     } else { t.textContent = 'pas encore de tags'; t.className = 'none'; }
     document.getElementById('lb-desc').textContent = f.desc || '';
     // Pas de date au jour pres -> pas de bouton (29 % de la photothèque en
-    // est la). Le libelle porte le jour : « Meme jour (14 aout) ».
+    // est la). Le libelle porte le jour : « Même jour (14 août) », accent
+    // compris — c'est ce que la page d'arrivee affiche.
     var jb = document.getElementById('lb-jour');
     jb.hidden = !f.jour;
-    if (f.jour) jb.textContent = '📅 Meme jour (' + jourLisible(f.jour) + ')';
+    if (f.jour) jb.textContent = '📅 Même jour (' + jourLisible(f.jour) + ')';
   }
-  // « 08-14 » -> « 14 aout ». Sans locale : toLocaleDateString depend du poste
-  // et le serveur, lui, ecrit deja ce libelle sans accents dans meme_jour.py.
-  var MOIS_JOUR = ['janvier','fevrier','mars','avril','mai','juin','juillet',
-                   'aout','septembre','octobre','novembre','decembre'];
+  // « 08-14 » -> « 14 aout ». Sans locale : toLocaleDateString depend du poste.
+  // Les MOIS viennent du serveur (meme_jour.MOIS_FR, accentue) : la page
+  // d'arrivee ecrit « 14 aout » avec son accent, le bouton qui y mene doit
+  // ecrire le meme mot. Deux tableaux recopies avaient deja diverge.
+  var MOIS_JOUR = __MOIS_JOUR__;
   function jourLisible(j) {
     var m = /^(\\d{2})-(\\d{2})$/.exec(j || '');
     return m ? (parseInt(m[2], 10) + ' ' + MOIS_JOUR[parseInt(m[1], 10) - 1]) : '';
@@ -6863,6 +6966,12 @@ __FOLDERS__
   });
 
   // ── bandeau tagging IA ──
+  // Il s'ANNONCE (role="status") : il apparait sans que rien n'ait ete clique,
+  // et un lecteur d'ecran ne verrait sinon jamais passer l'analyse.
+  // Et il ne se tait plus pour de bon : l'ancienne version ne se re-programmait
+  // QUE tant qu'il restait des photos en attente — une fois la file vide, plus
+  // aucun sondage, donc un envoi depuis le telephone n'allumait plus rien
+  // jusqu'au prochain rechargement. On ralentit au lieu de s'arreter.
   function poll() {
     fetch('/api/status').then(function(r) { return r.json(); }).then(function(s) {
       var el = document.getElementById('pending');
@@ -6873,10 +6982,12 @@ __FOLDERS__
       } else if (s.tagged > INITIAL_TAGGED) {
         el.style.display = 'block';
         el.innerHTML = '\\u2713 Nouveaux mots-cl\\u00e9s disponibles \\u2014 <a href="/files">actualiser la galerie</a>';
+        setTimeout(poll, 60000);
       } else {
         el.style.display = 'none';
+        setTimeout(poll, 60000);
       }
-    }).catch(function() {});
+    }).catch(function() { setTimeout(poll, 60000); });
   }
 
   // ── init ──
@@ -7328,7 +7439,7 @@ td.n, th.n { text-align: right; font-family: var(--f-donnees); }
     <a class="card" href="/browse"><div class="k">&#128193; Dossiers</div><div class="tv">Parcourir + gerer les fichiers (deplacer, renommer)</div></a>
     <a class="card" href="/map"><div class="k">&#128506;&#65039; Carte</div><div class="tv">Photos geolocalisees</div></a>
     <a class="card" href="/people"><div class="k">&#128101; Personnes</div><div class="tv">Nommer, verifier, tri au clavier</div></a>
-    <a class="card" href="/pets"><div class="k">&#128062; Animaux</div><div class="tv">Chats nommes, groupes</div></a>
+    <a class="card" href="/pets"><div class="k">&#128062; Animaux</div><div class="tv">Animaux nommes, groupes</div></a>
     <a class="card" href="/"><div class="k">&#128228; Envoyer des photos</div><div class="tv">Upload depuis le telephone</div></a>
     <a class="card" href="/sante"><div class="k">&#129658; Sante</div><div class="tv">Fichiers a probleme (EXIF, illisibles)</div></a>
   </div>
@@ -11300,12 +11411,12 @@ PETS_PAGE = """<!DOCTYPE html>
     <!-- Harmonisation avec /people (12/08) : la file « A verifier » des animaux
          vit dans /sujets?vue=classification, a cote de celle des personnes. -->
     <p class="muted" style="margin:0 0 var(--e-3)">Les propositions &agrave; v&eacute;rifier
-      (chats reconnus mais incertains, rattachements automatiques &agrave; annuler) se jugent
+      (animaux reconnus mais incertains, rattachements automatiques &agrave; annuler) se jugent
       dans <a href="/sujets?vue=classification#verifier-animaux" style="color:var(--texte)">Sujets
       &rsaquo; Classification</a>, avec celles des personnes.</p>
 
     <div class="row"><h2 style="margin:0">Animaux</h2><span class="sp"></span></div>
-    <div class="cats" id="named"><span class="muted">Aucun chat nomm&eacute; pour le moment.</span></div>
+    <div class="cats" id="named"><span class="muted">Aucun animal nomm&eacute; pour le moment.</span></div>
 
     <div class="row" style="margin-top:8px"><h2 id="groupes" style="margin:0">Groupes &agrave; identifier</h2>
       <span class="sp"></span>
@@ -11338,7 +11449,7 @@ PETS_PAGE = """<!DOCTYPE html>
 
 <div id="selbar">
   <span><b id="sel-n">0</b> s&eacute;lectionn&eacute;e(s)</span>
-  <button class="btn danger" id="sel-remove">Retirer de ce chat</button>
+  <button class="btn danger" id="sel-remove">Retirer de cet animal</button>
   <button class="btn" id="sel-clear">Annuler</button>
 </div>
 <div id="lightbox"><span class="x" onclick="closeLb()">&times;</span><img id="lb-img" src=""></div>
@@ -11368,7 +11479,7 @@ function loadStatus(){
   fetch('/api/animals/status').then(function(r){return r.json();}).then(function(d){
     var el=document.getElementById('strip');
     el.innerHTML='Photos analys&eacute;es <b>'+d.photos_processed+'</b>'
-      +' &middot; chats d&eacute;tect&eacute;s <b>'+(d.cats||0)+'</b>'
+      +' &middot; animaux d&eacute;tect&eacute;s <b>'+(d.cats||0)+'</b>'
       +' &middot; empreintes calcul&eacute;es <b>'+(d.embedded||0)+'</b>'
       +' &middot; en attente '+d.pending
       // Le moteur DINOv2 se charge PARESSEUSEMENT (au premier besoin) : tant
@@ -11383,7 +11494,7 @@ function loadStatus(){
 function loadNamed(){
   fetch('/api/pets/list').then(function(r){return r.json();}).then(function(d){
     var el=document.getElementById('named'); var pets=d.pets||[];
-    if(!pets.length){ el.innerHTML='<span class="muted">Aucun chat nomm&eacute; pour le moment. Identifie un groupe ci-dessous.</span>'; return; }
+    if(!pets.length){ el.innerHTML='<span class="muted">Aucun animal nomm&eacute; pour le moment. Identifie un groupe ci-dessous.</span>'; return; }
     el.innerHTML='';
     pets.forEach(function(p){
       var c=document.createElement('div'); c.className='cat';
@@ -11532,7 +11643,7 @@ function carteGroupe(c){
   return card;
 }
 
-/* ---- détail d'un chat ---- */
+/* ---- détail d'un animal ---- */
 function showOverview(){ document.getElementById('detail').style.display='none';
   document.getElementById('overview').style.display='block'; CUR=null; clearSel();
   loadNamed(); loadStatus(); }
@@ -11579,7 +11690,7 @@ function openCat(name){
   });
 }
 
-/* ---- diaporama d'un chat (chronologique / aléatoire / association) ---- */
+/* ---- diaporama d'un animal (chronologique / aléatoire / association) ---- */
 // Chronologique = du plus ANCIEN au plus recent (date de prise). Les photos sans
 // date fiable (taken absent) vont a la fin plutot qu'au debut.
 function seqPhotos(a){ return a.slice().sort(function(x,y){
@@ -11666,7 +11777,7 @@ document.getElementById('recalc').onclick=function(){ post('/api/pets/recluster'
 
 loadStatus(); loadNamed(); loadClusters(false);
 setInterval(function(){ if(!CUR) loadStatus(); },15000);
-// Lien profond /pets#groupes (onglet Classification) : la grille des chats
+// Lien profond /pets#groupes (onglet Classification) : la grille des animaux
 // nommés au-dessus se peint en async — cible mouvante. Re-viser 2,5 s,
 // stop à la première interaction (même remède que /people).
 (function(){
@@ -13881,7 +13992,9 @@ class Handler(BaseHTTPRequestHandler):
         # d'objet que la branche `sel` (donc rendu client inchange). Lecture seule,
         # index en memoire ; note_heavy_activity car semantic_search peut lire les
         # vecteurs. Cap a 1500 : couvre les gros lieux (Bremblens ~1141) sans
-        # exploser le rendu (vignettes en lazy-load).
+        # exploser le rendu (vignettes en lazy-load). Depuis le 22/08 il est
+        # ANNONCE quand il coupe (`detail['tronque']`) : `espece:chat` rend
+        # 2 386 photos, la page en montrait 1 500 sans un mot.
         if search_mode or sim_mode:
             note_heavy_activity()
             roots_cache = media_roots()
@@ -14027,6 +14140,8 @@ class Handler(BaseHTTPRequestHandler):
                 .replace('__SEARCHQ__', json.dumps(qparam if search_mode else ''))
                 .replace('__SEARCHMETA__', json.dumps(
                     detail_q if search_mode else {}, ensure_ascii=False))
+                .replace('__MOIS_JOUR__', json.dumps(
+                    meme_jour.MOIS_FR, ensure_ascii=False))
                 .replace('__TAGDATA__', json.dumps(
                     {'counts': top_tags, 'sel': sel, 'mode': tmode},
                     ensure_ascii=False)))
