@@ -822,29 +822,44 @@ class SubjectStore:
         return n
 
     def rename(self, old, new):
-        """Renomme un sujet : remplace <prefix>:Ancien par <prefix>:Nouveau
-        partout (index + fichiers) et fusionne les fiches."""
+        """Renomme un sujet : fusionne les FICHES d'abord, puis remplace
+        <prefix>:Ancien par <prefix>:Nouveau partout (index + fichiers).
+
+        L'ORDRE N'EST PAS COSMÉTIQUE — c'est le correctif du 22/08.
+
+        La boucle sur les photos met une HEURE (un `stat` NAS par photo, 5 907
+        photos pour Flo). Tant que la fiche absorbée existe, sa SIGNATURE
+        existe : `curator_loop()` repasse toutes les 240 s et `AUTO_ADD`
+        rattache l'ancien nom aux photos que la fusion vient de lui retirer.
+        Mesuré ce jour-là : `Flo` descend de 5 907 à 4 487, puis REMONTE à
+        5 703 pendant que la boucle tourne encore, 60 auto-ajouts « Flo » dans
+        l'heure, et 17 092 écritures XMP en attente pour une fusion qui en
+        demande 11 814 — les deux mécanismes se battaient, et le NAS écrivait
+        les coups des deux camps. Supprimer la fiche AVANT retire la signature
+        avant la course : il n'y a plus de course.
+
+        DEUX AUTRES PROPRIÉTÉS TIENNENT À CETTE FORME :
+
+        — Le journal est écrit dans un `finally`. Une boucle interrompue (la
+          première l'a été) laissait un fonds à moitié renommé et RIEN pour
+          l'annuler. Désormais ce qui a été fait est toujours noté, quoi qu'il
+          arrive, et relancer le même renommage REPREND le travail : la fiche
+          est déjà fusionnée (`op` vaut None), la boucle finit les photos.
+
+        — Les photos qui portent DÉJÀ le nouveau nom voient quand même leur
+          FICHIER réécrit. Une photo dont l'index a basculé sans que l'XMP
+          suive (file perdue au redémarrage, écriture échouée) garde l'ancien
+          nom dans ses métadonnées ; au prochain balayage des fichiers
+          modifiés il REVIENT dans l'index, sans fiche — un nom fantôme, tel
+          que « personne:Florine, 153 photos, aucune fiche ». La règle est
+          donc : après un renommage, plus AUCUN fichier ne porte l'ancien nom.
+        """
         old = (old or "").strip()
         new = (new or "").strip()[:60]
         if not old or not new or old.lower() == new.lower():
             return 0
         oldtag, newtag = f"{self.prefix}:{old}", f"{self.prefix}:{new}"
         n = 0
-        # `deja` : cette photo portait-elle DEJA le nouveau nom ? C'est la
-        # seule information qui permette de defaire la fusion sans mentir.
-        # Renommer Florine en Flo pour revenir en arriere emporterait les 153
-        # photos qui portaient Florine AVANT — un aller-retour ne rend pas ce
-        # qu'il a pris. Voir `annuler_fusion`.
-        touchees = []
-        for k, e in list(STORE.data.items()):
-            if _kw_has(e, oldtag):
-                deja = 1 if _kw_has(e, newtag) else 0
-                _index_remove_person(k, oldtag)
-                _index_add_person(k, newtag)
-                _enqueue_person_write(k, oldtag, 'del')
-                _enqueue_person_write(k, newtag, 'add')
-                touchees.append([k, deja])
-                n += 1
         avant_old = copy.deepcopy(self.store.data.get(old.lower()))
         avant_new = copy.deepcopy(self.store.data.get(new.lower()))
         op = self.store.data.pop(old.lower(), None)
@@ -881,26 +896,59 @@ class SubjectStore:
             if ats:
                 npp["at"] = min(ats)
             self.store.set(new.lower(), npp)
-        STORE.save()
-        _journal_fusion(self.prefix, old, new, touchees, avant_old, avant_new,
-                        copy.deepcopy(self.store.data.get(new.lower())))
+        apres_new = copy.deepcopy(self.store.data.get(new.lower()))
+        # `deja` : cette photo portait-elle DEJA le nouveau nom ? C'est la
+        # seule information qui permette de defaire la fusion sans mentir.
+        # Renommer Florine en Flo pour revenir en arriere emporterait les 153
+        # photos qui portaient Florine AVANT — un aller-retour ne rend pas ce
+        # qu'il a pris. Voir `annuler_fusion`.
+        touchees = []
+        try:
+            for k, e in list(STORE.data.items()):
+                a_ancien = _kw_has(e, oldtag)
+                a_nouveau = _kw_has(e, newtag)
+                if not (a_ancien or a_nouveau):
+                    continue
+                if a_ancien:
+                    _index_remove_person(k, oldtag)
+                    _index_add_person(k, newtag)
+                    touchees.append([k, 1 if a_nouveau else 0])
+                    n += 1
+                # Le FICHIER est reecrit dans les deux cas (voir la docstring) :
+                # une photo deja basculee dans l'index peut garder l'ancien nom
+                # dans son XMP, et c'est par la que naissent les noms fantomes.
+                # `touchees` ne la compte PAS : elle ne portait pas l'ancien
+                # nom, annuler ne doit donc rien lui rendre.
+                _enqueue_person_write(k, oldtag, 'del')
+                _enqueue_person_write(k, newtag, 'add')
+        finally:
+            STORE.save()
+            _journal_fusion(self.prefix, old, new, touchees, avant_old,
+                            avant_new, apres_new)
         return n
 
     def delete(self, name):
-        """Supprime entièrement un sujet : retire son tag partout et efface
-        sa fiche. Les tags dans les FICHIERS sont retirés via la file."""
+        """Supprime entièrement un sujet : efface sa FICHE, puis retire son tag
+        partout. Les tags dans les FICHIERS sont retirés via la file.
+
+        MÊME ORDRE QUE `rename`, ET POUR LA MÊME RAISON. La fiche part
+        d'ABORD : tant qu'elle vit, sa signature vit, et `AUTO_ADD` remet le
+        nom sur les photos que la boucle vient de lui retirer — une heure de
+        balayage contre une passe de curateur toutes les 240 s. Mesuré le
+        22/08 sur `rename`, qui avait la même forme (voir sa docstring).
+        """
         name = (name or "").strip()[:60]
         if not name:
             return 0
         tag = f"{self.prefix}:{name}"
         n = 0
+        self.store.data.pop(name.lower(), None)
+        self.store.save()
         for k, e in list(STORE.data.items()):
             if _kw_has(e, tag):
                 _index_remove_person(k, tag)
                 _enqueue_person_write(k, tag, 'del')
                 n += 1
-        self.store.data.pop(name.lower(), None)
-        self.store.save()
         STORE.save()
         return n
 

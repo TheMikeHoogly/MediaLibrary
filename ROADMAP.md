@@ -6,28 +6,55 @@ dans **git** ; les rejets dans `eval/DECISIONS.md` (photothèque) et
 `eval/METHODE.md` ; l'éphémère dans `PROMPT_NOUVELLE_SESSION.md`. Audits :
 `docs/AUDIT_INTERNE_2026-08.md`, `docs/AUDIT_EXTERNE_2026.md`, `docs/RANGEMENT_2026.md`.
 
+## État (23/08/2026, session 39)
+
+**La fusion Flo → Florine a été lancée pour de vrai, et elle s'est battue une
+heure contre le curateur du projet.** `SubjectStore.rename` balaye les 5 907
+photos une par une (un `stat` NAS chacune, ~1 h) et ne supprimait la fiche
+absorbée qu'**à la fin** : pendant tout ce temps la signature de Flo restait
+vivante, et `AUTO_ADD` la ré-attribuait toutes les 240 s aux photos que la
+fusion venait de lui retirer. Mesuré sur le fonds vivant : `Flo` descend de
+**5 907 à 4 487**, puis **REMONTE à 5 703** ; **60 auto-ajouts « Flo » en une
+heure** dans `/api/curator/list` ; **17 092 écritures XMP en attente** pour un
+geste qui en demande 11 814, et une file qui se vidait à **0,09 op/s** — plus
+de **50 heures** de NAS pour graver le résultat d'une bagarre. La boucle est
+morte avant de fusionner les fiches : ni fiche `Florine`, ni journal, **rien à
+annuler**. Redémarrage : la file fausse est jetée, l'index garde 5 725 `Flo` et
+≥ 2 000 `Florine`.
+
+**Corrigé — l'ORDRE du geste.** Les fiches sont fusionnées **AVANT** la boucle
+sur les photos : plus de fiche, plus de signature, plus de course. Elle
+disparaît par construction au lieu d'être arbitrée. Deux propriétés viennent
+avec : le journal s'écrit dans un `finally` — une boucle interrompue reste
+annulable, et **relancer REPREND** le travail — et les photos qui portent déjà
+le nom d'arrivée voient quand même leur **fichier** réécrit, ce qui empêche un
+nom fantôme de renaître au prochain balayage des modifiés. **`delete()` avait
+exactement la même forme** : corrigé aussi. **44 tests**, dont **5 rouges sur
+l'ancien code**.
+
+**`verifier_fusion.py` (22 tests) : le geste le plus lourd a enfin un juge.**
+Il lit `_corbeille_fusions/` et le serveur vivant et répond par l'arithmétique
+— l'union des décisions des deux fiches se retrouve-t-elle après (règle 2),
+quel journal peut VRAIMENT annuler (dès qu'il y a eu plusieurs passes, le
+dernier ment), l'ancien nom a-t-il disparu, que reste-t-il en file. Sans
+serveur joignable il juge les journaux et DIT ce qu'il n'a pas vérifié.
+
+**Reste à faire : le geste de Mike** — `/people` → `Flo` → Renommer →
+`Florine`. La sandbox n'écrit pas sur le fonds. Le signe que le correctif
+tient : la fiche `Florine` paraît **dans la seconde**, et le compte de `Flo`
+descend **sans jamais remonter**.
+
 ## État (22/08/2026, session 38)
 
-**Mike a tranché : Flo et Florine sont la même personne.** La fusion coûte
-**11 814 opérations XMP sur 5 907 photos** (5 907 portent Flo, 153 Florine,
-149 les deux) — le geste le plus lourd du projet sur le fonds.
-
-**En la préparant, `SubjectStore.rename` s'est révélée perdre des décisions
-humaines.** Elle transportait `refs`, `exclude` et `faces`, mais **pas
-`confirmed`, `avatar`, `nomerge`** : les **143** « oui, c'est bien elle » de la
-fiche Flo seraient partis en silence — et le même défaut valait pour **chaque
-fusion du curateur** depuis que la fonction existe. Règle 2. Corrigé (union des
-trois ensembles, avatar et espèce en repli, date la plus ancienne des deux).
-
-**Et la fusion est désormais RÉVERSIBLE.** C'était le seul geste destructeur du
-projet sans quarantaine — le plus lourd, justement. `_corbeille_fusions/` note
-les deux fiches (avant et après) et, photo par photo, **si elle portait déjà le
-nom d'arrivée** : sans ce détail, annuler rendrait Flo aux 149 photos qui
-portaient les deux noms mais leur volerait Florine. Bouton
-`Annuler la derniere fusion` dans `/reglages`. 35 tests.
-
-**Le geste lui-même appartient à Mike** : `/people` → fiche Flo → Renommer →
-`Florine`. La sandbox n'écrit pas sur le fonds.
+**Mike a tranché : Flo et Florine sont la même personne** (5 907 photos portent
+Flo, 153 Florine, 149 les deux). En préparant la fusion, `SubjectStore.rename`
+s'est révélée perdre des décisions humaines : elle transportait `refs`,
+`exclude` et `faces` mais **pas `confirmed`, `avatar`, `nomerge`** — les **143**
+« oui, c'est bien elle » de la fiche Flo, et autant à **chaque fusion du
+curateur** depuis que la fonction existe. Règle 2, corrigé. Et la fusion est
+devenue **réversible** : `_corbeille_fusions/` note les deux fiches et, photo
+par photo, si elle portait **déjà** le nom d'arrivée — sans quoi annuler
+volerait Florine aux 149. Bouton `Annuler la derniere fusion` dans `/reglages`.
 
 **Trouvé en chemin — les deux portes du projet ne jugeaient pas la même
 chose.** Deux livraisons refusées d'affilée sur « FAILED (errors=11) », sans

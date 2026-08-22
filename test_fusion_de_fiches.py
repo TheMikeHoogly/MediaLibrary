@@ -32,15 +32,20 @@ SOURCE = SERVER.read_text(encoding="utf-8")
 ARBRE = ast.parse(SOURCE)
 
 
-def _methode_rename():
-    """La méthode `rename` de `SubjectStore`, sortie de sa classe."""
+def _methode(nom):
+    """Une méthode de `SubjectStore`, sortie de sa classe."""
     for n in ast.walk(ARBRE):
         if isinstance(n, ast.ClassDef) and n.name == 'SubjectStore':
             for m in n.body:
-                if isinstance(m, ast.FunctionDef) and m.name == 'rename':
+                if isinstance(m, ast.FunctionDef) and m.name == nom:
                     return m
-    raise AssertionError("SubjectStore.rename introuvable — si la fusion a "
+    raise AssertionError(f"SubjectStore.{nom} introuvable — si la fusion a "
                          "bouge, ce test doit etre relu, pas contourne.")
+
+
+def _methode_rename():
+    """La méthode `rename` de `SubjectStore`, sortie de sa classe."""
+    return _methode('rename')
 
 
 def _fonction(nom):
@@ -70,21 +75,45 @@ class Sujet:
         self.species = species
         self.ecrits = []                       # (clé, tag, sens) mis en file
         self.journaux = []                     # ce que la fusion a NOTÉ
+        # Appelé AVANT chaque mise en file : c'est le seul endroit d'où l'on
+        # peut observer l'état des fiches PENDANT la boucle — et donc vérifier
+        # que la fusion des fiches a bien eu lieu AVANT elle (22/08).
+        self.hook = None
         index = index if index is not None else {}
+        self.index = FauxMagasin(index)
+
+        def _retire(k, tag):
+            e = self.index.data.get(k)
+            if isinstance(e, dict):
+                e['kw_fr'] = [x for x in (e.get('kw_fr') or [])
+                              if str(x).lower() != tag.lower()]
+
+        def _ajoute(k, tag):
+            e = self.index.data.get(k)
+            if isinstance(e, dict) and tag.lower() not in [
+                    str(x).lower() for x in (e.get('kw_fr') or [])]:
+                e.setdefault('kw_fr', []).append(tag)
+
+        def _enfile(k, tag, op='add'):
+            if self.hook:
+                self.hook(k, tag, op)
+            self.ecrits.append((k, tag, op))
+
         ns = {
             'copy': copy,
-            'STORE': FauxMagasin(index),
+            'STORE': self.index,
             '_kw_has': lambda e, tag: any(
                 str(x).lower() == tag.lower() for x in (e.get('kw_fr') or [])),
-            '_index_remove_person': lambda k, tag: None,
-            '_index_add_person': lambda k, tag: None,
-            '_enqueue_person_write': lambda k, tag, op='add':
-                self.ecrits.append((k, tag, op)),
+            '_index_remove_person': _retire,
+            '_index_add_person': _ajoute,
+            '_enqueue_person_write': _enfile,
             '_journal_fusion': lambda *a: self.journaux.append(a),
         }
-        mod = ast.Module([_fonction('_merge_assigned'), _methode_rename()], [])
+        mod = ast.Module([_fonction('_merge_assigned'), _methode_rename(),
+                          _methode('delete')], [])
         exec(compile(mod, str(SERVER), 'exec'), ns)
         self._rename = ns['rename']
+        self._delete = ns['delete']
 
     def _new_entry(self, name, espece=None):
         # Miroir minimal de `SubjectStore._new_entry` : une fiche neuve n'a
@@ -98,6 +127,9 @@ class Sujet:
 
     def rename(self, old, new):
         return self._rename(self, old, new)
+
+    def delete(self, name):
+        return self._delete(self, name)
 
 
 FICHE_FLO = {
@@ -463,6 +495,136 @@ class TestCeQueLaFusionECRIT(unittest.TestCase):
         tampon.write("  Fusion journalisee : Flo -> Florine, "
                      "5907 photo(s) - reversible (fusion_20260822.jsonl)\n")
         tampon.flush()
+
+
+class TestLOrdreDuGeste(unittest.TestCase):
+    """L'ordre fiches-puis-photos, et ce qu'il a coûté de l'apprendre.
+
+    Le 22/08, la vraie fusion a été lancée et n'a jamais fini. La boucle met
+    une HEURE (un `stat` NAS par photo) et la fiche absorbée ne disparaissait
+    qu'À LA FIN : pendant toute cette heure, la signature de Flo restait
+    vivante et `AUTO_ADD` la ré-attribuait toutes les 240 s aux photos que la
+    fusion venait de lui retirer. Mesuré sur le fonds : `Flo` descend de 5 907
+    à 4 487 puis REMONTE à 5 703, 60 auto-ajouts « Flo » en une heure, et
+    17 092 écritures en attente pour une fusion qui en demande 11 814.
+
+    Aucun test ne pouvait voir ça : ils regardaient le RÉSULTAT d'une fusion
+    qui va au bout. Ceux-ci regardent l'ORDRE et l'INTERRUPTION.
+    """
+
+    def _index(self, *cles_et_tags):
+        return {k: {'kw_fr': list(tags)} for k, tags in cles_et_tags}
+
+    def test_la_fiche_est_fusionnee_AVANT_la_boucle(self):
+        """Au premier fichier mis en file, l'ancienne fiche n'existe déjà
+        plus — donc plus de signature, donc plus d'auto-ajout à contre-sens."""
+        s = Sujet({'flo': dict(FICHE_FLO)},
+                  self._index(('a.jpg', ['personne:Flo']),
+                              ('b.jpg', ['personne:Flo'])))
+        vus = []
+        s.hook = lambda k, tag, op: vus.append(
+            ('flo' in s.store.data, 'florine' in s.store.data))
+        s.rename('Flo', 'Florine')
+        self.assertTrue(vus, "aucune écriture mise en file")
+        self.assertEqual(vus[0], (False, True),
+                         "la fiche absorbée vit encore pendant la boucle : "
+                         "le curateur va remettre l'ancien nom derrière elle")
+
+    def test_une_boucle_interrompue_note_quand_meme_ce_qu_elle_a_fait(self):
+        """Sans le `finally`, une boucle qui tombe laisse un fonds à moitié
+        renommé et RIEN pour l'annuler. C'est arrivé."""
+        s = Sujet({'flo': dict(FICHE_FLO)},
+                  self._index(('a.jpg', ['personne:Flo']),
+                              ('b.jpg', ['personne:Flo']),
+                              ('c.jpg', ['personne:Flo'])))
+
+        def casse(k, tag, op):
+            if k == 'b.jpg':
+                raise OSError("NAS injoignable")
+        s.hook = casse
+        with self.assertRaises(OSError):
+            s.rename('Flo', 'Florine')
+        self.assertEqual(len(s.journaux), 1, "rien n'a été journalisé : la "
+                         "fusion interrompue serait inannulable")
+        # `b.jpg` en fait partie : son INDEX avait déjà basculé quand
+        # l'écriture est tombée. C'est précisément ce qu'il faut noter — la
+        # photo est à moitié renommée, et seule cette ligne permet de le rendre.
+        touchees = s.journaux[0][3]
+        self.assertEqual([t[0] for t in touchees], ['a.jpg', 'b.jpg'])
+        self.assertIsInstance(s.journaux[0][4], dict,
+                              "la fiche absorbée doit être notée pour être "
+                              "rendue")
+
+    def test_relancer_apres_une_interruption_reprend_le_travail(self):
+        s = Sujet({'flo': dict(FICHE_FLO)},
+                  self._index(('a.jpg', ['personne:Flo']),
+                              ('b.jpg', ['personne:Flo']),
+                              ('c.jpg', ['personne:Flo'])))
+        s.hook = lambda k, tag, op: (_ for _ in ()).throw(
+            OSError("NAS")) if k == 'b.jpg' else None
+        with self.assertRaises(OSError):
+            s.rename('Flo', 'Florine')
+        s.ecrits.clear()
+        s.hook = None
+        n = s.rename('Flo', 'Florine')          # la fiche est déjà fusionnée
+        self.assertEqual(n, 1, "la photo restante n'a pas été reprise")
+        restants = [k for k, e in s.index.data.items()
+                    if 'personne:Flo' in e['kw_fr']]
+        self.assertEqual(restants, [])
+        # `b.jpg` avait basculé dans l'index sans que son fichier suive : la
+        # reprise doit REPASSER dessus, sinon son XMP garde l'ancien nom pour
+        # toujours et le fera revenir au prochain balayage.
+        self.assertIn(('b.jpg', 'personne:Flo', 'del'), s.ecrits)
+        # La deuxième passe ne trouve plus de fiche à absorber : elle ne doit
+        # RIEN retirer à celle d'arrivée (règle 2, même dans la reprise).
+        self.assertEqual(s.store.data['florine']['confirmed'],
+                         ['c1', 'c2', 'c3'])
+
+    def test_le_fichier_qui_porte_deja_le_nouveau_nom_est_reecrit(self):
+        """Une photo dont l'index a basculé sans que l'XMP suive garde
+        l'ancien nom dans ses métadonnées : au prochain balayage il revient
+        dans l'index, sans fiche. C'est ainsi que naît un nom fantôme —
+        « personne:Florine, 153 photos, aucune fiche »."""
+        s = Sujet({'flo': dict(FICHE_FLO)},
+                  self._index(('deja.jpg', ['personne:Florine'])))
+        s.rename('Flo', 'Florine')
+        self.assertIn(('deja.jpg', 'personne:Flo', 'del'), s.ecrits)
+        self.assertIn(('deja.jpg', 'personne:Florine', 'add'), s.ecrits)
+
+    def test_mais_elle_n_entre_pas_dans_ce_qui_s_annule(self):
+        """…et elle ne doit PAS être notée comme touchée : elle ne portait pas
+        l'ancien nom, annuler ne doit rien lui rendre."""
+        s = Sujet({'flo': dict(FICHE_FLO)},
+                  self._index(('deja.jpg', ['personne:Florine']),
+                              ('vraie.jpg', ['personne:Flo'])))
+        s.rename('Flo', 'Florine')
+        touchees = s.journaux[0][3]
+        self.assertEqual([t[0] for t in touchees], ['vraie.jpg'])
+
+    def test_supprimer_efface_la_fiche_AVANT_de_balayer(self):
+        """`delete` avait exactement la même forme que `rename` : la fiche ne
+        partait qu'après la boucle. Supprimer un nom très photographié aurait
+        donc livré la même bataille contre `AUTO_ADD`, en silence, et sans
+        même un journal pour la raconter."""
+        s = Sujet({'flo': dict(FICHE_FLO)},
+                  self._index(('a.jpg', ['personne:Flo']),
+                              ('b.jpg', ['personne:Flo'])))
+        vus = []
+        s.hook = lambda k, tag, op: vus.append('flo' in s.store.data)
+        n = s.delete('Flo')
+        self.assertEqual(n, 2)
+        self.assertTrue(vus)
+        self.assertFalse(vus[0], "la fiche vit encore pendant la boucle : le "
+                         "curateur va remettre le nom derrière la suppression")
+
+    def test_une_photo_qui_porte_les_DEUX_noms_est_notee_deja(self):
+        """Les 149 photos qui portaient Flo ET Florine : annuler doit leur
+        rendre Flo sans leur retirer Florine."""
+        s = Sujet({'flo': dict(FICHE_FLO)},
+                  self._index(('deux.jpg', ['personne:Flo',
+                                            'personne:Florine'])))
+        s.rename('Flo', 'Florine')
+        self.assertEqual(s.journaux[0][3], [['deux.jpg', 1]])
 
 
 if __name__ == '__main__':
