@@ -274,8 +274,24 @@ qui en découle : éditer → redémarrer → **observer** → livrer.
 6. **Navigation par similarité et par date** : « Semblables » et « même jour »
    livrés et observés. Reste : doublons proches bridés (>0,98 + même journée →
    quarantaine réversible, 50 paires jugées avant geste).
-7. **Extraction `ui/`** : décision à prendre — session dédiée `bundle.py` ou
-   parcage explicite (item zombie ; préparatoire fait).
+7. **Extraction `ui/` : COMMENCÉE (22/08), et la mécanique est faite.**
+   `ui_page(nom)` lit `ui/pages/<nom>.html` (relu à chaud quand le fichier
+   change), se replie sur le gabarit CUIT par `bundle.py` quand `ui/` est
+   absent, et **DIT quel fichier manque** si les deux manquent — une page
+   blanche enverrait chercher le défaut dans les données. `bundle.py` cuit
+   désormais les gabarits en plus du CSS : le mono-fichier reste déployable
+   seul. **Première page sortie : `browse` (141 lignes)**, et la preuve est au
+   caractère près — `/browse` rend **19 103 caractères, mêmes empreintes**
+   avant et après ; `/sante` et `/browse/0`, qui partagent le gabarit, servent
+   aussi. 13 tests neufs tiennent les trois pannes muettes (fichier non
+   déployé, gabarit non cuit, marqueur `__ROWS__` perdu).
+   **Reste : 10 gabarits**, dans l'ordre du plus simple au plus gros — `faces`
+   (121 l.), `tranche` (221), `html` (240), `residu` (324), `subjects` (605),
+   `reglages` (611), `map`, `pets`, `people`, `gallery` (1 597). Le geste est
+   désormais mécanique : extraire la VALEUR de la constante (jamais son source
+   — les `\\u00e0` du JavaScript y sont échappés deux fois), écrire le
+   fichier, remplacer les usages par `ui_page('<nom>')`, comparer l'empreinte
+   de la page servie avant/après.
 8. **Cross-pipeline (Mutz/Caline)** : outil livré, réversible. Fix auto REJETÉ
    (18 % faux rejets). Relancer si un nom d'animal sort en `personne:`.
 9. **Reconnaissance — algo. PARQUÉ (21/08, choix de Mike).** *Chiffre neuf

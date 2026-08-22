@@ -25,6 +25,10 @@ SCRIPT_DIR = Path(__file__).resolve().parent
 UI_DIR = SCRIPT_DIR / "ui"
 UI_GLOBAL_FILES = ("tokens.css", "base.css")   # DOIT refleter server._UI_GLOBAL_FILES
 MARQUEUR = '_UI_CACHE = {"css": None, "sig": None}'
+# Gabarits de pages sortis du monolithe (point 7). Meme principe que le CSS :
+# le dist embarque ce que ui/pages/ contient, donc il se deploie seul.
+UI_PAGES_DIR = UI_DIR / "pages"
+MARQUEUR_PAGES = '_UI_PAGES_CUIT = {}             # rempli par bundle.py — NE PAS renommer'
 
 
 def construire_css():
@@ -42,6 +46,15 @@ def construire_css():
 def signature_absente():
     """Signature renvoyee par server._ui_signature() quand ui/ est absent."""
     return tuple((name, 0, 0) for name in UI_GLOBAL_FILES)
+
+
+def cuire_les_pages():
+    """{nom: gabarit} pour tout ui/pages/*.html. Vide si le dossier est absent."""
+    pages = {}
+    if UI_PAGES_DIR.is_dir():
+        for f in sorted(UI_PAGES_DIR.glob("*.html")):
+            pages[f.stem] = f.read_text(encoding="utf-8")
+    return pages
 
 
 def main(argv):
@@ -64,11 +77,26 @@ def main(argv):
     remplacement = f'_UI_CACHE = {{"css": {css!r}, "sig": {signature_absente()!r}}}'
     out = src.replace(MARQUEUR, remplacement, 1)
 
+    # Les gabarits : sans eux, un dist sans ui/ servirait « Gabarit
+    # introuvable » a la place des pages extraites.
+    pages = cuire_les_pages()
+    if pages:
+        if MARQUEUR_PAGES not in out:
+            print("ERREUR : marqueur des gabarits introuvable dans server.py.")
+            print(f"  Attendu : {MARQUEUR_PAGES}")
+            return 2
+        out = out.replace(MARQUEUR_PAGES, f'_UI_PAGES_CUIT = {pages!r}', 1)
+
     dst = (SCRIPT_DIR / sortie) if not sortie.is_absolute() else sortie
     dst.parent.mkdir(parents=True, exist_ok=True)
     dst.write_text(out, encoding="utf-8")
     print(f"OK : {dst}")
     print(f"  CSS cuit : {len(css)} caracteres depuis {', '.join(UI_GLOBAL_FILES)}")
+    if pages:
+        print(f"  Gabarits cuits : {len(pages)} page(s) — "
+              + ", ".join(sorted(pages)))
+    else:
+        print("  Gabarits cuits : aucun (ui/pages/ absent ou vide).")
     print("  Ce fichier sert le design system meme sans dossier ui/.")
     return 0
 
