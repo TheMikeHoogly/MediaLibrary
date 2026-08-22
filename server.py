@@ -7759,7 +7759,7 @@ td.n, th.n { text-align: right; font-family: var(--f-donnees); }
     <span class="t" id="clock"></span>
     <button class="b" id="refresh" style="margin-left:auto;border-color:var(--graphite);color:var(--texte)">Rafraichir</button>
   </div>
-  <p class="mut">Reconnaissance des visages : <b>CPU</b> (seul Ollama utilise le GPU). Cette page se rafraichit toute seule.</p>
+  <p class="mut" id="moteurs" role="status" aria-live="polite">Reconnaissance des visages&nbsp;: <b>&hellip;</b>. Cette page se rafraichit toute seule.</p>
 
   <h2>Outils &amp; pages</h2>
   <div class="cards">
@@ -7876,6 +7876,18 @@ function load(){
       card('Ecritures noms', q.personnes||0),
       card('Empreintes animaux', s.pets_vec!=null?s.pets_vec:(s.pets_embed!=null?s.pets_embed:'?'))
     ].join('');
+    // I5 : le moteur des visages se DIT, il ne s'affirme plus. « CPU » etait
+    // ecrit en dur et faux depuis le GPU adaptatif ; ici c'est le dernier
+    // moteur REELLEMENT utilise, avec la raison quand le GPU n'est pas pris.
+    var mo=s.moteurs||{}, mot=mo.visages||'CPU', pourquoi='';
+    if(mot!=='GPU'){
+      pourquoi = mo.visages_gpu_erreur ? ' \u2014 GPU indisponible : '+mo.visages_gpu_erreur
+        : (mo.visages_gpu_voulu===false ? ' \u2014 choix delibere : la VRAM va au tagging (Ollama)'
+                                        : ' \u2014 GPU pas encore pris');
+    }
+    document.getElementById('moteurs').innerHTML =
+      'Reconnaissance des visages\u00a0: <b>'+esc(mot)+'</b>'+esc(pourquoi)
+      +'. Cette page se rafraichit toute seule.';
     // Boucle scan/backup (audit O5) : un crash silencieux devient visible ici.
     var bo=s.boucle||{}, bv=s.backup_verify||{};
     function heure(t){ if(!t) return 'jamais'; return new Date(t*1000).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}); }
@@ -7898,6 +7910,25 @@ function load(){
     // sans rien dire (12 407 photos sans date au jour pres). Elle rend
     // desormais des comptes ici.
     var bf=s.backfill||{};
+    // I6 : les baux VRAM, les refus et les evictions ne vivaient que dans
+    // `/api/search/status`. Un arbitre qu'on ne voit pas ne se diagnostique
+    // pas : un modele qui n'obtient jamais son bail ressemble a un modele
+    // lent, et on cherche au mauvais endroit.
+    function gpuCard(g, ordo){
+      if(!g) return '<div class="card"><div class="k">Arbitre VRAM</div><div class="v">\u2014</div>'
+        +'<div class="tv">Module ordonnanceur absent : chaque pipeline decide seul.</div></div>';
+      var baux=Object.keys(g.baux||{});
+      var nRefus=0, nEv=0;
+      Object.keys(g.refus||{}).forEach(function(k){ nRefus+=g.refus[k]; });
+      Object.keys(g.evictions||{}).forEach(function(k){ nEv+=g.evictions[k]; });
+      var v = baux.length ? baux.join(', ') : 'aucun bail';
+      var tv = (g.libre_mb!=null?g.libre_mb+' Mo libres \u00b7 ':'')
+             +nRefus+' refus \u00b7 '+nEv+' eviction(s)';
+      if(ordo && ordo.actif) tv += ' \u00b7 en cours : '+ordo.actif;
+      else if(ordo && (ordo.attente||[]).length) tv += ' \u00b7 en attente : '+ordo.attente.join(', ');
+      return '<div class="card"><div class="k">Arbitre VRAM</div><div class="v">'+esc(v)+'</div>'
+        +'<div class="tv">'+esc(tv)+'</div></div>';
+    }
     function bfCard(titre, o){
       o=o||{};
       var v = o.etat==='en cours' ? (o.faits||0)+' / '+(o.todo||0)
@@ -7915,7 +7946,8 @@ function load(){
       '<div class="card"><div class="k">Sauvegarde verifiee</div><div class="v">'+esc(bvTxt)+'</div><div class="tv">'+esc(bvTv)+'</div></div>',
       bfCard('Dates de prise de vue', bf.dates),
       bfCard('Coordonnees GPS', bf.gps),
-      bfCard('Noms relus dans les fichiers', bf.noms)
+      bfCard('Noms relus dans les fichiers', bf.noms),
+      gpuCard(s.gpu, s.ordonnanceur)
     ].join('');
     document.getElementById('lib').innerHTML=[
       card('Entrees', c.entrees||0), card('Taguees', c.tagues||0),
@@ -9697,11 +9729,6 @@ def build_pet_clusters():
     finally:
         with PET_CLUSTER_LOCK:
             PET_CLUSTER_CACHE["building"] = False
-
-
-def name_pet_cluster(cid, name):
-    """Nomme un groupe d'animaux : voir SubjectStore.name_cluster."""
-    return PETS.name_cluster(cid, name)
 
 
 def find_more_cats(name, limit=300):
@@ -14574,9 +14601,6 @@ class Handler(BaseHTTPRequestHandler):
         elif path == '/api/search/status':
             self._serve_semantic_status()
 
-        elif path == '/api/hardware':
-            self._serve_hardware()
-
         elif path == '/api/faces/list':
             self._serve_faces_list()
 
@@ -15767,11 +15791,11 @@ class Handler(BaseHTTPRequestHandler):
 
     def _do_pets_post(self, path):
         data = self._read_json_body()
-        if path == '/api/pets/name':
-            tagged = name_pet_cluster(str(data.get('cid', '')), data.get('name', ''))
-            self._send(200, json.dumps({"ok": tagged > 0, "tagged": tagged}).encode(),
-                       'application/json')
-        elif path == '/api/pets/find':
+        # `/api/pets/name` a été retiré le 22/08 (audit I8) : aucune page ne
+        # l'appelait depuis que le nommage des animaux passe par `/api/assign`
+        # (genre animal), qui journalise le jugement et sait le défaire. Le
+        # chemin des PERSONNES, lui, a un client vivant et reste en place.
+        if path == '/api/pets/find':
             props = find_more_cats(data.get('name', ''))
             self._send(200, json.dumps({"proposals": props}, ensure_ascii=False).encode(),
                        'application/json')
@@ -15799,10 +15823,6 @@ class Handler(BaseHTTPRequestHandler):
             self._send(200, b'{"building": true}', 'application/json')
         else:
             self._send(404, b'Not found', 'text/plain')
-
-    def _serve_hardware(self):
-        body = json.dumps({'hw': hw_state()}, ensure_ascii=False).encode()
-        self._send(200, body, 'application/json')
 
     def _serve_faces_list(self):
         q = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
@@ -16483,6 +16503,23 @@ class Handler(BaseHTTPRequestHandler):
             'dino_loaded': DINO_MODEL_OBJ is not None,
             # Boucle scan/backup (audit O5) + vérification de sauvegarde et
             # export des jugements (audit A) : rendus visibles dans /reglages.
+            # I6 : l'arbitre VRAM et l'ordonnanceur n'existaient QUE dans
+            # `/api/search/status` — la page qui montre l'état du serveur ne
+            # savait donc rien des baux, des refus ni des évictions. Un
+            # mécanisme qu'on ne voit pas ne se diagnostique pas.
+            'gpu': (GPU.etat() if GPU is not None else None),
+            'ordonnanceur': (ORDO.etat() if ORDO is not None else None),
+            # I5 : le moteur des visages était AFFIRMÉ en dur (« CPU (seul
+            # Ollama utilise le GPU) »), ce qui est faux depuis le GPU
+            # adaptatif. Il se DIT maintenant, avec ce qu'il a fait en dernier.
+            # Lu sur des DRAPEAUX, jamais en appelant `get_face_app()` : cet
+            # appel CHARGE InsightFace (invariant 3), et une page d'état qui
+            # monte un modèle pour dire s'il est monté serait le contraire
+            # d'un instrument.
+            'moteurs': {'visages': FACE_LAST_ENGINE or 'CPU',
+                        'visages_gpu_pret': FACE_APP_GPU is not None,
+                        'visages_gpu_erreur': FACE_GPU_ERROR or '',
+                        'visages_gpu_voulu': FACE_USE_GPU},
             'boucle': dict(MAINT_LOOP_STATE),
             # Comptes de l'index (chantier 10a) : qui retire des cles, combien,
             # et ce que personne n'explique. Toutes les listes sont bornees par

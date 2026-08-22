@@ -13,17 +13,22 @@ CE QUI NE VA PAS AVEC UN CENTROIDE UNIQUE
     0,03 sur les memes visages. Ce n'est pas un probleme de seuil, c'est un
     probleme de MODELE.
 
-DEUX CORRECTIONS
-    1. PROTOTYPES MULTIPLES — les references sont regroupees en k paquets
-       (k-moyennes, k choisi selon leur nombre) et l'on garde un vecteur par
-       paquet. Le score devient le MAXIMUM sur les prototypes : « ressemble a
-       l'une des facettes connues » plutot que « ressemble a la moyenne ».
+LA CORRECTION RETENUE — PROTOTYPES MULTIPLES
+    Les references sont regroupees en k paquets (k-moyennes, k choisi selon
+    leur nombre) et l'on garde un vecteur par paquet. Le score devient le
+    MAXIMUM sur les prototypes : « ressemble a l'une des facettes connues »
+    plutot que « ressemble a la moyenne ». C'est ce que `server.py` importe,
+    et la seule chose que ce module expose.
 
-    2. CONTRE-EXEMPLES — les exclusions posees a la main (« non, ce n'est pas
-       Florine ») ne servaient qu'a ne plus reproposer la photo. Elles portent
-       pourtant l'information la plus precieuse du corpus : ce que cette
-       personne N'EST PAS. On exige desormais qu'un candidat soit plus proche
-       d'un prototype positif que de tout contre-exemple.
+CE QUI A ETE REJETE, ET QUI N'EST PLUS ICI — LES CONTRE-EXEMPLES
+    Une seconde correction avait ete ecrite : exiger d'un candidat qu'il soit
+    plus proche d'un prototype positif que de tout contre-exemple humain
+    (classes `Modele` / `Banque`, constante `MARGE_NEGATIVE`). Elle a ete
+    REJETEE les 30-31/07 et n'a jamais eu d'appelant. Elle est restee 22 jours
+    dans le fichier avec un en-tete qui la presentait comme acquise —
+    c'est-a-dire une documentation qui decrivait un comportement que le
+    logiciel n'avait pas (audit interne I4). Retiree le 22/08 : le code vit
+    dans git, ou il se relit tel qu'il etait le jour du rejet.
 
 Le module ne depend que de numpy et sert INDIFFEREMMENT aux personnes et aux
 animaux : c'est le meme probleme.
@@ -31,7 +36,6 @@ animaux : c'est le meme probleme.
 
 MAX_PROTOTYPES = 4       # au-dela, on decoupe un nuage qui n'a plus de sens
 MIN_PAR_PROTOTYPE = 12   # references minimales pour justifier un prototype
-MARGE_NEGATIVE = 0.02    # avance requise du meilleur positif sur le negatif
 
 
 def _kmoyennes(X, k, iterations=12, graine=0):
@@ -106,64 +110,3 @@ def prototypes(vecteurs, max_proto=None, min_par=None):
     if not garde:
         return C
     return C[garde]
-
-
-class Modele:
-    """Un sujet (personne ou animal) : ses facettes et ses contre-exemples."""
-
-    __slots__ = ('nom', 'P', 'N')
-
-    def __init__(self, nom, positifs, negatifs=None):
-        self.nom = nom
-        self.P = prototypes(positifs) if len(positifs) else None
-        self.N = None
-        if negatifs is not None and len(negatifs):
-            import numpy as np
-            X = np.stack(negatifs).astype(np.float32)
-            nn = np.linalg.norm(X, axis=1, keepdims=True)
-            nn[nn == 0] = 1.0
-            self.N = X / nn
-
-    def valide(self):
-        return self.P is not None and self.P.shape[0] > 0
-
-    def score(self, v):
-        """(meilleur score positif, meilleur score negatif)."""
-        import numpy as np
-        pos = float(np.max(self.P @ v))
-        neg = float(np.max(self.N @ v)) if self.N is not None else -1.0
-        return pos, neg
-
-
-class Banque:
-    """Ensemble de modeles : classe un vecteur parmi tous les sujets connus."""
-
-    def __init__(self, modeles):
-        self.modeles = [m for m in modeles if m.valide()]
-
-    def classer(self, v, marge_negative=MARGE_NEGATIVE):
-        """[(nom, score)] decroissant, contre-exemples deja appliques."""
-        import numpy as np
-        v = np.asarray(v, dtype=np.float32).ravel()
-        nrm = np.linalg.norm(v)
-        if nrm:
-            v = v / nrm
-        out = []
-        for m in self.modeles:
-            if m.P.shape[1] != v.shape[0]:
-                continue
-            pos, neg = m.score(v)
-            # Un contre-exemple plus proche que la meilleure facette connue
-            # DISQUALIFIE le sujet : c'est un « non » humain, il prime.
-            if neg > pos - marge_negative:
-                continue
-            out.append((m.nom, pos))
-        out.sort(key=lambda t: -t[1])
-        return out
-
-    def meilleur(self, v, **kw):
-        r = self.classer(v, **kw)
-        if not r:
-            return None, -1.0, -1.0
-        second = r[1][1] if len(r) > 1 else -1.0
-        return r[0][0], r[0][1], r[0][1] - second

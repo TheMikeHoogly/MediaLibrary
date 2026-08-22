@@ -20,16 +20,24 @@
   → Corriger AVANT d'activer gps_place. Voir aussi O10 (index vectors).
 - **I3. Tests ArbitreGPU. RÉGLÉ 11/08** : 11 vérifications ajoutées (priorités, éviction,
   refus « en vol », matérialisation sans double compte, ménage plancher/sauf) — 27/27.
-- **I4. `classifier.py` contient encore `Modele`/`Banque`/`MARGE_NEGATIVE`** (contre-exemples,
-  REJETÉS 30–31/07) en code mort avec docstring élogieux ; `server.py` n'importe que
-  `prototypes`. → Supprimer ou marquer « REJETÉ, conservé pour banc d'essai ».
+- **I4. RÉGLÉ 22/08.** Les 57 lignes mortes (`Modele`, `Banque`, `MARGE_NEGATIVE`) sont
+  retirées ; `classifier.py` passe de 169 à 112 lignes. Le vrai défaut n'était pas le code
+  mais l'EN-TÊTE : il présentait les contre-exemples comme l'une des « deux corrections » du
+  modèle — une documentation qui décrivait un comportement que le logiciel n'avait pas,
+  22 jours durant. Il dit désormais le rejet et renvoie à git, où le code se relit tel qu'il
+  était le jour où il a été écarté.
 
 ### Moyennes
-- **I5.** /reglages affirme en dur « visages : CPU (seul Ollama utilise le GPU) » — faux
-  depuis le GPU adaptatif + arbitre. → Libellé dynamique (`FACE_LAST_ENGINE`, baux).
-- **I6.** `etat['gpu']`/`etat['ordonnanceur']` ne vivent que dans `/api/search/status` ;
-  /reglages ne les affiche pas (`/api/maint/status` ne les expose pas). → Les ajouter à
-  `/api/maint/status` + une carte /reglages « GPU : baux/refus/évictions ».
+- **I5. RÉGLÉ 22/08.** Le libellé vient de `/api/maint/status` (`moteurs.visages` =
+  `FACE_LAST_ENGINE`) et DIT la raison quand le GPU n'est pas pris — « choix delibere : la
+  VRAM va au tagging (Ollama) », ou l'erreur CUDA quand il y en a une. Observé en réel.
+- **I6. RÉGLÉ 22/08.** `/api/maint/status` publie `gpu` et `ordonnanceur` ; /reglages porte
+  une carte « Arbitre VRAM » (baux en cours, Mo libres, refus, évictions, travail actif ou en
+  attente) qui DIT aussi l'absence du module au lieu de se taire — une carte vide se lirait
+  « aucun bail », c'est-à-dire un arbitre au repos, l'inverse de la vérité. Observé en réel :
+  bail `semantique` 1 400 Mo matérialisé, 1 811 Mo libres, 0 refus, 0 éviction.
+  **Et la carte a immédiatement rendu I1 visible** : `tours` reste à `visages: 0,
+  animaux: 0` — les deux boucles les plus lourdes ne passent toujours pas par `creneau()`.
 - **I7. RÉGLÉ 22/08, et MESURÉ D'ABORD.** `tagging_meta.parse_tag_nomme()` est la règle
   unique : préfixe lu sans égard à la casse, nom rendu tel quel (règle 2). Elle remplace
   les six lectures divergentes — curateur ADD (`ptags`), curateur REMOVE (`pidx` en
@@ -44,8 +52,13 @@
   **Ce que la mesure a trouvé en chemin, et qui n'est PAS de la casse** : `personne:Florine`
   sur **153 photos sans aucune fiche** (149 partagées avec `personne:Flo`) — la galerie la
   propose en puce de filtre, `/api/names` l'ignore. Jugement humain, voir `QUESTIONS_MIKE.md`.
-- **I8.** Routes orphelines : `/api/pets/name` + `name_pet_cluster` (remplacés par
-  `/api/assign` genre animal) ; `/api/hardware` sans client. → Supprimer/statuer.
+- **I8. RÉGLÉ 22/08.** `/api/pets/name` + `name_pet_cluster` et `/api/hardware` +
+  `_serve_hardware` sont retirés (404 vérifiés en réel) après contrôle qu'aucune page, aucun
+  script et aucun `ui/` ne les appelle. Gardés : `/api/people/name` (client vivant — le
+  nommage d'un groupe dans /people), `/api/pets/find`, `/api/pets/confirm`, `/api/assign`, et
+  `hw_state()` qui reste publié là où une page le lit. 14 tests (`test_reglages_moteurs.py`)
+  tiennent I4, I5, I6 et I8 : aucun de ces quatre défauts ne casse quoi que ce soit en
+  revenant, c'est pourquoi il fallait un garde.
 - **I9.** CLAUDE.md dit « quatre pipelines » (sans SigLIP), PROMPT idem — le code en câble 5.
   → RÉGLÉ 11/08 (CLAUDE.md + PROMPT corrigés).
 - **I10.** Compteurs périmés : « ~9 400 lignes » (réel ~12 000), « 7 pages » (réel 9 gabarits :

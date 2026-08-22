@@ -101,6 +101,22 @@ un nom part dans une suggestion, un retrait ou un fichier XMP.
 210** — exactement les trois tags que la mesure avait nommés — et les 351 noms
 de personnes ne bougent pas d'un compte.
 
+**Quatre défauts d'audit qui ne cassaient rien sont corrigés — et le premier
+d'entre eux en a rendu un cinquième VISIBLE.** I5 : `/reglages` affirmait
+« Reconnaissance des visages : CPU (seul Ollama utilise le GPU) » en dur, faux
+depuis le GPU adaptatif ; le libellé vient maintenant du serveur et DIT la
+raison (« choix delibere : la VRAM va au tagging »). I6 : l'arbitre VRAM et
+l'ordonnanceur n'existaient que dans `/api/search/status` — un mécanisme qu'on
+ne voit pas ne se diagnostique pas ; la carte « Arbitre VRAM » montre les baux,
+les Mo libres, les refus et les évictions (observé : bail `semantique` 1 400 Mo,
+1 811 Mo libres, 0 refus). **Et elle a immédiatement montré I1** : `tours` reste
+à `visages: 0, animaux: 0` — les deux boucles les plus lourdes ne passent
+toujours pas par `creneau()`, exactement ce que l'audit du 11/08 annonçait.
+I8 : `/api/pets/name` et `/api/hardware` retirés (404 vérifiés), les chemins
+vivants intacts. I4 : 57 lignes rejetées le 30/07 retirées de `classifier.py` —
+le défaut n'était pas le code mort mais l'en-tête, qui décrivait depuis 22 jours
+un comportement que le logiciel n'avait pas.
+
 **Le chiffre neuf est ailleurs, et il ne se répare pas tout seul : `personne:
 Florine` vit sur 153 photos SANS AUCUNE FICHE.** C'est le seul nom du fonds
 dans ce cas. Conséquence visible : la galerie propose « Florine » comme puce de
@@ -244,10 +260,15 @@ qui en découle : éditer → redémarrer → **observer** → livrer.
    **Pas de retour à V0 sans protocole.**
 4. **Gestes Mike** : `gps_place` ✔ ; renommage appliqué ✔ (7 058) ; nettoyer
    Flo (5 909 photos) ; re-rejeter Caline.
-5. **Correctifs d'audit** : **I7 CLOS (22/08)** — règle unique
-   `parse_tag_nomme`, mesurée avant (3 tags en casse divergente sur 37 707 :
-   défaut latent) et observée après (Luna 207 → 210 dans `/api/names`).
-   Restent I4–I6, I8, O7–O9, O11–O15. O1 clos ; O15 (purge de
+5. **Correctifs d'audit** : **I4, I5, I6, I7 et I8 CLOS (22/08)**, tous
+   observés en réel, 32 tests neufs. I7 — règle unique `parse_tag_nomme`,
+   mesurée avant (3 tags en casse divergente sur 37 707 : défaut latent) et
+   observée après (Luna 207 → 210 dans `/api/names`). I5/I6 — le moteur des
+   visages se DIT au lieu de s'affirmer, et l'arbitre VRAM est enfin visible
+   dans `/reglages` (baux, refus, évictions). I4 — 57 lignes mortes retirées de
+   `classifier.py`, et l'en-tête cesse de décrire une correction rejetée le
+   30/07. I8 — deux routes orphelines retirées (404 vérifiés). Restent
+   O7–O9, O11–O15. O1 clos ; O15 (purge de
    `photo_thumbs/`) gagne en poids. **Ce que I7 a laissé ouvert** :
    `personne:Florine`, 153 photos sans fiche — question posée à Mike.
 6. **Navigation par similarité et par date** : « Semblables » et « même jour »
