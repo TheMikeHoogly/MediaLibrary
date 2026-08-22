@@ -35,7 +35,7 @@ n'était cassé, tout était vert, et une pièce manquait.
    part avec le cycle de maintenance, à l'heure). Contrôle : la carte
    « Sauvegarde verifiee » de `/reglages`, ou le banc ci-dessous.
 3. Un dossier de destination **vide**, sur un disque qui a la place :
-   `D:\essai-restauration` dans la suite (276 Mo pour la base + ~20 Mo
+   `C:\temp\essai-restauration` dans la suite (276 Mo pour la base + ~20 Mo
    d'artefacts).
 
 Contrôle de départ, à lancer par le canal des bancs
@@ -62,8 +62,12 @@ PRÉCÉDENT, dans le dossier d'essai, pour pouvoir être relancé) ; et il ne
 télécharge pas les modèles YOLO ni le gazetteer — re-téléchargeables, ils ne
 mettent aucune décision humaine en jeu et fausseraient le chrono.
 
-Le dossier d'essai et l'adresse du NAS se changent en tête du fichier
-(`set "CIBLE=…"`). La suite de ce document décrit **les mêmes gestes à la
+Le dossier d'essai se passe **en argument** — `"30 - Repetition de
+restauration.bat" E:\ailleurs` — ou se change en tête du fichier
+(`set "CIBLE=…"`), tout comme l'adresse du NAS. Le lanceur refuse d'avancer si
+le lecteur n'existe pas, plutôt que d'échouer trois étapes plus loin en
+accusant la mauvaise cause (c'est ce qu'il a fait au premier essai, 22/08 :
+`D:` n'existait pas et le message parlait d'un dossier non vide). La suite de ce document décrit **les mêmes gestes à la
 main** — utile si le lanceur cale, ou pour comprendre ce qu'il fait.
 
 ## À la main — chronométrer du début à la fin
@@ -73,7 +77,7 @@ mais « combien de temps entre un PC mort et une médiathèque qui répond ».
 
 ### 1. Le disque neuf (simulé)
 
-Crée `D:\essai-restauration`. Rien d'autre. C'est le PC neuf : tout ce qui n'y
+Crée `C:\temp\essai-restauration`. Rien d'autre. C'est le PC neuf : tout ce qui n'y
 arrivera pas par la sauvegarde n'existe pas.
 
 ### 2. Ce que le NAS rend
@@ -112,7 +116,7 @@ De retour sur le PC vivant, base fraîche d'abord, puis la comparaison :
 
 ```
 python mesure_copie_base.py
-python verifier_restauration.py --vivant copie.db --restaure D:/essai-restauration
+python verifier_restauration.py --vivant copie.db --restaure C:/temp/essai-restauration
 ```
 
 **Arrête le chrono ici** et note le temps total.

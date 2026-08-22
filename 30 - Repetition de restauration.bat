@@ -4,7 +4,11 @@ cd /d "%~dp0"
 REM Contenu en ASCII pur : cmd.exe relit le fichier par decalage d'octets.
 setlocal EnableDelayedExpansion
 
-set "CIBLE=D:\essai-restauration"
+REM Dossier d'essai : modifiable ici, ou passe en argument
+REM   "30 - Repetition de restauration.bat" E:\autre-essai
+set "CIBLE=C:\temp\essai-restauration"
+if not "%~1"=="" set "CIBLE=%~1"
+
 set "NAS=\\nas-bremblens\home\Uploads"
 set "DEPOT=https://github.com/TheMikeHoogly/MediaLibrary.git"
 
@@ -30,9 +34,19 @@ echo.
 echo   Prevois environ 300 Mo et quelques minutes de copie reseau.
 echo.
 
+REM --- Garde-fous : tout ce qui peut manquer se dit AVANT d'ecrire ---
 if /i "%CIBLE%"=="%CD%" (
     echo   REFUS : le dossier d'essai est le dossier du projet.
-    echo   Change CIBLE en tete de ce fichier.
+    echo   Passe un autre chemin en argument, ou change CIBLE en tete.
+    pause
+    exit /b 1
+)
+
+for %%d in ("%CIBLE%") do set "LECTEUR=%%~dd"
+if not exist "%LECTEUR%\" (
+    echo   REFUS : le lecteur %LECTEUR% n'existe pas sur ce PC.
+    echo   Relance avec un chemin valide, par exemple :
+    echo      "%~nx0" C:\temp\essai-restauration
     pause
     exit /b 1
 )
@@ -65,22 +79,30 @@ if errorlevel 2 (
     exit /b 0
 )
 
-for /f "delims=" %%t in ('"%PY%" -c "import time;print(int(time.time()))"') do set "T0=%%t"
+REM Chrono en batch pur : le "1xx-100" evite que 08 et 09 passent pour
+REM de l'octal, et aucun guillemet imbrique ne peut casser la ligne.
+set "H=%TIME: =0%"
+set /a T0=(1%H:~0,2%-100)*3600+(1%H:~3,2%-100)*60+(1%H:~6,2%-100)
 
 echo.
 echo --------------------------------------------------------------
 echo   Etape 1/4 : ce que GIT rend (le code)
 echo --------------------------------------------------------------
-if not exist "%CIBLE%" mkdir "%CIBLE%"
+if not exist "%CIBLE%\" mkdir "%CIBLE%"
+if not exist "%CIBLE%\" (
+    echo   Impossible de creer %CIBLE%. Chemin ou droits ?
+    pause
+    exit /b 1
+)
 if exist "%CIBLE%\.git" (
     echo   Depot deja present, clone saute.
 ) else (
     git clone "%DEPOT%" "%CIBLE%"
     if errorlevel 1 (
         echo.
-        echo   Le clone a echoue. La cause la plus frequente : le
-        echo   dossier n'etait pas vide - git refuse de cloner dedans.
-        echo   Vide %CIBLE% ou change CIBLE, puis relance.
+        echo   Le clone a echoue. Deux causes usuelles : le dossier
+        echo   n'etait pas vide (git refuse), ou le reseau/GitHub n'a
+        echo   pas repondu. Le message de git ci-dessus tranche.
         pause
         exit /b 1
     )
@@ -124,8 +146,10 @@ if %ERRORLEVEL% GEQ 8 (
     exit /b 1
 )
 
-for /f "delims=" %%t in ('"%PY%" -c "import time;print(int(time.time()))"') do set "T1=%%t"
-set /a SECONDES=%T1%-%T0%
+set "H=%TIME: =0%"
+set /a T1=(1%H:~0,2%-100)*3600+(1%H:~3,2%-100)*60+(1%H:~6,2%-100)
+set /a SECONDES=T1-T0
+if %SECONDES% LSS 0 set /a SECONDES=SECONDES+86400
 set /a MINUTES=SECONDES/60
 set /a RESTE=SECONDES%%60
 
