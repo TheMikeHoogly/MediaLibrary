@@ -23,6 +23,19 @@
    ]
   },
   {
+   "person": "Danica",
+   "key": "\\\\NAS-Bremblens\\home\\Photos\\2024\\20241114_205827.jpg",
+   "visages": 2,
+   "pourquoi": "faux_positif",
+   "candidats": [
+    {
+     "i": 0,
+     "sim": 0.278,
+     "cite": true
+    }
+   ]
+  },
+  {
    "person": "Didier",
    "key": "ARZOPA/UJAn0k-20260628_012444597.jpg",
    "visages": 12,
@@ -95,6 +108,19 @@
    ]
   },
   {
+   "person": "Didier",
+   "key": "\\\\NAS-Bremblens\\home\\Photos\\2023\\20230625_131758.jpg",
+   "visages": 5,
+   "pourquoi": "faux_positif",
+   "candidats": [
+    {
+     "i": 3,
+     "sim": 0.287,
+     "cite": true
+    }
+   ]
+  },
+  {
    "person": "Flo",
    "key": "\\\\NAS-Bremblens\\home\\Photos\\2025\\20250922_152638.jpg",
    "visages": 4,
@@ -113,6 +139,45 @@
     {
      "i": 2,
      "sim": 0.611,
+     "cite": true
+    }
+   ]
+  },
+  {
+   "person": "Flo",
+   "key": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Appartement Bremblens\\Appart Bremblens\\20190224-123207_bremblens_femme-debout-dans-une-piece.jpg",
+   "visages": 1,
+   "pourquoi": "faux_positif",
+   "candidats": [
+    {
+     "i": 0,
+     "sim": 0.06,
+     "cite": true
+    }
+   ]
+  },
+  {
+   "person": "Flo",
+   "key": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Appartement Bremblens\\20190224_bremblens_femme-en-train-de-regarder-2.jpg",
+   "visages": 1,
+   "pourquoi": "faux_positif",
+   "candidats": [
+    {
+     "i": 0,
+     "sim": 0.102,
+     "cite": true
+    }
+   ]
+  },
+  {
+   "person": "FX",
+   "key": "\\\\NAS-Bremblens\\home\\Photos\\2026\\260531_Samsung_MHU\\Camera\\20260517_151417.jpg",
+   "visages": 1,
+   "pourquoi": "faux_positif",
+   "candidats": [
+    {
+     "i": 0,
+     "sim": 0.113,
      "cite": true
     }
    ]
@@ -146,6 +211,58 @@
    ]
   },
   {
+   "person": "Linda",
+   "key": "\\\\NAS-Bremblens\\home\\Photos\\2010\\Photos mams\\Sanchez Laura.jpg",
+   "visages": 1,
+   "pourquoi": "faux_positif",
+   "candidats": [
+    {
+     "i": 0,
+     "sim": 0.223,
+     "cite": true
+    }
+   ]
+  },
+  {
+   "person": "Linda",
+   "key": "\\\\NAS-Bremblens\\home\\Photos\\Photos Papa\\2001\\20010725 Sanchez\\Sanchez Laura.jpg",
+   "visages": 1,
+   "pourquoi": "faux_positif",
+   "candidats": [
+    {
+     "i": 0,
+     "sim": 0.223,
+     "cite": true
+    }
+   ]
+  },
+  {
+   "person": "Markus",
+   "key": "\\\\NAS-Bremblens\\home\\Photos\\Photos Papa\\2001\\20010724 MicEliLeila Rurrenabaque\\Barco 2.JPG",
+   "visages": 3,
+   "pourquoi": "faux_positif",
+   "candidats": [
+    {
+     "i": 1,
+     "sim": 0.272,
+     "cite": true
+    }
+   ]
+  },
+  {
+   "person": "Markus",
+   "key": "\\\\NAS-Bremblens\\home\\Photos\\Photos Papa\\2002\\20020706 Alto Achumani\\117-1798_HUM Mutz.JPG",
+   "visages": 1,
+   "pourquoi": "faux_positif",
+   "candidats": [
+    {
+     "i": 0,
+     "sim": 0.135,
+     "cite": true
+    }
+   ]
+  },
+  {
    "person": "Maryline Baudère",
    "key": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\40 ans Flo\\20260607-145629_Flo-et-Maryline-Baudere.jpeg",
    "visages": 12,
@@ -159,6 +276,19 @@
     {
      "i": 9,
      "sim": 0.718,
+     "cite": true
+    }
+   ]
+  },
+  {
+   "person": "Mike",
+   "key": "\\\\NAS-Bremblens\\home\\Photos\\Photos Papa\\1983\\19830101 - 2000 Michael\\1997 classe_2.jpg",
+   "visages": 20,
+   "pourquoi": "faux_positif",
+   "candidats": [
+    {
+     "i": 2,
+     "sim": 0.23,
      "cite": true
     }
    ]
@@ -259,6 +389,19 @@
    ]
   },
   {
+   "person": "Rosario",
+   "key": "\\\\NAS-Bremblens\\home\\Photos\\Photos Papa\\1998\\1998 Bern Rundgang Altstadt\\Junkerngasse 99.JPG",
+   "visages": 2,
+   "pourquoi": "faux_positif",
+   "candidats": [
+    {
+     "i": 1,
+     "sim": 0.295,
+     "cite": true
+    }
+   ]
+  },
+  {
    "person": "Sylvie Chatelain",
    "key": "\\\\NAS-Bremblens\\home\\Photos\\2022\\20220410_135647_07.jpg",
    "visages": 7,
@@ -290,6 +433,32 @@
     {
      "i": 6,
      "sim": 0.852,
+     "cite": true
+    }
+   ]
+  },
+  {
+   "person": "Val",
+   "key": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Sista\\20260613_203722.jpg",
+   "visages": 3,
+   "pourquoi": "faux_positif",
+   "candidats": [
+    {
+     "i": 0,
+     "sim": 0.246,
+     "cite": true
+    }
+   ]
+  },
+  {
+   "person": "Zab",
+   "key": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Mickinou\\20220813_Zab.jpg",
+   "visages": 1,
+   "pourquoi": "faux_positif",
+   "candidats": [
+    {
+     "i": 0,
+     "sim": 0.221,
      "cite": true
     }
    ]

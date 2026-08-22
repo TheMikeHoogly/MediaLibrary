@@ -182,6 +182,7 @@ def _mesurer(faces, people, projet, ecart, exemples):
 
     for nom, P, couples, pe in fiches:
         scores_fiche = {}
+        sous_seuil = {}
         for rang, (cle, i) in enumerate(couples):
             c['couples'] += 1
             liste, reemb, presente = visages_de(cle)
@@ -224,6 +225,7 @@ def _mesurer(faces, people, projet, ecart, exemples):
                 # — sur une page d'album ou un montage, un ecart separe deux
                 # apparitions de la MEME personne, pas deux personnes.
                 c['sous_le_seuil_de_faux_positif'] += 1
+                sous_seuil.setdefault(cle, []).append(i)
                 if len(faux_positifs) < exemples:
                     faux_positifs.append({"person": nom, "key": cle, "i": i,
                                           "sim": round(s_i, 3),
@@ -259,13 +261,21 @@ def _mesurer(faces, people, projet, ecart, exemples):
                 plan['dont_fusion'] += 1
             if len(exemples_plan) < exemples:
                 exemples_plan.append(dict(r, person=nom))
-        par_photo = {}
+        par_photo, pourquoi_photo = {}, {}
         for r in refus:
             plan['refus_' + r['pourquoi']] += 1
             if len(exemples_refus) < exemples:
                 exemples_refus.append(dict(r, person=nom))
             if r['pourquoi'] == 'ambigu':
                 par_photo.setdefault(r['key'], []).append(int(r['i']))
+                pourquoi_photo.setdefault(r['key'], set()).add('ambigu')
+        # DEUXIEME famille : les couples dont le visage designe ne ressemble a
+        # PERSONNE (sous CUR_FP_SIM). Ceux-la, aucun recalage ne les repare —
+        # la plupart sont sur des photos a UN SEUL visage, il n'y a nulle part
+        # ou aller. Ils demandent un RETRAIT, donc un jugement humain.
+        for cle, idx in sous_seuil.items():
+            par_photo.setdefault(cle, []).extend(idx)
+            pourquoi_photo.setdefault(cle, set()).add('faux_positif')
 
         # Un cas AMBIGU = une photo que la fiche cite plusieurs fois. Soit la
         # personne y est vraiment detectee deux fois, soit un index egare
@@ -286,18 +296,21 @@ def _mesurer(faces, people, projet, ecart, exemples):
             autres = [(sj, j) for j, sj in enumerate(par_visage)
                       if sj is not None and j not in connus]
             # Le meilleur visage NON cite n'est montre que s'il est un vrai
-            # PRETENDANT : au-dessus du plus faible des couples cites. En
-            # dessous, ce n'est pas un candidat, c'est une vignette de plus a
-            # regarder — et sur une page de jugement, l'attention est la
-            # ressource rare.
+            # PRETENDANT : au-dessus du plus faible des couples cites ET
+            # au-dessus du seuil de faux positif. En dessous ce n'est pas un
+            # candidat, c'est une vignette de plus a regarder — et sur une
+            # page de jugement, l'attention est la ressource rare. Le second
+            # terme compte pour les couples sous le seuil : a 0,06, n'importe
+            # quel visage « fait mieux » sans etre pour autant la personne.
             faibles = [d['sim'] for d in candidats if d['sim'] is not None]
             if autres and faibles:
                 s_best, j_best = max(autres)
-                if s_best > min(faibles):
+                if s_best > max(min(faibles), fp_sim):
                     candidats.append({"i": j_best, "sim": round(s_best, 3),
                                       "cite": False})
             residu.append({"person": nom, "key": cle, "visages": len(liste),
-                           "pourquoi": "ambigu",
+                           "pourquoi": "+".join(sorted(pourquoi_photo.get(cle)
+                                                       or {'ambigu'})),
                            "candidats": sorted(candidats, key=lambda d: d['i'])})
 
     rap = {"seuils": {"CUR_FP_SIM": fp_sim, "ecart": ecart},
@@ -314,6 +327,7 @@ def _mesurer(faces, people, projet, ecart, exemples):
                "couples_cites": sum(
                    1 for c_ in residu for d in c_['candidats'] if d['cite']),
                "fiches": len({c_['person'] for c_ in residu}),
+               "par_famille": dict(Counter(c_['pourquoi'] for c_ in residu)),
                # Nommer ce qui n'est PAS dedans : un refus « deja_pris » est une
                # PERMUTATION entre deux fiches, une autre question (« a qui est
                # ce visage ? ») ; « ecart_insuffisant » et « sous_le_plancher »
@@ -448,8 +462,12 @@ def afficher(r):
         L.append("LE RESIDU, A JUGER A L'OEIL (--residu pour l'ecrire) :")
         L.append(f"    {len(res['cas'])} cas sur {res['fiches']} fiche(s), "
                  f"{res['couples_cites']} couples cites")
-        L.append("    Un cas = une photo que la fiche cite plusieurs fois. Le")
-        L.append("    score ne tranche pas ; un humain, oui.")
+        L.append("    Deux familles. AMBIGU : la fiche cite plusieurs visages")
+        L.append("    de la meme photo. FAUX_POSITIF : le visage designe ne")
+        L.append("    ressemble a personne, et souvent la photo n'en a qu'un —")
+        L.append("    aucun recalage ne peut aider, c'est un RETRAIT.")
+        for fam, n in sorted((res.get('par_famille') or {}).items()):
+            L.append(f"      famille {fam:<24} {n} cas")
         par_fiche = Counter(c_['person'] for c_ in res['cas'])
         for nom, n in par_fiche.most_common():
             L.append(f"      {nom[:22]:<22} {n} cas")

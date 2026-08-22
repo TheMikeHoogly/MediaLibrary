@@ -34,20 +34,18 @@ l'auto-ajout**, `CUR_ADD_SIM` ne bouge pas. Et la planche de référence de
 
 ## Prochain pas
 
-0. **Les 13 couples SOUS LE SEUIL DE FAUX POSITIF** — le seul défaut de
-   rattachement qui reste. Score **0,06 à 0,295** : Flo à 0,06, Linda posée sur
-   `Sanchez Laura.jpg`, Markus sur `117-1798_HUM Mutz.JPG` (un nom d'ANIMAL,
-   cross-pipeline). La plupart sont sur des photos à **un seul visage** :
-   aucun recalage ne peut les réparer, ils demandent un **RETRAIT**. Pointer
-   `/residu` sur eux (`mesure_rattachements.py --base copie.db --exemples 20`
-   les liste), avec les trois corrections dues :
-   (a) **la photo entière avec les boîtes numérotées** dessus, les crops en
-   second — c'est elle qui aurait rendu la page d'album évidente en une
-   seconde, aux deux bouts ; (b) des **lettres** au lieu des chiffres :
-   `/tranche` utilise `1`/`2` pour Oui/Non et `/residu` pour Visage 1/Visage 2,
-   à dix minutes d'intervalle ; (c) un garde-fou qui **parle** au lieu
-   d'enregistrer une réponse invraisemblable en silence. Puis le retrait,
-   réversible, dans `/reglages`.
+0. **Juger les 13 cas `faux_positif` sur
+   `http://192.168.0.13:8080/residu`** (lettres `A`–`H` pour cocher, `Entrée`
+   pour valider, `0` je ne sais pas, `Z` revenir). La page sert **28 cas** :
+   les 15 `ambigu` déjà jugés et les **13 `faux_positif`**, ceux dont le
+   visage désigné ne ressemble à personne (0,06–0,295) — Flo à 0,06, Linda sur
+   `Sanchez Laura.jpg`, Markus sur `117-1798_HUM Mutz.JPG` (un nom d'ANIMAL),
+   et un visage de **dessin animé projeté sur un écran** rattaché à Danica.
+   Puis `mesure_rattachements.py --base copie.db --bilan-residu`.
+   **Ensuite, à écrire** : les trois boutons de RETRAIT dans `/reglages`
+   (aperçu / appliquer / annuler, quarantaine réversible), passant par la même
+   fonction que le bilan. Volontairement non écrits tant qu'aucun verdict
+   n'existe : un plan de suppression sans jugement n'est qu'une promesse.
 1. **Chantier 12 — la répétition** (choix de Mike : ordre 1-4-3-2). Restaurer
    POUR DE VRAI sur un dossier vierge, chronométrer, puis
    `verifier_restauration.py --restaure <dossier>` : il compare les décisions

@@ -240,16 +240,23 @@ une **génération** : le `taskkill` par titre ne tuait rien.
 
 ## À faire — par ordre de valeur
 
-0. **Les 13 couples SOUS LE SEUIL DE FAUX POSITIF — le seul défaut de
-   rattachement qui reste (22/08).** Score 0,06–0,295, la plupart sur des
-   photos à UN SEUL visage : le recalage ne peut rien, c'est un **retrait**.
-   Pointer `/residu` sur eux, avec les trois corrections dues à la séance de
-   jugement : (a) montrer la **photo entière avec les boîtes numérotées**
-   dessus — c'est elle qui aurait rendu la page d'album évidente en une
-   seconde, aux deux bouts ; (b) des **lettres** au lieu des chiffres, la
-   collision avec `/tranche` (où `1`/`2` valent Oui/Non) étant un piège ;
-   (c) un garde-fou qui **parle** au lieu d'avaler une réponse invraisemblable.
-   Puis le retrait, réversible, dans `/reglages`.
+0. **Les 13 couples SOUS LE SEUIL DE FAUX POSITIF : la page est LIVRÉE et
+   OBSERVÉE, reste le JUGEMENT de Mike (22/08).** `/residu` sert désormais
+   **28 cas — 15 `ambigu` (déjà jugés) + 13 `faux_positif`** — et porte les
+   trois corrections que la séance de jugement a rendues nécessaires :
+   (a) **la photo entière avec les visages encadrés** en pourcentage
+   (`_dimensions_photo` lit l'orientation EXIF, les `bbox` vivant dans
+   l'espace redressé) — c'est elle qui aurait rendu la page d'album évidente
+   en une seconde, aux deux bouts ; (b) des **lettres A–H** au lieu des
+   chiffres, `/tranche` utilisant `1`/`2`/`3` pour Oui/Non/Je ne sais pas ;
+   (c) le bouton annonce la **CONSÉQUENCE** — « Valider écrira : 0 gardé ·
+   1 à RETIRER » — plutôt que le nombre de cases cochées. Une photo
+   introuvable (clé fantôme) est **dite**, pas affichée cassée. Observé en
+   réel : 28 cas servis, cadres posés, premier cas = un visage de **dessin
+   animé sur une diapositive projetée** rattaché à Danica, à 0,278.
+   **Ensuite** : `--bilan-residu`, puis les trois boutons de RETRAIT dans
+   `/reglages` — non écrits, volontairement : un plan de suppression sans
+   jugement n'est qu'une promesse.
 
 0bis. **Le résidu « ambigu » : CLOS (22/08).** Instrument et page livrés,
    15 cas jugés par Mike, **34 confirmés, 0 à retirer**. `mesure_rattachements.py --residu` écrit
@@ -534,12 +541,53 @@ dossier d'avant 1990 n'y passe. Le **plafond 2100** (`22082010141.jpg` → 2082)
   **après contrôles** (serveur à jour, tests des modules touchés, `.bat` ASCII,
   lint). L'ordre s'inverse : **observer AVANT de commiter**.
 
+## Pistes ouvertes par Mike (22/08) — à instruire, pas encore priorisées
+
+- **Tirer plus d'intelligence du LLM local À MATÉRIEL CONSTANT.** Demande de
+  Mike : évaluer ce que l'outillage actuel permet de gagner sans changer de
+  modèle — le plafond de 4 Go de VRAM ne bouge pas, et « modèle plus gros »
+  est déjà PARQUÉ pour cette raison (16/08). Axes à instruire, du moins cher au
+  plus cher : sortie **contrainte** (grammaire / JSON forcé, qui supprime une
+  classe entière d'erreurs de format sans coûter un octet de VRAM) ;
+  **auto-cohérence** (plusieurs tirages, on garde ce qui se répète) ;
+  **décodage spéculatif** ; quantifications récentes ; modèles petits parus
+  depuis (le fonds tourne sur `qwen3-vl:2b`) ; et le **temps de calcul au
+  moment de la réponse** plutôt que la taille. Source de départ donnée par
+  Mike : `xda-developers.com/local-llms-used-prove-not-just-smaller-versions-cloud-models/`.
+  **Habitude demandée** : se renseigner à l'ouverture de toute session qui
+  touche au tagging, à la description ou à la recherche — ce domaine bouge vite
+  et une doc de six mois est périmée.
+  **Condition non négociable, et elle est déjà écrite** : rien ne se câble sans
+  banc en aveugle sur un ET — apport réel **et** hallucination (`eval/METHODE.md`,
+  et les trois conditions du point 16(c)). Le prompt de PRODUCTION double déjà
+  les hallucinations, adopté sur un 25-15 : ce chantier-là commence par une
+  mesure, pas par un modèle.
+
+- **Ouvrir la médiathèque à TOUTE LA FAMILLE, avec la vie privée au centre.**
+  Aujourd'hui l'outil est pour Mike et Flo. La cible : chacun a son **dossier
+  perso**, y dépose ses photos, et **contrôle qui voit quoi** — partages
+  explicites, révocables, et le compte rendu de ce qui est partagé. L'outil
+  rend alors ce qu'il sait faire : classer, ranger, retrouver.
+  **Ce que ça change de nature** : le projet passe d'un outil mono-poste à un
+  service multi-utilisateur, et la vie privée cesse d'être un réglage pour
+  devenir la contrainte qui gouverne le modèle de données. Trois questions à
+  trancher AVANT toute ligne de code — (a) l'unité de propriété : la photo, le
+  dossier, ou la personne reconnue dessus ? une photo de Flo prise par Mike
+  appartient à qui ? (b) ce que la RECHERCHE laisse fuir : un compte de
+  résultats, un nom qui complète, une vignette de prévisualisation suffisent à
+  révéler ce qu'on croyait caché ; (c) les **visages** : nommer quelqu'un dans
+  la photo d'un autre, c'est écrire sur son bien — et les noms partent dans les
+  XMP des fichiers (règle 2), donc hors de portée de tout réglage.
+  **Absorbe l'item « mode Flo »** de la Réserve, dont le déclencheur était
+  tombé le 21/08 : la file de nommage à plusieurs redevient utile ici, mais
+  comme conséquence, pas comme préalable.
+
 ## Réserve — futur, non prioritaire (triée le 12/08)
 
 - **Multi-utilisateur** — « mode Flo » minimal (file de nommage des visages).
-  **Son déclencheur est tombé le 21/08** : il existait pour débloquer la vérité
-  terrain, or celle-ci ne bloque que le chantier 9, désormais parqué. À rouvrir
-  pour ce qu'il vaut par lui-même — nommer à plusieurs — pas comme préalable.
+  **Son déclencheur est tombé le 21/08**, et l'item est désormais **absorbé par
+  la piste « toute la famille »** ci-dessus (Mike, 22/08) : nommer à plusieurs
+  est une conséquence du partage, pas un préalable à la vérité terrain.
 - **Vidéo → audio** : coût élevé, valeur incertaine, aucun déclencheur.
 - **Bibliothèque Figma** : le design system vit dans le code ; un miroir serait
   de la doc à double entretien.

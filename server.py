@@ -11152,6 +11152,60 @@ RESIDU_VERDICTS = ('juge', 'indecidable')
 RESIDU_LOCK = threading.Lock()
 
 
+_DIMS_PHOTO = {}
+_DIMS_LOCK = threading.Lock()
+
+
+def _dimensions_photo(key):
+    """(largeur, hauteur) de la photo REDRESSEE, ou None.
+
+    Les `bbox` des visages sont exprimees dans l'espace redresse : les deux
+    producteurs (`_serve_facecrop`, `_serve_thumb`) appliquent
+    `exif_transpose` AVANT de decouper. Pour poser un cadre en POURCENTAGE
+    par-dessus la vignette, il faut donc les memes dimensions — d'ou la
+    lecture de l'orientation EXIF plutot qu'un `size` brut, qui donnerait un
+    cadre pivote sur toute photo prise a la verticale.
+
+    Seul l'en-tete du fichier est lu (PIL est paresseux), et le resultat est
+    mis en cache : les dimensions d'une photo ne changent pas.
+    """
+    with _DIMS_LOCK:
+        if key in _DIMS_PHOTO:
+            return _DIMS_PHOTO[key]
+    dims = None
+    if PIL_OK:
+        try:
+            path = _resolve_key(key)
+            if path.is_file():
+                with Image.open(path) as im:
+                    w, h = im.size
+                    try:
+                        orient = (im.getexif() or {}).get(0x0112)
+                    except Exception:                          # noqa: BLE001
+                        orient = None
+                    if orient in (5, 6, 7, 8):
+                        w, h = h, w
+                    dims = (w, h)
+        except Exception:                                      # noqa: BLE001
+            dims = None
+    with _DIMS_LOCK:
+        _DIMS_PHOTO[key] = dims
+    return dims
+
+
+def _boite_en_fractions(bbox, dims):
+    """Un `bbox` en pixels devient (gauche, haut, largeur, hauteur) en % —
+    le client n'a alors rien a savoir de la taille de la vignette."""
+    if not (dims and isinstance(bbox, (list, tuple)) and len(bbox) == 4):
+        return None
+    w, h = dims
+    if not (w and h):
+        return None
+    x1, y1, x2, y2 = [float(v) for v in bbox]
+    return [round(100.0 * x1 / w, 3), round(100.0 * y1 / h, 3),
+            round(100.0 * (x2 - x1) / w, 3), round(100.0 * (y2 - y1) / h, 3)]
+
+
 def _residu_id(key, person):
     """Identite d'un cas : la photo ET la personne.
 
@@ -12475,8 +12529,8 @@ RESIDU_PAGE = '''<!DOCTYPE html>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Le residu a juger</title>
 <style>
-/* Surface de TRAVAIL : on decide, donc papier. Tokens seuls, aucune valeur
-   en dur — meme systeme que /tranche, dont cette page est la jumelle. */
+/* Surface de TRAVAIL : on decide, donc papier. Tokens seuls.
+   La PHOTO, elle, se regarde : fond salle, comme partout ailleurs. */
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: var(--f-texte); background: var(--salle); color: var(--texte); }
 .bar { display: flex; align-items: center; gap: var(--e-3);
@@ -12489,16 +12543,30 @@ body { font-family: var(--f-texte); background: var(--salle); color: var(--texte
 .rappel b { color: var(--texte); }
 .feuille { background: var(--papier); color: var(--texte-papier);
            border-radius: var(--r-md); padding: var(--e-4);
-           margin: var(--e-3) var(--e-4) var(--e-8); max-width: 860px;
+           margin: var(--e-3) var(--e-4) var(--e-8); max-width: 900px;
            box-shadow: 0 1px 0 var(--papier-2), 0 8px 24px #0008; }
 .feuille h2 { font: 600 var(--t-xl)/1.2 var(--f-affichage);
               letter-spacing: -0.01em; margin-bottom: var(--e-3); }
 .aide { color: var(--graphite-p); font-size: var(--t-sm); line-height: 1.5; }
-/* Les candidats et les references doivent se comparer d'un coup d'oeil : on
-   BORNE leur taille au lieu de laisser 1fr les etirer. Deux vignettes de
-   420 px poussent la planche sous le pli, et on juge alors de memoire. */
-.choix { display: grid; gap: var(--e-3); margin: var(--e-4) 0;
-         grid-template-columns: repeat(auto-fit, minmax(132px, 200px)); }
+/* La SCENE : la photo entiere, cadres poses en pourcentage. C'est elle qui
+   dit si le fichier est une scene ou une page d'album — un crop isole ne le
+   dit jamais, et le 22/08 ca a coute une conclusion fausse. */
+.scene { position: relative; display: inline-block; max-width: 100%;
+         margin: var(--e-3) 0; background: var(--salle);
+         border-radius: var(--r-sm); line-height: 0; }
+.scene img { max-width: 100%; max-height: 46vh; width: auto; display: block;
+             border-radius: var(--r-sm); }
+.cadre { position: absolute; border: 2px solid var(--veilleuse);
+         border-radius: var(--r-sm); box-shadow: 0 0 0 1px #000A;
+         pointer-events: none; }
+.cadre[data-oui="1"] { border-color: var(--fixateur); }
+.cadre b { position: absolute; top: -1px; left: -1px;
+           font: 700 var(--t-xs)/1 var(--f-donnees); color: #000;
+           background: var(--veilleuse); padding: 3px 5px;
+           border-radius: var(--r-sm) 0 var(--r-sm) 0; }
+.cadre[data-oui="1"] b { background: var(--fixateur); color: #fff; }
+.choix { display: grid; gap: var(--e-3); margin: var(--e-3) 0;
+         grid-template-columns: repeat(auto-fit, minmax(132px, 190px)); }
 .cand { display: block; width: 100%; padding: var(--e-2); cursor: pointer;
         background: var(--papier-2); border: 2px solid transparent;
         border-radius: var(--r-md); color: var(--texte-papier);
@@ -12513,7 +12581,7 @@ body { font-family: var(--f-texte); background: var(--salle); color: var(--texte
 .cand[aria-pressed="true"] { border-color: var(--fixateur);
                              background: var(--fixateur); color: #fff; }
 .cand[aria-pressed="true"] .mes { color: #fff; opacity: 0.9; }
-.refs { display: grid; grid-template-columns: repeat(auto-fit, minmax(88px, 132px));
+.refs { display: grid; grid-template-columns: repeat(auto-fit, minmax(88px, 120px));
         gap: var(--e-2); margin-top: var(--e-2); }
 .refs img { width: 100%; aspect-ratio: 1; object-fit: cover; display: block;
             border-radius: var(--r-md); background: var(--papier-2); }
@@ -12523,7 +12591,8 @@ body { font-family: var(--f-texte); background: var(--salle); color: var(--texte
 .chiffres { font-family: var(--f-donnees); font-size: var(--t-sm);
             color: var(--texte-papier); background: var(--papier-2);
             border-radius: var(--r-sm); padding: var(--e-2) var(--e-3); }
-.actes { display: flex; gap: var(--e-2); flex-wrap: wrap; margin: var(--e-4) 0 var(--e-3); }
+.suite { margin: var(--e-3) 0 0; font-size: var(--t-sm); font-weight: 600; }
+.actes { display: flex; gap: var(--e-2); flex-wrap: wrap; margin: var(--e-3) 0; }
 .btn { min-height: var(--touch); padding: 0 var(--e-4);
        font: 500 var(--t-sm)/1 var(--f-texte); border: var(--trait);
        border-radius: var(--r-md); background: var(--salle-3); color: var(--texte);
@@ -12553,11 +12622,8 @@ body { font-family: var(--f-texte); background: var(--salle); color: var(--texte
 <div class="rappel" id="rappel">Chargement&hellip;</div>
 <section class="feuille" id="carte" hidden>
   <h2 id="question">&nbsp;</h2>
-  <p class="aide">Cette fiche cite <b>plusieurs visages de la m&ecirc;me
-    photo</b>. Ou la personne y est vraiment d&eacute;tect&eacute;e deux fois,
-    ou un index a gliss&eacute; et d&eacute;signe son voisin. Le score ne le
-    dit pas ; toi, oui. S&eacute;lectionne <b>chaque</b> visage qui est bien
-    cette personne.</p>
+  <p class="aide" id="pourquoi">&nbsp;</p>
+  <div class="scene" id="scene"><img id="photo-img" alt="La photo enti&egrave;re, visages encadr&eacute;s"></div>
   <div class="bloc">
     <div class="choix" id="choix"></div>
   </div>
@@ -12566,12 +12632,13 @@ body { font-family: var(--f-texte); background: var(--salle); color: var(--texte
     <div class="refs" id="refs"></div>
   </div>
   <p class="chiffres" id="chiffres">&nbsp;</p>
+  <p class="suite" id="suite">&nbsp;</p>
   <div class="actes">
     <button class="btn btn--confirmer" id="valider">Valider <kbd>Entr&eacute;e</kbd></button>
     <button class="btn btn--discret" id="sais-pas">Je ne sais pas <kbd>0</kbd></button>
   </div>
   <div class="pied">
-    <a id="photo" href="#" target="_blank" rel="noopener">Voir la photo enti&egrave;re</a>
+    <a id="photo" href="#" target="_blank" rel="noopener">Ouvrir la photo en grand</a>
     <button class="btn btn--discret" id="prec">Revenir <kbd>Z</kbd></button>
   </div>
 </section>
@@ -12580,8 +12647,7 @@ body { font-family: var(--f-texte); background: var(--salle); color: var(--texte
   <p class="chiffres" id="bilan">&nbsp;</p>
   <p class="aide">Rien n&rsquo;a &eacute;t&eacute; retir&eacute; : cette page
     <b>collecte</b>, elle n&rsquo;agit pas. Le plan de retrait se lit par
-    <b>mesure_rattachements.py --base copie.db --bilan-residu</b>, et le geste
-    reste le tien.</p>
+    <b>mesure_rattachements.py --bilan-residu</b>, et le geste reste le tien.</p>
   <div class="pied">
     <button class="btn btn--discret" id="revoir">Revoir les jugements</button>
   </div>
@@ -12589,6 +12655,10 @@ body { font-family: var(--f-texte); background: var(--salle); color: var(--texte
 <script>
 function esc(s){return (s||'').replace(/[&<>"]/g,function(c){
   return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+// Des LETTRES, pas des chiffres : /tranche utilise 1/2/3 pour Oui/Non/Je ne
+// sais pas. Les memes touches a dix minutes d'intervalle, avec des sens
+// opposes, ont deja fait enregistrer quinze reponses pour une autre.
+var LETTRES = 'ABCDEFGH';
 var CAS = [], VERD = {}, pos = 0, SEL = {};
 
 function chargee(d){
@@ -12599,10 +12669,13 @@ function chargee(d){
       '<b>mesure_rattachements.py --base copie.db --residu</b>';
     majCompte(); return;
   }
-  r.innerHTML = 'Ces cas sont ceux que la r&egrave;gle de recalage a ' +
-    '<b>refus&eacute;</b> de r&eacute;parer, expr&egrave;s : d&eacute;placer ' +
-    'un jugement humain au hasard serait pire que de ne rien faire. Cette page ' +
-    'ne retire rien et n&rsquo;attribue rien &mdash; elle recueille ton avis.';
+  r.innerHTML = 'Ces rattachements sont ceux qu&rsquo;aucune r&egrave;gle ne ' +
+    'peut trancher : soit la fiche cite plusieurs visages d&rsquo;une m&ecirc;me ' +
+    'photo, soit le visage d&eacute;sign&eacute; ne ressemble &agrave; personne. ' +
+    'La photo enti&egrave;re est l&agrave; parce qu&rsquo;un fichier n&rsquo;est ' +
+    'pas toujours une sc&egrave;ne &mdash; une page d&rsquo;album porte la ' +
+    'm&ecirc;me personne plusieurs fois. Cette page ne retire rien et ' +
+    'n&rsquo;attribue rien.';
   pos = CAS.findIndex(function(c){ return !VERD[c.id]; });
   if (pos < 0) pos = CAS.length;
   montrer();
@@ -12618,14 +12691,25 @@ function majCompte(){
   return {n: n, ind: ind};
 }
 
-function majValider(){
+function majSuite(){
   var c = CAS[pos]; if (!c) return;
-  var n = (SEL[c.id] || []).length;
+  var l = SEL[c.id] || [];
+  var cites = c.candidats.filter(function(k){ return k.cite; });
+  var gardes = cites.filter(function(k){ return l.indexOf(k.i) >= 0; }).length;
+  var retires = cites.length - gardes;
+  var ajouts = l.filter(function(i){
+    return !c.candidats.some(function(k){ return k.i === i && k.cite; }); }).length;
+  // Dire la CONSEQUENCE avant le clic, pas le nombre de cases cochees : c'est
+  // ce que la validation produira qui compte, et c'est ce qu'on relit mal.
+  var mots = [];
+  mots.push(gardes + ' gardé' + (gardes > 1 ? 's' : ''));
+  if (retires) mots.push(retires + ' à RETIRER');
+  if (ajouts) mots.push(ajouts + ' à proposer en ajout');
+  document.getElementById('suite').textContent = 'Valider écrira : ' + mots.join('  ·  ');
   var b = document.getElementById('valider');
-  b.innerHTML = (n ? 'Valider ' + n + ' visage' + (n > 1 ? 's' : '')
-                   : 'Aucun n\\u2019est ' + esc(c.person)) +
-                ' <kbd>Entrée</kbd>';
-  b.className = 'btn ' + (n ? 'btn--confirmer' : 'btn--destructif');
+  b.className = 'btn ' + (retires ? 'btn--destructif' : 'btn--confirmer');
+  document.querySelectorAll('.cadre').forEach(function(e){
+    e.setAttribute('data-oui', l.indexOf(+e.dataset.i) >= 0 ? '1' : '0'); });
 }
 
 function basculer(i){
@@ -12635,7 +12719,7 @@ function basculer(i){
   if (k < 0) l.push(i); else l.splice(k, 1);
   document.querySelectorAll('.cand').forEach(function(b){
     b.setAttribute('aria-pressed', String(l.indexOf(+b.dataset.i) >= 0)); });
-  majValider();
+  majSuite();
 }
 
 function montrer(){
@@ -12657,19 +12741,46 @@ function montrer(){
     // fiche affirme ferait valider l'erreur d'un clic.
     SEL[c.id] = (v && v.oui) ? v.oui.slice() : [];
   }
-  document.getElementById('question').textContent =
-    'Lequel de ces visages est ' + c.person + ' ?';
+  var seul = (c.candidats.length === 1);
+  document.getElementById('question').textContent = seul
+    ? 'Ce visage est-il ' + c.person + ' ?'
+    : 'Lequel de ces visages est ' + c.person + ' ?';
+  var manque = c.photo_lisible ? ''
+    : ' Le fichier de cette photo est introuvable sur le NAS : ni vignette, ni ' +
+      'cadres. Juge sur les visages ci-dessous, ou réponds « Je ne sais pas ».';
+  document.getElementById('pourquoi').textContent = (seul
+    ? 'La fiche dit que ce visage est ' + c.person + ', mais il ne ressemble ' +
+      'à personne selon le modèle. Si ce n’est pas elle, le laisser décoché ' +
+      'le marque à retirer.'
+    : 'Cette fiche cite plusieurs visages de la même photo. Regarde la scène : ' +
+      'si c’est une page d’album ou un montage, la même personne peut y être ' +
+      'plusieurs fois, et plusieurs réponses sont justes.') + manque;
+  var img = document.getElementById('photo-img');
+  var scene = document.getElementById('scene');
+  scene.hidden = !c.photo_lisible;
+  img.src = c.photo_lisible ? (c.photo_url || '') : '';
+  img.alt = 'La photo entière, ' + c.candidats.length + ' visage(s) encadré(s)';
+  scene.querySelectorAll('.cadre').forEach(function(e){ e.remove(); });
+  c.candidats.forEach(function(k, n){
+    if (!k.boite) return;
+    var e = document.createElement('div');
+    e.className = 'cadre'; e.dataset.i = k.i; e.setAttribute('data-oui', '0');
+    e.style.left = k.boite[0] + '%'; e.style.top = k.boite[1] + '%';
+    e.style.width = k.boite[2] + '%'; e.style.height = k.boite[3] + '%';
+    e.innerHTML = '<b>' + LETTRES[n] + '</b>';
+    scene.appendChild(e);
+  });
   document.getElementById('choix').innerHTML = c.candidats.map(function(k, n){
     return '<button type="button" class="cand" data-i="' + k.i + '" ' +
       'aria-pressed="false"><img src="' + esc(k.crop_url) + '" alt="Visage ' +
-      (n + 1) + ' de la photo, à juger"><span>Visage ' + (n + 1) +
-      ' <kbd>' + (n + 1) + '</kbd></span><span class="mes">i=' + k.i +
+      LETTRES[n] + ' de la photo, à juger"><span>Visage ' + LETTRES[n] +
+      ' <kbd>' + LETTRES[n] + '</kbd></span><span class="mes">i=' + k.i +
       '  ·  score ' + (k.sim == null ? '—' : k.sim.toFixed(3)) +
       (k.cite ? '  ·  cité' : '  ·  non cité') + '</span></button>'; }).join('');
   document.querySelectorAll('.cand').forEach(function(b){
     b.addEventListener('click', function(){ basculer(+b.dataset.i); }); });
   document.getElementById('legref').textContent =
-    'Visages déjà rattachés à ' + c.person + ' (ailleurs)';
+    'Visages déjà rattachés à ' + c.person + ' (sur d’autres photos)';
   var refs = document.getElementById('refs');
   refs.innerHTML = (c.refs_urls && c.refs_urls.length)
     ? c.refs_urls.map(function(u){
@@ -12678,13 +12789,13 @@ function montrer(){
     : '<p class="vide">Aucun visage rattaché ailleurs : juge sur la photo ' +
       'entière, ou réponds « Je ne sais pas ».</p>';
   document.getElementById('chiffres').textContent =
-    c.visages + ' visages sur la photo  ·  ' + c.candidats.length +
+    c.visages + ' visage(s) sur la photo  ·  ' + c.candidats.length +
     ' candidat(s)  ·  ' + c.pourquoi;
   document.getElementById('photo').href = c.url || '#';
   document.querySelectorAll('.cand').forEach(function(b){
     b.setAttribute('aria-pressed',
                    String(SEL[c.id].indexOf(+b.dataset.i) >= 0)); });
-  majValider();
+  majSuite();
   document.getElementById('prec').disabled = (pos === 0);
 }
 
@@ -12714,10 +12825,11 @@ document.getElementById('revoir').addEventListener('click', function(){
 document.addEventListener('keydown', function(e){
   if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
   var c = CAS[pos];
-  if (e.key >= '1' && e.key <= '9'){
+  var n = LETTRES.indexOf((e.key || '').toUpperCase());
+  if (n >= 0 && !e.ctrlKey && !e.metaKey && !e.altKey){
     if (!c) return;
-    var k = c.candidats[+e.key - 1];
-    if (k) basculer(k.i);
+    var k = c.candidats[n];
+    if (k){ e.preventDefault(); basculer(k.i); }
   } else if (e.key === 'Enter'){
     if (c) envoyer(c, 'juge', (SEL[c.id] || []).slice());
   } else if (e.key === '0'){
@@ -15795,13 +15907,22 @@ class Handler(BaseHTTPRequestHandler):
         for c in (d.get('cas') or []):
             k = c.get('key', '')
             person = c.get('person', '')
+            # Les `bbox` viennent du magasin VIVANT, jamais du fichier de
+            # tirage : un cadre pose au mauvais endroit serait pire qu'aucun
+            # cadre — il designerait un innocent avec autorite.
+            e = FACE_STORE.data.get(k)
+            visages = (e.get('faces') or []) if isinstance(e, dict) else []
+            dims = _dimensions_photo(k) if visages else None
             cands = []
             for x in (c.get('candidats') or []):
                 try:
                     i = int(x.get('i'))
                 except (TypeError, ValueError):
                     continue
-                cands.append(dict(x, i=i, crop_url=_crop_url(k, i)))
+                bb = None
+                if 0 <= i < len(visages) and isinstance(visages[i], dict):
+                    bb = _boite_en_fractions(visages[i].get('bbox'), dims)
+                cands.append(dict(x, i=i, crop_url=_crop_url(k, i), boite=bb))
             if not cands:
                 continue
             # La planche montre les rattachements d'AILLEURS : ceux de CETTE
@@ -15812,6 +15933,13 @@ class Handler(BaseHTTPRequestHandler):
                     if r[0] != k]
             cas.append(dict(c, id=_residu_id(k, person), person=person,
                             candidats=cands, url=_url_for_key(k),
+                            photo_url='/api/thumb?key='
+                                      + urllib.parse.quote(k, safe='') + '&s=1200',
+                            # Le fichier a pu disparaitre (cles fantomes des
+                            # anciens uploads) : sans dimensions, pas de cadre
+                            # et pas de vignette. Le DIRE vaut mieux qu'une
+                            # image cassee sur une page de jugement.
+                            photo_lisible=bool(dims),
                             refs_urls=[_crop_url(r[0], r[1]) for r in refs]))
         with RESIDU_LOCK:
             verdicts = _residu_lire_jugements()

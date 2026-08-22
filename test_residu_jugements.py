@@ -84,11 +84,23 @@ CAS = {"key": r"\\NAS\p\groupe.jpg", "person": 'Didier', "visages": 12,
                      {"i": 8, "sim": 0.745, "cite": True}]}
 
 
-def espace(dossier, fiches=None, cas=None):
+def espace(dossier, fiches=None, cas=None, visages=None):
     ns = {'json': json, 'os': os, 'time': __import__('time'),
           'urllib': urllib,
           'threading': __import__('threading'),
           'PEOPLE_STORE': FauxStore(fiches if fiches is not None else {}),
+          'FACE_STORE': FauxStore(visages if visages is not None else {
+              CAS['key']: {"faces": [{"bbox": [0, 0, 50, 50]},
+                                     {"bbox": [10, 10, 60, 60]},
+                                     {"bbox": [20, 20, 70, 70]},
+                                     {"bbox": [30, 30, 80, 80]},
+                                     {"bbox": [40, 40, 90, 90]},
+                                     {"bbox": [50, 50, 100, 100]},
+                                     {"bbox": [60, 60, 110, 110]},
+                                     {"bbox": [70, 70, 120, 120]},
+                                     {"bbox": [80, 80, 130, 130]}]}}),
+          '_dimensions_photo': lambda k: (200, 100),
+          'PIL_OK': False,
           'TRANCHE_REFS_MAX': _constante('TRANCHE_REFS_MAX'),
           'RESIDU_VERDICTS': _constante('RESIDU_VERDICTS'),
           'RESIDU_A_JUGER': Path(dossier) / '_residu_a_juger.json',
@@ -99,8 +111,8 @@ def espace(dossier, fiches=None, cas=None):
     ns['RESIDU_LOCK'] = ns['threading'].Lock()
     for nom in ('_residu_id', '_residu_lire_jugements',
                 '_residu_ecrire_jugements', '_tranche_fiches_par_nom',
-                '_tranche_refs_vivantes', '_crop_url', '_serve_residu_list',
-                '_do_residu_post'):
+                '_tranche_refs_vivantes', '_crop_url', '_boite_en_fractions',
+                '_serve_residu_list', '_do_residu_post'):
         exec(compile(ast.Module([_noeud(nom)], []), str(SERVER), 'exec'), ns)
     if cas is not None:
         ns['RESIDU_A_JUGER'].write_text(
@@ -239,6 +251,44 @@ class TestListe(unittest.TestCase):
             quotee = urllib.parse.quote(CAS['key'], safe='')
             self.assertFalse(any(quotee in u for u in urls))
 
+    def test_chaque_candidat_porte_son_cadre_en_pourcentage(self):
+        """Le cadre est pose sur la photo entiere : en % de ses dimensions, le
+        client n'a rien a savoir de la taille de la vignette. i=8 a pour bbox
+        [80,80,130,130] sur 200x100 -> 40 % / 80 % / 25 % / 50 %."""
+        with TemporaryDirectory() as d:
+            _code, r = lister(espace(d, self.FICHES, [CAS]))
+            boites = [k['boite'] for k in r['cas'][0]['candidats']]
+            self.assertEqual(boites[1], [40.0, 80.0, 25.0, 50.0])
+            self.assertTrue(all(b and len(b) == 4 for b in boites))
+
+    def test_une_photo_introuvable_est_DITE_pas_cassee(self):
+        """Les cles fantomes des anciens uploads : le fichier a disparu, donc
+        ni vignette ni cadres. Une page de jugement doit le dire, pas afficher
+        une image cassee."""
+        with TemporaryDirectory() as d:
+            ns = espace(d, self.FICHES, [CAS])
+            ns['_dimensions_photo'] = lambda k: None
+            _code, r = lister(ns)
+            self.assertFalse(r['cas'][0]['photo_lisible'])
+            self.assertIn('introuvable', _constante('RESIDU_PAGE'))
+
+    def test_un_cadre_impossible_ne_fait_pas_tomber_la_page(self):
+        """Photo absente du magasin de visages : pas de cadre, mais le cas
+        reste jugeable — sur la photo entiere et les crops."""
+        with TemporaryDirectory() as d:
+            ns = espace(d, self.FICHES, [CAS], visages={})
+            _code, r = lister(ns)
+            self.assertEqual(len(r['cas']), 1)
+            self.assertEqual([k['boite'] for k in r['cas'][0]['candidats']],
+                             [None, None])
+
+    def test_la_photo_entiere_est_servie(self):
+        """Un crop isole ne dit pas si le fichier est une scene ou une page
+        d'album : le 22/08, ca a coute une conclusion fausse."""
+        with TemporaryDirectory() as d:
+            _code, r = lister(espace(d, self.FICHES, [CAS]))
+            self.assertIn('/api/thumb', r['cas'][0]['photo_url'])
+
     def test_fichier_absent_ne_tombe_pas(self):
         with TemporaryDirectory() as d:
             code, r = lister(espace(d))
@@ -269,6 +319,19 @@ class TestPromesse(unittest.TestCase):
         page = _constante('RESIDU_PAGE')
         for mot in _constante('RESIDU_VERDICTS'):
             self.assertIn(mot, page)
+
+    def test_les_touches_ne_sont_PAS_des_chiffres(self):
+        """/tranche utilise 1/2/3 pour Oui/Non/Je ne sais pas. Les memes
+        touches ici, avec un sens oppose, ont fait enregistrer quinze reponses
+        pour une autre le 22/08."""
+        page = _constante('RESIDU_PAGE')
+        self.assertIn("LETTRES = 'ABCDEFGH'", page)
+        self.assertNotIn("e.key >= '1'", page)
+
+    def test_la_page_annonce_la_CONSEQUENCE_avant_le_clic(self):
+        page = _constante('RESIDU_PAGE')
+        self.assertIn('Valider écrira', page)
+        self.assertIn('RETIRER', page)
 
     def test_la_page_dit_qu_elle_ne_retire_rien(self):
         page = _constante('RESIDU_PAGE')
