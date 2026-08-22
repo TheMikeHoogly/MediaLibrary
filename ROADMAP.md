@@ -376,9 +376,16 @@ qui en découle : éditer → redémarrer → **observer** → livrer.
     bases vides ne passent pas. 14 tests (`test_verifier_restauration.py`).
 
     **Reste le geste de Mike**, et il tient dans un double-clic :
-    **`30 - Repetition de restauration.bat`** (ASCII pur, contrôlé) enchaîne
+    **`30 - Repetition de restauration.bat`** enchaîne
     clone, base, artefacts, chrono et comparaison, et s'arrête net à la
-    première étape qui échoue. Le pas-à-pas manuel reste dans
+    première étape qui échoue. **Trois défauts de lanceur ont été payés pour
+    y arriver** (python inline aux guillemets imbriqués ; lecteur `D:` absent
+    diagnostiqué comme un dossier non vide ; et une parenthèse dans un `echo`
+    au sein d'un bloc, qui FERME le bloc et tue `cmd` sur « ou etait
+    inattendu »). Le troisième a fait grandir l'instrument : `verifier_bat.py`
+    voit désormais ce cas (15 tests), et les 18 `.bat` du projet passent —
+    aucun autre ne le portait. Le lanceur, lui, n'a plus un seul bloc : que
+    des `goto`. Le pas-à-pas manuel reste dans
     `docs/REPETITION_RESTAURATION.md` —
     restaurer pour de vrai dans un dossier vierge, chronométrer, puis
     `verifier_restauration.py --restaure <dossier>`, qui compare les décisions

@@ -66,7 +66,49 @@ def controler(chemin):
                 f"l.{num} : {' '.join(repr(c) for c in fautifs)}"
                 f"   -> remplacer par {suggest!r}"
                 f"\n         {ligne.strip()[:70]}")
+    problemes.extend(parentheses_dans_un_bloc(texte))
     return problemes
+
+
+def parentheses_dans_un_bloc(texte):
+    """Une parenthese dans un `echo` A L'INTERIEUR d'un bloc le FERME.
+
+    Troisieme mode de panne muet des .bat, paye le 22/08 : le lanceur de la
+    repetition disait « le dossier n'etait pas vide (git refuse), ou le
+    reseau… » dans un bloc `else (`. La parenthese de « (git refuse) » a
+    ferme le bloc, et cmd est mort sur « ou etait inattendu » — un message
+    qui ne nomme NI le fichier, NI la ligne, NI la vraie cause.
+
+    Le controle suit la profondeur des blocs et signale toute parenthese non
+    echappee dans une commande a l'interieur. La parade est `^(` ... `^)`,
+    ou mieux : pas de blocs du tout, des `goto` a la place.
+    """
+    pbs = []
+    profondeur = 0
+    for num, ligne in enumerate(texte.splitlines(), 1):
+        nu = ligne.strip()
+        bas = nu.lower()
+        if not nu or bas.startswith('rem ') or bas.startswith('::'):
+            continue
+        if profondeur > 0 and (bas.startswith('echo ') or bas.startswith('echo.')):
+            corps = nu[5:]
+            reste = corps.replace('^(', '').replace('^)', '')
+            if '(' in reste or ')' in reste:
+                pbs.append(
+                    f"l.{num} : parenthese dans un echo A L'INTERIEUR d'un bloc"
+                    "   -> elle FERME le bloc ; ecrire ^( et ^), ou remplacer"
+                    " le bloc par un goto"
+                    f"\n         {nu[:70]}")
+        # Profondeur : ce qui OUVRE finit par « ( » ; ce qui ferme commence
+        # par « ) ». « ) else ( » fait les deux et laisse la profondeur egale.
+        if nu.startswith(')'):
+            profondeur = max(0, profondeur - 1)
+            if nu.rstrip().endswith('('):
+                profondeur += 1
+            continue
+        if nu.rstrip().endswith('(') and not nu.startswith('echo'):
+            profondeur += 1
+    return pbs
 
 
 def rapport(fichiers):
@@ -82,8 +124,9 @@ def rapport(fichiers):
             print(f"  + {Path(f).name}")
     print()
     if total:
-        print(f"  {total} probleme(s). Un .bat non-ASCII saute des etapes")
-        print("  en silence : corrige avant de le lancer.")
+        print(f"  {total} probleme(s). Un .bat mal forme saute des etapes")
+        print("  en silence, ou meurt sur un message qui ne nomme rien :")
+        print("  corrige avant de le lancer.")
     else:
         print("  Tous les .bat sont en ASCII pur.")
     return 1 if total else 0

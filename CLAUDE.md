@@ -17,11 +17,15 @@ décisions techniques. `FACE_USE_GPU=False` **volontaire** (VRAM prise par Ollam
 
 ## Règles absolues
 
-1. **`.bat` en ASCII PUR.** `cmd.exe` relit le fichier par décalage d'octets : un
-   seul caractère multi-octets fait sauter des étapes en silence. Interdits même
-   en `REM` : accents, `« »`, `─ → ✓ ⚠`, emoji. Contrôle avant livraison et
-   **lire sa sortie** : `python verifier_bat.py` (+ hook PostToolUse). Déjà
-   commise 2×.
+1. **`.bat` en ASCII PUR, et sans parenthèse dans un bloc.** `cmd.exe` relit le
+   fichier par décalage d'octets : un seul caractère multi-octets fait sauter des
+   étapes en silence. Interdits même en `REM` : accents, `« »`, `─ → ✓ ⚠`, emoji.
+   **Et une parenthèse dans un `echo` À L'INTÉRIEUR d'un bloc `( … )` FERME le
+   bloc** — mort sur « ou etait inattendu », un message qui ne nomme ni le
+   fichier, ni la ligne, ni la cause (22/08). Écrire `^(` `^)`, ou mieux : pas de
+   blocs, des `goto`. Contrôle avant livraison et **lire sa sortie** :
+   `python verifier_bat.py` (+ hook PostToolUse) — il voit les trois défauts.
+   Déjà commise 3×.
 2. **Les noms humains ne se perdent jamais.** Toute migration les préserve
    (modèle `migrate_animal_pipeline()`). Un changement qui risque d'en perdre un
    est faux, quel que soit son gain.
