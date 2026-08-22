@@ -6,7 +6,22 @@
 > `eval/DECISIONS.md` si elle tranche, dans `ROADMAP.md` si elle priorise.
 > Protocole : `CLAUDE.md`, « Traite autonome ».
 
-*Aucune question en attente.*
+- **22/08 — 748 décisions humaines attendent un clic.** Le rangement les avait
+  décrochées de leur photo (cause trouvée et corrigée : `rekey_everywhere` ne
+  re-clait pas les fiches `PEOPLE`/`PETS`, keyées par NOM). La réparation est
+  livrée, l'aperçu à blanc a tourné sur le serveur vivant — **804 clés mortes,
+  685 à re-clé, 119 sans destination connue, 0 hors bornes**, mêmes nombres que
+  le banc. **Ma recommandation : appliquer.** Aucun fichier n'est touché, rien
+  n'est inventé (les journaux d'annulation disent où chaque photo est partie),
+  et c'est entièrement réversible — quarantaine `_corbeille_decisions/`, bouton
+  « 3 · Annuler ». **Le geste** : `/reglages` → « Décisions humaines restées sur
+  l'ancien chemin » → **2 · Appliquer**. Puis, pour observer :
+  `verifier_recle_decisions.py --base copie.db` doit passer de **928** décisions
+  hors index à **~180**.
+  *En attendant* : je n'écris rien sur le fonds (la sandbox n'en a pas le
+  droit), et je passe aux points suivants.
+
+*Aucune autre question en attente.*
 
 ## Réglées
 

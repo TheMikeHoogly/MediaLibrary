@@ -31,6 +31,20 @@
   dates de scan se comptent par le dossier (15) ou par la trace `YYYY0000` du nom (27). Le
   désaccord n'était pas du bruit : **1 cas où le repli sur le NOM réinscrit ce que le garde-fou
   venait d'écarter**, **15 noms périmés**. Un accord parfait n'aurait rien appris.
+- **Un « déjà perdu » se mesure, il ne se déduit pas d'une recherche qu'on n'a pas faite**
+  (22/08) : 787 décisions ont été déclarées perdues parce que le banc ne fouillait qu'une autre
+  population. En cherchant vraiment, 698 clés sur 804 retrouvent leur photo. Une population
+  écartée d'une mesure doit être NOMMÉE dans le rapport, sinon elle devient une conclusion.
+- **Le meilleur témoin d'un déplacement est le programme qui l'a fait** (22/08) : avant de
+  comparer des noms ou des vecteurs, chercher si le geste a laissé une trace. Les journaux
+  d'annulation de `docs/`, écrits pour DÉFAIRE, relus à l'endroit disent où chaque photo est
+  partie — 685 clés retrouvées là où le nom en rendait 346 et le vecteur 13.
+- **Un garde-fou qui ne se déclenche jamais est aussi une mesure** (22/08) : « 0 index hors
+  bornes » sur 462 rattachements n'est pas un contrôle inutile, c'est une corroboration — un
+  jumeau faux aurait fait déborder les index.
+- **Un no-op silencieux est le pire mode de panne** (22/08) : `store.rekey` renvoyait faux sur
+  deux magasins sur quatre, sans un mot, pendant des semaines. Une boucle qui traite des objets
+  de natures différentes doit VÉRIFIER qu'elle a agi, ou les traiter séparément.
 - **« Le fichier existe » ne dit pas « il sera repris »** (17/08) : 91 photos présentes, mais
   hors de toute racine scannée — muettes à vie. Répliquer la règle de SÉLECTION du producteur.
 - **Une limite ÉCRITE n'est pas une limite gérée** (17/08) : `date_fiable` annonçait dans sa

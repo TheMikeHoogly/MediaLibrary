@@ -9,99 +9,75 @@ FUSIONNÉ — ce document, non. Puis `ROADMAP.md`, `eval/DECISIONS.md`,
 `eval/METHODE.md` — et `docs/DECISIONS_OUTILLAGE.md` si le sujet touche aux
 canaux. Débrief en 2–3 lignes, puis on attaque.
 
-## Où on en est (21/08/2026, fin de session 30)
+## Où on en est (22/08/2026, fin de session 31)
 
-**Le chantier 16(a) est CLOS par une mesure, et il n'y avait rien dedans.**
-La propagation des noms ne dormait pas : elle a convergé. `build_suggestions()`
-repasse sur tout le fonds toutes les 240 s et `AUTO_ADD` moissonne à 0,40 avec
-une marge de 0,10. Ce qu'elle rattacherait MAINTENANT, sur 71 461 visages :
-**14 en automatique, 24 en file — 33 photos, 38 noms.** Rien n'est caché par le
-plafond (38 cartes sur 400). Le cas exact du chantier — une photo nommée qui
-garde un visage non couvert — concerne **18 745** photos et en rendrait **17**.
+**Le coupable n'était pas la purge : c'est le RANGEMENT, et il se taisait.**
+`rekey_everywhere` transporte sept magasins quand une photo change de chemin, et
+quatre « stores de sujets » passent dans la même boucle. Mais `PEOPLE` et `PETS`
+sont les seuls keyés par **NOM** : leurs chemins vivent DANS la fiche
+(`faces` = [[chemin, index]], `exclude`, `confirmed`, `avatar`).
+`store.rekey(ancien_chemin, nouveau_chemin)` y cherche une entrée dont la CLÉ
+serait un chemin, n'en trouve jamais, renvoie **faux sans un mot**. La boucle
+avait l'air de couvrir quatre magasins ; elle en couvrait deux. Chaque rangement
+par année et chacun des **7 058** renommages a pu décrocher un jugement.
 
-**Ce qui autorise à conclure** : le banc et le serveur VIVANT donnent les trois
-mêmes nombres — `remove` **13**, `merge` **1**, `add` **24**. Deux chemins, un
-chiffre.
+**Ce que ça coûtait** : sur **3 364** décisions humaines, **928** pointent vers
+une clé absente de l'index (596 rattachements, 249 exclusions, 83
+confirmations), sur **804** clés. Le TAG survivait (index + XMP), donc la photo
+gardait son nom et la règle 2 tenait : c'est la VÉRITÉ TERRAIN qui partait — et
+une exclusion perdue, c'est un faux positif qui revient.
 
-**Le brut mentait d'un facteur 100.** Sans le garde-fou des clés fantômes, le
-banc annonçait 3 698 rattachements en attente ; testées une à une contre le
-NAS, **3 684** pointent vers un fichier disparu. C'est `--fichiers` qui a fait
-tomber 3 698 à 14 — voir `eval/METHODE.md`.
+**« 787 décisions déjà perdues » est RÉFUTÉ**, et c'était un défaut de
+recherche, pas une mesure : personne ne leur avait cherché de jumeau. Les
+**journaux d'annulation** de `docs/` — écrits pour défaire, relus à l'endroit —
+donnent **19 331** déplacements et retrouvent **698** des 804 clés. Trois
+preuves comparées : journal **685**, nom de fichier **346** (36 homonymes
+refusés), vecteur **13** — la purge du 21/08 ayant emporté les détections des
+clés mortes. Bilan : **748 décisions se re-clent**, 56 y sont déjà, **124** sont
+vraiment perdues. Le « une seule décision à reporter (Luna) » tombe avec.
 
-**La trouvaille est ailleurs, et elle vaut plus que la question posée.** Le
-magasin de visages garde **2 374** fiches dont la clé n'est plus dans l'index :
-**exactement** les 2 374 clés purgées le 17/08 (intersection 2 374 / 2 374
-contre `_corbeille_vecteurs/vecteurs_orphelins_20260817_073335.jsonl`). La
-purge a emporté leurs vecteurs SigLIP et **laissé leurs visages**. Et sur ces
-clés oubliées vivent des décisions humaines — **141**, portées par **120 clés**
-(Alix Baudère, Luna…).
+**LIVRÉ.** `recle_decisions.py` (règle pure, 15 tests) branché dans
+`rekey_everywhere` : une photo qui bouge emmène ses jugements, index de vignette
+compris. `journaux_deplacements.py` (14 tests) : une seule lecture des journaux,
+partagée par le serveur et le banc. Réparation rétroactive dans `/reglages` —
+aperçu / appliquer / annuler, quarantaine `_corbeille_decisions/` — qui passe
+par **la même fonction** que le préventif. Instruments :
+`mesure_report_orphelines.py`, `verifier_recle_decisions.py`.
 
-**LA CAUSE, trouvée le soir même.** La cascade de suppression est pilotée par
-l'INDEX : `_sync_dir` calcule ses orphelins à partir de `STORE`, donc une clé
-**déjà** absente de l'index lui est invisible — `forget_everywhere` ne sera
-jamais appelé pour elle. L'autre filet, `purge_cles_fantomes`, exige un
-**jumeau vivant** de même nom de fichier : quand les deux jumeaux sont morts
-(`ARZOPA/x` et `…\_Uploads\ARZOPA\x`), il ne se déclenche jamais. Classement
-des 2 374 : **2 283 « personne ne les voit »**, **91 sous un chemin caché**
-(`.corbeille-rangement`), que la purge de démarrage retire de l'index **sans
-cascade**. Et l'instrument avait un angle mort exact : il comparait les
-détections au DISQUE et les vecteurs à l'INDEX, jamais les détections à
-l'index. **Bouché** : `verifier_orphelins.py --sans-disque` (0,7 s, base contre
-base) dit `faces` **2 374** hors index, `animals` **2 377**, **120 clés jugées
-par un humain**, **0** vecteur orphelin.
-
-**Le sauvetage ne rend presque rien, et c'est le résultat.** Sur les 141
-décisions portées par ces clés : **13** ont un jumeau vivant, **12** portent
-déjà le nom, il reste **UNE** décision à reporter (Luna). Les **128** autres
-n'ont aucun jumeau. Et **787** décisions pointent vers des clés inconnues
-PARTOUT — déjà perdues. Vérité terrain réelle : **3 364** décisions (1 576
-rattachements — « 1 196 » comptait des CLÉS —, 1 496 exclusions, 292
-confirmations).
-
-**LE CORRECTIF EST LIVRÉ ET OBSERVÉ.** La purge de démarrage cascade enfin
-(`forget_everywhere` au lieu de `STORE.remove_many` — préventif), et
-`purge_detections_hors_index()` balaie au démarrage ce que `_sync_dir` ne peut
-plus voir. Deux garde-fous : **jamais** une clé portant une décision humaine, et
-**seulement** ce que l'index ne reprendra jamais (fichier absent ou chemin
-caché) — une clé dont le fichier existe est en attente de re-tagging et se
-COMPTE au lieu de se purger. Quarantaine JSONL avant tout retrait. Le dry-run
-(`verifier_orphelins.py --sans-disque --simuler-purge`) annonçait 2 254 + 2 257 ;
-la quarantaine en contient **exactement** 2 254 + 2 257. Observé après
-redémarrage : `visages` **44 450 → 42 196**, hors index **2 374 → 120** (les
-protégées), file du curateur **inchangée** (13/1/24), index intact à 43 065.
+**Observé sur le serveur vivant** : `POST /api/maint/recle-apercu` rend 804 clés
+mortes, **685 à re-clé**, 119 sans destination, **0 hors bornes** — les mêmes
+nombres que le banc, deux chemins. Le « 0 hors bornes » est une corroboration :
+un jumeau faux ferait déborder les index.
 
 ## Prochain pas
 
-1. **Reporter la décision de Luna**, la seule des 141 qui se sauve : son
-   rattachement sur `…\_Uploads\ARZOPA\KP6XMN-…jpg` va vers
-   `…\Photos Flo\Luna & Inti\20260101_Pheno.jpg` (jumeau retrouvé par le
-   VISAGE à 1,0000). Puis décider du sort des **120 clés protégées** : leurs
-   photos n'existent plus, la décision n'a plus de sujet — les garder coûte un
-   résidu permanent, les purger coûte 141 décisions de vérité terrain.
-2. **Faire SURVIVRE le registre des oublis.** `comptes_index` vit en mémoire :
-   après le redémarrage de 19:31, `par_motif` est vide et la cause des 2 283 ne
-   pourra jamais être établie rétrospectivement. Un compteur qui ne survit pas
-   au redémarrage ne diagnostique rien.
-3. **Juger 30 propositions de la tranche 0,35–0,40** (choix de Mike, 21/08)
-   avant de toucher `CUR_ADD_SIM`. 1 328 visages, 1 106 photos vivantes. Sans
-   ce jugement, abaisser un seuil est un pari sur des noms — et le plafond de
-   400 n'en montrerait que 386 de toute façon. Le réservoir entier (28 684
-   visages, meilleur voisin **médian 0,21**) n'est PAS un gisement : ce sont
-   des gens sans fiche.
-4. **Chantier 12 — la restauration à blanc.** Toujours le seul item dont
-   l'échec serait irréversible, et il n'a jamais tourné. Partage des rôles
-   inchangé : la restauration est un geste de Mike, la sandbox écrit
-   l'INSTRUMENT (`verifier_restauration.py`, comparaison du restauré au vivant).
-5. **Les finitions, en TRAITE AUTONOME** (`commit`, `main` intacte) : UI (11),
-   audit I4–I8 / O7–O15, plafond de page à 1 500 sur `espece:chat`.
-6. **MCP lecture seule (13)**, puis le reste de `ROADMAP.md`.
+1. **UN CLIC DE MIKE, et c'est le plus rentable de la liste** : `/reglages` →
+   « Décisions humaines restées sur l'ancien chemin » → **2 · Appliquer**. La
+   sandbox n'a pas le droit d'écrire sur le fonds — l'aperçu et l'annulation
+   sont là pour encadrer le geste. Pour observer ensuite :
+   `mesure_copie_base.py` puis `verifier_recle_decisions.py --base copie.db`,
+   qui doit passer de **928** décisions hors index à **~180**.
+2. **Ce qui reste vraiment perdu** : **124** décisions sur 106 clés dont aucun
+   journal ne connaît la destination, plus **120** clés protégées de la purge du
+   21/08 dont les photos n'existent plus. Décider de leur sort — les garder
+   coûte un résidu permanent, les purger coûte de la vérité terrain.
+3. **Faire SURVIVRE le registre des oublis.** `comptes_index` vit en mémoire :
+   après chaque redémarrage, `par_motif` repart à vide. Un compteur qui ne
+   survit pas au redémarrage ne diagnostique rien.
+4. **Juger 30 propositions de la tranche 0,35–0,40** (choix de Mike, 21/08)
+   avant de toucher `CUR_ADD_SIM`. 1 328 visages, 1 106 photos vivantes.
+5. **Chantier 12 — la restauration à blanc.** Toujours le seul item dont l'échec
+   serait irréversible, et il n'a jamais tourné. La restauration est un geste de
+   Mike, la sandbox écrit l'INSTRUMENT (`verifier_restauration.py`).
+6. **Les finitions, en TRAITE AUTONOME** : UI (11), audit I4–I8 / O7–O15,
+   plafond de page à 1 500 sur `espece:chat`. Puis **MCP lecture seule (13)**.
 
-**Une décision à cinq secondes qui traîne depuis deux sessions** : l'extraction
+**Une décision à cinq secondes qui traîne depuis trois sessions** : l'extraction
 `ui/` (point 7) — lui donner une session ou la parquer.
 
 **Ne pas rouvrir sans chiffre neuf** : 16(a) (mesuré, 17 photos) ; `taken` en
-base ; backfill ÉCRIT de `faits` ; index des noms en UNE passe ; filtre des
-noms sur les `kw` bruts ; `det_score` comme critère d'espèce ; règle d'espèce
+base ; backfill ÉCRIT de `faits` ; index des noms en UNE passe ; filtre des noms
+sur les `kw` bruts ; `det_score` comme critère d'espèce ; règle d'espèce
 ÉLARGIE ; re-passe de tagging en LOT (50 h GPU — l'incrémental reste ouvert) ;
 agent git dans le serveur ; planchers 1990 ; plafond 2100.
 
@@ -114,8 +90,11 @@ LIRE `_banc_sortie.txt`. Trois fenêtres ouvertes — Serveur, Git, Bancs ; un
 agent est vivant si son `_agent_*_vu.txt` a moins de 30 s.
 
 **Mesurer** : jamais sur `photos.db` — `mesure_copie_base.py` d'abord, puis
-`--base copie.db`. Et **répliquer les GARDE-FOUS du producteur, pas seulement
-sa règle** : `mesure_propagation_noms.py --fichiers 40000` (76 s, un `stat` par
-clé candidate) est ce qui sépare 3 698 d'un chiffre vrai. Ce que le serveur
-FAIT ne se lit pas dans un banc : `GET /api/curator/list` a confirmé les trois
-nombres.
+`--base copie.db`. Et **avant de comparer des noms ou des vecteurs, chercher si
+le geste a laissé une TRACE** : les journaux d'annulation de `docs/` ont rendu
+685 clés là où le nom en rendait 346 et le vecteur 13.
+
+**La sandbox ne peut pas écrire sur le fonds.** `POST` de renommage,
+d'attribution ou d'application est refusé côté Claude. Tout ce qui MODIFIE
+l'archive se termine donc par un bouton dans `/reglages` ou un geste de Mike —
+prévois-le dans la conception, sinon le chantier finit en cul-de-sac.

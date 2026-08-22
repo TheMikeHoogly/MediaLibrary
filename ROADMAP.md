@@ -6,37 +6,63 @@ dans **git** ; les rejets dans `eval/DECISIONS.md` (photothèque) et
 `eval/METHODE.md` ; l'éphémère dans `PROMPT_NOUVELLE_SESSION.md`. Audits :
 `docs/AUDIT_INTERNE_2026-08.md`, `docs/AUDIT_EXTERNE_2026.md`, `docs/RANGEMENT_2026.md`.
 
+## État (22/08/2026, session 31)
+
+**Le trou n'était pas la purge : c'est le RANGEMENT qui décrochait les décisions
+humaines, et il le faisait en silence.** `rekey_everywhere` transporte sept
+magasins quand une photo change de chemin, et quatre « stores de sujets »
+passent dans la même boucle. Mais `PEOPLE` et `PETS` sont les seuls keyés par
+**NOM** : leurs chemins vivent DANS la fiche — `faces` = [[chemin, index]],
+`exclude`, `confirmed`, `avatar`. `store.rekey(ancien_chemin, nouveau_chemin)`
+y cherche une entrée dont la CLÉ serait un chemin, n'en trouve jamais, renvoie
+faux **et ne dit rien**. La boucle avait l'air de couvrir quatre magasins ; elle
+en couvrait deux. Chaque rangement par année et chacun des **7 058** renommages
+a donc pu décrocher un jugement.
+
+**Ce que ça coûtait, mesuré** : sur **3 364** décisions humaines, **928**
+pointent vers une clé absente de l'index (596 rattachements, 249 exclusions, 83
+confirmations), sur **804** clés. Le TAG survivait — il vit dans `tags` et dans
+le XMP — donc la photo gardait son nom et la règle 2 tenait ; c'est la VÉRITÉ
+TERRAIN qui partait, et une exclusion perdue est un faux positif qui revient.
+
+**« 787 décisions déjà perdues » est FAUX**, et c'était un défaut de recherche,
+pas une mesure : personne ne leur avait cherché de jumeau. Les **journaux
+d'annulation** de `docs/` — écrits pour défaire, relus à l'endroit — donnent
+**19 331** déplacements et retrouvent **698** des 804 clés. Les trois preuves
+comparées : journal **685**, nom de fichier **346** (36 homonymes refusés),
+vecteur **13** (la purge du 21/08 a emporté les détections des clés mortes).
+Résultat : **748 décisions se re-clent**, 56 y sont déjà, **124** sont vraiment
+perdues. Le « une seule décision à reporter (Luna) » tombe avec.
+
+**LIVRÉ.** (1) Préventif — `recle_decisions.py`, règle pure, 15 tests, branchée
+dans `rekey_everywhere` : une photo qui bouge emmène désormais ses jugements,
+index de vignette compris. (2) `journaux_deplacements.py`, une seule lecture
+des journaux, partagée par le serveur et le banc. (3) Rétroactif — trois
+boutons dans `/reglages` (aperçu / appliquer / annuler), quarantaine
+`_corbeille_decisions/`, qui passent par **la même fonction** que le préventif.
+(4) Instruments : `mesure_report_orphelines.py` et
+`verifier_recle_decisions.py`. Aperçu à blanc **sur le serveur vivant** :
+804 clés mortes, **685 à re-clé**, 119 sans destination, **0 hors bornes** —
+les mêmes nombres que le banc, deux chemins.
+
+**RESTE À FAIRE, et c'est un clic de Mike** : `/reglages` → « Décisions humaines
+restées sur l'ancien chemin » → **2 · Appliquer**. La sandbox n'a pas le droit
+d'écrire sur le fonds ; l'aperçu et l'annulation sont là pour encadrer le geste.
+
 ## État (21/08/2026, session 30)
 
-**La CAUSE est trouvée, et elle est structurelle.** La cascade de suppression
-est pilotée par l'INDEX : `_sync_dir` calcule ses orphelins à partir de
-`STORE`, donc une clé **déjà** absente de l'index lui est invisible et
-`forget_everywhere` ne sera jamais appelé pour elle. L'autre filet,
-`purge_cles_fantomes`, exige un **jumeau vivant** de même nom de fichier :
-quand les deux jumeaux sont morts, il ne se déclenche jamais. Sur les 2 374 :
-**2 283 « personne ne les voit »**, **91 sous un chemin caché**
-(`.corbeille-rangement`), que la purge de démarrage retire de l'index **sans
-cascade**. Et l'instrument qui aurait dû le voir avait un angle mort exact : il
-comparait les détections au DISQUE et les vecteurs à l'INDEX, jamais les
-détections à l'index. **C'est corrigé** (`verifier_orphelins --sans-disque`,
-0,7 s) : `faces` 2 374 hors index, `animals` 2 377, **120 clés jugées par un
-humain**, **0** vecteur orphelin.
+**La purge du 17/08 n'avait traité qu'un magasin sur deux**, et la cascade de
+suppression était pilotée par l'INDEX : une clé déjà absente de l'index est
+invisible à `_sync_dir`, donc `forget_everywhere` n'est jamais appelé pour elle.
+**Corrigé et observé** : `purge_detections_hors_index()` balaie au démarrage ce
+que la cascade ne voit plus, sans jamais toucher une clé jugée par un humain —
+`visages` **44 450 → 42 196**, hors index **2 374 → 120** (les protégées), index
+intact à 43 065, quarantaine réversible `_corbeille_detections/`.
 
-**Le chantier 16(a) est CLOS par la mesure, et il n'y avait rien dedans.** La
-propagation des noms ne dort pas : elle a convergé. Ce que la règle
-rattacherait maintenant, sur 71 461 visages, c'est **14 visages en automatique
-et 24 en file — 33 photos**. Le cas exact du chantier (une photo nommée qui
-garde un visage non couvert) concerne **18 745 photos** et en rendrait **17**.
-Trois nombres du banc contre trois du serveur vivant, identiques (`remove` 13,
-`merge` 1, `add` 24) : c'est ce qui autorise à conclure.
-
-**Ce que la mesure a trouvé à côté vaut plus que ce qu'elle cherchait.** Le
-magasin de visages garde **2 374** fiches dont la clé n'est plus dans l'index —
-**exactement** les 2 374 clés purgées le 17/08 : la purge a emporté leurs
-vecteurs SigLIP et laissé leurs VISAGES. Le curateur re-score depuis quatre
-jours 3 698 visages morts toutes les 240 s, et le garde-fou des clés fantômes
-les rejette en silence. **141 décisions humaines**, portées par **120 clés**,
-vivent là : elles se sauvent AVANT qu'on purge, jamais après.
+**Le chantier 16(a) est CLOS par la mesure** : la propagation des noms ne dort
+pas, elle a convergé — **14 rattachements automatiques, 24 cartes en file, 33
+photos**, et **17** photos dans le cas exact du chantier sur 18 745 qui y
+ressemblent. Trois nombres du banc contre trois du serveur vivant, identiques.
 
 ## État (20/08/2026, session 28)
 
@@ -101,13 +127,20 @@ une **génération** : le `taskkill` par titre ne tuait rien.
    réversible `_corbeille_detections/`), `visages` 44 450 → **42 196**, hors index
    2 374 → **120** — exactement les protégées. Reste à faire : **reporter la
    décision de Luna** (la seule qui se sauve) et décider du sort des 120.
-   **Le sauvetage a été mesuré (21/08)** : sur les 141 décisions portées par ces
-   clés, **13** ont un jumeau vivant, dont **12** portent déjà le nom — il ne
-   reste **qu'une seule** décision à reporter (Luna). Les **128** autres n'ont
-   aucun jumeau : leurs photos n'existent plus nulle part. Et **787** décisions
-   pointent vers des clés inconnues PARTOUT, déjà perdues. La vérité terrain
-   réelle est de **3 364** décisions (1 576 rattachements — 1 196 comptait des
-   CLÉS —, 1 496 exclusions, 292 confirmations).
+   **Le sauvetage a été REMESURÉ (22/08), et le compte du 21/08 était faux** :
+   « 13 jumeaux, une seule décision à reporter, 787 déjà perdues » venait d'une
+   recherche restreinte à 141 clés et à deux preuves faibles. En suivant les
+   **journaux d'annulation** (19 331 déplacements connus), **698** des **804**
+   clés mortes retrouvent leur photo et **748** décisions se re-clent (462
+   rattachements, 230 exclusions, 56 confirmations), 56 y sont déjà, **124**
+   sont perdues. La CAUSE est structurelle et corrigée : `rekey_everywhere` ne
+   transportait pas les décisions, `PEOPLE` et `PETS` étant keyés par NOM.
+   **Correctif préventif + réparation rétroactive LIVRÉS (22/08)** ; l'aperçu à
+   blanc tourne sur le serveur vivant (685 clés, 0 hors bornes). Reste **un clic
+   de Mike** : `/reglages` → « Décisions humaines restées sur l'ancien chemin »
+   → 2 · Appliquer. La vérité terrain réelle est de **3 364** décisions (1 576
+   rattachements — 1 196 comptait des CLÉS —, 1 496 exclusions, 292
+   confirmations).
    **Le reste du point est parqué, et son chiffre avait déjà été corrigé la
    veille : deux mesures portaient le même nom.** Ce dont le PRODUIT a
    besoin — « qui est sur cette photo » — est à **18 863 photos nommées**
@@ -276,7 +309,10 @@ dossier d'avant 1990 n'y passe. Le **plafond 2100** (`22082010141.jpg` → 2082)
   `TAGGING_PIPELINE_VERSION` estampillée (`pipe`) — **sur les 81 photos taguées
   DEPUIS**, pas sur le fonds ; 1 lecture exiftool/photo.
 - **Index/vecteurs** : cascade `forget_everywhere` au scan — **pilotée par
-  l'index, donc aveugle à une clé déjà oubliée (21/08)** ; **2 374 vecteurs
+  l'index, donc aveugle à une clé déjà oubliée (21/08)** ; **re-clé complet
+  (22/08)** : `rekey_everywhere` transporte enfin les DÉCISIONS humaines des
+  fiches `PEOPLE`/`PETS` (`recle_decisions.py`), et `journaux_deplacements.py`
+  relit les journaux d'annulation comme carte des déplacements ; **2 374 vecteurs
   orphelins purgés et observés** (0 muet sur 1 600 résultats, contre 2,6 %),
   quarantaine réversible `_corbeille_vecteurs/`.
 - **Observabilité** : boucle scan/backup (O5), `backup_verify`, trois tâches de

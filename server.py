@@ -11,6 +11,7 @@ Run: python server.py [dossier_uploads]
 """
 
 import base64
+import copy
 import hashlib
 import html
 import io
@@ -2947,6 +2948,58 @@ def photo_vectors():
     return PHOTO_VEC
 
 
+# Regle PURE du re-cle des decisions humaines (module stdlib, import leger) :
+# `PEOPLE` et `PETS` sont les deux seuls magasins keyes par NOM, leurs chemins
+# vivent DANS la fiche. Partagee avec les bancs, testee sans ouvrir photos.db.
+import recle_decisions
+
+
+def _recler_decisions_humaines(old, new):
+    """Re-cle les decisions humaines a l'INTERIEUR des fiches personnes/animaux.
+
+    `store.rekey(ancien_chemin, nouveau_chemin)` est un NO-OP sur PEOPLE et PETS :
+    leur cle est le NOM de la personne ou de l'animal, pas un chemin. Il cherche
+    une entree dont la cle serait un chemin, n'en trouve jamais, renvoie faux et
+    ne dit rien — la boucle des « quatre magasins de sujets » ci-dessous en
+    couvrait donc DEUX.
+
+    Mesure du 22/08/2026, avant ce correctif : **928** decisions humaines sur
+    **3 364** pointaient vers une cle absente de l'index (596 rattachements, 249
+    exclusions, 83 confirmations), sur 804 cles — la trace de chaque rangement
+    par annee et de chacun des 7 058 renommages appliques. Le TAG survivait (il
+    vit dans `tags` et dans le XMP), donc la photo gardait son nom : la regle 2
+    tenait. C'est la VERITE TERRAIN qui partait — quel VISAGE est Flo, quelles
+    photos ont ete ecartees d'un nom, lesquelles ont ete confirmees. Et une
+    exclusion perdue, c'est un faux positif qui revient.
+
+    L'INDEX d'une vignette est conserve : `rekey_everywhere` deplace l'entree de
+    FACE_STORE / ANIMAL_STORE EN BLOC, la liste des detections est la meme.
+
+    `save=False` : la sauvegarde suit celle des autres magasins, deja assuree
+    par l'appelant (contrat de `rekey_everywhere`). Reassigner les CHAMPS — et
+    non muter au fond d'une liste — est ce qui marque l'entree « sale » cote
+    store (`store_sqlite.TrackedEntry`).
+
+    Cout : un balayage des fiches (~360, ~3 400 decisions au total) par re-cle,
+    negligeable devant le `rename` sur le NAS qui l'accompagne.
+
+    Renvoie le nombre de decisions re-clees.
+    """
+    n = 0
+    for st in (PEOPLE_STORE, PETS_STORE):
+        for pk, pe in list(st.data.items()):
+            if not isinstance(pe, dict):
+                continue
+            champs, k = recle_decisions.recler_fiche(pe, old, new)
+            if not champs:
+                continue
+            for champ, valeur in champs.items():
+                pe[champ] = valeur
+            st.set(pk, pe, save=False)
+            n += k
+    return n
+
+
 def rekey_everywhere(old, new, mtime=None, save=True):
     """Point de re-clé UNIQUE pour un déplacement/renommage `old` → `new`.
 
@@ -2965,7 +3018,12 @@ def rekey_everywhere(old, new, mtime=None, save=True):
     Mécanique par magasin :
       - `tags` : `STORE.rekey` déplace l'entrée en mémoire ; c'est lui qui
         décide si le déplacement « compte » (renvoi de la fonction).
-      - sujets : `rekey` + `save`. Le `save` (`_reconcilier`) supprime l'ancienne
+      - sujets keyés par CHEMIN (`FACE`, `ANIMAL`) : `rekey` + `save`. Les deux
+        autres (`PEOPLE`, `PETS`) sont keyés par NOM : `rekey` y est un NO-OP
+        SILENCIEUX, et leurs décisions humaines sont transportées par
+        `_recler_decisions_humaines` (mesuré : 928 décisions perdues avant le
+        correctif du 22/08).
+        Le `save` (`_reconcilier`) supprime l'ancienne
         clé — donc son préfixe vecteur — puis ré-extrait la nouvelle depuis
         l'entrée en mémoire, où l'embedding est toujours présent : les vecteurs
         de sujets sont ainsi transportés SANS recalcul.
@@ -2994,6 +3052,14 @@ def rekey_everywhere(old, new, mtime=None, save=True):
             st.rekey(old, new, mtime=mtime)
         except Exception as e:
             print(f"  ⚠ re-clé {getattr(st, 'path', st)} {old!r}→{new!r} : {e}")
+    # PEOPLE et PETS ne sont pas keyés par CHEMIN : la boucle ci-dessus n'y a
+    # rien trouvé et n'a rien dit. Leurs décisions humaines — quel visage est
+    # Flo, quelles photos sont écartées d'un nom, lesquelles sont confirmées —
+    # vivent DANS la fiche et se transportent ici (correctif du 22/08/2026).
+    try:
+        _recler_decisions_humaines(old, new)
+    except Exception as e:                                   # noqa: BLE001
+        print(f"  ⚠ re-clé des décisions humaines {old!r}→{new!r} : {e}")
     # 7ᵉ magasin keyé par chemin (audit I2) : les libellés de géocodage.
     # `save` suit le même différé que les stores (flush au batch appelant).
     try:
@@ -3015,6 +3081,198 @@ def rekey_everywhere(old, new, mtime=None, save=True):
         for st in subject_stores:
             st.save()
     return moved
+
+
+# Carte des deplacements, relue dans les journaux d'annulation de `docs/`.
+# Module pur, partage avec les bancs : une seule lecture des journaux.
+import journaux_deplacements
+
+CORBEILLE_DECISIONS = SCRIPT_DIR / "_corbeille_decisions"
+
+# Les quatre champs d'une fiche qui citent un CHEMIN. `refs` porte des
+# embeddings, pas des cles : ne jamais y toucher.
+CHAMPS_FICHE = ('faces', 'exclude', 'confirmed', 'avatar')
+
+
+def _detections_du_genre(genre, cle):
+    """Combien de detections porte une cle, dans le magasin qui va avec le
+    genre de la fiche. Un visage InsightFace ne se compte pas dans `animals`."""
+    st, champ = ((FACE_STORE, 'faces') if genre == 'visage'
+                 else (ANIMAL_STORE, 'animals'))
+    e = st.data.get(cle)
+    return len(e.get(champ) or []) if isinstance(e, dict) else 0
+
+
+def _fiches_par_genre():
+    """[(magasin, genre, store)] — l'ordre est celui des deux magasins keyes
+    par NOM, les deux que `rekey_everywhere` ne savait pas transporter."""
+    return (('people', 'visage', PEOPLE_STORE), ('pets', 'animal', PETS_STORE))
+
+
+def _decisions_sur_cles_mortes(vivantes):
+    """{cle morte: {genre: index maximal cite}} — de quoi verifier les bornes.
+
+    Une exclusion ou une confirmation n'a pas d'index : elle inscrit -1, ce qui
+    passe toujours la borne. C'est voulu : elles designent la PHOTO."""
+    out = {}
+    for _magasin, genre, st in _fiches_par_genre():
+        for pe in st.data.values():
+            if not isinstance(pe, dict) or not pe.get('name'):
+                continue
+            for kf in (pe.get('faces') or []):
+                if (isinstance(kf, (list, tuple)) and len(kf) == 2
+                        and kf[0] not in vivantes):
+                    d = out.setdefault(kf[0], {})
+                    d[genre] = max(d.get(genre, -1), int(kf[1] or 0))
+            for champ in ('exclude', 'confirmed'):
+                for cle in (pe.get(champ) or []):
+                    if cle not in vivantes:
+                        out.setdefault(cle, {}).setdefault(genre, -1)
+    return out
+
+
+def reparer_decisions_orphelines(dry=True):
+    """Finit le re-cle que le rangement n'a jamais fait sur les DECISIONS.
+
+    `rekey_everywhere` re-clait sept magasins, mais `store.rekey(chemin, chemin)`
+    est un no-op silencieux sur PEOPLE et PETS, keyes par NOM. Le correctif
+    preventif (`_recler_decisions_humaines`) ferme le robinet ; celui-ci eponge
+    ce qui a coule : au 22/08/2026, **928** decisions humaines sur 3 364
+    pointaient vers une cle absente de l'index, sur 804 cles.
+
+    OU VA CHAQUE PHOTO : les journaux d'annulation de `docs/` le disent —
+    `old_key` -> `new_key` pour un deplacement ou un renommage, `canonique` pour
+    un doublon absorbe. Ce n'est pas une ressemblance de nom ni une similarite
+    de vecteur : c'est le geste lui-meme, ecrit par le programme qui l'a fait.
+
+    DEUX GARDE-FOUS. La cible doit etre VIVANTE dans l'index (sinon on
+    deplacerait une decision d'un mort vers un autre). Et l'index d'un
+    rattachement doit tomber DANS les detections de la cible : `rekey_everywhere`
+    a deplace la liste des detections en bloc, donc l'index est conserve — mais
+    un doublon absorbe est un AUTRE fichier, re-detecte pour son compte. Un index
+    hors bornes n'est plus un re-cle, c'est un pari : on saute la cle.
+
+    Le meme chemin de code que le correctif preventif : `_recler_decisions_humaines`.
+    Ce qui repare ici est exactement ce qui protegera demain.
+
+    Reversible : chaque fiche touchee est journalisee AVANT/APRES dans
+    `_corbeille_decisions/`, et `annuler_recle_decisions()` la remet.
+    """
+    vivantes = set(STORE.data.keys())
+    chaine = journaux_deplacements.chaines(SCRIPT_DIR / 'docs')
+    mortes = _decisions_sur_cles_mortes(vivantes)
+
+    paires, sans_jumeau, hors_bornes = [], 0, 0
+    for cle, par_genre in mortes.items():
+        cible = journaux_deplacements.suivre(chaine, cle, vivantes)
+        if not cible:
+            sans_jumeau += 1
+            continue
+        if any(i >= 0 and i >= _detections_du_genre(g, cible)
+               for g, i in par_genre.items()):
+            hors_bornes += 1
+            continue
+        paires.append((cle, cible))
+
+    res = {'ok': True, 'dry': dry, 'cles_mortes': len(mortes),
+           'a_recler': len(paires), 'sans_jumeau': sans_jumeau,
+           'hors_bornes': hors_bornes,
+           'deplacements_connus': len(chaine)}
+    if dry or not paires:
+        res['decisions'] = 0
+        return res
+
+    interessantes = {c for c, _n in paires}
+    avant = {}
+    for magasin, _genre, st in _fiches_par_genre():
+        for pk, pe in list(st.data.items()):
+            if not isinstance(pe, dict):
+                continue
+            cite = any(
+                (isinstance(kf, (list, tuple)) and len(kf) == 2
+                 and kf[0] in interessantes)
+                for kf in (pe.get('faces') or [])) or any(
+                c in interessantes
+                for champ in ('exclude', 'confirmed')
+                for c in (pe.get(champ) or []))
+            if cite:
+                avant[(magasin, pk)] = {c: copy.deepcopy(pe.get(c))
+                                        for c in CHAMPS_FICHE}
+
+    n = 0
+    for ancien, nouveau in paires:
+        n += _recler_decisions_humaines(ancien, nouveau)
+    for _magasin, _genre, st in _fiches_par_genre():
+        st.save()
+
+    lignes = [json.dumps({'at': time.time(), 'paires': len(paires),
+                          'decisions': n}, ensure_ascii=False)]
+    for (magasin, pk), etat in avant.items():
+        st = PEOPLE_STORE if magasin == 'people' else PETS_STORE
+        pe = st.data.get(pk) or {}
+        lignes.append(json.dumps(
+            {'magasin': magasin, 'fiche': pk, 'avant': etat,
+             'apres': {c: pe.get(c) for c in CHAMPS_FICHE}},
+            ensure_ascii=False))
+    try:
+        CORBEILLE_DECISIONS.mkdir(exist_ok=True)
+        ts = time.strftime('%Y%m%d_%H%M%S')
+        (CORBEILLE_DECISIONS / f'recle_{ts}.jsonl').write_text(
+            "\n".join(lignes) + "\n", encoding='utf-8')
+    except OSError as e:
+        print(f"  ⚠ quarantaine des décisions impossible : {e}")
+
+    res.update(decisions=n, fiches=len(avant))
+    print(f"  🔑 Re-clé des décisions : {n} sur {len(avant)} fiche(s), "
+          f"{len(paires)} clé(s) — réversible (_corbeille_decisions/)")
+    return res
+
+
+def annuler_recle_decisions(journal=None):
+    """Remet les fiches telles qu'elles etaient avant le dernier re-cle.
+
+    Ne restaure une fiche que si son etat ACTUEL est bien celui que le journal
+    a note en sortie : si un humain a juge depuis, on ne lui passe pas dessus —
+    on le compte et on le dit."""
+    try:
+        js = sorted(CORBEILLE_DECISIONS.glob('recle_*.jsonl'))
+    except OSError:
+        js = []
+    jp = Path(journal) if journal else (js[-1] if js else None)
+    if not jp or not jp.is_file():
+        return {'ok': False, 'error': 'aucun re-clé à annuler.'}
+    remises, modifiees = 0, 0
+    for i, ligne in enumerate(jp.read_text(encoding='utf-8').splitlines()):
+        if not ligne.strip():
+            continue
+        try:
+            op = json.loads(ligne)
+        except ValueError:
+            continue
+        if i == 0 and 'fiche' not in op:
+            continue
+        st = PEOPLE_STORE if op.get('magasin') == 'people' else PETS_STORE
+        pe = st.data.get(op.get('fiche'))
+        if not isinstance(pe, dict):
+            continue
+        if {c: pe.get(c) for c in CHAMPS_FICHE} != op.get('apres'):
+            modifiees += 1
+            continue
+        for champ, valeur in (op.get('avant') or {}).items():
+            if valeur is None:
+                pe.pop(champ, None)
+            else:
+                pe[champ] = valeur
+        st.set(op['fiche'], pe, save=False)
+        remises += 1
+    for _magasin, _genre, st in _fiches_par_genre():
+        st.save()
+    try:
+        jp.rename(jp.with_suffix('.jsonl.annule'))
+    except OSError:
+        pass
+    return {'ok': True, 'fiches_remises': remises, 'fiches_modifiees_depuis':
+            modifiees}
 
 
 def forget_everywhere(keys, motif='oubli', label=''):
@@ -7063,6 +7321,15 @@ td.n, th.n { text-align: right; font-family: var(--f-donnees); }
       <li><button class="b" id="reclundo">3 &middot; Annuler le dernier reclassement</button><span class="mut">Remet les tags <b>personne:</b> et restaure les fiches.</span></li>
     </ol>
     <div class="renmsg" id="recl-msg" role="status" aria-live="polite">Clique &laquo;&nbsp;1 &middot; Apercu&nbsp;&raquo; pour voir ce qui serait reclasse.</div>
+
+    <h4 class="subh">Decisions humaines restees sur l'ancien chemin</h4>
+    <p class="mut">Quand une photo est rangee ou renommee, son <b>tag</b> la suit (il vit dans l'index et dans le XMP). Mais les jugements &mdash; <b>quel visage</b> est cette personne, quelles photos ont ete <b>ecartees</b> d'un nom, lesquelles ont ete <b>confirmees</b> &mdash; vivent dans la fiche et y sont restes accroches a l'ANCIEN chemin. Cet outil les remet sur la bonne photo en suivant les journaux d'annulation, qui disent ou chaque fichier est parti. Entierement reversible ; aucun fichier n'est touche.</p>
+    <ol class="stepren">
+      <li><button class="b" id="reclecheck">1 &middot; Apercu (a blanc)</button><span class="mut">Compte les cles a re-cler et celles dont la destination est inconnue ; ne touche a rien.</span></li>
+      <li><button class="b prim" id="recleapply">2 &middot; Appliquer</button><span class="mut">Remet les decisions sur la photo actuelle, index de vignette compris. Reversible.</span></li>
+      <li><button class="b" id="recleundo">3 &middot; Annuler le dernier re-cle</button><span class="mut">Restaure les fiches telles qu'elles etaient, sauf celles jugees depuis.</span></li>
+    </ol>
+    <div class="renmsg" id="recle-msg" role="status" aria-live="polite">Clique &laquo;&nbsp;1 &middot; Apercu&nbsp;&raquo; pour voir ce qui serait re-cle.</div>
   </div>
 
   <h2>Dedoublonnage &amp; rangement</h2>
@@ -7257,6 +7524,9 @@ document.getElementById('renundo').onclick=function(){ act('/api/maint/rename-un
 document.getElementById('reclcheck').onclick=function(){ act('/api/maint/reclass-apercu', null, 'recl-msg'); };
 document.getElementById('reclapply').onclick=function(){ act('/api/maint/reclass-apply', 'Reclasser les photos personne: en animal: pour les noms d animaux connus, et retirer les fiches en double ? Reversible via Annuler.', 'recl-msg'); };
 document.getElementById('reclundo').onclick=function(){ act('/api/maint/reclass-undo', 'Annuler le dernier reclassement ?', 'recl-msg'); };
+document.getElementById('reclecheck').onclick=function(){ act('/api/maint/recle-apercu', null, 'recle-msg'); };
+document.getElementById('recleapply').onclick=function(){ act('/api/maint/recle-apply', 'Remettre les decisions humaines orphelines sur la photo actuelle ? Aucun fichier touche, entierement reversible.', 'recle-msg'); };
+document.getElementById('recleundo').onclick=function(){ act('/api/maint/recle-undo', 'Annuler le dernier re-cle des decisions ?', 'recle-msg'); };
 load(); setInterval(load, 6000);
 </script>
 </body>
@@ -14819,6 +15089,29 @@ class Handler(BaseHTTPRequestHandler):
                                   f"[{', '.join(res['noms_traites']) or 'aucun'}] ; "
                                   f"{len(res['fiches_retirees'])} fiche(s) en double retiree(s). "
                                   f"Reversible (Annuler).")
+        elif path == '/api/maint/recle-apercu':
+            res = reparer_decisions_orphelines(dry=True)
+            if res.get('ok'):
+                res['msg'] = (
+                    f"A blanc : {res['a_recler']} cle(s) a re-cler sur "
+                    f"{res['cles_mortes']} orpheline(s) ; {res['sans_jumeau']} "
+                    f"sans destination connue, {res['hors_bornes']} hors bornes. "
+                    f"{res['deplacements_connus']} deplacement(s) connus des journaux.")
+        elif path == '/api/maint/recle-apply':
+            res = reparer_decisions_orphelines(dry=False)
+            if res.get('ok'):
+                res['msg'] = (
+                    f"Re-cle : {res.get('decisions', 0)} decision(s) humaine(s) "
+                    f"remises sur la bonne photo, {res.get('fiches', 0)} fiche(s) "
+                    f"touchee(s). Reversible (Annuler).")
+        elif path == '/api/maint/recle-undo':
+            res = annuler_recle_decisions()
+            if res.get('ok'):
+                res['msg'] = (
+                    f"Annulation : {res['fiches_remises']} fiche(s) remise(s)"
+                    + (f", {res['fiches_modifiees_depuis']} laissee(s) telle(s) "
+                       f"quelle(s) (jugees depuis)."
+                       if res['fiches_modifiees_depuis'] else "."))
         elif path == '/api/maint/reclass-undo':
             res = annuler_reclassement()
             if res.get('ok'):

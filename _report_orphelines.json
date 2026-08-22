@@ -1,0 +1,2584 @@
+{
+ "fonds": {
+  "cles_vivantes": 43065,
+  "decisions_totales": 3364,
+  "decisions_sur_cle_morte": 928
+ },
+ "comptes": {
+  "a_reporter": 101,
+  "a_reporter_exclusion": 77,
+  "refus": 274,
+  "aucun_jumeau": 482,
+  "deja_la": 71,
+  "a_reporter_rattachement": 14,
+  "a_reporter_confirmation": 10
+ },
+ "preuves": {
+  "nom": 87,
+  "vecteur": 14
+ },
+ "par_type": {
+  "exclusion": 249,
+  "rattachement": 596,
+  "confirmation": 83
+ },
+ "a_reporter": [
+  {
+   "nom": "Adi",
+   "fiche": "adi",
+   "genre": "visage",
+   "table": "faces",
+   "champ": "faces",
+   "type": "exclusion",
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\250914_Samsung_Mike\\20241129_142046.jpg",
+   "i": null,
+   "jumeau": "\\\\NAS-Bremblens\\home\\Photos\\2024\\20241129_142046.jpg",
+   "j": null,
+   "preuve": "nom",
+   "sim_photo": null,
+   "geste": {
+    "route": "/api/people/untag",
+    "corps": {
+     "name": "Adi",
+     "keys": [
+      "\\\\NAS-Bremblens\\home\\Photos\\2024\\20241129_142046.jpg"
+     ]
+    }
+   }
+  },
+  {
+   "nom": "Adi",
+   "fiche": "adi",
+   "genre": "visage",
+   "table": "faces",
+   "champ": "faces",
+   "type": "exclusion",
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\250914_Samsung_Mike\\20241129_142044.jpg",
+   "i": null,
+   "jumeau": "\\\\NAS-Bremblens\\home\\Photos\\2024\\20241129_142044.jpg",
+   "j": null,
+   "preuve": "nom",
+   "sim_photo": null,
+   "geste": {
+    "route": "/api/people/untag",
+    "corps": {
+     "name": "Adi",
+     "keys": [
+      "\\\\NAS-Bremblens\\home\\Photos\\2024\\20241129_142044.jpg"
+     ]
+    }
+   }
+  },
+  {
+   "nom": "Alexandre",
+   "fiche": "alexandre",
+   "genre": "visage",
+   "table": "faces",
+   "champ": "faces",
+   "type": "exclusion",
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\180725 Samsung Mike\\20180506_001713.jpg",
+   "i": null,
+   "jumeau": "\\\\NAS-Bremblens\\home\\Photos\\2018\\20180506_001713.jpg",
+   "j": null,
+   "preuve": "nom",
+   "sim_photo": null,
+   "geste": {
+    "route": "/api/people/untag",
+    "corps": {
+     "name": "Alexandre",
+     "keys": [
+      "\\\\NAS-Bremblens\\home\\Photos\\2018\\20180506_001713.jpg"
+     ]
+    }
+   }
+  },
+  {
+   "nom": "Alison Waller",
+   "fiche": "alison waller",
+   "genre": "visage",
+   "table": "faces",
+   "champ": "faces",
+   "type": "exclusion",
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\250914_Samsung_Mike\\20240330_144119.jpg",
+   "i": null,
+   "jumeau": "\\\\NAS-Bremblens\\home\\Photos\\2024\\20240330_144119.jpg",
+   "j": null,
+   "preuve": "nom",
+   "sim_photo": null,
+   "geste": {
+    "route": "/api/people/untag",
+    "corps": {
+     "name": "Alison Waller",
+     "keys": [
+      "\\\\NAS-Bremblens\\home\\Photos\\2024\\20240330_144119.jpg"
+     ]
+    }
+   }
+  },
+  {
+   "nom": "Andreas",
+   "fiche": "andreas",
+   "genre": "visage",
+   "table": "faces",
+   "champ": "faces",
+   "type": "exclusion",
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\240211_Samsung Mike\\20220520_103959.jpg",
+   "i": null,
+   "jumeau": "\\\\NAS-Bremblens\\home\\Photos\\2022\\20220520_103959.jpg",
+   "j": null,
+   "preuve": "nom",
+   "sim_photo": null,
+   "geste": {
+    "route": "/api/people/untag",
+    "corps": {
+     "name": "Andreas",
+     "keys": [
+      "\\\\NAS-Bremblens\\home\\Photos\\2022\\20220520_103959.jpg"
+     ]
+    }
+   }
+  },
+  {
+   "nom": "Andreas",
+   "fiche": "andreas",
+   "genre": "visage",
+   "table": "faces",
+   "champ": "faces",
+   "type": "exclusion",
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\240211_Samsung Mike\\20230519_125257.jpg",
+   "i": null,
+   "jumeau": "\\\\NAS-Bremblens\\home\\Photos\\2023\\20230519_125257.jpg",
+   "j": null,
+   "preuve": "nom",
+   "sim_photo": null,
+   "geste": {
+    "route": "/api/people/untag",
+    "corps": {
+     "name": "Andreas",
+     "keys": [
+      "\\\\NAS-Bremblens\\home\\Photos\\2023\\20230519_125257.jpg"
+     ]
+    }
+   }
+  },
+  {
+   "nom": "Andreas",
+   "fiche": "andreas",
+   "genre": "visage",
+   "table": "faces",
+   "champ": "faces",
+   "type": "exclusion",
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\250914_Samsung_Mike\\20241129_142044.jpg",
+   "i": null,
+   "jumeau": "\\\\NAS-Bremblens\\home\\Photos\\2024\\20241129_142044.jpg",
+   "j": null,
+   "preuve": "nom",
+   "sim_photo": null,
+   "geste": {
+    "route": "/api/people/untag",
+    "corps": {
+     "name": "Andreas",
+     "keys": [
+      "\\\\NAS-Bremblens\\home\\Photos\\2024\\20241129_142044.jpg"
+     ]
+    }
+   }
+  },
+  {
+   "nom": "Annick",
+   "fiche": "annick",
+   "genre": "visage",
+   "table": "faces",
+   "champ": "faces",
+   "type": "exclusion",
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\200804 Samsung Mike\\20200725_164635.jpg",
+   "i": null,
+   "jumeau": "\\\\NAS-Bremblens\\home\\Photos\\2020\\20200725_164635.jpg",
+   "j": null,
+   "preuve": "nom",
+   "sim_photo": null,
+   "geste": {
+    "route": "/api/people/untag",
+    "corps": {
+     "name": "Annick",
+     "keys": [
+      "\\\\NAS-Bremblens\\home\\Photos\\2020\\20200725_164635.jpg"
+     ]
+    }
+   }
+  },
+  {
+   "nom": "Annick",
+   "fiche": "annick",
+   "genre": "visage",
+   "table": "faces",
+   "champ": "faces",
+   "type": "exclusion",
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\200804 Samsung Mike\\20200725_164634.jpg",
+   "i": null,
+   "jumeau": "\\\\NAS-Bremblens\\home\\Photos\\2020\\20200725_164634.jpg",
+   "j": null,
+   "preuve": "nom",
+   "sim_photo": null,
+   "geste": {
+    "route": "/api/people/untag",
+    "corps": {
+     "name": "Annick",
+     "keys": [
+      "\\\\NAS-Bremblens\\home\\Photos\\2020\\20200725_164634.jpg"
+     ]
+    }
+   }
+  },
+  {
+   "nom": "Audrey",
+   "fiche": "audrey",
+   "genre": "visage",
+   "table": "faces",
+   "champ": "faces",
+   "type": "exclusion",
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\211108-210801 Samsung Mike\\20200821_173625.jpg",
+   "i": null,
+   "jumeau": "\\\\NAS-Bremblens\\home\\Photos\\2020\\20200821_173625.jpg",
+   "j": null,
+   "preuve": "nom",
+   "sim_photo": null,
+   "geste": {
+    "route": "/api/people/untag",
+    "corps": {
+     "name": "Audrey",
+     "keys": [
+      "\\\\NAS-Bremblens\\home\\Photos\\2020\\20200821_173625.jpg"
+     ]
+    }
+   }
+  },
+  {
+   "nom": "Boris",
+   "fiche": "boris",
+   "genre": "visage",
+   "table": "faces",
+   "champ": "faces",
+   "type": "exclusion",
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\240211_Samsung Mike\\20230519_125257.jpg",
+   "i": null,
+   "jumeau": "\\\\NAS-Bremblens\\home\\Photos\\2023\\20230519_125257.jpg",
+   "j": null,
+   "preuve": "nom",
+   "sim_photo": null,
+   "geste": {
+    "route": "/api/people/untag",
+    "corps": {
+     "name": "Boris",
+     "keys": [
+      "\\\\NAS-Bremblens\\home\\Photos\\2023\\20230519_125257.jpg"
+     ]
+    }
+   }
+  },
+  {
+   "nom": "Béa",
+   "fiche": "béa",
+   "genre": "visage",
+   "table": "faces",
+   "champ": "faces",
+   "type": "exclusion",
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\240211_Samsung Mike\\20221218_120031.jpg",
+   "i": null,
+   "jumeau": "\\\\NAS-Bremblens\\home\\Photos\\2022\\20221218_120031.jpg",
+   "j": null,
+   "preuve": "nom",
+   "sim_photo": null,
+   "geste": {
+    "route": "/api/people/untag",
+    "corps": {
+     "name": "Béa",
+     "keys": [
+      "\\\\NAS-Bremblens\\home\\Photos\\2022\\20221218_120031.jpg"
+     ]
+    }
+   }
+  },
+  {
+   "nom": "Christine",
+   "fiche": "christine",
+   "genre": "visage",
+   "table": "faces",
+   "champ": "faces",
+   "type": "exclusion",
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\250914_Samsung_Mike\\20240316_220641.jpg",
+   "i": null,
+   "jumeau": "\\\\NAS-Bremblens\\home\\Photos\\2024\\20240316_220641.jpg",
+   "j": null,
+   "preuve": "nom",
+   "sim_photo": null,
+   "geste": {
+    "route": "/api/people/untag",
+    "corps": {
+     "name": "Christine",
+     "keys": [
+      "\\\\NAS-Bremblens\\home\\Photos\\2024\\20240316_220641.jpg"
+     ]
+    }
+   }
+  },
+  {
+   "nom": "Christine",
+   "fiche": "christine",
+   "genre": "visage",
+   "table": "faces",
+   "champ": "faces",
+   "type": "exclusion",
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\180725 Samsung Mike\\20180621_124655.jpg",
+   "i": null,
+   "jumeau": "\\\\NAS-Bremblens\\home\\Photos\\2018\\20180621_124655.jpg",
+   "j": null,
+   "preuve": "nom",
+   "sim_photo": null,
+   "geste": {
+    "route": "/api/people/untag",
+    "corps": {
+     "name": "Christine",
+     "keys": [
+      "\\\\NAS-Bremblens\\home\\Photos\\2018\\20180621_124655.jpg"
+     ]
+    }
+   }
+  },
+  {
+   "nom": "Cédric Baudin",
+   "fiche": "cédric baudin",
+   "genre": "visage",
+   "table": "faces",
+   "champ": "faces",
+   "type": "exclusion",
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\240211_Samsung Mike\\20230519_125257.jpg",
+   "i": null,
+   "jumeau": "\\\\NAS-Bremblens\\home\\Photos\\2023\\20230519_125257.jpg",
+   "j": null,
+   "preuve": "nom",
+   "sim_photo": null,
+   "geste": {
+    "route": "/api/people/untag",
+    "corps": {
+     "name": "Cédric Baudin",
+     "keys": [
+      "\\\\NAS-Bremblens\\home\\Photos\\2023\\20230519_125257.jpg"
+     ]
+    }
+   }
+  },
+  {
+   "nom": "Céline Gauchat",
+   "fiche": "céline gauchat",
+   "genre": "visage",
+   "table": "faces",
+   "champ": "faces",
+   "type": "rattachement",
+   "cle": "ARZOPA/sEBdWd-20260604_134333775.jpg",
+   "i": 6,
+   "jumeau": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Friends\\20150912_Annick-et-Celine-Gauchat-et-Clemence-et-al.jpg",
+   "j": 6,
+   "preuve": "vecteur",
+   "sim_photo": 1.0,
+   "geste": {
+    "route": "/api/assign",
+    "corps": {
+     "genre": "visage",
+     "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Friends\\20150912_Annick-et-Celine-Gauchat-et-Clemence-et-al.jpg",
+     "i": 6,
+     "cible": "Céline Gauchat"
+    }
+   }
+  },
+  {
+   "nom": "Daniela Stan",
+   "fiche": "daniela stan",
+   "genre": "visage",
+   "table": "faces",
+   "champ": "faces",
+   "type": "exclusion",
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\250914_Samsung_Mike\\20241216_202023(0).jpg",
+   "i": null,
+   "jumeau": "\\\\NAS-Bremblens\\home\\Photos\\2024\\20241216_202023(0).jpg",
+   "j": null,
+   "preuve": "nom",
+   "sim_photo": null,
+   "geste": {
+    "route": "/api/people/untag",
+    "corps": {
+     "name": "Daniela Stan",
+     "keys": [
+      "\\\\NAS-Bremblens\\home\\Photos\\2024\\20241216_202023(0).jpg"
+     ]
+    }
+   }
+  },
+  {
+   "nom": "Didier",
+   "fiche": "didier",
+   "genre": "visage",
+   "table": "faces",
+   "champ": "faces",
+   "type": "rattachement",
+   "cle": "ARZOPA/UJAn0k-20260628_012444597.jpg",
+   "i": 8,
+   "jumeau": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\70 ans Papa\\20240330_Didier-et-Nicolas-Laser.jpg",
+   "j": 8,
+   "preuve": "vecteur",
+   "sim_photo": 1.0,
+   "geste": {
+    "route": "/api/assign",
+    "corps": {
+     "genre": "visage",
+     "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\70 ans Papa\\20240330_Didier-et-Nicolas-Laser.jpg",
+     "i": 8,
+     "cible": "Didier"
+    }
+   }
+  },
+  {
+   "nom": "Didier",
+   "fiche": "didier",
+   "genre": "visage",
+   "table": "faces",
+   "champ": "faces",
+   "type": "rattachement",
+   "cle": "ARZOPA/UJAn0k-20260628_012444597.jpg",
+   "i": 1,
+   "jumeau": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\70 ans Papa\\20240330_Didier-et-Nicolas-Laser.jpg",
+   "j": 1,
+   "preuve": "vecteur",
+   "sim_photo": 1.0,
+   "geste": {
+    "route": "/api/assign",
+    "corps": {
+     "genre": "visage",
+     "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\70 ans Papa\\20240330_Didier-et-Nicolas-Laser.jpg",
+     "i": 1,
+     "cible": "Didier"
+    }
+   }
+  },
+  {
+   "nom": "Didier",
+   "fiche": "didier",
+   "genre": "visage",
+   "table": "faces",
+   "champ": "faces",
+   "type": "rattachement",
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\_Uploads\\ARZOPA\\UJAn0k-20260628_012444597.jpg",
+   "i": 1,
+   "jumeau": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\70 ans Papa\\20240330_Didier-et-Nicolas-Laser.jpg",
+   "j": 1,
+   "preuve": "vecteur",
+   "sim_photo": 1.0,
+   "geste": {
+    "route": "/api/assign",
+    "corps": {
+     "genre": "visage",
+     "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\70 ans Papa\\20240330_Didier-et-Nicolas-Laser.jpg",
+     "i": 1,
+     "cible": "Didier"
+    }
+   }
+  },
+  {
+   "nom": "Didier",
+   "fiche": "didier",
+   "genre": "visage",
+   "table": "faces",
+   "champ": "faces",
+   "type": "confirmation",
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\240211_Samsung Mike\\20230409_151644.jpg",
+   "i": null,
+   "jumeau": "\\\\NAS-Bremblens\\home\\Photos\\2023\\20230409_151644.jpg",
+   "j": null,
+   "preuve": "nom",
+   "sim_photo": null,
+   "geste": {
+    "route": "/api/people/confirm",
+    "corps": {
+     "name": "Didier",
+     "keys": [
+      "\\\\NAS-Bremblens\\home\\Photos\\2023\\20230409_151644.jpg"
+     ]
+    }
+   }
+  },
+  {
+   "nom": "Didier",
+   "fiche": "didier",
+   "genre": "visage",
+   "table": "faces",
+   "champ": "faces",
+   "type": "confirmation",
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\240211_Samsung Mike\\20230409_151655.jpg",
+   "i": null,
+   "jumeau": "\\\\NAS-Bremblens\\home\\Photos\\2023\\20230409_151655.jpg",
+   "j": null,
+   "preuve": "nom",
+   "sim_photo": null,
+   "geste": {
+    "route": "/api/people/confirm",
+    "corps": {
+     "name": "Didier",
+     "keys": [
+      "\\\\NAS-Bremblens\\home\\Photos\\2023\\20230409_151655.jpg"
+     ]
+    }
+   }
+  },
+  {
+   "nom": "Dévi",
+   "fiche": "dévi",
+   "genre": "visage",
+   "table": "faces",
+   "champ": "faces",
+   "type": "exclusion",
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\250914_Samsung_Mike\\20240427_192513.jpg",
+   "i": null,
+   "jumeau": "\\\\NAS-Bremblens\\home\\Photos\\2024\\20240427_192513.jpg",
+   "j": null,
+   "preuve": "nom",
+   "sim_photo": null,
+   "geste": {
+    "route": "/api/people/untag",
+    "corps": {
+     "name": "Dévi",
+     "keys": [
+      "\\\\NAS-Bremblens\\home\\Photos\\2024\\20240427_192513.jpg"
+     ]
+    }
+   }
+  },
+  {
+   "nom": "Elia",
+   "fiche": "elia",
+   "genre": "visage",
+   "table": "faces",
+   "champ": "faces",
+   "type": "exclusion",
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\200804 Samsung Mike\\20200606_175821.jpg",
+   "i": null,
+   "jumeau": "\\\\NAS-Bremblens\\home\\Photos\\2020\\20200606_175821.jpg",
+   "j": null,
+   "preuve": "nom",
+   "sim_photo": null,
+   "geste": {
+    "route": "/api/people/untag",
+    "corps": {
+     "name": "Elia",
+     "keys": [
+      "\\\\NAS-Bremblens\\home\\Photos\\2020\\20200606_175821.jpg"
+     ]
+    }
+   }
+  },
+  {
+   "nom": "Elia",
+   "fiche": "elia",
+   "genre": "visage",
+   "table": "faces",
+   "champ": "faces",
+   "type": "exclusion",
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\250914_Samsung_Mike\\20240421_161446.jpg",
+   "i": null,
+   "jumeau": "\\\\NAS-Bremblens\\home\\Photos\\2024\\20240421_161446.jpg",
+   "j": null,
+   "preuve": "nom",
+   "sim_photo": null,
+   "geste": {
+    "route": "/api/people/untag",
+    "corps": {
+     "name": "Elia",
+     "keys": [
+      "\\\\NAS-Bremblens\\home\\Photos\\2024\\20240421_161446.jpg"
+     ]
+    }
+   }
+  },
+  {
+   "nom": "Ellie",
+   "fiche": "ellie",
+   "genre": "visage",
+   "table": "faces",
+   "champ": "faces",
+   "type": "exclusion",
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\240211_Samsung Mike\\20240107_150959.jpg",
+   "i": null,
+   "jumeau": "\\\\NAS-Bremblens\\home\\Photos\\2024\\20240107_150959.jpg",
+   "j": null,
+   "preuve": "nom",
+   "sim_photo": null,
+   "geste": {
+    "route": "/api/people/untag",
+    "corps": {
+     "name": "Ellie",
+     "keys": [
+      "\\\\NAS-Bremblens\\home\\Photos\\2024\\20240107_150959.jpg"
+     ]
+    }
+   }
+  },
+  {
+   "nom": "Emilie",
+   "fiche": "emilie",
+   "genre": "visage",
+   "table": "faces",
+   "champ": "faces",
+   "type": "exclusion",
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\240211_Samsung Mike\\20220430_105026.jpg",
+   "i": null,
+   "jumeau": "\\\\NAS-Bremblens\\home\\Photos\\2022\\20220430_105026.jpg",
+   "j": null,
+   "preuve": "nom",
+   "sim_photo": null,
+   "geste": {
+    "route": "/api/people/untag",
+    "corps": {
+     "name": "Emilie",
+     "keys": [
+      "\\\\NAS-Bremblens\\home\\Photos\\2022\\20220430_105026.jpg"
+     ]
+    }
+   }
+  },
+  {
+   "nom": "Fabien",
+   "fiche": "fabien",
+   "genre": "visage",
+   "table": "faces",
+   "champ": "faces",
+   "type": "exclusion",
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\260211_Samsung_MHU\\Camera\\20251221_154958.jpg",
+   "i": null,
+   "jumeau": "\\\\NAS-Bremblens\\home\\Photos\\2025\\20251221_154958.jpg",
+   "j": null,
+   "preuve": "nom",
+   "sim_photo": null,
+   "geste": {
+    "route": "/api/people/untag",
+    "corps": {
+     "name": "Fabien",
+     "keys": [
+      "\\\\NAS-Bremblens\\home\\Photos\\2025\\20251221_154958.jpg"
+     ]
+    }
+   }
+  },
+  {
+   "nom": "Fabio",
+   "fiche": "fabio",
+   "genre": "visage",
+   "table": "faces",
+   "champ": "faces",
+   "type": "exclusion",
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\200804 Samsung Mike\\20200711_153739(0).jpg",
+   "i": null,
+   "jumeau": "\\\\NAS-Bremblens\\home\\Photos\\2020\\20200711_153739(0).jpg",
+   "j": null,
+   "preuve": "nom",
+   "sim_photo": null,
+   "geste": {
+    "route": "/api/people/untag",
+    "corps": {
+     "name": "Fabio",
+     "keys": [
+      "\\\\NAS-Bremblens\\home\\Photos\\2020\\20200711_153739(0).jpg"
+     ]
+    }
+   }
+  },
+  {
+   "nom": "Flavio",
+   "fiche": "flavio",
+   "genre": "visage",
+   "table": "faces",
+   "champ": "faces",
+   "type": "exclusion",
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\240211_Samsung Mike\\20220522_133346.jpg",
+   "i": null,
+   "jumeau": "\\\\NAS-Bremblens\\home\\Photos\\2022\\20220522_133346.jpg",
+   "j": null,
+   "preuve": "nom",
+   "sim_photo": null,
+   "geste": {
+    "route": "/api/people/untag",
+    "corps": {
+     "name": "Flavio",
+     "keys": [
+      "\\\\NAS-Bremblens\\home\\Photos\\2022\\20220522_133346.jpg"
+     ]
+    }
+   }
+  },
+  {
+   "nom": "Flo",
+   "fiche": "flo",
+   "genre": "visage",
+   "table": "faces",
+   "champ": "faces",
+   "type": "exclusion",
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Annick\\IMG_20190706_210851.jpg",
+   "i": null,
+   "jumeau": "\\\\NAS-Bremblens\\home\\Photos\\2019\\07 Juillet\\40 ans Annick\\IMG_20190706_210851.jpg",
+   "j": null,
+   "preuve": "nom",
+   "sim_photo": null,
+   "geste": {
+    "route": "/api/people/untag",
+    "corps": {
+     "name": "Flo",
+     "keys": [
+      "\\\\NAS-Bremblens\\home\\Photos\\2019\\07 Juillet\\40 ans Annick\\IMG_20190706_210851.jpg"
+     ]
+    }
+   }
+  },
+  {
+   "nom": "Flo",
+   "fiche": "flo",
+   "genre": "visage",
+   "table": "faces",
+   "champ": "faces",
+   "type": "exclusion",
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Appartement Bremblens\\Appart Bremblens\\IMG_20190809_145046.jpg",
+   "i": null,
+   "jumeau": "\\\\NAS-Bremblens\\home\\Photos\\Appart Bremblens\\IMG_20190809_145046.jpg",
+   "j": null,
+   "preuve": "nom",
+   "sim_photo": null,
+   "geste": {
+    "route": "/api/people/untag",
+    "corps": {
+     "name": "Flo",
+     "keys": [
+      "\\\\NAS-Bremblens\\home\\Photos\\Appart Bremblens\\IMG_20190809_145046.jpg"
+     ]
+    }
+   }
+  },
+  {
+   "nom": "Flo",
+   "fiche": "flo",
+   "genre": "visage",
+   "table": "faces",
+   "champ": "faces",
+   "type": "exclusion",
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Appartement Bremblens\\Appart Bremblens\\IMG_20190224_123204.jpg",
+   "i": null,
+   "jumeau": "\\\\NAS-Bremblens\\home\\Photos\\Appart Bremblens\\IMG_20190224_123204.jpg",
+   "j": null,
+   "preuve": "nom",
+   "sim_photo": null,
+   "geste": {
+    "route": "/api/people/untag",
+    "corps": {
+     "name": "Flo",
+     "keys": [
+      "\\\\NAS-Bremblens\\home\\Photos\\Appart Bremblens\\IMG_20190224_123204.jpg"
+     ]
+    }
+   }
+  },
+  {
+   "nom": "Flo",
+   "fiche": "flo",
+   "genre": "visage",
+   "table": "faces",
+   "champ": "faces",
+   "type": "exclusion",
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\211108-210801 Samsung Mike\\20201101_133059.jpg",
+   "i": null,
+   "jumeau": "\\\\NAS-Bremblens\\home\\Photos\\2020\\20201101_133059.jpg",
+   "j": null,
+   "preuve": "nom",
+   "sim_photo": null,
+   "geste": {
+    "route": "/api/people/untag",
+    "corps": {
+     "name": "Flo",
+     "keys": [
+      "\\\\NAS-Bremblens\\home\\Photos\\2020\\20201101_133059.jpg"
+     ]
+    }
+   }
+  },
+  {
+   "nom": "Flo",
+   "fiche": "flo",
+   "genre": "visage",
+   "table": "faces",
+   "champ": "faces",
+   "type": "exclusion",
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\250914_Samsung_Mike\\20240330_123947.jpg",
+   "i": null,
+   "jumeau": "\\\\NAS-Bremblens\\home\\Photos\\2024\\20240330_123947.jpg",
+   "j": null,
+   "preuve": "nom",
+   "sim_photo": null,
+   "geste": {
+    "route": "/api/people/untag",
+    "corps": {
+     "name": "Flo",
+     "keys": [
+      "\\\\NAS-Bremblens\\home\\Photos\\2024\\20240330_123947.jpg"
+     ]
+    }
+   }
+  },
+  {
+   "nom": "Flo",
+   "fiche": "flo",
+   "genre": "visage",
+   "table": "faces",
+   "champ": "faces",
+   "type": "exclusion",
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\250914_Samsung_Mike\\20241231_193411.jpg",
+   "i": null,
+   "jumeau": "\\\\NAS-Bremblens\\home\\Photos\\2024\\20241231_193411.jpg",
+   "j": null,
+   "preuve": "nom",
+   "sim_photo": null,
+   "geste": {
+    "route": "/api/people/untag",
+    "corps": {
+     "name": "Flo",
+     "keys": [
+      "\\\\NAS-Bremblens\\home\\Photos\\2024\\20241231_193411.jpg"
+     ]
+    }
+   }
+  },
+  {
+   "nom": "Flo",
+   "fiche": "flo",
+   "genre": "visage",
+   "table": "faces",
+   "champ": "faces",
+   "type": "exclusion",
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\260211_Samsung_MHU\\Camera\\20251013_221514.jpg",
+   "i": null,
+   "jumeau": "\\\\NAS-Bremblens\\home\\Photos\\2025\\20251013_221514.jpg",
+   "j": null,
+   "preuve": "nom",
+   "sim_photo": null,
+   "geste": {
+    "route": "/api/people/untag",
+    "corps": {
+     "name": "Flo",
+     "keys": [
+      "\\\\NAS-Bremblens\\home\\Photos\\2025\\20251013_221514.jpg"
+     ]
+    }
+   }
+  },
+  {
+   "nom": "Flo",
+   "fiche": "flo",
+   "genre": "visage",
+   "table": "faces",
+   "champ": "faces",
+   "type": "exclusion",
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\240211_Samsung Mike\\20220913_215050.jpg",
+   "i": null,
+   "jumeau": "\\\\NAS-Bremblens\\home\\Photos\\2022\\20220913_215050.jpg",
+   "j": null,
+   "preuve": "nom",
+   "sim_photo": null,
+   "geste": {
+    "route": "/api/people/untag",
+    "corps": {
+     "name": "Flo",
+     "keys": [
+      "\\\\NAS-Bremblens\\home\\Photos\\2022\\20220913_215050.jpg"
+     ]
+    }
+   }
+  },
+  {
+   "nom": "Flo",
+   "fiche": "flo",
+   "genre": "visage",
+   "table": "faces",
+   "champ": "faces",
+   "type": "exclusion",
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\240211_Samsung Mike\\20230804_203538.jpg",
+   "i": null,
+   "jumeau": "\\\\NAS-Bremblens\\home\\Photos\\2023\\20230804_203538.jpg",
+   "j": null,
+   "preuve": "nom",
+   "sim_photo": null,
+   "geste": {
+    "route": "/api/people/untag",
+    "corps": {
+     "name": "Flo",
+     "keys": [
+      "\\\\NAS-Bremblens\\home\\Photos\\2023\\20230804_203538.jpg"
+     ]
+    }
+   }
+  },
+  {
+   "nom": "Flo",
+   "fiche": "flo",
+   "genre": "visage",
+   "table": "faces",
+   "champ": "faces",
+   "type": "exclusion",
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Appartement Bremblens\\Appart Bremblens\\IMG_20190224_123203.jpg",
+   "i": null,
+   "jumeau": "\\\\NAS-Bremblens\\home\\Photos\\Appart Bremblens\\IMG_20190224_123203.jpg",
+   "j": null,
+   "preuve": "nom",
+   "sim_photo": null,
+   "geste": {
+    "route": "/api/people/untag",
+    "corps": {
+     "name": "Flo",
+     "keys": [
+      "\\\\NAS-Bremblens\\home\\Photos\\Appart Bremblens\\IMG_20190224_123203.jpg"
+     ]
+    }
+   }
+  },
+  {
+   "nom": "Flo",
+   "fiche": "flo",
+   "genre": "visage",
+   "table": "faces",
+   "champ": "faces",
+   "type": "exclusion",
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Annick\\40 ans Annick\\IMG_20190706_210851.jpg",
+   "i": null,
+   "jumeau": "\\\\NAS-Bremblens\\home\\Photos\\2019\\07 Juillet\\40 ans Annick\\IMG_20190706_210851.jpg",
+   "j": null,
+   "preuve": "nom",
+   "sim_photo": null,
+   "geste": {
+    "route": "/api/people/untag",
+    "corps": {
+     "name": "Flo",
+     "keys": [
+      "\\\\NAS-Bremblens\\home\\Photos\\2019\\07 Juillet\\40 ans Annick\\IMG_20190706_210851.jpg"
+     ]
+    }
+   }
+  },
+  {
+   "nom": "Flo",
+   "fiche": "flo",
+   "genre": "visage",
+   "table": "faces",
+   "champ": "faces",
+   "type": "exclusion",
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Mathilde et Ellie\\Mathilde mariage\\EVJF Mathilde\\IMG-20180616-WA0000.jpg",
+   "i": null,
+   "jumeau": "\\\\NAS-Bremblens\\home\\Photos\\2018\\EVJF Mathilde\\IMG-20180616-WA0000.jpg",
+   "j": null,
+   "preuve": "nom",
+   "sim_photo": null,
+   "geste": {
+    "route": "/api/people/untag",
+    "corps": {
+     "name": "Flo",
+     "keys": [
+      "\\\\NAS-Bremblens\\home\\Photos\\2018\\EVJF Mathilde\\IMG-20180616-WA0000.jpg"
+     ]
+    }
+   }
+  },
+  {
+   "nom": "Flo",
+   "fiche": "flo",
+   "genre": "visage",
+   "table": "faces",
+   "champ": "faces",
+   "type": "exclusion",
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Mathilde et Ellie\\Photos Thildette\\IMG-20180617-WA0048.jpg",
+   "i": null,
+   "jumeau": "\\\\NAS-Bremblens\\home\\Photos\\2018\\EVJF Mathilde\\IMG-20180617-WA0048.jpg",
+   "j": null,
+   "preuve": "nom",
+   "sim_photo": null,
+   "geste": {
+    "route": "/api/people/untag",
+    "corps": {
+     "name": "Flo",
+     "keys": [
+      "\\\\NAS-Bremblens\\home\\Photos\\2018\\EVJF Mathilde\\IMG-20180617-WA0048.jpg"
+     ]
+    }
+   }
+  },
+  {
+   "nom": "Flo",
+   "fiche": "flo",
+   "genre": "visage",
+   "table": "faces",
+   "champ": "faces",
+   "type": "exclusion",
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\260731_Samsung Mike\\20260613_004428.jpg",
+   "i": null,
+   "jumeau": "\\\\NAS-Bremblens\\home\\Photos\\2026\\20260613_004428.jpg",
+   "j": null,
+   "preuve": "nom",
+   "sim_photo": null,
+   "geste": {
+    "route": "/api/people/untag",
+    "corps": {
+     "name": "Flo",
+     "keys": [
+      "\\\\NAS-Bremblens\\home\\Photos\\2026\\20260613_004428.jpg"
+     ]
+    }
+   }
+  },
+  {
+   "nom": "Flo",
+   "fiche": "flo",
+   "genre": "visage",
+   "table": "faces",
+   "champ": "faces",
+   "type": "exclusion",
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\240211_Samsung Mike\\20220319_153552.jpg",
+   "i": null,
+   "jumeau": "\\\\NAS-Bremblens\\home\\Photos\\2022\\20220319_153552.jpg",
+   "j": null,
+   "preuve": "nom",
+   "sim_photo": null,
+   "geste": {
+    "route": "/api/people/untag",
+    "corps": {
+     "name": "Flo",
+     "keys": [
+      "\\\\NAS-Bremblens\\home\\Photos\\2022\\20220319_153552.jpg"
+     ]
+    }
+   }
+  },
+  {
+   "nom": "Flo",
+   "fiche": "flo",
+   "genre": "visage",
+   "table": "faces",
+   "champ": "faces",
+   "type": "exclusion",
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\200804 Samsung Mike\\20200423_130959.jpg",
+   "i": null,
+   "jumeau": "\\\\NAS-Bremblens\\home\\Photos\\2020\\20200423_130959.jpg",
+   "j": null,
+   "preuve": "nom",
+   "sim_photo": null,
+   "geste": {
+    "route": "/api/people/untag",
+    "corps": {
+     "name": "Flo",
+     "keys": [
+      "\\\\NAS-Bremblens\\home\\Photos\\2020\\20200423_130959.jpg"
+     ]
+    }
+   }
+  },
+  {
+   "nom": "Flo",
+   "fiche": "flo",
+   "genre": "visage",
+   "table": "faces",
+   "champ": "faces",
+   "type": "exclusion",
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\260211_Samsung_MHU\\Camera\\20250922_152638.jpg",
+   "i": null,
+   "jumeau": "\\\\NAS-Bremblens\\home\\Photos\\2025\\20250922_152638.jpg",
+   "j": null,
+   "preuve": "nom",
+   "sim_photo": null,
+   "geste": {
+    "route": "/api/people/untag",
+    "corps": {
+     "name": "Flo",
+     "keys": [
+      "\\\\NAS-Bremblens\\home\\Photos\\2025\\20250922_152638.jpg"
+     ]
+    }
+   }
+  },
+  {
+   "nom": "Flo",
+   "fiche": "flo",
+   "genre": "visage",
+   "table": "faces",
+   "champ": "faces",
+   "type": "exclusion",
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\260211_Samsung_MHU\\Camera\\20251013_221514(0).jpg",
+   "i": null,
+   "jumeau": "\\\\NAS-Bremblens\\home\\Photos\\2025\\20251013_221514(0).jpg",
+   "j": null,
+   "preuve": "nom",
+   "sim_photo": null,
+   "geste": {
+    "route": "/api/people/untag",
+    "corps": {
+     "name": "Flo",
+     "keys": [
+      "\\\\NAS-Bremblens\\home\\Photos\\2025\\20251013_221514(0).jpg"
+     ]
+    }
+   }
+  },
+  {
+   "nom": "Flo",
+   "fiche": "flo",
+   "genre": "visage",
+   "table": "faces",
+   "champ": "faces",
+   "type": "exclusion",
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\240211_Samsung Mike\\20211210_190948.jpg",
+   "i": null,
+   "jumeau": "\\\\NAS-Bremblens\\home\\Photos\\2021\\20211210_190948.jpg",
+   "j": null,
+   "preuve": "nom",
+   "sim_photo": null,
+   "geste": {
+    "route": "/api/people/untag",
+    "corps": {
+     "name": "Flo",
+     "keys": [
+      "\\\\NAS-Bremblens\\home\\Photos\\2021\\20211210_190948.jpg"
+     ]
+    }
+   }
+  },
+  {
+   "nom": "Flo",
+   "fiche": "flo",
+   "genre": "visage",
+   "table": "faces",
+   "champ": "faces",
+   "type": "exclusion",
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Annick\\IMG_20190706_210852.jpg",
+   "i": null,
+   "jumeau": "\\\\NAS-Bremblens\\home\\Photos\\2019\\07 Juillet\\40 ans Annick\\IMG_20190706_210852.jpg",
+   "j": null,
+   "preuve": "nom",
+   "sim_photo": null,
+   "geste": {
+    "route": "/api/people/untag",
+    "corps": {
+     "name": "Flo",
+     "keys": [
+      "\\\\NAS-Bremblens\\home\\Photos\\2019\\07 Juillet\\40 ans Annick\\IMG_20190706_210852.jpg"
+     ]
+    }
+   }
+  },
+  {
+   "nom": "Flo",
+   "fiche": "flo",
+   "genre": "visage",
+   "table": "faces",
+   "champ": "faces",
+   "type": "exclusion",
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Annick\\40 ans Annick\\IMG_20190706_210852.jpg",
+   "i": null,
+   "jumeau": "\\\\NAS-Bremblens\\home\\Photos\\2019\\07 Juillet\\40 ans Annick\\IMG_20190706_210852.jpg",
+   "j": null,
+   "preuve": "nom",
+   "sim_photo": null,
+   "geste": {
+    "route": "/api/people/untag",
+    "corps": {
+     "name": "Flo",
+     "keys": [
+      "\\\\NAS-Bremblens\\home\\Photos\\2019\\07 Juillet\\40 ans Annick\\IMG_20190706_210852.jpg"
+     ]
+    }
+   }
+  },
+  {
+   "nom": "Flo",
+   "fiche": "flo",
+   "genre": "visage",
+   "table": "faces",
+   "champ": "faces",
+   "type": "exclusion",
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\2026\\Photos Floflo\\Miki\\IMG_20190224_123203.jpg",
+   "i": null,
+   "jumeau": "\\\\NAS-Bremblens\\home\\Photos\\Appart Bremblens\\IMG_20190224_123203.jpg",
+   "j": null,
+   "preuve": "nom",
+   "sim_photo": null,
+   "geste": {
+    "route": "/api/people/untag",
+    "corps": {
+     "name": "Flo",
+     "keys": [
+      "\\\\NAS-Bremblens\\home\\Photos\\Appart Bremblens\\IMG_20190224_123203.jpg"
+     ]
+    }
+   }
+  },
+  {
+   "nom": "Flo",
+   "fiche": "flo",
+   "genre": "visage",
+   "table": "faces",
+   "champ": "faces",
+   "type": "exclusion",
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\250914_Samsung_Mike\\20250608_133824.jpg",
+   "i": null,
+   "jumeau": "\\\\NAS-Bremblens\\home\\Photos\\2025\\20250608_133824.jpg",
+   "j": null,
+   "preuve": "nom",
+   "sim_photo": null,
+   "geste": {
+    "route": "/api/people/untag",
+    "corps": {
+     "name": "Flo",
+     "keys": [
+      "\\\\NAS-Bremblens\\home\\Photos\\2025\\20250608_133824.jpg"
+     ]
+    }
+   }
+  },
+  {
+   "nom": "Flo",
+   "fiche": "flo",
+   "genre": "visage",
+   "table": "faces",
+   "champ": "faces",
+   "type": "exclusion",
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Mathilde et Ellie\\Mathilde mariage\\EVJF Mathilde\\IMG-20180617-WA0075.jpg",
+   "i": null,
+   "jumeau": "\\\\NAS-Bremblens\\home\\Photos\\2018\\EVJF Mathilde\\IMG-20180617-WA0075.jpg",
+   "j": null,
+   "preuve": "nom",
+   "sim_photo": null,
+   "geste": {
+    "route": "/api/people/untag",
+    "corps": {
+     "name": "Flo",
+     "keys": [
+      "\\\\NAS-Bremblens\\home\\Photos\\2018\\EVJF Mathilde\\IMG-20180617-WA0075.jpg"
+     ]
+    }
+   }
+  },
+  {
+   "nom": "Flo",
+   "fiche": "flo",
+   "genre": "visage",
+   "table": "faces",
+   "champ": "faces",
+   "type": "confirmation",
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Appartement Bremblens\\Appart Bremblens\\IMG_20190224_123204.jpg",
+   "i": null,
+   "jumeau": "\\\\NAS-Bremblens\\home\\Photos\\Appart Bremblens\\IMG_20190224_123204.jpg",
+   "j": null,
+   "preuve": "nom",
+   "sim_photo": null,
+   "geste": {
+    "route": "/api/people/confirm",
+    "corps": {
+     "name": "Flo",
+     "keys": [
+      "\\\\NAS-Bremblens\\home\\Photos\\Appart Bremblens\\IMG_20190224_123204.jpg"
+     ]
+    }
+   }
+  },
+  {
+   "nom": "Flo",
+   "fiche": "flo",
+   "genre": "visage",
+   "table": "faces",
+   "champ": "faces",
+   "type": "confirmation",
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\240211_Samsung Mike\\20211226_143806.jpg",
+   "i": null,
+   "jumeau": "\\\\NAS-Bremblens\\home\\Photos\\2021\\20211226_143806.jpg",
+   "j": null,
+   "preuve": "nom",
+   "sim_photo": null,
+   "geste": {
+    "route": "/api/people/confirm",
+    "corps": {
+     "name": "Flo",
+     "keys": [
+      "\\\\NAS-Bremblens\\home\\Photos\\2021\\20211226_143806.jpg"
+     ]
+    }
+   }
+  },
+  {
+   "nom": "Flo",
+   "fiche": "flo",
+   "genre": "visage",
+   "table": "faces",
+   "champ": "faces",
+   "type": "confirmation",
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\200804 Samsung Mike\\20200729_181031.jpg",
+   "i": null,
+   "jumeau": "\\\\NAS-Bremblens\\home\\Photos\\2020\\20200729_181031.jpg",
+   "j": null,
+   "preuve": "nom",
+   "sim_photo": null,
+   "geste": {
+    "route": "/api/people/confirm",
+    "corps": {
+     "name": "Flo",
+     "keys": [
+      "\\\\NAS-Bremblens\\home\\Photos\\2020\\20200729_181031.jpg"
+     ]
+    }
+   }
+  },
+  {
+   "nom": "FX",
+   "fiche": "fx",
+   "genre": "visage",
+   "table": "faces",
+   "champ": "faces",
+   "type": "exclusion",
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\240211_Samsung Mike\\20210919_113153.jpg",
+   "i": null,
+   "jumeau": "\\\\NAS-Bremblens\\home\\Photos\\2021\\20210919_113153.jpg",
+   "j": null,
+   "preuve": "nom",
+   "sim_photo": null,
+   "geste": {
+    "route": "/api/people/untag",
+    "corps": {
+     "name": "FX",
+     "keys": [
+      "\\\\NAS-Bremblens\\home\\Photos\\2021\\20210919_113153.jpg"
+     ]
+    }
+   }
+  },
+  {
+   "nom": "Jamie Fernandez",
+   "fiche": "jamie fernandez",
+   "genre": "visage",
+   "table": "faces",
+   "champ": "faces",
+   "type": "rattachement",
+   "cle": "ARZOPA/0hLi0Z-20260604_134333368.JPG",
+   "i": 3,
+   "jumeau": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Friends 2\\20191027_Alba-et-Flo-et-Flora-et-al-3.jpg",
+   "j": 3,
+   "preuve": "vecteur",
+   "sim_photo": 1.0,
+   "geste": {
+    "route": "/api/assign",
+    "corps": {
+     "genre": "visage",
+     "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Friends 2\\20191027_Alba-et-Flo-et-Flora-et-al-3.jpg",
+     "i": 3,
+     "cible": "Jamie Fernandez"
+    }
+   }
+  },
+  {
+   "nom": "JC",
+   "fiche": "jc",
+   "genre": "visage",
+   "table": "faces",
+   "champ": "faces",
+   "type": "confirmation",
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\240211_Samsung Mike\\20230519_124856.jpg",
+   "i": null,
+   "jumeau": "\\\\NAS-Bremblens\\home\\Photos\\2023\\20230519_124856.jpg",
+   "j": null,
+   "preuve": "nom",
+   "sim_photo": null,
+   "geste": {
+    "route": "/api/people/confirm",
+    "corps": {
+     "name": "JC",
+     "keys": [
+      "\\\\NAS-Bremblens\\home\\Photos\\2023\\20230519_124856.jpg"
+     ]
+    }
+   }
+  },
+  {
+   "nom": "Linda",
+   "fiche": "linda",
+   "genre": "visage",
+   "table": "faces",
+   "champ": "faces",
+   "type": "exclusion",
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\250914_Samsung_Mike\\20240804_124854.jpg",
+   "i": null,
+   "jumeau": "\\\\NAS-Bremblens\\home\\Photos\\2024\\20240804_124854.jpg",
+   "j": null,
+   "preuve": "nom",
+   "sim_photo": null,
+   "geste": {
+    "route": "/api/people/untag",
+    "corps": {
+     "name": "Linda",
+     "keys": [
+      "\\\\NAS-Bremblens\\home\\Photos\\2024\\20240804_124854.jpg"
+     ]
+    }
+   }
+  },
+  {
+   "nom": "Markus",
+   "fiche": "markus",
+   "genre": "visage",
+   "table": "faces",
+   "champ": "faces",
+   "type": "exclusion",
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\250914_Samsung_Mike\\20240729_123911.jpg",
+   "i": null,
+   "jumeau": "\\\\NAS-Bremblens\\home\\Photos\\2024\\20240729_123911.jpg",
+   "j": null,
+   "preuve": "nom",
+   "sim_photo": null,
+   "geste": {
+    "route": "/api/people/untag",
+    "corps": {
+     "name": "Markus",
+     "keys": [
+      "\\\\NAS-Bremblens\\home\\Photos\\2024\\20240729_123911.jpg"
+     ]
+    }
+   }
+  },
+  {
+   "nom": "Marlo",
+   "fiche": "marlo",
+   "genre": "visage",
+   "table": "faces",
+   "champ": "faces",
+   "type": "exclusion",
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\200804 Samsung Mike\\20200606_175902.jpg",
+   "i": null,
+   "jumeau": "\\\\NAS-Bremblens\\home\\Photos\\2020\\20200606_175902.jpg",
+   "j": null,
+   "preuve": "nom",
+   "sim_photo": null,
+   "geste": {
+    "route": "/api/people/untag",
+    "corps": {
+     "name": "Marlo",
+     "keys": [
+      "\\\\NAS-Bremblens\\home\\Photos\\2020\\20200606_175902.jpg"
+     ]
+    }
+   }
+  },
+  {
+   "nom": "Marlyse",
+   "fiche": "marlyse",
+   "genre": "visage",
+   "table": "faces",
+   "champ": "faces",
+   "type": "exclusion",
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\240211_Samsung Mike\\20211010_142409.jpg",
+   "i": null,
+   "jumeau": "\\\\NAS-Bremblens\\home\\Photos\\2021\\20211010_142409.jpg",
+   "j": null,
+   "preuve": "nom",
+   "sim_photo": null,
+   "geste": {
+    "route": "/api/people/untag",
+    "corps": {
+     "name": "Marlyse",
+     "keys": [
+      "\\\\NAS-Bremblens\\home\\Photos\\2021\\20211010_142409.jpg"
+     ]
+    }
+   }
+  },
+  {
+   "nom": "Marlyse",
+   "fiche": "marlyse",
+   "genre": "visage",
+   "table": "faces",
+   "champ": "faces",
+   "type": "exclusion",
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\240211_Samsung Mike\\20220116_162014.jpg",
+   "i": null,
+   "jumeau": "\\\\NAS-Bremblens\\home\\Photos\\2022\\20220116_162014.jpg",
+   "j": null,
+   "preuve": "nom",
+   "sim_photo": null,
+   "geste": {
+    "route": "/api/people/untag",
+    "corps": {
+     "name": "Marlyse",
+     "keys": [
+      "\\\\NAS-Bremblens\\home\\Photos\\2022\\20220116_162014.jpg"
+     ]
+    }
+   }
+  },
+  {
+   "nom": "Maryline Baudère",
+   "fiche": "maryline baudère",
+   "genre": "visage",
+   "table": "faces",
+   "champ": "faces",
+   "type": "rattachement",
+   "cle": "ARZOPA/GAS5yc-20260613_111305040.jpg",
+   "i": 0,
+   "jumeau": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\40 ans Flo\\20260613_Josephine-et-Lola-et-Maryline-Baudere-et-al.jpg",
+   "j": 0,
+   "preuve": "vecteur",
+   "sim_photo": 1.0,
+   "geste": {
+    "route": "/api/assign",
+    "corps": {
+     "genre": "visage",
+     "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\40 ans Flo\\20260613_Josephine-et-Lola-et-Maryline-Baudere-et-al.jpg",
+     "i": 0,
+     "cible": "Maryline Baudère"
+    }
+   }
+  },
+  {
+   "nom": "Maryline Baudère",
+   "fiche": "maryline baudère",
+   "genre": "visage",
+   "table": "faces",
+   "champ": "faces",
+   "type": "rattachement",
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\_Uploads\\ARZOPA\\GAS5yc-20260613_111305040.jpg",
+   "i": 0,
+   "jumeau": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\40 ans Flo\\20260613_Josephine-et-Lola-et-Maryline-Baudere-et-al.jpg",
+   "j": 0,
+   "preuve": "vecteur",
+   "sim_photo": 1.0,
+   "geste": {
+    "route": "/api/assign",
+    "corps": {
+     "genre": "visage",
+     "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\40 ans Flo\\20260613_Josephine-et-Lola-et-Maryline-Baudere-et-al.jpg",
+     "i": 0,
+     "cible": "Maryline Baudère"
+    }
+   }
+  },
+  {
+   "nom": "Mathilde",
+   "fiche": "mathilde",
+   "genre": "visage",
+   "table": "faces",
+   "champ": "faces",
+   "type": "exclusion",
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\260211_Samsung_MHU\\Camera\\20251108_171826.jpg",
+   "i": null,
+   "jumeau": "\\\\NAS-Bremblens\\home\\Photos\\2025\\20251108_171826.jpg",
+   "j": null,
+   "preuve": "nom",
+   "sim_photo": null,
+   "geste": {
+    "route": "/api/people/untag",
+    "corps": {
+     "name": "Mathilde",
+     "keys": [
+      "\\\\NAS-Bremblens\\home\\Photos\\2025\\20251108_171826.jpg"
+     ]
+    }
+   }
+  },
+  {
+   "nom": "Mathilde",
+   "fiche": "mathilde",
+   "genre": "visage",
+   "table": "faces",
+   "champ": "faces",
+   "type": "confirmation",
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Mathilde et Ellie\\Mathilde mariage\\EVJF Mathilde\\IMG-20180616-WA0000.jpg",
+   "i": null,
+   "jumeau": "\\\\NAS-Bremblens\\home\\Photos\\2018\\EVJF Mathilde\\IMG-20180616-WA0000.jpg",
+   "j": null,
+   "preuve": "nom",
+   "sim_photo": null,
+   "geste": {
+    "route": "/api/people/confirm",
+    "corps": {
+     "name": "Mathilde",
+     "keys": [
+      "\\\\NAS-Bremblens\\home\\Photos\\2018\\EVJF Mathilde\\IMG-20180616-WA0000.jpg"
+     ]
+    }
+   }
+  },
+  {
+   "nom": "Mike",
+   "fiche": "mike",
+   "genre": "visage",
+   "table": "faces",
+   "champ": "faces",
+   "type": "exclusion",
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\211108-210801 Samsung Mike\\20200821_161232.jpg",
+   "i": null,
+   "jumeau": "\\\\NAS-Bremblens\\home\\Photos\\2020\\20200821_161232.jpg",
+   "j": null,
+   "preuve": "nom",
+   "sim_photo": null,
+   "geste": {
+    "route": "/api/people/untag",
+    "corps": {
+     "name": "Mike",
+     "keys": [
+      "\\\\NAS-Bremblens\\home\\Photos\\2020\\20200821_161232.jpg"
+     ]
+    }
+   }
+  },
+  {
+   "nom": "Mike",
+   "fiche": "mike",
+   "genre": "visage",
+   "table": "faces",
+   "champ": "faces",
+   "type": "exclusion",
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\250914_Samsung_Mike\\20250912_204659.jpg",
+   "i": null,
+   "jumeau": "\\\\NAS-Bremblens\\home\\Photos\\2025\\20250912_204659.jpg",
+   "j": null,
+   "preuve": "nom",
+   "sim_photo": null,
+   "geste": {
+    "route": "/api/people/untag",
+    "corps": {
+     "name": "Mike",
+     "keys": [
+      "\\\\NAS-Bremblens\\home\\Photos\\2025\\20250912_204659.jpg"
+     ]
+    }
+   }
+  },
+  {
+   "nom": "Mike",
+   "fiche": "mike",
+   "genre": "visage",
+   "table": "faces",
+   "champ": "faces",
+   "type": "exclusion",
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\250914_Samsung_Mike\\20240427_213500.jpg",
+   "i": null,
+   "jumeau": "\\\\NAS-Bremblens\\home\\Photos\\2024\\20240427_213500.jpg",
+   "j": null,
+   "preuve": "nom",
+   "sim_photo": null,
+   "geste": {
+    "route": "/api/people/untag",
+    "corps": {
+     "name": "Mike",
+     "keys": [
+      "\\\\NAS-Bremblens\\home\\Photos\\2024\\20240427_213500.jpg"
+     ]
+    }
+   }
+  },
+  {
+   "nom": "Mike",
+   "fiche": "mike",
+   "genre": "visage",
+   "table": "faces",
+   "champ": "faces",
+   "type": "exclusion",
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\250914_Samsung_Mike\\20241221_141506.jpg",
+   "i": null,
+   "jumeau": "\\\\NAS-Bremblens\\home\\Photos\\2024\\20241221_141506.jpg",
+   "j": null,
+   "preuve": "nom",
+   "sim_photo": null,
+   "geste": {
+    "route": "/api/people/untag",
+    "corps": {
+     "name": "Mike",
+     "keys": [
+      "\\\\NAS-Bremblens\\home\\Photos\\2024\\20241221_141506.jpg"
+     ]
+    }
+   }
+  },
+  {
+   "nom": "Mike",
+   "fiche": "mike",
+   "genre": "visage",
+   "table": "faces",
+   "champ": "faces",
+   "type": "confirmation",
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\240211_Samsung Mike\\20230312_105605.jpg",
+   "i": null,
+   "jumeau": "\\\\NAS-Bremblens\\home\\Photos\\2023\\20230312_105605.jpg",
+   "j": null,
+   "preuve": "nom",
+   "sim_photo": null,
+   "geste": {
+    "route": "/api/people/confirm",
+    "corps": {
+     "name": "Mike",
+     "keys": [
+      "\\\\NAS-Bremblens\\home\\Photos\\2023\\20230312_105605.jpg"
+     ]
+    }
+   }
+  },
+  {
+   "nom": "Mike",
+   "fiche": "mike",
+   "genre": "visage",
+   "table": "faces",
+   "champ": "faces",
+   "type": "confirmation",
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\240211_Samsung Mike\\20230312_105607.jpg",
+   "i": null,
+   "jumeau": "\\\\NAS-Bremblens\\home\\Photos\\2023\\20230312_105607.jpg",
+   "j": null,
+   "preuve": "nom",
+   "sim_photo": null,
+   "geste": {
+    "route": "/api/people/confirm",
+    "corps": {
+     "name": "Mike",
+     "keys": [
+      "\\\\NAS-Bremblens\\home\\Photos\\2023\\20230312_105607.jpg"
+     ]
+    }
+   }
+  },
+  {
+   "nom": "Nabii",
+   "fiche": "nabii",
+   "genre": "visage",
+   "table": "faces",
+   "champ": "faces",
+   "type": "exclusion",
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\211108-210801 Samsung Mike\\20200821_154440.jpg",
+   "i": null,
+   "jumeau": "\\\\NAS-Bremblens\\home\\Photos\\2020\\20200821_154440.jpg",
+   "j": null,
+   "preuve": "nom",
+   "sim_photo": null,
+   "geste": {
+    "route": "/api/people/untag",
+    "corps": {
+     "name": "Nabii",
+     "keys": [
+      "\\\\NAS-Bremblens\\home\\Photos\\2020\\20200821_154440.jpg"
+     ]
+    }
+   }
+  },
+  {
+   "nom": "Nicolas Läser",
+   "fiche": "nicolas läser",
+   "genre": "visage",
+   "table": "faces",
+   "champ": "faces",
+   "type": "rattachement",
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\_Uploads\\ARZOPA\\UJAn0k-20260628_012444597.jpg",
+   "i": 0,
+   "jumeau": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\70 ans Papa\\20240330_Didier-et-Nicolas-Laser.jpg",
+   "j": 0,
+   "preuve": "vecteur",
+   "sim_photo": 1.0,
+   "geste": {
+    "route": "/api/assign",
+    "corps": {
+     "genre": "visage",
+     "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\70 ans Papa\\20240330_Didier-et-Nicolas-Laser.jpg",
+     "i": 0,
+     "cible": "Nicolas Läser"
+    }
+   }
+  },
+  {
+   "nom": "Patrick Laurent",
+   "fiche": "patrick laurent",
+   "genre": "visage",
+   "table": "faces",
+   "champ": "faces",
+   "type": "exclusion",
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\250914_Samsung_Mike\\20241216_204541.jpg",
+   "i": null,
+   "jumeau": "\\\\NAS-Bremblens\\home\\Photos\\2024\\20241216_204541.jpg",
+   "j": null,
+   "preuve": "nom",
+   "sim_photo": null,
+   "geste": {
+    "route": "/api/people/untag",
+    "corps": {
+     "name": "Patrick Laurent",
+     "keys": [
+      "\\\\NAS-Bremblens\\home\\Photos\\2024\\20241216_204541.jpg"
+     ]
+    }
+   }
+  },
+  {
+   "nom": "Patrick Laurent",
+   "fiche": "patrick laurent",
+   "genre": "visage",
+   "table": "faces",
+   "champ": "faces",
+   "type": "confirmation",
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\250914_Samsung_Mike\\20241216_194219.jpg",
+   "i": null,
+   "jumeau": "\\\\NAS-Bremblens\\home\\Photos\\2024\\20241216_194219.jpg",
+   "j": null,
+   "preuve": "nom",
+   "sim_photo": null,
+   "geste": {
+    "route": "/api/people/confirm",
+    "corps": {
+     "name": "Patrick Laurent",
+     "keys": [
+      "\\\\NAS-Bremblens\\home\\Photos\\2024\\20241216_194219.jpg"
+     ]
+    }
+   }
+  },
+  {
+   "nom": "Petit",
+   "fiche": "petit",
+   "genre": "visage",
+   "table": "faces",
+   "champ": "faces",
+   "type": "exclusion",
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\240211_Samsung Mike\\20230519_125303.jpg",
+   "i": null,
+   "jumeau": "\\\\NAS-Bremblens\\home\\Photos\\2023\\20230519_125303.jpg",
+   "j": null,
+   "preuve": "nom",
+   "sim_photo": null,
+   "geste": {
+    "route": "/api/people/untag",
+    "corps": {
+     "name": "Petit",
+     "keys": [
+      "\\\\NAS-Bremblens\\home\\Photos\\2023\\20230519_125303.jpg"
+     ]
+    }
+   }
+  },
+  {
+   "nom": "Quentin",
+   "fiche": "quentin",
+   "genre": "visage",
+   "table": "faces",
+   "champ": "faces",
+   "type": "exclusion",
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\260211_Samsung_MHU\\Camera\\20251221_155000.jpg",
+   "i": null,
+   "jumeau": "\\\\NAS-Bremblens\\home\\Photos\\2026\\260531_Samsung_MHU\\Camera\\20251221_155000.jpg",
+   "j": null,
+   "preuve": "nom",
+   "sim_photo": null,
+   "geste": {
+    "route": "/api/people/untag",
+    "corps": {
+     "name": "Quentin",
+     "keys": [
+      "\\\\NAS-Bremblens\\home\\Photos\\2026\\260531_Samsung_MHU\\Camera\\20251221_155000.jpg"
+     ]
+    }
+   }
+  },
+  {
+   "nom": "Quentin",
+   "fiche": "quentin",
+   "genre": "visage",
+   "table": "faces",
+   "champ": "faces",
+   "type": "exclusion",
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\250914_Samsung_Mike\\20241117_151426.jpg",
+   "i": null,
+   "jumeau": "\\\\NAS-Bremblens\\home\\Photos\\2024\\20241117_151426.jpg",
+   "j": null,
+   "preuve": "nom",
+   "sim_photo": null,
+   "geste": {
+    "route": "/api/people/untag",
+    "corps": {
+     "name": "Quentin",
+     "keys": [
+      "\\\\NAS-Bremblens\\home\\Photos\\2024\\20241117_151426.jpg"
+     ]
+    }
+   }
+  },
+  {
+   "nom": "Ryan Waller",
+   "fiche": "ryan waller",
+   "genre": "visage",
+   "table": "faces",
+   "champ": "faces",
+   "type": "exclusion",
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\250914_Samsung_Mike\\20240330_144143.jpg",
+   "i": null,
+   "jumeau": "\\\\NAS-Bremblens\\home\\Photos\\2024\\20240330_144143.jpg",
+   "j": null,
+   "preuve": "nom",
+   "sim_photo": null,
+   "geste": {
+    "route": "/api/people/untag",
+    "corps": {
+     "name": "Ryan Waller",
+     "keys": [
+      "\\\\NAS-Bremblens\\home\\Photos\\2024\\20240330_144143.jpg"
+     ]
+    }
+   }
+  },
+  {
+   "nom": "Ryan Waller",
+   "fiche": "ryan waller",
+   "genre": "visage",
+   "table": "faces",
+   "champ": "faces",
+   "type": "exclusion",
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\250914_Samsung_Mike\\20241227_122918.jpg",
+   "i": null,
+   "jumeau": "\\\\NAS-Bremblens\\home\\Photos\\2024\\20241227_122918.jpg",
+   "j": null,
+   "preuve": "nom",
+   "sim_photo": null,
+   "geste": {
+    "route": "/api/people/untag",
+    "corps": {
+     "name": "Ryan Waller",
+     "keys": [
+      "\\\\NAS-Bremblens\\home\\Photos\\2024\\20241227_122918.jpg"
+     ]
+    }
+   }
+  },
+  {
+   "nom": "Sarah",
+   "fiche": "sarah",
+   "genre": "visage",
+   "table": "faces",
+   "champ": "faces",
+   "type": "exclusion",
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\260211_Samsung_MHU\\Camera\\20251031_184037.jpg",
+   "i": null,
+   "jumeau": "\\\\NAS-Bremblens\\home\\Photos\\2025\\20251031_184037.jpg",
+   "j": null,
+   "preuve": "nom",
+   "sim_photo": null,
+   "geste": {
+    "route": "/api/people/untag",
+    "corps": {
+     "name": "Sarah",
+     "keys": [
+      "\\\\NAS-Bremblens\\home\\Photos\\2025\\20251031_184037.jpg"
+     ]
+    }
+   }
+  },
+  {
+   "nom": "Sarah",
+   "fiche": "sarah",
+   "genre": "visage",
+   "table": "faces",
+   "champ": "faces",
+   "type": "exclusion",
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\260211_Samsung_MHU\\Camera\\20251031_184047.jpg",
+   "i": null,
+   "jumeau": "\\\\NAS-Bremblens\\home\\Photos\\2025\\20251031_184047.jpg",
+   "j": null,
+   "preuve": "nom",
+   "sim_photo": null,
+   "geste": {
+    "route": "/api/people/untag",
+    "corps": {
+     "name": "Sarah",
+     "keys": [
+      "\\\\NAS-Bremblens\\home\\Photos\\2025\\20251031_184047.jpg"
+     ]
+    }
+   }
+  },
+  {
+   "nom": "Sarah",
+   "fiche": "sarah",
+   "genre": "visage",
+   "table": "faces",
+   "champ": "faces",
+   "type": "exclusion",
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\260211_Samsung_MHU\\Camera\\20251031_184042.jpg",
+   "i": null,
+   "jumeau": "\\\\NAS-Bremblens\\home\\Photos\\2026\\260531_Samsung_MHU\\Camera\\20251031_184042.jpg",
+   "j": null,
+   "preuve": "nom",
+   "sim_photo": null,
+   "geste": {
+    "route": "/api/people/untag",
+    "corps": {
+     "name": "Sarah",
+     "keys": [
+      "\\\\NAS-Bremblens\\home\\Photos\\2026\\260531_Samsung_MHU\\Camera\\20251031_184042.jpg"
+     ]
+    }
+   }
+  },
+  {
+   "nom": "Sarah",
+   "fiche": "sarah",
+   "genre": "visage",
+   "table": "faces",
+   "champ": "faces",
+   "type": "exclusion",
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\260211_Samsung_MHU\\Camera\\20251031_184044.jpg",
+   "i": null,
+   "jumeau": "\\\\NAS-Bremblens\\home\\Photos\\2025\\20251031_184044.jpg",
+   "j": null,
+   "preuve": "nom",
+   "sim_photo": null,
+   "geste": {
+    "route": "/api/people/untag",
+    "corps": {
+     "name": "Sarah",
+     "keys": [
+      "\\\\NAS-Bremblens\\home\\Photos\\2025\\20251031_184044.jpg"
+     ]
+    }
+   }
+  },
+  {
+   "nom": "Shai Trivelli",
+   "fiche": "shai trivelli",
+   "genre": "visage",
+   "table": "faces",
+   "champ": "faces",
+   "type": "rattachement",
+   "cle": "ARZOPA/0hLi0Z-20260604_134333368.JPG",
+   "i": 1,
+   "jumeau": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Friends 2\\20191027_Alba-et-Flo-et-Flora-et-al-3.jpg",
+   "j": 1,
+   "preuve": "vecteur",
+   "sim_photo": 1.0,
+   "geste": {
+    "route": "/api/assign",
+    "corps": {
+     "genre": "visage",
+     "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Friends 2\\20191027_Alba-et-Flo-et-Flora-et-al-3.jpg",
+     "i": 1,
+     "cible": "Shai Trivelli"
+    }
+   }
+  },
+  {
+   "nom": "Stéphanie Boucher",
+   "fiche": "stéphanie boucher",
+   "genre": "visage",
+   "table": "faces",
+   "champ": "faces",
+   "type": "exclusion",
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\250914_Samsung_Mike\\20241129_142047.jpg",
+   "i": null,
+   "jumeau": "\\\\NAS-Bremblens\\home\\Photos\\2024\\20241129_142047.jpg",
+   "j": null,
+   "preuve": "nom",
+   "sim_photo": null,
+   "geste": {
+    "route": "/api/people/untag",
+    "corps": {
+     "name": "Stéphanie Boucher",
+     "keys": [
+      "\\\\NAS-Bremblens\\home\\Photos\\2024\\20241129_142047.jpg"
+     ]
+    }
+   }
+  },
+  {
+   "nom": "Susy",
+   "fiche": "susy",
+   "genre": "visage",
+   "table": "faces",
+   "champ": "faces",
+   "type": "exclusion",
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\240211_Samsung Mike\\20220213_173841.jpg",
+   "i": null,
+   "jumeau": "\\\\NAS-Bremblens\\home\\Photos\\2022\\20220213_173841.jpg",
+   "j": null,
+   "preuve": "nom",
+   "sim_photo": null,
+   "geste": {
+    "route": "/api/people/untag",
+    "corps": {
+     "name": "Susy",
+     "keys": [
+      "\\\\NAS-Bremblens\\home\\Photos\\2022\\20220213_173841.jpg"
+     ]
+    }
+   }
+  },
+  {
+   "nom": "Val",
+   "fiche": "val",
+   "genre": "visage",
+   "table": "faces",
+   "champ": "faces",
+   "type": "exclusion",
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\240211_Samsung Mike\\20220619_165910.jpg",
+   "i": null,
+   "jumeau": "\\\\NAS-Bremblens\\home\\Photos\\2022\\20220619_165910.jpg",
+   "j": null,
+   "preuve": "nom",
+   "sim_photo": null,
+   "geste": {
+    "route": "/api/people/untag",
+    "corps": {
+     "name": "Val",
+     "keys": [
+      "\\\\NAS-Bremblens\\home\\Photos\\2022\\20220619_165910.jpg"
+     ]
+    }
+   }
+  },
+  {
+   "nom": "Val",
+   "fiche": "val",
+   "genre": "visage",
+   "table": "faces",
+   "champ": "faces",
+   "type": "exclusion",
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\250914_Samsung_Mike\\20240330_111123.jpg",
+   "i": null,
+   "jumeau": "\\\\NAS-Bremblens\\home\\Photos\\2024\\20240330_111123.jpg",
+   "j": null,
+   "preuve": "nom",
+   "sim_photo": null,
+   "geste": {
+    "route": "/api/people/untag",
+    "corps": {
+     "name": "Val",
+     "keys": [
+      "\\\\NAS-Bremblens\\home\\Photos\\2024\\20240330_111123.jpg"
+     ]
+    }
+   }
+  },
+  {
+   "nom": "Val",
+   "fiche": "val",
+   "genre": "visage",
+   "table": "faces",
+   "champ": "faces",
+   "type": "exclusion",
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\250914_Samsung_Mike\\20241214_195011.jpg",
+   "i": null,
+   "jumeau": "\\\\NAS-Bremblens\\home\\Photos\\2024\\20241214_195011.jpg",
+   "j": null,
+   "preuve": "nom",
+   "sim_photo": null,
+   "geste": {
+    "route": "/api/people/untag",
+    "corps": {
+     "name": "Val",
+     "keys": [
+      "\\\\NAS-Bremblens\\home\\Photos\\2024\\20241214_195011.jpg"
+     ]
+    }
+   }
+  },
+  {
+   "nom": "William",
+   "fiche": "william",
+   "genre": "visage",
+   "table": "faces",
+   "champ": "faces",
+   "type": "exclusion",
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\240211_Samsung Mike\\20220424_142925.jpg",
+   "i": null,
+   "jumeau": "\\\\NAS-Bremblens\\home\\Photos\\2022\\20220424_142925.jpg",
+   "j": null,
+   "preuve": "nom",
+   "sim_photo": null,
+   "geste": {
+    "route": "/api/people/untag",
+    "corps": {
+     "name": "William",
+     "keys": [
+      "\\\\NAS-Bremblens\\home\\Photos\\2022\\20220424_142925.jpg"
+     ]
+    }
+   }
+  },
+  {
+   "nom": "Zab",
+   "fiche": "zab",
+   "genre": "visage",
+   "table": "faces",
+   "champ": "faces",
+   "type": "exclusion",
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\180725 Samsung Mike\\20180715_180034.jpg",
+   "i": null,
+   "jumeau": "\\\\NAS-Bremblens\\home\\Photos\\2018\\20180715_180034.jpg",
+   "j": null,
+   "preuve": "nom",
+   "sim_photo": null,
+   "geste": {
+    "route": "/api/people/untag",
+    "corps": {
+     "name": "Zab",
+     "keys": [
+      "\\\\NAS-Bremblens\\home\\Photos\\2018\\20180715_180034.jpg"
+     ]
+    }
+   }
+  },
+  {
+   "nom": "Inti",
+   "fiche": "inti",
+   "genre": "animal",
+   "table": "animals",
+   "champ": "animals",
+   "type": "rattachement",
+   "cle": "1000146893_20260628_215036_3077.jpg",
+   "i": 0,
+   "jumeau": "\\\\NAS-Bremblens\\home\\Photos\\2026\\20260628_005303.jpg",
+   "j": 0,
+   "preuve": "vecteur",
+   "sim_photo": 1.0,
+   "geste": {
+    "route": "/api/assign",
+    "corps": {
+     "genre": "animal",
+     "membres": [
+      [
+       "\\\\NAS-Bremblens\\home\\Photos\\2026\\20260628_005303.jpg",
+       0
+      ]
+     ],
+     "cible": "Inti"
+    }
+   }
+  },
+  {
+   "nom": "Inti",
+   "fiche": "inti",
+   "genre": "animal",
+   "table": "animals",
+   "champ": "animals",
+   "type": "rattachement",
+   "cle": "1000146896_20260628_215029_6532.jpg",
+   "i": 0,
+   "jumeau": "\\\\NAS-Bremblens\\home\\Photos\\2026\\20260628_005311.jpg",
+   "j": 0,
+   "preuve": "vecteur",
+   "sim_photo": 1.0,
+   "geste": {
+    "route": "/api/assign",
+    "corps": {
+     "genre": "animal",
+     "membres": [
+      [
+       "\\\\NAS-Bremblens\\home\\Photos\\2026\\20260628_005311.jpg",
+       0
+      ]
+     ],
+     "cible": "Inti"
+    }
+   }
+  },
+  {
+   "nom": "Inti",
+   "fiche": "inti",
+   "genre": "animal",
+   "table": "animals",
+   "champ": "animals",
+   "type": "rattachement",
+   "cle": "ARZOPA/D2xvdn-20260613_003524579.jpg",
+   "i": 0,
+   "jumeau": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Luna & Inti\\20230422_deux-chats-se-reposent.jpg",
+   "j": 0,
+   "preuve": "vecteur",
+   "sim_photo": 1.0,
+   "geste": {
+    "route": "/api/assign",
+    "corps": {
+     "genre": "animal",
+     "membres": [
+      [
+       "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Luna & Inti\\20230422_deux-chats-se-reposent.jpg",
+       0
+      ]
+     ],
+     "cible": "Inti"
+    }
+   }
+  },
+  {
+   "nom": "Inti",
+   "fiche": "inti",
+   "genre": "animal",
+   "table": "animals",
+   "champ": "animals",
+   "type": "rattachement",
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\_Uploads\\ARZOPA\\D2xvdn-20260613_003524579.jpg",
+   "i": 0,
+   "jumeau": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Luna & Inti\\20230422_deux-chats-se-reposent.jpg",
+   "j": 0,
+   "preuve": "vecteur",
+   "sim_photo": 1.0,
+   "geste": {
+    "route": "/api/assign",
+    "corps": {
+     "genre": "animal",
+     "membres": [
+      [
+       "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Luna & Inti\\20230422_deux-chats-se-reposent.jpg",
+       0
+      ]
+     ],
+     "cible": "Inti"
+    }
+   }
+  },
+  {
+   "nom": "Luna",
+   "fiche": "luna",
+   "genre": "animal",
+   "table": "animals",
+   "champ": "animals",
+   "type": "rattachement",
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\_Uploads\\ARZOPA\\KP6XMN-20260613_003524791.jpg",
+   "i": 0,
+   "jumeau": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Luna & Inti\\20260101_Pheno.jpg",
+   "j": 0,
+   "preuve": "vecteur",
+   "sim_photo": 1.0,
+   "geste": {
+    "route": "/api/assign",
+    "corps": {
+     "genre": "animal",
+     "membres": [
+      [
+       "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Luna & Inti\\20260101_Pheno.jpg",
+       0
+      ]
+     ],
+     "cible": "Luna"
+    }
+   }
+  }
+ ],
+ "ambigues": [
+  {
+   "nom": "Akim Meylan",
+   "fiche": "akim meylan",
+   "genre": "visage",
+   "table": "faces",
+   "champ": "faces",
+   "type": "rattachement",
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Mathilde et Ellie\\Mathilde mariage\\EVJF Mathilde\\IMG-20180616-WA0000.jpg",
+   "i": 0,
+   "jumeau": "\\\\NAS-Bremblens\\home\\Photos\\2018\\EVJF Mathilde\\IMG-20180616-WA0000.jpg",
+   "raison": "vecteur de la décision absent"
+  },
+  {
+   "nom": "Akim Meylan",
+   "fiche": "akim meylan",
+   "genre": "visage",
+   "table": "faces",
+   "champ": "faces",
+   "type": "rattachement",
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Mathilde et Ellie\\Mathilde mariage\\EVJF Mathilde\\IMG-20180617-WA0008.jpg",
+   "i": 1,
+   "jumeau": "\\\\NAS-Bremblens\\home\\Photos\\2018\\EVJF Mathilde\\IMG-20180617-WA0008.jpg",
+   "raison": "vecteur de la décision absent"
+  },
+  {
+   "nom": "Akim Meylan",
+   "fiche": "akim meylan",
+   "genre": "visage",
+   "table": "faces",
+   "champ": "faces",
+   "type": "rattachement",
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Mathilde et Ellie\\Mathilde mariage\\EVJF Mathilde\\IMG-20180617-WA0027.jpg",
+   "i": 2,
+   "jumeau": "\\\\NAS-Bremblens\\home\\Photos\\2018\\EVJF Mathilde\\IMG-20180617-WA0027.jpg",
+   "raison": "vecteur de la décision absent"
+  },
+  {
+   "nom": "Akim Meylan",
+   "fiche": "akim meylan",
+   "genre": "visage",
+   "table": "faces",
+   "champ": "faces",
+   "type": "rattachement",
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Mathilde et Ellie\\Mathilde mariage\\EVJF Mathilde\\IMG-20180617-WA0047.jpg",
+   "i": 4,
+   "jumeau": "\\\\NAS-Bremblens\\home\\Photos\\2018\\EVJF Mathilde\\IMG-20180617-WA0047.jpg",
+   "raison": "vecteur de la décision absent"
+  },
+  {
+   "nom": "Antoinette Muth",
+   "fiche": "antoinette muth",
+   "genre": "visage",
+   "table": "faces",
+   "champ": "faces",
+   "type": "rattachement",
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\260211_Samsung_MHU\\Camera\\20251227_171418.jpg",
+   "i": 1,
+   "jumeau": "\\\\NAS-Bremblens\\home\\Photos\\2025\\20251227_171418.jpg",
+   "raison": "vecteur de la décision absent"
+  },
+  {
+   "nom": "Antoinette Muth",
+   "fiche": "antoinette muth",
+   "genre": "visage",
+   "table": "faces",
+   "champ": "faces",
+   "type": "rattachement",
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\260211_Samsung_MHU\\Camera\\20251227_171421.jpg",
+   "i": 2,
+   "jumeau": "\\\\NAS-Bremblens\\home\\Photos\\2025\\20251227_171421.jpg",
+   "raison": "vecteur de la décision absent"
+  }
+ ],
+ "exemples": [
+  {
+   "nom": "Adi",
+   "fiche": "adi",
+   "genre": "visage",
+   "table": "faces",
+   "champ": "faces",
+   "type": "exclusion",
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\250914_Samsung_Mike\\20241129_142046.jpg",
+   "i": null,
+   "jumeau": "\\\\NAS-Bremblens\\home\\Photos\\2024\\20241129_142046.jpg",
+   "j": null,
+   "preuve": "nom",
+   "sim_photo": null,
+   "geste": {
+    "route": "/api/people/untag",
+    "corps": {
+     "name": "Adi",
+     "keys": [
+      "\\\\NAS-Bremblens\\home\\Photos\\2024\\20241129_142046.jpg"
+     ]
+    }
+   }
+  },
+  {
+   "nom": "Adi",
+   "fiche": "adi",
+   "genre": "visage",
+   "table": "faces",
+   "champ": "faces",
+   "type": "exclusion",
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\250914_Samsung_Mike\\20241129_142044.jpg",
+   "i": null,
+   "jumeau": "\\\\NAS-Bremblens\\home\\Photos\\2024\\20241129_142044.jpg",
+   "j": null,
+   "preuve": "nom",
+   "sim_photo": null,
+   "geste": {
+    "route": "/api/people/untag",
+    "corps": {
+     "name": "Adi",
+     "keys": [
+      "\\\\NAS-Bremblens\\home\\Photos\\2024\\20241129_142044.jpg"
+     ]
+    }
+   }
+  },
+  {
+   "nom": "Alexandre",
+   "fiche": "alexandre",
+   "genre": "visage",
+   "table": "faces",
+   "champ": "faces",
+   "type": "exclusion",
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\180725 Samsung Mike\\20180506_001713.jpg",
+   "i": null,
+   "jumeau": "\\\\NAS-Bremblens\\home\\Photos\\2018\\20180506_001713.jpg",
+   "j": null,
+   "preuve": "nom",
+   "sim_photo": null,
+   "geste": {
+    "route": "/api/people/untag",
+    "corps": {
+     "name": "Alexandre",
+     "keys": [
+      "\\\\NAS-Bremblens\\home\\Photos\\2018\\20180506_001713.jpg"
+     ]
+    }
+   }
+  },
+  {
+   "nom": "Alison Waller",
+   "fiche": "alison waller",
+   "genre": "visage",
+   "table": "faces",
+   "champ": "faces",
+   "type": "exclusion",
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\250914_Samsung_Mike\\20240330_144119.jpg",
+   "i": null,
+   "jumeau": "\\\\NAS-Bremblens\\home\\Photos\\2024\\20240330_144119.jpg",
+   "j": null,
+   "preuve": "nom",
+   "sim_photo": null,
+   "geste": {
+    "route": "/api/people/untag",
+    "corps": {
+     "name": "Alison Waller",
+     "keys": [
+      "\\\\NAS-Bremblens\\home\\Photos\\2024\\20240330_144119.jpg"
+     ]
+    }
+   }
+  },
+  {
+   "nom": "Andreas",
+   "fiche": "andreas",
+   "genre": "visage",
+   "table": "faces",
+   "champ": "faces",
+   "type": "exclusion",
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\240211_Samsung Mike\\20220520_103959.jpg",
+   "i": null,
+   "jumeau": "\\\\NAS-Bremblens\\home\\Photos\\2022\\20220520_103959.jpg",
+   "j": null,
+   "preuve": "nom",
+   "sim_photo": null,
+   "geste": {
+    "route": "/api/people/untag",
+    "corps": {
+     "name": "Andreas",
+     "keys": [
+      "\\\\NAS-Bremblens\\home\\Photos\\2022\\20220520_103959.jpg"
+     ]
+    }
+   }
+  },
+  {
+   "nom": "Andreas",
+   "fiche": "andreas",
+   "genre": "visage",
+   "table": "faces",
+   "champ": "faces",
+   "type": "exclusion",
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\240211_Samsung Mike\\20230519_125257.jpg",
+   "i": null,
+   "jumeau": "\\\\NAS-Bremblens\\home\\Photos\\2023\\20230519_125257.jpg",
+   "j": null,
+   "preuve": "nom",
+   "sim_photo": null,
+   "geste": {
+    "route": "/api/people/untag",
+    "corps": {
+     "name": "Andreas",
+     "keys": [
+      "\\\\NAS-Bremblens\\home\\Photos\\2023\\20230519_125257.jpg"
+     ]
+    }
+   }
+  }
+ ]
+}
