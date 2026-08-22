@@ -178,16 +178,26 @@ def resolve_datestamp(key, entry):
 
 def names_from_entry(entry):
     """Tags de nom humain (« personne:… » / « animal:… ») de l'entrée tags,
-    ordre stable, sans doublon."""
+    ordre stable, sans doublon.
+
+    Le préfixe est lu par la règle unique (`tagging_meta.parse_tag_nomme`) :
+    un « Personne:Flo » importé d'un fichier tagué ailleurs entre ici comme
+    les autres. Le dédoublonnage se fait sur le nom NORMALISÉ — deux écritures
+    du même nom sur la même photo ne valent qu'un seul nom, et la PREMIÈRE
+    garde sa casse (l'index n'est pas l'autorité de l'orthographe, la fiche
+    l'est)."""
+    from tagging_meta import parse_tag_nomme
     out, seen = [], set()
     if isinstance(entry, dict):
         for fld in ('kw_fr', 'kw_en'):
             for t in entry.get(fld) or []:
-                if isinstance(t, str) and (t.startswith('personne:')
-                                           or t.startswith('animal:')):
-                    if t not in seen:
-                        seen.add(t)
-                        out.append(t)
+                p = parse_tag_nomme(t) if isinstance(t, str) else None
+                if not p:
+                    continue
+                cle = (p[0], p[1].lower())
+                if cle not in seen:
+                    seen.add(cle)
+                    out.append(t)
     return out
 
 

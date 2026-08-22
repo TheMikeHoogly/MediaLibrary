@@ -129,21 +129,48 @@ def format_date_fr(epoch):
         return None
 
 
+GENRES_NOMMES = ('personne', 'animal')
+
+
+def parse_tag_nomme(t):
+    """(genre, nom) d'un tag nomme, ou None si ce n'en est pas un.
+
+    LA REGLE UNIQUE de lecture des tags « personne:Nom » / « animal:Nom ».
+    Elle existe pour qu'il n'y en ait qu'UNE : l'audit du 11/08 (I7) avait
+    compte trois lectures normalisees et trois autres en casse sensible, si
+    bien qu'un tag ecrit « Personne:Flo » (importe d'un fichier tague ailleurs)
+    etait lu par les unes et invisible aux autres — donc jamais rattache,
+    jamais corrige, jamais retire.
+
+    Le PREFIXE est lu sans egard a la casse ; le NOM est rendu TEL QUEL, car
+    c'est la fiche qui fait foi sur l'orthographe et le comparer est le role de
+    l'appelant (`nom.lower()`), jamais celui de cette fonction : abaisser le
+    nom ici perdrait « Res Jordi » au profit de « res jordi » dans les fichiers
+    XMP, et la regle 2 du projet l'interdit.
+    """
+    s = str(t)
+    low = s.lower()
+    for genre in GENRES_NOMMES:
+        if low.startswith(genre + ':'):
+            nom = s.split(':', 1)[1].strip()
+            return (genre, nom) if nom else None
+    return None
+
+
+def est_tag_nomme(t):
+    """Le mot-cle est-il un tag nomme ? (insensible a la casse du prefixe)"""
+    return parse_tag_nomme(t) is not None
+
+
 def noms_depuis_kw(kw):
     """Extrait des mots-cles existants les noms humains deja attribues.
     Renvoie (personnes, animaux), listes triees et dedoublonnees."""
     persons, animals = set(), set()
     for t in (kw or []):
-        s = str(t)
-        low = s.lower()
-        if low.startswith('personne:'):
-            n = s.split(':', 1)[1].strip()
-            if n:
-                persons.add(n)
-        elif low.startswith('animal:'):
-            n = s.split(':', 1)[1].strip()
-            if n:
-                animals.add(n)
+        p = parse_tag_nomme(t)
+        if not p:
+            continue
+        (persons if p[0] == 'personne' else animals).add(p[1])
     return sorted(persons), sorted(animals)
 
 

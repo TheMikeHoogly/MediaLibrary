@@ -1143,16 +1143,30 @@ def write_metadata(path, keywords, desc):
         return False
 
 
+# LA règle de lecture des tags nommés, une seule fois pour tout le serveur
+# (module pur : `re` + `time`, aucun import lourd, invariant 3). Avant elle,
+# six lectures coexistaient — trois normalisées, trois en casse sensible — et
+# un « Personne:Flo » importé d'un fichier tagué ailleurs restait invisible à
+# la moitié d'entre elles : jamais compté, jamais rattaché, jamais retiré
+# (audit interne I7).
+from tagging_meta import est_tag_nomme, parse_tag_nomme      # noqa: E402
+
+
 def _norm_import_kw(k):
     """Normalise un mot-clé importé d'un fichier. Les mots-clés IA sont en
     minuscules ; on aligne dessus SAUF les tags nommés « personne:… » et
     « animal:… » dont on PRÉSERVE la casse (sinon « personne:Nom » deviendrait
-    « personne:nom » et ne correspondrait plus au nom dans people.json/pets.json)."""
+    « personne:nom » et ne correspondrait plus au nom dans people.json/pets.json).
+
+    Le PRÉFIXE, lui, est canonisé : « Personne:Flo » entre comme
+    « personne:Flo ». Le nom est ce qui doit survivre, pas la façon dont un
+    autre logiciel a écrit l'étiquette — et un préfixe capitalisé rendait le
+    tag invisible à toute lecture qui le cherche en minuscules."""
     s = str(k).strip()
-    low = s.lower()
-    if low.startswith('personne:') or low.startswith('animal:'):
-        return s
-    return low
+    pn = parse_tag_nomme(s)
+    if pn:
+        return f"{pn[0]}:{pn[1]}"
+    return s.lower()
 
 
 def read_existing_metadata(paths, progress=False):
@@ -3724,8 +3738,7 @@ def purge_cles_fantomes(dry_run=False):
     named = set()
     for k, se in list(STORE.data.items()):
         if isinstance(se, dict) and any(
-                str(kw).startswith(('personne:', 'animal:'))
-                for kw in (se.get('kw_fr') or [])):
+                est_tag_nomme(kw) for kw in (se.get('kw_fr') or [])):
             named.add(k)
 
     def _est_fichier(k):
@@ -4595,12 +4608,15 @@ def noms_pour_saisie(genre=None, prefixe=""):
     from collections import Counter
     p = _sans_accents(prefixe)
     out = []
+    # Compté sur le nom NORMALISÉ : un « animal:luna » d'index appartient à la
+    # fiche « Luna » — le compter à part afficherait « 0 photo » sous un nom
+    # qui en porte, et c'est ce zéro qui rendait le défaut invisible (I7).
     compte = Counter()
     for k, e in list(STORE.data.items()):
         for kw in ((e.get('kw_fr') or []) + (e.get('kw_en') or [])):
-            s = str(kw)
-            if s.startswith('personne:') or s.startswith('animal:'):
-                compte[s] += 1
+            pn = parse_tag_nomme(kw)
+            if pn:
+                compte[(pn[0], pn[1].lower())] += 1
     for store, genre_i in ((PEOPLE_STORE, 'personne'), (PETS_STORE, 'animal')):
         if genre and genre_i != genre:
             continue
@@ -4612,7 +4628,7 @@ def noms_pour_saisie(genre=None, prefixe=""):
                 continue
             out.append({"nom": nom, "genre": genre_i,
                         "espece": e.get('species') or '',
-                        "n": compte.get(f"{genre_i}:{nom}", 0)})
+                        "n": compte.get((genre_i, nom.lower()), 0)})
     out.sort(key=lambda x: -x["n"])
     return out
 
@@ -11562,7 +11578,11 @@ def build_suggestions():
             proprio = np.asarray(proprio)
             C = np.stack([p["c"] for p in persons])
             names = [p["name"] for p in persons]
-            pidx = {nm: n for n, nm in enumerate(names)}
+            # Indexé en MINUSCULES : l'index peut porter « personne:flo » là où
+            # la fiche dit « Flo ». Cherché en casse sensible, ce tag n'était
+            # jamais visité par le contrôle REMOVE — donc jamais auto-guéri,
+            # même quand la décision humaine disait de le retirer (I7).
+            pidx = {str(nm).lower(): n for n, nm in enumerate(names)}
             # ADD : visage non attribué proche d'une signature
             add_seen = set()
             auto_count = 0
@@ -11584,11 +11604,15 @@ def build_suggestions():
                 if not isinstance(e, dict) or e.get('failed'):
                     continue
                 se = STORE.data.get(k)
+                # Noms NORMALISÉS : « personne:flo » dit que la photo porte
+                # déjà Flo. Comparé en casse sensible, il ne le disait pas — et
+                # le curateur proposait (ou ajoutait) un second tag du même nom.
                 ptags = set()
                 if isinstance(se, dict):
                     for kw in (se.get('kw_fr') or []):
-                        if kw.startswith('personne:'):
-                            ptags.add(kw[9:])
+                        pn = parse_tag_nomme(kw)
+                        if pn and pn[0] == 'personne':
+                            ptags.add(pn[1].lower())
                 for i, f in enumerate(e.get('faces') or []):
                     # 12b : une decoupe marquee « pas un visage » (chat, objet)
                     # ne doit jamais etre proposee au rattachement a une personne.
@@ -11617,7 +11641,8 @@ def build_suggestions():
                     if len(sims) >= 2:
                         second = float(np.partition(sims, -2)[-2])
                     nm = names[j]
-                    if nm in ptags or k in persons[j]["exclude"] or best < CUR_ADD_SIM:
+                    if (nm.lower() in ptags or k in persons[j]["exclude"]
+                            or best < CUR_ADD_SIM):
                         continue
                     kk = (nm, k)
                     if kk in add_seen:
@@ -11668,7 +11693,9 @@ def build_suggestions():
             for k, se in list(STORE.data.items()):
                 if not isinstance(se, dict):
                     continue
-                ptags = [kw[9:] for kw in (se.get('kw_fr') or []) if kw.startswith('personne:')]
+                ptags = [pn[1] for pn in
+                         (parse_tag_nomme(kw) for kw in (se.get('kw_fr') or []))
+                         if pn and pn[0] == 'personne']
                 if not ptags:
                     continue
                 fe = FACE_STORE.data.get(k)
@@ -11682,10 +11709,15 @@ def build_suggestions():
                             pass
                 if not fvecs:
                     continue
-                for nm in ptags:
-                    if nm not in pidx:
+                for nm_tag in ptags:
+                    j = pidx.get(nm_tag.lower())
+                    if j is None:
                         continue
-                    p = persons[pidx[nm]]
+                    # La FICHE fait foi sur l'orthographe : ce qui part dans une
+                    # suggestion ou un retrait porte SON nom, pas l'écriture
+                    # trouvée dans l'index.
+                    nm = names[j]
+                    p = persons[j]
                     if k in p["confirmed"]:
                         continue
                     # Correction humaine FAISANT AUTORITÉ. Une photo EXCLUE d'une

@@ -6,7 +6,19 @@
 > `eval/DECISIONS.md` si elle tranche, dans `ROADMAP.md` si elle priorise.
 > Protocole : `CLAUDE.md`, « Traite autonome ».
 
-*Aucune question en attente.*
+- **22/08 — `personne:Florine` : 153 photos, aucune fiche. Qui est-ce ?**
+  Le seul nom du fonds dans ce cas (mesuré sur 37 707 tags nommés). **149 des
+  153 portent aussi `personne:Flo`** — d'où la question : Florine est-elle Flo,
+  ou quelqu'un d'autre ? Aujourd'hui le nom vit à moitié : la galerie le
+  propose comme puce de filtre (les puces viennent des `kw` des photos), mais
+  `/api/names` — donc `/people`, l'autocomplétion et tout curateur — ne le
+  connaît pas ; aucune signature, aucun avatar, aucun rattachement possible.
+  **Recommandation : ne rien faire tant que tu n'as pas regardé.** Ouvre
+  `/files?q=personne:Florine` : si c'est Flo, la fusion existe déjà
+  (`rename_person`, réversible) ; si c'est une autre personne, il lui faut une
+  fiche et elle rejoint le curateur. Les deux gestes sont des écritures sur le
+  fonds — donc les tiens, pas ceux de la sandbox. **En attendant** : rien n'est
+  touché, et l'écart entre les deux autorités est écrit dans `ROADMAP.md`.
 
 ## Réglées
 

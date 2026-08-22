@@ -30,9 +30,20 @@
 - **I6.** `etat['gpu']`/`etat['ordonnanceur']` ne vivent que dans `/api/search/status` ;
   /reglages ne les affiche pas (`/api/maint/status` ne les expose pas). → Les ajouter à
   `/api/maint/status` + une carte /reglages « GPU : baux/refus/évictions ».
-- **I7.** Casse des tags nommés non homogène : lecture normalisée (`lower`) à 3 endroits,
-  mais curateur ADD/REMOVE + 2 autres comparent en casse sensible → un `personne:nom`
-  importé n'est jamais auto-guéri. → `parse_tag_nomme()` unique, insensible à la casse.
+- **I7. RÉGLÉ 22/08, et MESURÉ D'ABORD.** `tagging_meta.parse_tag_nomme()` est la règle
+  unique : préfixe lu sans égard à la casse, nom rendu tel quel (règle 2). Elle remplace
+  les six lectures divergentes — curateur ADD (`ptags`), curateur REMOVE (`pidx` en
+  minuscules, la FICHE faisant foi sur l'orthographe de ce qui part en suggestion ou en
+  retrait), compteur de `noms_pour_saisie`, garde-fou des clés fantômes,
+  `renommage_facts.names_from_entry`, `_norm_import_kw` (qui canonise désormais le
+  préfixe). **Le fonds a été interrogé AVANT** (`mesure_noms_casse.py`, 18 tests, banc
+  sur copie) : sur **37 707 tags nommés — 0 préfixe non canonique, 0 doublon de casse,
+  3 tags en casse divergente** (`animal:luna` / fiche `Luna`). C'était donc un défaut
+  LATENT, à ne pas annoncer comme une réparation. Observé après redémarrage : `/api/names`
+  passe Luna de 207 à 210, les personnes inchangées.
+  **Ce que la mesure a trouvé en chemin, et qui n'est PAS de la casse** : `personne:Florine`
+  sur **153 photos sans aucune fiche** (149 partagées avec `personne:Flo`) — la galerie la
+  propose en puce de filtre, `/api/names` l'ignore. Jugement humain, voir `QUESTIONS_MIKE.md`.
 - **I8.** Routes orphelines : `/api/pets/name` + `name_pet_cluster` (remplacés par
   `/api/assign` genre animal) ; `/api/hardware` sans client. → Supprimer/statuer.
 - **I9.** CLAUDE.md dit « quatre pipelines » (sans SigLIP), PROMPT idem — le code en câble 5.

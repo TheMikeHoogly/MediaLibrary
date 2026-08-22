@@ -83,261 +83,76 @@ version, « 0 photo taguée » pour les **douze** fiches. Il lisait `kw` ; la pr
 écrit `kw_fr`. Un compte identique sur toutes les lignes d'un tableau accuse la
 COLONNE, pas les lignes.
 
-## État (22/08/2026, session 35)
+## État (22/08/2026, session 38)
 
-**Le chantier des rattachements est CLOS, et son dernier chiffre porte sur
-l'INSTRUMENT, pas sur le fonds.**
+**I7 est corrigé, et la mesure dit que c'était un défaut LATENT — sauf sur
+trois tags.** L'audit du 11/08 annonçait « un `personne:nom` importé n'est
+jamais auto-guéri » ; personne n'avait demandé au FONDS s'il en portait la
+trace. `mesure_noms_casse.py` (18 tests) le demande : sur **37 707 tags nommés,
+0 préfixe non canonique, 0 doublon de casse, 3 tags en casse divergente** —
+`animal:luna` là où la fiche dit `Luna`. Le correctif reste juste, mais il
+s'annonce pour ce qu'il est : de la robustesse, pas une réparation.
+**Une règle unique** — `tagging_meta.parse_tag_nomme` — remplace six lectures
+(trois normalisées, trois en casse sensible) dans `server.py`, `tagging_meta`
+et `renommage_facts` : le préfixe se lit sans égard à la casse, le NOM ne
+s'abaisse jamais (règle 2), et la fiche fait foi sur l'orthographe partout où
+un nom part dans une suggestion, un retrait ou un fichier XMP.
+**Observé en réel** (`code_a_jour` vrai) : `/api/names` passe Luna de **207 à
+210** — exactement les trois tags que la mesure avait nommés — et les 351 noms
+de personnes ne bougent pas d'un compte.
 
-**Le geste.** Les 28 cas de `/residu` jugés par Mike : **2 retirés, 45
-confirmés**, 0 ajout, 0 indécidable. Appliqué et OBSERVÉ — couples **1 194 →
-1 192**, exactement les deux, quarantaine `_corbeille_retraits/`, et un second
-aperçu qui les compte « déjà absents » (le geste est idempotent). Les deux
-étaient `Res Jordi` sur `Bei Michael Jordi.jpg` et `…2.jpg` : une confusion
-avec son **frère Michael** — exactement ce que la règle de recalage refuse
-d'arbitrer, et ce qu'aucun score ni aucune géométrie ne tranche.
+**Le chiffre neuf est ailleurs, et il ne se répare pas tout seul : `personne:
+Florine` vit sur 153 photos SANS AUCUNE FICHE.** C'est le seul nom du fonds
+dans ce cas. Conséquence visible : la galerie propose « Florine » comme puce de
+filtre (les puces viennent des `kw` des photos) pendant que `/api/names` — donc
+`/people`, l'autocomplétion et tout curateur — l'ignore. **Deux autorités
+divergent sur « qui est une personne ».** Et **149 de ces 153 photos portent
+aussi `personne:Flo`** : soit Florine EST Flo et c'est un doublon d'identité à
+fusionner, soit c'est quelqu'un d'autre et il lui manque une fiche. Aucune
+colonne ne tranche ça — c'est un jugement, il est dans `QUESTIONS_MIKE.md`.
 
-**Le résultat qui compte.** Sur les 13 couples dont le visage désigné scorait
-**0,06–0,295**, Mike en a confirmé **12**. La colonne « sous le seuil de faux
-positif » ne dit donc pas « ce n'est pas elle » mais **« je ne la reconnais
-pas »** : elle mesure la cécité de l'empreinte, pas une faute du fonds. Ces 13
-reviendront dans chaque `--residu` tant que leur score sera bas ; ils sont
-JUGÉS, et il ne faut pas les relire comme 13 défauts.
+## Ce qu'il faut garder des sessions 28 → 35 (le récit vit dans git)
 
-**Ce qui reste, et c'est peu.** 9 « décalés » (0,8 %) qui sont des apparitions
-multiples sur pages d'album et montages, 13 « faux positifs » jugés justes,
-155 photos à un seul visage. Le fonds des rattachements est sain.
+**Rattachements (31 → 35).** `rekey_everywhere` ne transportait pas les
+décisions humaines : `PEOPLE`/`PETS` sont keyés par NOM, leurs chemins vivent
+DANS la fiche — chaque rangement décrochait des jugements en silence. Corrigé
+(préventif `recle_decisions.py`) puis réparé : **787 décisions re-clées sur 685
+clés**, et l'audit de quarantaine — **788 sorties, 734 appariées, 54 fusions, 0
+sans contrepartie** — est ce qui distingue « déplacé » de « perdu » ; un total
+ne l'aurait jamais dit. Vérité terrain : **3 310** décisions.
+Puis la CIBLE : `reembed_one_batch` remplace `e['faces']`, l'ordre change, le
+couple `[photo, index]` survit et désigne quelqu'un d'autre **de la même
+photo** — **42 décalés (3,5 %)**, 41 sur des photos re-détectées. Recalage
+appliqué : **33 sur 17 fiches**, décalés **→ 9 (0,8 %)**, 1 194 couples avant
+comme après. Résidu jugé par Mike : **2 retirés, 45 confirmés** (1 194 → 1 192).
 
-## État (22/08/2026, session 34)
+**Trois leçons de méthode, payées cher.** (1) *Un fichier n'est pas une scène* :
+une page d'album photographiée porte cinq tirages, un test géométrique la
+déclarait impossible et rendait 0,0 sur 15 cas sur 15. (2) *« Décalé » nomme un
+ÉCART DE SCORE, pas une identité fausse* — sur 13 couples scorant 0,06–0,295,
+Mike en a confirmé **12** : cette colonne mesure la cécité de l'empreinte.
+(3) *Un drapeau que tout le monde porte ne croise rien* (`reemb` rendait 100 %).
 
-**Le résidu est jugé, il n'y avait rien à retirer — et c'est le banc qui avait
-tort, pas l'œil.** Mike a jugé les **15 cas** : **34 couples confirmés, 0 à
-retirer, 0 indécidable**. Un test géométrique a d'abord déclaré ce résultat
-impossible — deux visages aux boîtes disjointes ne peuvent pas être la même
-personne — en rendant **0,0 sur 15 cas sur 15**. La première photo ouverte est
-une **page d'album photographiée** : 3735×1378, cinq tirages et un mot
-manuscrit dans un seul fichier, où Céline paraît deux fois légitimement.
-`Flyer_Jenny.jpg` porte quatre portraits de Jenny. **Un fichier n'est pas une
-scène**, et un score parfait reste une alarme — y compris quand c'est le sien.
+**Seuils et jugements (33).** Tranche 0,35–0,40 : 30 jugements, **92,6 %**
+justes, **Wilson 76,6 %–97,9 %** → file « À vérifier », **jamais** l'auto-ajout ;
+`CUR_ADD_SIM` ne bouge pas. La planche de référence servait l'état d'AVANT le
+recalage (3 planches sur 30 périmées) — elle se relit désormais à l'affichage.
+Et le résidu est CONCENTRÉ : 43 cas sur **10 fiches**, Didier en portant 4 —
+**compter par FICHE, pas seulement sur le fonds**.
 
-**Les refus de la règle étaient donc justes**, sur toute la population qu'elle
-a refusée. Et dans l'autre sens (`--verifier-recalages`) : sur les **33
-recalages appliqués**, **29 (87,9 %) étaient de vraies réparations** — l'ancien
-index scorait sous 0,30, jusqu'à **−0,13** — contre **4 rebrassages** entre deux
-apparitions de Flo. La règle a tranché presque exactement au bon endroit. Ce
-qui était trop fort, c'est le MOT : « décalé » nomme un ÉCART de score, pas une
-identité fausse.
+**Purge et propagation (30).** La purge du 17/08 n'avait traité qu'un magasin
+sur deux (la cascade suit l'index, aveugle à une clé déjà oubliée) : `visages`
+**44 450 → 42 196**, hors index **2 374 → 120**, quarantaine réversible.
+Chantier 16(a) clos par la mesure : la propagation a convergé (14 rattachements
+auto, 33 photos).
 
-**Le vrai défaut restant était dans la colonne d'à côté, jamais listée : les
-13 couples SOUS LE SEUIL DE FAUX POSITIF.** Score **0,06 à 0,295** — Flo à
-0,06, Linda posée sur `Sanchez Laura.jpg`, Markus sur `117-1798_HUM Mutz.JPG`
-(un nom d'ANIMAL). Ceux-là désignent quelqu'un qui ne ressemble à personne, et
-la plupart sont sur des photos à **un seul visage** : aucun recalage ne peut
-les réparer. Ils demandent un **retrait**.
-
-## État (22/08/2026, session 33)
-
-**La tranche 0,35–0,40 est TRANCHÉE, et l'œil de Mike avait raison deux fois,
-pour deux raisons différentes.**
-
-**Le chiffre.** Ses 30 jugements : **25 justes, 2 faux, 3 indécidables** →
-**92,6 %** sur 27 tranchées, **Wilson 95 % : 76,6 % – 97,9 %**. Ce que
-l'intervalle autorise, et rien de plus : la tranche va dans la file
-**« À vérifier »**, **jamais dans l'auto-ajout**. `CUR_ADD_SIM` ne bouge pas —
-une borne basse à 76,6 % interdit l'automatique, et 30 tirages ne sont pas un
-pourcentage.
-
-**Le défaut, première raison.** « Je n'ai pas constaté d'amélioration :
-certaines photos proposées pour une personne contiennent une AUTRE personne. »
-Le tirage avait été écrit à **21:26**, le recalage appliqué à **22:19**, et la
-page servait les références du FICHIER : l'état d'AVANT la réparation. **3
-planches sur 30 étaient périmées** — Didier, Mathieu, Markus Grossert, dont les
-deux qu'il avait nommés la veille. Sur celles-là aucune amélioration n'était
-possible : c'était l'image d'avant. **Corrigé et OBSERVÉ** :
-`_tranche_refs_vivantes` relit la fiche à chaque affichage, le banc ne tire plus
-de références (elles appartiennent à la PAGE) — après redémarrage
-(`code_a_jour` vrai), **4 références corrigées sur les 3 planches**, les mêmes 4
-que la quarantaine du recalage, deux chemins ; les 30 verdicts ont survécu. La
-légende ne ment plus non plus : « visages déjà **rattachés à** X ».
-
-**Le défaut, seconde raison — et c'est le prochain pas.** Le résidu du recalage
-n'est pas dilué, il est **CONCENTRÉ** : les **9 décalés** et les **34 refus
-« ambigu »** tiennent sur **10 fiches**, et **Didier en porte 4 des 9**. Sa
-fiche cite deux visages de la MÊME photo (i=1 à 0,908 et i=8 à 0,745) : la
-règle refuse exprès de trancher, et ce qu'il faut n'est pas un recalage mais un
-**retrait** — un geste humain. « 0,8 % sur 1 194 couples » se lit comme un fonds
-sain ; sur la fiche de Didier, c'est un intrus à chaque ouverture. Compter par
-FICHE, pas seulement sur le fonds.
-
-## État (22/08/2026, session 32)
-
-**On ne sait toujours pas ce que vaut la tranche 0,35–0,40 — mais l'instrument
-pour le savoir est là, et l'échantillon est tiré.** `mesure_tranche_seuil.py`
-n'a pas de règle à lui : il importe celle de `mesure_propagation_noms` (seuils
-lus dans `server.py`, stores de prod, facettes, `noter_visages` désormais
-partagée) et n'y ajoute que des BORNES. Tirage **uniforme** sur la tranche,
-graine fixe — prendre les 30 meilleurs mesurerait le haut et conclurait sur
-tout, l'erreur exacte du 20/08. Mesuré : **1 190 candidates** dans la tranche
-après les garde-fous humains (685 « déjà dit », 64 exclusions), **22 clés
-fantômes écartées**, **1 168 vivantes**, 30 tirées.
-
-La page **`/tranche`** les donne à juger et **n'attribue rien** — ni tag, ni
-fiche, ni XMP : un verdict est une MESURE, et la confondre avec un geste
-rendrait le chiffre inutile, puisqu'on mesurerait un seuil avec des
-rattachements qu'on vient soi-même de poser. Trois tests tiennent cette
-promesse sur le source. Le serveur COLLECTE (`_tranche_jugements.json`, écriture
-atomique, l'avancement survit au redémarrage), le banc CONCLUT
-(`--bilan`, intervalle de **Wilson** : 30 jugements ne sont pas un pourcentage).
-Observé en réel : 30 items servis, vignettes 200, verdict écrit, verdict
-inconnu refusé en 400.
-
-**Et la planche de jugement a fait tomber autre chose — Mike l'a vu à l'œil.**
-La planche « visages déjà confirmés de Didier » contenait Laura Waller ; celle
-de Mathieu, Mathilde. Un rattachement est un couple `[photo, index du visage]`,
-et `reembed_one_batch` REMPLACE `e['faces']` quand il ré-analyse une photo :
-l'ordre change, le couple survit, sa cible non — sur une photo de groupe,
-l'index finit par désigner quelqu'un d'autre **qui est sur la même photo**.
-Mesuré (`mesure_rattachements.py`, 1 194 couples, 104 fiches) : **42 décalés**
-(3,5 %), 0 hors bornes, score médian 0,767 mais minimum **−0,13**. Le
-croisement nomme la cause : **5,4 %** de décalage sur les photos réellement
-re-détectées contre **0,4 %** ailleurs — 41 des 42. Le garde-fou `assigned_keys`
-protège l'avenir depuis un correctif antérieur ; il n'a jamais réparé le passé,
-et il ne lit pas `PETS`.
-**Premier croisement RÉFUTÉ par lui-même** : bâti sur le drapeau `reemb`, il
-rendait **100 %** — ce drapeau est aussi posé sur les photos seulement
-EXAMINÉES. Un drapeau que tout le monde porte ne croise rien ; `reemb_ms`
-discrimine.
-**RÉPARATION LIVRÉE** : `recale_rattachements.py` (règle pure, 27 tests) —
-le bon index est le visage de la MÊME photo le plus proche de la signature —
-plus trois boutons dans `/reglages` (aperçu / appliquer / annuler, quarantaine
-`_corbeille_recalage/`) qui passent par **la même fonction** que le banc.
-Aperçu à blanc sur le serveur vivant : **32 à recaler, 34 refus « ambigu »,
-1 « déjà pris »** — les mêmes nombres que le banc, deux chemins.
-La règle refuse plus qu'elle ne répare, et c'est voulu : un décalage qui
-PERMUTE deux personnes d'une même photo se refuse des deux côtés (« déjà
-pris »), et une photo que la fiche cite deux fois est « ambiguë ». Le résidu de
-**34 + 1** se juge à l'œil, pas au score.
-
-**APPLIQUÉ ET OBSERVÉ (22/08, geste de Mike)** : **33 recalages sur 17
-fiches** — 32 au premier passage, plus **1 au second**, le « déjà pris » s'étant
-libéré quand son bloqueur a bougé. Remesuré sur copie fraîche : décalés
-**42 → 9** (3,5 % → 0,8 %), score minimum **−0,13 → +0,06**, sous le seuil de
-faux positif **42 → 13**, désignent le bon visage **997 → 1 030**. Et le
-contrôle qui compte : **1 194 couples avant, 1 194 après** — aucune décision
-humaine perdue en route. Les 9 restants sont exactement les ambigus.
-
-**Reste le geste de Mike** : juger les 15 cas sur `/residu`, puis
-`mesure_rattachements.py --bilan-residu`.
-
-## État (22/08/2026, session 31)
-
-**Le trou n'était pas la purge : c'est le RANGEMENT qui décrochait les décisions
-humaines, et il le faisait en silence.** `rekey_everywhere` transporte sept
-magasins quand une photo change de chemin, et quatre « stores de sujets »
-passent dans la même boucle. Mais `PEOPLE` et `PETS` sont les seuls keyés par
-**NOM** : leurs chemins vivent DANS la fiche — `faces` = [[chemin, index]],
-`exclude`, `confirmed`, `avatar`. `store.rekey(ancien_chemin, nouveau_chemin)`
-y cherche une entrée dont la CLÉ serait un chemin, n'en trouve jamais, renvoie
-faux **et ne dit rien**. La boucle avait l'air de couvrir quatre magasins ; elle
-en couvrait deux. Chaque rangement par année et chacun des **7 058** renommages
-a donc pu décrocher un jugement.
-
-**Ce que ça coûtait, mesuré** : sur **3 364** décisions humaines, **928**
-pointent vers une clé absente de l'index (596 rattachements, 249 exclusions, 83
-confirmations), sur **804** clés. Le TAG survivait — il vit dans `tags` et dans
-le XMP — donc la photo gardait son nom et la règle 2 tenait ; c'est la VÉRITÉ
-TERRAIN qui partait, et une exclusion perdue est un faux positif qui revient.
-
-**« 787 décisions déjà perdues » est FAUX**, et c'était un défaut de recherche,
-pas une mesure : personne ne leur avait cherché de jumeau. Les **journaux
-d'annulation** de `docs/` — écrits pour défaire, relus à l'endroit — donnent
-**19 331** déplacements et retrouvent **698** des 804 clés. Les trois preuves
-comparées : journal **685**, nom de fichier **346** (36 homonymes refusés),
-vecteur **13** (la purge du 21/08 a emporté les détections des clés mortes).
-Résultat : **748 décisions se re-clent**, 56 y sont déjà, **124** sont vraiment
-perdues. Le « une seule décision à reporter (Luna) » tombe avec.
-
-**LIVRÉ.** (1) Préventif — `recle_decisions.py`, règle pure, 15 tests, branchée
-dans `rekey_everywhere` : une photo qui bouge emmène désormais ses jugements,
-index de vignette compris. (2) `journaux_deplacements.py`, une seule lecture
-des journaux, partagée par le serveur et le banc. (3) Rétroactif — trois
-boutons dans `/reglages` (aperçu / appliquer / annuler), quarantaine
-`_corbeille_decisions/`, qui passent par **la même fonction** que le préventif.
-(4) Instruments : `mesure_report_orphelines.py` et
-`verifier_recle_decisions.py`. Aperçu à blanc **sur le serveur vivant** :
-804 clés mortes, **685 à re-clé**, 119 sans destination, **0 hors bornes** —
-les mêmes nombres que le banc, deux chemins.
-
-**APPLIQUÉ ET VÉRIFIÉ (22/08, geste de Mike)** : **787 décisions sur 685 clés,
-97 fiches**. Observé — décisions posées sur une clé hors index **928 → 140**.
-Et le contrôle qui compte : la vérité terrain passe de 3 364 à **3 310**, mais
-les 54 manquantes ne sont pas perdues. L'audit de la quarantaine apparie chaque
-SORTIE à une ARRIVÉE de même type et de même index — **788 sorties, 734
-appariées, 54 fusions de doublons, 0 sans contrepartie**. Un total ne l'aurait
-jamais dit ; c'est la contrepartie qui distingue « déplacé » de « perdu ».
-
-**Le résidu est GARDÉ (choix de Mike, 22/08)** : 140 décisions sur des clés dont
-aucun journal ne connaît la destination, plus les 120 clés protégées de la purge
-du 21/08. Il ne coûte plus rien de mesurable, et le jour même 787 décisions dites
-« déjà perdues » se sont révélées récupérables dès qu'une preuve neuve est
-apparue.
-
-## État (21/08/2026, session 30)
-
-**La purge du 17/08 n'avait traité qu'un magasin sur deux**, et la cascade de
-suppression était pilotée par l'INDEX : une clé déjà absente de l'index est
-invisible à `_sync_dir`, donc `forget_everywhere` n'est jamais appelé pour elle.
-**Corrigé et observé** : `purge_detections_hors_index()` balaie au démarrage ce
-que la cascade ne voit plus, sans jamais toucher une clé jugée par un humain —
-`visages` **44 450 → 42 196**, hors index **2 374 → 120** (les protégées), index
-intact à 43 065, quarantaine réversible `_corbeille_detections/`.
-
-**Le chantier 16(a) est CLOS par la mesure** : la propagation des noms ne dort
-pas, elle a convergé — **14 rattachements automatiques, 24 cartes en file, 33
-photos**, et **17** photos dans le cas exact du chantier sur 18 745 qui y
-ressemblent. Trois nombres du banc contre trois du serveur vivant, identiques.
-
-## État (20/08/2026, session 28)
-
-**Ce qu'on cherche est ce qu'on voit — 14a-(iv) CLOS et OBSERVÉ.** Le filtre
-des noms lisait les `kw` bruts de l'index pendant que la ligne de faits lisait
-les fiches : **13 photos** sortaient d'une recherche par un nom qu'`exclude`
-avait retiré, **0** dans l'autre sens (363 tags balayés sur copie).
-`_autorite_des_noms()` est l'unique implémentation, partagée par l'affichage et
-le filtre. Observé : Silvio **495 → 494**, Danica **325 → 324**, clés exclues
-absentes. La fiche fait foi sur l'orthographe (« Luna · luna » a disparu).
-
-**Portée du filtre : 92,74 %** — nom ou lieu atteint **27 936** des **30 122**
-photos à fait NON-date. Les **2 186** autres n'ont qu'une ESPÈCE.
-
-**Le 5ᵉ axe est LIVRÉ (21/08).** `espece:chat` filtre sur la concordance des
-deux regards ; observé en réel : 2 386 photos concordantes, 0 en trop face à la
-règle, `espece:licorne` rend zéro et le DIT. Le vrai gain est la précision, pas
-le rappel — voir `eval/DECISIONS.md`. La sandbox fabrique désormais sa propre
-copie de la base (`mesure_copie_base.py`) : plus un aller-retour clavier avant
-de mesurer.
-
-**L'espèce est mesurée, et elle a réfuté deux fois.** SigLIP ne rend dans son
-top-1500 que la moitié des détections de YOLO (chat 50,1 %, chien 50,3 %,
-oiseau 48,3 %, cheval 72,6 %) — elles ont pourtant TOUTES un vecteur : mal
-classées, pas muettes. Mais `det_score` **ne dit pas l'espèce** : `cheval`
-0,934 sur *chien, homme, barrière*. Ce qui tient, c'est la **CONCORDANCE** de
-deux regards indépendants — YOLO et le tagueur : chat **2 316** (92,6 %
-d'accord), **3 065** en tout. C'est la matière du 5ᵉ axe, forme A (choix de
-Mike) : un jeton `espece:` explicite, jamais une promotion silencieuse.
-
-**Un TROISIÈME canal : la sandbox peut MESURER.** Elle n'atteint pas le LAN
-(`blocked-by-allowlist`), donc un banc qui interroge le serveur ne pouvait pas
-tourner chez elle — le 20/08, il a fallu le clavier de Mike, et sa sortie a
-réfuté une conclusion tirée de deux échantillons. `banc_agent.py` (fenêtre
-« MediaLibrary - Bancs ») lit `_commande_banc.txt`, ne lance QUE les familles
-qui MESURENT, sans shell ni chemin ni `force=`, et écrit `_banc_sortie.txt`.
-Les trois canaux partagent enfin `canal.py` — une seule façon de lire un ordre.
-
-**La livraison git est une PORTE — et elle POUSSE.** `commit` = branche + push,
-`main` intacte ; `livrer` ajoute le fast-forward. L'ordre s'inverse : éditer →
-redémarrer → **observer** → livrer. `_etat_git.json` dit ce qu'il a TENTÉ,
-`.git/logs/*` ce qui s'est PASSÉ. Le bat 0 retire les anciens superviseurs par
-une **génération** : le `taskkill` par titre ne tuait rien.
+**Noms, espèce, outillage (28).** Le filtre des noms partage l'AUTORITÉ de
+l'affichage (`_autorite_des_noms`) : la fiche fait foi, un nom retiré ne sort
+plus d'une recherche. Portée du filtre : **92,74 %** des photos à fait non-date.
+`det_score` **ne dit pas l'espèce** — c'est la CONCORDANCE de deux regards
+(YOLO ∧ tagueur) qui fait le 5ᵉ axe. Trois canaux (serveur, git, bancs) et un
+seul `canal.py` ; livraison `commit` (branche) / `livrer` (fusion), et l'ordre
+qui en découle : éditer → redémarrer → **observer** → livrer.
 
 ## À faire — par ordre de valeur
 
@@ -429,8 +244,12 @@ une **génération** : le `taskkill` par titre ne tuait rien.
    **Pas de retour à V0 sans protocole.**
 4. **Gestes Mike** : `gps_place` ✔ ; renommage appliqué ✔ (7 058) ; nettoyer
    Flo (5 909 photos) ; re-rejeter Caline.
-5. **Correctifs d'audit** : I4–I8, O7–O9, O11–O15. O1 clos ; O15 (purge de
-   `photo_thumbs/`) gagne en poids.
+5. **Correctifs d'audit** : **I7 CLOS (22/08)** — règle unique
+   `parse_tag_nomme`, mesurée avant (3 tags en casse divergente sur 37 707 :
+   défaut latent) et observée après (Luna 207 → 210 dans `/api/names`).
+   Restent I4–I6, I8, O7–O9, O11–O15. O1 clos ; O15 (purge de
+   `photo_thumbs/`) gagne en poids. **Ce que I7 a laissé ouvert** :
+   `personne:Florine`, 153 photos sans fiche — question posée à Mike.
 6. **Navigation par similarité et par date** : « Semblables » et « même jour »
    livrés et observés. Reste : doublons proches bridés (>0,98 + même journée →
    quarantaine réversible, 50 paires jugées avant geste).
