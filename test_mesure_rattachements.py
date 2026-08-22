@@ -1,0 +1,232 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""Tests de `mesure_rattachements.py`.
+
+Ce banc va servir a decider si les 1 576 rattachements de la verite terrain
+sont fiables. S'il compte mal, il condamnera ou blanchira a tort. Ces cas
+fixent donc les trois verdicts qu'il rend — DESIGNE LE MEILLEUR, DECALE, HORS
+BORNES — et le garde-fou qui les separe : deux visages proches ne sont pas un
+decalage, sinon toute photo de fratrie serait une erreur.
+
+Les tests n'IMPRIMENT rien : l'agent git capture la sortie, et un « é » parti
+dans un tuyau tue le test sous Windows (constate le 22/08, deux fois).
+"""
+
+import contextlib
+import io
+import unittest
+from pathlib import Path
+from tempfile import TemporaryDirectory
+
+import numpy as np
+
+import mesure_rattachements as R
+from test_mesure_propagation_noms import SERVER_FACTICE, Base, b64, vecteur
+
+
+class Fabrique:
+    """Une fiche (Flo) et des photos dont on choisit les visages."""
+
+    def __init__(self, d):
+        self.b = Base(d)
+        self.flo = vecteur(1)
+        self.autre = vecteur(77)          # quelqu'un d'autre, loin de Flo
+
+    def fiche(self, couples, refs=None):
+        self.b.personne('Flo', refs if refs is not None else [self.flo],
+                        faces=[list(c) for c in couples])
+
+    def photo(self, cle, vecteurs, redetectee=False, examinee=False):
+        """`examinee` pose le drapeau `reemb` SANS re-detection ; `redetectee`
+        pose en plus `reemb_ms`. La prod fait exactement cette difference, et
+        c'est elle qui distingue un croisement vivant d'un croisement mort."""
+        e = {"faces": [({"emb": b64(v)} if v is not None else {})
+                       for v in vecteurs]}
+        if examinee or redetectee:
+            e["reemb"] = 1
+        if redetectee:
+            e["reemb_ms"] = 1600
+        self.b.faces.set(cle, e)
+        self.b.tags.set(cle, {"kw_fr": []})
+
+    def fermer(self):
+        self.b.fermer()
+        return self.b.db
+
+
+def mesurer(d, f, ecart=R.ECART_DEFAUT):
+    with contextlib.redirect_stdout(io.StringIO()):
+        return R.mesurer(f.fermer(), d, ecart, 12)
+
+
+class TestVerdicts(unittest.TestCase):
+
+    def test_un_couple_qui_designe_le_bon_visage_est_juste(self):
+        with TemporaryDirectory() as d:
+            f = Fabrique(d)
+            f.fiche([('a.jpg', 0)])
+            f.photo('a.jpg', [f.flo, f.autre])
+            r = mesurer(d, f)
+            self.assertEqual(r["comptes"]["designe_le_meilleur_ou_presque"], 1)
+            self.assertNotIn("decale", r["comptes"])
+
+    def test_un_index_decale_vers_l_autre_personne_est_vu(self):
+        """Le cas de Mike : Didier designe le visage de Laura, sur la meme photo."""
+        with TemporaryDirectory() as d:
+            f = Fabrique(d)
+            f.fiche([('a.jpg', 1)])           # designe « l'autre »
+            f.photo('a.jpg', [f.flo, f.autre])
+            r = mesurer(d, f)
+            self.assertEqual(r["comptes"]["decale"], 1)
+            e = r["exemples_decales"][0]
+            self.assertEqual((e["i"], e["mieux"]), (1, 0))
+            self.assertGreater(e["sim_mieux"], e["sim"])
+
+    def test_un_index_hors_bornes_est_compte_a_part(self):
+        """`_serve_facecrop` retombe alors sur le visage 0 EN SILENCE : ce cas
+        ne doit jamais etre noye dans « decale », il se repare autrement."""
+        with TemporaryDirectory() as d:
+            f = Fabrique(d)
+            f.fiche([('a.jpg', 5)])
+            f.photo('a.jpg', [f.flo, f.autre])
+            r = mesurer(d, f)
+            self.assertEqual(r["comptes"]["index_hors_bornes"], 1)
+            self.assertEqual(r["comptes"].get("mesurables", 0), 0)
+            self.assertEqual(r["exemples_hors_bornes"][0]["visages"], 2)
+
+    def test_deux_visages_proches_ne_sont_pas_un_decalage(self):
+        """Sinon toute photo ou quelqu'un est detecte deux fois, ou toute
+        fratrie, passerait pour une erreur."""
+        with TemporaryDirectory() as d:
+            f = Fabrique(d)
+            presque = f.flo + 0.02 * vecteur(5)
+            presque = presque / np.linalg.norm(presque)
+            f.fiche([('a.jpg', 0)])
+            f.photo('a.jpg', [f.flo, presque])
+            r = mesurer(d, f)
+            self.assertEqual(r["comptes"]["designe_le_meilleur_ou_presque"], 1)
+            self.assertNotIn("decale", r["comptes"])
+
+    def test_l_ecart_est_reglable_et_change_le_verdict(self):
+        with TemporaryDirectory() as d:
+            f = Fabrique(d)
+            moyen = f.flo + 0.35 * vecteur(5)
+            moyen = moyen / np.linalg.norm(moyen)
+            f.fiche([('a.jpg', 1)])
+            f.photo('a.jpg', [f.flo, moyen])
+            self.assertEqual(mesurer(d, f, ecart=0.01)["comptes"].get("decale"), 1)
+
+    def test_une_photo_a_un_seul_visage_ne_peut_pas_etre_decalee(self):
+        with TemporaryDirectory() as d:
+            f = Fabrique(d)
+            f.fiche([('a.jpg', 0)])
+            f.photo('a.jpg', [f.autre])       # mauvais visage, mais seul
+            r = mesurer(d, f)
+            self.assertEqual(r["comptes"]["seul_visage_de_la_photo"], 1)
+            self.assertNotIn("decale", r["comptes"])
+            self.assertEqual(r["comptes"]["sous_le_seuil_de_faux_positif"], 1)
+
+
+class TestMatiereAbsente(unittest.TestCase):
+
+    def test_photo_sans_fiche_de_visages(self):
+        with TemporaryDirectory() as d:
+            f = Fabrique(d)
+            f.fiche([('fantome.jpg', 0)])
+            f.photo('a.jpg', [f.flo])
+            r = mesurer(d, f)
+            self.assertEqual(r["comptes"]["photo_sans_fiche_de_visages"], 1)
+
+    def test_visage_sans_vecteur(self):
+        with TemporaryDirectory() as d:
+            f = Fabrique(d)
+            f.fiche([('a.jpg', 0)])
+            f.photo('a.jpg', [None, f.autre])
+            r = mesurer(d, f)
+            self.assertEqual(r["comptes"]["visage_designe_sans_vecteur"], 1)
+
+    def test_une_fiche_sans_signature_est_comptee_et_non_mesuree(self):
+        with TemporaryDirectory() as d:
+            f = Fabrique(d)
+            f.fiche([('a.jpg', 0)], refs=[])
+            f.photo('a.jpg', [f.flo])
+            with self.assertRaises(SystemExit):
+                mesurer(d, f)
+
+
+class TestCroisement(unittest.TestCase):
+
+    def test_le_decalage_est_croise_avec_le_re_embedding(self):
+        """La cause presumee doit etre NOMMEE par le chiffre, pas par le
+        raisonnement — c'est tout l'interet du croisement."""
+        with TemporaryDirectory() as d:
+            f = Fabrique(d)
+            f.fiche([('a.jpg', 1), ('b.jpg', 1)])
+            f.photo('a.jpg', [f.flo, f.autre], redetectee=True)
+            f.photo('b.jpg', [f.flo, f.autre])
+            r = mesurer(d, f)
+            self.assertEqual(r["croisement_reemb"]["decale_reemb"], 1)
+            self.assertEqual(r["croisement_reemb"]["decale_sans_reemb"], 1)
+            self.assertEqual(r["fonds"]["dont_reembarquees"], 1)
+            self.assertEqual(r["fonds"]["photos_a_visages"], 2)
+
+    def test_le_drapeau_reemb_seul_ne_vaut_pas_re_detection(self):
+        """Le 22/08, le premier croisement a rendu 100 % — instrument mort :
+        `reemb` est aussi pose sur les photos seulement EXAMINEES. Seul
+        `reemb_ms` marque un appel reel a `detect_faces`."""
+        with TemporaryDirectory() as d:
+            f = Fabrique(d)
+            f.fiche([('a.jpg', 1)])
+            f.photo('a.jpg', [f.flo, f.autre], examinee=True)
+            r = mesurer(d, f)
+            self.assertEqual(r["fonds"]["dont_marquees_reemb"], 1)
+            self.assertEqual(r["fonds"]["dont_reembarquees"], 0)
+            self.assertEqual(r["croisement_reemb"]["decale_sans_reemb"], 1)
+
+    def test_le_verdict_est_rendu_poste_par_poste(self):
+        """La planche montre les premiers couples : leur sort doit se lire
+        separement, sinon un fonds sain masque une planche trompeuse."""
+        with TemporaryDirectory() as d:
+            f = Fabrique(d)
+            f.fiche([('a.jpg', 1), ('b.jpg', 0)])   # poste 0 faux, poste 1 juste
+            f.photo('a.jpg', [f.flo, f.autre])
+            f.photo('b.jpg', [f.flo, f.autre])
+            r = mesurer(d, f)
+            self.assertEqual(r["par_poste"]["0"]["decale"], 1)
+            self.assertEqual(r["par_poste"]["1"]["juste"], 1)
+            self.assertIn("Par POSTE", R.afficher(r))
+
+    def test_le_denominateur_du_fonds_est_rendu(self):
+        """« 80 % des decales sont reemb » ne veut rien dire si 80 % du fonds
+        l'est : sans denominateur, le croisement ment."""
+        with TemporaryDirectory() as d:
+            f = Fabrique(d)
+            f.fiche([('a.jpg', 0)])
+            f.photo('a.jpg', [f.flo, f.autre], redetectee=True)
+            f.photo('c.jpg', [f.autre], redetectee=True)
+            r = mesurer(d, f)
+            self.assertEqual(r["fonds"]["dont_reembarquees"], 2)
+
+
+class TestRefus(unittest.TestCase):
+
+    def test_refuse_photos_db(self):
+        with self.assertRaises(SystemExit) as e:
+            R.mesurer('photos.db', '.', 0.1, 3)
+        self.assertIn('photos.db', str(e.exception))
+
+
+class TestRapport(unittest.TestCase):
+
+    def test_le_rapport_dit_que_le_chiffre_est_une_borne_basse(self):
+        with TemporaryDirectory() as d:
+            f = Fabrique(d)
+            f.fiche([('a.jpg', 1)])
+            f.photo('a.jpg', [f.flo, f.autre])
+            txt = R.afficher(mesurer(d, f))
+            self.assertIn("BORNE BASSE", txt)
+            self.assertIn("decale", txt)
+
+
+if __name__ == '__main__':
+    unittest.main()
