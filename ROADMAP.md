@@ -208,8 +208,11 @@ une **génération** : le `taskkill` par titre ne tuait rien.
     `docs/undo_*.json` (la carte des 19 331 déplacements, devenue porteuse le
     22/08), les trois quarantaines, et les six fichiers de réglages saisis à la
     main dont `dossiers_a_taguer.txt`, sans lequel un PC neuf ne voit plus
-    aucune photo. **Correctif livré** : `backup_artefacts()` les pousse sur le
-    NAS à chaque sauvegarde, incrémental — 20 Mo à côté d'un snapshot de 276.
+    aucune photo. **Correctif livré ET OBSERVÉ** : `backup_artefacts()` les
+    pousse sur le NAS à chaque sauvegarde, incrémental — 20 Mo à côté d'un
+    snapshot de 276. Première sauvegarde réelle : **61 fichiers, 20,4 Mo**, et
+    l'instrument relancé annonce **« Total exposé : 0 o »**, chaque ligne passée
+    de « AUCUNE COPIE » à « OUI · artefacts/… ».
     Reste le geste de Mike : restaurer pour de vrai sur un dossier vierge,
     chronométrer, puis `verifier_restauration.py --restaure <dossier>` — il
     compare les décisions humaines **nom par nom** (un total identique ne prouve

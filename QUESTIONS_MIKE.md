@@ -21,6 +21,21 @@
   *En attendant* : je n'écris rien sur le fonds (la sandbox n'en a pas le
   droit), et je passe aux points suivants.
 
+- **22/08 — que faire du résidu, une fois le re-clé appliqué ?** Il restera deux
+  poches : **124 décisions sur 106 clés** dont aucun journal ne connaît la
+  destination, et les **120 clés** que la purge du 21/08 a protégées parce
+  qu'elles portaient un jugement, alors que leurs photos n'existent plus.
+  **Ma recommandation : les GARDER, et ne pas rouvrir le sujet.** Trois raisons.
+  (1) Le résidu est passé de 2 374 clés à 120 : il ne coûte plus rien de
+  mesurable. (2) Ce sont des décisions humaines, et la règle 2 dit qu'elles ne
+  se perdent jamais — les purger est irréversible, les garder ne l'est pas.
+  (3) Surtout, aujourd'hui même, **787 décisions déclarées « déjà perdues » se
+  sont révélées récupérables à 685** dès qu'une source de preuve nouvelle est
+  apparue (les journaux d'annulation). Déclarer une décision définitivement
+  morte est un pari que ce projet vient de perdre une fois.
+  *En attendant* : rien n'est purgé, et `verifier_orphelins.py --sans-disque`
+  continue de les compter.
+
 *Aucune autre question en attente.*
 
 ## Réglées

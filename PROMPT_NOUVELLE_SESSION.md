@@ -72,7 +72,7 @@ un jumeau faux ferait déborder les index.
    `verifier_restauration.py` a nommé **9 artefacts irrécupérables présents
    nulle part ailleurs (19,9 Mo)**, dont `docs/undo_*.json` et les trois
    quarantaines ; `backup_artefacts()` les pousse désormais sur le NAS à chaque
-   sauvegarde. Reste le geste de Mike : restaurer pour de vrai sur un dossier
+   sauvegarde — observé : 61 fichiers, 20,4 Mo, « Total exposé : 0 o ». Reste le geste de Mike : restaurer pour de vrai sur un dossier
    vierge, chronométrer, puis `verifier_restauration.py --restaure <dossier>`.
 6. **Finitions UI et plafond de page : FAITES et observées (22/08).** Reste
    l'audit I4–I8 / O7–O15, puis **MCP lecture seule (13)**.
