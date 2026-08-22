@@ -101,6 +101,13 @@ python verifier_restauration.py --vivant copie.db --restaure D:/essai-restaurati
 
 **Arrête le chrono ici** et note le temps total.
 
+> **Ne lance pas la comparaison avant d'avoir restauré.** Le 22/08, l'essai a
+> été fait sur un dossier encore vide : l'instrument a répondu « Total exposé :
+> 0 o » (il ne comptait que ce qui est PRÉSENT sans copie) puis s'est tué sur
+> un refus de garde-fou. Les deux sont corrigés — il dit maintenant « RIEN N'A
+> ÉTÉ RESTAURÉ ICI » et « COMPARAISON IMPOSSIBLE » — mais l'ordre reste : les
+> étapes 1 à 4, PUIS l'étape 5.
+
 ## Comment lire le verdict
 
 L'instrument compare les décisions humaines **nom par nom** — rattachements,
@@ -111,7 +118,8 @@ exclusions, confirmations. C'est le point entier de l'exercice :
 
 Trois issues, et une seule est bonne :
 
-- **Aucun écart, sur aucun nom** → la répétition est réussie. Note le temps
+- **« RÉPÉTITION RÉUSSIE »** — le rapport ne l'écrit que si l'intégrité, les
+  tables, le nombre de noms ET chaque nom concordent. Note le temps
   dans `ROADMAP.md` et le chantier 12 se ferme.
 - **Un écart sur un ou deux noms** → ce n'est pas un détail. Chaque nom est une
   décision qu'un humain a prise et que la sauvegarde n'a pas rendue. Ne

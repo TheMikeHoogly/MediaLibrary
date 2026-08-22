@@ -359,6 +359,22 @@ qui en découle : éditer → redémarrer → **observer** → livrer.
     geste de Mike (`git rm --cached`), le `.gitignore` ne défait rien seul.
     *Un zéro parfait est une alarme, encore — et c'est le troisième de la
     journée.*
+    **LE PREMIER ESSAI RÉEL (22/08, 20:21) A TROUVÉ TROIS DÉFAUTS D'INSTRUMENT,
+    et c'est exactement ce que la répétition existe pour trouver.** (1) Le
+    garde-fou « ne jamais ouvrir `photos.db` » testait le NOM du fichier : il
+    refusait donc aussi la base RESTAURÉE, qui s'appelle forcément comme ça —
+    **la comparaison nom par nom, seul juge du chantier, n'avait jamais pu
+    tourner une seule fois**, et le refus tuait le programme (`SystemExit`) au
+    lieu de rendre un rapport. Il vise désormais LE `photos.db` de ce projet, et
+    lui seul. (2) Sur un dossier restauré VIDE, l'inventaire annonçait
+    « Total exposé : 0 o » — il compte ce qui est présent SANS copie, or rien
+    n'était présent : **une restauration ratée se lisait comme une réussite**.
+    Le côté restauré a maintenant sa propre lecture (« RIEN N'A ÉTÉ RESTAURÉ
+    ICI », artefacts irrécupérables manquants, « Revenus : n / 19 »). (3) Le
+    rapport ne CONCLUAIT pas : il dit « RÉPÉTITION RÉUSSIE » seulement si
+    l'intégrité, les tables, le nombre de noms ET chaque nom concordent — deux
+    bases vides ne passent pas. 14 tests (`test_verifier_restauration.py`).
+
     **Reste le geste de Mike** : suivre `docs/REPETITION_RESTAURATION.md` —
     restaurer pour de vrai dans un dossier vierge, chronométrer, puis
     `verifier_restauration.py --restaure <dossier>`, qui compare les décisions

@@ -269,14 +269,35 @@ def inventaire(racine=RACINE, sauvegarde=None):
     return out
 
 
+# La base dont le SERVEUR est l'écrivain unique — la seule qu'il ne faut jamais
+# ouvrir. Le 22/08, le garde-fou testait le NOM du fichier : il refusait donc
+# aussi `D:/essai-restauration/photos.db`, où la base restaurée s'appelle
+# forcément comme ça. La comparaison nom par nom — le cœur du chantier 12 —
+# n'avait donc JAMAIS pu tourner, et le refus tuait le programme (`SystemExit`)
+# au lieu de rendre un rapport. Un garde-fou qui protège la mauvaise cible
+# n'est pas une prudence, c'est une panne.
+BASE_VIVANTE = RACINE / 'photos.db'
+
+
+def est_la_base_vivante(chemin):
+    """Vrai seulement pour LE `photos.db` de ce projet, pas pour un homonyme."""
+    try:
+        return Path(chemin).resolve() == BASE_VIVANTE.resolve()
+    except OSError:
+        return False
+
+
 def decisions_de_la_base(chemin):
     """{nom: {rattachements, exclusions, confirmations}} lu dans une COPIE.
 
-    Refuse `photos.db` : le serveur en est l'écrivain unique."""
+    Refuse la base VIVANTE de ce projet (le serveur en est l'écrivain unique) —
+    et elle seule. Le `photos.db` d'un dossier RESTAURÉ n'a pas d'écrivain :
+    c'est même tout l'objet de l'exercice."""
     p = Path(chemin)
-    if p.name.lower() == 'photos.db':
-        raise SystemExit("REFUS : ne jamais ouvrir photos.db. "
-                         "Fabrique la copie (mesure_copie_base.py).")
+    if est_la_base_vivante(p):
+        return None, ("c'est la base VIVANTE de ce projet, dont le serveur est "
+                      "l'écrivain unique — fabrique la copie "
+                      "(mesure_copie_base.py), puis --vivant copie.db")
     if not p.is_file():
         return None, f"base absente : {p}"
     par_nom, tailles = {}, {}
@@ -344,33 +365,63 @@ def comparer(vivant, restaure_base):
             'ecarts': ecarts}, None
 
 
-def afficher_inventaire(lignes, racine, sauvegarde=None):
-    L = [f"CE QU'UN DISQUE MORT EMPORTERAIT — {racine}",
+def afficher_inventaire(lignes, racine, sauvegarde=None, restaure=False):
+    """Le rapport. Deux LECTURES opposées, selon le côté qu'on regarde.
+
+    Sur le PC vivant, la question est « qu'est-ce qui n'a pas de copie ? ».
+    Sur un dossier RESTAURÉ, elle s'inverse : « qu'est-ce qui n'est pas
+    revenu ? » — et un dossier vide n'y répond pas « rien ne manque ». Le
+    22/08, l'inventaire annonçait « Total exposé : 0 o » sur un dossier
+    ENTIÈREMENT VIDE : il comptait ce qui est présent SANS copie, or rien
+    n'était présent. Une restauration ratée se serait lue comme un succès.
+    """
+    titre = ("CE QUE LA RESTAURATION A RENDU" if restaure
+             else "CE QU'UN DISQUE MORT EMPORTERAIT")
+    L = [f"{titre} — {racine}",
          f"({time.strftime('%d/%m/%Y %H:%M')}, heure locale)",
          f"Sauvegarde consultée : {sauvegarde or '(aucune)'}", ""]
     manquants = [x for x in lignes if not x['present']]
     sans_copie = [x for x in lignes
                   if x['present'] and x['gravite'] == IRRECUPERABLE
                   and x['copie'] == 'AUCUNE COPIE']
-    L.append(f"{len(sans_copie)} artefact(s) présent(s) ici et NULLE PART "
-             f"ailleurs — c'est la liste des manques du chantier 12 :")
-    for x in sans_copie:
-        L.append(f"  ⚠ {x['quoi']}  ({humain(x['octets'])}"
-                 + (f", {x['fichiers']} fichiers" if x['fichiers'] > 1 else "")
-                 + f")  [{x['gravite']}]\n      {x['role']}")
-    if not sans_copie:
-        L.append("  (aucun — tout ce qui vit ici a une copie ailleurs)")
-    L.append("")
-    L.append(f"Total exposé : "
-             + humain(sum(x['octets'] for x in sans_copie)))
-    L.append("")
+    if restaure:
+        absents = [x for x in manquants if x['gravite'] == IRRECUPERABLE]
+        presents = [x for x in lignes if x['present']]
+        if not presents:
+            L.append("RIEN N'A ÉTÉ RESTAURÉ ICI — le dossier est vide (ou "
+                     "introuvable).")
+            L.append("  Ce n'est pas « aucun manque » : c'est « aucune "
+                     "réponse ». Refais la copie depuis le NAS, puis relance.")
+        elif absents:
+            L.append(f"{len(absents)} artefact(s) IRRÉCUPÉRABLE(S) MANQUENT "
+                     "dans le dossier restauré :")
+            for x in absents:
+                L.append(f"  ⚠ {x['quoi']}\n      {x['role']}")
+        else:
+            L.append("Tous les artefacts IRRÉCUPÉRABLES sont revenus.")
+        L.append("")
+        L.append(f"Revenus : {len(presents)} / {len(lignes)} artefact(s).")
+        L.append("")
+    else:
+        L.append(f"{len(sans_copie)} artefact(s) présent(s) ici et NULLE PART "
+                 f"ailleurs — c'est la liste des manques du chantier 12 :")
+        for x in sans_copie:
+            L.append(f"  ⚠ {x['quoi']}  ({humain(x['octets'])}"
+                     + (f", {x['fichiers']} fichiers" if x['fichiers'] > 1 else "")
+                     + f")  [{x['gravite']}]\n      {x['role']}")
+        if not sans_copie:
+            L.append("  (aucun — tout ce qui vit ici a une copie ailleurs)")
+        L.append("")
+        L.append(f"Total exposé : "
+                 + humain(sum(x['octets'] for x in sans_copie)))
+        L.append("")
     L.append("Tableau complet :")
     for x in lignes:
         etat = ('absent' if not x['present']
                 else humain(x['octets'])
                 + (f" / {x['fichiers']} f." if x['fichiers'] > 1 else ""))
         L.append(f"  {x['quoi']:<28} {etat:>14}  {x['gravite']:<17} {x['copie']}")
-    if manquants:
+    if manquants and not restaure:
         L.append("")
         L.append("Absents d'ici (normal si jamais utilisés) : "
                  + ", ".join(x['quoi'] for x in manquants))
@@ -389,6 +440,19 @@ def afficher_comparaison(r):
     L.append(f"Noms : vivant {r['noms_vivant']} · restauré {r['noms_restaure']}")
     if not r['ecarts']:
         L.append("Décisions humaines : AUCUN écart, nom par nom.")
+        tables_ok = all(r['tables']['vivant'].get(t) == r['tables']['restaure'].get(t)
+                        for t in TABLES)
+        integre = str(r['integrite_restauree']).lower() == 'ok'
+        if tables_ok and integre and r['noms_vivant'] == r['noms_restaure'] \
+                and r['noms_vivant']:
+            L.append("")
+            L.append("RÉPÉTITION RÉUSSIE : base intègre, tables identiques, "
+                     "chaque nom retrouve ses décisions.")
+        else:
+            L.append("")
+            L.append("⚠ Aucun écart de décisions, MAIS le reste ne concorde "
+                     "pas (intégrité, tables ou nombre de noms) — regarde les "
+                     "lignes ci-dessus avant de conclure.")
     else:
         L.append(f"⚠ {len(r['ecarts'])} nom(s) dont les décisions diffèrent :")
         for e in r['ecarts'][:40]:
@@ -424,11 +488,14 @@ def main(argv=None):
         dossier = Path(a.restaure)
         print("\n" + "=" * 74)
         rapport['inventaire_restaure'] = inventaire(dossier, sv)
-        print(afficher_inventaire(rapport['inventaire_restaure'], dossier, sv))
+        print(afficher_inventaire(rapport['inventaire_restaure'], dossier, sv,
+                                  restaure=True))
         print("\n" + "=" * 74)
         cmp_, err = comparer(a.vivant, dossier / 'photos.db')
         if err:
-            print(f"Comparaison impossible — {err}")
+            print(f"COMPARAISON IMPOSSIBLE — {err}")
+            print("  C'est le résultat qui compte le plus : sans elle, la "
+                  "répétition n'a rien prouvé.")
             rapport['erreur'] = err
         else:
             rapport['comparaison'] = cmp_
