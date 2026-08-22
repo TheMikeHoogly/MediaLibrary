@@ -278,6 +278,72 @@ class TestRapport(unittest.TestCase):
             self.assertIn("decale", txt)
 
 
+class TestVerifierRecalages(unittest.TestCase):
+    """Un recalage applique a-t-il REPARE (l'ancien visage etait un inconnu)
+    ou REBRASSE (les deux sont la personne, page d'album ou montage) ?"""
+
+    def journal(self, dossier, avant, apres, fiche='flo'):
+        d = Path(dossier) / '_corbeille_recalage'
+        d.mkdir(exist_ok=True)
+        (d / 'recalage_20260822_000000.jsonl').write_text(
+            json.dumps({"at": 0, "recalages": 1}) + "\n"
+            + json.dumps({"magasin": "people", "fiche": fiche,
+                          "avant": {"faces": avant},
+                          "apres": {"faces": apres}}) + "\n",
+            encoding='utf-8')
+        return str(d)
+
+    def test_sans_journal_il_le_DIT_au_lieu_de_conclure(self):
+        with TemporaryDirectory() as d:
+            f = Fabrique(d)
+            f.fiche([('a.jpg', 0)])
+            f.photo('a.jpg', [f.flo])
+            base = f.fermer()
+            with self.assertRaises(SystemExit) as e:
+                R.verifier_recalages(base, d, str(Path(d) / 'vide'))
+            self.assertIn('Aucun journal', str(e.exception))
+
+    def test_ancien_visage_inconnu_compte_comme_REPARATION(self):
+        with TemporaryDirectory() as d:
+            f = Fabrique(d)
+            f.fiche([('a.jpg', 0)])
+            f.photo('a.jpg', [f.flo, f.autre])
+            base = f.fermer()
+            dossier = self.journal(d, [['a.jpg', 1]], [['a.jpg', 0]])
+            txt = R.verifier_recalages(base, d, dossier)
+            self.assertIn('REPARATION', txt)
+            self.assertNotIn('rebrassage  flo', txt)
+
+    def test_deux_visages_de_la_personne_comptent_comme_rebrassage(self):
+        """Le cas de la page d'album : l'ancien index designait deja Flo,
+        ailleurs dans le meme fichier. Rien n'a ete repare."""
+        with TemporaryDirectory() as d:
+            f = Fabrique(d)
+            f.fiche([('a.jpg', 0)])
+            f.photo('a.jpg', [f.flo, f.flo])
+            base = f.fermer()
+            dossier = self.journal(d, [['a.jpg', 1]], [['a.jpg', 0]])
+            txt = R.verifier_recalages(base, d, dossier)
+            self.assertIn('rebrassage', txt)
+            ligne = [x for x in txt.split('\n') if 'rebrassage  (' in x][0]
+            self.assertIn('1', ligne)
+            self.assertIn('100.0 %', ligne)
+
+    def test_une_fusion_est_ECARTEE_et_NOMMEE(self):
+        """Les listes n'ont plus la meme longueur : les apparier position par
+        position serait deviner. Une population ecartee doit etre nommee."""
+        with TemporaryDirectory() as d:
+            f = Fabrique(d)
+            f.fiche([('a.jpg', 0)])
+            f.photo('a.jpg', [f.flo, f.autre])
+            base = f.fermer()
+            dossier = self.journal(d, [['a.jpg', 1], ['a.jpg', 0]],
+                                   [['a.jpg', 0]])
+            txt = R.verifier_recalages(base, d, dossier)
+            self.assertIn('ECARTES', txt)
+            self.assertIn('fusion', txt)
+
+
 class TestBilanResidu(unittest.TestCase):
     """Le banc CONCLUT sur les jugements de la page /residu.
 

@@ -6,6 +6,33 @@ dans **git** ; les rejets dans `eval/DECISIONS.md` (photothèque) et
 `eval/METHODE.md` ; l'éphémère dans `PROMPT_NOUVELLE_SESSION.md`. Audits :
 `docs/AUDIT_INTERNE_2026-08.md`, `docs/AUDIT_EXTERNE_2026.md`, `docs/RANGEMENT_2026.md`.
 
+## État (22/08/2026, session 34)
+
+**Le résidu est jugé, il n'y avait rien à retirer — et c'est le banc qui avait
+tort, pas l'œil.** Mike a jugé les **15 cas** : **34 couples confirmés, 0 à
+retirer, 0 indécidable**. Un test géométrique a d'abord déclaré ce résultat
+impossible — deux visages aux boîtes disjointes ne peuvent pas être la même
+personne — en rendant **0,0 sur 15 cas sur 15**. La première photo ouverte est
+une **page d'album photographiée** : 3735×1378, cinq tirages et un mot
+manuscrit dans un seul fichier, où Céline paraît deux fois légitimement.
+`Flyer_Jenny.jpg` porte quatre portraits de Jenny. **Un fichier n'est pas une
+scène**, et un score parfait reste une alarme — y compris quand c'est le sien.
+
+**Les refus de la règle étaient donc justes**, sur toute la population qu'elle
+a refusée. Et dans l'autre sens (`--verifier-recalages`) : sur les **33
+recalages appliqués**, **29 (87,9 %) étaient de vraies réparations** — l'ancien
+index scorait sous 0,30, jusqu'à **−0,13** — contre **4 rebrassages** entre deux
+apparitions de Flo. La règle a tranché presque exactement au bon endroit. Ce
+qui était trop fort, c'est le MOT : « décalé » nomme un ÉCART de score, pas une
+identité fausse.
+
+**Le vrai défaut restant était dans la colonne d'à côté, jamais listée : les
+13 couples SOUS LE SEUIL DE FAUX POSITIF.** Score **0,06 à 0,295** — Flo à
+0,06, Linda posée sur `Sanchez Laura.jpg`, Markus sur `117-1798_HUM Mutz.JPG`
+(un nom d'ANIMAL). Ceux-là désignent quelqu'un qui ne ressemble à personne, et
+la plupart sont sur des photos à **un seul visage** : aucun recalage ne peut
+les réparer. Ils demandent un **retrait**.
+
 ## État (22/08/2026, session 33)
 
 **La tranche 0,35–0,40 est TRANCHÉE, et l'œil de Mike avait raison deux fois,
@@ -213,8 +240,19 @@ une **génération** : le `taskkill` par titre ne tuait rien.
 
 ## À faire — par ordre de valeur
 
-0. **Le résidu du recalage : instrument et page LIVRÉS et OBSERVÉS (22/08),
-   reste le JUGEMENT de Mike.** `mesure_rattachements.py --residu` écrit
+0. **Les 13 couples SOUS LE SEUIL DE FAUX POSITIF — le seul défaut de
+   rattachement qui reste (22/08).** Score 0,06–0,295, la plupart sur des
+   photos à UN SEUL visage : le recalage ne peut rien, c'est un **retrait**.
+   Pointer `/residu` sur eux, avec les trois corrections dues à la séance de
+   jugement : (a) montrer la **photo entière avec les boîtes numérotées**
+   dessus — c'est elle qui aurait rendu la page d'album évidente en une
+   seconde, aux deux bouts ; (b) des **lettres** au lieu des chiffres, la
+   collision avec `/tranche` (où `1`/`2` valent Oui/Non) étant un piège ;
+   (c) un garde-fou qui **parle** au lieu d'avaler une réponse invraisemblable.
+   Puis le retrait, réversible, dans `/reglages`.
+
+0bis. **Le résidu « ambigu » : CLOS (22/08).** Instrument et page livrés,
+   15 cas jugés par Mike, **34 confirmés, 0 à retirer**. `mesure_rattachements.py --residu` écrit
    **15 cas sur 9 fiches, 34 couples cités** — Didier 4 cas, Res Jordi 4, puis
    Céline Gauchat, Flo, Jenny, Maryline Baudère, Rosario, Sylvie Chatelain,
    Val. Le rapport NOMME ce qu'il écarte (autres motifs de refus : aucun

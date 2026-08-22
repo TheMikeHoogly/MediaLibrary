@@ -9,57 +9,45 @@ FUSIONNÉ — ce document, non. Puis `ROADMAP.md`, `eval/DECISIONS.md`,
 `eval/METHODE.md` — et `docs/DECISIONS_OUTILLAGE.md` si le sujet touche aux
 canaux. Débrief en 2–3 lignes, puis on attaque.
 
-## Où on en est (22/08/2026, fin de session 33)
+## Où on en est (22/08/2026, fin de session 34)
 
-**La tranche 0,35–0,40 est tranchée, et l'œil de Mike avait raison deux fois,
-pour deux raisons différentes.**
+**Le résidu du recalage est JUGÉ : 34 couples confirmés, 0 à retirer.** Et
+c'est le banc qui avait tort, pas l'œil. Un test géométrique a déclaré le
+résultat impossible — deux visages aux boîtes disjointes ne peuvent pas être la
+même personne — en rendant **0,0 sur 15 cas sur 15**. La première photo ouverte
+est une **page d'album photographiée** : 3735×1378, cinq tirages dans un seul
+fichier, où Céline paraît deux fois légitimement ; `Flyer_Jenny.jpg` porte
+quatre portraits de Jenny. **Un fichier n'est pas une scène**, et un score
+parfait reste une alarme — y compris quand c'est le sien.
 
-**Le chiffre.** 30 propositions jugées par lui : **25 justes, 2 faux, 3
-indécidables** → **92,6 %** sur 27 tranchées, **Wilson 95 % : 76,6 %–97,9 %**.
-Ce que l'intervalle autorise, et rien de plus : la tranche a sa place dans la
-file **« À vérifier »**, **jamais dans l'auto-ajout**. `CUR_ADD_SIM` ne bouge
-pas.
+**Les refus de `recale_rattachements` étaient donc justes.** Vérifié dans
+l'autre sens (`--verifier-recalages`) : sur les **33 recalages appliqués**,
+**29 (87,9 %) étaient de vraies réparations** — ancien index sous 0,30, jusqu'à
+**−0,13** — contre **4 rebrassages**. Le geste tient ; c'est le MOT qui était
+trop fort : « décalé » nomme un ÉCART de score, pas une identité fausse.
 
-**Première raison — la planche était FIGÉE, et c'est corrigé.** Il a dit :
-« je n'ai pas constaté d'amélioration, certaines photos proposées pour une
-personne contiennent une AUTRE personne. » Le tirage datait de **21:26**, le
-recalage avait été appliqué à **22:19**, et la page servait les références du
-FICHIER : l'état d'avant la réparation. **3 planches sur 30** — Didier,
-Mathieu, Markus Grossert, dont les deux qu'il avait nommés la veille.
-`_tranche_refs_vivantes` relit désormais la fiche à chaque affichage, et le
-banc ne tire plus de références du tout : elles appartiennent à la PAGE.
-Observé après redémarrage (`code_a_jour` vrai) : **4 références corrigées sur
-les 3 planches**, les mêmes 4 que la quarantaine du recalage — deux chemins —
-et les 30 verdicts ont survécu. La légende dit maintenant « visages déjà
-**rattachés à** X » : `confirmed` est un autre champ, et une planche qui se dit
-*confirmée* accuse le jugement humain d'une faute qui est celle de l'index.
-
-**Seconde raison — le résidu est CONCENTRÉ, et c'est le prochain pas.** Les
-**9 décalés** restants et les **34 refus « ambigu »** tiennent sur **10
-fiches**, et **Didier en porte 4 des 9**. « 0,8 % sur 1 194 couples » se lit
-comme un fonds sain ; sur SA fiche, c'est un intrus à chaque ouverture.
-
-**La page du résidu est LIVRÉE (fin de session 33).**
-`mesure_rattachements.py --base copie.db --residu` écrit **15 cas sur 9
-fiches, 34 couples cités** ; la page **`/residu`** (18 tests) les montre côte à
-côte avec la planche de référence — vivante, et **la photo en cause en est
-retirée** : le visage qu'on juge ne peut pas être sa propre référence. Elle
-n'attribue rien et ne retire rien ; un verdict ne peut désigner qu'un visage
-MONTRÉ. Observé en réel : 15 cas servis, sélection sans écriture. Un lien y
-mène depuis `/reglages`, sous les boutons du recalage.
+**Avant, dans la même journée** : la tranche 0,35–0,40 a été jugée —
+**92,6 %**, Wilson **76,6 %–97,9 %** → file « À vérifier », **jamais
+l'auto-ajout**, `CUR_ADD_SIM` ne bouge pas. Et la planche de référence de
+`/tranche`, qui était figée dans le tirage, se relit maintenant dans la fiche
+(`_tranche_refs_vivantes`).
 
 ## Prochain pas
 
-0. **Juger les 15 cas sur `http://192.168.0.13:8080/residu`** (clavier `1`–`9`
-   pour cocher, `Entrée` pour valider, `0` je ne sais pas, `Z` revenir), puis
-   `mesure_rattachements.py --base copie.db --bilan-residu`. Le bilan sépare
-   **à retirer** (cité, jugé pas elle), **confirmé**, et **à AJOUTER** (jugé
-   elle mais non cité — une attribution, autre geste, hors plan de retrait).
-   Le retrait est DESTRUCTIF : quarantaine réversible et geste de Mike, comme
-   le recalage. **Il reste à ÉCRIRE** — les trois boutons dans `/reglages`,
-   passant par la même fonction que le bilan.
-   Et **`PETS` n'a jamais été mesuré** (empreintes DINOv2, `assigned_keys` ne
-   le lit pas).
+0. **Les 13 couples SOUS LE SEUIL DE FAUX POSITIF** — le seul défaut de
+   rattachement qui reste. Score **0,06 à 0,295** : Flo à 0,06, Linda posée sur
+   `Sanchez Laura.jpg`, Markus sur `117-1798_HUM Mutz.JPG` (un nom d'ANIMAL,
+   cross-pipeline). La plupart sont sur des photos à **un seul visage** :
+   aucun recalage ne peut les réparer, ils demandent un **RETRAIT**. Pointer
+   `/residu` sur eux (`mesure_rattachements.py --base copie.db --exemples 20`
+   les liste), avec les trois corrections dues :
+   (a) **la photo entière avec les boîtes numérotées** dessus, les crops en
+   second — c'est elle qui aurait rendu la page d'album évidente en une
+   seconde, aux deux bouts ; (b) des **lettres** au lieu des chiffres :
+   `/tranche` utilise `1`/`2` pour Oui/Non et `/residu` pour Visage 1/Visage 2,
+   à dix minutes d'intervalle ; (c) un garde-fou qui **parle** au lieu
+   d'enregistrer une réponse invraisemblable en silence. Puis le retrait,
+   réversible, dans `/reglages`.
 1. **Chantier 12 — la répétition** (choix de Mike : ordre 1-4-3-2). Restaurer
    POUR DE VRAI sur un dossier vierge, chronométrer, puis
    `verifier_restauration.py --restaure <dossier>` : il compare les décisions
@@ -97,14 +85,23 @@ agent est vivant si son `_agent_*_vu.txt` a moins de 30 s.
 **Mesurer** : jamais sur `photos.db` — `mesure_copie_base.py` d'abord, puis
 `--base copie.db`.
 
-**Un échantillon se FIGE, une référence se LIT MAINTENANT.** C'est la leçon du
-22/08 : figer le tirage est ce qui le rend uniforme, figer la référence est
-faux — elle n'est pas ce qu'on mesure, elle est ce CONTRE QUOI on mesure, et
-elle vieillit précisément là où une réparation vient de passer.
+**Un échantillon se FIGE, une référence se LIT MAINTENANT.** Figer le tirage
+est ce qui le rend uniforme ; figer la référence est faux — elle n'est pas ce
+qu'on mesure, elle est ce CONTRE QUOI on mesure, et elle vieillit précisément
+là où une réparation vient de passer.
 
-**Un défaut concentré ne se voit pas dans un taux.** 0,8 % sur le fonds, mais
-4 intrus sur une seule fiche. Compter par FICHE avant de conclure que le fonds
-va bien.
+**Un FICHIER n'est pas une SCÈNE.** Pages d'album photographiées, montages,
+flyers : la même personne y paraît plusieurs fois, à des endroits différents.
+Toute règle qui suppose une scène par fichier se trompe ici — et elle s'y
+trompe sur la population même qui la fait invoquer.
+
+**Un score parfait est une alarme, y compris quand c'est le sien.** 15/15
+aurait dû faire relire l'instrument AVANT de s'en servir pour contredire un
+humain.
+
+**Un écart de score n'est pas une identité fausse.** Le chiffre qui sépare :
+le SCORE DU VISAGE DÉSIGNÉ. 0,594–0,745 = des apparitions multiples ;
+0,06–0,295 = des inconnus.
 
 **Un test ne doit rien imprimer.** L'agent git CAPTURE la sortie ; sous Windows
 un `print` part dans un tuyau, l'encodage local reprend la main, et le premier

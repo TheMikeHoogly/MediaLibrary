@@ -161,6 +161,7 @@ def _mesurer(faces, people, projet, ecart, exemples):
 
     c = Counter()
     scores, decales, exemples_hb = [], [], []
+    faux_positifs = []
     # D : le croisement avec la cause presumee.
     croise = Counter()
     # E : le verdict par POSTE dans la liste de la fiche. La planche montre les
@@ -218,7 +219,15 @@ def _mesurer(faces, people, projet, ecart, exemples):
             c['mesurables'] += 1
             scores.append(s_i)
             if s_i < fp_sim:
+                # LE vrai defaut : le visage designe ne ressemble a PERSONNE.
+                # A distinguer du « decalage », qui n'est qu'un ECART de score
+                # — sur une page d'album ou un montage, un ecart separe deux
+                # apparitions de la MEME personne, pas deux personnes.
                 c['sous_le_seuil_de_faux_positif'] += 1
+                if len(faux_positifs) < exemples:
+                    faux_positifs.append({"person": nom, "key": cle, "i": i,
+                                          "sim": round(s_i, 3),
+                                          "visages": len(liste)})
             # C : un autre visage de la MÊME photo fait-il nettement mieux ?
             autres = [(s, j) for j, s in enumerate(par_visage)
                       if s is not None and j != i]
@@ -297,6 +306,7 @@ def _mesurer(faces, people, projet, ecart, exemples):
            "comptes": dict(c), "croisement_reemb": dict(croise),
            "par_poste": {k: dict(v) for k, v in sorted(postes.items())},
            "exemples_decales": decales, "exemples_hors_bornes": exemples_hb,
+           "exemples_faux_positifs": faux_positifs,
            "plan": dict(plan), "exemples_plan": exemples_plan,
            "exemples_refus": exemples_refus,
            "residu": {
@@ -405,6 +415,13 @@ def afficher(r):
         for e in r["exemples_hors_bornes"]:
             L.append(f"    {e['person'][:18]:<18} i={e['i']} sur {e['visages']} "
                      f"visage(s)  reemb={e['reemb']}  {Path(e['key']).name[:34]}")
+    if r.get("exemples_faux_positifs"):
+        L.append("")
+        L.append("SOUS LE SEUIL DE FAUX POSITIF — le visage designe ne ressemble")
+        L.append("a personne. C'est le defaut REEL ; le decalage n'est qu'un ecart.")
+        for e in r["exemples_faux_positifs"]:
+            L.append(f"    {e['person'][:18]:<18} i={e['i']} ({e['sim']}) sur "
+                     f"{e['visages']} visage(s)  {Path(e['key']).name[:34]}")
     if r["exemples_decales"]:
         L.append("")
         L.append("Decales (un autre visage de la MEME photo ressemble plus) :")
@@ -444,6 +461,143 @@ def afficher(r):
     L.append("BORNE BASSE : une empreinte faussement confirmee est entree dans la")
     L.append("signature et rend son propre couple « juste ». Il y en a au moins")
     L.append("tant, jamais moins.")
+    return "\n".join(L)
+
+
+def verifier_recalages(base, projet, dossier=None, exemples=40):
+    """Les recalages DEJA APPLIQUES ont-ils repare, ou rebrasse ?
+
+    LA QUESTION, ET POURQUOI ELLE SE POSE APRES COUP
+
+    Le critere qui a designe 42 couples le 22/08 est un ECART de score : un
+    autre visage de la meme photo depasse le designe d'au moins 0,10. Ce
+    critere ne dit pas que le visage designe etait FAUX — seulement qu'un
+    autre faisait mieux. Or un fichier n'est pas toujours une scene : les
+    pages d'album photographiees, les montages et les flyers portent la MEME
+    personne plusieurs fois, a des endroits differents. La, l'ecart separe
+    deux apparitions d'elle, et le « recalage » n'a rien repare : il a deplace
+    un couple juste vers un autre couple juste.
+
+    La mesure qui tranche est le score de l'ANCIEN index :
+
+      * sous `CUR_FP_SIM` — l'ancien visage ne ressemblait a personne : le
+        recalage a bien REPARE une erreur.
+      * au-dessus — les deux visages ressemblent a la personne : c'est un
+        REBRASSAGE, sans gain de verite terrain, et le titre « 42
+        rattachements designaient le mauvais visage » est a corriger.
+
+    Lecture seule, sur COPIE. Les journaux de quarantaine disent ce qui a
+    bouge — c'est le programme qui l'a fait qui les a ecrits.
+    """
+    import numpy as np
+    d = Path(dossier or '_corbeille_recalage')
+    journaux = sorted(d.glob('recalage_*.jsonl'))
+    if not journaux:
+        raise SystemExit(f"Aucun journal de recalage dans {d} : rien a "
+                         "verifier. Un recalage non applique n'a rien a dire.")
+
+    def paire(x):
+        if isinstance(x, (list, tuple)) and len(x) == 2:
+            try:
+                return (x[0], int(x[1] or 0))
+            except (TypeError, ValueError):
+                return None
+        return None
+
+    bouges, longueurs = [], 0
+    for j in journaux:
+        for ligne in j.read_text(encoding='utf-8').splitlines():
+            try:
+                o = json.loads(ligne)
+            except ValueError:
+                continue
+            if 'fiche' not in o:
+                continue
+            av = [paire(x) for x in (o.get('avant', {}).get('faces') or [])]
+            ap = [paire(x) for x in (o.get('apres', {}).get('faces') or [])]
+            if len(av) != len(ap):
+                # Une fusion a raccourci la liste : l'appariement position par
+                # position ne tient plus, et deviner serait pire que compter.
+                longueurs += 1
+                continue
+            for a, b in zip(av, ap):
+                if a and b and a != b:
+                    bouges.append({"fiche": o['fiche'], "key": a[0],
+                                   "avant": a[1], "apres": b[1]})
+
+    seuils, _s = M.seuils_de_server(projet)
+    fp_sim = float(seuils['CUR_FP_SIM'])
+    tags, faces, people = M.ouvrir_stores(base)
+    try:
+        fiches, _sans = _fiches(people)
+        par_nom = {str(n).lower(): P for n, P, _c, _pe in fiches}
+        c = Counter()
+        lignes = []
+        for b in bouges:
+            P = par_nom.get(str(b['fiche']).lower())
+            e = faces.data.get(b['key'])
+            liste = (e.get('faces') or []) if isinstance(e, dict) else []
+            if P is None or not liste:
+                c['sans_matiere'] += 1
+                continue
+            def score(i):
+                if not (0 <= i < len(liste)):
+                    return None
+                f = liste[i]
+                if not (isinstance(f, dict) and f.get('emb')):
+                    return None
+                try:
+                    return float(np.max(P @ M.emb_de_b64(f['emb'])))
+                except Exception:                              # noqa: BLE001
+                    return None
+            s_av, s_ap = score(b['avant']), score(b['apres'])
+            if s_av is None or s_ap is None:
+                c['sans_matiere'] += 1
+                continue
+            c['mesurables'] += 1
+            reparation = s_av < fp_sim
+            c['reparation' if reparation else 'rebrassage'] += 1
+            if len(lignes) < exemples:
+                lignes.append({"fiche": b['fiche'], "key": b['key'],
+                               "avant": b['avant'], "apres": b['apres'],
+                               "s_av": round(s_av, 3), "s_ap": round(s_ap, 3),
+                               "quoi": 'REPARATION' if reparation else 'rebrassage'})
+    finally:
+        for st in (tags, faces, people):
+            try:
+                st.cx.close()
+            except Exception:                                  # noqa: BLE001
+                pass
+
+    L = ["=" * 78,
+         "LES RECALAGES APPLIQUES ONT-ILS REPARE, OU REBRASSE ?",
+         "=" * 78,
+         f"Journaux lus : {len(journaux)}   couples deplacees : {len(bouges)}"
+         f"   mesurables : {c['mesurables']}"]
+    if longueurs:
+        L.append(f"   ECARTES : {longueurs} fiche(s) dont la liste a change de "
+                 "longueur (fusion) — non appariables.")
+    if c['sans_matiere']:
+        L.append(f"   ECARTES : {c['sans_matiere']} sans signature ou sans "
+                 "vecteur.")
+    if not c['mesurables']:
+        L.append("")
+        L.append("Rien de mesurable : pas de conclusion.")
+        return "\n".join(L)
+    L += ["",
+          f"    REPARATION (ancien visage sous {fp_sim:.2f}, un inconnu) "
+          f"{c['reparation']:>5}   {part(c['reparation'], c['mesurables'])}",
+          f"    rebrassage  (les deux ressemblent a la personne)  "
+          f"{c['rebrassage']:>5}   {part(c['rebrassage'], c['mesurables'])}",
+          "",
+          "Si le rebrassage domine, le critere d'ECART a nomme des apparitions",
+          "multiples d'une meme personne (page d'album, montage, flyer) et non",
+          "des erreurs : le chiffre publie doit etre corrige, pas le fonds.",
+          ""]
+    for x in lignes:
+        L.append(f"    {x['quoi']:<11} {x['fiche'][:18]:<18} "
+                 f"i={x['avant']}({x['s_av']}) -> i={x['apres']}({x['s_ap']})  "
+                 f"{Path(x['key']).name[:30]}")
     return "\n".join(L)
 
 
@@ -545,7 +699,14 @@ def main(argv=None):
     ap.add_argument('--bilan-residu', dest='bilan_residu', nargs='?',
                     const=RESIDU_JUGEMENTS_DEFAUT, default=None,
                     help="conclut sur les jugements de la page /residu")
+    ap.add_argument('--verifier-recalages', dest='verif', action='store_true',
+                    help="les recalages appliques ont-ils repare ou rebrasse ?")
     a = ap.parse_args(argv)
+    if a.verif:
+        if not a.base:
+            ap.error("--base est requis (une COPIE : mesure_copie_base.py)")
+        print(verifier_recalages(a.base, a.projet))
+        return 0
     if a.bilan_residu:
         print(bilan_residu(a.residu or RESIDU_DEFAUT, a.bilan_residu))
         return 0

@@ -125,5 +125,24 @@
   de 0,8 % les cachait tous les deux, parce qu'il est **concentré** : Didier porte 4 des 9.
   Un défaut réparti se dilue dans un taux ; un défaut concentré se voit à chaque ouverture de la
   fiche. Compter par FICHE, pas seulement sur le fonds.
+- **Un FICHIER n'est pas une SCÈNE** (22/08) : pour réfuter quinze jugements humains, un test
+  géométrique a posé que deux visages aux boîtes disjointes sont deux personnes. Il a rendu
+  **0,0 sur 15 cas sur 15** — et la première photo ouverte était une **page d'album
+  photographiée** : un fichier de 3735×1378 contenant cinq tirages. `Flyer_Jenny.jpg` en porte
+  quatre. Pages scannées, montages, flyers : la même personne y paraît plusieurs fois, à des
+  endroits différents. Toute règle qui suppose une scène par fichier se trompe ici — et elle s'y
+  trompe exactement sur la population qui fait citer deux fois le même fichier, donc là où on
+  l'invoque.
+- **Un score parfait est une alarme — y compris quand c'est le sien** (22/08) : la règle était
+  écrite dans `CLAUDE.md` et appliquée à tous les bancs du projet, sauf à celui qui venait de
+  servir à contredire un humain. 15/15 aurait dû faire relire l'instrument AVANT la conclusion.
+- **Un écart de score n'est pas une identité fausse** (22/08) : le critère « décalé » dit qu'un
+  autre visage de la même photo dépasse le désigné de 0,10 — pas que le désigné soit le mauvais.
+  Le chiffre qui sépare les deux est le SCORE DU VISAGE DÉSIGNÉ : les 9 décalés restants tiennent
+  **0,594–0,745** (des apparitions multiples), les 13 « sous le seuil de faux positif » tiennent
+  **0,06–0,295** (des inconnus). Vérifié dans l'autre sens sur les 33 recalages appliqués :
+  **29 réparations** (ancien score sous 0,30, jusqu'à **−0,13**) contre **4 rebrassages**. La
+  règle avait tranché presque exactement au bon endroit — mais ce n'est pas le mot « décalé »
+  qui le disait, c'est le score.
 - **Fragilité du corpus** : clés corrompues et mutations concurrentes ont invalidé des runs ;
   `--mesurer` alerte au-delà de 15 % de clés mortes.
