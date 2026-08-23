@@ -43,8 +43,14 @@ zéro ; le seul qui déclare une écriture impossible est celui qui l'a TENTÉE.
 **4 rouges observés sur l'ancien code reconstitué**, dont deux tests de la 41
 qui affirmaient l'inverse.
 
-**Reste à faire, et c'est un geste de Mike** : `appliquer_xmp_personnes.py`
-sur les ~5 800. Voir `QUESTIONS_MIKE.md`.
+**La réparation est PROUVÉE sur un premier lot.** Mike a passé
+`appliquer_xmp_personnes.py` sur Ellie : **54 réécrites, 0 en échec**, journal
+d'annulation de 54 lignes portant l'état AVANT de chaque photo. Vérifié
+ensuite par l'instrument indépendant, qui relit le disque : **346 à l'index,
+346 portent le nom, 0 manque** (292 avant). **Débit mesuré : 191 s pour 54
+photos, soit 3,5 s/photo** — au-dessus des 2,91 s/op du matin, le NAS étant
+chargé. Le reste (~5 700) coûtera donc **~5 h 30**, pas 4 h 40.
+**Reste à faire, geste de Mike** : les 351 autres noms. `QUESTIONS_MIKE.md`.
 
 ## État (23/08/2026, session 41)
 

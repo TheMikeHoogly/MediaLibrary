@@ -63,18 +63,22 @@ il REFUSE de classer un nom lu moins de 8 fois, et DIT ce qu'il n'a pas lu).
 
 ## Ce qui attend Mike
 
-**`QUESTIONS_MIKE.md` n'est PAS vide** : ~5 800 photos à éponger avec
-`appliquer_xmp_personnes.py`. Recommandation : Ellie d'abord (54, ~3 min,
-lot nommé dans `_xmp_ellie.json`), puis le reste (~4 h 40 de file).
+**`QUESTIONS_MIKE.md` n'est PAS vide.** Ellie est FAITE et vérifiée — 54
+réécrites, 0 échec, puis **346/346 sur le disque**. Débit réel **3,5 s/photo**
+(191 s pour 54). Restent ~5 700 photos sur 351 noms ;
+`appliquer_xmp_personnes.py` ne prend **qu'un nom à la fois**, d'où la
+recommandation d'un `--tous` avant d'engager les ~5 h 30.
 
 ## La seule chose NON observée
 
-**Le journal de la file sur un geste VIVANT, et son débit.** Deux gestes ont
-été manqués de quelques secondes : pour UNE photo, le journal vit ~3 s puis
-s'auto-efface. **La réparation ci-dessus le fera voir gratuitement** — des
-milliers d'écritures, donc un journal qui vit des heures. À regarder ce
-jour-là : `_file_personnes.jsonl` naît, `.pos` avance, il disparaît à la fin,
-et le débit tombe vers **~2,9 s par photo**.
+**Le journal de la file sur un geste VIVANT.** Deux gestes ont été manqués de
+quelques secondes : pour UNE photo, le journal vit ~3 s puis s'auto-efface.
+**Et la réparation ne le montrera PAS** — `appliquer_xmp_personnes.py` est un
+processus SÉPARÉ qui écrit lui-même, il ne passe jamais par `PERSON_QUEUE`
+(erreur que j'ai faite en le promettant à Mike). Ce qu'il faut : un geste dans
+l'INTERFACE portant sur beaucoup de photos — un groupe nommé, un renommage.
+À regarder ce jour-là : `_file_personnes.jsonl` naît, `.pos` avance, il
+disparaît quand la file se vide.
 
 ## Prochain pas
 

@@ -6,7 +6,16 @@
 > `eval/DECISIONS.md` si elle tranche, dans `ROADMAP.md` si elle priorise.
 > Protocole : `CLAUDE.md`, « Traite autonome ».
 
-- **23/08 — ~5 800 photos dont le fichier ignore un nom que l'index porte.**
+- **23/08 — ~5 700 photos dont le fichier ignore un nom que l'index porte.**
+  **Ellie est FAITE et vérifiée** : 54 réécrites, 0 échec, puis 346/346 sur le
+  disque. Débit réel **3,5 s/photo** (191 s pour 54) : le reste coûtera
+  **~5 h 30**, et `appliquer_xmp_personnes.py` se lance **un nom à la fois**
+  (`--nom X --appliquer`) — 351 lancements. **Ma recommandation** : lui ajouter
+  un `--tous` (reprend là où il s'arrête, journal par nom) avant d'engager la
+  soirée. Dis-le si tu le veux, c'est une heure de travail au plus.
+  *Le paragraphe ci-dessous vaut toujours pour la méthode.*
+
+- **23/08 (fait, gardé pour la méthode) — le premier lot.**
   La fuite est BOUCHÉE (l'enfilement et la reprise ne jugent plus de
   l'existence) ; il reste à éponger l'arriéré. `appliquer_xmp_personnes.py`
   existe pour ça, il est à blanc par défaut, il refuse de tourner tant que la
