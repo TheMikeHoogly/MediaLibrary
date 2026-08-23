@@ -22,13 +22,22 @@ pour un geste qui en demande 11 814, à **0,09 op/s** — 50 heures de NAS pour
 graver une bagarre. La boucle est morte avant de fusionner les fiches : aucun
 journal, donc **rien à annuler**.
 
+**Et ce n'est pas la bagarre qui l'a tuée : un VERROU dans la fiche.**
+`TypeError: cannot pickle '_thread.RLock' object`, dans le `copy.deepcopy` de
+la fiche — une ligne qui venait APRÈS la boucle. Les 5 907 photos étaient
+renommées, puis la fusion mourait sans fiche, sans journal et sans un mot à
+l'écran. Le nouvel ordre a déplacé ce mur de la 60ᵉ minute à la 1ʳᵉ
+milliseconde. Le journal prend maintenant une copie JSON-SÛRE et **nomme** ce
+qu'il écarte. **Qui met un verrou dans une fiche de personne ? Pas encore
+su** — la ligne de console le dira au prochain renommage, et c'est à suivre.
+
 **Corrigé, et la course n'est pas arbitrée : elle n'existe plus.** Les fiches
 sont fusionnées AVANT la boucle — plus de fiche, plus de signature. Le journal
 s'écrit dans un `finally` (interrompue = annulable, et **relancer reprend**),
 et les photos qui portent déjà le nom d'arrivée voient quand même leur FICHIER
 réécrit — c'est ce qui empêche un nom fantôme de renaître au balayage des
 modifiés, et c'est probablement l'origine des « 153 Florine sans fiche ».
-**`delete()` avait la même forme** : corrigé aussi. **44 tests** dans
+**`delete()` avait la même forme** : corrigé aussi. **45 tests** dans
 `test_fusion_de_fiches.py`, dont **5 échouent sur l'ancien code**.
 
 **`verifier_fusion.py` + 22 tests** : le geste le plus lourd du projet a enfin

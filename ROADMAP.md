@@ -17,10 +17,22 @@ fusion venait de lui retirer. Mesuré sur le fonds vivant : `Flo` descend de
 **5 907 à 4 487**, puis **REMONTE à 5 703** ; **60 auto-ajouts « Flo » en une
 heure** dans `/api/curator/list` ; **17 092 écritures XMP en attente** pour un
 geste qui en demande 11 814, et une file qui se vidait à **0,09 op/s** — plus
-de **50 heures** de NAS pour graver le résultat d'une bagarre. La boucle est
-morte avant de fusionner les fiches : ni fiche `Florine`, ni journal, **rien à
-annuler**. Redémarrage : la file fausse est jetée, l'index garde 5 725 `Flo` et
-≥ 2 000 `Florine`.
+de **50 heures** de NAS pour graver le résultat d'une bagarre. Redémarrage : la
+file fausse est jetée, l'index garde 5 725 `Flo` et ≥ 2 000 `Florine`.
+
+**Mais ce n'est pas la bagarre qui l'a tuée — c'est un VERROU dans la fiche.**
+La console du serveur, seule à l'avoir su :
+`TypeError: cannot pickle '_thread.RLock' object`, dans le
+`copy.deepcopy(self.store.data.get(old))` de `rename`. La fiche `Flo` porte, en
+mémoire, un objet vivant. Et cette ligne venait **APRÈS** la boucle : les 5 907
+photos étaient renommées, puis la fusion mourait — ni fiche `Florine`, ni
+journal, rien à annuler, et pas un mot à l'écran. **Le nouvel ordre a déplacé
+ce mur de la 60ᵉ minute à la 1ʳᵉ milliseconde** : c'est ce qui l'a rendu
+visible. Le journal prend désormais une copie **JSON-sûre** de la fiche —
+`_journal_fusion` sérialise, donc ce champ aurait tué le journal juste après le
+deepcopy — et **NOMME dans la console** ce qu'il écarte. **Reste à savoir qui
+met un verrou dans une fiche de personne** : la ligne le dira au prochain
+renommage.
 
 **Corrigé — l'ORDRE du geste.** Les fiches sont fusionnées **AVANT** la boucle
 sur les photos : plus de fiche, plus de signature, plus de course. Elle
@@ -29,8 +41,8 @@ avec : le journal s'écrit dans un `finally` — une boucle interrompue reste
 annulable, et **relancer REPREND** le travail — et les photos qui portent déjà
 le nom d'arrivée voient quand même leur **fichier** réécrit, ce qui empêche un
 nom fantôme de renaître au prochain balayage des modifiés. **`delete()` avait
-exactement la même forme** : corrigé aussi. **44 tests**, dont **5 rouges sur
-l'ancien code**.
+exactement la même forme** : corrigé aussi. **45 tests**, dont **5 rouges sur
+l'ancien code**, et un qui fabrique la fiche à verrou.
 
 **`verifier_fusion.py` (22 tests) : le geste le plus lourd a enfin un juge.**
 Il lit `_corbeille_fusions/` et le serveur vivant et répond par l'arithmétique

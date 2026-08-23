@@ -860,8 +860,8 @@ class SubjectStore:
             return 0
         oldtag, newtag = f"{self.prefix}:{old}", f"{self.prefix}:{new}"
         n = 0
-        avant_old = copy.deepcopy(self.store.data.get(old.lower()))
-        avant_new = copy.deepcopy(self.store.data.get(new.lower()))
+        avant_old = _fiche_pour_journal(self.store.data.get(old.lower()))
+        avant_new = _fiche_pour_journal(self.store.data.get(new.lower()))
         op = self.store.data.pop(old.lower(), None)
         if op:
             npp = self.store.data.get(new.lower())
@@ -896,7 +896,7 @@ class SubjectStore:
             if ats:
                 npp["at"] = min(ats)
             self.store.set(new.lower(), npp)
-        apres_new = copy.deepcopy(self.store.data.get(new.lower()))
+        apres_new = _fiche_pour_journal(self.store.data.get(new.lower()))
         # `deja` : cette photo portait-elle DEJA le nouveau nom ? C'est la
         # seule information qui permette de defaire la fusion sans mentir.
         # Renommer Florine en Flo pour revenir en arriere emporterait les 153
@@ -3735,6 +3735,42 @@ def annuler_recalage(journal=None):
     return {'ok': True, 'fiches_remises': remises,
             'fiches_modifiees_depuis': modifiees}
 
+
+
+def _fiche_pour_journal(fiche):
+    """Copie JSON-SURE d'une fiche, pour le journal de fusion.
+
+    POURQUOI PAS `copy.deepcopy`. Le 23/08, la fusion Flo -> Florine est morte
+    sur `TypeError: cannot pickle '_thread.RLock' object`, dans le deepcopy de
+    la fiche. Une fiche VIVANTE peut porter, en memoire, autre chose que les
+    decisions humaines qu'elle stocke sur disque — et un verrou ne se copie
+    pas. Dans l'ancien ordre le defaut frappait APRES une heure de balayage :
+    les 5 907 photos etaient renommees, la fusion des fiches n'avait pas lieu,
+    aucun journal n'etait ecrit, et le message n'arrivait que dans la console.
+
+    Le journal n'a besoin que de ce qui se RELIT : `confirmed`, `exclude`,
+    `nomerge`, `faces`, `avatar`, `at`. Ce qui ne passe pas en JSON est donc
+    ECARTE et NOMME dans la console — un champ inattendu est une information,
+    pas une raison de faire tomber le geste le plus lourd du projet.
+
+    Ligne d'impression en ASCII PUR : l'agent git lance les tests sans
+    PYTHONUTF8, et sur une console cp1252 un symbole leve une
+    UnicodeEncodeError qui fait passer des tests au rouge sans nommer sa cause.
+    """
+    if not isinstance(fiche, dict):
+        return None
+    out, refuses = {}, []
+    for k, v in fiche.items():
+        try:
+            json.dumps(v, ensure_ascii=False)
+        except (TypeError, ValueError):
+            refuses.append(str(k))
+            continue
+        out[k] = copy.deepcopy(v)
+    if refuses:
+        print("  Fiche %r : champ(s) non JSON ecarte(s) du journal : %s"
+              % (str(fiche.get('name') or '?'), ", ".join(refuses)))
+    return out
 
 
 def _journal_fusion(prefix, ancien, nouveau, touchees, avant_old, avant_new,

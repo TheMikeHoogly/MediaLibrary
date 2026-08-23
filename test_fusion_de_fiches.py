@@ -22,6 +22,8 @@ de l'AST et exécutée avec des magasins à nous.
 
 import ast
 import copy
+import json
+import threading
 import shutil
 import tempfile
 import unittest
@@ -79,6 +81,7 @@ class Sujet:
         # peut observer l'état des fiches PENDANT la boucle — et donc vérifier
         # que la fusion des fiches a bien eu lieu AVANT elle (22/08).
         self.hook = None
+        self.dits = []                         # ce que la fusion a IMPRIME
         index = index if index is not None else {}
         self.index = FauxMagasin(index)
 
@@ -100,7 +103,8 @@ class Sujet:
             self.ecrits.append((k, tag, op))
 
         ns = {
-            'copy': copy,
+            'copy': copy, 'json': json, 'print': lambda *x: self.dits.append(
+                " ".join(str(y) for y in x)),
             'STORE': self.index,
             '_kw_has': lambda e, tag: any(
                 str(x).lower() == tag.lower() for x in (e.get('kw_fr') or [])),
@@ -109,8 +113,9 @@ class Sujet:
             '_enqueue_person_write': _enfile,
             '_journal_fusion': lambda *a: self.journaux.append(a),
         }
-        mod = ast.Module([_fonction('_merge_assigned'), _methode_rename(),
-                          _methode('delete')], [])
+        mod = ast.Module([_fonction('_merge_assigned'),
+                          _fonction('_fiche_pour_journal'),
+                          _methode_rename(), _methode('delete')], [])
         exec(compile(mod, str(SERVER), 'exec'), ns)
         self._rename = ns['rename']
         self._delete = ns['delete']
@@ -600,6 +605,32 @@ class TestLOrdreDuGeste(unittest.TestCase):
         s.rename('Flo', 'Florine')
         touchees = s.journaux[0][3]
         self.assertEqual([t[0] for t in touchees], ['vraie.jpg'])
+
+    def test_une_fiche_qui_porte_un_verrou_ne_fait_pas_tomber_la_fusion(self):
+        """La panne du 23/08, en une ligne.
+
+        `TypeError: cannot pickle '_thread.RLock' object` — la fusion est morte
+        dans le `copy.deepcopy` de la fiche. Dans l'ancien ordre, ce mur venait
+        APRÈS une heure de balayage : les 5 907 photos étaient renommées, les
+        fiches ne fusionnaient jamais, aucun journal n'était écrit, et la seule
+        trace était une pile d'appels dans la console du serveur.
+
+        Ce que le journal doit garder, ce sont les décisions humaines. Un champ
+        qui ne passe pas en JSON est écarté et NOMMÉ — pas fatal."""
+        fiche = dict(FICHE_FLO)
+        fiche['_cache'] = {'verrou': threading.RLock()}
+        s = Sujet({'flo': fiche}, self._index(('a.jpg', ['personne:Flo'])))
+        n = s.rename('Flo', 'Florine')
+        self.assertEqual(n, 1)
+        self.assertIn('florine', s.store.data)
+        self.assertEqual(len(s.journaux), 1)
+        avant_old = s.journaux[0][4]
+        self.assertEqual(avant_old['confirmed'], ['c1', 'c2', 'c3'])
+        self.assertNotIn('_cache', avant_old)
+        json.dumps(avant_old)          # le journal doit rester écrivable
+        self.assertTrue(any('_cache' in d for d in s.dits),
+                        "le champ écarté doit être NOMMÉ dans la console : "
+                        "sans ça, on ne saura jamais ce qui traînait là")
 
     def test_supprimer_efface_la_fiche_AVANT_de_balayer(self):
         """`delete` avait exactement la même forme que `rename` : la fiche ne
