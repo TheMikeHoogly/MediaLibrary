@@ -51,6 +51,17 @@ opérations en file ≈ 2 × 5 400 photos restantes : **la file ne se répète p
 elle est seulement lente**. 70 s pour 200 fichiers (~2,9 f/s sur SMB) : une
 passe complète demande `--echantillon`, ou plus que les 600 s du banc.
 
+**Et l'autre moitié : `appliquer_xmp_personnes.py` (23 tests) REFAIT ce que la
+file n'a pas fait.** Il REFUSE net tant que `queues.personnes` n'est pas à 0 —
+deux écrivains sur les mêmes fichiers, c'est la bagarre du 22/08 en pire ; il
+est à blanc par défaut ; il relit les tags avant d'écrire, donc **relancer
+reprend** et une photo déjà réparée n'est pas réécrite ; son journal
+(`_corbeille_xmp/`) s'écrit dans un `finally` et note l'état d'AVANT, donc une
+passe interrompue reste annulable. Il fait le retrait et l'ajout d'une photo en
+**UNE** invocation exiftool, là où `person_writer` en lance deux. **Il n'a
+jamais écrit un vrai fichier** : famille `appliquer_`, hors de portée du banc —
+la première passe à blanc est un geste de Mike.
+
 
 ## État (22/08/2026, session 38)
 

@@ -229,3 +229,12 @@ _florine_a_juger.html
 # photos touchees. C'est ce qui rend `Annuler la derniere fusion` possible.
 # Local, jamais versionne : des chemins de photos, et un etat de machine.
 _corbeille_fusions/
+
+# --- Quarantaine des reparations XMP (23/08) -------------------------------
+# Ce que `appliquer_xmp_personnes.py` a retire et ajoute dans les fichiers du
+# fonds, photo par photo, avec l'etat d'AVANT : c'est ce qui rend la
+# reparation annulable. Local, jamais versionne (chemins de photos).
+_corbeille_xmp/
+# Les rapports d'ecart de `verifier_xmp_personnes.py` (--json) : une photo de
+# l'instant, pas une source.
+_xmp_*.json

@@ -53,13 +53,13 @@ branches.**
 
 ## Prochain pas
 
-1. **La MOITIÉ manquante de la réparation.** Mesurer l'écart est fait
-   (`verifier_xmp_personnes.py`, 29 tests, tourné au banc : 19 photos sur 200
-   portent `Florine` dans leur fichier, 119 portent encore `Flo`). Le REFAIRE
-   reste : soit un `appliquer_xmp_personnes.py` (geste de Mike, jamais de
-   l'agent), soit une route qui remet en file les clés du `--json`. **Ne jamais
-   écrire pendant que `person_writer` tourne** : deux écrivains sur les mêmes
-   fichiers, c'est la bagarre du 22/08 en pire.
+1. **Faire tourner la réparation POUR DE VRAI.** Les deux outils existent —
+   `verifier_xmp_personnes.py` (29 tests, tourné au banc : 19 photos sur 200
+   portent `Florine` dans leur fichier, 119 portent encore `Flo`) et
+   `appliquer_xmp_personnes.py` (23 tests). Le second **n'a jamais écrit un vrai
+   fichier** : famille `appliquer_`, le banc ne la lance pas. Quand la file sera
+   à 0, un passage du VÉRIFICATEUR dira s'il reste quoi que ce soit ; s'il reste
+   quelque chose, la réparation à blanc, puis `--appliquer` — geste de Mike.
 2. **Accélérer l'écriture XMP** : un processus exiftool par opération, en série,
    ~3,5 s par tag. Grouper le `-Ancien` et le `+Nouveau` d'une même photo en UNE
    invocation (÷2), puis le mode `-stay_open`. Touche `server.py`.
