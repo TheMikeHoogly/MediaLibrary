@@ -3,6 +3,13 @@
 > À coller après connexion de `C:\Prog\Claude\MediaLibrary`. Règles et
 > protocole : `CLAUDE.md`. Ici : **l'état et le prochain pas, rien d'autre.**
 
+> ⚠ **NE REDÉMARRE PAS LE SERVEUR tant que `/api/maint/status` →
+> `queues.personnes` n'est pas à 0.** La fusion Flo → Florine y a laissé
+> ~11 700 écritures XMP (~3,4 h) ; un redémarrage les jette, et des milliers de
+> photos garderaient `personne:Flo` dans leurs métadonnées alors que l'index
+> dit `Florine` — c'est ainsi que naît un nom fantôme. La file est vide ? Alors
+> le protocole normal reprend.
+
 Tu reprends **MediaLibrary**. **VÉRIFIE avant de lire** : `.git/HEAD`,
 `.git/logs/HEAD` et `.git/logs/refs/heads/main` disent ce qui a été commité et
 FUSIONNÉ — ce document, non. Puis `ROADMAP.md`, `eval/DECISIONS.md`,
