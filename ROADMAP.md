@@ -55,7 +55,22 @@ balaie le fonds **par PHOTO** (une photo à deux noms manquants coûte UNE
 invocation, pas deux), **reprend** où il s'arrête, et **s'arrête** si la file
 du serveur repart — jamais deux écrivains sur les mêmes fichiers.
 **13 vérifications neuves, 6 des 7 fonctions rouges** sur le code sans `--tous`
-(36/36 vertes après). **Reste : le lancer**, geste de Mike.
+(41/41 vertes après).
+
+**Et le premier lancement réel a trouvé un défaut en trois minutes.** Sur 352
+requêtes enchaînées, le serveur en ferme deux (« Remote end closed connection
+without response ») : **`Val` — 1 205 photos — a été SAUTÉ**, et ses photos
+marquées « faites » parce qu'elles portent un autre nom. La reprise ne les
+rattrapait donc jamais. Corrigé : `cles_du_nom` **réessaie trois fois** et
+LÈVE si ça échoue encore (rendre une liste vide ferait passer un nom perdu
+pour un nom sans photo) ; les noms sautés sont écrits dans
+`_corbeille_xmp/_tous_noms_sautes.txt` et **redits à la fin**, la console
+défilant cinq heures. **5 vérifications neuves.**
+
+**Aussi vu au lancement, et à ne pas mal lire** : sur les 1 400 premières
+photos, **5 réécritures** — 0,4 %, loin des 18,7 %. Le balayage suit l'ordre
+alphabétique des CHEMINS, donc les années anciennes d'abord ; les 54 écarts
+d'Ellie étaient sur 2022 et 2024. Le taux doit monter à mesure qu'il avance.
 
 ## État (23/08/2026, session 41)
 

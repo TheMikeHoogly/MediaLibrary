@@ -17,6 +17,10 @@
 
       python appliquer_xmp_personnes.py --tous --max-photos 300
       python appliquer_xmp_personnes.py --tous --appliquer
+
+  **LANCÉ le 23/08 à 21:38.** La passe en cours tourne sur le code d'AVANT le
+  correctif ci-dessous : à sa fin, **rattraper `Val` et `Yann Mamin`** avec
+  `--nom X --appliquer` (ce mode ignore le fichier de reprise).
   *Le paragraphe ci-dessous vaut toujours pour la méthode.*
 
 - **23/08 (fait, gardé pour la méthode) — le premier lot.**

@@ -145,6 +145,7 @@ def ecrire_une(exe, chemin, ajoute, retire):
 # ─────────────────────────── Le fonds entier (--tous) ───────────────────────
 
 FAITS_TOUS = CORBEILLE / "_tous_faits.txt"
+NOMS_SAUTES = CORBEILLE / "_tous_noms_sautes.txt"
 
 
 def attendu_par_photo(serveur, uploads, ecrire=print):
@@ -159,12 +160,14 @@ def attendu_par_photo(serveur, uploads, ecrire=print):
     reprendre avant d'engager cinq heures d'écritures."""
     import verifier_xmp_toutes_personnes as T
     par_chemin = {}
+    sautes = []
     noms = T.noms_du_serveur(serveur)
     ecrire("  %d nom(s) de personne ; collecte des cles..." % len(noms))
     for nom, _n in noms:
         try:
             cles = V.cles_du_nom(nom, serveur)
         except Exception as e:                                # noqa: BLE001
+            sautes.append(nom)
             ecrire("  ! %s : cles non lues (%s) — ce nom sera SAUTE" % (nom, e))
             continue
         for cle in cles:
@@ -175,7 +178,18 @@ def attendu_par_photo(serveur, uploads, ecrire=print):
             if k not in par_chemin:
                 par_chemin[k] = (chemin, set())
             par_chemin[k][1].add(nom)
-    return par_chemin
+    if sautes:
+        # Sur DISQUE, parce que la console defile pendant cinq heures et que
+        # ces noms-la sont precisement ceux qu'il ne faut pas oublier : leurs
+        # photos seront marquees FAITES si elles portent un autre nom.
+        try:
+            NOMS_SAUTES.parent.mkdir(parents=True, exist_ok=True)
+            with NOMS_SAUTES.open('a', encoding='utf-8') as f:
+                for nom in sautes:
+                    f.write(nom + '\n')
+        except OSError:
+            pass
+    return par_chemin, sautes
 
 
 def charger_faits(chemin=None):
@@ -306,7 +320,7 @@ def appliquer(plan, exe, journal_path, ecrire=print):
 
 def tour_du_fonds(a, exe, uploads, ecrire=print):
     """Le fonds entier, par photo, avec reprise. Rend le code de sortie."""
-    par_chemin = attendu_par_photo(a.serveur, uploads, ecrire=ecrire)
+    par_chemin, sautes = attendu_par_photo(a.serveur, uploads, ecrire=ecrire)
     deja = charger_faits()
     restants = [k for k in sorted(par_chemin) if k not in deja]
     plafonne = 0
@@ -346,6 +360,17 @@ def tour_du_fonds(a, exe, uploads, ecrire=print):
                "elles repasseront)" % (r['total'] - r['vues']))
     if plafonne:
         ecrire("  hors plafond       : %d" % plafonne)
+    if sautes:
+        ecrire("")
+        ecrire("  %d NOM(S) SAUTE(S) — leurs cles n ont pas pu etre lues :"
+               % len(sautes))
+        for nom in sautes:
+            ecrire("    - %s" % nom)
+        ecrire("  Leurs photos ont pu etre marquees FAITES parce qu elles")
+        ecrire("  portent un AUTRE nom : la reprise ne les rattrapera pas.")
+        ecrire("  Les reprendre un par un, ce mode ignore le fichier de")
+        ecrire("  reprise :  --nom NOM --appliquer")
+        ecrire("  Liste gardee dans %s" % NOMS_SAUTES)
     if r['arret']:
         ecrire("  ARRET AVANT LA FIN : %s" % r['arret'])
         ecrire("  Relancer reprendra ou ca s est arrete.")

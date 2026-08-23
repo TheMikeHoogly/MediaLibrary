@@ -315,6 +315,87 @@ def t_tous_refuse_de_se_melanger_a_nom(tmp):
     verifie("--tous ne se combine pas avec --nom", code == 2, "code=%r" % code)
 
 
+def t_une_requete_qui_lache_est_REESSAYEE(tmp):
+    """Le 23/08, le premier balayage a perdu Val — 1 205 photos — sur un
+    « Remote end closed connection ». Un nom perdu ici ne revient jamais :
+    ses photos sont marquees faites parce qu'elles portent un autre nom."""
+    essais = {'n': 0}
+
+    class R:
+        def read(self_):
+            return b'{"photos": [{"key": "a.jpg"}]}'
+
+        def __enter__(self_):
+            return self_
+
+        def __exit__(self_, *a):
+            return False
+
+    def urlopen(*a, **k):
+        essais['n'] += 1
+        if essais['n'] < 3:
+            raise ConnectionResetError("Remote end closed connection")
+        return R()
+
+    vrai = V.urllib.request.urlopen
+    V.urllib.request.urlopen = urlopen
+    try:
+        cles = V.cles_du_nom('Val', 'http://x')
+    finally:
+        V.urllib.request.urlopen = vrai
+    verifie("une requete qui lache est reessayee", cles == ['a.jpg'],
+            "cles=%r apres %d essai(s)" % (cles, essais['n']))
+
+
+def t_ce_qui_lache_TROIS_fois_leve(tmp):
+    """Rendre une liste vide ferait passer un nom perdu pour un nom sans
+    photo : c'est la difference entre « rien a faire » et « on ne sait pas »."""
+    def urlopen(*a, **k):
+        raise ConnectionResetError("toujours ferme")
+
+    vrai = V.urllib.request.urlopen
+    V.urllib.request.urlopen = urlopen
+    leve = False
+    try:
+        V.cles_du_nom('Val', 'http://x')
+    except OSError:
+        leve = True
+    finally:
+        V.urllib.request.urlopen = vrai
+    verifie("ce qui lache trois fois LEVE, au lieu de rendre une liste vide",
+            leve)
+
+
+def t_un_nom_saute_est_ECRIT_sur_disque_et_redit(tmp):
+    """La console defile pendant cinq heures. Ces noms-la sont ceux qu il ne
+    faut pas oublier."""
+    tmp = Path(tmp)
+    vrai_sautes, vrai_cles = A.NOMS_SAUTES, V.cles_du_nom
+    A.NOMS_SAUTES = tmp / "sautes.txt"
+    import verifier_xmp_toutes_personnes as T
+    vrai_noms = T.noms_du_serveur
+    T.noms_du_serveur = lambda *a, **k: [('Val', 1205), ('Ellie', 346)]
+
+    def cles(nom, serveur, **k):
+        if nom == 'Val':
+            raise ConnectionResetError("ferme")
+        return ['e.jpg']
+
+    V.cles_du_nom = cles
+    try:
+        par_chemin, sautes = A.attendu_par_photo('http://x', Path('/f'),
+                                                 ecrire=lambda *x: None)
+    finally:
+        V.cles_du_nom, T.noms_du_serveur = vrai_cles, vrai_noms
+        lu = A.NOMS_SAUTES.read_text(encoding='utf-8') if A.NOMS_SAUTES.exists() else ''
+        A.NOMS_SAUTES = vrai_sautes
+    verifie("un nom saute est rendu a l appelant", sautes == ['Val'],
+            "sautes=%r" % sautes)
+    verifie("un nom saute est ecrit sur DISQUE", 'Val' in lu, "lu=%r" % lu)
+    verifie("le nom saute ne laisse pas de photo fantome dans le plan",
+            len(par_chemin) == 1, "par_chemin=%r" % list(par_chemin))
+
+
 def main():
     tmp = Path(tempfile.mkdtemp(prefix="test_appl_xmp_"))
     tests = [t_refus_si_la_file_tourne, t_refus_sans_verite_dindex,
@@ -325,7 +406,10 @@ def main():
              t_tous_ne_devine_pas_ce_qu_il_n_a_pas_lu,
              t_tous_REPREND_ou_il_s_est_arrete,
              t_tous_S_ARRETE_si_le_serveur_se_remet_a_ecrire,
-             t_tous_a_blanc_n_ecrit_RIEN, t_tous_refuse_de_se_melanger_a_nom]
+             t_tous_a_blanc_n_ecrit_RIEN, t_tous_refuse_de_se_melanger_a_nom,
+             t_une_requete_qui_lache_est_REESSAYEE,
+             t_ce_qui_lache_TROIS_fois_leve,
+             t_un_nom_saute_est_ECRIT_sur_disque_et_redit]
     for t in tests:
         sous = tmp / t.__name__
         sous.mkdir(parents=True, exist_ok=True)

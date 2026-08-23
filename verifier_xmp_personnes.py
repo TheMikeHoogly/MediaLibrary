@@ -57,6 +57,7 @@ import random
 import shutil
 import subprocess
 import sys
+import time
 import tempfile
 import urllib.error
 import urllib.parse
@@ -111,16 +112,35 @@ def exiftool_exe(racine=None):
 
 # ─────────────────────────── La vérité d'index ───────────────────────────
 
-def cles_du_nom(nom, serveur, timeout=120):
+def cles_du_nom(nom, serveur, timeout=120, essais=3):
     """Les clés que l'INDEX dit taguées `personne:Nom` (`/api/people/photos`).
 
-    `light=1` : on ne veut que des clés, pas des vignettes ni des dates."""
+    `light=1` : on ne veut que des clés, pas des vignettes ni des dates.
+
+    ELLE RÉESSAIE, et ça n'est pas de la coquetterie. Le 23/08, le premier
+    balayage des 352 noms en a perdu deux — « Remote end closed connection
+    without response » : le serveur ferme la connexion quand on l'enchaîne
+    trois cent cinquante fois. L'un des deux était **Val, 1 205 photos**. Un
+    nom perdu ici, c'est un nom que la réparation ne verra jamais, alors même
+    que ses photos seront marquées faites parce qu'elles en portent un autre.
+    Trois essais, pause qui double. Ce qui échoue quand même LÈVE — l'appelant
+    doit pouvoir le nommer, pas recevoir une liste vide qui ressemble à un nom
+    sans photo."""
     url = (serveur.rstrip('/') + '/api/people/photos?'
            + urllib.parse.urlencode({'name': nom, 'limit': 50000,
                                      'light': 1, 'order': 'best'}))
-    with urllib.request.urlopen(url, timeout=timeout) as r:
-        data = json.loads(r.read().decode('utf-8'))
-    return [p.get('key') for p in (data.get('photos') or []) if p.get('key')]
+    dernier = None
+    for i in range(max(1, essais)):
+        try:
+            with urllib.request.urlopen(url, timeout=timeout) as r:
+                data = json.loads(r.read().decode('utf-8'))
+            return [p.get('key') for p in (data.get('photos') or [])
+                    if p.get('key')]
+        except (OSError, ValueError) as e:                    # noqa: PERF203
+            dernier = e
+            if i + 1 < max(1, essais):
+                time.sleep(0.5 * (2 ** i))
+    raise dernier
 
 
 def file_du_serveur(serveur, timeout=20):
