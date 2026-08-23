@@ -50,7 +50,12 @@ ensuite par l'instrument indépendant, qui relit le disque : **346 à l'index,
 346 portent le nom, 0 manque** (292 avant). **Débit mesuré : 191 s pour 54
 photos, soit 3,5 s/photo** — au-dessus des 2,91 s/op du matin, le NAS étant
 chargé. Le reste (~5 700) coûtera donc **~5 h 30**, pas 4 h 40.
-**Reste à faire, geste de Mike** : les 351 autres noms. `QUESTIONS_MIKE.md`.
+**Et l'outil pour le reste est livré** : `appliquer_xmp_personnes.py --tous`
+balaie le fonds **par PHOTO** (une photo à deux noms manquants coûte UNE
+invocation, pas deux), **reprend** où il s'arrête, et **s'arrête** si la file
+du serveur repart — jamais deux écrivains sur les mêmes fichiers.
+**13 vérifications neuves, 6 des 7 fonctions rouges** sur le code sans `--tous`
+(36/36 vertes après). **Reste : le lancer**, geste de Mike.
 
 ## État (23/08/2026, session 41)
 

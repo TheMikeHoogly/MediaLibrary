@@ -65,9 +65,11 @@ il REFUSE de classer un nom lu moins de 8 fois, et DIT ce qu'il n'a pas lu).
 
 **`QUESTIONS_MIKE.md` n'est PAS vide.** Ellie est FAITE et vérifiée — 54
 réécrites, 0 échec, puis **346/346 sur le disque**. Débit réel **3,5 s/photo**
-(191 s pour 54). Restent ~5 700 photos sur 351 noms ;
-`appliquer_xmp_personnes.py` ne prend **qu'un nom à la fois**, d'où la
-recommandation d'un `--tous` avant d'engager les ~5 h 30.
+(191 s pour 54). Restent ~5 700 photos sur 351 noms, et
+**`appliquer_xmp_personnes.py --tous` est livré** : par PHOTO, avec reprise
+(`_corbeille_xmp/_tous_faits.txt`), et arrêt propre si la file du serveur
+repart. Reste à le LANCER (~5 h) : `--tous --max-photos 300` d'abord, puis
+`--tous --appliquer`.
 
 ## La seule chose NON observée
 

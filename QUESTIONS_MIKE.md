@@ -9,10 +9,14 @@
 - **23/08 — ~5 700 photos dont le fichier ignore un nom que l'index porte.**
   **Ellie est FAITE et vérifiée** : 54 réécrites, 0 échec, puis 346/346 sur le
   disque. Débit réel **3,5 s/photo** (191 s pour 54) : le reste coûtera
-  **~5 h 30**, et `appliquer_xmp_personnes.py` se lance **un nom à la fois**
-  (`--nom X --appliquer`) — 351 lancements. **Ma recommandation** : lui ajouter
-  un `--tous` (reprend là où il s'arrête, journal par nom) avant d'engager la
-  soirée. Dis-le si tu le veux, c'est une heure de travail au plus.
+  **~5 h 30**. **`--tous` est LIVRÉ** (choix de Mike, 23/08) : il balaie tout,
+  **par PHOTO** — une photo qui manque deux noms coûte UNE invocation, pas
+  deux — et il **REPREND** où il s'est arrêté (`_corbeille_xmp/_tous_faits.txt`).
+  Il s'ARRÊTE proprement si la file du serveur repart : jamais deux écrivains.
+  La commande :
+
+      python appliquer_xmp_personnes.py --tous --max-photos 300
+      python appliquer_xmp_personnes.py --tous --appliquer
   *Le paragraphe ci-dessous vaut toujours pour la méthode.*
 
 - **23/08 (fait, gardé pour la méthode) — le premier lot.**

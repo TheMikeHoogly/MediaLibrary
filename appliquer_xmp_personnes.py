@@ -142,6 +142,146 @@ def ecrire_une(exe, chemin, ajoute, retire):
                 pass
 
 
+# ─────────────────────────── Le fonds entier (--tous) ───────────────────────
+
+FAITS_TOUS = CORBEILLE / "_tous_faits.txt"
+
+
+def attendu_par_photo(serveur, uploads, ecrire=print):
+    """`chemin normalisé -> (Path, {noms attendus})` — par PHOTO, pas par
+    couple nom–photo.
+
+    POURQUOI PAR PHOTO. Le mode `--nom` traite un nom à la fois : une photo qui
+    manque DEUX noms coûte alors deux lectures et deux invocations ExifTool,
+    dont le prix est le démarrage du processus (3,5 s mesurés sur le NAS le
+    23/08). Groupées, elles n'en coûtent qu'une — c'est exactement la leçon que
+    `write_person_tags` avait tirée côté serveur, et que ce script devait
+    reprendre avant d'engager cinq heures d'écritures."""
+    import verifier_xmp_toutes_personnes as T
+    par_chemin = {}
+    noms = T.noms_du_serveur(serveur)
+    ecrire("  %d nom(s) de personne ; collecte des cles..." % len(noms))
+    for nom, _n in noms:
+        try:
+            cles = V.cles_du_nom(nom, serveur)
+        except Exception as e:                                # noqa: BLE001
+            ecrire("  ! %s : cles non lues (%s) — ce nom sera SAUTE" % (nom, e))
+            continue
+        for cle in cles:
+            chemin = V.chemin_de_cle(cle, uploads)
+            if chemin is None:
+                continue
+            k = V._normalise(chemin)
+            if k not in par_chemin:
+                par_chemin[k] = (chemin, set())
+            par_chemin[k][1].add(nom)
+    return par_chemin
+
+
+def charger_faits(chemin=None):
+    """Les photos déjà traitées lors d'un passage précédent.
+
+    La reprise est un SET de chemins, pas une position : entre deux passages
+    l'index a pu bouger, et une position dans une liste qui n'est plus la même
+    ferait sauter des photos sans que personne le sache."""
+    chemin = Path(chemin or FAITS_TOUS)
+    if not chemin.is_file():
+        return set()
+    try:
+        return {l.strip() for l in
+                chemin.read_text(encoding='utf-8').splitlines() if l.strip()}
+    except OSError:
+        return set()
+
+
+def a_faire_photo(par_chemin, tags):
+    """Ce qui manque à chaque photo LUE, d'après ce qu'elle porte maintenant.
+
+    Une photo non lue ne rend rien : on ne devine pas ce qu'un fichier porte.
+    Elle n'est pas non plus marquée faite — elle repassera."""
+    plan = []
+    for k, (chemin, noms) in par_chemin.items():
+        mots = tags.get(k)
+        if mots is None:
+            continue
+        manque = sorted(n for n in noms
+                        if ("%s:%s" % (V.PREFIXE, n)).lower() not in mots)
+        plan.append({'cle': str(chemin), 'chemin': str(chemin),
+                     'ajoute': manque, 'retire': [],
+                     'avant': sorted(mots), 'k': k})
+    return plan
+
+
+def balayer(par_chemin, exe, journal_path, faits_path, serveur='',
+            lot=200, appliquer_vrai=False, ecrire=print):
+    """Lit et répare le fonds par tranches, en marquant chaque photo FAITE.
+
+    Trois choses tiennent ce mode :
+
+    1. **La reprise.** Chaque photo traitée est ajoutée à `_tous_faits.txt`
+       APRÈS son écriture et son journal. Une fenêtre fermée, une coupure, un
+       Ctrl-C : relancer reprend, et ne réécrit pas ce qui l'a déjà été.
+    2. **L'écrivain reste unique.** La file du serveur est re-testée AVANT
+       chaque tranche : si elle se remet à travailler — Mike a nommé quelqu'un
+       pendant que ça tourne — ce script S'ARRÊTE proprement au lieu de se
+       battre avec `person_writer` sur les mêmes fichiers.
+    3. **Rien n'est tu.** Ce qui n'a pas été lu, pas écrit, ou sauté parce que
+       la file s'est remise à tourner est COMPTÉ et dit à la fin."""
+    restants = [k for k in sorted(par_chemin) if k not in charger_faits(faits_path)]
+    total = len(restants)
+    vues = reecrites = rates = 0
+    arret = ''
+    t0 = time.time()
+    journal_path.parent.mkdir(parents=True, exist_ok=True)
+    fh = journal_path.open('a', encoding='utf-8') if appliquer_vrai else None
+    fa = open(faits_path, 'a', encoding='utf-8') if appliquer_vrai else None
+    try:
+        for debut in range(0, total, lot):
+            if serveur:
+                file = V.file_du_serveur(serveur)
+                if file:
+                    arret = ("la file du serveur s est remise a tourner "
+                             "(%d operation(s)) : deux ecrivains sur les memes "
+                             "fichiers, jamais." % file)
+                    break
+            tranche = restants[debut:debut + lot]
+            chemins = [par_chemin[k][0] for k in tranche]
+            tags = V.lire_tags(chemins, exe, journal=None)
+            sous = {k: par_chemin[k] for k in tranche}
+            for op in a_faire_photo(sous, tags):
+                vues += 1
+                if op['ajoute']:
+                    if appliquer_vrai:
+                        ok, err = ecrire_une(exe, op['chemin'], op['ajoute'],
+                                             op['retire'])
+                        fh.write(json.dumps(dict(op, ok=ok, erreur=err,
+                                                 quand=time.time()),
+                                            ensure_ascii=False) + '\n')
+                        fh.flush()
+                        reecrites += 1 if ok else 0
+                        rates += 0 if ok else 1
+                    else:
+                        reecrites += 1
+                if appliquer_vrai:
+                    fa.write(op['k'] + '\n')
+                    fa.flush()
+            ecoule = time.time() - t0
+            reste = (total - min(debut + lot, total))
+            vitesse = (min(debut + lot, total)) / ecoule if ecoule else 0
+            ecrire("  %d/%d photos vues — %d reecrite(s), %d echec(s)%s"
+                   % (min(debut + lot, total), total, reecrites, rates,
+                      (" — reste ~%d min" % int(reste / vitesse / 60))
+                      if vitesse else ""))
+    finally:
+        if fh:
+            fh.close()
+        if fa:
+            fa.close()
+    return {'total': total, 'vues': vues, 'reecrites': reecrites,
+            'rates': rates, 'non_lues': vues and (total - vues) or 0,
+            'arret': arret}
+
+
 def appliquer(plan, exe, journal_path, ecrire=print):
     """Écrit, en notant AVANT de continuer. Le journal est fermé dans un
     `finally` : une interruption laisse un journal complet de ce qui a été
@@ -164,6 +304,56 @@ def appliquer(plan, exe, journal_path, ecrire=print):
     return faits, rates
 
 
+def tour_du_fonds(a, exe, uploads, ecrire=print):
+    """Le fonds entier, par photo, avec reprise. Rend le code de sortie."""
+    par_chemin = attendu_par_photo(a.serveur, uploads, ecrire=ecrire)
+    deja = charger_faits()
+    restants = [k for k in sorted(par_chemin) if k not in deja]
+    plafonne = 0
+    if a.max_photos and len(restants) > a.max_photos:
+        plafonne = len(restants) - a.max_photos
+        restants = restants[:a.max_photos]
+        par_chemin = {k: par_chemin[k] for k in restants}
+    ecrire("")
+    ecrire("=" * 74)
+    ecrire("  REPARATION DU FONDS — toutes les personnes, par PHOTO")
+    ecrire("=" * 74)
+    ecrire("  photos portant au moins un nom : %d" % (len(deja) + len(restants)
+                                                      + plafonne))
+    ecrire("  deja traitees (reprise)        : %d" % len(deja))
+    ecrire("  a examiner maintenant          : %d" % len(restants))
+    if plafonne:
+        ecrire("  LAISSEES DE COTE par --max-photos: %d "
+               "(un plafond tu se lirait comme un fonds propre)" % plafonne)
+    if not a.appliquer:
+        ecrire("")
+        ecrire("  A BLANC : la lecture a lieu, aucune ecriture. Ajouter "
+               "--appliquer.")
+    ecrire("=" * 74)
+    jp = CORBEILLE / ("xmp_tous_%s.jsonl" % horodatage())
+    if a.appliquer:
+        ecrire("  journal  : %s" % jp)
+        ecrire("  reprise  : %s" % FAITS_TOUS)
+    r = balayer(par_chemin, exe, jp, FAITS_TOUS, serveur=a.serveur,
+                lot=max(1, a.lot), appliquer_vrai=a.appliquer, ecrire=ecrire)
+    ecrire("")
+    ecrire("=" * 74)
+    ecrire("  photos lues        : %d sur %d" % (r['vues'], r['total']))
+    ecrire("  reecrites          : %d" % r['reecrites'])
+    ecrire("  en echec           : %d" % r['rates'])
+    if r['total'] > r['vues']:
+        ecrire("  NON LUES           : %d (ni reparees, ni marquees faites : "
+               "elles repasseront)" % (r['total'] - r['vues']))
+    if plafonne:
+        ecrire("  hors plafond       : %d" % plafonne)
+    if r['arret']:
+        ecrire("  ARRET AVANT LA FIN : %s" % r['arret'])
+        ecrire("  Relancer reprendra ou ca s est arrete.")
+    ecrire("  Verifier avec verifier_xmp_toutes_personnes.py.")
+    ecrire("=" * 74)
+    return 1 if (r['rates'] or r['arret']) else 0
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.split('\n')[1])
     ap.add_argument('--rapport', default='',
@@ -173,11 +363,21 @@ def main(argv=None):
     ap.add_argument('--serveur', default='http://127.0.0.1:8080')
     ap.add_argument('--appliquer', action='store_true',
                     help="ecrire pour de vrai (sans lui : a blanc)")
+    ap.add_argument('--tous', action='store_true',
+                    help="balayer TOUS les noms, par PHOTO, avec reprise")
+    ap.add_argument('--lot', type=int, default=200,
+                    help="photos lues par tranche en mode --tous (defaut 200)")
+    ap.add_argument('--max-photos', type=int, default=0,
+                    help="plafond d essai en mode --tous (0 = tout)")
     a = ap.parse_args(argv)
 
-    if not a.rapport and not a.nom:
-        print("il faut --rapport, ou --nom (la verite d'index vient de l'un "
-              "des deux).")
+    if a.tous and (a.rapport or a.nom):
+        print("--tous balaie le fonds entier : il ne se combine ni avec "
+              "--rapport ni avec --nom.")
+        return 2
+    if not a.tous and not a.rapport and not a.nom:
+        print("il faut --tous, --rapport, ou --nom (la verite d'index vient "
+              "de l'un des trois).")
         return 2
 
     file = V.file_du_serveur(a.serveur)
@@ -196,6 +396,9 @@ def main(argv=None):
     if exe is None:
         print("ExifTool introuvable : rien a faire sans lui.")
         return 2
+
+    if a.tous:
+        return tour_du_fonds(a, V.exiftool_exe(), V.dossier_uploads())
 
     cles, nom, absent = candidats(a.rapport, a.nom, a.absent, a.serveur)
     if not cles:

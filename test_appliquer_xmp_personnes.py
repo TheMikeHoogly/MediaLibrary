@@ -199,12 +199,133 @@ def t_candidats_depuis_un_rapport(tmp):
             (nom, absent) == ('Florine', 'Flo'), "%r" % ((nom, absent),))
 
 
+# ───────────────────────────── Le mode --tous ────────────────────────────────
+#
+# Il engage cinq heures d'ecritures sans surveillance. Ce qui le rend
+# acceptable tient en quatre points, et chacun a son test : il groupe par
+# PHOTO (une invocation, pas une par nom), il REPREND ou il s'est arrete, il
+# s'ARRETE si le serveur se remet a ecrire, et il DIT ce qu'il n'a pas fait.
+
+
+def t_tous_groupe_par_PHOTO(tmp):
+    """Une photo qui manque DEUX noms coute UNE invocation, pas deux.
+    A 3,5 s l'invocation sur le NAS, c'est la moitie de la soiree."""
+    a = Path(tmp) / "a.jpg"
+    par_chemin = {V._normalise(a): (a, {"Ellie", "Mike"})}
+    tags = {V._normalise(a): {"personne:florine"}}
+    plan = A.a_faire_photo(par_chemin, tags)
+    verifie("--tous : une entree par PHOTO, pas par couple", len(plan) == 1,
+            "plan=%r" % plan)
+    verifie("--tous : les deux noms manquants dans le MEME geste",
+            plan and plan[0]['ajoute'] == ["Ellie", "Mike"],
+            "ajoute=%r" % (plan[0]['ajoute'] if plan else None))
+
+
+def t_tous_ne_reecrit_pas_le_conforme(tmp):
+    a = Path(tmp) / "a.jpg"
+    par_chemin = {V._normalise(a): (a, {"Ellie"})}
+    plan = A.a_faire_photo(par_chemin, {V._normalise(a): {"personne:ellie"}})
+    verifie("--tous : une photo conforme ne demande aucun geste",
+            plan and plan[0]['ajoute'] == [], "plan=%r" % plan)
+
+
+def t_tous_ne_devine_pas_ce_qu_il_n_a_pas_lu(tmp):
+    """Un fichier non lu n'est ni repare ni marque fait : il repassera.
+    Le declarer conforme serait exactement la faute qu'on repare aujourd'hui."""
+    a = Path(tmp) / "a.jpg"
+    plan = A.a_faire_photo({V._normalise(a): (a, {"Ellie"})}, {})
+    verifie("--tous : non lu = rien, surtout pas 'conforme'", plan == [],
+            "plan=%r" % plan)
+
+
+def t_tous_REPREND_ou_il_s_est_arrete(tmp):
+    tmp = Path(tmp)
+    a, b = tmp / "a.jpg", tmp / "b.jpg"
+    for f in (a, b):
+        f.write_bytes(b"jpeg")
+    faits = tmp / "faits.txt"
+    faits.write_text(V._normalise(a) + "\n", encoding='utf-8')
+    par_chemin = {V._normalise(a): (a, {"Ellie"}),
+                  V._normalise(b): (b, {"Ellie"})}
+    vrai_lire, vrai_run = V.lire_tags, A.subprocess.run
+    faux = FauxExif()
+    V.lire_tags = lambda chemins, exe, **kw: {V._normalise(c): set()
+                                              for c in chemins}
+    A.subprocess.run = faux.run
+    try:
+        r = A.balayer(par_chemin, "exiftool", tmp / "j.jsonl", faits,
+                      serveur='', lot=10, appliquer_vrai=True,
+                      ecrire=lambda *x: None)
+    finally:
+        V.lire_tags, A.subprocess.run = vrai_lire, vrai_run
+    verifie("--tous : la photo deja faite n'est pas reprise", r['total'] == 1,
+            "total=%r" % r['total'])
+    verifie("--tous : une seule invocation ExifTool au second passage",
+            len(faux.appels) == 1, "appels=%d" % len(faux.appels))
+    verifie("--tous : la photo traitee s'ajoute au fichier de reprise",
+            V._normalise(b) in A.charger_faits(faits))
+
+
+def t_tous_S_ARRETE_si_le_serveur_se_remet_a_ecrire(tmp):
+    """Deux ecrivains sur les memes fichiers, c'est la bagarre du 22/08.
+    Le test verifie qu'il s'arrete ET qu'il le DIT."""
+    tmp = Path(tmp)
+    a = tmp / "a.jpg"
+    a.write_bytes(b"jpeg")
+    vrai = V.file_du_serveur
+    V.file_du_serveur = lambda *x, **k: 42
+    try:
+        r = A.balayer({V._normalise(a): (a, {"Ellie"})}, "exiftool",
+                      tmp / "j.jsonl", tmp / "faits.txt",
+                      serveur='http://x', lot=10, appliquer_vrai=True,
+                      ecrire=lambda *x: None)
+    finally:
+        V.file_du_serveur = vrai
+    verifie("--tous : il s'arrete quand la file du serveur repart",
+            r['reecrites'] == 0 and r['arret'], "r=%r" % r)
+    verifie("--tous : l'arret est NOMME, pas silencieux",
+            "file du serveur" in (r['arret'] or ""), "arret=%r" % r['arret'])
+
+
+def t_tous_a_blanc_n_ecrit_RIEN(tmp):
+    tmp = Path(tmp)
+    a = tmp / "a.jpg"
+    a.write_bytes(b"jpeg")
+    faits = tmp / "faits.txt"
+    vrai_lire, vrai_run = V.lire_tags, A.subprocess.run
+    faux = FauxExif()
+    V.lire_tags = lambda chemins, exe, **kw: {V._normalise(c): set()
+                                              for c in chemins}
+    A.subprocess.run = faux.run
+    try:
+        r = A.balayer({V._normalise(a): (a, {"Ellie"})}, "exiftool",
+                      tmp / "j.jsonl", faits, serveur='', lot=10,
+                      appliquer_vrai=False, ecrire=lambda *x: None)
+    finally:
+        V.lire_tags, A.subprocess.run = vrai_lire, vrai_run
+    verifie("--tous a blanc : aucune invocation ExifTool en ecriture",
+            len(faux.appels) == 0, "appels=%d" % len(faux.appels))
+    verifie("--tous a blanc : rien n'est marque fait", not faits.exists())
+    verifie("--tous a blanc : il compte quand meme ce qu'il ferait",
+            r['reecrites'] == 1, "r=%r" % r)
+
+
+def t_tous_refuse_de_se_melanger_a_nom(tmp):
+    code = A.main(['--tous', '--nom', 'Ellie'])
+    verifie("--tous ne se combine pas avec --nom", code == 2, "code=%r" % code)
+
+
 def main():
     tmp = Path(tempfile.mkdtemp(prefix="test_appl_xmp_"))
     tests = [t_refus_si_la_file_tourne, t_refus_sans_verite_dindex,
              t_a_faire_ne_reecrit_pas_le_conforme,
              t_une_seule_invocation_par_photo, t_journal_et_finally,
-             t_journal_survit_a_une_interruption, t_candidats_depuis_un_rapport]
+             t_journal_survit_a_une_interruption, t_candidats_depuis_un_rapport,
+             t_tous_groupe_par_PHOTO, t_tous_ne_reecrit_pas_le_conforme,
+             t_tous_ne_devine_pas_ce_qu_il_n_a_pas_lu,
+             t_tous_REPREND_ou_il_s_est_arrete,
+             t_tous_S_ARRETE_si_le_serveur_se_remet_a_ecrire,
+             t_tous_a_blanc_n_ecrit_RIEN, t_tous_refuse_de_se_melanger_a_nom]
     for t in tests:
         sous = tmp / t.__name__
         sous.mkdir(parents=True, exist_ok=True)
