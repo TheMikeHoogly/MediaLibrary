@@ -9,6 +9,28 @@ FUSIONNÉ — ce document, non. Puis `ROADMAP.md`, `eval/DECISIONS.md`,
 `eval/METHODE.md` — et `docs/DECISIONS_OUTILLAGE.md` si le sujet touche aux
 canaux, à la livraison ou au MCP. Débrief en 2–3 lignes, puis on attaque.
 
+## ⚠ EN COURS le 23/08 à 21:38 — une réparation tourne (~5 h)
+
+`appliquer_xmp_personnes.py --tous --appliquer` réécrit les XMP de ~18 300
+photos dans la fenêtre PowerShell de Mike. **Avant de faire quoi que ce soit,
+vérifier si elle tourne** : `_corbeille_xmp/_tous_faits.txt` grossit-il encore ?
+
+Tant qu'elle tourne :
+
+- **Ne PAS nommer, renommer ou fusionner** dans l'interface : la file du
+  serveur repartirait et le script s'arrêterait (proprement — il reprend —
+  mais la nuit serait perdue).
+- **Ne PAS lancer de banc qui lit le NAS en masse** (`verifier_xmp_*`,
+  `mesure_xmp_*`) : ils se disputent ExifTool et le partage, et toute mesure
+  de débit prise pendant ce temps est fausse.
+- **Ne JAMAIS supprimer `_corbeille_xmp/_tous_faits.txt`** : c'est la reprise.
+- Redémarrer le serveur ne casse rien (le script n'écrit pas par lui), mais
+  ne rend service à personne.
+
+**À la fin** : rattraper les noms sautés (`_corbeille_xmp/_tous_noms_sautes.txt`,
+au moins `Val` et `Yann Mamin`) avec `--nom X --appliquer`, puis
+`verifier_xmp_toutes_personnes.py`.
+
 ## Réflexes
 
 **Le serveur a un journal : `_journal_serveur.log`** (`journal_serveur.py`),
