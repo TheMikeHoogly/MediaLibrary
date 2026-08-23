@@ -238,3 +238,23 @@ _corbeille_xmp/
 # Les rapports d'ecart de `verifier_xmp_personnes.py` (--json) : une photo de
 # l'instant, pas une source.
 _xmp_*.json
+
+# --- La file d'ecriture XMP, rendue durable (23/08) ------------------------
+# Ce que `person_writer` doit encore ecrire dans les fichiers, et ou il en est.
+# C'est ce qui fait qu'un redemarrage cesse de prendre onze heures en otage.
+# Etat de machine : local, jamais versionne.
+_file_personnes.jsonl
+_file_personnes.pos
+_file_personnes.pos.tmp
+# Ce que la file n'a PAS su ecrire : nomme, au lieu d'etre avale.
+_file_personnes_echecs.jsonl
+
+# --- Le journal du serveur (23/08) ----------------------------------------
+# Ce que la fenetre du serveur disait, date et lisible a distance : c'est ce
+# qui permet de savoir CE qui a plante sans demander a Mike de recopier son
+# terminal. Etat de machine, borne a 4 Mo + une archive. Jamais versionne.
+_journal_serveur.log
+_journal_serveur.log.1
+# Le plantage dur d'une lib native (torch, insightface), ecrit par faulthandler
+# quand il n'y a plus de Python pour ecrire quoi que ce soit.
+_journal_serveur_crash.log

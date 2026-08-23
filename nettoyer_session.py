@@ -165,10 +165,13 @@ def apply_quarantine(cands):
 # --- Volet 2 : lint des *.md de suivi --------------------------------------
 
 # Docs de suivi + seuil de bloat (octets). None = pas de seuil (juste refs/dates).
-# Budget de bloat, en octets. **50 000 partout, décision de Mike (20/08)** —
-# et deux fois dans la même journée, parce que j'ai d'abord cru qu'il parlait
-# d'un seul fichier, puis j'ai gardé `CLAUDE.md` serré « puisqu'il est relu à
-# chaque session ». Non : le seuil est le même pour tous.
+# Budget de bloat, en octets. **100 000 partout, décision de Mike (23/08)**.
+# Il était à 50 000 depuis le 20/08 — relevé le jour où DEUX docs l'ont frôlé
+# dans la même session, et où la marge a de nouveau manqué avant d'avoir servi.
+# C'est la troisième fois qu'il monte (9 000 → 12 000 le 19/08, → 50 000 le
+# 20/08), et les trois fois pour la même raison : rogner sous le plafond a
+# coûté la PRÉCISION des raisons, c'est-à-dire exactement ce que le fichier
+# est censé garder. Le seuil est le même pour tous, `CLAUDE.md` compris.
 #
 # CE QUE LE SEUIL FAIT ENCORE : rattraper un emballement franc — un fichier
 # qui double, une doc qui devient un journal.
@@ -186,23 +189,23 @@ def apply_quarantine(cands):
 #   · `ROADMAP.md` porte les priorités ; les récits terminés vivent dans git.
 #   · Les DECISIONS sont un tableau : une ligne par verdict, un chiffre ou
 #     une réfutation dans chaque raison. C'est la FORME qui interdit le récit.
-# Un fichier qui approche 50 000 sans avoir trahi son rôle n'a pas de
+# Un fichier qui approche 100 000 sans avoir trahi son rôle n'a pas de
 # problème de taille ; celui qui devient bavard à 9 000 en a un, et le lint
 # ne le dira pas. C'est au lecteur de le voir.
 TRACKING_MD = {
-    "CLAUDE.md": 50000,
-    "ROADMAP.md": 50000,
-    "PROMPT_NOUVELLE_SESSION.md": 50000,
-    "eval/DECISIONS.md": 50000,
+    "CLAUDE.md": 100000,
+    "ROADMAP.md": 100000,
+    "PROMPT_NOUVELLE_SESSION.md": 100000,
+    "eval/DECISIONS.md": 100000,
     # Sorti de DECISIONS.md le 20/08 : découpage par DOMAINE, non par statut
     # (l'archive par âge avait été rejetée la veille — elle obligeait à relire
     # les deux fichiers). Ici l'outillage : les trois canaux, le pilotage, la
     # livraison git. Qui travaille la recherche n'a jamais besoin de savoir
     # pourquoi `taskkill` a échoué.
-    "docs/DECISIONS_OUTILLAGE.md": 50000,
+    "docs/DECISIONS_OUTILLAGE.md": 100000,
     # Sorti de DECISIONS.md le 16/08 : « ce qui a ete tranche » d'un cote,
     # « comment on tranche » de l'autre.
-    "eval/METHODE.md": 50000,
+    "eval/METHODE.md": 100000,
     "README.md": None,
     "INSTALLATION.md": None,
 }

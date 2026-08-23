@@ -62,6 +62,7 @@ décisions techniques. `FACE_USE_GPU=False` **volontaire** (VRAM prise par Ollam
 | `server.py` | Monolithe ~12 000 l. : config, stores, pipelines, workers, routeur, 9 pages HTML inline |
 | `store_sqlite.py` / `vectors.py` | Persistance SQLite / vecteurs BLOB + cosinus |
 | `pilotage.py` / `superviseur.bat` | Arrêt et redémarrage commandés par `_commande_serveur.txt` |
+| `journal_serveur.py` | Miroir daté de la console du serveur → `_journal_serveur.log` : ce qui plante se lit à distance |
 | `git_agent.py` / `superviseur_git.bat` | Livraison git commandée par `_commande_git.txt`, sous contrôles ; rapport dans `_etat_git.json` |
 | `banc_agent.py` / `superviseur_banc.bat` | Lance un BANC sous Windows sur ordre de `_commande_banc.txt` ; sortie dans `_banc_sortie.txt`. Familles qui MESURENT seulement, sans shell ni chemin |
 | `canal.py` | Lire et écrire un ordre : les trois canaux, mêmes octets (BOM/CRLF/LF, écriture atomique) |
@@ -111,8 +112,8 @@ caillou ; jamais trancher à sa place.
 
 **Fin de session (systématique)** : docs de suivi cohérentes — **le détail vit
 dans git, pas dans les docs : c'est le levier tokens**, et le seuil du lint
-(50 000) ne rattrape plus qu'un emballement franc, c'est le RÔLE de chaque
-fichier qui le tient court ; `python nettoyer_session.py` (lint propre attendu ;
+(100 000 depuis le 23/08) ne rattrape plus qu'un emballement franc, c'est le
+RÔLE de chaque fichier qui le tient court ; `python nettoyer_session.py` (lint propre attendu ;
 `--appliquer` ou bat 29 = quarantaine réversible `_corbeille_session/`, rien
 n'est supprimé) ; laisser `PROMPT_NOUVELLE_SESSION.md` en amorce lean prête à
 coller.
@@ -143,6 +144,14 @@ porte sur l'ancien code. Les TROIS fenêtres du bat 0 sont requises (Serveur,
 Git, Bancs) ; un agent est vivant si son `_agent_*_vu.txt` a moins de 30 s
 (`git_agent.py --etat`), sinon `ping`, et si rien ne répond rendre la main à
 Mike. Un redémarrage interrompt tagging et scan.
+
+**Ce que le serveur a raconté se lit à distance** : `_journal_serveur.log`
+(miroir daté de sa console, `journal_serveur.py`) — les tracebacks des threads
+qui meurent y sont, la console de Mike n'est plus le seul témoin. Depuis le
+dernier démarrage : `sed -n '/===== DEMARRAGE/,$p' _journal_serveur.log` sur la
+dernière bannière. Plantage dur d'une lib native : `_journal_serveur_crash.log`.
+**Le lire AVANT de supposer** — c'est là que se trouve la cause, pas dans une
+hypothèse.
 
 Clics/captures : onglet au premier plan ; l'état passe par `fetch('/api/…')`
 GET (marche onglet caché) ; GPU : `GET /api/search/status`. Sandbox → disque :

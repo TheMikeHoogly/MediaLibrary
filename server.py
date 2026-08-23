@@ -68,6 +68,23 @@ except OSError:
 MAX_IMAGE_SIDE = 896           # redimensionnement avant envoi à l'IA
 SCRIPT_DIR = Path(__file__).resolve().parent
 
+# ─── Le journal du serveur ────────────────────────────────────────────────────
+# Tout ce que ce fichier raconte va dans une fenêtre `cmd.exe` — chez Mike, et
+# nulle part ailleurs. Un thread qui meurt la nuit n'y laisse rien qu'un
+# traceback que personne ne lira, et diagnostiquer à distance coûtait un
+# aller-retour humain. Le miroir garde la console INTACTE et écrit la même
+# chose, datée, dans `_journal_serveur.log`.
+# Sous `if __name__` : un banc qui importerait ce fichier ne doit pas se
+# retrouver avec ses `print` détournés — ni créer un journal en passant.
+if __name__ == '__main__':
+    try:
+        import journal_serveur
+        journal_serveur.installer(SCRIPT_DIR / '_journal_serveur.log',
+                                  source=__file__)
+    except Exception as _e:                                   # noqa: BLE001
+        print(f"  ! journal du serveur indisponible ({_e}) — la console reste "
+              f"la seule trace.")
+
 # ── De quand date ce processus, et fait-il tourner le code du disque ? ───────
 # Sans hot-reload, la question « le serveur exécute-t-il ce que je viens
 # d'écrire ? » n'avait aucune réponse observable : on redémarrait, et on
@@ -586,7 +603,22 @@ PET_EMBED_STATE = {"done": 0}
 
 # Phase 2 : personnes nommées + file d'écriture des tags personne:Nom
 PEOPLE_STORE = make_store(PEOPLE_FILE)
-PERSON_QUEUE = queue.Queue()          # (chemin, tag) à écrire dans les fichiers
+PERSON_QUEUE = queue.Queue()          # (chemin, tag, op, clé, n°) à écrire
+# La file d'écriture XMP SURVIT à un arrêt. Elle n'existait qu'en mémoire : la
+# fusion Flo → Florine du 23/08 y a laissé 11 814 écritures pour ~11 h de
+# travail, et un redémarrage — ou une coupure — les aurait perdues SANS RIEN
+# pour les retrouver. Des milliers de photos auraient gardé `personne:Flo` dans
+# leur fichier quand l'index disait `Florine` : c'est ainsi que naît un nom
+# fantôme, et c'est la règle 2 qui tombe. Un journal en ajout pur note chaque
+# geste AVANT de l'enfiler ; un seul écrivain les consomme dans l'ordre, donc
+# une POSITION suffit à dire où il en est. Au démarrage, ce qui est au-delà de
+# la position repart en file.
+PERSON_JOURNAL = SCRIPT_DIR / "_file_personnes.jsonl"
+PERSON_JOURNAL_POS = SCRIPT_DIR / "_file_personnes.pos"
+PERSON_JOURNAL_ECHECS = SCRIPT_DIR / "_file_personnes_echecs.jsonl"
+PERSON_JOURNAL_LOCK = threading.Lock()
+PERSON_SEQ = 0                        # dernier n° distribué (sous le verrou)
+PERSON_LOT_MAX = 16                   # gestes groupés en une invocation
 CLUSTER_CACHE = {"at": 0.0, "building": False, "clusters": [], "byid": {}}
 CLUSTER_LOCK = threading.Lock()
 # Vue « (Inconnus) » : clusters des visages archivés (champ 'inconnu'), séparés de
@@ -2577,6 +2609,13 @@ def _noms_fusionnes(cle, entree, attendus, exclus, canon=None):
             deja.add(tl)
             noms.append(canon.get(tl, t))
     return noms
+
+
+# Plafond de /api/faits. Le cout d'un lot est celui de `_faits_ctx()`, bati UNE
+# fois ; ce qui grimpe avec le nombre de cles est la boucle, pas le contexte.
+# 200 est le plafond d'une page de resultats cote MCP : au-dela, c'est un
+# parcours, pas un affichage.
+MAX_FAITS = 200
 
 
 def _faits_ctx():
@@ -8209,48 +8248,182 @@ def desarchiver_visages(membres):
     return {"ok": True, "n": len(touches), "jeton": jeton, "libelle": libelle}
 
 
-def write_person_tag(path, tag):
-    """Ajoute le mot-clé « personne:Nom » dans le fichier (XMP + IPTC), sans
-    doublon (-= puis +=) et sans toucher aux autres mots-clés."""
-    if not EXIFTOOL:
+def write_person_tags(path, gestes):
+    """Applique PLUSIEURS gestes sur une même photo en UNE invocation ExifTool.
+
+    `gestes` : `{tag: 'add'|'del'}`. Un ajout fait `-=` puis `+=` (pas de
+    doublon, comme avant) ; un retrait fait `-=` seul. IPTC suit XMP.
+
+    POURQUOI GROUPER : le coût dominant n'est pas l'écriture, c'est le
+    DÉMARRAGE du processus ExifTool — ~2,6 s mesurés sur SMB le 23/08. Or
+    renommer une personne demande DEUX gestes par photo (retirer l'ancien nom,
+    ajouter le nouveau) : la fusion Flo → Florine a ainsi coûté 11 814
+    invocations pour 5 907 photos, soit ~11 h pendant lesquelles un simple
+    redémarrage devenait interdit. Une invocation par PHOTO au lieu d'une par
+    GESTE divise ce coût par deux — et l'ordre est préservé, le dernier geste
+    posé sur un tag l'emporte, exactement comme deux appels successifs."""
+    if not EXIFTOOL or not gestes:
         return False
     args = ["-overwrite_original", "-q", "-m", "-charset", "filename=UTF8",
-            "-codedcharacterset=utf8",
-            f"-XMP-dc:Subject-={tag}", f"-XMP-dc:Subject+={tag}",
-            f"-IPTC:Keywords-={tag}", f"-IPTC:Keywords+={tag}",
-            str(path)]
+            "-codedcharacterset=utf8"]
+    for tag, op in gestes.items():
+        args += [f"-XMP-dc:Subject-={tag}", f"-IPTC:Keywords-={tag}"]
+        if op != 'del':
+            args += [f"-XMP-dc:Subject+={tag}", f"-IPTC:Keywords+={tag}"]
+    args.append(str(path))
     try:
         return _run_exiftool(args).returncode == 0
     except Exception:
         return False
+
+
+def write_person_tag(path, tag):
+    """Ajoute le mot-clé « personne:Nom » dans le fichier (XMP + IPTC), sans
+    doublon (-= puis +=) et sans toucher aux autres mots-clés."""
+    return write_person_tags(path, {tag: 'add'})
 
 
 def write_person_untag(path, tag):
     """Retire le mot-clé « personne:Nom » du fichier (XMP + IPTC)."""
-    if not EXIFTOOL:
-        return False
-    args = ["-overwrite_original", "-q", "-m", "-charset", "filename=UTF8",
-            "-codedcharacterset=utf8",
-            f"-XMP-dc:Subject-={tag}", f"-IPTC:Keywords-={tag}", str(path)]
-    try:
-        return _run_exiftool(args).returncode == 0
-    except Exception:
-        return False
+    return write_person_tags(path, {tag: 'del'})
 
 
-def person_writer():
-    """Écrit/retire les tags personne:Nom dans les fichiers, en série (un seul
-    ExifTool à la fois), pour ne pas saturer le NAS."""
-    while True:
-        item = PERSON_QUEUE.get()
+def _file_personnes_note(path, tag, op, key):
+    """Note un geste dans le journal de la file AVANT de l'enfiler, et rend son
+    numéro d'ordre.
+
+    Écrire d'abord, enfiler ensuite : si tout s'arrête entre les deux, le geste
+    sera REFAIT au démarrage suivant — refaire est sans effet (l'écriture est
+    idempotente), tandis qu'oublier laisse un nom fantôme dans un fichier."""
+    global PERSON_SEQ
+    with PERSON_JOURNAL_LOCK:
+        PERSON_SEQ += 1
+        n = PERSON_SEQ
         try:
-            path, tag, op = item[0], item[1], item[2]
-            key = item[3] if len(item) >= 4 else None
-            ok = write_person_untag(path, tag) if op == 'del' else write_person_tag(path, tag)
-            # PÉRENNITÉ : après notre propre écriture, on resynchronise le mtime
-            # stocké dans l'index avec celui du fichier — sinon le balayage
-            # « fichiers modifiés » re-tague la photo et perd le tag nommé.
-            if ok and key is not None:
+            with open(PERSON_JOURNAL, 'a', encoding='utf-8') as f:
+                f.write(json.dumps({"n": n, "chemin": str(path), "tag": tag,
+                                    "op": op, "cle": key},
+                                   ensure_ascii=False) + "\n")
+        except OSError as e:                                  # noqa: BLE001
+            print(f"  ! file personne : journal non ecrit ({e})")
+    return n
+
+
+def _file_personnes_faite(lot):
+    """Avance la position : tout ce qui porte un numéro <= elle est consommé.
+
+    Une position suffit parce que `person_writer` est l'écrivain UNIQUE et
+    consomme dans l'ordre. Elle avance même quand l'écriture a échoué : le
+    geste a été TENTÉ, et le rejouer indéfiniment ferait boucler un fichier
+    illisible. Ce qui a échoué est nommé dans `_file_personnes_echecs.jsonl`,
+    jamais avalé."""
+    global PERSON_SEQ
+    n = max([it[4] for it in lot if len(it) >= 5 and it[4]] or [0])
+    if not n:
+        return
+    with PERSON_JOURNAL_LOCK:
+        try:
+            tmp = Path(str(PERSON_JOURNAL_POS) + '.tmp')
+            tmp.write_text(str(n), encoding='utf-8')
+            os.replace(tmp, PERSON_JOURNAL_POS)
+        except OSError:
+            return
+        # File vide et rien de plus récent enfilé : le journal a fini son
+        # office, on le remet à zéro pour qu'il ne grossisse pas sans fin.
+        if PERSON_QUEUE.qsize() == 0 and n >= PERSON_SEQ:
+            try:
+                PERSON_JOURNAL.unlink(missing_ok=True)
+                PERSON_JOURNAL_POS.unlink(missing_ok=True)
+                PERSON_SEQ = 0
+            except OSError:
+                pass
+
+
+def _file_personnes_echec(lot, motif):
+    """Nomme par écrit ce que la file n'a pas su écrire."""
+    try:
+        with open(PERSON_JOURNAL_ECHECS, 'a', encoding='utf-8') as f:
+            for it in lot:
+                f.write(json.dumps(
+                    {"quand": time.strftime("%Y-%m-%d %H:%M:%S"),
+                     "chemin": str(it[0]), "tag": it[1], "op": it[2],
+                     "cle": it[3] if len(it) >= 4 else None,
+                     "motif": motif}, ensure_ascii=False) + "\n")
+    except OSError:
+        pass
+
+
+def _file_personnes_reprise():
+    """Remet en file ce qu'un arrêt a laissé en plan, et rend leur nombre.
+
+    Lit le journal, saute tout ce que la position déclare consommé, et réenfile
+    le reste. Une ligne tronquée par une coupure est ignorée sans faire tomber
+    la reprise. Le chemin est RÉSOLU depuis la clé quand elle existe : entre
+    l'arrêt et le redémarrage, la photo a pu être rangée ailleurs."""
+    global PERSON_SEQ
+    if not PERSON_JOURNAL.exists():
+        return 0
+    try:
+        pos = int((PERSON_JOURNAL_POS.read_text(encoding='utf-8')
+                   if PERSON_JOURNAL_POS.exists() else '0').strip() or 0)
+    except (OSError, ValueError):
+        pos = 0
+    repris = perdus = 0
+    dernier = pos
+    try:
+        with open(PERSON_JOURNAL, encoding='utf-8') as f:
+            for ligne in f:
+                ligne = ligne.strip()
+                if not ligne:
+                    continue
+                try:
+                    d = json.loads(ligne)
+                    n = int(d.get('n') or 0)
+                except (ValueError, TypeError):
+                    continue
+                dernier = max(dernier, n)
+                if n <= pos:
+                    continue
+                cle = d.get('cle')
+                try:
+                    p = _resolve_key(cle) if cle else Path(d.get('chemin') or '')
+                    if not p.is_file():
+                        perdus += 1
+                        continue
+                except OSError:
+                    perdus += 1
+                    continue
+                PERSON_QUEUE.put((p, d.get('tag'), d.get('op') or 'add', cle, n))
+                repris += 1
+    except OSError as e:                                      # noqa: BLE001
+        print(f"  ! file personne : journal illisible ({e})")
+        return 0
+    PERSON_SEQ = max(PERSON_SEQ, dernier)
+    if repris or perdus:
+        print(f"  * File XMP : {repris} ecriture(s) reprises apres arret"
+              + (f", {perdus} photo(s) introuvable(s)." if perdus else "."))
+    return repris
+
+
+def _ecrire_lot_personne(lot):
+    """Écrit en UNE invocation tous les gestes d'une même photo, resynchronise
+    le mtime de l'index, puis avance la position de la file durable."""
+    path = lot[0][0]
+    gestes = {}
+    for it in lot:
+        gestes[it[1]] = 'del' if it[2] == 'del' else 'add'
+    ok = False
+    motif = ""
+    try:
+        ok = write_person_tags(path, gestes)
+        if not ok:
+            motif = "exiftool absent" if not EXIFTOOL else "exiftool a refuse"
+        # PÉRENNITÉ : après notre propre écriture, on resynchronise le mtime
+        # stocké dans l'index avec celui du fichier — sinon le balayage
+        # « fichiers modifiés » re-tague la photo et perd le tag nommé.
+        if ok:
+            for key in dict.fromkeys(it[3] for it in lot
+                                     if len(it) >= 4 and it[3] is not None):
                 try:
                     size, mtime = _stat_of(path)
                     e = STORE.data.get(key)
@@ -8260,10 +8433,40 @@ def person_writer():
                             e['size'] = size
                 except Exception:
                     pass
-        except Exception as e:
-            print(f"  ⚠ écriture personne {item} : {e}")
-        finally:
+    except Exception as e:                                    # noqa: BLE001
+        motif = f"{type(e).__name__}: {e}"
+        print(f"  ! ecriture personne {path} : {e}")
+    finally:
+        if not ok:
+            _file_personnes_echec(lot, motif or "inconnu")
+        _file_personnes_faite(lot)
+        for _ in lot:
             PERSON_QUEUE.task_done()
+
+
+def person_writer():
+    """Écrit/retire les tags personne:Nom dans les fichiers, en série (un seul
+    ExifTool à la fois), pour ne pas saturer le NAS.
+
+    Les gestes qui se suivent sur la MÊME photo partent ENSEMBLE : un renommage
+    en pose deux par photo, coup sur coup, et les payer en deux processus
+    doublait la facture (voir `write_person_tags`)."""
+    reste = None
+    while True:
+        premier = reste if reste is not None else PERSON_QUEUE.get()
+        reste = None
+        lot = [premier]
+        while len(lot) < PERSON_LOT_MAX:
+            try:
+                autre = PERSON_QUEUE.get_nowait()
+            except queue.Empty:
+                break
+            if str(autre[0]) == str(premier[0]):
+                lot.append(autre)
+            else:
+                reste = autre           # pris, pas encore fait : il ouvre le
+                break                   # prochain lot, et sera compté là
+        _ecrire_lot_personne(lot)
 
 
 def _kw_has(e, tag):
@@ -8305,7 +8508,8 @@ def _enqueue_person_write(key, tag, op='add'):
     p = _resolve_key(key)
     try:
         if p.is_file():
-            PERSON_QUEUE.put((p, tag, op, key))
+            n = _file_personnes_note(p, tag, op, key)
+            PERSON_QUEUE.put((p, tag, op, key, n))
     except OSError:
         pass
 
@@ -9548,6 +9752,8 @@ class Handler(BaseHTTPRequestHandler):
             self._serve_similar()
         elif path == '/api/jour':
             self._serve_jour()
+        elif path == '/api/faits':
+            self._serve_faits()
 
         elif path == '/api/search/status':
             self._serve_semantic_status()
@@ -10406,6 +10612,62 @@ class Handler(BaseHTTPRequestHandler):
         self._send(200, json.dumps(
             {'results': sortie, 'encodee': True, 'key': cle},
             ensure_ascii=False).encode(), 'application/json')
+
+    def _serve_faits(self):
+        """La ligne de faits (date . lieu . noms) de photos DESIGNEES.
+
+        Pourquoi une route, alors que `_serve_browse` calcule deja ces faits :
+        parce qu'il les calcule DANS une page. Rien d'autre que le HTML ne
+        pouvait les lire -- ni un banc, ni le MCP en lecture seule (point 13) -
+        et refaire l'assemblage ailleurs est exactement ce que `faits_vue`
+        existe pour empecher (voir `_faits_pour` : un deuxieme assemblage, meme
+        fidele, finit par diverger).
+
+        ?key=<cle>, repetable, MAX_FAITS au plus. Le contexte est bati UNE fois
+        pour tout le lot -- c'est ce qui rend un appel groupe moins cher que N
+        appels, et c'est la meme economie que fait la page.
+
+        Trois etats, et ils ne se confondent pas : un fait rendu ; `null` pour
+        une photo CONNUE qui ne porte aucun des trois ; et la cle citee dans
+        `inconnues` quand l'index ne la connait pas. Une cle absente rendue
+        comme un fait vide se lirait <<cette photo ne porte rien>>, alors
+        qu'elle dit <<je ne connais pas cette photo>>."""
+        qs = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
+        cles = [c.strip() for c in qs.get('key', []) if c and c.strip()]
+        if not cles:
+            self._send(400, json.dumps(
+                {'error': 'aucune cle : ?key=<cle>, repetable, %d au plus'
+                          % MAX_FAITS}, ensure_ascii=False).encode(),
+                'application/json')
+            return
+        tronque = len(cles) > MAX_FAITS
+        cles = cles[:MAX_FAITS]
+        # `media_roots()` fait des stats SMB (audit O3) : cette route touche
+        # donc le NAS, et cede la priorite au travail de fond comme les autres.
+        note_heavy_activity()
+        ctx = _faits_ctx()
+        faits, inconnues = {}, []
+        for cle in cles:
+            k, e = cle, STORE.data.get(cle)
+            if e is None:
+                # Lien ancien, ou cle minusculee par le resolve de l'hote SMB :
+                # meme rattrapage que `_jour_resoudre`, plutot qu'un <<absent>>
+                # qui serait faux.
+                alt = _index_key_for_path(_resolve_key(cle))
+                if alt:
+                    k, e = alt, STORE.data.get(alt)
+            if e is None:
+                inconnues.append(cle)
+                continue
+            faits[cle] = _faits_pour(k, e, ctx)
+        corps = {'faits': faits, 'inconnues': inconnues,
+                 'demandees': len(cles)}
+        if tronque:
+            # Un plafond muet se lit comme une exhaustivite (ROADMAP 14a).
+            corps['tronque'] = True
+            corps['plafond'] = MAX_FAITS
+        self._send(200, json.dumps(corps, ensure_ascii=False).encode(),
+                   'application/json')
 
     def _serve_jour(self):
         """« Même jour, autres années » — les photos qui partagent le mois-jour
@@ -12227,6 +12489,7 @@ if __name__ == '__main__':
     threading.Thread(target=pet_embed_loop, daemon=True).start()
     threading.Thread(target=rederive_pet_refs, daemon=True).start()
     threading.Thread(target=cat_curator_loop, daemon=True).start()
+    _file_personnes_reprise()   # AVANT l'ecrivain : la file d'abord
     threading.Thread(target=person_writer, daemon=True).start()
     threading.Thread(target=curator_loop, daemon=True).start()
     threading.Thread(target=reembed_loop, daemon=True).start()

@@ -6,6 +6,84 @@ dans **git** ; les rejets dans `eval/DECISIONS.md` (photothèque) et
 `eval/METHODE.md` ; l'éphémère dans `PROMPT_NOUVELLE_SESSION.md`. Audits :
 `docs/AUDIT_INTERNE_2026-08.md`, `docs/AUDIT_EXTERNE_2026.md`, `docs/RANGEMENT_2026.md`.
 
+## État (23/08/2026, session 41)
+
+**La file XMP ne prend plus onze heures en otage : elle a un journal.** Elle
+n'existait qu'en `queue.Queue()` — un redémarrage, une coupure ou un plantage
+perdait le travail restant SANS RIEN pour le retrouver, et des milliers de
+fichiers auraient gardé `Flo` quand l'index dit `Florine`. Désormais chaque
+geste est noté sur disque **avant** d'être enfilé (`_file_personnes.jsonl`) ;
+l'écrivain étant unique et consommant dans l'ordre, **une position suffit**
+(`_file_personnes.pos`), et au démarrage ce qui est au-delà repart en file. Une
+ligne tronquée par la coupure est sautée, une photo rangée ailleurs est suivie
+par sa CLÉ, la position avance MÊME sur échec — sans quoi un fichier illisible
+serait rejoué à jamais — et ce qui échoue est NOMMÉ
+(`_file_personnes_echecs.jsonl`). File vide, le journal se remet à zéro.
+
+**Et le prix n'est plus payé deux fois.** `person_writer` lançait un processus
+ExifTool par GESTE, or un renommage en pose deux par photo, coup sur coup. Les
+gestes qui se suivent sur la MÊME photo partent maintenant ensemble, en UNE
+invocation (`write_person_tags`) ; le dernier geste posé sur un tag l'emporte,
+exactement comme deux appels successifs. **21 vérifications neuves, 21 ROUGES
+sur l'ancien code**, vertes au banc sous Windows.
+
+**`-stay_open` : le chiffre le range APRÈS le reste.** Mesuré sur 30 photos du
+fonds (`mesure_xmp_debit.py`, lecture seule, trois régimes) : un processus par
+photo coûte **0,80 s**, `-stay_open` **0,07 s** — 12×. Mais ce 12× est celui de
+la LECTURE ; il isole le seul terme que `-stay_open` supprime, le **démarrage
+du processus : 0,74 s**. Une écriture réelle coûte **2,91 s/op** (mesurée sur
+7 172 s de file vivante), dont la réécriture du fichier sur SMB, à laquelle
+`-stay_open` ne touche pas. Gain réel : **2,91 → 2,17 s/op, soit 25 %**, quand
+le groupement, lui, valait un facteur 2.
+
+**Vu en chemin, et payé 600 s :** `-q` emporte le `{ready}` de `-stay_open`. Le
+banc a attendu sans fin, et la fenêtre des bancs avec lui, jusqu'à ce que
+l'agent le tue. Deux parades : `-q` retiré, et **un délai par ordre** — un banc
+doit ÉCHOUER, jamais se figer.
+
+**Quatre branches attendent la fusion** — les trois de la 40
+(`fix/la-fiche-est-le-verrou`, `feat/ce-que-la-file-xmp-doit-encore`,
+`feat/reparer-ce-que-la-file-xmp-n-a-pas-fait`, livrées en `commit` avec
+`force=`) et celle du jour. **Le contrôle 5 a raison ici** : `server.py` a
+changé sous un serveur qui tourne. À la fin de la file : **redémarrer,
+OBSERVER le débit neuf, puis fusionner.**
+
+**La file a fini, le serveur a redémarré, et le fonds porte ce que l'index
+dit.** 17:45 : `queues.personnes` à 0 après onze heures ; redémarrage, bannière
+neuve dans `_journal_serveur.log`, **aucun `THREAD MORT`**, `code_a_jour` vrai.
+17:47 : `verifier_xmp_personnes.py` lit 200 fichiers du disque — **200 portent
+`Florine`, 0 portent `Flo`** (19 et 119 le matin même). La fusion décidée le
+22/08 est ACQUISE, et `appliquer_xmp_personnes.py` n'a rien à réparer.
+**Une seule chose n'a PAS été observée** : le journal de la file sur un geste
+VIVANT. `_file_personnes.jsonl` naît au premier geste de nom, et il n'y en a pas
+eu depuis le redémarrage — l'observer coûte une vraie écriture XMP dans une
+vraie photo. Les 21 vérifications tiennent la mécanique (21 rouges sur l'ancien
+code) ; le prochain nom attribué produira la preuve gratuitement.
+
+**La photothèque s'ouvre à un agent — et le chantier a trouvé DEUX plafonds
+muets, aucun par la lecture du code.** `mcp_serveur.py`
+(point 13) n'appelle aucune route neuve : c'est ce qui l'a rendu observable un
+jour où `server.py` a changé sous un serveur qui n'a pas redémarré. Le chiffre
+du chantier est le COÛT EN CONTEXTE : `/api/people/photos` rend **4 013 486
+octets** pour Florine, l'outil en rend **5 775** — **695× moins, 0,14 %
+gardé**. Les deux plafonds, eux, se sont vus en OBSERVANT : le mien, qui
+annonçait « 5 trouvées » pour `espece:chat` parce qu'il comptait ce qu'il avait
+demandé ; et celui de la route, qui rend **2 000** photos pour Florine — elle en
+porte **5 909** — sans le dire. `total_est_un_plancher` distingue désormais un
+compte d'un plafond atteint. La leçon de la page de recherche (14a), re-payée
+deux fois le même jour dans un module écrit pour l'appliquer.
+
+**Deux demandes de Mike, faites le jour même.** (1) Le budget des docs de
+suivi passe à **100 000** octets — quatrième relèvement, et pour la même raison
+que les trois premiers : rogner sous le plafond coûte la PRÉCISION des raisons.
+(2) **Le serveur a un JOURNAL** (`journal_serveur.py`, 15 vérifications) : sa
+console est mirée, datée, dans `_journal_serveur.log`, lisible à distance et
+sans lui. Ce qu'il attrape et que rien n'attrapait : les **threads qui meurent**
+— un worker tombe, sa file se remplit, le serveur a l'air vivant — et les
+plantages durs des libs natives (`faulthandler`). Une bannière par démarrage
+rend « qu'est-ce qui a planté depuis que ce serveur tourne ? » lisible d'un
+`sed`. Désormais : **lire le journal avant de supposer.**
+
 ## État (23/08/2026, session 40)
 
 **La question ouverte de la 39 est répondue — et reproduite en trois lignes,
@@ -17,24 +95,15 @@ sous-classe de dict copie AUSSI l'état d'instance : il suit `_store` jusqu'au
 en-tête). Ce n'était donc pas la fiche de Flo — **toute fiche vivante de tout
 index SQLite** était indeepcopyable, hier comme demain. Conséquence directe :
 **la ligne console de `_fiche_pour_journal` ne nommera jamais rien**, aucun
-CHAMP n'étant en faute.
+CHAMP n'étant en faute. **Parade** : `__deepcopy__` / `__copy__` / `__reduce__`
+sur `TrackedEntry` et `TrackedDict` rendent un **dict NU** — une copie n'a ni
+clé ni store à prévenir. **4 vérifications rouges sur l'ancien code, 52/52 sur
+le nouveau**, dont une qui deepcopy le store LUI-MÊME pour prouver que le piège
+existe toujours.
 
-**Parade** : `__deepcopy__` / `__copy__` / `__reduce__` sur `TrackedEntry` et
-`TrackedDict` rendent un **dict NU** — une copie n'a ni clé ni store à prévenir,
-et une copie qui se croirait suivie ferait écrire en base des mutations qui
-n'appartiennent à personne. **4 vérifications rouges sur l'ancien code, 52/52
-sur le nouveau**, dont une qui deepcopy le store LUI-MÊME pour prouver que le
-piège existe toujours — sans quoi les autres ne prouveraient rien.
-
-**La file XMP est 3× plus lente que ne le disait la session 39.** Mesuré sur le
-fonds vivant, deux fenêtres indépendantes (274 s et 181 s) : **0,28 op/s**, soit
-**~11 h**, pas 3,4 h. Le 0,95 avait été pris sur une fenêtre courte juste après
-la fusion. Cause : `person_writer` lance **un processus exiftool par opération**,
-en série — ~3,5 s par tag sur SMB, et une photo renommée en demande deux.
-
-**Et cette file est une `queue.Queue()` EN MÉMOIRE, sans trace disque.** Un
-redémarrage, une coupure ou un plantage perd le travail restant **sans rien pour
-le retrouver** : c'est ce qui rend ces 11 h otages, et c'est le vrai défaut.
+**La file XMP est 3× plus lente que ne le disait la session 39** : **0,28 op/s**
+mesuré sur le fonds vivant (deux fenêtres indépendantes), soit ~11 h et non
+3,4 h. Le 0,95 venait d'une fenêtre courte juste après la fusion.
 
 **L'accident est maintenant RÉPARABLE : `verifier_xmp_personnes.py` (29 tests)
 recompte, DEPUIS LE DISQUE, ce que la file doit encore.** Il ne lit pas la file
@@ -250,16 +319,18 @@ qui en découle : éditer → redémarrer → **observer** → livrer.
 
 ## À faire — par ordre de valeur
 
-0ter. **La file XMP : d'abord RÉPARABLE, ensuite rapide (23/08, tranché avec
-   Mike).** Elle n'existe qu'en mémoire (`PERSON_QUEUE = queue.Queue()`) et
-   avance à 0,28 op/s. **(a)** Un outil qui compare les `personne:` des XMP du
-   fonds à l'index et REFAIT ce qui manque — l'accident cesse d'être une perte
-   sèche, et un redémarrage cesse d'être interdit. Ne touche pas `server.py`.
-   **(b)** Grouper le `-Ancien` et le `+Nouveau` d'une même photo en UNE
-   invocation exiftool (÷2 tout de suite), puis le mode `-stay_open` (le coût
-   de démarrage du processus disparaît). Touche `server.py` : livrable après
-   redémarrage seulement.
-
+0ter. **La file XMP : réparable (fait), durable (fait), rapide (à moitié).**
+   **(a)** `verifier_xmp_personnes.py` recompte depuis le disque ce qu'elle
+   doit, `appliquer_xmp_personnes.py` le refait. **Le vérificateur a tourné à
+   17:47, file à 0, et il n'y a RIEN à réparer** : sur 200 fichiers tirés à
+   graine fixe, **200 portent `personne:Florine`, 0 portent encore `Flo`, 0
+   manquent, 0 illisibles.** Le même échantillon donnait 19 et 119 à 10:37 :
+   la file a fait le travail en entier. `appliquer_xmp_personnes.py` reste donc
+   livré et JAMAIS passé en réel — faute d'emploi, et c'est la bonne nouvelle. **(b1)** Les deux gestes d'une photo en UNE invocation : **fait** (÷2).
+   **(b2)** Le journal qui la fait survivre à un arrêt : **fait**. **(b3)**
+   `-stay_open` : mesuré à **25 %** de mieux sur une écriture, pas 12× — un
+   processus qui vit longtemps et tient le NAS pour ce prix-là, **après le
+   reste**. (b1), (b2) touchent `server.py` : livrables après redémarrage.
 
 0. **Chantier des rattachements : CLOS (22/08).** Recalage appliqué (33, dont
    29 vraies réparations), résidu jugé (28 cas), retrait appliqué (2). Couples
@@ -347,8 +418,9 @@ qui en découle : éditer → redémarrer → **observer** → livrer.
    La re-passe ne se fera pas. Reste ouvert : **le prompt de PRODUCTION est celui
    qui hallucine le plus** (adopté sur un 25-15 ; toute photo taguée le paie).
    **Pas de retour à V0 sans protocole.**
-4. **Gestes Mike** : `gps_place` ✔ ; renommage appliqué ✔ (7 058) ; nettoyer
-   Flo (5 909 photos) ; re-rejeter Caline.
+4. **Gestes Mike** : `gps_place` ✔ ; renommage appliqué ✔ (7 058) ; **Flo →
+   Florine ✔ (23/08 — 11 heures de file, 5 909 photos, vérifié 200/200 sur le
+   DISQUE)** ; re-rejeter Caline.
 5. **Correctifs d'audit** : **I4, I5, I6, I7 et I8 CLOS (22/08)**, tous
    observés en réel, 32 tests neufs. I7 — règle unique `parse_tag_nomme`,
    mesurée avant (3 tags en casse divergente sur 37 707 : défaut latent) et
@@ -456,9 +528,25 @@ qui en découle : éditer → redémarrer → **observer** → livrer.
     **Ce qui reste ouvert, et c'est un choix de Mike** : la copie **hors site**.
     Un sinistre qui emporte le PC ET le NAS emporte tout.
 
-13. **Serveur exposé en MCP, lecture seule d'abord (PROMU 12/08).** Recherche,
-    fiches et `faits` en outils MCP locaux (JSON-RPC stdio, zéro dépendance —
-    skill `mcp-builder`). Écriture plus tard. Briques de 14a.
+13. **Serveur exposé en MCP, lecture seule : LIVRÉ et OBSERVÉ (23/08).**
+    `mcp_serveur.py` — JSON-RPC 2.0 sur stdio, stdlib pure, six outils
+    (`ml_chercher`, `ml_semblables`, `ml_meme_jour`, `ml_sujets`,
+    `ml_photos_de`, `ml_etat`). **41 vérifications + 15 pour le banc**, et
+    **13 mutations vues sur 13** — un module neuf n'a pas d'ancien code à
+    rougir, la mutation est ce qui en tient lieu. Observé contre le serveur
+    vivant par `mesure_mcp.py` (12 étapes, 0 rouge) : une VRAIE poignée de main
+    sur un VRAI tuyau, 0,09 s, 351 personnes, `espece:chat` filtré.
+    **Et `faits` a sa route (23/08).** La ligne de faits n'existait que dans
+    `_serve_browse` : rien d'autre que le HTML ne pouvait la lire — ni un banc,
+    ni le MCP. `/api/faits?key=…` (répétable, 200 au plus) la rend pour un LOT,
+    contexte bâti UNE fois ; **16 vérifications, 8 mutations vues sur 8**, et
+    l'outil `ml_faits` s'y branche (48 vérifications au total côté MCP).
+    **Trois états qui ne se confondent pas** : les faits ; `null` pour une photo
+    connue qui ne porte ni date, ni lieu, ni nom ; la clé citée dans
+    `inconnues` quand l'index l'ignore. **C'est la seule route NEUVE du lot** —
+    elle attend le redémarrage, et le banc le dit au lieu de le taire (« la
+    route existe-t-elle dans le code qui TOURNE ? »).
+    **Reste** : l'écriture, plus tard, et pas sans décision. Briques de 14a.
 14. **Recherche IA locale contextuelle.**
     (a) **Déterministe — CLOS et OBSERVÉ.** (i)–(iii) le 19/08 : `faits` est une
     VUE, la règle de LIEU est unifiée, la vue s'affiche. (iv) le 20/08 : le
