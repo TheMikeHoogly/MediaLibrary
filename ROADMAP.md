@@ -19,8 +19,27 @@ import dynamique illisible est un TROU nommé, qui fait retomber sur la vieille
 règle, plus large. **17 vérifications neuves, 13 rouges sur l'ancien code,
 45/45 vertes sous Windows** — dont quatre sur le VRAI dépôt.
 
-**La réparation des XMP tourne** (lancée le 23/08 à 21:38, ~18 900 photos).
-Détail et gestes de fin : `PROMPT_NOUVELLE_SESSION.md`.
+**Et la réparation des XMP est morte au bout de 31 minutes — la cause est
+trouvée et bouchée.** Lancée à 21:38, arrêtée à **22:09:40, à 4 800 photos sur
+~18 900**, onze secondes après un `🤖 Auto-ajout : 14 visage(s)` du curateur.
+Celui-ci rattache des visages TOUT SEUL toutes les quatre à cinq minutes, et
+chaque auto-ajout remplit `PERSON_QUEUE` : la passe, qui s'arrêtait au premier
+signe, ne pouvait pas finir. Elle **ATTEND** désormais que la file retombe
+(patience bornée, temps attendu compté), l'invariant « jamais deux écrivains »
+intact — aucune invocation d'ExifTool pendant l'attente. **7 fonctions de test
+neuves, 7 rouges sur l'ancien code, 56/56 vertes sous Windows.**
+
+**O7 est MESURÉ, et ce n'est pas lui le sujet.** Le filtre nommé coûte
+**191–208 ms** de coût fixe (deux passes, seuil écrit d'avance à 200 ms : le
+verdict bascule d'une passe à l'autre — mesure prise pendant que le tagueur
+tourne). Mais `/api/names`, appelé au chargement de **chaque** page pour
+l'autocomplétion, coûte **359–364 ms** : même index, même balayage, plus
+`parse_tag_nomme` sur chaque mot-clé. `mesure_recherche_nommee.py` (21
+vérifications) le dit, et signale au passage que `/api/search` **calcule**
+`total`/`tronque` et ne les rend PAS — le plafond silencieux corrigé pour la
+page le 22/08 et pour le MCP le 23/08 est toujours dans la route.
+
+Gestes de fin de la réparation : `PROMPT_NOUVELLE_SESSION.md`.
 
 ## État (23/08/2026, session 42)
 

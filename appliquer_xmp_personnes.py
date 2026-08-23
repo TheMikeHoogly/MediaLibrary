@@ -19,11 +19,17 @@ de courant laissait ~5 400 photos avec `Flo` dans leurs métadonnées et
 CE QUI EST NON NÉGOCIABLE
 
   1. **Jamais deux écrivains sur les mêmes fichiers.** Si le serveur répond et
-     que `queues.personnes` n'est pas à 0, ce script REFUSE. Le 22/08, la
-     fusion et le curateur se sont battus une heure sur le même fonds : 60
-     auto-ajouts, 17 092 écritures pour un geste qui en demandait 11 814. Deux
-     écrivains, c'est la même chose en pire — `person_writer` est l'écrivain
-     unique tant qu'il vit.
+     que `queues.personnes` n'est pas à 0, ce script n'écrit RIEN : il ATTEND
+     qu'elle retombe (patience bornée, `--patience`), et ne refuse que si elle
+     ne retombe pas. Le 22/08, la fusion et le curateur se sont battus une
+     heure sur le même fonds : 60 auto-ajouts, 17 092 écritures pour un geste
+     qui en demandait 11 814. Deux écrivains, c'est la même chose en pire —
+     `person_writer` est l'écrivain unique tant qu'il vit.
+     **Attendre, et non abandonner (23/08).** La version qui s'arrêtait au
+     premier signe est morte à 4 800 photos sur 18 900, onze secondes après un
+     « Auto-ajout : 14 visage(s) » — le curateur en pose un toutes les quatre
+     minutes, et une passe de cinq heures ne survit pas à ça. L'invariant n'a
+     pas bougé d'un pouce : attendre n'est pas écrire.
   2. **À blanc par défaut.** Sans `--appliquer`, rien n'est écrit et tout est
      dit.
   3. **Journal d'abord, écriture ensuite, `finally` toujours.** Chaque photo
@@ -226,8 +232,57 @@ def a_faire_photo(par_chemin, tags):
     return plan
 
 
+PATIENCE_S = 1800        # 30 min : le curateur passe toutes les ~4 min
+
+
+def attendre_la_file(serveur, patience_s=PATIENCE_S, pas_s=10, ecrire=print,
+                     dormir=None, horloge=None):
+    """Attend que `queues.personnes` retombe a zero. Rend (libre, attendu_s, file).
+
+    POURQUOI, ET CE QUE CA NE DESSERRE PAS (23/08, observe)
+
+    Le curateur rattache des visages TOUT SEUL — « Auto-ajout : 14 visage(s)
+    rattache(s) » — toutes les quatre a cinq minutes, et chacun remplit
+    `PERSON_QUEUE` pour quelques secondes. La passe `--tous` s ARRETAIT au
+    premier : lancee a 21:38, morte a 22:09:40, onze secondes apres l auto-ajout
+    de 22:09:29, a **4 800 photos sur 18 900**. Une passe de cinq heures qui
+    renonce sur un evenement qui se produit toutes les quatre minutes ne finira
+    jamais, et personne n etait la pour la relancer.
+
+    L invariant 1 est INTACT : on n ecrit toujours pas pendant que le serveur
+    ecrit. On cesse seulement d ABANDONNER — attendre n est pas ecrire.
+
+    La patience est BORNEE : un script qui attend sans fin est pire qu un
+    script qui echoue (lecon du `{ready}` avale par `-q`, 23/08). Epuisee, on
+    rend `False` et l appelant s arrete comme avant.
+
+    Serveur MUET : rend `libre`, parce que personne d autre n ecrit — mais le
+    DIT, un silence ne s interprete pas tout seul."""
+    # Resolus a l APPEL, jamais en defaut : un defaut fige le `time.sleep` du
+    # jour de la definition, et un test qui remplace l horloge dort pour de vrai.
+    dormir = dormir or time.sleep
+    horloge = horloge or time.monotonic
+    file = V.file_du_serveur(serveur)
+    if not file:                       # 0 (vide) ou None (muet) : rien a attendre
+        return True, 0.0, file
+    t0 = horloge()
+    ecrire("  la file du serveur travaille (%d operation(s)) — j attends, "
+           "je n ecris pas (patience %d s)." % (file, patience_s))
+    while True:
+        attendu = horloge() - t0
+        if attendu >= patience_s:
+            return False, attendu, file
+        dormir(min(pas_s, max(0.0, patience_s - attendu)))
+        file = V.file_du_serveur(serveur)
+        attendu = horloge() - t0
+        if not file:
+            ecrire("  file retombee a zero apres %d s — je reprends." % attendu)
+            return True, attendu, file
+
+
 def balayer(par_chemin, exe, journal_path, faits_path, serveur='',
-            lot=200, appliquer_vrai=False, ecrire=print):
+            lot=200, appliquer_vrai=False, ecrire=print,
+            patience_s=PATIENCE_S):
     """Lit et répare le fonds par tranches, en marquant chaque photo FAITE.
 
     Trois choses tiennent ce mode :
@@ -235,15 +290,21 @@ def balayer(par_chemin, exe, journal_path, faits_path, serveur='',
     1. **La reprise.** Chaque photo traitée est ajoutée à `_tous_faits.txt`
        APRÈS son écriture et son journal. Une fenêtre fermée, une coupure, un
        Ctrl-C : relancer reprend, et ne réécrit pas ce qui l'a déjà été.
-    2. **L'écrivain reste unique.** La file du serveur est re-testée AVANT
-       chaque tranche : si elle se remet à travailler — Mike a nommé quelqu'un
-       pendant que ça tourne — ce script S'ARRÊTE proprement au lieu de se
-       battre avec `person_writer` sur les mêmes fichiers.
+    2. **L'écrivain reste unique — et on ATTEND au lieu d'abandonner.** La
+       file du serveur est re-testée AVANT chaque tranche ; si elle travaille,
+       ce script ne écrit rien et ATTEND qu'elle retombe à zéro (patience
+       bornée). Il ne s'arrête que si elle ne retombe pas. Le 23/08, arrêter
+       au premier signe a coûté la nuit : le curateur rattache des visages tout
+       seul toutes les quatre minutes, et la passe est morte à 4 800 photos sur
+       18 900, onze secondes après un « Auto-ajout : 14 visage(s) ».
     3. **Rien n'est tu.** Ce qui n'a pas été lu, pas écrit, ou sauté parce que
-       la file s'est remise à tourner est COMPTÉ et dit à la fin."""
+       la file s'est remise à tourner est COMPTÉ et dit à la fin — le temps
+       passé à attendre aussi : une passe deux fois plus lente sans qu'on
+       sache pourquoi est une mesure fausse."""
     restants = [k for k in sorted(par_chemin) if k not in charger_faits(faits_path)]
     total = len(restants)
     vues = reecrites = rates = 0
+    attentes, attente_s = 0, 0.0
     arret = ''
     t0 = time.time()
     journal_path.parent.mkdir(parents=True, exist_ok=True)
@@ -252,11 +313,15 @@ def balayer(par_chemin, exe, journal_path, faits_path, serveur='',
     try:
         for debut in range(0, total, lot):
             if serveur:
-                file = V.file_du_serveur(serveur)
-                if file:
-                    arret = ("la file du serveur s est remise a tourner "
-                             "(%d operation(s)) : deux ecrivains sur les memes "
-                             "fichiers, jamais." % file)
+                libre, attendu, file = attendre_la_file(
+                    serveur, patience_s=patience_s, ecrire=ecrire)
+                if attendu:
+                    attentes += 1
+                    attente_s += attendu
+                if not libre:
+                    arret = ("la file du serveur travaille encore apres %d s "
+                             "d attente (%d operation(s)) : deux ecrivains sur "
+                             "les memes fichiers, jamais." % (attendu, file))
                     break
             tranche = restants[debut:debut + lot]
             chemins = [par_chemin[k][0] for k in tranche]
@@ -293,7 +358,7 @@ def balayer(par_chemin, exe, journal_path, faits_path, serveur='',
             fa.close()
     return {'total': total, 'vues': vues, 'reecrites': reecrites,
             'rates': rates, 'non_lues': vues and (total - vues) or 0,
-            'arret': arret}
+            'arret': arret, 'attentes': attentes, 'attente_s': attente_s}
 
 
 def appliquer(plan, exe, journal_path, ecrire=print):
@@ -349,12 +414,17 @@ def tour_du_fonds(a, exe, uploads, ecrire=print):
         ecrire("  journal  : %s" % jp)
         ecrire("  reprise  : %s" % FAITS_TOUS)
     r = balayer(par_chemin, exe, jp, FAITS_TOUS, serveur=a.serveur,
-                lot=max(1, a.lot), appliquer_vrai=a.appliquer, ecrire=ecrire)
+                lot=max(1, a.lot), appliquer_vrai=a.appliquer, ecrire=ecrire,
+                patience_s=max(0, a.patience))
     ecrire("")
     ecrire("=" * 74)
     ecrire("  photos lues        : %d sur %d" % (r['vues'], r['total']))
     ecrire("  reecrites          : %d" % r['reecrites'])
     ecrire("  en echec           : %d" % r['rates'])
+    if r.get('attentes'):
+        ecrire("  attentes de la file: %d fois, %d s au total (le curateur "
+               "rattache des visages tout seul)"
+               % (r['attentes'], int(r['attente_s'])))
     if r['total'] > r['vues']:
         ecrire("  NON LUES           : %d (ni reparees, ni marquees faites : "
                "elles repasseront)" % (r['total'] - r['vues']))
@@ -394,6 +464,9 @@ def main(argv=None):
                     help="photos lues par tranche en mode --tous (defaut 200)")
     ap.add_argument('--max-photos', type=int, default=0,
                     help="plafond d essai en mode --tous (0 = tout)")
+    ap.add_argument('--patience', type=int, default=PATIENCE_S,
+                    help="secondes d attente quand la file du serveur "
+                         "travaille (0 = ne pas attendre, comme avant)")
     a = ap.parse_args(argv)
 
     if a.tous and (a.rapport or a.nom):
@@ -405,13 +478,16 @@ def main(argv=None):
               "de l'un des trois).")
         return 2
 
-    file = V.file_du_serveur(a.serveur)
-    if file:
-        print("REFUS : le serveur a encore %d operation(s) en file." % file)
+    libre, attendu, file = attendre_la_file(a.serveur,
+                                            patience_s=max(0, a.patience))
+    if not libre:
+        print("REFUS : le serveur a encore %d operation(s) en file apres %d s "
+              "d attente." % (file, attendu))
         print("  `person_writer` est l'ecrivain unique tant qu'il vit. Deux")
         print("  ecrivains sur les memes fichiers, c'est la bagarre du 22/08")
         print("  en pire. Attendre queues.personnes = 0, ou arreter le serveur.")
         return 3
+    file = V.file_du_serveur(a.serveur)
     if file is None and not a.rapport:
         print("le serveur ne repond pas : sans lui, la verite d'index doit "
               "venir d'un --rapport ecrit quand il repondait encore.")

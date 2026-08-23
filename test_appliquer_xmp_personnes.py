@@ -52,15 +52,28 @@ class FauxExif:
 
 
 def t_refus_si_la_file_tourne(tmp):
-    """LA garde principale : deux ecrivains sur les memes fichiers."""
+    """LA garde principale : deux ecrivains sur les memes fichiers.
+
+    `--patience 0` : on mesure le REFUS, pas l'attente. Depuis le 23/08 le
+    script attend d'abord que la file retombe (le curateur en remplit une
+    toutes les quatre minutes) — mais la garde, elle, n'a pas bouge d'un
+    pouce, et c'est ce que ce test tient."""
     vrai = V.file_du_serveur
     V.file_du_serveur = lambda *a, **k: 10801
     try:
-        code = A.main(['--nom', 'Florine', '--appliquer'])
+        code = A.main(['--nom', 'Florine', '--appliquer', '--patience', '0'])
         verifie("REFUS tant que la file du serveur n'est pas vide", code == 3,
                 "code=%r" % code)
     finally:
         V.file_du_serveur = vrai
+
+
+def t_la_patience_par_defaut_est_une_CONSTANTE_lisible(tmp):
+    """Une patience choisie dans le code au cas par cas ne se discute pas.
+    30 min : le curateur passe toutes les 4 a 5 min, une attente qui abandonne
+    avant six passages abandonnerait pour rien."""
+    verifie("patience par defaut lisible et bornee",
+            A.PATIENCE_S == 1800, "PATIENCE_S=%r" % A.PATIENCE_S)
 
 
 def t_refus_sans_verite_dindex(tmp):
@@ -268,7 +281,9 @@ def t_tous_REPREND_ou_il_s_est_arrete(tmp):
 
 def t_tous_S_ARRETE_si_le_serveur_se_remet_a_ecrire(tmp):
     """Deux ecrivains sur les memes fichiers, c'est la bagarre du 22/08.
-    Le test verifie qu'il s'arrete ET qu'il le DIT."""
+    Le test verifie qu'il s'arrete ET qu'il le DIT. `--patience 0` = l'ancien
+    comportement, celui qui n'attend pas : la garde ne depend PAS de l'attente.
+    """
     tmp = Path(tmp)
     a = tmp / "a.jpg"
     a.write_bytes(b"jpeg")
@@ -278,13 +293,168 @@ def t_tous_S_ARRETE_si_le_serveur_se_remet_a_ecrire(tmp):
         r = A.balayer({V._normalise(a): (a, {"Ellie"})}, "exiftool",
                       tmp / "j.jsonl", tmp / "faits.txt",
                       serveur='http://x', lot=10, appliquer_vrai=True,
-                      ecrire=lambda *x: None)
+                      ecrire=lambda *x: None, patience_s=0)
     finally:
         V.file_du_serveur = vrai
     verifie("--tous : il s'arrete quand la file du serveur repart",
             r['reecrites'] == 0 and r['arret'], "r=%r" % r)
     verifie("--tous : l'arret est NOMME, pas silencieux",
             "file du serveur" in (r['arret'] or ""), "arret=%r" % r['arret'])
+
+
+class FileQuiRetombe:
+    """La file du serveur : occupee `n` fois, puis vide. Comme le curateur."""
+
+    def __init__(self, occupee, valeur=14):
+        self.reste = occupee
+        self.valeur = valeur
+        self.lectures = 0
+
+    def __call__(self, *a, **k):
+        self.lectures += 1
+        if self.reste > 0:
+            self.reste -= 1
+            return self.valeur
+        return 0
+
+
+def t_attente_le_curateur_ne_tue_plus_la_passe(tmp):
+    """LE defaut du 23/08 : la passe est morte a 4 800 photos sur 18 900,
+    onze secondes apres un « Auto-ajout : 14 visage(s) ». Le curateur en pose
+    un toutes les quatre minutes ; abandonner au premier, c'est ne jamais
+    finir."""
+    dormis = []
+    faux_temps = [0.0]
+
+    def dormir(s):
+        dormis.append(s)
+        faux_temps[0] += s
+
+    vrai = V.file_du_serveur
+    V.file_du_serveur = FileQuiRetombe(occupee=3)
+    try:
+        libre, attendu, file = A.attendre_la_file(
+            'http://x', patience_s=600, pas_s=10, ecrire=lambda *x: None,
+            dormir=dormir, horloge=lambda: faux_temps[0])
+    finally:
+        V.file_du_serveur = vrai
+    verifie("attente : la file retombe, on REPREND au lieu d'abandonner",
+            libre is True, "libre=%r" % libre)
+    verifie("attente : le temps attendu est COMPTE, pas tu",
+            attendu == 30.0, "attendu=%r dormis=%r" % (attendu, dormis))
+    verifie("attente : on n'a pas dormi plus que necessaire",
+            dormis == [10, 10, 10], "dormis=%r" % dormis)
+
+
+def t_attente_BORNEE_un_script_qui_se_fige_est_pire(tmp):
+    """Lecon du `{ready}` avale par `-q` (23/08) : un banc doit ECHOUER,
+    jamais attendre sans fin."""
+    faux_temps = [0.0]
+
+    def dormir(s):
+        faux_temps[0] += s
+
+    vrai = V.file_du_serveur
+    V.file_du_serveur = lambda *a, **k: 7          # jamais vide
+    try:
+        libre, attendu, file = A.attendre_la_file(
+            'http://x', patience_s=60, pas_s=10, ecrire=lambda *x: None,
+            dormir=dormir, horloge=lambda: faux_temps[0])
+    finally:
+        V.file_du_serveur = vrai
+    verifie("attente : la patience est BORNEE", libre is False,
+            "libre=%r attendu=%r" % (libre, attendu))
+    verifie("attente : la patience epuisee rend la file RESTANTE",
+            file == 7, "file=%r" % file)
+
+
+def t_attente_ne_desserre_RIEN_on_n_ecrit_pas_pendant(tmp):
+    """L'invariant 1 est intact : tant que la file travaille, ExifTool n'est
+    pas invoque une seule fois. Attendre n'est pas ecrire."""
+    tmp = Path(tmp)
+    a = tmp / "a.jpg"
+    a.write_bytes(b"jpeg")
+    faux = FauxExif()
+    vrai_file, vrai_run = V.file_du_serveur, A.subprocess.run
+    V.file_du_serveur = lambda *x, **k: 5          # occupee, et le reste
+    A.subprocess.run = faux.run
+    try:
+        r = A.balayer({V._normalise(a): (a, {"Ellie"})}, "exiftool",
+                      tmp / "j.jsonl", tmp / "faits.txt",
+                      serveur='http://x', lot=10, appliquer_vrai=True,
+                      ecrire=lambda *x: None, patience_s=0)
+    finally:
+        V.file_du_serveur, A.subprocess.run = vrai_file, vrai_run
+    verifie("attente : AUCUNE invocation d'ExifTool pendant que la file "
+            "travaille", faux.appels == [], "appels=%r" % faux.appels)
+    verifie("attente : rien n'est marque FAIT non plus",
+            not (tmp / "faits.txt").exists()
+            or (tmp / "faits.txt").read_text(encoding='utf-8').strip() == "",
+            "reprise polluee")
+    verifie("attente : et l'arret est dit", bool(r['arret']))
+
+
+def t_attente_serveur_MUET_est_libre_mais_se_dit(tmp):
+    """Un serveur qui ne repond pas n'ecrit pas : on peut travailler. Mais un
+    silence ne s'interprete pas tout seul — il rend None, jamais 0."""
+    vrai = V.file_du_serveur
+    V.file_du_serveur = lambda *a, **k: None
+    try:
+        libre, attendu, file = A.attendre_la_file('http://x', patience_s=60,
+                                                  ecrire=lambda *x: None)
+    finally:
+        V.file_du_serveur = vrai
+    verifie("attente : serveur muet = libre, sans attendre",
+            libre is True and attendu == 0.0, "libre=%r a=%r" % (libre, attendu))
+    verifie("attente : muet se distingue de vide (None, pas 0)",
+            file is None, "file=%r" % file)
+
+
+def t_demarrage_ATTEND_au_lieu_de_refuser_tout_de_suite(tmp):
+    """La relance de 23 h ne doit pas buter sur un auto-ajout qui dure trois
+    secondes. Avec --patience 0, le vieux refus immediat est intact."""
+    vrai = V.file_du_serveur
+    V.file_du_serveur = lambda *a, **k: 9
+    try:
+        code = A.main(['--nom', 'Florine', '--appliquer', '--patience', '0'])
+    finally:
+        V.file_du_serveur = vrai
+    verifie("--patience 0 : le refus immediat est intact", code == 3,
+            "code=%r" % code)
+
+
+def t_le_temps_attendu_est_DIT_dans_le_rapport(tmp):
+    """Une passe deux fois plus lente sans qu'on sache pourquoi est une mesure
+    fausse."""
+    tmp = Path(tmp)
+    a = tmp / "a.jpg"
+    a.write_bytes(b"jpeg")
+    faux_temps = [0.0]
+
+    def dormir(s):
+        faux_temps[0] += s
+
+    vrai_dormir, vrai_horloge = A.time.sleep, A.time.monotonic
+    vrai_file, vrai_lire = V.file_du_serveur, V.lire_tags
+    V.file_du_serveur = FileQuiRetombe(occupee=2)
+    V.lire_tags = lambda chemins, exe, **kw: {V._normalise(c): set()
+                                              for c in chemins}
+    A.time.sleep = dormir
+    A.time.monotonic = lambda: faux_temps[0]
+    try:
+        r = A.balayer({V._normalise(a): (a, {"Ellie"})}, "exiftool",
+                      tmp / "j.jsonl", tmp / "faits.txt",
+                      serveur='http://x', lot=10, appliquer_vrai=False,
+                      ecrire=lambda *x: None, patience_s=600)
+    finally:
+        V.file_du_serveur, V.lire_tags = vrai_file, vrai_lire
+        A.time.sleep, A.time.monotonic = vrai_dormir, vrai_horloge
+    verifie("attente : le rapport COMPTE les attentes",
+            r.get('attentes') == 1, "r=%r" % r)
+    verifie("attente : le rapport dit les secondes attendues",
+            r.get('attente_s') == 20.0, "r=%r" % r)
+    verifie("attente : et la passe a bien continue apres",
+            not r['arret'] and r['vues'] == 1, "r=%r" % r)
 
 
 def t_tous_a_blanc_n_ecrit_RIEN(tmp):
@@ -399,6 +569,7 @@ def t_un_nom_saute_est_ECRIT_sur_disque_et_redit(tmp):
 def main():
     tmp = Path(tempfile.mkdtemp(prefix="test_appl_xmp_"))
     tests = [t_refus_si_la_file_tourne, t_refus_sans_verite_dindex,
+             t_la_patience_par_defaut_est_une_CONSTANTE_lisible,
              t_a_faire_ne_reecrit_pas_le_conforme,
              t_une_seule_invocation_par_photo, t_journal_et_finally,
              t_journal_survit_a_une_interruption, t_candidats_depuis_un_rapport,
@@ -409,7 +580,13 @@ def main():
              t_tous_a_blanc_n_ecrit_RIEN, t_tous_refuse_de_se_melanger_a_nom,
              t_une_requete_qui_lache_est_REESSAYEE,
              t_ce_qui_lache_TROIS_fois_leve,
-             t_un_nom_saute_est_ECRIT_sur_disque_et_redit]
+             t_un_nom_saute_est_ECRIT_sur_disque_et_redit,
+             t_attente_le_curateur_ne_tue_plus_la_passe,
+             t_attente_BORNEE_un_script_qui_se_fige_est_pire,
+             t_attente_ne_desserre_RIEN_on_n_ecrit_pas_pendant,
+             t_attente_serveur_MUET_est_libre_mais_se_dit,
+             t_demarrage_ATTEND_au_lieu_de_refuser_tout_de_suite,
+             t_le_temps_attendu_est_DIT_dans_le_rapport]
     for t in tests:
         sous = tmp / t.__name__
         sous.mkdir(parents=True, exist_ok=True)

@@ -18,9 +18,21 @@
       python appliquer_xmp_personnes.py --tous --max-photos 300
       python appliquer_xmp_personnes.py --tous --appliquer
 
-  **LANCÉ le 23/08 à 21:38.** La passe en cours tourne sur le code d'AVANT le
-  correctif ci-dessous : à sa fin, **rattraper `Val` et `Yann Mamin`** avec
-  `--nom X --appliquer` (ce mode ignore le fichier de reprise).
+  **LANCÉ le 23/08 à 21:38 — et MORT à 22:09:40, à 4 800 photos sur ~18 900.**
+  Onze secondes après un `🤖 Auto-ajout : 14 visage(s)` : le curateur rattache
+  des visages tout seul toutes les quatre à cinq minutes, chaque auto-ajout
+  remplit `PERSON_QUEUE`, et la passe s'arrêtait au PREMIER signe. **Corrigé
+  le 23/08** : elle attend que la file retombe au lieu d'abandonner, sans
+  jamais écrire pendant ce temps (7 fonctions de test neuves, 7 rouges sur
+  l'ancien code, 56/56 vertes).
+  **À RELANCER — geste de Mike**, la famille `appliquer_` étant hors de portée
+  du banc :
+
+      python appliquer_xmp_personnes.py --tous --appliquer
+
+  Elle reprend à 4 800 et ne réécrit rien de ce qui est fait. À sa fin,
+  **rattraper `Val` et `Yann Mamin`** avec `--nom X --appliquer` (ce mode
+  ignore le fichier de reprise), puis `verifier_xmp_toutes_personnes.py`.
   *Le paragraphe ci-dessous vaut toujours pour la méthode.*
 
 - **23/08 (fait, gardé pour la méthode) — le premier lot.**
