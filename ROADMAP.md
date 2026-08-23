@@ -41,12 +41,14 @@ banc a attendu sans fin, et la fenêtre des bancs avec lui, jusqu'à ce que
 l'agent le tue. Deux parades : `-q` retiré, et **un délai par ordre** — un banc
 doit ÉCHOUER, jamais se figer.
 
-**Quatre branches attendent la fusion** — les trois de la 40
-(`fix/la-fiche-est-le-verrou`, `feat/ce-que-la-file-xmp-doit-encore`,
-`feat/reparer-ce-que-la-file-xmp-n-a-pas-fait`, livrées en `commit` avec
-`force=`) et celle du jour. **Le contrôle 5 a raison ici** : `server.py` a
-changé sous un serveur qui tourne. À la fin de la file : **redémarrer,
-OBSERVER le débit neuf, puis fusionner.**
+**Les quatre branches sont FUSIONNÉES** (23/08, 17:50) : `main`
+**8f48b26 → 9df303d** en fast-forward, ce qui emporte d'un coup la chaîne
+entière — les trois de la 40 (`fix/la-fiche-est-le-verrou`,
+`feat/ce-que-la-file-xmp-doit-encore`,
+`feat/reparer-ce-que-la-file-xmp-n-a-pas-fait`) et celle du jour, qui en
+descend. Vérifié dans `.git/logs/refs/heads/main`, pas dans le rapport de
+l'agent. **Le contrôle 5 avait raison, et il a fini par s'ouvrir tout seul** :
+il suffisait que le serveur tourne enfin le code qu'on gravait.
 
 **La file a fini, le serveur a redémarré, et le fonds porte ce que l'index
 dit.** 17:45 : `queues.personnes` à 0 après onze heures ; redémarrage, bannière
