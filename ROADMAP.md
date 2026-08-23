@@ -6,6 +6,22 @@ dans **git** ; les rejets dans `eval/DECISIONS.md` (photothèque) et
 `eval/METHODE.md` ; l'éphémère dans `PROMPT_NOUVELLE_SESSION.md`. Audits :
 `docs/AUDIT_INTERNE_2026-08.md`, `docs/AUDIT_EXTERNE_2026.md`, `docs/RANGEMENT_2026.md`.
 
+## État (23/08/2026, session 43)
+
+**Le contrôle 5 de l'agent git cesse de réclamer une preuve qui n'existe pas.**
+Il jugeait sur le NOM — tout `.py` sauf `test_`/`mesure_` — et exigeait donc de
+`mcp_serveur.py`, `banc_agent.py`, `git_agent.py` lui-même et des familles
+`appliquer_`/`verifier_` qu'un serveur les fasse tourner. Le serveur ne les
+importe jamais. C'est ce qui obligeait à forcer, et un contrôle qu'on contourne
+par habitude ne contrôle plus rien. Il lit maintenant le GRAPHE des imports de
+`server.py`, imports paresseux compris : **29 modules dedans, 134 dehors**. Un
+import dynamique illisible est un TROU nommé, qui fait retomber sur la vieille
+règle, plus large. **17 vérifications neuves, 13 rouges sur l'ancien code,
+45/45 vertes sous Windows** — dont quatre sur le VRAI dépôt.
+
+**La réparation des XMP tourne** (lancée le 23/08 à 21:38, ~18 900 photos).
+Détail et gestes de fin : `PROMPT_NOUVELLE_SESSION.md`.
+
 ## État (23/08/2026, session 42)
 
 **Le canal des bancs portait tout, sauf un nom humain.** Mike nomme le groupe

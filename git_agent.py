@@ -43,17 +43,27 @@ LES CONTRÔLES, ET LEQUEL EST NÉGOCIABLE
       par-dessus les bretelles de `.gitignore` : `photos.db` fait 290 Mo.
 
   Contournables par `force=raison` dans `SESSION_COMMIT.txt` (tracé) :
-   5. tout `.py` modifié (hors `test_` / `mesure_`, que le serveur n'importe
-      jamais) est PLUS ANCIEN que le démarrage du serveur — donc le serveur
-      fait tourner ce qu'on grave ;
+   5. tout `.py` modifié QUE LE SERVEUR IMPORTE est plus ancien que son
+      démarrage — donc le serveur fait tourner ce qu'on grave ;
    6. les `test_*.py` des modules touchés passent ;
    7. `verifier_bat.py` passe si un `.bat` a changé (règle absolue du projet) ;
    8. le lint des docs de suivi est propre.
 
-La règle 5 est volontairement plus stricte que nécessaire : `git_agent.py`
-lui-même n'est jamais importé par le serveur, et exiger un redémarrage pour le
-commiter est un faux positif. C'est le prix d'une règle qu'on peut lire en une
-ligne ; le redémarrage coûte douze secondes, et `force=` existe.
+La règle 5 a d'abord jugé sur le NOM — tout `.py` sauf `test_` et `mesure_` —
+et elle mentait sur 50 fichiers : `mcp_serveur.py`, `banc_agent.py`, les
+familles `appliquer_` et `verifier_`, `git_agent.py` lui-même. Aucun n'est
+importé par le serveur ; leur exiger un redémarrage réclamait une preuve qui
+n'existe pas, et c'est ce qui obligeait à écrire `force=`. Un contrôle qu'on
+contourne par habitude ne contrôle plus rien.
+
+Elle lit donc désormais le GRAPHE : `server.py` et tout ce qu'il importe,
+directement ou non, imports paresseux compris (règle 3 du projet : les imports
+lourds vivent dans les fonctions, donc on parcourt l'arbre entier). Mesuré le
+23/08 : **29 modules dedans, 134 dehors**. Rien n'est importé pour de vrai —
+`ast` lit le source, et un nom sans fichier dans le projet est un nom externe.
+Un import DYNAMIQUE dont le nom n'est pas écrit en clair est un TROU : le
+contrôle le NOMME et retombe sur la vieille règle de nom, plus large. Un seul
+est admis, daté et justifié (`TROUS_ADMIS`).
 
 CE QUE L'AGENT NE SAIT PAS FAIRE
 
@@ -82,6 +92,7 @@ USAGE
     python git_agent.py --controle     (contrôles seuls, ne touche pas au dépôt)
 """
 
+import ast
 import json
 import os
 import re
@@ -95,7 +106,8 @@ import canal
 __all__ = ['FICHIER_COMMANDE', 'FICHIER_ETAT', 'COMMANDES', 'DEFAUT',
            'PERIODE_S', 'lire_commande', 'ecrire_commande',
            'lire_session_commit', 'motif_branche', 'motif_fichiers',
-           'py_a_observer', 'tests_pour', 'porcelain']
+           'graphe_du_serveur', 'py_a_observer', 'tests_pour',
+           'porcelain']
 
 FICHIER_COMMANDE = '_commande_git.txt'
 FICHIER_ETAT = '_etat_git.json'
@@ -131,10 +143,22 @@ EXT_INTERDITES = {
 }
 TAILLE_MAX = 5 * 1024 * 1024        # 5 Mo : au-delà, on veut une phrase humaine
 
-# Modules que le serveur n'importe jamais : les faire compter dans le contrôle
-# « le serveur tourne-t-il ce code » ferait sonner l'alarme pour rien, et une
-# alarme qui sonne pour rien s'ignore. Même raison que le rappel du bat 27.
+# Le REPLI du contrôle 5, quand le graphe des imports n'est pas lisible : la
+# vieille règle de nom, large et grossière. Elle ne sert plus au cas courant —
+# le graphe, lui, sait qui le serveur importe vraiment.
 HORS_SERVEUR = re.compile(r'^(test_|mesure_)')
+
+# Le point d'entrée du graphe : ce que le serveur fait tourner, c'est ce
+# fichier et tout ce qu'il importe, directement ou non.
+RACINE_SERVEUR = 'server.py'
+
+# Un import DYNAMIQUE dont le nom n'est pas écrit en clair est un TROU dans le
+# graphe : on ne peut pas savoir ce qu'il atteint. Le seul admis est daté et
+# justifié — `semantic.cmd_diagnostic` fait `__import__(nom)` sur les deux
+# littéraux ("open_clip", "transformers"), des bibliothèques EXTERNES, jamais
+# un module du projet (23/08). Tout autre trou fait retomber le contrôle sur
+# HORS_SERVEUR, et le DIT : un contrôle qui ment est pire qu'un contrôle absent.
+TROUS_ADMIS = {'semantic.py'}
 
 API_SERVEUR = 'http://127.0.0.1:8080/api/serveur'
 
@@ -241,14 +265,110 @@ def motif_fichiers(chemins, taille_de):
     return None
 
 
-def py_a_observer(chemins):
-    """Les `.py` modifiés que le SERVEUR importe — ceux dont il faut prouver
-    qu'il les fait tourner. `test_*` et `mesure_*` en sont exclus : le serveur
-    ne les importe jamais."""
+def _fichiers_possibles(nom_pointe):
+    """Les fichiers qu'un nom de module PEUT désigner, du plus précis au moins.
+
+    `a.b.c` peut vivre dans `a/b/c.py`, et importer `a.b.c` exécute aussi
+    `a/b.py` et `a.py` : les trois comptent. Le projet est plat aujourd'hui,
+    mais la règle ne doit pas mentir le jour où il ne le sera plus."""
+    parts = [x for x in nom_pointe.split('.') if x]
+    for i in range(len(parts), 0, -1):
+        yield '/'.join(parts[:i]) + '.py'
+
+
+def _est_import_dynamique(noeud):
+    """`__import__(...)` ou `importlib.import_module(...)`, sinon None."""
+    f = noeud.func
+    if isinstance(f, ast.Name) and f.id == '__import__':
+        return True
+    if isinstance(f, ast.Attribute) and f.attr in ('import_module', '__import__'):
+        return True
+    return False
+
+
+def imports_ecrits(source):
+    """(noms de modules importés, trou) pour UN source.
+
+    `trou` est None quand tout ce qui est importé est écrit en clair ; sinon
+    c'est la phrase qui dit ce qu'on n'a pas su lire. Les imports PARESSEUX,
+    posés dans des fonctions (règle 3 du projet), comptent comme les autres :
+    on parcourt l'arbre entier, pas seulement son premier étage."""
+    try:
+        arbre = ast.parse(source)
+    except SyntaxError as e:
+        return set(), 'source illisible (%s)' % e
+    noms, trou = set(), None
+    for n in ast.walk(arbre):
+        if isinstance(n, ast.Import):
+            for a in n.names:
+                noms.add(a.name)
+        elif isinstance(n, ast.ImportFrom):
+            if n.level:
+                trou = trou or 'import relatif (from %s.)' % ('.' * n.level)
+                continue
+            base = n.module or ''
+            noms.add(base)
+            for a in n.names:
+                noms.add(base + '.' + a.name)
+        elif isinstance(n, ast.Call) and _est_import_dynamique(n):
+            arg = n.args[0] if n.args else None
+            if isinstance(arg, ast.Constant) and isinstance(arg.value, str):
+                noms.add(arg.value)
+            else:
+                trou = trou or 'import dynamique dont le nom n\'est pas écrit'
+    return {x for x in noms if x}, trou
+
+
+def graphe_du_serveur(lire, racine=RACINE_SERVEUR):
+    """Les fichiers `.py` du projet que le SERVEUR fait tourner : `server.py`
+    et tout ce qu'il importe, directement ou non.
+
+    `lire(chemin)` rend le source, ou None si le fichier n'est pas là — c'est
+    ainsi qu'un nom externe (`json`, `torch`) se distingue d'un module du
+    projet, sans jamais rien importer pour de vrai.
+
+    Rend `(fichiers, trou)`. `trou` est None quand la lecture est COMPLÈTE ;
+    sinon c'est la phrase qui dit pourquoi elle ne l'est pas, et l'appelant
+    doit retomber sur la règle large plutôt que d'ouvrir une porte sur un
+    graphe qu'il sait faux."""
+    src = lire(racine)
+    if src is None:
+        return set(), 'le point d\'entrée %s est introuvable' % racine
+    graphe, pile, trou = {racine}, [(racine, src)], None
+    while pile:
+        fichier, source = pile.pop()
+        noms, t = imports_ecrits(source)
+        if t and fichier not in TROUS_ADMIS:
+            trou = trou or '%s : %s' % (fichier, t)
+        for nom in noms:
+            for cible in _fichiers_possibles(nom):
+                if cible in graphe:
+                    continue
+                s = lire(cible)
+                if s is None:                 # nom externe, ou étage absent
+                    continue
+                graphe.add(cible)
+                pile.append((cible, s))
+    return graphe, trou
+
+
+def py_a_observer(chemins, graphe=None):
+    """Les `.py` modifiés que le SERVEUR fait tourner — ceux dont il faut
+    prouver qu'il tourne sur leur version d'aujourd'hui.
+
+    `graphe` est ce que rend `graphe_du_serveur`. À None — graphe illisible,
+    ou troué — on retombe sur la règle de NOM : tout sauf `test_` et `mesure_`.
+    Elle est large, elle réclame des redémarrages pour rien ; c'est le bon
+    sens du doute, pas la règle courante."""
     out = []
     for c in chemins:
         p = Path(c)
-        if p.suffix.lower() == '.py' and not HORS_SERVEUR.match(p.name):
+        if p.suffix.lower() != '.py':
+            continue
+        if graphe is None:
+            if not HORS_SERVEUR.match(p.name):
+                out.append(c)
+        elif str(c).replace('\\', '/') in graphe:
             out.append(c)
     return out
 
@@ -353,7 +473,20 @@ def controler(projet, sc, chemins):
         return None, notes
 
     # ── contrôle 5 : le serveur fait-il tourner ce qu'on grave ? ──
-    py = py_a_observer(chemins)
+    def _source(f):
+        q = projet / f
+        try:
+            return q.read_text(encoding='utf-8', errors='replace')
+        except OSError:
+            return None
+
+    graphe, trou = graphe_du_serveur(_source)
+    if trou:
+        notes.append("graphe du serveur illisible (%s) — règle de nom" % trou)
+        graphe = None
+    else:
+        notes.append("graphe du serveur : %d modules" % len(graphe))
+    py = py_a_observer(chemins, graphe)
     if py:
         demarre_a = _serveur_demarre_a()
         if demarre_a is None:

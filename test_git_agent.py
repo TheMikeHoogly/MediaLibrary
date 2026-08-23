@@ -129,12 +129,157 @@ class TestLectures(unittest.TestCase):
              'mesure_faits_vue.py', 'ROADMAP.md']
         self.assertEqual(ga.py_a_observer(c), ['server.py', 'faits_vue.py'])
 
+    def test_py_a_observer_sans_graphe_retombe_sur_le_nom(self):
+        """Graphe illisible : le doute penche du côté qui redemande une preuve."""
+        c = ['server.py', 'mcp_serveur.py', 'test_x.py', 'mesure_x.py']
+        self.assertEqual(ga.py_a_observer(c, None),
+                         ['server.py', 'mcp_serveur.py'])
+
     def test_tests_pour(self):
         presents = {'test_faits_vue.py', 'test_server.py'}
         self.assertEqual(
             ga.tests_pour(['faits_vue.py', 'test_faits_vue.py', 'ROADMAP.md',
                            'sans_test.py'], lambda n: n in presents),
             ['test_faits_vue.py'])
+
+
+# ─────────── le contrôle 5 : QUI le serveur fait-il tourner ? ───────────
+
+class TestGrapheDuServeur(unittest.TestCase):
+    """La règle 5 jugeait sur le NOM et mentait sur 50 fichiers. Elle lit
+    maintenant le graphe des imports — et quand elle ne sait pas le lire, elle
+    le DIT et redevient large."""
+
+    def _monde(self, fichiers):
+        """Un projet en mémoire : `lire(chemin)` rend le source, ou None."""
+        return lambda f: fichiers.get(f)
+
+    def test_suit_la_chaine_transitive(self):
+        g, trou = ga.graphe_du_serveur(self._monde({
+            'server.py': 'import recherche\n',
+            'recherche.py': 'import vectors\n',
+            'vectors.py': 'import json\n',
+        }))
+        self.assertIsNone(trou)
+        self.assertEqual(g, {'server.py', 'recherche.py', 'vectors.py'})
+
+    def test_un_import_paresseux_dans_une_fonction_compte(self):
+        """Règle 3 du projet : les imports lourds vivent DANS les fonctions.
+        Un graphe qui ne lit que le premier étage les manquerait tous."""
+        g, trou = ga.graphe_du_serveur(self._monde({
+            'server.py': 'def charge():\n    import semantic\n    return semantic\n',
+            'semantic.py': '',
+        }))
+        self.assertIsNone(trou)
+        self.assertIn('semantic.py', g)
+
+    def test_from_module_import_nom(self):
+        g, _ = ga.graphe_du_serveur(self._monde({
+            'server.py': 'from faits_vue import dit_l_espece\n',
+            'faits_vue.py': '',
+        }))
+        self.assertEqual(g, {'server.py', 'faits_vue.py'})
+
+    def test_un_nom_externe_n_entre_pas(self):
+        """`torch` n'est pas un fichier du projet : rien n'est importé pour de
+        vrai, l'absence du fichier suffit à le classer dehors."""
+        g, trou = ga.graphe_du_serveur(self._monde({
+            'server.py': 'import torch, json\nimport numpy as np\n'}))
+        self.assertIsNone(trou)
+        self.assertEqual(g, {'server.py'})
+
+    def test_import_dynamique_ecrit_en_clair_est_suivi(self):
+        g, trou = ga.graphe_du_serveur(self._monde({
+            'server.py': 'm = __import__("interet")\n',
+            'interet.py': '',
+        }))
+        self.assertIsNone(trou)
+        self.assertIn('interet.py', g)
+
+    def test_import_dynamique_opaque_troue_le_graphe(self):
+        g, trou = ga.graphe_du_serveur(self._monde({
+            'server.py': 'import x\n',
+            'x.py': 'def d(nom):\n    return __import__(nom)\n',
+        }))
+        self.assertIsNotNone(trou)
+        self.assertIn('x.py', trou)
+
+    def test_un_trou_admis_ne_troue_pas(self):
+        """`semantic.py` fait `__import__(nom)` sur open_clip/transformers :
+        deux bibliothèques EXTERNES. L'exception est écrite, datée, justifiée
+        — pas une heuristique qui devine."""
+        self.assertIn('semantic.py', ga.TROUS_ADMIS)
+        g, trou = ga.graphe_du_serveur(self._monde({
+            'server.py': 'import semantic\n',
+            'semantic.py': 'def d(nom):\n    return __import__(nom)\n',
+        }))
+        self.assertIsNone(trou)
+        self.assertIn('semantic.py', g)
+
+    def test_point_d_entree_absent_est_un_trou_pas_un_graphe_vide(self):
+        """Un graphe vide rendu en silence ferait passer TOUT le dépôt pour
+        hors serveur : la porte s'ouvrirait grande sur une lecture ratée."""
+        g, trou = ga.graphe_du_serveur(self._monde({}))
+        self.assertIsNotNone(trou)
+        self.assertEqual(g, set())
+
+    def test_source_non_parsable_est_un_trou(self):
+        g, trou = ga.graphe_du_serveur(self._monde({
+            'server.py': 'import x\n', 'x.py': 'def (:\n'}))
+        self.assertIsNotNone(trou)
+
+    def test_py_a_observer_sur_un_graphe_epargne_ce_que_le_serveur_ignore(self):
+        """LE défaut réparé : `mcp_serveur.py`, `verifier_…`, `git_agent.py`
+        exigeaient la preuve qu'un serveur les fait tourner. Elle n'existe
+        pas — ils ne sont jamais importés."""
+        graphe = {'server.py', 'faits_vue.py', 'semantic.py'}
+        c = ['server.py', 'faits_vue.py', 'mcp_serveur.py', 'git_agent.py',
+             'verifier_xmp_personnes.py', 'appliquer_xmp_personnes.py',
+             'banc_agent.py', 'ROADMAP.md']
+        self.assertEqual(ga.py_a_observer(c, graphe),
+                         ['server.py', 'faits_vue.py'])
+
+    def test_un_py_supprime_ou_hors_racine_n_est_pas_dans_le_graphe(self):
+        self.assertEqual(ga.py_a_observer(['eval/eval_int8_vectors.py'],
+                                          {'server.py'}), [])
+
+    def test_le_separateur_windows_ne_fait_pas_rater_le_graphe(self):
+        self.assertEqual(ga.py_a_observer(['ui\\p.py'], {'ui/p.py'}),
+                         ['ui\\p.py'])
+
+
+@unittest.skipUnless(Path('server.py').exists(), "hors du dossier du projet")
+class TestGrapheDuVraiDepot(unittest.TestCase):
+    """Le graphe rendu sur le VRAI dépôt. Un banc qui ne tourne que sur un
+    projet inventé ne mesure que l'imagination de celui qui l'a écrit."""
+
+    def setUp(self):
+        def lire(f):
+            try:
+                return Path(f).read_text(encoding='utf-8', errors='replace')
+            except OSError:
+                return None
+        self.g, self.trou = ga.graphe_du_serveur(lire)
+
+    def test_le_graphe_du_depot_est_lisible_en_entier(self):
+        self.assertIsNone(self.trou)
+
+    def test_le_serveur_et_ses_modules_sont_dedans(self):
+        for f in ('server.py', 'recherche.py', 'faits_vue.py', 'store_sqlite.py',
+                  'semantic.py', 'vectors.py', 'canal.py'):
+            self.assertIn(f, self.g, f)
+
+    def test_l_outillage_est_dehors(self):
+        for f in ('git_agent.py', 'banc_agent.py', 'mcp_serveur.py',
+                  'verifier_xmp_personnes.py', 'appliquer_xmp_personnes.py',
+                  'nettoyer_session.py', 'bundle.py', 'ui_gabarits.py'):
+            self.assertNotIn(f, self.g, f)
+
+    def test_le_graphe_est_une_MINORITE_du_depot(self):
+        """Le chiffre du 23/08 : 29 dedans, 134 dehors. S'il se met à tout
+        avaler, c'est que la lecture a dérapé — pas que le serveur a grossi."""
+        total = len(list(Path('.').glob('*.py')))
+        self.assertLess(len(self.g), total // 2, (len(self.g), total))
 
 
 # ─────────── la porte : ce qu'un `force=` ne doit PAS ouvrir ───────────
