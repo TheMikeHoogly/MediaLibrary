@@ -36,6 +36,21 @@ en série — ~3,5 s par tag sur SMB, et une photo renommée en demande deux.
 redémarrage, une coupure ou un plantage perd le travail restant **sans rien pour
 le retrouver** : c'est ce qui rend ces 11 h otages, et c'est le vrai défaut.
 
+**L'accident est maintenant RÉPARABLE : `verifier_xmp_personnes.py` (29 tests)
+recompte, DEPUIS LE DISQUE, ce que la file doit encore.** Il ne lit pas la file
+— elle est en mémoire, donc invisible — il compare les deux choses qui
+survivent : ce que l'index dit (`/api/people/photos`) et ce que les fichiers
+portent (ExifTool, une invocation par lot de 300). Il NOMME les photos en écart
+(`--json`), n'écrit rien, et compte à part ce qu'il n'a pas pu lire.
+
+**Ce qu'il a mesuré au banc (23/08, 10:37, échantillon de 200 tiré à graine
+fixe sur les 5 909) : seules 19 photos sur 200 portent `personne:Florine` dans
+leur FICHIER, et 119 portent encore `Flo`.** Le fonds est donc à ~10 % du geste,
+neuf heures après le clic. Les deux chiffres indépendants concordent — 10 801
+opérations en file ≈ 2 × 5 400 photos restantes : **la file ne se répète pas,
+elle est seulement lente**. 70 s pour 200 fichiers (~2,9 f/s sur SMB) : une
+passe complète demande `--echantillon`, ou plus que les 600 s du banc.
+
 
 ## État (22/08/2026, session 38)
 

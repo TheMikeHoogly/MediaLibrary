@@ -38,19 +38,28 @@ rien**. Parade livrée : `__deepcopy__`/`__copy__`/`__reduce__` sur
 code, 52/52 sur le nouveau — dont une vérification qui deepcopy le store
 lui-même, pour que le test ne soit pas vide.
 
-**Livré en `commit` avec `force=`** (branche `fix/la-fiche-est-le-verrou`,
-`main` intacte) : le contrôle 5 exige un serveur démarré APRÈS le fichier, et
-redémarrer aurait jeté la file XMP. Les tests, eux, ont tourné à la main sur la
-machine avec le python du `.venv`. **À la fin de la file : redémarrer, observer,
-puis fusionner cette branche.**
+**Deux branches livrées en `commit` avec `force=`, `main` intacte** :
+`fix/la-fiche-est-le-verrou` et `feat/ce-que-la-file-xmp-doit-encore`. Le
+contrôle 5 exige un serveur démarré APRÈS le fichier, et redémarrer aurait jeté
+la file XMP ; les tests, eux, ont tourné au BANC sous Windows — 52/52 et 29/29.
+**À la fin de la file : redémarrer, observer, puis fusionner ces deux
+branches.**
+
+> Le contrôle 5 de l'agent git traite tout `.py` hors `test_`/`mesure_` comme du
+> code de serveur — donc aussi les bancs `verifier_*`, que le serveur n'importe
+> jamais. L'en-tête de `git_agent.py` assume ce faux positif (« le redémarrage
+> coûte douze secondes »). Aujourd'hui il coûtait onze heures : **à rouvrir avec
+> Mike, pas à trancher seul.**
 
 ## Prochain pas
 
-1. **Rendre la file XMP RÉPARABLE** — le vrai défaut. Un outil qui compare les
-   `personne:` des XMP du fonds à l'index et REFAIT ce qui manque : l'accident
-   cesse d'être une perte sèche, et un redémarrage cesse d'être interdit.
-   Ne touche pas `server.py` (donc livrable sans redémarrage) ; tourne au BANC,
-   la VM n'atteint pas le NAS.
+1. **La MOITIÉ manquante de la réparation.** Mesurer l'écart est fait
+   (`verifier_xmp_personnes.py`, 29 tests, tourné au banc : 19 photos sur 200
+   portent `Florine` dans leur fichier, 119 portent encore `Flo`). Le REFAIRE
+   reste : soit un `appliquer_xmp_personnes.py` (geste de Mike, jamais de
+   l'agent), soit une route qui remet en file les clés du `--json`. **Ne jamais
+   écrire pendant que `person_writer` tourne** : deux écrivains sur les mêmes
+   fichiers, c'est la bagarre du 22/08 en pire.
 2. **Accélérer l'écriture XMP** : un processus exiftool par opération, en série,
    ~3,5 s par tag. Grouper le `-Ancien` et le `+Nouveau` d'une même photo en UNE
    invocation (÷2), puis le mode `-stay_open`. Touche `server.py`.
