@@ -27,9 +27,10 @@ code, pas en faisant confiance au rapport de la fonction qui vient d'agir.
 CE QU'IL SAIT VOIR QU'UN OEIL NE VOIT PAS
 
 **Les passes multiples.** La boucle de `rename` balaye les photos une par une
-avec un `stat` NAS chacune : une heure sans que le bouton `Renommer` ne rende
-la main. Un deuxième clic lance une deuxième passe complète, dans un autre
-thread. Le fonds y survit (les écritures sont idempotentes), mais
+et ne rend la main qu'à la fin — deux minutes sur une machine calme, une HEURE
+le 22/08 pendant qu'elle se battait avec le curateur. Un bouton muet appelle un
+deuxième clic, et un deuxième clic lance une passe complète de plus, dans un
+autre thread. Le fonds y survit (les écritures sont idempotentes), mais
 l'ANNULATION, non : `annuler_fusion` prend le DERNIER journal, or c'est le
 PREMIER qui dit vrai — lui seul a vu la fiche d'origine, et lui seul sait
 quelles photos portaient déjà le nom d'arrivée AVANT que la première passe ne
@@ -344,7 +345,7 @@ def afficher(r):
             A(f"  file d'écriture XMP « personnes » : {s['file_personnes']}")
             attendu = r.get('ops_attendues')
             if attendu and s['file_personnes'] > attendu:
-                A(f"     ⚠ elle dépasse le coût total de la fusion ({attendu} "
+                A(f"     ⚠ elle dépasse le coût total du geste ({attendu} "
                   "opérations) : plusieurs passes écrivent en même temps.")
             elif s['file_personnes'] == 0:
                 A("     vide : le fonds est à jour, les XMP portent le nouveau nom.")
@@ -417,10 +418,17 @@ def main(argv=None):
     ancien = entetes[0].get('ancien', '') if entetes else ''
     nouveau = entetes[0].get('nouveau', '') if entetes else ''
     photos = entetes[0].get('photos', 0) if entetes else 0
+    serveur = cote_serveur(a.serveur, ancien, nouveau)
+    # Le coût du geste n'est PAS « photos touchées x 2 ». `rename` réécrit
+    # aussi le FICHIER des photos qui portaient déjà le nom d'arrivée — c'est
+    # ce qui empêche un nom fantôme d'y renaître. Le compte du serveur les
+    # inclut, le journal non (elles ne s'annulent pas). Prendre le plus grand
+    # des deux, sinon l'instrument crie au loup sur son propre correctif.
+    portees = serveur.get('photos_nouveau') or 0
     r = {'journaux': rapports, 'ancien': ancien, 'nouveau': nouveau,
          'annulabilite': annulabilite([x for x in rapports if x.get('entete')]),
-         'serveur': cote_serveur(a.serveur, ancien, nouveau),
-         'ops_attendues': (a.attendu or photos) * 2}
+         'serveur': serveur,
+         'ops_attendues': max(a.attendu or photos, portees) * 2}
     r['verdict'] = verdict(r)
     print(afficher(r))
     if a.sortie_json:

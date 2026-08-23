@@ -51,10 +51,23 @@ quel journal peut VRAIMENT annuler (dès qu'il y a eu plusieurs passes, le
 dernier ment), l'ancien nom a-t-il disparu, que reste-t-il en file. Sans
 serveur joignable il juge les journaux et DIT ce qu'il n'a pas vérifié.
 
-**Reste à faire : le geste de Mike** — `/people` → `Flo` → Renommer →
-`Florine`. La sandbox n'écrit pas sur le fonds. Le signe que le correctif
-tient : la fiche `Florine` paraît **dans la seconde**, et le compte de `Flo`
-descend **sans jamais remonter**.
+**LA FUSION EST FAITE (23/08, 08:31), et elle est vérifiée.** Mike a cliqué,
+la fiche `Florine` a paru **dans la seconde** et `Flo` a disparu du même coup.
+La boucle qui mettait une heure hier a mis **deux minutes** — les 5 725 photos
+à ~55/s : la lenteur d'hier était la BAGARRE, pas le coût du `stat`. Journal
+`fusion_20260823_083124.jsonl`, et `verifier_fusion.py` lancé au banc rend :
+**règle 2 tenue — confirmations 143 → 143, exclusions 1 215 → 1 215, visages
+84 → 84, avatar présent, date la plus ancienne** ; un seul journal, annulable ;
+côté serveur **un seul nom, `Florine`, 5 909 photos**, plus aucun `Flo`. La
+file XMP (11 800 opérations) se vide à **0,95 op/s — ~3,4 h**, contre 0,09 op/s
+hier : là encore, c'était la bagarre.
+
+**Une nuance à connaître avant de cliquer « Annuler la derniere fusion »** :
+**5 724 des 5 725 photos portaient DÉJÀ `Florine`** — séquelle de la passe
+morte d'hier, qui avait fait tout le travail d'index avant de tomber. Annuler
+leur rendrait donc `Flo` **sans** leur retirer `Florine` : c'est fidèle à
+l'état d'avant la fusion d'aujourd'hui, pas à celui d'avant-hier. L'annulation
+ne remonte pas plus loin que le dernier geste.
 
 ## État (22/08/2026, session 38)
 

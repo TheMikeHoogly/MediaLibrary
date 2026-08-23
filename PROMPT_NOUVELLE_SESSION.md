@@ -44,23 +44,29 @@ modifiés, et c'est probablement l'origine des « 153 Florine sans fiche ».
 un juge — règle 2 par l'arithmétique des ensembles du journal, quel journal
 peut vraiment annuler, disparition de l'ancien nom, file restante.
 
-**État du fonds à cette minute** : `Flo` = **5 725** photos, `Florine` ≥ 2 000
-(les deux coexistent, séquelle de la passe ratée), fiche `Flo` intacte avec ses
-143 confirmations, aucune fiche `Florine`, file d'écriture **à 0**, serveur à
-jour (`code_a_jour` vrai).
+**LA FUSION EST FAITE ET VÉRIFIÉE (23/08, 08:31).** Un seul nom, `Florine`,
+**5 909 photos**, plus aucun `Flo`. `verifier_fusion.py` au banc : règle 2
+tenue — **143 → 143 confirmations**, 1 215 → 1 215 exclusions, 84 → 84 visages,
+avatar présent, date la plus ancienne ; un seul journal
+(`fusion_20260823_083124.jsonl`), annulable. La boucle a mis **2 minutes** là
+où elle en mettait 60 hier : la lenteur était la bagarre, pas le `stat` NAS.
+Reste la file XMP, **~11 700 opérations à 0,95 op/s, ~3,4 h** — le fonds
+lui-même n'est à jour qu'une fois vidée.
+
+**À savoir avant d'annuler** : 5 724 des 5 725 photos portaient DÉJÀ `Florine`
+(séquelle de la passe morte). Annuler rendrait `Flo` sans retirer `Florine` —
+fidèle à l'état d'avant CE geste, pas d'avant-hier.
 
 ## Prochain pas
 
-1. **La fusion, par Mike** : `/people` → `Flo` → Renommer → `Florine`. Le
-   bouton ouvre un `prompt()` du navigateur pré-rempli avec `Flo` : tant qu'on
-   n'a pas remplacé le texte et validé, RIEN n'est envoyé — et rien ne le dit.
-   Signes que le correctif tient, **immédiatement** : la fiche `Florine`
-   apparaît dans la seconde, la fiche `Flo` disparaît, puis le compte descend
-   **sans jamais remonter**. Ensuite `python verifier_fusion.py --serveur
-   http://192.168.0.13:8080` (au banc) doit dire : règle 2 tenue, un seul
-   journal, ancien nom disparu. La file XMP (~12 000 opérations) se vide en
-   tâche de fond — compter en HEURES, et mesurer le débit réel : à 0,09 op/s
-   ce serait 36 h, et si c'est le cas c'est un chantier en soi.
+1. **Qui met un VERROU dans une fiche de personne ?** La question ouverte de
+   la session. `_fiche_pour_journal` nomme désormais dans la console le champ
+   qu'il écarte — la ligne du 23/08 est à lire dans la fenêtre du serveur, et
+   à remonter jusqu'au code qui pose cet objet. Une fiche est du JSON : elle ne
+   doit pas porter d'objet vivant, et rien ne l'interdit aujourd'hui.
+   **Vérifier au passage que la file XMP est bien allée à 0** (`/api/maint/
+   status`, `queues.personnes`) : tant qu'elle tourne, les XMP du fonds portent
+   encore `Flo` pour une partie des photos.
 2. **Copie HORS SITE (12 bis)** — le seul manque qui reste à l'assurance-vie,
    et il demande une décision avant du code.
 3. **Suite de `ui/`** : le CSS commun (chaque page porte encore son `<style>`)
