@@ -59,6 +59,7 @@ echo [bancs] Ordre = le nom d'un banc et ses arguments, par exemple :
 echo [bancs]   mesure_espece_recherche.py --base copie.db --exemples 14
 echo [bancs] Familles admises : mesure_ verifier_ diagnostic_ comptes_
 echo [bancs]                    inventaire_ test_ eval_
+echo [bancs] Accent ou espace dans un argument : le passer en b64:BASE64URL.
 echo [bancs] "ping" = signe de vie, ne lance rien.
 echo [bancs] La sortie va dans _banc_sortie.txt, le rapport dans
 echo [bancs] _etat_banc.json.

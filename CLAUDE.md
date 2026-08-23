@@ -26,6 +26,11 @@ décisions techniques. `FACE_USE_GPU=False` **volontaire** (VRAM prise par Ollam
    blocs, des `goto`. Contrôle avant livraison et **lire sa sortie** :
    `python verifier_bat.py` (+ hook PostToolUse) — il voit les trois défauts.
    Déjà commise 3×.
+   **Et ne JAMAIS éditer un `.bat` pendant qu'il TOURNE** : même correction
+   juste, même ASCII pur — le décalage d'octets déplace le curseur du
+   `cmd.exe` en cours, qui saute ou meurt sans rien dire. Le 23/08 la fenêtre
+   des Bancs est morte comme ça, sur l'ajout d'une ligne d'aide. Éditer, puis
+   demander à Mike de ROUVRIR la fenêtre — et vérifier son `_agent_*_vu.txt`.
 2. **Les noms humains ne se perdent jamais.** Toute migration les préserve
    (modèle `migrate_animal_pipeline()`). Un changement qui risque d'en perdre un
    est faux, quel que soit son gain.

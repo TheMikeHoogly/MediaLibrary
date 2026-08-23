@@ -187,5 +187,94 @@ class TestLancement(unittest.TestCase):
         self.assertEqual(d['historique'][0]['quand'], 1)
 
 
+class TestJetonB64(unittest.TestCase):
+    """Le jeton `b64:` — porter un ACCENT ou un ESPACE sans ouvrir la porte.
+
+    Pourquoi ces tests existent : le 23/08, `verifier_xmp_personnes.py --nom
+    "Stéphane Plouvin"` s'est révélé INLANÇABLE par ce canal. `ARG_OK` ne
+    visait pas les noms humains, il les a attrapés au passage — 168 des 352
+    noms de la photothèque, 6 119 photos, hors de portée du seul instrument
+    qui prouve la règle 2 sur le DISQUE.
+
+    Ce qui est vérifié ici tient en une phrase : le jeton rend une VALEUR,
+    il ne rend pas la porte plus large."""
+
+    def setUp(self):
+        self.d = Path(tempfile.mkdtemp())
+        for nom in ('mesure_x.py', 'verifier_y.py'):
+            (self.d / nom).write_text('print("ok")\n', encoding='utf-8')
+        (self.d / 'mesure_argv.py').write_text(
+            "import json, sys\nprint(json.dumps(sys.argv[1:]))\n",
+            encoding='utf-8')
+
+    def tearDown(self):
+        shutil.rmtree(self.d, ignore_errors=True)
+
+    def _refus(self, ordre):
+        return ba.motif_refus(ordre, self.d) or ''
+
+    def test_le_jeton_rend_le_nom_EXACT(self):
+        self.assertEqual(ba.dejeton('b64:U3TDqXBoYW5lIFBsb3V2aW4'),
+                         'Stéphane Plouvin')
+        self.assertEqual(ba.dejeton('b64:QsOpYQ'), 'Béa')
+
+    def test_le_bourrage_est_facultatif(self):
+        """Un base64 padé porte des « = » ; sans eux il est plus court et
+        `ARG_OK` l'admet aussi. Les deux doivent rendre le même nom."""
+        self.assertEqual(ba.dejeton('b64:QsOpYQ=='), ba.dejeton('b64:QsOpYQ'))
+
+    def test_un_argument_NU_traverse_intact(self):
+        """Le jeton est un cas, pas une couche : ce qui n'en porte pas ne doit
+        pas être touché — un `--base` décodé serait un défaut muet."""
+        for a in ('--base', 'copie.db', '0.5', 'b64', 'ab64:x'):
+            self.assertEqual(ba.dejeton(a), a)
+
+    def test_un_jeton_passe_la_porte(self):
+        self.assertIsNone(ba.motif_refus(
+            'verifier_y.py --nom b64:U3TDqXBoYW5lIFBsb3V2aW4', self.d))
+
+    def test_un_jeton_VIDE_est_un_refus(self):
+        self.assertIn('b64', self._refus('mesure_x.py --nom b64:'))
+
+    def test_un_jeton_QUI_N_EST_PAS_DE_L_UTF8_est_un_refus(self):
+        """`_w` décode en 0xFF, qui n'est aucun texte. Le laisser passer
+        donnerait au banc un argument à moitié né."""
+        self.assertIn('b64', self._refus('mesure_x.py --nom b64:_w'))
+
+    def test_un_CARACTERE_DE_CONTROLE_est_un_refus(self):
+        """Aucun nom ne porte de tabulation. Un canal qui l'accepte accepte
+        qu'on lui glisse une ligne dans un argument."""
+        self.assertIn('b64', self._refus('mesure_x.py --nom b64:CQ'))
+
+    def test_le_jeton_NE_ROUVRE_PAS_la_porte(self):
+        """Les trois barrières jugent ce qui TRANSITE, et le jeton transite en
+        base64url. Une famille qui écrit reste refusée, un chemin reste
+        refusé — décoder ne vient qu'après, et jamais sur le nom du banc."""
+        (self.d / 'purger_tout.py').write_text('', encoding='utf-8')
+        self.assertIn('famille', self._refus('purger_tout.py --nom b64:QsOpYQ'))
+        self.assertIn('argument', self._refus('mesure_x.py "un deux"'))
+
+    def test_le_banc_RECOIT_un_seul_argument_et_le_bon(self):
+        """La preuve de bout en bout : ce que le script voit dans `sys.argv`.
+        Un espace décodé ne doit pas se rescinder en deux arguments."""
+        rap = ba.lancer(self.d, 'mesure_argv.py --nom b64:U3TDqXBoYW5lIFBsb3V2aW4')
+        self.assertTrue(rap['ok'], rap)
+        txt = (self.d / ba.FICHIER_SORTIE).read_text(encoding='utf-8')
+        self.assertIn('["--nom", "St\\u00e9phane Plouvin"]', txt)
+
+    def test_la_sortie_DIT_ce_qui_a_vraiment_tourne(self):
+        """Un rapport qui n'affiche que l'ordre brut laisserait lire
+        `b64:U3TDqXBo…` là où il faut lire un nom."""
+        ba.lancer(self.d, 'mesure_argv.py --nom b64:QsOpYQ')
+        txt = (self.d / ba.FICHIER_SORTIE).read_text(encoding='utf-8')
+        self.assertIn('décodé', txt)
+        self.assertIn('Béa', txt)
+
+    def test_sans_jeton_la_sortie_ne_change_pas(self):
+        ba.lancer(self.d, 'mesure_argv.py --base copie.db')
+        txt = (self.d / ba.FICHIER_SORTIE).read_text(encoding='utf-8')
+        self.assertNotIn('décodé', txt)
+
+
 if __name__ == '__main__':
     unittest.main(verbosity=2)

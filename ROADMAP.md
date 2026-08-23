@@ -6,6 +6,26 @@ dans **git** ; les rejets dans `eval/DECISIONS.md` (photothèque) et
 `eval/METHODE.md` ; l'éphémère dans `PROMPT_NOUVELLE_SESSION.md`. Audits :
 `docs/AUDIT_INTERNE_2026-08.md`, `docs/AUDIT_EXTERNE_2026.md`, `docs/RANGEMENT_2026.md`.
 
+## État (23/08/2026, session 42)
+
+**Le canal des bancs portait tout, sauf un nom humain.** Mike nomme le groupe
+de « Stéphane Plouvin » ; la preuve DISQUE de son geste —
+`verifier_xmp_personnes.py --nom "Stéphane Plouvin"` — est refusée par
+`banc_agent` : `ARG_OK` n'admet ni accent ni espace. Le chiffre trouvé en
+comptant : **168 des 352 noms, 6 119 photos**, hors de portée du seul
+instrument qui vérifie la règle 2 dans les fichiers. Le jeton **`b64:`** rend
+la valeur **sans desserrer la porte** — ce qui transite est du base64url,
+qu'`ARG_OK` admettait déjà ; les trois barrières jugent la forme écrite ; la
+valeur ne renaît qu'APRÈS elles, pour la LISTE de `subprocess.run`.
+**11 vérifications neuves, 8 rouges sur l'ancien code**, 32 vertes au banc.
+
+**Et le geste de Mike est PROUVÉ sur le disque.** `personne:Stéphane Plouvin` :
+**58 photos à l'index, 58 lues par ExifTool, 58 portent le nom, 0 manque, 0
+illisible**, file à 0. Le journal de la file s'était déjà auto-effacé — ce qui
+veut dire « tout consommé » — et aucun `_file_personnes_echecs.jsonl` n'est né.
+**Ce qui n'a PAS été observé** : le journal VIVANT et le débit d'un renommage
+(~2,9 s/photo attendu). On est arrivé après le drainage ; ça reste dû.
+
 ## État (23/08/2026, session 41)
 
 **La file XMP ne prend plus onze heures en otage : elle a un journal.** Elle
@@ -422,7 +442,8 @@ qui en découle : éditer → redémarrer → **observer** → livrer.
    **Pas de retour à V0 sans protocole.**
 4. **Gestes Mike** : `gps_place` ✔ ; renommage appliqué ✔ (7 058) ; **Flo →
    Florine ✔ (23/08 — 11 heures de file, 5 909 photos, vérifié 200/200 sur le
-   DISQUE)** ; re-rejeter Caline.
+   DISQUE)** ; **groupe de Stéphane Plouvin ✔ (23/08 — 58/58 sur le DISQUE)** ;
+   re-rejeter Caline.
 5. **Correctifs d'audit** : **I4, I5, I6, I7 et I8 CLOS (22/08)**, tous
    observés en réel, 32 tests neufs. I7 — règle unique `parse_tag_nomme`,
    mesurée avant (3 tags en casse divergente sur 37 707 : défaut latent) et

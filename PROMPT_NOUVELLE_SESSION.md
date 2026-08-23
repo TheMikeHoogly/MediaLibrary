@@ -13,8 +13,8 @@ canaux, à la livraison ou au MCP. Débrief en 2–3 lignes, puis on attaque.
 
 **Le serveur a un journal : `_journal_serveur.log`** (`journal_serveur.py`),
 miroir daté de sa console, lisible depuis la sandbox et qui survit à sa mort.
-Il porte les **tracebacks des threads qui meurent** — le cas qui n'apparaissait
-nulle part. **Le lire avant de supposer** :
+Il porte les **tracebacks des threads qui meurent**. **Le lire avant de
+supposer** :
 
     tail -80 _journal_serveur.log
     sed -n '/===== DEMARRAGE/,$p' _journal_serveur.log
@@ -22,43 +22,43 @@ nulle part. **Le lire avant de supposer** :
 
 Plantage dur d'une lib native : `_journal_serveur_crash.log`.
 
+**Un nom accentué passe au banc par le jeton `b64:`** (23/08) :
+
+    verifier_xmp_personnes.py --nom b64:U3TDqXBoYW5lIFBsb3V2aW4
+
+`python3 -c "import base64;print(base64.urlsafe_b64encode('Béa'.encode()).decode().rstrip('='))"`.
+`ARG_OK` n'a pas bougé — le jeton transite dans son alphabet, et la valeur ne
+renaît qu'après les contrôles.
+
 > **Piège d'horloge, payé le 23/08** : `device_bash` tourne dans une VM en
 > **UTC**. `date` y annonce 14:25 quand il est 16:25 chez Mike. Les epochs du
 > serveur (`/api/maint/status`, `now`) sont la seule heure fiable.
 
-## Où on en est (23/08/2026, fin de session 41)
+## Où on en est (23/08/2026, fin de session 42)
 
-**Flo → Florine est ACQUIS, et vérifié sur le DISQUE.** Onze heures de file XMP,
-5 909 photos ; à 17:45 `queues.personnes` est tombée à 0, le serveur a
-redémarré sur le code neuf (`code_a_jour` vrai, bannière neuve, **aucun
-`THREAD MORT`**), et `verifier_xmp_personnes.py` a lu 200 fichiers tirés à
-graine fixe : **200 portent `Florine`, 0 portent encore `Flo`**, contre 19 et
-119 le matin même. `appliquer_xmp_personnes.py` n'a rien à réparer.
+**Le geste de Mike sur le groupe de « Stéphane Plouvin » est PROUVÉ sur le
+disque** : 58 photos à l'index, **58 portent le nom, 0 manque, 0 illisible**,
+file à 0, aucun `_file_personnes_echecs.jsonl`. Le journal de la file s'était
+auto-effacé avant qu'on regarde — c'est ce qu'il fait quand tout est consommé.
 
-**La file XMP a un journal, et ne paie plus deux fois le même geste.** Chaque
-geste est noté sur disque AVANT d'être enfilé (`_file_personnes.jsonl`) ; une
-POSITION suffit (`_file_personnes.pos`) ; les gestes qui se suivent sur la MÊME
-photo partent en UNE invocation ExifTool. **21 vérifications, 21 ROUGES sur
-l'ancien code.** `-stay_open` est mesuré et rangé APRÈS le reste : 25 % sur une
-écriture, pas les 12× que montre la lecture.
+**Le canal des bancs porte enfin les noms humains.** `ARG_OK` refusait accent
+et espace : **168 des 352 noms, 6 119 photos** étaient hors de portée du seul
+instrument qui vérifie la règle 2 dans les FICHIERS. Le jeton `b64:` rend la
+valeur sans desserrer la porte (`docs/DECISIONS_OUTILLAGE.md`).
+**11 vérifications neuves, 8 rouges sur l'ancien code**, 32 vertes au banc.
 
-**La photothèque s'ouvre en MCP, lecture seule (point 13).** `mcp_serveur.py` —
-JSON-RPC 2.0 sur stdio, stdlib pure, **sept** outils, plus la route
-`/api/faits`. 79 vérifications neuves, **21 mutations posées, 21 vues**, et
-`mesure_mcp.py` l'interroge en vrai : **13 étapes, 0 rouge**, `ml_faits` servi
-depuis le redémarrage. Chiffre du chantier : `/api/people/photos` rend
-**4 013 486 o** pour Florine, l'outil **5 775 o** — 695× moins. Deux plafonds
-MUETS trouvés en observant : le mien, et celui de la route (2 000 photos là où
-elle en porte 5 909). `total_est_un_plancher` les déclare.
+**Rappel de la 41, intact** : file XMP journalisée et réparable, `-stay_open`
+rangé APRÈS le reste (25 %, pas 12×), photothèque ouverte en MCP lecture seule
+(sept outils, `/api/faits`).
 
 ## La seule chose NON observée
 
-**Le journal de la file sur un geste vivant.** `_file_personnes.jsonl` naît au
-premier geste de nom ; il n'y en a pas eu depuis le redémarrage, et l'observer
-coûte une vraie écriture XMP dans une vraie photo — geste de Mike. Les 21
-vérifications tiennent la mécanique ; le prochain nom attribué produira la
-preuve gratuitement. **À regarder ce jour-là** : le fichier naît, se vide, et le
-débit d'un renommage tombe vers **~2,9 s par PHOTO** (au lieu de 5,8).
+**Le journal de la file sur un geste VIVANT, et son débit.** On est arrivé
+après le drainage du geste de Mike. À regarder au prochain nom attribué, dans
+les secondes qui suivent : `_file_personnes.jsonl` naît, `.pos` avance, le
+fichier disparaît une fois la file vide — et le débit d'un renommage doit
+tomber vers **~2,9 s par PHOTO** (au lieu de 5,8). Ça ne coûte rien de plus
+que d'être là au bon moment.
 
 ## Prochain pas
 
@@ -68,12 +68,12 @@ débit d'un renommage tombe vers **~2,9 s par PHOTO** (au lieu de 5,8).
 2. **Suite de `ui/`** : le CSS commun (chaque page porte encore son `<style>` ;
    `tokens.css`, `base.css`, `components.css` attendent) puis le redesign —
    deux chantiers SÉPARÉS, exprès (`photo-ui`).
-3. **Reste d'audit** : O7–O9, O11, O13–O15 (**O12 est clos** par la file de la
-   41) ; **I1** est VISIBLE dans `/reglages` (`tours: visages 0, animaux 0`).
+3. **Reste d'audit** : O7–O9, O11, O13–O15 ; **I1** est VISIBLE dans
+   `/reglages` (`tours: visages 0, animaux 0`).
 4. **Point 13, la suite** : l'ÉCRITURE en MCP — plus tard, et pas sans décision.
 5. **`py_a_observer` est trop grossier** (`docs/DECISIONS_OUTILLAGE.md`) : le
    contrôle 5 exige qu'un serveur fasse tourner des modules qu'il n'importe
-   jamais (`mcp_serveur.py`, familles `appliquer_`, `verifier_`). C'est ce qui a
-   obligé la session 40 à forcer.
+   jamais (`mcp_serveur.py`, `banc_agent.py`, familles `appliquer_`,
+   `verifier_`). C'est ce qui oblige à forcer.
 
 **Rien n'attend Mike dans `QUESTIONS_MIKE.md`.**

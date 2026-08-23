@@ -43,6 +43,29 @@ Les ARGUMENTS sont contraints au même esprit : `[A-Za-z0-9_.:/=-]`, jamais
 d'espace à l'intérieur, jamais de quote. C'est assez pour `--base copie.db
 --exemples 14`, et trop peu pour construire quoi que ce soit.
 
+CE QUE CETTE CONTRAINTE INTERDISAIT SANS LE VOULOIR
+
+Un nom humain porte des accents et des espaces. Le 23/08, après que Mike a
+nommé le groupe de « Stéphane Plouvin », la preuve DISQUE de son geste —
+`verifier_xmp_personnes.py --nom "Stéphane Plouvin"` — s'est révélée
+INLANÇABLE par ce canal. Le chiffre : **168 des 352 noms de la photothèque,
+6 119 photos**, hors de portée du seul instrument qui vérifie la règle 2 dans
+les fichiers. Le garde-fou ne visait pas les noms ; il les a attrapés au
+passage, et il rendait muet ce qui devait témoigner.
+
+LE JETON `b64:` — UNE VALEUR, PAS UNE PORTE PLUS LARGE
+
+    verifier_xmp_personnes.py --nom b64:U3TDqXBoYW5lIFBsb3V2aW4
+
+Ce qui TRANSITE reste du base64url, que `ARG_OK` admettait déjà : la porte
+n'est pas desserrée d'un caractère, et les trois barrières s'appliquent
+inchangées, sur la forme écrite. La valeur n'est reconstituée qu'APRÈS elles,
+et seulement pour aller dans la LISTE de `subprocess.run` — là où la barrière
+1 garantit que nul shell ne la relira. Un jeton illisible, vide, ou porteur
+d'un caractère de contrôle est un REFUS NOMMÉ : un argument à moitié décodé
+ferait mesurer autre chose que ce qu'on croit. Le nom du BANC, lui, n'est
+jamais décodé — la famille se juge sur ce qui est écrit.
+
 CE QU'IL RAPPORTE
 
 `_banc_sortie.txt` — la sortie, telle quelle, en UTF-8, tronquée à la fin si
@@ -64,6 +87,7 @@ USAGE
     python banc_agent.py --etat       (affiche le dernier rapport)
 """
 
+import base64
 import json
 import os
 import re
@@ -76,7 +100,8 @@ import canal
 
 __all__ = ['FICHIER_COMMANDE', 'FICHIER_ETAT', 'FICHIER_SORTIE', 'FICHIER_VU',
            'RIEN', 'PING', 'DEFAUT', 'PERIODE_S', 'FAMILLES', 'TIMEOUT_S',
-           'SORTIE_MAX', 'lire_commande', 'ecrire_commande', 'decouper',
+           'SORTIE_MAX', 'JETON_B64', 'lire_commande', 'ecrire_commande',
+           'decouper', 'dejeton',
            'python_du_projet',
            'motif_refus', 'ecrire_etat']
 
@@ -99,6 +124,11 @@ FAMILLES = ('mesure_', 'verifier_', 'diagnostic_', 'comptes_', 'inventaire_',
 # Ce qu'un argument peut contenir. Assez pour `--base copie.db --seuil 0.5`,
 # trop peu pour bâtir un chemin exotique ou glisser une quote.
 ARG_OK = re.compile(r'^[A-Za-z0-9_.:/=-]+$')
+
+# Le préfixe qui annonce une valeur encodée, et l'alphabet de son corps.
+# Les deux tiennent DÉJÀ dans `ARG_OK` : le jeton n'élargit rien.
+JETON_B64 = 'b64:'
+CORPS_B64 = re.compile(r'^[A-Za-z0-9_-]+=*$')
 
 # Dix minutes : `mesure_faits_vue` prend 3 s, `eval_tagging` peut prendre des
 # heures — celui-là n'a rien à faire ici, et le plafond le dit sans discuter.
@@ -136,6 +166,38 @@ def decouper(ordre):
     return [m for m in str(ordre or '').split() if m]
 
 
+def dejeton(arg):
+    """`'b64:QsOpYQ'` → `'Béa'` ; tout ce qui ne porte pas le jeton est rendu
+    TEL QUEL — un `--base` décodé en douce serait un défaut muet.
+
+    Le jeton n'est pas un échappement : il ne rend pas au canal ce qu'`ARG_OK`
+    lui refuse, il transporte une valeur sous une forme qu'`ARG_OK` accepte
+    déjà. Le décodage vient donc APRÈS les contrôles, et sa sortie ne va que
+    dans la liste de `subprocess.run`.
+
+    Lève `ValueError` sur un jeton vide, hors alphabet, qui n'est pas de
+    l'UTF-8, ou qui porte un caractère de contrôle — `motif_refus` en fait un
+    refus nommé plutôt qu'un argument à moitié né. Aucun nom humain ne porte
+    de tabulation ; un canal qui l'accepterait accepterait qu'on lui glisse
+    une ligne dans un argument."""
+    if not arg.startswith(JETON_B64):
+        return arg
+    corps = arg[len(JETON_B64):]
+    if not corps:
+        raise ValueError('jeton vide')
+    if not CORPS_B64.match(corps):
+        raise ValueError('hors alphabet base64url')
+    # Le bourrage est facultatif : sans lui le jeton est plus court, et il
+    # traverse le canal aussi bien.
+    brut = base64.urlsafe_b64decode(corps + '=' * (-len(corps) % 4))
+    valeur = brut.decode('utf-8')          # lève sur ce qui n'est pas un texte
+    if not valeur:
+        raise ValueError('valeur vide')
+    if any(ord(c) < 32 for c in valeur):
+        raise ValueError('caractere de controle dans la valeur')
+    return valeur
+
+
 def motif_refus(ordre, projet):
     """Motif de refus de l'ordre, ou None s'il est lançable.
 
@@ -160,7 +222,15 @@ def motif_refus(ordre, projet):
     for a in args:
         if not ARG_OK.match(a):
             return (f"argument refusé : {a!r} — seuls "
-                    "[A-Za-z0-9_.:/=-] sont admis")
+                    "[A-Za-z0-9_.:/=-] sont admis. Un accent ou un espace "
+                    f"passe par le jeton {JETON_B64} suivi du base64url du "
+                    "texte UTF-8.")
+        if a.startswith(JETON_B64):
+            try:
+                dejeton(a)
+            except ValueError as e:
+                return (f"jeton {JETON_B64} illisible : {a!r} — {e}. Attendu "
+                        f"{JETON_B64} suivi du base64url d'un texte UTF-8.")
     if not (Path(projet) / nom).is_file():
         return f"banc introuvable dans le projet : {nom!r}"
     return None
@@ -220,7 +290,11 @@ def lancer(projet, ordre, timeout=TIMEOUT_S):
         rap['refus'] = refus
         return rap
 
-    morceaux = decouper(ordre)
+    bruts = decouper(ordre)
+    # Les jetons deviennent des VALEURS ici, et pas avant : `motif_refus` a
+    # jugé la forme qui a transité, pas ce qu'elle portait. Le nom du banc
+    # (indice 0) n'est jamais décodé — sa famille se juge sur l'écrit.
+    morceaux = bruts[:1] + [dejeton(a) for a in bruts[1:]]
     py = python_du_projet(projet)
     env = dict(os.environ, PYTHONIOENCODING='utf-8', PYTHONUTF8='1')
     t0 = time.time()
@@ -247,7 +321,11 @@ def lancer(projet, ordre, timeout=TIMEOUT_S):
                   "banc_agent : un banc qui déverse ne rapporte plus ...]\n")
         rap['tronquee'] = True
     rap['octets'] = len(sortie)
-    entete = (f"# {rap['ordre']}\n# code {rap['code']} — {rap['duree_s']} s"
+    # Un en-tête qui n'affiche que l'ordre brut laisserait lire
+    # `b64:U3TDqXBo…` là où il faut lire un nom.
+    decode = ('# décodé : ' + ' '.join(morceaux) + '\n'
+              if morceaux != bruts else '')
+    entete = (f"# {rap['ordre']}\n{decode}# code {rap['code']} — {rap['duree_s']} s"
               f"{' — TRONQUÉE' if rap['tronquee'] else ''}\n"
               + "-" * 74 + "\n")
     try:
