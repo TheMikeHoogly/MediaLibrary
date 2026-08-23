@@ -84,6 +84,8 @@
 | Le repli sur le NOM gardé comme `taken` | **CORRIGÉ** (19/08) | Le scanner écrit le scan dans `DateTimeOriginal` **et** dans le nom : le garde-fou du 17/08 ne fermait qu'une porte sur deux. |
 | Le plan revient sur ce qu'il a renommé | **CORRIGÉ** (19/08) | `est_nom_annee_seule` n'agit que si la date est devenue précise (plan à **0**). |
 
+| **`is_file()` avant d'enfiler une écriture XMP** | **RETIRÉ, et c'était une FUITE** (23/08) | `_enqueue_person_write` testait l'existence du fichier et, sur un « non », ne notait rien, n'enfilait rien, ne disait rien ; `_file_personnes_reprise` faisait pareil au démarrage — le pire moment, le NAS n'étant pas toujours monté : la prudence de la reprise annulait le journal qu'elle devait sauver. Or `is_file()` interroge un partage SMB, qui répond « non » sur un fichier qui existe. Le compte : **18,7 % des couples nom–photo** (Wilson 16,7–20,9 %, 255 écarts sur 1 364 lus, 352 noms) — soit **~5 800 photos** dont l'index porte un nom que le fichier ignore. Les deux seuls noms sans écart, Florine (200/200) et Stéphane Plouvin (58/58), sont les deux dont les fichiers ont été RÉÉCRITS en entier. Désormais : on note, on enfile, et le seul qui déclare une écriture impossible est celui qui l'a TENTÉE (`_file_personnes_echecs.jsonl`). **4 rouges observés sur l'ancien code**, dont deux tests d'hier qui affirmaient l'inverse. |
+
 ## Lieux · recherche (chantier 14a)
 
 | Idée / piste | Verdict | Raison |

@@ -36,44 +36,53 @@ renaît qu'après les contrôles.
 
 ## Où on en est (23/08/2026, fin de session 42)
 
-**Le geste de Mike sur le groupe de « Stéphane Plouvin » est PROUVÉ sur le
-disque** : 58 photos à l'index, **58 portent le nom, 0 manque, 0 illisible**,
-file à 0, aucun `_file_personnes_echecs.jsonl`. Le journal de la file s'était
-auto-effacé avant qu'on regarde — c'est ce qu'il fait quand tout est consommé.
+**Une FUITE de la règle 2 a été trouvée, chiffrée et bouchée.** L'index porte
+des noms que les FICHIERS ignorent : **18,7 % des couples nom–photo** (Wilson
+16,7–20,9 %, 255 écarts sur 1 364 lus, 352 noms) — soit **~5 800 photos**.
+Ellie : 342 à l'index, **54 sans le nom dans le fichier**, file à zéro. Mike :
+37 sur 200. Florine : **200/200**, comme Stéphane Plouvin 58/58 — les deux
+seuls dont les fichiers ont été RÉÉCRITS en entier.
 
-**Le canal des bancs porte enfin les noms humains.** `ARG_OK` refusait accent
-et espace : **168 des 352 noms, 6 119 photos** étaient hors de portée du seul
-instrument qui vérifie la règle 2 dans les FICHIERS. Le jeton `b64:` rend la
-valeur sans desserrer la porte (`docs/DECISIONS_OUTILLAGE.md`).
-**11 vérifications neuves, 8 rouges sur l'ancien code**, 32 vertes au banc.
+**La cause** : `_enqueue_person_write` testait `p.is_file()` avant de noter le
+geste ; sur un « non », rien n'était noté, enfilé, ni dit. Or `is_file()`
+interroge un partage SMB, qui répond « non » sur un fichier qui existe.
+`_file_personnes_reprise` faisait pareil AU DÉMARRAGE — la prudence de la
+reprise jetait la file que le journal existait pour sauver. **Les deux jugent
+désormais zéro** : on note, on enfile, et seul celui qui a TENTÉ l'écriture
+peut la déclarer impossible (`_file_personnes_echecs.jsonl`). **4 rouges
+observés sur l'ancien code reconstitué**, dont deux tests de la 41 qui
+affirmaient l'inverse. Serveur redémarré à 19:42 sur le code neuf.
 
-**Rappel de la 41, intact** : file XMP journalisée et réparable, `-stay_open`
-rangé APRÈS le reste (25 %, pas 12×), photothèque ouverte en MCP lecture seule
-(sept outils, `/api/faits`).
+**Le canal des bancs porte enfin les noms humains** (jeton `b64:`) — sans quoi
+rien de ce qui précède n'aurait été trouvé : `ARG_OK` mettait 168 des 352 noms
+hors de portée du seul instrument qui vérifie la règle 2 dans les fichiers.
+
+**Instruments** : `verifier_xmp_personnes.py --nom X` (un nom, exact),
+`verifier_xmp_toutes_personnes.py` (tous, échantillonné, 21 vérifications —
+il REFUSE de classer un nom lu moins de 8 fois, et DIT ce qu'il n'a pas lu).
+
+## Ce qui attend Mike
+
+**`QUESTIONS_MIKE.md` n'est PAS vide** : ~5 800 photos à éponger avec
+`appliquer_xmp_personnes.py`. Recommandation : Ellie d'abord (54, ~3 min,
+lot nommé dans `_xmp_ellie.json`), puis le reste (~4 h 40 de file).
 
 ## La seule chose NON observée
 
-**Le journal de la file sur un geste VIVANT, et son débit.** On est arrivé
-après le drainage du geste de Mike. À regarder au prochain nom attribué, dans
-les secondes qui suivent : `_file_personnes.jsonl` naît, `.pos` avance, le
-fichier disparaît une fois la file vide — et le débit d'un renommage doit
-tomber vers **~2,9 s par PHOTO** (au lieu de 5,8). Ça ne coûte rien de plus
-que d'être là au bon moment.
+**Le journal de la file sur un geste VIVANT, et son débit.** Deux gestes ont
+été manqués de quelques secondes : pour UNE photo, le journal vit ~3 s puis
+s'auto-efface. **La réparation ci-dessus le fera voir gratuitement** — des
+milliers d'écritures, donc un journal qui vit des heures. À regarder ce
+jour-là : `_file_personnes.jsonl` naît, `.pos` avance, il disparaît à la fin,
+et le débit tombe vers **~2,9 s par photo**.
 
 ## Prochain pas
 
-1. **Copie HORS SITE (12 bis)** — le seul manque qui reste à l'assurance-vie :
-   un sinistre qui emporte le PC ET le NAS emporte tout. Demande une décision de
-   Mike (quoi, où, à quelle fréquence, chiffré ou non) avant du code.
-2. **Suite de `ui/`** : le CSS commun (chaque page porte encore son `<style>` ;
-   `tokens.css`, `base.css`, `components.css` attendent) puis le redesign —
-   deux chantiers SÉPARÉS, exprès (`photo-ui`).
-3. **Reste d'audit** : O7–O9, O11, O13–O15 ; **I1** est VISIBLE dans
-   `/reglages` (`tours: visages 0, animaux 0`).
-4. **Point 13, la suite** : l'ÉCRITURE en MCP — plus tard, et pas sans décision.
+1. **La réparation** (geste de Mike, ci-dessus) — et l'observer.
+2. **Copie HORS SITE (12 bis)** — un sinistre qui emporte le PC ET le NAS
+   emporte tout. Décision de Mike avant du code.
+3. **Suite de `ui/`** : le CSS commun, puis le redesign — séparés, exprès.
+4. **Reste d'audit** : O7–O9, O11, O13–O15 ; **I1** visible dans `/reglages`.
 5. **`py_a_observer` est trop grossier** (`docs/DECISIONS_OUTILLAGE.md`) : le
    contrôle 5 exige qu'un serveur fasse tourner des modules qu'il n'importe
-   jamais (`mcp_serveur.py`, `banc_agent.py`, familles `appliquer_`,
-   `verifier_`). C'est ce qui oblige à forcer.
-
-**Rien n'attend Mike dans `QUESTIONS_MIKE.md`.**
+   jamais. C'est ce qui oblige à forcer.

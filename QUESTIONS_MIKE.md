@@ -6,7 +6,18 @@
 > `eval/DECISIONS.md` si elle tranche, dans `ROADMAP.md` si elle priorise.
 > Protocole : `CLAUDE.md`, « Traite autonome ».
 
-_Rien en attente._
+- **23/08 — ~5 800 photos dont le fichier ignore un nom que l'index porte.**
+  La fuite est BOUCHÉE (l'enfilement et la reprise ne jugent plus de
+  l'existence) ; il reste à éponger l'arriéré. `appliquer_xmp_personnes.py`
+  existe pour ça, il est à blanc par défaut, il refuse de tourner tant que la
+  file tourne, et son journal est annulable. **Ma recommandation** : commencer
+  par **Ellie seule** (54 photos, ~3 min) — le lot est nommé
+  (`_xmp_ellie.json`), et il fait voir la mécanique tourner en vrai avant de
+  l'engager sur 5 800 (~4 h 40 de file à 2,9 s/photo, pendant lesquelles il ne
+  faut pas redémarrer). **En attendant** : rien n'est écrit, et le chiffre ne
+  bouge plus — la fuite ne coule plus.
+  *Bénéfice second* : cette file-là fera enfin voir le journal `_file_personnes.jsonl`
+  VIVANT, la seule chose que la 41 n'avait jamais pu observer.
 
 ## Réglées
 

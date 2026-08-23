@@ -21,10 +21,30 @@ valeur ne renaît qu'APRÈS elles, pour la LISTE de `subprocess.run`.
 
 **Et le geste de Mike est PROUVÉ sur le disque.** `personne:Stéphane Plouvin` :
 **58 photos à l'index, 58 lues par ExifTool, 58 portent le nom, 0 manque, 0
-illisible**, file à 0. Le journal de la file s'était déjà auto-effacé — ce qui
-veut dire « tout consommé » — et aucun `_file_personnes_echecs.jsonl` n'est né.
-**Ce qui n'a PAS été observé** : le journal VIVANT et le débit d'un renommage
-(~2,9 s/photo attendu). On est arrivé après le drainage ; ça reste dû.
+illisible**, file à 0.
+
+**Puis le canal débloqué a trouvé une FUITE, et c'est le vrai sujet de la 42.**
+Un second geste de Mike (confirmation sur Ellie) a fait poser la question au
+bon nom : `personne:Ellie` — **342 photos à l'index, 54 dont le fichier ne
+porte pas le nom**, file à ZÉRO, donc rien ne viendra les combler. Mike :
+**37 sur 200** tirées. Florine : **200/200**. Le balayage de tous les noms
+(`verifier_xmp_toutes_personnes.py`, 21 vérifications) tranche :
+**18,7 % des couples nom–photo** (Wilson 16,7–20,9 %, 255 écarts sur 1 364 lus,
+352 noms) — soit **~5 800 photos** que l'index nomme et que le fichier ignore.
+La règle 2 était en défaut depuis des mois, sans une ligne nulle part.
+
+**La cause, et elle est bouchée.** `_enqueue_person_write` testait
+`p.is_file()` avant de noter : sur un « non », le geste disparaissait en
+silence. Or `is_file()` interroge un partage SMB, qui répond « non » quand le
+NAS hoquette. `_file_personnes_reprise` faisait de même AU DÉMARRAGE — le pire
+moment, le partage n'étant pas toujours monté : la prudence de la reprise
+jetait la file que le journal existait pour sauver. Les deux jugent désormais
+zéro ; le seul qui déclare une écriture impossible est celui qui l'a TENTÉE.
+**4 rouges observés sur l'ancien code reconstitué**, dont deux tests de la 41
+qui affirmaient l'inverse.
+
+**Reste à faire, et c'est un geste de Mike** : `appliquer_xmp_personnes.py`
+sur les ~5 800. Voir `QUESTIONS_MIKE.md`.
 
 ## État (23/08/2026, session 41)
 

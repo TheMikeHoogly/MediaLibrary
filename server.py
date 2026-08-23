@@ -8359,7 +8359,14 @@ def _file_personnes_reprise():
     Lit le journal, saute tout ce que la position déclare consommé, et réenfile
     le reste. Une ligne tronquée par une coupure est ignorée sans faire tomber
     la reprise. Le chemin est RÉSOLU depuis la clé quand elle existe : entre
-    l'arrêt et le redémarrage, la photo a pu être rangée ailleurs."""
+    l'arrêt et le redémarrage, la photo a pu être rangée ailleurs.
+
+    ELLE NE JUGE PAS DE L'EXISTENCE (23/08). Elle testait `is_file()` et
+    comptait les « non » comme perdus. Au DÉMARRAGE, c'est le pire moment pour
+    poser cette question : le partage NAS peut n'être pas encore joignable, et
+    un `is_file()` prudent jetait alors TOUTE la file que ce journal existe
+    pour sauver — le défaut annulait exactement le remède. Ce qui ne s'écrira
+    pas sera NOMMÉ par l'écrivain, qui, lui, a essayé."""
     global PERSON_SEQ
     if not PERSON_JOURNAL.exists():
         return 0
@@ -8368,7 +8375,7 @@ def _file_personnes_reprise():
                    if PERSON_JOURNAL_POS.exists() else '0').strip() or 0)
     except (OSError, ValueError):
         pos = 0
-    repris = perdus = 0
+    repris = 0
     dernier = pos
     try:
         with open(PERSON_JOURNAL, encoding='utf-8') as f:
@@ -8387,21 +8394,18 @@ def _file_personnes_reprise():
                 cle = d.get('cle')
                 try:
                     p = _resolve_key(cle) if cle else Path(d.get('chemin') or '')
-                    if not p.is_file():
-                        perdus += 1
-                        continue
                 except OSError:
-                    perdus += 1
-                    continue
+                    p = Path(d.get('chemin') or '')
                 PERSON_QUEUE.put((p, d.get('tag'), d.get('op') or 'add', cle, n))
                 repris += 1
     except OSError as e:                                      # noqa: BLE001
         print(f"  ! file personne : journal illisible ({e})")
         return 0
     PERSON_SEQ = max(PERSON_SEQ, dernier)
-    if repris or perdus:
-        print(f"  * File XMP : {repris} ecriture(s) reprises apres arret"
-              + (f", {perdus} photo(s) introuvable(s)." if perdus else "."))
+    if repris:
+        print(f"  * File XMP : {repris} ecriture(s) reprises apres arret. "
+              "Ce qui ne s ecrira pas sera nomme dans "
+              "_file_personnes_echecs.jsonl.")
     return repris
 
 
@@ -8505,13 +8509,34 @@ def _index_remove_person(key, tag):
 
 
 def _enqueue_person_write(key, tag, op='add'):
-    p = _resolve_key(key)
+    """Note le geste au journal, PUIS l'enfile — sans juger d'abord si le
+    fichier existe.
+
+    POURQUOI CE N'EST PLUS UN `is_file()`, et ce que ça coûtait (23/08).
+    Cette fonction testait `p.is_file()` et, sur un « non », ne notait rien,
+    n'enfilait rien, ne disait rien. Or `is_file()` interroge un partage SMB :
+    il répond « non » quand le NAS hoquette, quand la session réseau se
+    renégocie, quand le partage n'est pas encore monté — sur un fichier qui
+    existe. Le geste disparaissait alors ENTRE l'index et le fichier, sans une
+    ligne nulle part : la règle 2 tombait en silence.
+
+    Le compte, ce jour-là : `personne:Ellie` — **342 photos à l'index, 54 dont
+    le fichier ne porte pas le nom**, file à zéro ; `Mike`, **37 sur 200**
+    tirées. Les deux seuls noms sans écart (Florine 200/200, Stéphane Plouvin
+    58/58) sont précisément les deux dont les fichiers ont été RÉÉCRITS en
+    entier. Ce qui s'accumule geste par geste fuyait ; ce qui est réécrit d'un
+    bloc, non.
+
+    Le seul endroit qui a le droit de déclarer une écriture impossible est
+    celui qui l'a TENTÉE : `_ecrire_lot_personne` nomme ce qui échoue dans
+    `_file_personnes_echecs.jsonl`, et la position avance quand même. Partout
+    ailleurs, décider revient à perdre sans trace."""
     try:
-        if p.is_file():
-            n = _file_personnes_note(p, tag, op, key)
-            PERSON_QUEUE.put((p, tag, op, key, n))
+        p = _resolve_key(key)
     except OSError:
-        pass
+        p = Path(str(key))          # même une clé irrésoluble laisse une trace
+    n = _file_personnes_note(p, tag, op, key)
+    PERSON_QUEUE.put((p, tag, op, key, n))
 
 
 def reclasser_animaux(dry=True):

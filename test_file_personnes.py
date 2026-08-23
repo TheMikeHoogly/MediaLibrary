@@ -262,10 +262,30 @@ class LaFileSurvit(BancTest):
         self.assertEqual(len(item), 5)
         self.assertEqual(item[4], 1)
 
-    def test_ce_qui_n_est_pas_un_fichier_n_entre_ni_en_file_ni_au_journal(self):
+    def test_un_fichier_INJOIGNABLE_est_note_et_enfile_QUAND_MEME(self):
+        """Ce test disait l'inverse jusqu'au 23/08 — « ce qui n'est pas un
+        fichier n'entre ni en file ni au journal » — et c'est ce contrat-là
+        qui a coûté 54 photos d'Ellie et 37 sur 200 de Mike. `is_file()`
+        interroge un partage SMB : il répond « non » sur un fichier qui existe
+        dès que le NAS hoquette. Décider ici, c'est perdre sans trace ; le
+        seul qui peut déclarer l'écriture impossible est celui qui l'a
+        tentée."""
         self.b['_enqueue_person_write']('fantome.jpg', 'personne:Flo', 'add')
-        self.assertTrue(self.b.file.empty())
-        self.assertEqual(self.b.journal(), [])
+        self.assertFalse(self.b.file.empty(),
+                         "un geste jete avant d etre tente est un geste perdu")
+        self.assertEqual([d['tag'] for d in self.b.journal()], ['personne:Flo'])
+
+    def test_une_cle_IRRESOLUBLE_laisse_quand_meme_une_trace(self):
+        """`_resolve_key` peut lever sur un chemin exotique. Avant, le `except
+        OSError: pass` avalait le geste entier."""
+        self.b.espace['_resolve_key'] = self._leve
+        self.b['_enqueue_person_write']('x.jpg', 'personne:Flo', 'add')
+        self.assertEqual(len(self.b.journal()), 1)
+        self.assertFalse(self.b.file.empty())
+
+    @staticmethod
+    def _leve(cle):
+        raise OSError('partage injoignable')
 
     def test_une_file_interrompue_repart_exactement_ou_elle_en_etait(self):
         """Le cas de la fusion : 3 gestes notés, 1 fait, arrêt. Au redémarrage,
@@ -313,12 +333,32 @@ class LaFileSurvit(BancTest):
         self.assertEqual(neuf['_file_personnes_reprise'](), 1)
         self.assertEqual(neuf.file.get_nowait()[0], Path(self.tmp) / 'a.jpg')
 
-    def test_une_photo_disparue_est_sautee_sans_bloquer_le_reste(self):
+    def test_la_reprise_NE_JUGE_PAS_de_l_existence(self):
+        """Elle sautait ce que `is_file()` disait absent. Au DÉMARRAGE c'est la
+        pire des questions : le NAS n'est pas toujours monté quand le serveur
+        naît, et une file entière partait alors à la poubelle — le journal
+        annulé par la prudence de sa propre reprise."""
         self.b.photo('a.jpg')
         self.b['_enqueue_person_write']('a.jpg', 'personne:Flo', 'add')
         Path(self.tmp, 'a.jpg').unlink()
         neuf = Banc(self.tmp)
-        self.assertEqual(neuf['_file_personnes_reprise'](), 0)
+        self.assertEqual(neuf['_file_personnes_reprise'](), 1)
+        self.assertEqual(neuf.file.get_nowait()[3], 'a.jpg')
+
+    def test_ce_qui_ne_s_ecrit_pas_finit_NOMME_et_non_avale(self):
+        """La contrepartie du test precedent : ne plus juger n'est acceptable
+        que parce que l'ECRIVAIN, lui, nomme ce qu'il n'a pas su ecrire."""
+        b = Banc(self.tmp, code=1)               # ExifTool refuse
+        b.ecrivain()
+        b['_enqueue_person_write']('disparue.jpg', 'personne:Flo', 'add')
+        for _ in range(200):
+            if (Path(self.tmp) / '_file_personnes_echecs.jsonl').exists():
+                break
+            time.sleep(0.01)
+        echecs = b.journal('_file_personnes_echecs.jsonl')
+        self.assertEqual(len(echecs), 1)
+        self.assertEqual(echecs[0]['cle'], 'disparue.jpg')
+        self.assertTrue(echecs[0]['motif'])
 
     def test_file_vidée_le_journal_est_remis_a_zero(self):
         """Sans ça, le journal grossirait à chaque nom posé, pour toujours."""
