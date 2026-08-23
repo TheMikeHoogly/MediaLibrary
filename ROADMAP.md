@@ -6,68 +6,36 @@ dans **git** ; les rejets dans `eval/DECISIONS.md` (photothèque) et
 `eval/METHODE.md` ; l'éphémère dans `PROMPT_NOUVELLE_SESSION.md`. Audits :
 `docs/AUDIT_INTERNE_2026-08.md`, `docs/AUDIT_EXTERNE_2026.md`, `docs/RANGEMENT_2026.md`.
 
-## État (23/08/2026, session 39)
+## État (23/08/2026, session 40)
 
-**La fusion Flo → Florine a été lancée pour de vrai, et elle s'est battue une
-heure contre le curateur du projet.** `SubjectStore.rename` balaye les 5 907
-photos une par une (un `stat` NAS chacune, ~1 h) et ne supprimait la fiche
-absorbée qu'**à la fin** : pendant tout ce temps la signature de Flo restait
-vivante, et `AUTO_ADD` la ré-attribuait toutes les 240 s aux photos que la
-fusion venait de lui retirer. Mesuré sur le fonds vivant : `Flo` descend de
-**5 907 à 4 487**, puis **REMONTE à 5 703** ; **60 auto-ajouts « Flo » en une
-heure** dans `/api/curator/list` ; **17 092 écritures XMP en attente** pour un
-geste qui en demande 11 814, et une file qui se vidait à **0,09 op/s** — plus
-de **50 heures** de NAS pour graver le résultat d'une bagarre. Redémarrage : la
-file fausse est jetée, l'index garde 5 725 `Flo` et ≥ 2 000 `Florine`.
+**La question ouverte de la 39 est répondue — et reproduite en trois lignes,
+sans serveur ni NAS. Personne ne met de verrou dans une fiche : la fiche EST le
+verrou.** `store.data.get(nom)` ne rend pas un `dict` mais un **`TrackedEntry`**
+(sous-classe de `dict`, `__slots__ = ('_store', '_key')`). `copy.deepcopy` d'une
+sous-classe de dict copie AUSSI l'état d'instance : il suit `_store` jusqu'au
+`SqliteStore` et bute sur son `lock`, un **RLock** délibéré (`store_sqlite.py`,
+en-tête). Ce n'était donc pas la fiche de Flo — **toute fiche vivante de tout
+index SQLite** était indeepcopyable, hier comme demain. Conséquence directe :
+**la ligne console de `_fiche_pour_journal` ne nommera jamais rien**, aucun
+CHAMP n'étant en faute.
 
-**Mais ce n'est pas la bagarre qui l'a tuée — c'est un VERROU dans la fiche.**
-La console du serveur, seule à l'avoir su :
-`TypeError: cannot pickle '_thread.RLock' object`, dans le
-`copy.deepcopy(self.store.data.get(old))` de `rename`. La fiche `Flo` porte, en
-mémoire, un objet vivant. Et cette ligne venait **APRÈS** la boucle : les 5 907
-photos étaient renommées, puis la fusion mourait — ni fiche `Florine`, ni
-journal, rien à annuler, et pas un mot à l'écran. **Le nouvel ordre a déplacé
-ce mur de la 60ᵉ minute à la 1ʳᵉ milliseconde** : c'est ce qui l'a rendu
-visible. Le journal prend désormais une copie **JSON-sûre** de la fiche —
-`_journal_fusion` sérialise, donc ce champ aurait tué le journal juste après le
-deepcopy — et **NOMME dans la console** ce qu'il écarte. **Reste à savoir qui
-met un verrou dans une fiche de personne** : la ligne le dira au prochain
-renommage.
+**Parade** : `__deepcopy__` / `__copy__` / `__reduce__` sur `TrackedEntry` et
+`TrackedDict` rendent un **dict NU** — une copie n'a ni clé ni store à prévenir,
+et une copie qui se croirait suivie ferait écrire en base des mutations qui
+n'appartiennent à personne. **4 vérifications rouges sur l'ancien code, 52/52
+sur le nouveau**, dont une qui deepcopy le store LUI-MÊME pour prouver que le
+piège existe toujours — sans quoi les autres ne prouveraient rien.
 
-**Corrigé — l'ORDRE du geste.** Les fiches sont fusionnées **AVANT** la boucle
-sur les photos : plus de fiche, plus de signature, plus de course. Elle
-disparaît par construction au lieu d'être arbitrée. Deux propriétés viennent
-avec : le journal s'écrit dans un `finally` — une boucle interrompue reste
-annulable, et **relancer REPREND** le travail — et les photos qui portent déjà
-le nom d'arrivée voient quand même leur **fichier** réécrit, ce qui empêche un
-nom fantôme de renaître au prochain balayage des modifiés. **`delete()` avait
-exactement la même forme** : corrigé aussi. **45 tests**, dont **5 rouges sur
-l'ancien code**, et un qui fabrique la fiche à verrou.
+**La file XMP est 3× plus lente que ne le disait la session 39.** Mesuré sur le
+fonds vivant, deux fenêtres indépendantes (274 s et 181 s) : **0,28 op/s**, soit
+**~11 h**, pas 3,4 h. Le 0,95 avait été pris sur une fenêtre courte juste après
+la fusion. Cause : `person_writer` lance **un processus exiftool par opération**,
+en série — ~3,5 s par tag sur SMB, et une photo renommée en demande deux.
 
-**`verifier_fusion.py` (22 tests) : le geste le plus lourd a enfin un juge.**
-Il lit `_corbeille_fusions/` et le serveur vivant et répond par l'arithmétique
-— l'union des décisions des deux fiches se retrouve-t-elle après (règle 2),
-quel journal peut VRAIMENT annuler (dès qu'il y a eu plusieurs passes, le
-dernier ment), l'ancien nom a-t-il disparu, que reste-t-il en file. Sans
-serveur joignable il juge les journaux et DIT ce qu'il n'a pas vérifié.
+**Et cette file est une `queue.Queue()` EN MÉMOIRE, sans trace disque.** Un
+redémarrage, une coupure ou un plantage perd le travail restant **sans rien pour
+le retrouver** : c'est ce qui rend ces 11 h otages, et c'est le vrai défaut.
 
-**LA FUSION EST FAITE (23/08, 08:31), et elle est vérifiée.** Mike a cliqué,
-la fiche `Florine` a paru **dans la seconde** et `Flo` a disparu du même coup.
-La boucle qui mettait une heure hier a mis **deux minutes** — les 5 725 photos
-à ~55/s : la lenteur d'hier était la BAGARRE, pas le coût du `stat`. Journal
-`fusion_20260823_083124.jsonl`, et `verifier_fusion.py` lancé au banc rend :
-**règle 2 tenue — confirmations 143 → 143, exclusions 1 215 → 1 215, visages
-84 → 84, avatar présent, date la plus ancienne** ; un seul journal, annulable ;
-côté serveur **un seul nom, `Florine`, 5 909 photos**, plus aucun `Flo`. La
-file XMP (11 800 opérations) se vide à **0,95 op/s — ~3,4 h**, contre 0,09 op/s
-hier : là encore, c'était la bagarre.
-
-**Une nuance à connaître avant de cliquer « Annuler la derniere fusion »** :
-**5 724 des 5 725 photos portaient DÉJÀ `Florine`** — séquelle de la passe
-morte d'hier, qui avait fait tout le travail d'index avant de tomber. Annuler
-leur rendrait donc `Flo` **sans** leur retirer `Florine` : c'est fidèle à
-l'état d'avant la fusion d'aujourd'hui, pas à celui d'avant-hier. L'annulation
-ne remonte pas plus loin que le dernier geste.
 
 ## État (22/08/2026, session 38)
 
@@ -255,6 +223,17 @@ seul `canal.py` ; livraison `commit` (branche) / `livrer` (fusion), et l'ordre
 qui en découle : éditer → redémarrer → **observer** → livrer.
 
 ## À faire — par ordre de valeur
+
+0ter. **La file XMP : d'abord RÉPARABLE, ensuite rapide (23/08, tranché avec
+   Mike).** Elle n'existe qu'en mémoire (`PERSON_QUEUE = queue.Queue()`) et
+   avance à 0,28 op/s. **(a)** Un outil qui compare les `personne:` des XMP du
+   fonds à l'index et REFAIT ce qui manque — l'accident cesse d'être une perte
+   sèche, et un redémarrage cesse d'être interdit. Ne touche pas `server.py`.
+   **(b)** Grouper le `-Ancien` et le `+Nouveau` d'une même photo en UNE
+   invocation exiftool (÷2 tout de suite), puis le mode `-stay_open` (le coût
+   de démarrage du processus disparaît). Touche `server.py` : livrable après
+   redémarrage seulement.
+
 
 0. **Chantier des rattachements : CLOS (22/08).** Recalage appliqué (33, dont
    29 vraies réparations), résidu jugé (28 cas), retrait appliqué (2). Couples

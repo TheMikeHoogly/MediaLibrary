@@ -8,8 +8,10 @@ couverture soit vérifiable et non déclarative.
 """
 
 import base64
+import copy
 import json
 import os
+import pickle
 import random
 import shutil
 import sqlite3
@@ -443,6 +445,88 @@ def t_cinq_stores_meme_base(tmp):
             and contenu_brut(db, "pets")["collision"]["origine"] == "pets")
 
 
+def t_copie_de_fiche(tmp):
+    """Le motif qui a tué la fusion Flo -> Florine (server.py l. 824-905).
+
+    `SubjectStore.rename` faisait `copy.deepcopy(self.store.data.get(old))` et
+    mourait sur `cannot pickle '_thread.RLock' object`. La cause n'était dans
+    aucun CHAMP de la fiche : une TrackedEntry est une sous-classe de dict, et
+    `deepcopy` copie aussi l'état d'instance — donc `_store`, donc le RLock du
+    SqliteStore. Ces vérifications tiennent la parade, et la DERNIÈRE prouve
+    que le piège existe toujours (sans quoi elles ne prouveraient rien).
+    """
+    db = tmp / "fiches.db"
+    st = SqliteStore(db, "people")
+    st.set("flo", {"name": "Flo", "refs": ["r1"], "confirmed": ["a.jpg"],
+                   "exclude": ["b.jpg"], "nomerge": ["florian"],
+                   "avatar": ["c.jpg", 0], "faces": [["c.jpg", 0]],
+                   "at": 1000.0})
+    fiche = st.data.get("flo")
+
+    verifie("la fiche vivante est bien une TrackedEntry",
+            type(fiche).__name__ == "TrackedEntry", type(fiche).__name__)
+
+    try:
+        copie = copy.deepcopy(fiche)
+        leve = None
+    except Exception as e:                                    # noqa: BLE001
+        copie, leve = None, repr(e)
+    verifie("deepcopy d'une fiche vivante ne lève plus (motif de rename)",
+            leve is None, f"a levé {leve}")
+
+    if copie is not None:
+        verifie("la copie est un dict NU, plus reliée au store",
+                type(copie) is dict, type(copie).__name__)
+        verifie("REGLE 2 : les décisions humaines survivent à la copie",
+                (copie.get("confirmed") == ["a.jpg"]
+                 and copie.get("exclude") == ["b.jpg"]
+                 and copie.get("nomerge") == ["florian"]
+                 and copie.get("avatar") == ["c.jpg", 0]
+                 and copie.get("faces") == [["c.jpg", 0]]), f"copie={copie}")
+
+        # PROFONDE : muter la copie ne doit toucher ni l'original ni la base.
+        copie["confirmed"].append("intrus.jpg")
+        st._dirty.clear()
+        copie["name"] = "Intrus"
+        verifie("muter la copie ne touche pas la fiche vivante",
+                st.data.get("flo")["confirmed"] == ["a.jpg"]
+                and st.data.get("flo")["name"] == "Flo",
+                f"vivante={dict(st.data.get('flo'))}")
+        verifie("muter la copie ne salit aucune clé (rien à réécrire)",
+                st._dirty == set(), f"_dirty={st._dirty}")
+
+    verifie("copy.copy d'une fiche rend un dict nu",
+            type(copy.copy(fiche)) is dict, type(copy.copy(fiche)).__name__)
+
+    try:
+        rond = pickle.loads(pickle.dumps(fiche))
+        verifie("pickle d'une fiche rend un dict nu et égal",
+                type(rond) is dict and rond == dict(fiche), f"rond={type(rond)}")
+    except Exception as e:                                    # noqa: BLE001
+        verifie("pickle d'une fiche rend un dict nu et égal", False, repr(e))
+
+    # L'index ENTIER porte le même défaut : `deepcopy(STORE.data)`.
+    try:
+        tout = copy.deepcopy(st.data)
+        verifie("deepcopy de l'index entier rend des dicts nus",
+                type(tout) is dict and type(tout["flo"]) is dict
+                and tout["flo"]["name"] == "Flo", f"tout={type(tout)}")
+    except Exception as e:                                    # noqa: BLE001
+        verifie("deepcopy de l'index entier rend des dicts nus", False, repr(e))
+
+    # LE PIÈGE EXISTE-T-IL ENCORE ? Si deepcopy(store) passait, c'est que le
+    # verrou aurait disparu — et tous les tests ci-dessus ne prouveraient rien.
+    try:
+        copy.deepcopy(st)
+        piege = False
+    except TypeError:
+        piege = True
+    verifie("le verrou est toujours là (le test n'est pas vide)",
+            piege, "deepcopy(SqliteStore) ne lève plus : test à revoir")
+
+    st.close()
+
+
 def t_performance(tmp):
     """Mesure indicative du gain, avec des entrées de taille réaliste."""
     N = 4000
@@ -490,7 +574,8 @@ def main():
              t_ecriture_incrementale, t_remplacement_global, t_pop_direct,
              t_invariant_noms_humains, t_concurrence, t_resistance_coupure,
              t_unicode_et_chemins_windows, t_open_store_repli,
-             t_sauvegarde_et_export, t_cinq_stores_meme_base, t_performance]
+             t_sauvegarde_et_export, t_cinq_stores_meme_base,
+             t_copie_de_fiche, t_performance]
     try:
         for t in tests:
             sous = tmp / t.__name__

@@ -39,6 +39,7 @@ CONVERGENCE
     lot, sans coût d'écriture réseau.
 """
 
+import copy
 import hashlib
 import json
 import os
@@ -111,6 +112,35 @@ class TrackedEntry(dict):
         if not avant:
             self._touch()
         return r
+
+    # ─────────────── copier une entrée rend du dict NU ───────────────
+    #
+    # POURQUOI (23/08/2026). La fusion Flo -> Florine est morte sur
+    # `TypeError: cannot pickle '_thread.RLock' object`, dans le
+    # `copy.deepcopy(store.data.get(nom))` de `SubjectStore.rename`. Personne
+    # ne mettait de verrou dans la fiche : la fiche EST une TrackedEntry, et
+    # `deepcopy` d'une sous-classe de dict copie AUSSI l'état d'instance —
+    # donc `_store`, donc le `SqliteStore`, donc son `lock` (un RLock, choix
+    # délibéré, cf. l'en-tête). Toute fiche vivante de tout index était ainsi
+    # indeepcopyable, et le défaut ne se voyait qu'à l'exécution, dans la
+    # console, une heure après le début du geste le plus lourd du projet.
+    #
+    # CE QUE REND LA COPIE. Un `dict` nu, pas une entrée vivante : une copie
+    # n'a ni clé ni store à prévenir, et une copie qui se croirait suivie
+    # ferait écrire en base des mutations qui n'appartiennent à personne.
+    # `__reduce__` ferme le même piège pour `pickle`.
+    def __deepcopy__(self, memo):
+        clone = {}
+        memo[id(self)] = clone          # inscrit AVANT de descendre : cycles
+        for k, v in self.items():
+            clone[k] = copy.deepcopy(v, memo)
+        return clone
+
+    def __copy__(self):
+        return dict(self)
+
+    def __reduce__(self):
+        return (dict, (dict(self),))
 
 
 class TrackedDict(dict):
@@ -193,6 +223,20 @@ class TrackedDict(dict):
         if k not in self:
             self[k] = d if d is not None else {}
         return self[k]
+
+    # Même parade que TrackedEntry : l'index entier porte lui aussi `_store`.
+    def __deepcopy__(self, memo):
+        clone = {}
+        memo[id(self)] = clone          # inscrit AVANT de descendre : cycles
+        for k, v in self.items():
+            clone[k] = copy.deepcopy(v, memo)
+        return clone
+
+    def __copy__(self):
+        return dict(self)
+
+    def __reduce__(self):
+        return (dict, (dict(self),))
 
 
 class SqliteStore:
