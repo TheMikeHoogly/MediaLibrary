@@ -46,14 +46,17 @@ index, plus `parse_tag_nomme` sur chaque mot-clé, et l'autocomplétion l'appell
 au chargement de chaque page. S'il coûte plus qu'O7, c'est lui le sujet — et il
 reçoit son propre verdict, au même seuil.
 
-CE QUE LA PREMIÈRE MESURE A TROUVÉ EN CHEMIN (23/08)
+CE QUE LA PREMIÈRE MESURE A TROUVÉ EN CHEMIN (23/08), ET CORRIGÉ (24/08)
 
-La colonne « total » reste vide, et ce n'est pas un trou du banc : `/api/search`
-CALCULE `detail['total']` et `detail['tronque']` puis ne les met pas dans sa
-réponse. Seule la page `/files?q=` les reçoit. Un consommateur de l'API — le
-MCP, un banc, un futur client — voit donc 1 500 photos sans savoir qu'il y en
-avait 5 832 : le plafond SILENCIEUX corrigé pour la page le 22/08 et pour le
-MCP le 23/08 est toujours là, dans la route elle-même.
+La colonne « total » restait vide, et ce n'était pas un trou du banc :
+`/api/search` CALCULAIT `detail['total']` et `detail['tronque']` puis ne les
+mettait pas dans sa réponse. Seule la page `/files?q=` les recevait, et un
+consommateur de l'API — le MCP, un banc, un futur client — voyait 1 500 photos
+sans savoir qu'il y en avait 5 832 : le plafond SILENCIEUX corrigé pour la page
+le 22/08 et pour le MCP le 23/08 vivait encore dans la route elle-même.
+La route les rend depuis le 24/08, et ce banc le VÉRIFIE : une requête nommée
+est déterministe, son total est connu avant la coupe, donc un `total` absent
+sur `rare_n1500` ou `gros_n1500` est une RÉGRESSION que le rapport nomme.
 
 CE QU'IL NE FAIT PAS
 
@@ -270,6 +273,7 @@ def mesurer(base, tours):
         rap['totaux'][etape] = {
             'noms_lus': (rep or {}).get('noms'),
             'total': (rep or {}).get('total'),
+            'tronque': (rep or {}).get('tronque'),
             'rendus': len((rep or {}).get('results') or []),
         }
 
@@ -358,9 +362,22 @@ def imprimer(rap, sortie=sys.stdout):
         e('\n  VERDICT /api/names [%s]\n' % vn.get('code'))
         e('    %s\n' % vn.get('dit'))
         e('    (appele au chargement de CHAQUE page, pour l autocompletion)\n')
-    e('\n  NOTE : la colonne « total » n existe pas — /api/search calcule\n')
-    e('  detail[total] et detail[tronque] et ne les rend PAS. Un consommateur\n')
-    e('  de l API voit son plafond sans savoir qu il en est un.\n')
+    e('\n  CE QUE LA ROUTE DIT DE SON PLAFOND\n')
+    muets = []
+    for etape in ('rare_n1500', 'gros_n1500'):
+        t = (rap.get('totaux') or {}).get(etape) or {}
+        if t.get('total') is None:
+            muets.append(etape)
+            e('    %-12s total NON RENDU (%d rendus)\n'
+              % (etape, t.get('rendus') or 0))
+        else:
+            e('    %-12s total %d, rendus %d, tronque %s\n'
+              % (etape, t['total'], t.get('rendus') or 0,
+                 '?' if t.get('tronque') is None else t['tronque']))
+    if muets:
+        e('    ATTENTION : une requete NOMMEE est deterministe, son total est\n')
+        e('    CONNU avant la coupe. Ne pas le rendre, c est le plafond muet\n')
+        e('    du 22/08 revenu dans la route (corrige le 24/08).\n')
     if c.get('tenu') is not True:
         e('    ATTENTION : le controle du modele n a pas tenu — le verdict\n')
         e('    ci-dessus porte sur une soustraction non validee.\n')

@@ -9,48 +9,36 @@ FUSIONNÉ — ce document, non. Puis `ROADMAP.md`, `eval/DECISIONS.md`,
 `eval/METHODE.md` — et `docs/DECISIONS_OUTILLAGE.md` si le sujet touche aux
 canaux, à la livraison ou au MCP. Débrief en 2–3 lignes, puis on attaque.
 
-## La réparation des XMP est FINIE, et PROUVÉE
+## Le chantier des XMP est CLOS, à zéro
 
-Terminée le 24/08 à 03:07 : **18 828 photos balayées, 3 128 réécrites**
-(181 + 2 947), **13 échecs**, **aucun nom sauté**. Plus rien ne tourne : le
-serveur peut redémarrer, les bancs NAS peuvent tourner, on peut renommer.
+`verifier_xmp_toutes_personnes.py`, machine calme : **1 614 couples nom–photo
+lus, 0 en écart, 0 nom en écart** — contre **18,7 %** le 23/08. La réparation a
+réécrit 3 128 photos sur 18 828 balayées ; les 21 fantômes `_exiftool_tmp` sont
+effacés ; `inventaire_fantomes.py` en trouve **0** sur les deux racines.
+Il n'y a plus rien à faire de ce côté. Ce qui reste vaut pour la MÉTHODE :
 
-**Le chiffre qui comptait est pris** : `verifier_xmp_toutes_personnes.py`,
-machine calme — **0,2 % d'écart** (Wilson 0,1–0,5 %, 5 sur 2 247 couples lus)
-contre **18,7 %** le 23/08. Les intervalles ne se touchent pas.
-
-**Ce qui reste tient en deux gestes de Mike** (famille `appliquer_`, hors de
-portée du banc) — et le résidu mesuré est EXACTEMENT ça :
-
-1. **Les fantômes `_exiftool_tmp` — il y en a 21, pas 11.** ExifTool recopie
-   la photo dans `<photo>_exiftool_tmp` avant d'écrire et **refuse d'écrire
-   tant que ce temporaire existe** : une écriture tuée en route condamne sa
-   photo, définitivement et sans bruit. Datés du 06/07 au 24/08, dix d'entre
-   eux ne figurent dans AUCUN journal. Effacer est sans risque — l'original
-   est le fichier d'à côté, intact :
-
-       Get-ChildItem \\NAS-Bremblens\home\Photos -Recurse -Filter *_exiftool_tmp | Remove-Item -Force -Verbose
-
-   puis `python appliquer_xmp_personnes.py --reprendre-echecs --appliquer`.
-   Le script sait aussi le faire lui-même — `--balayer-fantomes`, jamais par
-   défaut. Les 2 derniers échecs sont des JPEG tronqués — illisibles, bat 17.
-2. **`Val` : 3 photos.** Mesuré fichiers en main : Val 1 091/1 094, Yann Mamin
-   13/13. Des deux noms sautés par la passe de 21:38, un seul est à reprendre.
-
-       python appliquer_xmp_personnes.py --nom Val --appliquer
-
-Après ces deux gestes, relancer `verifier_xmp_toutes_personnes.py` doit rendre
-**0 écart**. C'est la fin du chantier.
+- **Un `_exiftool_tmp` condamne sa photo.** ExifTool refuse d'écrire tant que
+  son temporaire est là et n'a pas d'option pour l'écraser : une écriture tuée
+  en route rend la photo non réécrivable, définitivement et sans bruit. Le
+  balayage est possible mais **jamais par défaut** :
+  `appliquer_xmp_personnes.py --reprendre-echecs --balayer-fantomes --appliquer`.
+  Le surveiller : `inventaire_fantomes.py` (banc, lecture seule).
+- **Un fantôme SANS original à côté ne s'efface pas en lot** : ExifTool est
+  peut-être mort entre le remplacement et le renommage, et c'est alors la
+  seule copie qui reste. L'inventaire les compte à part et les nomme.
 
 ## Ensuite
 
-3. **`/api/names`, pas O7.** Le filtre nommé coûte 191–208 ms ; `/api/names`
-   coûte **359–364 ms** et part au chargement de CHAQUE page. Re-mesurer
-   `mesure_recherche_nommee.py` sur une machine CALME (le verdict d'O7 bascule
-   autour de son seuil sous charge), puis traiter l'autocomplétion : même
-   cause — un balayage complet de l'index par requête — sans doute même
-   remède. **Et rendre `total`/`tronque` dans `/api/search`** : la route les
-   calcule et ne les rend pas ; seule la page `/files?q=` les reçoit.
+3. **`/api/names`, et O7 est classé.** Mesure CALME du 24/08 : le filtre
+   nommé coûte **139 ms** — sous le seuil de 200, verdict **mineur**, à peser
+   contre le reste de la feuille et non à traiter par réflexe. `/api/names`
+   coûte **298 ms** et part au chargement de CHAQUE page : c'est lui le
+   chantier. La cause est identifiée et le remède écrit (non livré) : la liste
+   des noms ne coûte rien, c'est le COMPTAGE qui balaie les 43 000 fiches et
+   lit chaque mot-clé à chaque appel. Mettre en cache le COMPTE, jamais la
+   LISTE — un nom créé à l'instant doit paraître tout de suite, sinon on le
+   recrée en « Nouveau » (défaut I7). `total`/`tronque` : **fait le 24/08**,
+   observé en réel (`total 5898, rendus 1500, tronque 4398`).
 4. **Suite de `ui/`** : le CSS commun — chaque page porte encore son `<style>`.
    L'octet servi CHANGE, donc la preuve « identique au caractère près » qui a
    tenu les onze gabarits ne s'applique plus : une autre preuve, décidée AVANT

@@ -10592,6 +10592,22 @@ class Handler(BaseHTTPRequestHandler):
              # sûre — elles vont en fin de liste. Une protection qui s'annule
              # doit se compter, même quand elle ne cache rien.
              'sans_date_tri': detail.get('sans_date_tri', 0),
+             # LE PLAFOND SE DIT (24/08). Le filtre déterministe COMPTE avant
+             # de couper : `total` = ce qui correspondait, `tronque` = ce qui
+             # n'a pas tenu dans `n`. Ces deux chiffres étaient calculés par
+             # `semantic_search` puis JETÉS ici — seule la page `/files?q=`
+             # les recevait, et un consommateur de l'API voyait 1 500 photos
+             # sans savoir qu'il y en avait 5 832. Le plafond silencieux
+             # corrigé pour la page le 22/08 et pour le MCP le 23/08 vivait
+             # encore dans la route.
+             # `null` et non `len(results)` quand le moteur ne SAIT pas : la
+             # branche sémantique classe tout le fonds par cosinus, il n'y a
+             # pas de total à y lire, et rendre le nombre de résultats ferait
+             # passer une page pour un fonds entier. `0` dit « rien n'a été
+             # coupé », `null` dit « je ne sais pas » — les confondre, c'est
+             # réinventer le plafond muet à l'autre bout.
+             'total': detail.get('total'),
+             'tronque': detail.get('tronque'),
              'reste': detail.get('reste', requete)},
             ensure_ascii=False).encode(), 'application/json')
 

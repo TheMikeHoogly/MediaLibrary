@@ -6,6 +6,40 @@ dans **git** ; les rejets dans `eval/DECISIONS.md` (photothèque) et
 `eval/METHODE.md` ; l'éphémère dans `PROMPT_NOUVELLE_SESSION.md`. Audits :
 `docs/AUDIT_INTERNE_2026-08.md`, `docs/AUDIT_EXTERNE_2026.md`, `docs/RANGEMENT_2026.md`.
 
+## État (24/08/2026, session 45)
+
+**LE CHANTIER DES XMP EST CLOS, à zéro.** `verifier_xmp_toutes_personnes.py`,
+machine calme, mêmes paramètres que la mesure de référence : **1 614 couples
+nom–photo lus, 0 en écart, 0 nom en écart** — contre **255 sur 1 364 (18,7 %)**
+le 23/08 et 0,2 % ce matin. Les 21 fantômes effacés, les 13 échecs repris
+(3 réécrits, le reste déjà conforme), `Val` rattrapé. Le fonds ne porte plus un
+seul nom que l'index connaît et que le fichier ignore.
+
+**Et il n'y a plus un seul fantôme sur le fonds.** `inventaire_fantomes.py`
+(nouveau, famille `inventaire_`, lecture seule, lançable au banc) balaie les
+deux racines du serveur en 3 min 30 : **0 trouvé**. Il sépare les deux cas —
+fantôme dont l'original est intact **à côté** (effaçable sans risque) et
+fantôme **sans original** (ExifTool peut être mort entre le remplacement et le
+renommage : c'est alors la seule copie qui reste, et l'effacer en lot serait
+une perte). **17 vérifications, dont celle qui interdit tout `unlink` dans le
+module.**
+
+**`/api/search` rend enfin `total` et `tronque`** — observé en réel :
+`total 5898, rendus 1500, tronque 4398`. Ils étaient CALCULÉS puis jetés ;
+seule la page `/files?q=` les recevait. Quand le moteur ne SAIT pas — la
+branche sémantique classe tout le fonds par cosinus — la route rend `null` et
+non `len(results)` : rendre le nombre de résultats ferait passer une page pour
+un fonds entier, c'est-à-dire réinventer le plafond muet à l'autre bout.
+**8 vérifications neuves, 5 rouges sur l'ancien code**, et
+`mesure_recherche_nommee` VÉRIFIE désormais le plafond au lieu de le
+commenter : une requête nommée est déterministe, un `total` absent est une
+régression que le rapport nomme.
+
+**Et la mesure calme renverse le verdict d'O7 :** coût fixe du filtre nommé
+**139 ms** (contre 191–208 sous charge) — **mineur**, sous le seuil de 200.
+`/api/names` reste à **298 ms**, et part au chargement de CHAQUE page : c'est
+lui le chantier, comme la 43 le soupçonnait.
+
 ## État (24/08/2026, session 44)
 
 **La réparation du fonds est FINIE.** Relancée à 22:38, terminée à 03:07 :
