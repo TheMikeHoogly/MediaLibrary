@@ -6,6 +6,21 @@
 > `eval/DECISIONS.md` si elle tranche, dans `ROADMAP.md` si elle priorise.
 > Protocole : `CLAUDE.md`, « Traite autonome ».
 
+- **24/08 — l'ordre `reparation_xmp` au canal des bancs : sa raison d'être a
+  expiré vingt minutes après ton accord.** Tu as dit oui pour qu'une mort à
+  3 h ne coûte pas la nuit — mais la passe a fini toute seule à 03:07. Ce
+  qu'il coûterait maintenant : le PREMIER geste qui ÉCRIT dans un canal dont
+  le contrat est « ce qui MESURE seulement », et une exception au plafond de
+  30 min (une réparation dure des heures). Ce qu'il rapporterait : relancer
+  une passe longue sans toi — besoin qui ne se représentera que si un nouvel
+  arriéré apparaît. **Ma recommandation : ne pas le construire maintenant**,
+  et le reprendre le jour où une seconde passe longue est nécessaire.
+  **Fait quand même, parce que c'était la moitié SÛRE de ton accord** : le
+  verrou d'écriture. `appliquer_xmp_personnes.py` ne tenait « jamais deux
+  écrivains » que contre le SERVEUR ; deux passes lancées à la main, ou une
+  passe et un `--nom`, s'ignoraient. Elles se voient désormais (preuve par
+  fraîcheur, reprise automatique après 10 min sans signe de vie).
+
 - **24/08 — 11 fichiers `_exiftool_tmp` fantômes sur le NAS.** Onze des 13
   échecs de la réparation viennent d'un temporaire laissé par un ExifTool tué
   en route : tant qu'il est là, **la photo ne peut plus jamais être
@@ -14,9 +29,19 @@
 
       Get-ChildItem \\NAS-Bremblens\home\Photos -Recurse -Filter *_exiftool_tmp
 
-  **En attendant** : `--reprendre-echecs` existe et refera les 13 d'un coup
+  **C'est le dernier écart mesurable du fonds** : les 5 noms que le banc
+  trouve encore en écart (Jessica Giallara, Pami, Sabrina Camiolo, Petit,
+  Ismet) sont tous portés par ces 13 photos-là.
+  **En attendant** : `--reprendre-echecs` existe et refera les 11 d'un coup
   dès que les fantômes seront partis. Les 2 restants sont des JPEG tronqués
   (`JPEG EOI marker not found`) : famille des illisibles, bat 17.
+
+- **24/08 — le rattrapage de `Val` : 3 photos, pas 1 205.** Mesuré nom par nom,
+  fichiers relus en entier : **Val 1 091 sur 1 094**, **Yann Mamin 13 sur 13**.
+  Des deux noms sautés par la passe de 21:38, un seul a besoin d'être repris,
+  et pour trois photos. Geste de Mike, famille `appliquer_` :
+
+      python appliquer_xmp_personnes.py --nom Val --appliquer
 
 - **23/08 (fait, gardé pour la méthode) — le premier lot.**
   La fuite est BOUCHÉE (l'enfilement et la reprise ne jugent plus de

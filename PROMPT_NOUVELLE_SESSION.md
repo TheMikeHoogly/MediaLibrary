@@ -9,48 +9,53 @@ FUSIONNÉ — ce document, non. Puis `ROADMAP.md`, `eval/DECISIONS.md`,
 `eval/METHODE.md` — et `docs/DECISIONS_OUTILLAGE.md` si le sujet touche aux
 canaux, à la livraison ou au MCP. Débrief en 2–3 lignes, puis on attaque.
 
-## La réparation des XMP est FINIE — reste à la PROUVER
+## La réparation des XMP est FINIE, et PROUVÉE
 
 Terminée le 24/08 à 03:07 : **18 828 photos balayées, 3 128 réécrites**
 (181 + 2 947), **13 échecs**, **aucun nom sauté**. Plus rien ne tourne : le
 serveur peut redémarrer, les bancs NAS peuvent tourner, on peut renommer.
 
-**Le seul chiffre qui compte n'est pas encore pris.** Dans cet ordre :
+**Le chiffre qui comptait est pris** : `verifier_xmp_toutes_personnes.py`,
+machine calme — **0,2 % d'écart** (Wilson 0,1–0,5 %, 5 sur 2 247 couples lus)
+contre **18,7 %** le 23/08. Les intervalles ne se touchent pas.
 
-1. **Rattraper `Val` et `Yann Mamin`** — sautés par la passe de 21:38 (une
-   connexion fermée) ; leurs photos qui portaient un AUTRE nom sont marquées
-   « faites », la reprise ne les rattrapera pas. `--nom` l'ignore, lui :
+**Ce qui reste tient en deux gestes de Mike** (famille `appliquer_`, hors de
+portée du banc) — et le résidu mesuré est EXACTEMENT ça :
+
+1. **Les 11 `_exiftool_tmp` fantômes.** Onze des treize échecs sont un
+   temporaire laissé sur le NAS par un ExifTool tué en route ; tant qu'il est
+   là, la photo **ne peut plus jamais être réécrite**. Les lister, les
+   effacer (ce sont des copies partielles, l'original est intact à côté) :
+
+       Get-ChildItem \\NAS-Bremblens\home\Photos -Recurse -Filter *_exiftool_tmp
+
+   puis `python appliquer_xmp_personnes.py --reprendre-echecs --appliquer` :
+   il relit les journaux, refait ces photos-là et pas 18 828. Les 2 derniers
+   sont des JPEG tronqués — famille des illisibles, bat 17.
+2. **`Val` : 3 photos.** Mesuré fichiers en main : Val 1 091/1 094, Yann Mamin
+   13/13. Des deux noms sautés par la passe de 21:38, un seul est à reprendre.
 
        python appliquer_xmp_personnes.py --nom Val --appliquer
-       python appliquer_xmp_personnes.py --nom "Yann Mamin" --appliquer
 
-   Famille `appliquer_` : **geste de Mike**, hors de portée du banc.
-2. **Les 13 échecs.** 11 sont un `_exiftool_tmp` fantôme sur le NAS, laissé par
-   un ExifTool tué en route, qui **empêche définitivement** de réécrire sa
-   photo ; 2 sont des JPEG tronqués (illisibles, bat 17). Effacer les fantômes
-   (`Get-ChildItem \\NAS-Bremblens\home\Photos -Recurse -Filter *_exiftool_tmp`),
-   puis `python appliquer_xmp_personnes.py --reprendre-echecs --appliquer` :
-   il relit les journaux, refait ces photos-là et pas 18 828.
-3. **`verifier_xmp_toutes_personnes.py`** — il relit le DISQUE et dit si les
-   **18,7 %** de couples nom–photo perdus sont tombés. C'EST LE CHIFFRE.
-   Par le canal des bancs (`_commande_banc.txt`), il est long.
+Après ces deux gestes, relancer `verifier_xmp_toutes_personnes.py` doit rendre
+**0 écart**. C'est la fin du chantier.
 
 ## Ensuite
 
-4. **`/api/names`, pas O7.** Le filtre nommé coûte 191–208 ms ; `/api/names`
+3. **`/api/names`, pas O7.** Le filtre nommé coûte 191–208 ms ; `/api/names`
    coûte **359–364 ms** et part au chargement de CHAQUE page. Re-mesurer
    `mesure_recherche_nommee.py` sur une machine CALME (le verdict d'O7 bascule
    autour de son seuil sous charge), puis traiter l'autocomplétion : même
    cause — un balayage complet de l'index par requête — sans doute même
    remède. **Et rendre `total`/`tronque` dans `/api/search`** : la route les
    calcule et ne les rend pas ; seule la page `/files?q=` les reçoit.
-5. **Suite de `ui/`** : le CSS commun — chaque page porte encore son `<style>`.
+4. **Suite de `ui/`** : le CSS commun — chaque page porte encore son `<style>`.
    L'octet servi CHANGE, donc la preuve « identique au caractère près » qui a
    tenu les onze gabarits ne s'applique plus : une autre preuve, décidée AVANT
    le code.
-6. **Copie HORS SITE (12 bis)** — un sinistre qui emporte le PC ET le NAS
+5. **Copie HORS SITE (12 bis)** — un sinistre qui emporte le PC ET le NAS
    emporte tout. Décision de Mike avant du code.
-7. **Reste d'audit** : O8–O9, O11, O13–O15 ; **I1** visible dans `/reglages`.
+6. **Reste d'audit** : O8–O9, O11, O13–O15 ; **I1** visible dans `/reglages`.
 
 ## Réflexes
 
@@ -75,6 +80,11 @@ Plantage dur d'une lib native : `_journal_serveur_crash.log`.
 lit le graphe des imports de `server.py`. `git_agent.py`, `banc_agent.py`,
 `mcp_serveur.py`, `appliquer_*`, `verifier_*`, `bundle.py`, `ui_gabarits.py`
 sont DEHORS — plus besoin de `force=` pour eux.
+
+**Jamais deux écrivains, y compris contre soi-même** (24/08) :
+`appliquer_xmp_personnes.py` pose un verrou d'écriture
+(`_corbeille_xmp/_ecriture.lock`, preuve par fraîcheur, repris après 10 min
+sans signe de vie). Deux passes lancées à la main se voient enfin.
 
 **Un compte d'échecs ne se répare pas ; une cause, si** (24/08). La passe
 disait `en echec : 3` et il a fallu relire le jsonl pour voir que onze des

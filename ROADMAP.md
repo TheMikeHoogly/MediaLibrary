@@ -10,9 +10,20 @@ dans **git** ; les rejets dans `eval/DECISIONS.md` (photothèque) et
 
 **La réparation du fonds est FINIE.** Relancée à 22:38, terminée à 03:07 :
 **18 828 photos balayées, 3 128 réécrites** (181 la nuit d'avant + 2 947),
-**13 échecs**, aucun nom sauté. Le chiffre qui compte — celui de
-`verifier_xmp_toutes_personnes.py`, qui relit le DISQUE et dira si les 18,7 %
-sont tombés — reste à prendre.
+**13 échecs**, aucun nom sauté. **Et le chiffre est tombé** :
+`verifier_xmp_toutes_personnes.py`, machine calme, mêmes paramètres que la
+mesure de référence — **0,2 % d'écart** (Wilson 0,1–0,5 %, 5 écarts sur
+2 247 couples lus, 352 noms), contre **18,7 %** (Wilson 16,7–20,9 %) le 23/08.
+Les intervalles ne se touchent pas. Ordre de grandeur restant : **19 couples**,
+contre ~5 800 photos.
+
+**Et le résidu est EXACTEMENT les échecs.** Les 5 noms encore en écart —
+Jessica Giallara, Pami, Sabrina Camiolo, Petit, Ismet — sont tous portés par
+les 13 photos dont l'écriture a raté. Rien d'autre ne manque : la fuite est
+bouchée, l'arriéré est épongé, et ce qui reste a une cause nommée dans un
+fichier. Contrôlé nom par nom : **Val 1 091/1 094** (3 manquent, un vrai
+rattrapage), **Yann Mamin 13/13** (les deux noms sautés par la passe de 21:38 ;
+un seul avait besoin d'être repris).
 
 **Et le fichier de reprise MENTAIT sur les échecs.** Toute photo VUE y était
 notée faite, l'échec compris : les 13 photos qui ont raté leur écriture
@@ -32,7 +43,14 @@ geste quand il est connu.
 **`--reprendre-echecs`** refait ce que les journaux disent en échec, par
 PHOTO, sans rebalayer 18 828 photos pour en retrouver 13 — et sans croire le
 journal : les tags sont relus avant d'écrire, comme partout ici.
-**6 vérifications neuves, 6 rouges sur l'ancien code, 71/71 vertes.**
+**Et « jamais deux écrivains » vaut enfin aussi contre soi-même.** Le fichier
+tenait cet invariant contre le SERVEUR uniquement : deux passes lancées à la
+main, ou une passe et un rattrapage `--nom`, s'ignoraient. Un verrou
+d'écriture les fait se voir — preuve par FRAÎCHEUR et non par PID (une fenêtre
+fermée laisse un fichier, pas un écrivain ; un verrou de plus de 10 min sans
+signe de vie se reprend tout seul), rafraîchi à chaque tranche, rendu dans un
+`finally`, et jamais posé par une passe à blanc.
+**11 vérifications neuves, 14 rouges sur l'ancien code, 79/79 vertes.**
 
 ## État (23/08/2026, session 43)
 

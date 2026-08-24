@@ -13,7 +13,9 @@ SORTIE EN ASCII PUR (console cp1252 de l'agent git).
 """
 
 import json
+import os
 import sys
+import time
 import tempfile
 from pathlib import Path
 
@@ -597,7 +599,7 @@ def _fonds_de_deux(tmp):
     return tmp, a, b, par_chemin
 
 
-def _balaye(par_chemin, tmp, faits, faux):
+def _balaye(par_chemin, tmp, faits, faux, verrou=None):
     vrai_lire, vrai_run = V.lire_tags, A.subprocess.run
     V.lire_tags = lambda chemins, exe, **kw: {V._normalise(c): set()
                                               for c in chemins}
@@ -605,7 +607,7 @@ def _balaye(par_chemin, tmp, faits, faux):
     try:
         return A.balayer(par_chemin, "exiftool", tmp / "j.jsonl", faits,
                          serveur='', lot=10, appliquer_vrai=True,
-                         ecrire=lambda *x: None)
+                         ecrire=lambda *x: None, verrou=verrou)
     finally:
         V.lire_tags, A.subprocess.run = vrai_lire, vrai_run
 
@@ -737,6 +739,82 @@ def t_reprendre_les_echecs_ne_se_melange_pas_aux_autres_modes(tmp):
             A.main(['--reprendre-echecs', '--nom', 'Val']) == 2)
 
 
+
+def t_le_verrou_refuse_un_SECOND_ecrivain(tmp):
+    """L invariant du fichier est « jamais deux ecrivains ». Il n etait tenu
+    que contre le SERVEUR : deux passes lancees a la main, ou une passe et un
+    rattrapage, s ignoraient completement. Le canal des bancs pouvant
+    desormais relancer la reparation, ce trou devient portant."""
+    v = Path(tmp) / "ecriture.lock"
+    vivant, _age = A.verrou_vivant(v)
+    verifie("verrou : rien ne bloque quand il n y en a pas", not vivant)
+    A.poser_le_verrou(v)
+    vivant, _age = A.verrou_vivant(v)
+    verifie("verrou : un ecrivain en place bloque le suivant", vivant)
+    verifie("verrou : il DIT qui tient", str(os.getpid()) in
+            v.read_text(encoding='utf-8'), v.read_text(encoding='utf-8'))
+
+
+def t_un_verrou_PERIME_ne_bloque_pas_pour_toujours(tmp):
+    """Preuve par FRAICHEUR et non par PID : une fenetre fermee au chausse-pied
+    laisse un fichier, pas un ecrivain. Un verrou qu on ne peut pas reprendre
+    est une panne de plus, pas une garde."""
+    v = Path(tmp) / "ecriture.lock"
+    A.poser_le_verrou(v)
+    vieux = time.time() - (A.VERROU_PERIME_S + 60)
+    os.utime(v, (vieux, vieux))
+    vivant, age = A.verrou_vivant(v)
+    verifie("verrou : perime, il ne bloque plus", not vivant, "age=%r" % age)
+    verifie("verrou : et son age est DIT", age > A.VERROU_PERIME_S,
+            "age=%r" % age)
+
+
+def t_le_verrou_est_RENDU_meme_quand_ca_leve(tmp):
+    v = Path(tmp) / "ecriture.lock"
+    try:
+        with A.avec_le_verrou(v):
+            raise RuntimeError("boum")
+    except RuntimeError:
+        pass
+    verifie("verrou : rendu meme sur une exception", not v.exists())
+
+
+def t_le_verrou_est_RAFRAICHI_pendant_une_longue_passe(tmp):
+    """Cinq heures d ecriture sous un verrou de dix minutes : sans
+    rafraichissement, la passe se ferait voler sa place par la suivante."""
+    tmp, a, b, par_chemin = _fonds_de_deux(tmp)
+    v = tmp / "ecriture.lock"
+    A.poser_le_verrou(v)
+    vieux = time.time() - (A.VERROU_PERIME_S - 30)
+    os.utime(v, (vieux, vieux))
+    avant = v.stat().st_mtime
+    _balaye(par_chemin, tmp, tmp / "faits.txt", FauxExif(), verrou=v)
+    verifie("verrou : la passe le retouche en avancant",
+            v.stat().st_mtime > avant, "avant=%r apres=%r"
+            % (avant, v.stat().st_mtime))
+
+
+def t_a_blanc_ne_pose_PAS_de_verrou(tmp):
+    """A blanc n ecrit rien : il n a aucune raison d empecher un autre
+    d ecrire."""
+    tmp = Path(tmp)
+    v = tmp / "ecriture.lock"
+    A.poser_le_verrou(v)
+    a = tmp / "a.jpg"
+    a.write_bytes(b"jpeg")
+    par_chemin = {V._normalise(a): (a, {"Ellie"})}
+    vrai_lire = V.lire_tags
+    V.lire_tags = lambda chemins, exe, **kw: {V._normalise(c): set()
+                                              for c in chemins}
+    try:
+        r = A.balayer(par_chemin, "exiftool", tmp / "j.jsonl",
+                      tmp / "faits.txt", serveur='', lot=10,
+                      appliquer_vrai=False, ecrire=lambda *x: None, verrou=v)
+    finally:
+        V.lire_tags = vrai_lire
+    verifie("verrou : a blanc lit quand meme", r['total'] == 1, "r=%r" % r)
+
+
 def main():
     tmp = Path(tempfile.mkdtemp(prefix="test_appl_xmp_"))
     tests = [t_refus_si_la_file_tourne, t_refus_sans_verite_dindex,
@@ -764,7 +842,12 @@ def main():
              t_le_mode_nom_DIT_AUSSI_la_cause,
              t_echecs_des_journaux_ne_retient_que_ce_qui_a_RATE,
              t_reprendre_les_echecs_NE_CROIT_PAS_le_journal,
-             t_reprendre_les_echecs_ne_se_melange_pas_aux_autres_modes]
+             t_reprendre_les_echecs_ne_se_melange_pas_aux_autres_modes,
+             t_le_verrou_refuse_un_SECOND_ecrivain,
+             t_un_verrou_PERIME_ne_bloque_pas_pour_toujours,
+             t_le_verrou_est_RENDU_meme_quand_ca_leve,
+             t_le_verrou_est_RAFRAICHI_pendant_une_longue_passe,
+             t_a_blanc_ne_pose_PAS_de_verrou]
     for t in tests:
         sous = tmp / t.__name__
         sous.mkdir(parents=True, exist_ok=True)

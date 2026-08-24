@@ -56,6 +56,7 @@ USAGE
 """
 
 import argparse
+import contextlib
 import json
 import os
 import subprocess
@@ -249,6 +250,79 @@ def a_faire_photo(par_chemin, tags):
     return plan
 
 
+VERROU = CORBEILLE / "_ecriture.lock"
+
+# Dix minutes sans une seule tranche ecrite : plus personne n est au bout.
+# `balayer` retouche le verrou a CHAQUE tranche, et une tranche de 200 photos
+# a coute au pire ~3 min le 24/08.
+VERROU_PERIME_S = 600
+
+
+def verrou_vivant(verrou=None, maintenant=None, perime_s=VERROU_PERIME_S):
+    """Un autre ecrivain est-il en vie ? Rend (vivant, age_s).
+
+    POURQUOI LA FRAICHEUR, PAS LE PID
+
+    L invariant du fichier — jamais deux ecrivains sur les memes photos —
+    n etait tenu que contre le SERVEUR. Deux passes lancees a la main, ou une
+    passe et un rattrapage `--nom`, s ignoraient. Le canal des bancs pouvant
+    relancer la reparation (24/08), ce trou devient portant.
+
+    Un PID ne se verifie pas de la meme facon sous Windows et ailleurs, et un
+    PID recycle ment. La fraicheur d un fichier, si : c est deja l idiome des
+    `_agent_*_vu.txt` du projet. Une fenetre fermee laisse un fichier, pas un
+    ecrivain — et un verrou qu on ne peut jamais reprendre est une panne de
+    plus, pas une garde."""
+    v = Path(verrou or VERROU)
+    try:
+        age = (maintenant or time.time()) - v.stat().st_mtime
+    except OSError:
+        return False, 0.0
+    return age < perime_s, age
+
+
+def poser_le_verrou(verrou=None):
+    """Pose ou RETOUCHE le verrou. Il dit qui tient et depuis quand."""
+    v = Path(verrou or VERROU)
+    try:
+        v.parent.mkdir(parents=True, exist_ok=True)
+        v.write_text("pid=%d\ndepuis=%s\n"
+                     % (os.getpid(), horodatage()), encoding='utf-8')
+    except OSError:
+        pass
+    return v
+
+
+def rafraichir_le_verrou(verrou=None):
+    """Retouche un verrou DEJA POSE, et seulement lui : une passe a blanc ou
+    un test ne doit pas en faire naitre un."""
+    v = Path(verrou or VERROU)
+    try:
+        if v.is_file():
+            os.utime(v, None)
+    except OSError:
+        pass
+
+
+def rendre_le_verrou(verrou=None):
+    v = Path(verrou or VERROU)
+    try:
+        v.unlink()
+    except OSError:
+        pass
+
+
+@contextlib.contextmanager
+def avec_le_verrou(verrou=None):
+    """Pose, et REND dans un `finally` — une passe qui leve ne laisse pas sa
+    place condamnee jusqu a peremption."""
+    poser_le_verrou(verrou)
+    try:
+        yield
+    finally:
+        rendre_le_verrou(verrou)
+
+
 PATIENCE_S = 1800        # 30 min : le curateur passe toutes les ~4 min
 
 
@@ -299,7 +373,7 @@ def attendre_la_file(serveur, patience_s=PATIENCE_S, pas_s=10, ecrire=print,
 
 def balayer(par_chemin, exe, journal_path, faits_path, serveur='',
             lot=200, appliquer_vrai=False, ecrire=print,
-            patience_s=PATIENCE_S):
+            patience_s=PATIENCE_S, verrou=None):
     """Lit et répare le fonds par tranches, en marquant chaque photo FAITE.
 
     Trois choses tiennent ce mode :
@@ -341,7 +415,8 @@ def balayer(par_chemin, exe, journal_path, faits_path, serveur='',
                              "d attente (%d operation(s)) : deux ecrivains sur "
                              "les memes fichiers, jamais." % (attendu, file))
                     break
-            tranche = restants[debut:debut + lot]
+            rafraichir_le_verrou(verrou)   # cinq heures sous un verrou
+            tranche = restants[debut:debut + lot]   # de dix minutes
             chemins = [par_chemin[k][0] for k in tranche]
             tags = V.lire_tags(chemins, exe, journal=None)
             sous = {k: par_chemin[k] for k in tranche}
@@ -426,6 +501,7 @@ def appliquer(plan, exe, journal_path, ecrire=print):
                 c = cause_courte(err)
                 causes[c] = causes.get(c, 0) + 1
             if i % 100 == 0:
+                rafraichir_le_verrou()
                 ecrire("  %d/%d ecrites (%d en echec)" % (i, len(plan), rates))
     finally:
         fh.close()
@@ -639,6 +715,24 @@ def main(argv=None):
         print("ExifTool introuvable : rien a faire sans lui.")
         return 2
 
+    if a.appliquer:
+        vivant, age = verrou_vivant()
+        if vivant:
+            print("REFUS : une autre passe d ecriture tourne (verrou touche il")
+            print("  y a %d s : %s)." % (int(age), VERROU))
+            print("  Jamais deux ecrivains sur les memes photos - c est vrai")
+            print("  du serveur, et de ce script vis-a-vis de lui-meme.")
+            print("  Attendre sa fin. Un verrou de plus de %d s est repris"
+                  % VERROU_PERIME_S)
+            print("  tout seul : une fenetre fermee laisse un fichier, pas un")
+            print("  ecrivain.")
+            return 4
+        with avec_le_verrou():
+            return _executer(a, exe)
+    return _executer(a, exe)
+
+
+def _executer(a, exe):
     if a.reprendre_echecs:
         return reprise_des_echecs(a, exe)
 
