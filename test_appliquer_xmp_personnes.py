@@ -815,6 +815,146 @@ def t_a_blanc_ne_pose_PAS_de_verrou(tmp):
     verifie("verrou : a blanc lit quand meme", r['total'] == 1, "r=%r" % r)
 
 
+
+class ExifBloqueParUnFantome:
+    """Echoue tant que le `_exiftool_tmp` de la photo existe, reussit sinon.
+
+    C est le vrai comportement, observe le 24/08 : ExifTool refuse d ecrire
+    quand sa copie de travail est deja la, et cette copie survit a tout —
+    fenetre fermee, passe tuee, coupure. Vingt-et-un dormaient sur le NAS,
+    du 06/07 au 24/08, dont un fabrique la nuit meme par la reparation."""
+
+    def __init__(self):
+        self.appels = []
+
+    def run(self, cmd, **kw):
+        argfile = Path(cmd[cmd.index('-@') + 1])
+        args = argfile.read_text(encoding='utf-8-sig').split('\n')
+        chemin = args[-1]
+        self.appels.append(chemin)
+
+        class R:
+            pass
+        r = R()
+        bloque = Path(chemin + A.FANTOME_SUFFIXE).exists()
+        r.returncode = 1 if bloque else 0
+        r.stderr = ("Error: Temporary file already exists: %s%s"
+                    % (chemin, A.FANTOME_SUFFIXE)) if bloque else ""
+        return r
+
+
+def _photo_hantee(tmp, nom="a.jpg"):
+    a = Path(tmp) / nom
+    a.write_bytes(b"jpeg")
+    fantome = Path(str(a) + A.FANTOME_SUFFIXE)
+    fantome.write_bytes(b"partiel")
+    return a, fantome
+
+
+def t_le_fantome_n_est_PAS_efface_sans_qu_on_le_demande(tmp):
+    """Effacer sur le NAS est un geste qui appartient a Mike. Le drapeau
+    existe pour qu il le donne explicitement, jamais par defaut."""
+    a, fantome = _photo_hantee(tmp)
+    faux = ExifBloqueParUnFantome()
+    vrai = A.subprocess.run
+    A.subprocess.run = faux.run
+    try:
+        ok, err = A.ecrire_une("exiftool", a, ['Val'], [])
+    finally:
+        A.subprocess.run = vrai
+    verifie("fantome : sans drapeau, l ecriture echoue", not ok)
+    verifie("fantome : sans drapeau, il survit", fantome.exists())
+
+
+def t_avec_le_drapeau_le_fantome_est_balaye_et_l_ecriture_REESSAYEE(tmp):
+    tmp = Path(tmp)
+    a, fantome = _photo_hantee(tmp)
+    par_chemin = {V._normalise(a): (a, {"Val"})}
+    faux = ExifBloqueParUnFantome()
+    vrai_lire, vrai_run = V.lire_tags, A.subprocess.run
+    V.lire_tags = lambda chemins, exe, **kw: {V._normalise(c): set()
+                                              for c in chemins}
+    A.subprocess.run = faux.run
+    try:
+        r = A.balayer(par_chemin, "exiftool", tmp / "j.jsonl",
+                      tmp / "faits.txt", serveur='', lot=10,
+                      appliquer_vrai=True, ecrire=lambda *x: None,
+                      balayer_fantomes=True)
+    finally:
+        V.lire_tags, A.subprocess.run = vrai_lire, vrai_run
+    verifie("fantome : balaye, il n est plus la", not fantome.exists())
+    verifie("fantome : l ecriture est reessayee et passe",
+            r['reecrites'] == 1 and r['rates'] == 0, "r=%r" % r)
+    verifie("fantome : une seule reprise, pas une boucle",
+            len(faux.appels) == 2, "appels=%d" % len(faux.appels))
+    verifie("fantome : le balayage est COMPTE", r.get('fantomes') == 1,
+            "r=%r" % r)
+
+
+def t_on_ne_balaie_QUE_le_fantome_de_CETTE_photo(tmp):
+    """Une suppression sur le fonds ne doit toucher que ce qu elle vise."""
+    tmp = Path(tmp)
+    a, fantome_a = _photo_hantee(tmp, "a.jpg")
+    b, fantome_b = _photo_hantee(tmp, "b.jpg")
+    A.effacer_le_fantome(a)
+    verifie("fantome : celui de la photo visee part", not fantome_a.exists())
+    verifie("fantome : celui d a cote reste", fantome_b.exists())
+    verifie("fantome : la photo elle-meme est intacte", a.is_file())
+
+
+def t_ce_qui_rate_pour_une_AUTRE_cause_n_est_pas_traite_en_fantome(tmp):
+    """Un JPEG tronque n a pas de fantome a balayer : deux des treize echecs
+    du 24/08 etaient des `JPEG EOI marker not found`."""
+    verifie("fantome : la cause est reconnue",
+            A.est_un_fantome("Error: Temporary file already exists: x"))
+    verifie("fantome : un JPEG tronque n en est pas un",
+            not A.est_un_fantome("Error: JPEG EOI marker not found - x"))
+    verifie("fantome : une erreur vide n en est pas un",
+            not A.est_un_fantome(""))
+
+
+
+class FauxArgs:
+    def __init__(self, **kw):
+        self.appliquer = True
+        self.balayer_fantomes = False
+        self.serveur = ''
+        self.nom = ''
+        self.absent = ''
+        self.rapport = ''
+        self.tous = False
+        self.reprendre_echecs = True
+        self.lot = 200
+        self.max_photos = 0
+        self.patience = 0
+        self.__dict__.update(kw)
+
+
+def t_le_drapeau_ARRIVE_jusqu_a_la_passe(tmp):
+    """Un drapeau qui n atteint pas le code est un mensonge d aide en ligne.
+    On verifie qu il traverse, dans les deux positions."""
+    tmp = Path(tmp)
+    a, _f = _photo_hantee(tmp)
+    _journal(tmp, [{'chemin': str(a), 'ajoute': ['Val'], 'ok': False,
+                    'erreur': 'Error: Temporary file already exists'}])
+    vus = []
+    vrai_appl, vrai_lire, vraie_corb = A.appliquer, V.lire_tags, A.CORBEILLE
+    A.appliquer = lambda plan, exe, jp, ecrire=print, balayer_fantomes=False: (
+        vus.append(balayer_fantomes) or (0, 0))
+    V.lire_tags = lambda chemins, exe, **kw: {V._normalise(c): set()
+                                              for c in chemins}
+    A.CORBEILLE = tmp
+    try:
+        A.reprise_des_echecs(FauxArgs(balayer_fantomes=True), "exiftool",
+                             ecrire=lambda *x: None)
+        A.reprise_des_echecs(FauxArgs(balayer_fantomes=False), "exiftool",
+                             ecrire=lambda *x: None)
+    finally:
+        A.appliquer, V.lire_tags, A.CORBEILLE = vrai_appl, vrai_lire, vraie_corb
+    verifie("drapeau : il traverse jusqu a l ecriture", vus == [True, False],
+            "vus=%r" % vus)
+
+
 def main():
     tmp = Path(tempfile.mkdtemp(prefix="test_appl_xmp_"))
     tests = [t_refus_si_la_file_tourne, t_refus_sans_verite_dindex,
@@ -847,7 +987,12 @@ def main():
              t_un_verrou_PERIME_ne_bloque_pas_pour_toujours,
              t_le_verrou_est_RENDU_meme_quand_ca_leve,
              t_le_verrou_est_RAFRAICHI_pendant_une_longue_passe,
-             t_a_blanc_ne_pose_PAS_de_verrou]
+             t_a_blanc_ne_pose_PAS_de_verrou,
+             t_le_fantome_n_est_PAS_efface_sans_qu_on_le_demande,
+             t_avec_le_drapeau_le_fantome_est_balaye_et_l_ecriture_REESSAYEE,
+             t_on_ne_balaie_QUE_le_fantome_de_CETTE_photo,
+             t_ce_qui_rate_pour_une_AUTRE_cause_n_est_pas_traite_en_fantome,
+             t_le_drapeau_ARRIVE_jusqu_a_la_passe]
     for t in tests:
         sous = tmp / t.__name__
         sous.mkdir(parents=True, exist_ok=True)

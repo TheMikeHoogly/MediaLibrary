@@ -53,6 +53,7 @@ USAGE
     python appliquer_xmp_personnes.py --rapport _xmp_florine.json --appliquer
     python appliquer_xmp_personnes.py --nom Florine --absent Flo --appliquer
     python appliquer_xmp_personnes.py --reprendre-echecs --appliquer
+    python appliquer_xmp_personnes.py --reprendre-echecs --balayer-fantomes --appliquer
 """
 
 import argparse
@@ -148,6 +149,64 @@ def ecrire_une(exe, chemin, ajoute, retire):
                 os.unlink(argfile)
             except OSError:
                 pass
+
+
+FANTOME_SUFFIXE = '_exiftool_tmp'
+
+
+def est_un_fantome(err):
+    """L erreur dit-elle qu une copie de travail d ExifTool bloque la photo ?"""
+    return 'Temporary file already exists' in (err or '')
+
+
+def effacer_le_fantome(chemin):
+    """Efface la copie de travail qu ExifTool a laissee A COTE de la photo.
+    Rend True si un fichier a bien ete efface.
+
+    CE QUE C EST, ET POURQUOI L EFFACER N EST PAS DANGEREUX
+
+    Avant d ecrire, ExifTool fabrique `<photo>_exiftool_tmp`, y recopie le
+    fichier, puis remplace l original. Tue en route — fenetre fermee, passe
+    interrompue, coupure — il laisse cette copie derriere lui. L ORIGINAL EST
+    INTACT : c est le fichier d a cote, sous son vrai nom. Mais ExifTool
+    REFUSE d ecrire tant que le temporaire existe, et il n a pas d option pour
+    l ecraser : la photo devient definitivement non reecrivable.
+
+    CE QUE CA COUTAIT (24/08, mesure)
+
+    Vingt-et-un fantomes dormaient sur le NAS, dates du 06/07 au 24/08 — dont
+    un fabrique la nuit meme par la reparation. Onze bloquaient des photos que
+    l on savait a reparer ; les dix autres bloquaient en silence, sans
+    apparaitre dans aucun journal. Ce n est pas le residu d un accident, c est
+    une fuite chronique : chaque ecriture interrompue en laisse un.
+
+    CE QUE CA NE FAIT PAS
+
+    Ca n efface QUE le temporaire de la photo visee, jamais un balayage. Et ca
+    ne part JAMAIS tout seul : `--balayer-fantomes` le demande explicitement —
+    effacer sur le fonds reste un geste voulu."""
+    f = Path(str(chemin) + FANTOME_SUFFIXE)
+    try:
+        if f.is_file():
+            f.unlink()
+            return True
+    except OSError:
+        pass
+    return False
+
+
+def ecrire_avec_reprise(exe, chemin, ajoute, retire, balayer_fantomes=False):
+    """Ecrit, et si un fantome bloque, le balaie et REESSAIE — UNE fois.
+
+    Rend (ok, erreur, fantome_balaye). Une seule reprise : ce qui rate deux
+    fois a une cause que balayer ne repare pas."""
+    ok, err = ecrire_une(exe, chemin, ajoute, retire)
+    if ok or not balayer_fantomes or not est_un_fantome(err):
+        return ok, err, False
+    if not effacer_le_fantome(chemin):
+        return ok, err, False
+    ok, err = ecrire_une(exe, chemin, ajoute, retire)
+    return ok, err, True
 
 
 def cause_courte(err):
@@ -373,7 +432,8 @@ def attendre_la_file(serveur, patience_s=PATIENCE_S, pas_s=10, ecrire=print,
 
 def balayer(par_chemin, exe, journal_path, faits_path, serveur='',
             lot=200, appliquer_vrai=False, ecrire=print,
-            patience_s=PATIENCE_S, verrou=None):
+            patience_s=PATIENCE_S, verrou=None,
+            balayer_fantomes=False):
     """Lit et répare le fonds par tranches, en marquant chaque photo FAITE.
 
     Trois choses tiennent ce mode :
@@ -394,7 +454,7 @@ def balayer(par_chemin, exe, journal_path, faits_path, serveur='',
        sache pourquoi est une mesure fausse."""
     restants = [k for k in sorted(par_chemin) if k not in charger_faits(faits_path)]
     total = len(restants)
-    vues = reecrites = rates = 0
+    vues = reecrites = rates = fantomes = 0
     causes = {}
     attentes, attente_s = 0, 0.0
     arret = ''
@@ -425,8 +485,10 @@ def balayer(par_chemin, exe, journal_path, faits_path, serveur='',
                 pose = True                  # rien a ecrire = deja en place
                 if op['ajoute']:
                     if appliquer_vrai:
-                        ok, err = ecrire_une(exe, op['chemin'], op['ajoute'],
-                                             op['retire'])
+                        ok, err, balaye = ecrire_avec_reprise(
+                            exe, op['chemin'], op['ajoute'], op['retire'],
+                            balayer_fantomes=balayer_fantomes)
+                        fantomes += 1 if balaye else 0
                         fh.write(json.dumps(dict(op, ok=ok, erreur=err,
                                                  quand=time.time()),
                                             ensure_ascii=False) + '\n')
@@ -461,7 +523,7 @@ def balayer(par_chemin, exe, journal_path, faits_path, serveur='',
     return {'total': total, 'vues': vues, 'reecrites': reecrites,
             'rates': rates, 'non_lues': vues and (total - vues) or 0,
             'arret': arret, 'attentes': attentes, 'attente_s': attente_s,
-            'causes': causes}
+            'causes': causes, 'fantomes': fantomes}
 
 
 def dire_les_causes(causes, ecrire=print):
@@ -481,17 +543,21 @@ def dire_les_causes(causes, ecrire=print):
                "-Filter *_exiftool_tmp")
 
 
-def appliquer(plan, exe, journal_path, ecrire=print):
+def appliquer(plan, exe, journal_path, ecrire=print,
+              balayer_fantomes=False):
     """Écrit, en notant AVANT de continuer. Le journal est fermé dans un
     `finally` : une interruption laisse un journal complet de ce qui a été
     fait — c'est ce qui rend le geste annulable."""
-    faits, rates = 0, 0
+    faits, rates, fantomes = 0, 0, 0
     causes = {}
     journal_path.parent.mkdir(parents=True, exist_ok=True)
     fh = journal_path.open('w', encoding='utf-8')
     try:
         for i, op in enumerate(plan, 1):
-            ok, err = ecrire_une(exe, op['chemin'], op['ajoute'], op['retire'])
+            ok, err, balaye = ecrire_avec_reprise(
+                exe, op['chemin'], op['ajoute'], op['retire'],
+                balayer_fantomes=balayer_fantomes)
+            fantomes += 1 if balaye else 0
             ligne = dict(op, ok=ok, erreur=err, quand=time.time())
             fh.write(json.dumps(ligne, ensure_ascii=False) + '\n')
             fh.flush()
@@ -505,6 +571,9 @@ def appliquer(plan, exe, journal_path, ecrire=print):
                 ecrire("  %d/%d ecrites (%d en echec)" % (i, len(plan), rates))
     finally:
         fh.close()
+    if fantomes:
+        ecrire("  fantomes balayes    : %d (copies de travail d ExifTool"
+               " laissees par une ecriture tuee en route)" % fantomes)
     dire_les_causes(causes, ecrire)
     return faits, rates
 
@@ -578,7 +647,9 @@ def reprise_des_echecs(a, exe, ecrire=print):
         return 0
     jp = CORBEILLE / ("xmp_echecs_%s.jsonl" % horodatage())
     ecrire("  journal                          : %s" % jp)
-    faits, rates = appliquer(plan, exe, jp, ecrire=ecrire)
+    faits, rates = appliquer(plan, exe, jp, ecrire=ecrire,
+                             balayer_fantomes=getattr(a, 'balayer_fantomes',
+                                                      False))
     ecrire("")
     ecrire("  reecrites                        : %d" % faits)
     ecrire("  en echec ENCORE                  : %d" % rates)
@@ -621,7 +692,8 @@ def tour_du_fonds(a, exe, uploads, ecrire=print):
         ecrire("  reprise  : %s" % FAITS_TOUS)
     r = balayer(par_chemin, exe, jp, FAITS_TOUS, serveur=a.serveur,
                 lot=max(1, a.lot), appliquer_vrai=a.appliquer, ecrire=ecrire,
-                patience_s=max(0, a.patience))
+                patience_s=max(0, a.patience),
+                balayer_fantomes=getattr(a, 'balayer_fantomes', False))
     ecrire("")
     ecrire("=" * 74)
     ecrire("  photos lues        : %d sur %d" % (r['vues'], r['total']))
@@ -631,6 +703,9 @@ def tour_du_fonds(a, exe, uploads, ecrire=print):
         ecrire("  Les photos en echec ne sont PAS notees faites : relancer")
         ecrire("  cette passe les reprend, et elles seules.")
     dire_les_causes(r.get('causes') or {}, ecrire)
+    if r.get('fantomes'):
+        ecrire("  fantomes balayes   : %d (copies de travail d ExifTool"
+               " laissees par une ecriture tuee en route)" % r['fantomes'])
     if r.get('attentes'):
         ecrire("  attentes de la file: %d fois, %d s au total (le curateur "
                "rattache des visages tout seul)"
@@ -673,6 +748,11 @@ def main(argv=None):
     ap.add_argument('--reprendre-echecs', action='store_true',
                     dest='reprendre_echecs',
                     help="refaire les photos que les journaux disent en echec")
+    ap.add_argument('--balayer-fantomes', action='store_true',
+                    dest='balayer_fantomes',
+                    help="effacer le `_exiftool_tmp` qui bloque une photo et "
+                         "reessayer UNE fois (une suppression sur le fonds : "
+                         "jamais par defaut)")
     ap.add_argument('--lot', type=int, default=200,
                     help="photos lues par tranche en mode --tous (defaut 200)")
     ap.add_argument('--max-photos', type=int, default=0,
@@ -768,7 +848,9 @@ def _executer(a, exe):
 
     jp = CORBEILLE / ("xmp_%s.jsonl" % horodatage())
     print("  journal             : %s" % jp)
-    faits, rates = appliquer(plan, exe, jp)
+    faits, rates = appliquer(plan, exe, jp,
+                             balayer_fantomes=getattr(a, 'balayer_fantomes',
+                                                      False))
     print("")
     print("  reecrites           : %d" % faits)
     print("  en echec            : %d" % rates)

@@ -22,16 +22,18 @@ contre **18,7 %** le 23/08. Les intervalles ne se touchent pas.
 **Ce qui reste tient en deux gestes de Mike** (famille `appliquer_`, hors de
 portée du banc) — et le résidu mesuré est EXACTEMENT ça :
 
-1. **Les 11 `_exiftool_tmp` fantômes.** Onze des treize échecs sont un
-   temporaire laissé sur le NAS par un ExifTool tué en route ; tant qu'il est
-   là, la photo **ne peut plus jamais être réécrite**. Les lister, les
-   effacer (ce sont des copies partielles, l'original est intact à côté) :
+1. **Les fantômes `_exiftool_tmp` — il y en a 21, pas 11.** ExifTool recopie
+   la photo dans `<photo>_exiftool_tmp` avant d'écrire et **refuse d'écrire
+   tant que ce temporaire existe** : une écriture tuée en route condamne sa
+   photo, définitivement et sans bruit. Datés du 06/07 au 24/08, dix d'entre
+   eux ne figurent dans AUCUN journal. Effacer est sans risque — l'original
+   est le fichier d'à côté, intact :
 
-       Get-ChildItem \\NAS-Bremblens\home\Photos -Recurse -Filter *_exiftool_tmp
+       Get-ChildItem \\NAS-Bremblens\home\Photos -Recurse -Filter *_exiftool_tmp | Remove-Item -Force -Verbose
 
-   puis `python appliquer_xmp_personnes.py --reprendre-echecs --appliquer` :
-   il relit les journaux, refait ces photos-là et pas 18 828. Les 2 derniers
-   sont des JPEG tronqués — famille des illisibles, bat 17.
+   puis `python appliquer_xmp_personnes.py --reprendre-echecs --appliquer`.
+   Le script sait aussi le faire lui-même — `--balayer-fantomes`, jamais par
+   défaut. Les 2 derniers échecs sont des JPEG tronqués — illisibles, bat 17.
 2. **`Val` : 3 photos.** Mesuré fichiers en main : Val 1 091/1 094, Yann Mamin
    13/13. Des deux noms sautés par la passe de 21:38, un seul est à reprendre.
 

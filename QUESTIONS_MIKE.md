@@ -21,20 +21,25 @@
   passe et un `--nom`, s'ignoraient. Elles se voient désormais (preuve par
   fraîcheur, reprise automatique après 10 min sans signe de vie).
 
-- **24/08 — 11 fichiers `_exiftool_tmp` fantômes sur le NAS.** Onze des 13
-  échecs de la réparation viennent d'un temporaire laissé par un ExifTool tué
-  en route : tant qu'il est là, **la photo ne peut plus jamais être
-  réécrite**. Ma recommandation : les LISTER puis les effacer — ce sont des
-  copies partielles, l'original est intact à côté.
+- **24/08 — 21 fantômes `_exiftool_tmp`, et une fuite chronique derrière.**
+  Ta liste en rend **21**, pas 11, datés du **06/07 au 24/08** — dont un
+  fabriqué par la réparation de cette nuit. Onze bloquaient des photos connues
+  de nos journaux ; **les dix autres bloquent en silence** et aucun instrument
+  ne les voyait. Chaque écriture ExifTool interrompue en laisse un, et il
+  condamne sa photo : ExifTool refuse d'écrire tant que son temporaire est là.
+  **Effacer est sans risque** — l'original est le fichier d'à côté, intact.
 
-      Get-ChildItem \\NAS-Bremblens\home\Photos -Recurse -Filter *_exiftool_tmp
+      Get-ChildItem \\NAS-Bremblens\home\Photos -Recurse -Filter *_exiftool_tmp | Remove-Item -Force -Verbose
 
-  **C'est le dernier écart mesurable du fonds** : les 5 noms que le banc
-  trouve encore en écart (Jessica Giallara, Pami, Sabrina Camiolo, Petit,
-  Ismet) sont tous portés par ces 13 photos-là.
-  **En attendant** : `--reprendre-echecs` existe et refera les 11 d'un coup
-  dès que les fantômes seront partis. Les 2 restants sont des JPEG tronqués
-  (`JPEG EOI marker not found`) : famille des illisibles, bat 17.
+  **La question qui t'appartient** : est-ce que le script doit balayer le
+  fantôme lui-même avant de réessayer ? C'est une suppression sur le fonds.
+  **Ma recommandation : oui, mais jamais par défaut** — c'est ce qui est
+  livré. `--balayer-fantomes` existe, il efface UNIQUEMENT le temporaire de la
+  photo visée, réessaie UNE fois, et compte ce qu'il a balayé. Sans le
+  drapeau, rien n'est effacé et l'échec est dit avec sa cause. Après ton
+  effacement manuel :
+
+      python appliquer_xmp_personnes.py --reprendre-echecs --balayer-fantomes --appliquer
 
 - **24/08 — le rattrapage de `Val` : 3 photos, pas 1 205.** Mesuré nom par nom,
   fichiers relus en entier : **Val 1 091 sur 1 094**, **Yann Mamin 13 sur 13**.

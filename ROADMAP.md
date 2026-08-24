@@ -40,6 +40,18 @@ réécriture de sa photo tant qu'il est là ; les 2 autres sont des JPEG tronqu�
 (famille des illisibles). Les causes sont désormais comptées et dites, avec le
 geste quand il est connu.
 
+**Et les `_exiftool_tmp` ne sont pas un accident, c'est une FUITE
+CHRONIQUE.** La liste demandée à Mike en rend **21**, pas 11 — datés du
+**06/07 au 24/08**, dont un fabriqué par la réparation de la nuit même, et deux
+de 0 octet. Onze bloquaient des photos qu'on savait à réparer ; **les dix
+autres bloquaient en silence**, sans figurer dans aucun journal, donc hors de
+portée de `--reprendre-echecs`. Le mécanisme : ExifTool recopie la photo dans
+`<photo>_exiftool_tmp` avant d'écrire, et **refuse d'écrire tant que ce
+temporaire existe**, sans option pour l'écraser — une écriture tuée en route
+condamne donc sa photo, définitivement et sans bruit. `--balayer-fantomes`
+(jamais par défaut : effacer sur le fonds reste voulu) l'efface et réessaie
+UNE fois. **5 vérifications neuves, 5 rouges sur l'ancien code, 92/92 vertes.**
+
 **`--reprendre-echecs`** refait ce que les journaux disent en échec, par
 PHOTO, sans rebalayer 18 828 photos pour en retrouver 13 — et sans croire le
 journal : les tags sont relus avant d'écrire, comme partout ici.
