@@ -6,6 +6,34 @@ dans **git** ; les rejets dans `eval/DECISIONS.md` (photothèque) et
 `eval/METHODE.md` ; l'éphémère dans `PROMPT_NOUVELLE_SESSION.md`. Audits :
 `docs/AUDIT_INTERNE_2026-08.md`, `docs/AUDIT_EXTERNE_2026.md`, `docs/RANGEMENT_2026.md`.
 
+## État (24/08/2026, session 44)
+
+**La réparation du fonds est FINIE.** Relancée à 22:38, terminée à 03:07 :
+**18 828 photos balayées, 3 128 réécrites** (181 la nuit d'avant + 2 947),
+**13 échecs**, aucun nom sauté. Le chiffre qui compte — celui de
+`verifier_xmp_toutes_personnes.py`, qui relit le DISQUE et dira si les 18,7 %
+sont tombés — reste à prendre.
+
+**Et le fichier de reprise MENTAIT sur les échecs.** Toute photo VUE y était
+notée faite, l'échec compris : les 13 photos qui ont raté leur écriture
+étaient marquées « faites » et **aucune relance ne les aurait jamais
+reprises**. Règle 2 côté reprise : un nom qui n'a pas atterri ne se note pas
+atterri. Corrigé — la reprise ne note que ce qui a réussi ; l'échec repasse à
+la relance, et lui seul.
+
+**Un échec a maintenant une CAUSE, pas seulement un compte.** La console
+disait `en echec : 3`, ce qui ne se répare pas. Les journaux, relus à la main,
+disaient tout autre chose : **11 des 13 sont un `_exiftool_tmp` fantôme**
+laissé par un ExifTool tué en route, qui **bloque définitivement** la
+réécriture de sa photo tant qu'il est là ; les 2 autres sont des JPEG tronqués
+(famille des illisibles). Les causes sont désormais comptées et dites, avec le
+geste quand il est connu.
+
+**`--reprendre-echecs`** refait ce que les journaux disent en échec, par
+PHOTO, sans rebalayer 18 828 photos pour en retrouver 13 — et sans croire le
+journal : les tags sont relus avant d'écrire, comme partout ici.
+**6 vérifications neuves, 6 rouges sur l'ancien code, 71/71 vertes.**
+
 ## État (23/08/2026, session 43)
 
 **Le contrôle 5 de l'agent git cesse de réclamer une preuve qui n'existe pas.**

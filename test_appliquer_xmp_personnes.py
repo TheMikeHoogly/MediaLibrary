@@ -566,6 +566,177 @@ def t_un_nom_saute_est_ECRIT_sur_disque_et_redit(tmp):
             len(par_chemin) == 1, "par_chemin=%r" % list(par_chemin))
 
 
+
+class ExifQuiEchoue(FauxExif):
+    """Un ExifTool qui echoue avec une CAUSE nommee, comme le vrai.
+
+    Les 13 echecs de la passe du 24/08 avaient deux causes, et la console de
+    Mike n'en disait aucune : elle affichait `en echec : 3`. Onze d'entre eux
+    etaient des `_exiftool_tmp` fantomes laisses par un ExifTool tue en cours
+    de route, qui empechent DEFINITIVEMENT de reecrire la photo. Un compte
+    sans cause ne se repare pas."""
+
+    def __init__(self, echoue_sur=(), cause="Error: Temporary file already exists"):
+        FauxExif.__init__(self, echoue_sur=echoue_sur)
+        self.cause = cause
+
+    def run(self, cmd, **kw):
+        r = FauxExif.run(self, cmd, **kw)
+        if r.returncode:
+            r.stderr = self.cause
+        return r
+
+
+def _fonds_de_deux(tmp):
+    tmp = Path(tmp)
+    a, b = tmp / "a.jpg", tmp / "b.jpg"
+    for f in (a, b):
+        f.write_bytes(b"jpeg")
+    par_chemin = {V._normalise(a): (a, {"Ellie"}),
+                  V._normalise(b): (b, {"Ellie"})}
+    return tmp, a, b, par_chemin
+
+
+def _balaye(par_chemin, tmp, faits, faux):
+    vrai_lire, vrai_run = V.lire_tags, A.subprocess.run
+    V.lire_tags = lambda chemins, exe, **kw: {V._normalise(c): set()
+                                              for c in chemins}
+    A.subprocess.run = faux.run
+    try:
+        return A.balayer(par_chemin, "exiftool", tmp / "j.jsonl", faits,
+                         serveur='', lot=10, appliquer_vrai=True,
+                         ecrire=lambda *x: None)
+    finally:
+        V.lire_tags, A.subprocess.run = vrai_lire, vrai_run
+
+
+def t_une_ecriture_QUI_ECHOUE_n_est_pas_notee_faite(tmp):
+    """Regle 2, cote reprise : un nom qui n'a PAS atterri ne se note pas
+    atterri. Le fichier de reprise etait ecrit pour toute photo VUE, echec
+    compris — les 13 echecs du 24/08 sont ainsi marques faits, et aucune
+    relance ne les reprendra jamais."""
+    tmp, a, b, par_chemin = _fonds_de_deux(tmp)
+    faits = tmp / "faits.txt"
+    r = _balaye(par_chemin, tmp, faits, ExifQuiEchoue(echoue_sur={"a.jpg"}))
+    deja = A.charger_faits(faits)
+    verifie("l'echec n'est PAS note fait", V._normalise(a) not in deja,
+            "reprise=%r" % sorted(deja))
+    verifie("la reussite EST notee faite", V._normalise(b) in deja,
+            "reprise=%r" % sorted(deja))
+    verifie("l'echec est compte", r['rates'] == 1 and r['reecrites'] == 1,
+            "r=%r" % r)
+
+
+def t_l_echec_REPASSE_a_la_relance(tmp):
+    """La consequence qui compte : relancer reprend la photo en echec, et
+    seulement elle."""
+    tmp, a, b, par_chemin = _fonds_de_deux(tmp)
+    faits = tmp / "faits.txt"
+    _balaye(par_chemin, tmp, faits, ExifQuiEchoue(echoue_sur={"a.jpg"}))
+    faux2 = FauxExif()
+    r2 = _balaye(par_chemin, tmp, faits, faux2)
+    verifie("la relance ne reprend QUE l'echec", r2['total'] == 1,
+            "total=%r" % r2['total'])
+    verifie("la relance reprend la BONNE photo",
+            len(faux2.appels) == 1 and "a.jpg" in faux2.appels[0][-1],
+            "appels=%r" % faux2.appels)
+
+
+def t_la_CAUSE_d_un_echec_est_dite_pas_seulement_son_compte(tmp):
+    """`en echec : 3` ne se repare pas. `11 x Temporary file already exists`
+    se repare : ce sont des fichiers fantomes a effacer."""
+    tmp, a, b, par_chemin = _fonds_de_deux(tmp)
+    faits = tmp / "faits.txt"
+    r = _balaye(par_chemin, tmp, faits,
+                ExifQuiEchoue(echoue_sur={"a.jpg"},
+                              cause="Error: Temporary file already exists"))
+    causes = r.get('causes') or {}
+    verifie("le rapport porte les CAUSES d'echec", bool(causes),
+            "causes=%r" % causes)
+    verifie("la cause est nommee et comptee",
+            sum(causes.values()) == 1
+            and any("Temporary file" in c for c in causes),
+            "causes=%r" % causes)
+
+
+
+def t_le_mode_nom_DIT_AUSSI_la_cause(tmp):
+    """`--nom Val` est le mode du rattrapage, celui qu'on lance a la main
+    quand quelque chose a rate. S'il compte les echecs sans les nommer, on
+    relance a l'aveugle."""
+    tmp = Path(tmp)
+    a = tmp / "a.jpg"
+    a.write_bytes(b"jpeg")
+    plan = [{'cle': str(a), 'chemin': str(a), 'ajoute': ['Val'],
+             'retire': [], 'avant': []}]
+    dit = []
+    faux = ExifQuiEchoue(echoue_sur={"a.jpg"},
+                         cause="Error: Temporary file already exists")
+    vrai = A.subprocess.run
+    A.subprocess.run = faux.run
+    try:
+        faits, rates = A.appliquer(plan, "exiftool", tmp / "j.jsonl",
+                                   ecrire=dit.append)
+    finally:
+        A.subprocess.run = vrai
+    verifie("--nom : l'echec est compte", rates == 1 and faits == 0,
+            "faits=%r rates=%r" % (faits, rates))
+    verifie("--nom : la cause est DITE",
+            any("Temporary file" in l for l in dit), "dit=%r" % dit)
+
+
+
+def _journal(tmp, lignes):
+    j = Path(tmp) / "xmp_tous_20260101_000000.jsonl"
+    import json as _j
+    j.write_text('\n'.join(_j.dumps(l, ensure_ascii=False) for l in lignes)
+                 + '\n', encoding='utf-8')
+    return j
+
+
+def t_echecs_des_journaux_ne_retient_que_ce_qui_a_RATE(tmp):
+    """Les 13 echecs du 24/08 sont dans les journaux, avec leur cause et les
+    noms qui n'ont pas atterri. Personne ne les relira a la main."""
+    tmp = Path(tmp)
+    a, b = tmp / "a.jpg", tmp / "b.jpg"
+    for f in (a, b):
+        f.write_bytes(b"jpeg")
+    _journal(tmp, [
+        {'chemin': str(a), 'ajoute': ['Val'], 'ok': False,
+         'erreur': 'Error: Temporary file already exists'},
+        {'chemin': str(a), 'ajoute': ['Zab'], 'ok': False, 'erreur': 'x'},
+        {'chemin': str(b), 'ajoute': ['Mike'], 'ok': True, 'erreur': ''},
+    ])
+    par_chemin = A.echecs_des_journaux(tmp)
+    verifie("les echecs : la photo qui a RATE est la",
+            V._normalise(a) in par_chemin, "%r" % sorted(par_chemin))
+    verifie("les echecs : celle qui a REUSSI n'y est pas",
+            V._normalise(b) not in par_chemin, "%r" % sorted(par_chemin))
+    verifie("les echecs : les noms d'une meme photo sont GROUPES",
+            par_chemin.get(V._normalise(a), (None, set()))[1] == {'Val', 'Zab'},
+            "%r" % (par_chemin.get(V._normalise(a)),))
+
+
+def t_reprendre_les_echecs_NE_CROIT_PAS_le_journal(tmp):
+    """Un journal est une liste de candidats, pas un ordre : entre l'echec et
+    la reprise, la file du serveur a pu poser le nom. On relit les tags."""
+    tmp = Path(tmp)
+    a = tmp / "a.jpg"
+    a.write_bytes(b"jpeg")
+    par_chemin = {V._normalise(a): (a, {"Val"})}
+    tags = {V._normalise(a): {"personne:val"}}
+    verifie("les echecs : une photo devenue conforme ne se reecrit pas",
+            A.a_faire_photo(par_chemin, tags)[0]['ajoute'] == [],
+            "%r" % A.a_faire_photo(par_chemin, tags))
+
+
+def t_reprendre_les_echecs_ne_se_melange_pas_aux_autres_modes(tmp):
+    verifie("--reprendre-echecs refuse de se melanger a --tous",
+            A.main(['--reprendre-echecs', '--tous']) == 2)
+    verifie("--reprendre-echecs refuse de se melanger a --nom",
+            A.main(['--reprendre-echecs', '--nom', 'Val']) == 2)
+
+
 def main():
     tmp = Path(tempfile.mkdtemp(prefix="test_appl_xmp_"))
     tests = [t_refus_si_la_file_tourne, t_refus_sans_verite_dindex,
@@ -586,7 +757,14 @@ def main():
              t_attente_ne_desserre_RIEN_on_n_ecrit_pas_pendant,
              t_attente_serveur_MUET_est_libre_mais_se_dit,
              t_demarrage_ATTEND_au_lieu_de_refuser_tout_de_suite,
-             t_le_temps_attendu_est_DIT_dans_le_rapport]
+             t_le_temps_attendu_est_DIT_dans_le_rapport,
+             t_une_ecriture_QUI_ECHOUE_n_est_pas_notee_faite,
+             t_l_echec_REPASSE_a_la_relance,
+             t_la_CAUSE_d_un_echec_est_dite_pas_seulement_son_compte,
+             t_le_mode_nom_DIT_AUSSI_la_cause,
+             t_echecs_des_journaux_ne_retient_que_ce_qui_a_RATE,
+             t_reprendre_les_echecs_NE_CROIT_PAS_le_journal,
+             t_reprendre_les_echecs_ne_se_melange_pas_aux_autres_modes]
     for t in tests:
         sous = tmp / t.__name__
         sous.mkdir(parents=True, exist_ok=True)

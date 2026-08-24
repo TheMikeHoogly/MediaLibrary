@@ -6,34 +6,17 @@
 > `eval/DECISIONS.md` si elle tranche, dans `ROADMAP.md` si elle priorise.
 > Protocole : `CLAUDE.md`, « Traite autonome ».
 
-- **23/08 — ~5 700 photos dont le fichier ignore un nom que l'index porte.**
-  **Ellie est FAITE et vérifiée** : 54 réécrites, 0 échec, puis 346/346 sur le
-  disque. Débit réel **3,5 s/photo** (191 s pour 54) : le reste coûtera
-  **~5 h 30**. **`--tous` est LIVRÉ** (choix de Mike, 23/08) : il balaie tout,
-  **par PHOTO** — une photo qui manque deux noms coûte UNE invocation, pas
-  deux — et il **REPREND** où il s'est arrêté (`_corbeille_xmp/_tous_faits.txt`).
-  Il s'ARRÊTE proprement si la file du serveur repart : jamais deux écrivains.
-  La commande :
+- **24/08 — 11 fichiers `_exiftool_tmp` fantômes sur le NAS.** Onze des 13
+  échecs de la réparation viennent d'un temporaire laissé par un ExifTool tué
+  en route : tant qu'il est là, **la photo ne peut plus jamais être
+  réécrite**. Ma recommandation : les LISTER puis les effacer — ce sont des
+  copies partielles, l'original est intact à côté.
 
-      python appliquer_xmp_personnes.py --tous --max-photos 300
-      python appliquer_xmp_personnes.py --tous --appliquer
+      Get-ChildItem \\NAS-Bremblens\home\Photos -Recurse -Filter *_exiftool_tmp
 
-  **LANCÉ le 23/08 à 21:38 — et MORT à 22:09:40, à 4 800 photos sur ~18 900.**
-  Onze secondes après un `🤖 Auto-ajout : 14 visage(s)` : le curateur rattache
-  des visages tout seul toutes les quatre à cinq minutes, chaque auto-ajout
-  remplit `PERSON_QUEUE`, et la passe s'arrêtait au PREMIER signe. **Corrigé
-  le 23/08** : elle attend que la file retombe au lieu d'abandonner, sans
-  jamais écrire pendant ce temps (7 fonctions de test neuves, 7 rouges sur
-  l'ancien code, 56/56 vertes).
-  **À RELANCER — geste de Mike**, la famille `appliquer_` étant hors de portée
-  du banc :
-
-      python appliquer_xmp_personnes.py --tous --appliquer
-
-  Elle reprend à 4 800 et ne réécrit rien de ce qui est fait. À sa fin,
-  **rattraper `Val` et `Yann Mamin`** avec `--nom X --appliquer` (ce mode
-  ignore le fichier de reprise), puis `verifier_xmp_toutes_personnes.py`.
-  *Le paragraphe ci-dessous vaut toujours pour la méthode.*
+  **En attendant** : `--reprendre-echecs` existe et refera les 13 d'un coup
+  dès que les fantômes seront partis. Les 2 restants sont des JPEG tronqués
+  (`JPEG EOI marker not found`) : famille des illisibles, bat 17.
 
 - **23/08 (fait, gardé pour la méthode) — le premier lot.**
   La fuite est BOUCHÉE (l'enfilement et la reprise ne jugent plus de
@@ -49,6 +32,13 @@
   VIVANT, la seule chose que la 41 n'avait jamais pu observer.
 
 ## Réglées
+
+- **23/08 — ~5 700 photos dont le fichier ignore un nom que l'index porte.**
+  **FAIT le 24/08 à 03:07** : `--tous --appliquer`, deux passes, **18 828
+  photos balayées, 3 128 réécrites, 13 échecs, aucun nom sauté**. La première
+  passe (21:38) est morte à 4 800 sur un auto-ajout du curateur ; la seconde,
+  qui ATTEND la file au lieu d'abandonner, est allée au bout en 4 h 29. Reste
+  à prendre le seul chiffre qui compte : `verifier_xmp_toutes_personnes.py`.
 
 - **22/08 — `personne:Florine` : 153 photos, aucune fiche. Qui est-ce ?**
   Réponse de Mike : **c'est Flo.** « Il faut remplacer tous les Flo par Florine

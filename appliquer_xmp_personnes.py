@@ -52,6 +52,7 @@ USAGE
     python appliquer_xmp_personnes.py --rapport _xmp_florine.json
     python appliquer_xmp_personnes.py --rapport _xmp_florine.json --appliquer
     python appliquer_xmp_personnes.py --nom Florine --absent Flo --appliquer
+    python appliquer_xmp_personnes.py --reprendre-echecs --appliquer
 """
 
 import argparse
@@ -146,6 +147,22 @@ def ecrire_une(exe, chemin, ajoute, retire):
                 os.unlink(argfile)
             except OSError:
                 pass
+
+
+def cause_courte(err):
+    """La cause d'un echec, SANS le chemin — pour que deux echecs de meme
+    nature se comptent ensemble.
+
+    Le 24/08, la passe a fini sur « en echec : 3 » et la nuit d'avant sur
+    « en echec : 10 ». Un compte ne se repare pas : il a fallu relire le
+    journal jsonl pour voir que ONZE des treize etaient le meme fichier
+    fantome, `_exiftool_tmp`, laisse par un ExifTool tue en cours de route —
+    et qu'il bloque DEFINITIVEMENT la reecriture de ces photos."""
+    m = (err or '').strip().replace('\n', ' ').replace('\r', ' ')
+    coupes = [i for i in (m.find('//'), m.find('\\\\')) if i > 0]
+    if coupes:
+        m = m[:min(coupes)]
+    return m.rstrip(' :-')[:120] or 'cause non dite'
 
 
 # ─────────────────────────── Le fonds entier (--tous) ───────────────────────
@@ -304,6 +321,7 @@ def balayer(par_chemin, exe, journal_path, faits_path, serveur='',
     restants = [k for k in sorted(par_chemin) if k not in charger_faits(faits_path)]
     total = len(restants)
     vues = reecrites = rates = 0
+    causes = {}
     attentes, attente_s = 0, 0.0
     arret = ''
     t0 = time.time()
@@ -329,6 +347,7 @@ def balayer(par_chemin, exe, journal_path, faits_path, serveur='',
             sous = {k: par_chemin[k] for k in tranche}
             for op in a_faire_photo(sous, tags):
                 vues += 1
+                pose = True                  # rien a ecrire = deja en place
                 if op['ajoute']:
                     if appliquer_vrai:
                         ok, err = ecrire_une(exe, op['chemin'], op['ajoute'],
@@ -339,9 +358,17 @@ def balayer(par_chemin, exe, journal_path, faits_path, serveur='',
                         fh.flush()
                         reecrites += 1 if ok else 0
                         rates += 0 if ok else 1
+                        pose = ok
+                        if not ok:
+                            c = cause_courte(err)
+                            causes[c] = causes.get(c, 0) + 1
                     else:
                         reecrites += 1
-                if appliquer_vrai:
+                # La reprise ne note QUE ce qui a atterri. Regle 2 : un nom
+                # qui a rate son fichier n'est pas un nom pose. Noter l'echec
+                # comme fait, c'est le rendre irrattrapable — les 13 echecs
+                # du 24/08 l'etaient, aucune relance ne les aurait repris.
+                if appliquer_vrai and pose:
                     fa.write(op['k'] + '\n')
                     fa.flush()
             ecoule = time.time() - t0
@@ -358,7 +385,25 @@ def balayer(par_chemin, exe, journal_path, faits_path, serveur='',
             fa.close()
     return {'total': total, 'vues': vues, 'reecrites': reecrites,
             'rates': rates, 'non_lues': vues and (total - vues) or 0,
-            'arret': arret, 'attentes': attentes, 'attente_s': attente_s}
+            'arret': arret, 'attentes': attentes, 'attente_s': attente_s,
+            'causes': causes}
+
+
+def dire_les_causes(causes, ecrire=print):
+    """Les echecs, par CAUSE et non par compte — et le geste quand la cause
+    est connue. Un `_exiftool_tmp` fantome ne se repare pas tout seul."""
+    if not causes:
+        return
+    ecrire("")
+    ecrire("  CAUSES DES ECHECS :")
+    for cause, n in sorted(causes.items(), key=lambda kv: (-kv[1], kv[0])):
+        ecrire("    %4d x %s" % (n, cause))
+    if any('Temporary file' in c for c in causes):
+        ecrire("    -> un `_exiftool_tmp` fantome, laisse par un ExifTool tue")
+        ecrire("       en route, BLOQUE toute reecriture de ces photos tant")
+        ecrire("       qu il est la. Les trouver et les effacer :")
+        ecrire("       Get-ChildItem \\\\NAS-Bremblens\\home\\Photos -Recurse "
+               "-Filter *_exiftool_tmp")
 
 
 def appliquer(plan, exe, journal_path, ecrire=print):
@@ -366,6 +411,7 @@ def appliquer(plan, exe, journal_path, ecrire=print):
     `finally` : une interruption laisse un journal complet de ce qui a été
     fait — c'est ce qui rend le geste annulable."""
     faits, rates = 0, 0
+    causes = {}
     journal_path.parent.mkdir(parents=True, exist_ok=True)
     fh = journal_path.open('w', encoding='utf-8')
     try:
@@ -376,11 +422,95 @@ def appliquer(plan, exe, journal_path, ecrire=print):
             fh.flush()
             faits += 1 if ok else 0
             rates += 0 if ok else 1
+            if not ok:
+                c = cause_courte(err)
+                causes[c] = causes.get(c, 0) + 1
             if i % 100 == 0:
                 ecrire("  %d/%d ecrites (%d en echec)" % (i, len(plan), rates))
     finally:
         fh.close()
+    dire_les_causes(causes, ecrire)
     return faits, rates
+
+
+def echecs_des_journaux(dossier=None):
+    """Les photos que les journaux disent EN ECHEC — par PHOTO, noms groupes.
+
+    POURQUOI CE MODE EXISTE
+
+    Le 24/08, la passe du fonds a fini sur 13 echecs : 11 `_exiftool_tmp`
+    fantomes et 2 JPEG tronques. Ils etaient notes FAITS dans le fichier de
+    reprise (corrige le 24/08), donc irrattrapables ; et meme corrige, les
+    reprendre demandait de rebalayer 18 828 photos pour en retrouver 13.
+    Les journaux, eux, savent exactement lesquelles et quels noms : ce mode
+    les relit. Il ne les CROIT pas — les tags sont relus avant d ecrire, comme
+    partout ailleurs ici."""
+    dossier = Path(dossier or CORBEILLE)
+    par_chemin = {}
+    for j in sorted(dossier.glob('xmp*.jsonl')):
+        try:
+            lignes = j.read_text(encoding='utf-8').splitlines()
+        except OSError:
+            continue
+        for ligne in lignes:
+            ligne = ligne.strip()
+            if not ligne:
+                continue
+            try:
+                d = json.loads(ligne)
+            except ValueError:
+                continue
+            if d.get('ok'):
+                continue
+            chemin = Path(d.get('chemin') or d.get('cle') or '')
+            if not str(chemin):
+                continue
+            k = V._normalise(chemin)
+            if k not in par_chemin:
+                par_chemin[k] = (chemin, set())
+            par_chemin[k][1].update(d.get('ajoute') or [])
+    return {k: v for k, v in par_chemin.items() if v[1]}
+
+
+def reprise_des_echecs(a, exe, ecrire=print):
+    """Refaire ce qui a rate, et seulement ca. Rend le code de sortie."""
+    par_chemin = echecs_des_journaux()
+    ecrire("")
+    ecrire("=" * 74)
+    ecrire("  REPRISE DES ECHECS — d apres les journaux de %s" % CORBEILLE.name)
+    ecrire("=" * 74)
+    ecrire("  photos en echec dans les journaux : %d" % len(par_chemin))
+    if not par_chemin:
+        ecrire("  rien a reprendre.")
+        ecrire("=" * 74)
+        return 0
+    chemins = [c for c, _n in par_chemin.values()]
+    ecrire("  relecture des tags de %d fichier(s)..." % len(chemins))
+    tags = V.lire_tags(chemins, exe, journal=None)
+    plan = [op for op in a_faire_photo(par_chemin, tags) if op['ajoute']]
+    ecrire("  deja conformes depuis            : %d"
+           % (len(par_chemin) - len(plan)))
+    ecrire("  a reecrire                       : %d" % len(plan))
+    if not plan:
+        ecrire("  rien a reecrire : les journaux parlent d un passe repare.")
+        ecrire("=" * 74)
+        return 0
+    if not a.appliquer:
+        ecrire("")
+        ecrire("  A BLANC : rien n a ete ecrit. Ajouter --appliquer.")
+        ecrire("=" * 74)
+        return 0
+    jp = CORBEILLE / ("xmp_echecs_%s.jsonl" % horodatage())
+    ecrire("  journal                          : %s" % jp)
+    faits, rates = appliquer(plan, exe, jp, ecrire=ecrire)
+    ecrire("")
+    ecrire("  reecrites                        : %d" % faits)
+    ecrire("  en echec ENCORE                  : %d" % rates)
+    if rates:
+        ecrire("  Ce qui rate deux fois a une cause dans le FICHIER, pas dans")
+        ecrire("  la passe : fantome `_exiftool_tmp`, JPEG tronque, droits.")
+    ecrire("=" * 74)
+    return 1 if rates else 0
 
 
 def tour_du_fonds(a, exe, uploads, ecrire=print):
@@ -421,6 +551,10 @@ def tour_du_fonds(a, exe, uploads, ecrire=print):
     ecrire("  photos lues        : %d sur %d" % (r['vues'], r['total']))
     ecrire("  reecrites          : %d" % r['reecrites'])
     ecrire("  en echec           : %d" % r['rates'])
+    if r['rates']:
+        ecrire("  Les photos en echec ne sont PAS notees faites : relancer")
+        ecrire("  cette passe les reprend, et elles seules.")
+    dire_les_causes(r.get('causes') or {}, ecrire)
     if r.get('attentes'):
         ecrire("  attentes de la file: %d fois, %d s au total (le curateur "
                "rattache des visages tout seul)"
@@ -460,6 +594,9 @@ def main(argv=None):
                     help="ecrire pour de vrai (sans lui : a blanc)")
     ap.add_argument('--tous', action='store_true',
                     help="balayer TOUS les noms, par PHOTO, avec reprise")
+    ap.add_argument('--reprendre-echecs', action='store_true',
+                    dest='reprendre_echecs',
+                    help="refaire les photos que les journaux disent en echec")
     ap.add_argument('--lot', type=int, default=200,
                     help="photos lues par tranche en mode --tous (defaut 200)")
     ap.add_argument('--max-photos', type=int, default=0,
@@ -473,9 +610,13 @@ def main(argv=None):
         print("--tous balaie le fonds entier : il ne se combine ni avec "
               "--rapport ni avec --nom.")
         return 2
-    if not a.tous and not a.rapport and not a.nom:
-        print("il faut --tous, --rapport, ou --nom (la verite d'index vient "
-              "de l'un des trois).")
+    if a.reprendre_echecs and (a.tous or a.rapport or a.nom):
+        print("--reprendre-echecs refait ce que les journaux disent en echec :"
+              " il ne se combine avec aucun autre mode.")
+        return 2
+    if not a.tous and not a.rapport and not a.nom and not a.reprendre_echecs:
+        print("il faut --tous, --reprendre-echecs, --rapport ou --nom (la "
+              "verite d'index vient de l'un d'eux).")
         return 2
 
     libre, attendu, file = attendre_la_file(a.serveur,
@@ -488,7 +629,7 @@ def main(argv=None):
         print("  en pire. Attendre queues.personnes = 0, ou arreter le serveur.")
         return 3
     file = V.file_du_serveur(a.serveur)
-    if file is None and not a.rapport:
+    if file is None and not (a.rapport or a.reprendre_echecs):
         print("le serveur ne repond pas : sans lui, la verite d'index doit "
               "venir d'un --rapport ecrit quand il repondait encore.")
         return 2
@@ -497,6 +638,9 @@ def main(argv=None):
     if exe is None:
         print("ExifTool introuvable : rien a faire sans lui.")
         return 2
+
+    if a.reprendre_echecs:
+        return reprise_des_echecs(a, exe)
 
     if a.tous:
         return tour_du_fonds(a, V.exiftool_exe(), V.dossier_uploads())
