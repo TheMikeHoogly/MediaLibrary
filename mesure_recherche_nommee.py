@@ -46,6 +46,12 @@ index, plus `parse_tag_nomme` sur chaque mot-clé, et l'autocomplétion l'appell
 au chargement de chaque page. S'il coûte plus qu'O7, c'est lui le sujet — et il
 reçoit son propre verdict, au même seuil.
 
+Depuis le 24/08 ce comptage est mis en CACHE (60 s), et `/api/names` a donc
+DEUX prix : celui du premier appel après expiration, et celui que paie une
+page. Ce banc mesure les deux et les dit séparément. Les fondre dans une
+médiane ferait deux mensonges à la fois — crier au « score parfait » sur un
+chiffre expliqué, et faire disparaître le coût réel du premier appel.
+
 CE QUE LA PREMIÈRE MESURE A TROUVÉ EN CHEMIN (23/08), ET CORRIGÉ (24/08)
 
 La colonne « total » restait vide, et ce n'était pas un trou du banc :
@@ -158,7 +164,15 @@ def attribuer(mes):
         'tri_des_candidats': diff('gros_n1', 'rare_n1'),
         'rendu_1500': diff('gros_n1500', 'gros_n1'),
         'total_utilisateur': med('gros_n1500'),
-        'noms_autocompletion': diff('noms', 'plancher'),
+        # `/api/names` est mis en cache depuis le 24/08 : son coût n'est
+        # plus un seul nombre. `noms_autocompletion` est ce que paie une PAGE
+        # (cache chaud, le cas de presque toutes) ; `noms_premier_appel` est
+        # ce qui est payé après chaque expiration. Taire le second ferait
+        # disparaître un coût réel derrière une médiane.
+        'noms_autocompletion': (diff('noms_chaud', 'plancher')
+                                if mes.get('noms_chaud')
+                                else diff('noms', 'plancher')),
+        'noms_premier_appel': diff('noms_froid', 'plancher'),
     }
 
 
@@ -204,6 +218,35 @@ def verdict(fixe_ms):
     return 'justifie', (
         "coût fixe %.0f ms > %.0f : le chantier O7 est justifié."
         % (fixe_ms, SEUIL_JUSTIFIE_MS))
+
+
+def verdict_autocompletion(froid_ms, chaud_ms):
+    """Le verdict de `/api/names`, qui a DEUX prix depuis le 24/08.
+
+    Le comptage des noms est mis en cache (`_compte_des_noms`, 60 s). Une page
+    paie donc presque toujours le prix CHAUD ; le prix FROID est payé une fois
+    par expiration. Juger sur le seul chaud crierait au « score parfait » sur
+    un chiffre expliqué ; juger sur le seul froid tairait le gain."""
+    if froid_ms is None or chaud_ms is None:
+        return 'inconnu', "le coût de l'autocomplétion n'a pas pu être mesuré"
+    if froid_ms < 1.0:
+        return 'suspect', (
+            "premier appel mesuré à %.1f ms : 43 000 entrées ne se balaient "
+            "pas pour rien, même une fois. Un score parfait est une ALARME — "
+            "le comptage n'a probablement pas eu lieu." % froid_ms)
+    if chaud_ms < SEUIL_NEGLIGEABLE_MS:
+        return 'classer', (
+            "%.0f ms au premier appel, %.1f ms ensuite : le cache du comptage "
+            "fait le travail. Une page paie le second — le premier est payé "
+            "une fois par expiration." % (froid_ms, chaud_ms))
+    if chaud_ms < SEUIL_JUSTIFIE_MS:
+        return 'mineur', (
+            "%.0f ms au premier appel, %.0f ms ensuite : réel mais mineur."
+            % (froid_ms, chaud_ms))
+    return 'justifie', (
+        "%.0f ms au premier appel, %.0f ms ensuite > %.0f : chaque page le "
+        "paie, le chantier est justifié."
+        % (froid_ms, chaud_ms, SEUIL_JUSTIFIE_MS))
 
 
 # ─────────────────────────── le monde extérieur ───────────────────────────
@@ -254,6 +297,10 @@ def mesurer(base, tours):
     # 2. l'autocomplétion — même index, autre balayage.
     d, rep = serie(lien(base, '/api/names'), tours)
     rap['mesures']['noms'] = resume(d)
+    # Le PREMIER appel voit le cache froid ; les suivants le voient chaud.
+    # Les fondre dans une médiane cacherait l'un des deux.
+    rap['mesures']['noms_froid'] = resume(d[:1])
+    rap['mesures']['noms_chaud'] = resume(d[1:])
     noms = (rep or {}).get('noms') or []
     rap['noms']['connus'] = len(noms)
 
@@ -289,7 +336,9 @@ def mesurer(base, tours):
     rap['controle'] = {'tenu': tenu, 'dit': phrase}
     v, dit = verdict(rap['attribution'].get('fixe_filtre_nomme'))
     rap['verdict'] = {'code': v, 'dit': dit}
-    vn, dn = verdict(rap['attribution'].get('noms_autocompletion'))
+    vn, dn = verdict_autocompletion(
+        rap['attribution'].get('noms_premier_appel'),
+        rap['attribution'].get('noms_autocompletion'))
     rap['verdict_noms'] = {'code': vn, 'dit': dn}
     return rap
 
@@ -346,8 +395,10 @@ def imprimer(rap, sortie=sys.stdout):
     e('  tri des candidats                %s ms\n' % _ms(a['tri_des_candidats']))
     e('  rendu de 1500 photos             %s ms\n' % _ms(a['rendu_1500']))
     e('  ce que l utilisateur attend      %s ms\n' % _ms(a['total_utilisateur']))
-    e('  /api/names (autocompletion)      %s ms\n'
+    e('  /api/names, page (cache chaud)   %s ms\n'
       % _ms(a['noms_autocompletion']))
+    e('  /api/names, premier appel        %s ms\n'
+      % _ms(a.get('noms_premier_appel')))
 
     c = rap.get('controle') or {}
     e('\n  CONTROLE DU MODELE : %s\n'

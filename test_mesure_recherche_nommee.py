@@ -129,6 +129,55 @@ class TestVerdict(unittest.TestCase):
                          (50.0, 200.0))
 
 
+
+class TestVerdictAutocompletion(unittest.TestCase):
+    """`/api/names` est mis en cache depuis le 24/08 : son coût n'est plus un
+    seul nombre. Un banc qui n'en mesure qu'un se trompe deux fois — il crie
+    à l'alarme sur un chiffre expliqué, et il tait le prix réellement payé
+    quand le cache vient d'expirer."""
+
+    def test_chaud_quasi_nul_avec_un_froid_REEL_est_explique_pas_suspect(self):
+        code, dit = m.verdict_autocompletion(290.0, 2.0)
+        self.assertEqual(code, 'classer')
+        self.assertIn('cache', dit)
+
+    def test_un_FROID_quasi_nul_reste_une_ALARME(self):
+        """43 000 entrees ne se balaient pas pour rien, meme une fois."""
+        code, dit = m.verdict_autocompletion(0.3, 0.2)
+        self.assertEqual(code, 'suspect')
+        self.assertIn('ALARME', dit)
+
+    def test_les_deux_chers_restent_un_chantier(self):
+        code, _dit = m.verdict_autocompletion(360.0, 355.0)
+        self.assertEqual(code, 'justifie')
+
+    def test_une_mesure_absente_n_est_pas_un_accord(self):
+        self.assertEqual(m.verdict_autocompletion(None, 2.0)[0], 'inconnu')
+        self.assertEqual(m.verdict_autocompletion(290.0, None)[0], 'inconnu')
+
+    def test_le_prix_du_premier_appel_est_DIT_pas_seulement_le_chaud(self):
+        """Ce qui est payé après chaque expiration ne doit pas disparaître
+        derrière la médiane."""
+        _code, dit = m.verdict_autocompletion(290.0, 2.0)
+        self.assertIn('290', dit)
+        self.assertIn('2', dit)
+
+
+class TestAttribuerFroidEtChaud(unittest.TestCase):
+
+    def test_le_premier_appel_et_les_suivants_sont_SEPARES(self):
+        a = m.attribuer({'plancher': {'med': 1.0},
+                         'noms': {'med': 3.0},
+                         'noms_froid': {'med': 291.0},
+                         'noms_chaud': {'med': 3.0}})
+        self.assertAlmostEqual(a['noms_premier_appel'], 290.0)
+        self.assertAlmostEqual(a['noms_autocompletion'], 2.0)
+
+    def test_sans_les_deux_series_on_ne_devine_pas(self):
+        a = m.attribuer({'plancher': {'med': 1.0}, 'noms': {'med': 3.0}})
+        self.assertIsNone(a['noms_premier_appel'])
+
+
 class TestLien(unittest.TestCase):
     def test_un_nom_a_espace_ou_accent_est_encode(self):
         u = m.lien('http://127.0.0.1:8080', '/api/search',

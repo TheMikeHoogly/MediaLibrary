@@ -4892,24 +4892,62 @@ def annuler(jeton=None):
         return None
 
 
+_NOMS_COMPTE_CACHE = {"at": 0.0, "compte": None}
+_NOMS_COMPTE_LOCK = threading.Lock()
+
+# 60 s, comme `_ASSOC_CACHE` : ce qu'on perd est qu'un nom fraîchement posé
+# compte une photo de retard pendant au plus une minute, sur un CHIFFRE
+# d'affichage. La présence d'un nom dans la liste, elle, n'est jamais
+# retardée — c'est l'absence d'un nom qui le fait recréer en « Nouveau ».
+NOMS_COMPTE_TTL_S = 60
+
+
+def _compte_des_noms():
+    """{(genre, nom minusculé): nb de photos} — reconstruit au plus toutes
+    les `NOMS_COMPTE_TTL_S` secondes.
+
+    POURQUOI CE CACHE EXISTE (24/08)
+
+    `/api/names` part au chargement de CHAQUE page, pour l'autocomplétion.
+    `mesure_recherche_nommee` l'a chiffré le 23/08 : **359–364 ms**, presque
+    le double du filtre nommé O7 qu'on croyait être le sujet. La liste des
+    noms ne coûte rien — les deux magasins de fiches sont petits ; c'est CE
+    comptage qui coûte : tout l'index (43 000 fiches) et `parse_tag_nomme`
+    sur chacun de leurs mots-clés, refait à chaque appel.
+
+    Compté sur le nom NORMALISÉ : un « animal:luna » d'index appartient à la
+    fiche « Luna » — le compter à part afficherait « 0 photo » sous un nom qui
+    en porte, et c'est ce zéro qui rendait le défaut invisible (I7).
+    """
+    from collections import Counter
+    with _NOMS_COMPTE_LOCK:
+        c = _NOMS_COMPTE_CACHE
+        if (c["compte"] is not None
+                and time.time() - c["at"] < NOMS_COMPTE_TTL_S):
+            return c["compte"]
+        compte = Counter()
+        for k, e in list(STORE.data.items()):
+            for kw in ((e.get('kw_fr') or []) + (e.get('kw_en') or [])):
+                pn = parse_tag_nomme(kw)
+                if pn:
+                    compte[(pn[0], pn[1].lower())] += 1
+        c["compte"], c["at"] = compte, time.time()
+        return compte
+
+
 def noms_pour_saisie(genre=None, prefixe=""):
     """Source d'autocomplétion : personnes ET animaux, avec leur volume.
 
     Les deux magasins sont séparés ; les chercher ensemble évite de créer un
     « Luna » animal alors qu'une personne du même nom existe déjà.
+
+    Seul le COMPTAGE est mis en cache (`_compte_des_noms`). La LISTE, non :
+    un nom créé à l'instant doit paraître tout de suite, sinon on le recrée
+    en « Nouveau » au geste suivant.
     """
-    from collections import Counter
     p = _sans_accents(prefixe)
     out = []
-    # Compté sur le nom NORMALISÉ : un « animal:luna » d'index appartient à la
-    # fiche « Luna » — le compter à part afficherait « 0 photo » sous un nom
-    # qui en porte, et c'est ce zéro qui rendait le défaut invisible (I7).
-    compte = Counter()
-    for k, e in list(STORE.data.items()):
-        for kw in ((e.get('kw_fr') or []) + (e.get('kw_en') or [])):
-            pn = parse_tag_nomme(kw)
-            if pn:
-                compte[(pn[0], pn[1].lower())] += 1
+    compte = _compte_des_noms()
     for store, genre_i in ((PEOPLE_STORE, 'personne'), (PETS_STORE, 'animal')):
         if genre and genre_i != genre:
             continue

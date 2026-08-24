@@ -258,3 +258,10 @@ _journal_serveur.log.1
 # Le plantage dur d'une lib native (torch, insightface), ecrit par faulthandler
 # quand il n'y a plus de Python pour ecrire quoi que ce soit.
 _journal_serveur_crash.log
+
+# Rapports d'instruments (regenerables par leur banc)
+_fantomes.json
+_base_avant_cache.json
+_base_apres_cache.json
+_xmp_fonds_apres.json
+_xmp_fonds_final.json

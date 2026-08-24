@@ -35,10 +35,24 @@ un fonds entier, c'est-à-dire réinventer le plafond muet à l'autre bout.
 commenter : une requête nommée est déterministe, un `total` absent est une
 régression que le rapport nomme.
 
-**Et la mesure calme renverse le verdict d'O7 :** coût fixe du filtre nommé
-**139 ms** (contre 191–208 sous charge) — **mineur**, sous le seuil de 200.
-`/api/names` reste à **298 ms**, et part au chargement de CHAQUE page : c'est
-lui le chantier, comme la 43 le soupçonnait.
+**La mesure calme renverse le verdict d'O7, et le chantier `/api/names` est
+FAIT.** Coût fixe du filtre nommé : **139, 141, 146 ms** sur trois passes
+calmes (contre 191–208 sous charge) — **mineur**, sous le seuil de 200, à
+classer avec son chiffre. C'était bien `/api/names` le sujet : **292 ms**, payés
+au chargement de CHAQUE page. La liste des noms ne coûtait rien ; c'est le
+COMPTAGE qui balayait les 43 000 fiches et lisait chaque mot-clé, à chaque
+appel. Il est mis en cache 60 s — **le compte seulement, jamais la liste** :
+un nom créé à l'instant doit paraître tout de suite, sinon on le recrée en
+« Nouveau » (c'est le défaut I7). Observé : **281 ms au premier appel, 0,6 ms
+ensuite**, avec 364 noms et les mêmes comptes qu'avant (Florine 5 907) —
+le cache ne change pas un chiffre.
+
+**Et le banc a crié avant qu'on se réjouisse.** « Un score parfait est une
+ALARME » : sur 0,3 ms il a répondu *suspect*, ce qui était juste pour un banc
+qui ne connaissait qu'un prix. `/api/names` en a deux depuis le cache — celui
+du premier appel après expiration, et celui que paie une page. Le banc les
+mesure et les dit séparément ; les fondre dans une médiane ferait deux
+mensonges à la fois. **7 vérifications neuves, 7 rouges sur l'ancien code.**
 
 ## État (24/08/2026, session 44)
 

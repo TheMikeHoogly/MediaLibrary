@@ -29,16 +29,14 @@ Il n'y a plus rien à faire de ce côté. Ce qui reste vaut pour la MÉTHODE :
 
 ## Ensuite
 
-3. **`/api/names`, et O7 est classé.** Mesure CALME du 24/08 : le filtre
-   nommé coûte **139 ms** — sous le seuil de 200, verdict **mineur**, à peser
-   contre le reste de la feuille et non à traiter par réflexe. `/api/names`
-   coûte **298 ms** et part au chargement de CHAQUE page : c'est lui le
-   chantier. La cause est identifiée et le remède écrit (non livré) : la liste
-   des noms ne coûte rien, c'est le COMPTAGE qui balaie les 43 000 fiches et
-   lit chaque mot-clé à chaque appel. Mettre en cache le COMPTE, jamais la
-   LISTE — un nom créé à l'instant doit paraître tout de suite, sinon on le
-   recrée en « Nouveau » (défaut I7). `total`/`tronque` : **fait le 24/08**,
-   observé en réel (`total 5898, rendus 1500, tronque 4398`).
+3. **O7 est CLASSÉ, `/api/names` est fait.** Mesures calmes du 24/08 : le
+   filtre nommé coûte **139–146 ms** — sous le seuil de 200, verdict
+   **mineur**, à peser contre le reste de la feuille et non à traiter par
+   réflexe. `/api/names` coûtait **292 ms** à CHAQUE page ; son comptage est
+   mis en cache 60 s (le compte seulement, jamais la liste) : **281 ms au
+   premier appel, 0,6 ms ensuite**. `total`/`tronque` : rendus, observés
+   (`total 5898, rendus 1500, tronque 4398`).
+
 4. **Suite de `ui/`** : le CSS commun — chaque page porte encore son `<style>`.
    L'octet servi CHANGE, donc la preuve « identique au caractère près » qui a
    tenu les onze gabarits ne s'applique plus : une autre preuve, décidée AVANT
