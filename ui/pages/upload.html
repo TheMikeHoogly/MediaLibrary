@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Envoyer des photos v10</title>
+<!--UI:components-->
 <style>
   /* Etape A tokenisation « chambre noire » : couleurs/police en dur -> tokens.
      Bouton d'envoi = papier (principal neutre) ; barre de progression =
@@ -15,6 +16,8 @@
      base.css). Radius 20px des grandes cartes d'envoi et tailles d'icones
      (2/3rem) conserves : signature de la page, hors gamme des tokens. */
   * { box-sizing: border-box; margin: 0; padding: 0; }
+  /* La largeur de la colonne, ecrite UNE fois. */
+  :root { --colonne: 480px; }
   body { min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: var(--e-6) var(--e-4) 40px; }
   h1 { font-size: var(--t-xl); margin-bottom: var(--e-2); text-align: center; }
   .subtitle { color: var(--graphite); font-size: var(--t-md); margin-bottom: var(--e-8); text-align: center; }
@@ -22,7 +25,7 @@
   .pick-btn {
     display: block;
     width: 100%;
-    max-width: 480px;
+    max-width: var(--colonne);
     padding: 40px var(--e-6);
     background: var(--salle-3);
     border: 2px dashed var(--graphite);
@@ -32,18 +35,27 @@
     color: var(--texte);
     font-size: var(--t-md);
   }
-  .pick-btn:active { background: var(--salle-2); }
+  /* Meme direction que l'etat presse d'un bouton : la surface
+     s'ECLAIRCIT sous le doigt. Elle s'assombrissait ici, seule
+     contre le reste du systeme. */
+  .pick-btn:active { background: var(--salle-4); }
   .pick-btn--dossier { margin-top: var(--e-3); padding: var(--e-6) var(--e-6); }
   .pick-icon { font-size: 3rem; margin-bottom: var(--e-3); }
   .pick-btn--dossier .pick-icon { font-size: 2rem; margin-bottom: var(--e-2); }
   .pick-label { font-size: var(--t-lg); font-weight: 600; margin-bottom: var(--e-2); }
   .pick-hint { color: var(--graphite); font-size: var(--t-sm); }
 
-  .summary { width: 100%; max-width: 480px; margin-top: var(--e-4); font-size: var(--t-md);
+  .summary { width: 100%; max-width: var(--colonne); margin-top: var(--e-4); font-size: var(--t-md);
              color: var(--graphite); font-variant-numeric: tabular-nums; }
   .summary b { color: var(--texte); }
 
   /* Plancher d'accessibilite : focus visible + mouvement reduit. */
+  /* Le champ est focusable mais invisible : c'est le LIBELLE qui doit
+     porter l'anneau, sinon le focus existe sans se voir -- pire que rien.
+     D'ou l'ordre `input` puis `label` dans le HTML, pour que `+` marche. */
+  .hors-ecran:focus-visible + .pick-btn {
+    outline: 2px solid var(--veilleuse); outline-offset: 2px;
+  }
   .pick-btn:focus-visible, .btn:focus-visible, .gallery-link:focus-visible,
   .search-row input:focus-visible, .search-row button:focus-visible {
     outline: 2px solid var(--veilleuse); outline-offset: 2px;
@@ -53,24 +65,27 @@
                              animation-duration: 0.01ms !important; }
   }
 
-  .btn {
-    display: block;
-    width: 100%;
-    max-width: 480px;
-    margin-top: var(--e-4);
-    padding: var(--e-4);
-    background: var(--papier);
-    color: var(--texte-papier);
-    border: none;
-    border-radius: var(--r-md);
-    font-size: var(--t-lg);
-    font-weight: 600;
-    cursor: pointer;
-  }
-  .btn:active { opacity: 0.85; }
-  .btn:disabled { background: var(--salle-3); color: var(--graphite); cursor: default; }
+  /* Cette page passait pour << le cas different >> du chantier de
+     convergence : son bouton fait toute la largeur. Il ne l'etait pas.
+     Ce que `.btn` declarait ici, c'etait UN BOUTON PRIMAIRE (papier sur
+     texte-papier -- exactement `.btn--principal`) PLUS UNE MISE EN PAGE
+     (`display:block; width:100%; max-width:480px; margin-top`). La mise en
+     page n'est pas une variante de composant : c'est la colonne de la page
+     qui est large de 480 px, et le bouton qui la remplit. Cinq selecteurs
+     repetaient deja ce 480 -- ils partagent maintenant `--colonne`.
+     Ce qui reste vraiment propre a cette page, c'est l'EMPHASE : c'est
+     l'action unique de l'ecran, elle est plus grande que partout ailleurs.
+     Une taille n'est pas encore une variante du systeme -- une seule page la
+     demande. Elle reste donc ici, nommee. */
+  #uploadBtn { width: 100%; max-width: var(--colonne);
+               margin-top: var(--e-4);
+               /* Un cran AU-DESSUS du plancher tactile : c'est
+                  l'action unique de l'ecran, pas un bouton de
+                  barre d'outils. */
+               min-height: calc(var(--touch) + var(--e-2));
+               font-size: var(--t-lg); font-weight: 600; }
 
-  #status { width: 100%; max-width: 480px; margin-top: var(--e-6); font-size: var(--t-md); }
+  #status { width: 100%; max-width: var(--colonne); margin-top: var(--e-6); font-size: var(--t-md); }
   .file-item {
     display: flex; align-items: center; gap: var(--e-3);
     padding: var(--e-3) var(--e-4); background: var(--salle-3); border-radius: var(--r-md); margin-bottom: var(--e-2);
@@ -81,12 +96,12 @@
   .state.err { color: var(--encre); }
   .state.pending { color: var(--graphite); }
 
-  .progress-bar-wrap { width: 100%; max-width: 480px; margin-top: var(--e-4); background: var(--salle-3); border-radius: var(--r-pill); height: 8px; display: none; }
+  .progress-bar-wrap { width: 100%; max-width: var(--colonne); margin-top: var(--e-4); background: var(--salle-3); border-radius: var(--r-pill); height: 8px; display: none; }
   .progress-bar { height: 100%; border-radius: var(--r-pill); background: var(--veilleuse); width: 0%; transition: width 0.2s; }
 
   .gallery-link { margin-top: var(--e-6); color: var(--texte); text-decoration: none; font-size: var(--t-md); }
 
-  .search-row { display: flex; gap: var(--e-2); width: 100%; max-width: 480px; margin-top: var(--e-8); }
+  .search-row { display: flex; gap: var(--e-2); width: 100%; max-width: var(--colonne); margin-top: var(--e-8); }
   .search-row input { flex: 1; padding: var(--e-3) var(--e-4); border-radius: var(--r-md); border: var(--trait);
                       background: var(--salle-3); color: var(--texte); font-size: var(--t-md); }
   .search-row input:focus { border-color: var(--veilleuse); }
@@ -101,15 +116,14 @@
 <p style="color:var(--graphite);font-size:var(--t-xs);margin-bottom:var(--e-1)">v10 &middot; tagging IA</p>
 <p class="subtitle">Meme reseau WiFi &middot; Aucune inscription requise</p>
 
-<input type="file" id="fileInput" multiple accept="image/*,video/*" style="display:none">
-<input type="file" id="dirInput" webkitdirectory multiple style="display:none">
-
+<input type="file" id="fileInput" multiple accept="image/*,video/*" class="hors-ecran">
 <label for="fileInput" class="pick-btn" id="pickBtn">
   <div class="pick-icon">&#128247;</div>
   <div class="pick-label">Choisir des photos</div>
   <div class="pick-hint">Une ou plusieurs images &middot; videos</div>
 </label>
 
+<input type="file" id="dirInput" webkitdirectory multiple class="hors-ecran">
 <label for="dirInput" class="pick-btn pick-btn--dossier" id="pickDirBtn">
   <div class="pick-icon">&#128193;</div>
   <div class="pick-label">Choisir un dossier</div>
@@ -122,7 +136,7 @@
 
 <div id="summary" class="summary" style="display:none"></div>
 
-<button class="btn" id="uploadBtn" disabled>Envoyer</button>
+<button class="btn btn--principal" id="uploadBtn" disabled>Envoyer</button>
 
 <div id="status"></div>
 

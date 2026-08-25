@@ -9,90 +9,81 @@ FUSIONNÉ — ce document, non. Puis `ROADMAP.md`, `eval/DECISIONS.md`,
 `eval/METHODE.md` — et `docs/DECISIONS_OUTILLAGE.md` si le sujet touche aux
 canaux, à la livraison ou au MCP. Débrief en 2–3 lignes, puis on attaque.
 
-## Où on en est (25/08/2026, session 46)
+## Où on en est (25/08/2026, fin de session 46)
 
-**Rien ne tourne, rien n'attend.** Le chantier des XMP est CLOS (1 614 couples
-nom–photo lus, **0 en écart**, Wilson 0,0 – 0,2 %, contre 18,7 % le 23/08) ;
-les 21 fantômes `_exiftool_tmp` sont effacés. Le serveur a été **redémarré et
-observé** après le dernier increment.
+**Rien ne tourne, rien n'attend.** Le serveur a été redémarré et **observé**
+après chaque incrément. Le chantier des XMP est clos (**0 écart** sur 1 614
+couples, Wilson 0,0–0,2 %).
 
-**Le CSS commun a été mesuré, et la mesure a tué le chantier d'extraction** :
-200 déclarations hissables sur 1 754, dont **171 partagées par deux pages
-seulement** — 6,2 Ko sur 67. Le vrai sujet est la **divergence** : `.btn` ne
-veut pas dire la même chose selon la page.
+**Le chantier CSS a changé de nature trois fois, et chaque fois c'est une
+mesure qui l'a fait.**
 
-**La convergence a donc commencé, en opt-in : 5 pages sur 11.** `residu`,
-`tranche`, `subjects`, `people` et `pets` posent `<!--UI:components-->` et
-reçoivent `ui/components.css`. Les trois dernières écrivaient le canonique
-**sous d'autres noms** (`.prim`/`.warn`, `.primary`/`.danger`, valeurs
-identiques) — la divergence la plus chère, celle qui ne se voit pas à l'écran.
-**Et `people` comme `pets` n'avaient pas `min-height: var(--touch)`** : une
-cible tactile sous 44 px, donc une brèche du plancher d'accessibilité, refermée
-par le bouton canonique.
+1. *Extraire le CSS commun* → **tué par sa propre preuve** : 200 déclarations
+   hissables sur 1 754, dont 171 partagées par deux pages seulement, 6,2 Ko
+   sur 67. Le sujet n'est pas la duplication.
+2. *Faire converger les composants* → **6 pages sur 11 ont adopté**
+   `ui/components.css` (`residu`, `tranche`, `subjects`, `people`, `pets`,
+   `upload`). **Le `.btn` est FINI** : les cinq pages restantes n'en ont pas.
+   Trois d'entre elles écrivaient le canonique **sous d'autres noms**
+   (`.prim`/`.warn`, `.primary`/`.danger`) — la divergence la plus chère,
+   celle qui ne se voit pas à l'écran. Deux n'avaient pas
+   `min-height: var(--touch)`.
+3. *Le sujet réel est l'ACCESSIBILITÉ*, et il n'était pas dans le plan de
+   départ. Voir « Prochain pas ».
 
-**Les trois universelles sont hissées** : `body { background | color |
-font-family }`, écrit onze fois à l'identique, vit désormais dans `ui/base.css`
-seul — **11 pages sur 11 prouvées IDENTIQUE APRÈS LA CASCADE**. Elles étaient
-**trois, pas six** : le reset `*` ne vit que dans NEUF pages (`pets` et
-`subjects` ne l'ont jamais eu), donc le hisser serait un CHANGEMENT sur deux
-pages, pas un rangement.
+**Les trois universelles** (`body{background|color|font-family}`) vivent dans
+`ui/base.css` seul — **11 preuves sur 11, IDENTIQUE APRÈS LA CASCADE**. Elles
+étaient **trois, pas six** : le reset `*` ne vit que dans NEUF pages.
 
-**L'ordre réel de la cascade est à quatre étages** : `components.css` (au
-marqueur) → `<style>` de la page → `tokens.css` → `base.css` (à `</head>`,
-donc il gagne les égalités). C'est pourquoi les trois déclarations ont été
-RETIRÉES des onze pages, et pas seulement ajoutées à `base.css` : laissées en
-place elles auraient été écrasées sans bruit. **Le marqueur vit AVANT le `<style>` de la page**
-— sinon la feuille commune gagnerait la cascade et la page perdrait le dernier
-mot au moment même où elle converge. Trois preuves, dans l'ordre : cascade
-(`verifier_css_cascade.py --page`), mécanisme (`test_ui_composants.py`, 12),
-**serveur vivant** (`verifier_pages_composants.py`, 18 tests) — les trois
-vertes, la troisième après redémarrage réel.
+**Le design system a gagné quatre choses, toutes approuvées par Mike** :
+`--salle-4` (élévation 3, la marche du survol), `--fixateur-p` / `--encre-p`
+(la marche pressée des deux accents pleins), l'état **pressé** hors du garde
+`hover` (sur tactile c'est le SEUL retour), et `.hors-ecran` dans `base.css`.
 
-**Les deux instruments se sont corrigés cinq fois, sur cinq rouges OBSERVÉS.**
-Trois sur la preuve de cascade (l'ordre de `--apres` ; un mot dans un
-commentaire CSS ; la recherche par sous-chaîne) : sur `subjects`, elles font
-passer les « apparues » de 69 à 25. Deux sur le banc d'observation (un témoin
-qui n'était pas une route ; un témoin qui **redirige**, lu ailleurs et jugé
-quand même — en vert).
+**Et deux manquements réels ont été trouvés et corrigés** :
+- **AA** : `.btn--confirmer`, `.chip[aria-pressed]` à 3,94:1 et
+  `.btn--destructif` à 3,03:1. `--fixateur` assombri `#4A8C7B` → **`#448172`**,
+  bouton destructif **passé au plein** (5,34:1, sans toucher `--encre`).
+  **24 couples mesurés, tous au-dessus.**
+- **Niveau A** : les deux `<input type="file">` de `/` étaient en
+  `display:none` derrière des `<label for>` — **les deux actions principales
+  du site étaient injoignables au clavier**.
 
-**Le survol et l'état désactivé sont devenus canoniques** (approuvés le
-25/08) : token **`--salle-4: #24201D`** (élévation 3), `cursor: not-allowed`,
-sous `@media (hover: hover)`, et **chaque variante à fond repose le sien** —
-`.btn:hover` pèse (0,2,0) et repeindrait sinon le bouton primaire en gris.
-
-**Et c'est en écrivant ce survol qu'un défaut plus grave est sorti** : le
-plancher AA n'avait jamais été calculé. `verifier_contraste.py` (neuf, 20
-vérifications) le calcule ; voir « Prochain pas ».
+**⚠ ACTION EN ATTENTE DE MIKE** : la skill `photo-ui` a été mise à jour et
+envoyée en fichier. **Si elle n'a pas été enregistrée, sa table de tokens dit
+encore `#4A8C7B` et ne connaît ni `--salle-4`, ni les `-p`, ni `.hors-ecran`
+— la prochaine session réintroduira la couleur corrigée.** Vérifier AVANT de
+toucher au CSS.
 
 ## Prochain pas
 
-1. **Le plancher AA est tenu, et mesuré.** Les trois échecs trouvés le 25/08
-   sont corrigés : `--fixateur` assombri `#4A8C7B` → **`#448172`** (4,54:1
-   sous `#fff`, teinte et saturation intactes) et le bouton destructif passe
-   du **contour au PLEIN** (5,34:1, **sans toucher `--encre`** — l'éclaircir
-   aurait cassé son usage comme texte d'erreur sur papier : 2,91:1).
-   **19 couples sur 19 mesurés tiennent.** `verifier_contraste.py` rend 0.
-   **⚠ La skill `photo-ui` a été mise à jour et envoyée à Mike en fichier —
-   si elle n'a pas été enregistrée, sa table de tokens dit encore `#4A8C7B`
-   et la prochaine session le réintroduira.** Vérifier avant de toucher au CSS.
+1. **UN CONTRÔLE QUI N'EN EST PAS UN — le chantier est nommé et chiffré.**
+   `gallery` construit ses chips de personnes en `document.createElement
+   ('span')` + `.onclick` : pas de `tabindex`, pas de `role`, pas
+   d'`aria-pressed`. **Le filtre le plus utilisé de la page la plus utilisée
+   est inaccessible au clavier** — même manquement de niveau A que les champs
+   de fichier corrigés aujourd'hui. `subjects` fait `<button class="chip"
+   aria-pressed>` : correct. **La divergence n'est pas visuelle, elle est
+   sémantique.**
 
-2. **Finir la convergence `.btn`** : `upload` est le seul cas restant avec un
-   vrai bouton, et son composant est **réellement différent** (pleine
-   largeur) — à décider avec Mike, pas à forcer. Les cinq autres pages
-   (`gallery`, `browse`, `map`, `reglages`, `faces`) n'ont pas de `.btn`.
-   Ensuite `.chip`, même méthode.
-   **La procédure est fixée** :
-   `cp ui/pages/X.html _avant_css/` → convertir → **prouver** :
+   Gisement compté d'avance : **7** `onclick` en dur sur `<span>`/`<div>`
+   (`map` 3, `pets` 4) et **7 pages** qui fabriquent des `span`/`div` en JS
+   (`gallery` 8 créations / 22 `.onclick`, `people` 7/34, `pets` 5/17,
+   `subjects` 3/20). Tous les `.onclick` ne sont pas fautifs.
 
-       verifier_css_cascade.py --avant _avant_css/X.html \
-           --apres ui/components.css ui/pages/X.html --page ui/pages/X.html
+   **Premier geste : l'INSTRUMENT, pas la correction.**
+   `verifier_controles.py` (famille `verifier_`, lecture seule) apparie chaque
+   `createElement` à son `.onclick` et compte ce qui est cliquable sans être
+   un contrôle. **Rouges d'abord** — les trois instruments existants se sont
+   corrigés **six fois** sur des rouges observés, jamais sur une hypothèse.
+   Puis corriger avec un chiffre au lieu d'une impression.
 
-   **`ui/components.css` en PREMIER dans `--apres`** : c'est là que le serveur
-   l'injecte. Passée en dernier elle gagne une cascade qu'elle ne gagne pas en
-   vrai, et invente des changements (deux `.chip` sur `subjects`).
-   Puis : ajouter la page à `CONVERTIES` (`test_ui_composants.py`) **et** à
-   `ADOPTANTES` (`verifier_pages_composants.py`) → **redémarrer** → le banc →
-   livrer. Toute règle « apparue » qui MORD se dit à Mike avant de partir.
+2. **`.chip` suivra presque gratuitement.** Deux pages seulement le déclarent
+   et l'écart tient en trois lignes (32 px vs 36 ; `--e-1 --e-3` vs
+   `0 --e-4` ; compteur par `margin-left` vs par `gap`). **Contradiction à
+   trancher avec Mike** : `components.css` donne `min-height: 32px` au chip
+   alors que le plancher du même document exige « cibles ≥ 44 px ». 32 px
+   passe WCAG 2.5.8 (24 px) mais viole la règle que le projet s'est donnée.
 
 3. **Reste d'audit** : O8–O9, O11, O13–O15 ; **I1** visible dans `/reglages`.
    O15 (purge de `photo_thumbs/`) gagne en poids.
@@ -156,6 +147,45 @@ treize étaient le même fantôme. Les causes sont comptées et dites.
 **Jamais deux écrivains, y compris contre soi-même** (24/08) :
 `appliquer_xmp_personnes.py` pose un verrou (`_corbeille_xmp/_ecriture.lock`,
 preuve par FRAÎCHEUR, repris après 10 min sans signe de vie).
+
+**Un commentaire est de la PROSE, quel que soit le langage** (25/08, appris
+**quatre fois le même jour**). Un commentaire CSS disant « la feuille
+commune » a rendu six règles `.feuille` actives sur une page qui n'en porte
+aucune. Un commentaire JS (« légende + chip + position ») a rendu treize
+règles `.chip` actives. Une phrase dans un commentaire de `tokens.css`
+(« en bordure sur `--salle` : 4,33:1 ») a fait **disparaître le token qui la
+suivait**, parce que le lecteur avalait tout jusqu'au premier `;`. Et une
+fois, mon propre garde `assert` a échoué parce que ma note explicative
+contenait le marqueur qu'il cherchait. **Retirer les commentaires AVANT de
+lire** — et un nom de classe est un **jeton entier**, pas un morceau de mot
+(`toastP`, `vues`, `--f-donnees` faisaient passer `.toast`, `.vue`, `.donnee`
+pour actives).
+
+**Un banc qui ne SAIT pas ne rend pas vert** (25/08). `verifier_contraste.py`
+a affiché « le plancher AA tient sur tout ce qui est déclaré » et rendu 0,
+avec quatre couples listés juste au-dessus comme non décidables : trois
+avaient cessé d'être mesurés et rien ne criait. **Un couple non mesuré compte
+comme un grief**, et tout rapport dit sa PORTÉE. Ce qui ne se calcule pas se
+**DÉCLARE** dans la source, avec une raison obligatoire
+(`/* contraste: hors-portee -- raison */`) — jamais en dur dans l'instrument,
+sinon il devient aveugle au cas suivant sans qu'on le sache.
+
+**L'ordre de la cascade a QUATRE étages** (25/08), et il est la moitié de
+toute preuve CSS : `components.css` (au marqueur, AVANT le `<style>` de la
+page) → la page → `tokens.css` → `base.css` (à `</head>`, il gagne les
+égalités). Une feuille qui ne change pas doit figurer **des deux côtés**,
+sinon elle apparaît en entier (84 fausses « apparues » sur `residu`).
+
+**Un style de focus sur un élément qui ne reçoit jamais le focus est un
+aveu** (25/08). `.pick-btn:focus-visible` existait depuis toujours et ne
+pouvait pas se déclencher : le contrôle réel était en `display:none`. Quand
+une règle d'accessibilité semble inutile, chercher pourquoi elle a été
+écrite.
+
+**La mise en page n'est pas une variante de composant** (25/08). `upload`
+passait pour le cas différent du chantier avec son bouton pleine largeur :
+c'était `.btn--principal` plus quatre déclarations de layout. Un composant
+décrit ce qu'une chose EST, la page décide de la place qu'elle prend.
 
 **Un banc d'observation ment de deux façons** (25/08). Il peut manquer une
 panne — et il peut déclarer vert ce qu'il n'a **pas pu regarder**.

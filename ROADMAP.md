@@ -51,7 +51,7 @@ comptées À PART.
 déclarations universelles dans `base.css` (déjà injecté partout). Gain en
 octets : nul. Gain réel : une source unique de vérité là où il y en a onze.
 
-### Convergence `.btn` — 5 pages sur 11 ont adopté (25/08, session 46)
+### Convergence `.btn` — 6 pages sur 11, et le `.btn` est FINI (25/08, session 46)
 
 Le compteur du chantier n'est plus des kilo-octets, c'est **combien de pages
 écrivent le même bouton**. Cinq y sont : `residu`, `tranche`, `subjects`,
@@ -236,12 +236,113 @@ de ce que l'instrument sait :
    `color-mix()`, un `var()` inconnu) — un couple silencieusement sauté
    serait un feu vert volé.
 
-**Suite** :
+### `upload` n'était pas le cas différent — c'était une mise en page
 
-1. `upload` — composant réellement différent (pleine largeur) : à décider,
-   pas à forcer. Ce sont les 6 pages restantes qui n'ont pas de `.btn` du
-   tout (`gallery`, `browse`, `map`, `reglages`, `faces`) ou un autre.
-2. Trancher le survol / désactivé, puis `.chip` — même méthode.
+Cette page passait pour l'exception du chantier : son bouton fait toute la
+largeur. **Ce n'en était pas une.** Ce que `.btn` déclarait là, c'était un
+bouton primaire (papier sur texte-papier — exactement `.btn--principal`)
+**plus une mise en page** (`display:block; width:100%; max-width:480px;
+margin-top`). **La mise en page n'est pas une variante de composant** : c'est
+la colonne de la page qui est large de 480 px, et le bouton qui la remplit.
+Cinq sélecteurs répétaient ce 480 — ils partagent maintenant `--colonne`.
+
+Ce qui reste vraiment propre à cette page est l'**emphase** : c'est l'action
+unique de l'écran. Une taille n'est pas encore une variante du système (une
+seule page la demande), elle reste donc sur `#uploadBtn`, nommée — avec un
+`min-height: calc(var(--touch) + var(--e-2))`, un cran au-dessus du plancher
+tactile, parce que ce n'est pas un bouton de barre d'outils.
+
+Et `.pick-btn` n'est **pas** un bouton : c'est une zone de dépôt. Elle ne
+converge pas, elle reste ce qu'elle est. Son état pressé, en revanche,
+s'assombrissait quand tout le reste du système s'éclaircit : corrigé.
+
+**Le `.btn` est fini.** Les cinq pages restantes (`gallery`, `browse`, `map`,
+`reglages`, `faces`) n'ont pas de `.btn` du tout.
+
+### L'état PRESSÉ, parce que sur tactile c'est le seul retour
+
+`@media (hover: hover)` est faux sur un écran tactile : le survol n'existe
+pas. Sans `:active`, un doigt qui appuie sur « Confirmer » n'obtient **aucun
+retour** avant que la requête ne réponde — et sur ce projet, nommer des
+visages au téléphone est le geste le plus répété. `:active` vit donc **hors**
+du garde, et emprunte la même marche que le survol pour ne pas inventer un
+second vocabulaire de profondeur.
+
+Les deux accents pleins ne pouvaient pas emprunter une surface neutre : un
+« Confirmer » vert qui devient gris sous le doigt n'est plus un Confirmer.
+D'où **`--fixateur-p: #3F7769`** et **`--encre-p: #B82E1C`** — −8 % de
+clarté, teinte et saturation intactes, et les deux **améliorent** le
+contraste du blanc (5,18:1 et 6,09:1). **24 couples mesurés, tous au-dessus
+du seuil.**
+
+### Un manquement de niveau A, plus grave que les contrastes
+
+En convertissant `/`, un défaut est sorti qui bat tout ce qui précède : les
+**deux actions principales du site étaient injoignables au clavier**. Elles
+sont des `<label for>` pilotant un `<input type="file" style="display:none">`
+— et `display:none` retire un élément de l'ordre de tabulation **et** de
+l'arbre d'accessibilité, tandis qu'un `<label>` n'est pas focusable. WCAG
+2.1.1, **niveau A**.
+
+**L'indice traînait depuis toujours** : la page écrivait
+`.pick-btn:focus-visible`, une règle qui ne pouvait jamais se déclencher. Un
+style de focus sur un élément qui ne reçoit jamais le focus est un aveu, pas
+une précaution.
+
+`base.css` porte maintenant `.hors-ecran` — le motif « visuellement caché » :
+l'élément quitte la **peinture**, pas le document. Et comme un champ
+focusable mais invisible déplacerait un anneau qu'on ne voit pas (pire que
+rien), le champ précède immédiatement son libellé pour que
+`:focus-visible + .pick-btn` porte l'anneau.
+
+### Le prochain chantier est nommé et MESURÉ : un contrôle qui n'en est pas un
+
+`.chip` semblait la suite naturelle. La mesure dit autre chose : **deux pages
+seulement le déclarent** (`gallery` et `subjects`), et leur écart tient en
+trois lignes — 32 px contre 36, `var(--e-1) var(--e-3)` contre `0 var(--e-4)`,
+et le compteur `.n` par `margin-left` contre par `gap`. C'est de la mécanique.
+
+**Le vrai sujet est en dessous.** `gallery` construit ses chips de personnes
+ainsi :
+
+    var b = document.createElement('span');
+    b.className = 'pchip' + (…? ' on' : '');
+    b.onclick = function() { … };
+
+Un `<span onclick>` : pas de `tabindex`, donc **pas focusable** ; pas de
+`role`, donc **pas annoncé comme un contrôle** ; pas d'`aria-pressed`, donc
+**pas annoncé comme une bascule**. Le filtre le plus utilisé de la page la
+plus utilisée est **inaccessible au clavier** — WCAG 2.1.1, niveau A, le même
+manquement que les deux champs de fichier corrigés aujourd'hui. Le design
+system l'interdit noir sur blanc : « `<button>` pour agir, jamais
+`<div onclick>` », et « un chip de filtre est un bouton bascule ». Deux règles
+écrites, jamais vérifiées.
+
+`subjects`, lui, fait `<button class="chip" aria-pressed="…">` — correct.
+**La divergence n'est donc pas visuelle, elle est sémantique** : deux pages
+peignent le même objet et une seule le rend utilisable. Exactement la forme
+qu'avait prise `.btn`.
+
+**Le gisement, compté avant de commencer** :
+
+| | |
+|---|---|
+| `onclick` posé en dur sur `<span>`/`<div>` | **7** (`map` 3, `pets` 4) |
+| pages qui construisent des `span`/`div` en JS | **7** (`gallery` 8 créations / 22 `.onclick`, `people` 7/34, `pets` 5/17, `subjects` 3/20…) |
+| `aria-pressed` déjà présent | 6 pages, 29 occurrences |
+
+Tous les `.onclick` ne sont pas fautifs — beaucoup portent sur de vrais
+`<button>`. **Le premier geste est donc l'instrument, pas la correction** :
+`verifier_controles.py` (famille `verifier_`, lecture seule), qui apparie
+chaque `createElement` à son `.onclick` et compte ce qui est cliquable sans
+être un contrôle. Rouges d'abord, comme les deux autres. Puis on corrige avec
+un chiffre au lieu d'une impression — et `.chip` suivra, presque gratuitement,
+une fois ses chips devenus des boutons.
+
+**Et une contradiction interne à trancher au passage** : `components.css`
+donne `min-height: 32px` au chip, alors que le plancher du même document exige
+« cibles ≥ 44 px ». 32 px passe WCAG 2.5.8 (24 px, AA) mais viole la règle que
+le projet s'est donnée. Question pour Mike quand on y sera.
 
 ### Les trois universelles sont hissées — et elles étaient trois, pas six
 

@@ -128,7 +128,8 @@ class LaPageGardeLeDernierMot(unittest.TestCase):
 # La liste des pages converties vit ICI et dans `verifier_pages_composants.py`
 # (routes). Une page qui entre dans la convergence doit entrer dans les deux :
 # la premiere prouve le fichier, la seconde prouve le serveur qui le sert.
-CONVERTIES = ('residu', 'tranche', 'subjects', 'people', 'pets')
+CONVERTIES = ('residu', 'tranche', 'subjects', 'people', 'pets',
+              'upload')
 
 
 class LesPagesConverties(unittest.TestCase):
@@ -190,10 +191,39 @@ class LesPagesConverties(unittest.TestCase):
         css = (SERVER.parent / 'ui' / 'components.css').read_text(
             encoding='utf-8')
         survol = css[css.index('@media (hover: hover)'):]
-        survol = survol[:survol.index('}\n.btn:disabled')]
+        survol = survol[:survol.index('\n}')]
         for v in ('--principal', '--discret', '--confirmer', '--destructif'):
             self.assertIn('.btn' + v + ':hover', survol,
                           v + " n'a pas de survol : .btn:hover le repeindra")
+
+    def test_l_etat_PRESSE_existe_et_n_est_PAS_sous_le_garde_hover(self):
+        """Sur un ecran tactile, `@media (hover: hover)` est faux : le survol
+        n'existe pas. Sans `:active`, un doigt qui appuie sur << Confirmer >>
+        n'obtient AUCUN retour avant que la requete ne reponde. C'est le seul
+        retour immediat que le tactile possede -- il vit donc DEHORS."""
+        css = (SERVER.parent / 'ui' / 'components.css').read_text(
+            encoding='utf-8')
+        i = css.index('.btn:active')
+        j = css.rindex('@media (hover: hover)')
+        k = css.index('}', css.index('.btn--destructif:hover'))
+        self.assertTrue(i > k or i < j,
+                        ":active est enferme dans le garde hover : le tactile "
+                        "n'a plus aucun retour")
+
+    def test_chaque_variante_a_fond_a_AUSSI_son_etat_presse(self):
+        css = (SERVER.parent / 'ui' / 'components.css').read_text(
+            encoding='utf-8')
+        for v in ('--principal', '--discret', '--confirmer', '--destructif'):
+            self.assertIn('.btn' + v + ':active', css,
+                          v + " sans etat presse : .btn:active le repeindra")
+
+    def test_les_deux_accents_ont_une_marche_pressee_tokenisee(self):
+        """`--fixateur` et `--encre` posent un fond plein : leur etat presse
+        ne peut pas etre une surface neutre, il doit etre CET accent, plus
+        fonce. Sans token, on retombe sur une couleur en dur."""
+        tok = (SERVER.parent / 'ui' / 'tokens.css').read_text(encoding='utf-8')
+        self.assertIn('--fixateur-p:', tok)
+        self.assertIn('--encre-p:', tok)
 
     def test_le_token_du_survol_existe_vraiment(self):
         """Un var() qui ne resout pas rend une declaration INVALIDE, donc
@@ -206,6 +236,62 @@ class LesPagesConverties(unittest.TestCase):
             html = self._page(nom)
             self.assertNotIn('.btn:hover', html, nom)
             self.assertNotIn('.btn:disabled', html, nom)
+
+
+class UN_CHAMP_CACHE_EN_display_none_SORT_DU_CLAVIER(unittest.TestCase):
+    """Trouve le 25/08 en convertissant `/` -- et c'est un manquement de
+    niveau A, plus grave que les contrastes de niveau AA corriges le matin.
+
+    Les deux actions principales de la page d'envoi sont des `<label for>`
+    qui pilotent un `<input type="file" style="display:none">`. Un element en
+    `display:none` sort de l'ordre de tabulation ET de l'arbre
+    d'accessibilite ; un `<label>`, lui, n'est pas focusable. **Aucune des
+    deux actions ne pouvait etre atteinte au clavier.** WCAG 2.1.1, niveau A.
+
+    L'indice etait la depuis le debut : la page ecrivait
+    `.pick-btn:focus-visible` -- une regle qui ne pouvait jamais se declencher.
+    Un style de focus sur un element qui ne recoit jamais le focus est un
+    aveu, pas une precaution.
+
+    Le remede est le motif << visuellement cache >> : l'element reste dans le
+    document (donc focusable, donc annonce), il est seulement retire de la
+    peinture. `.hors-ecran` vit dans `base.css`, avec le reste du plancher.
+    """
+
+    def _page(self, nom):
+        return (SERVER.parent / 'ui' / 'pages' / (nom + '.html')).read_text(
+            encoding='utf-8')
+
+    def test_aucun_champ_de_fichier_n_est_en_display_none(self):
+        for nom in CONVERTIES:
+            html = self._page(nom)
+            for bout in html.split('<input')[1:]:
+                entete = bout[:bout.index('>')]
+                if 'type="file"' in entete:
+                    self.assertNotIn('display:none', entete.replace(' ', ''),
+                                     nom + " : un champ fichier en "
+                                     "display:none sort du clavier")
+
+    def test_le_motif_visuellement_cache_vit_dans_base_css(self):
+        css = (SERVER.parent / 'ui' / 'base.css').read_text(encoding='utf-8')
+        self.assertIn('.hors-ecran', css)
+        self.assertIn('clip-path', css)
+        self.assertNotIn('.hors-ecran { display: none', css)
+
+    def test_le_champ_cache_precede_son_libelle_pour_que_le_FOCUS_SE_VOIE(self):
+        """Un champ focusable mais invisible deplace un anneau de focus qu'on
+        ne voit pas : pire que rien. Le libelle doit porter l'anneau, donc le
+        champ doit le preceder immediatement (`input:focus-visible + label`).
+        """
+        html = self._page('upload')
+        i = html.index('id="fileInput"')
+        j = html.index('for="fileInput"')
+        entre = html[i:j]
+        # Le seul `<label` present est celui qui SUIT immediatement : rien ne
+        # s'intercale, donc le selecteur `+` mord.
+        self.assertEqual(entre.count('<label'), 1, entre)
+        self.assertEqual(entre.count('<input'), 0, entre)
+        self.assertIn(':focus-visible + .pick-btn', html)
 
 
 class LeBundleSuit(unittest.TestCase):

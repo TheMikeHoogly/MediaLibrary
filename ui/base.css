@@ -57,3 +57,22 @@ body {
   color: var(--texte);
   font-family: var(--f-texte);
 }
+
+/* 5. VISUELLEMENT CACHE, mais present pour le clavier et le lecteur d ecran
+   (25/08). `display: none` et `visibility: hidden` retirent un element de
+   l ordre de tabulation ET de l arbre d accessibilite. Sur la page d envoi,
+   les deux `<input type="file">` etaient en `display: none` derriere des
+   `<label for>` : les DEUX actions principales du site etaient injoignables
+   au clavier -- WCAG 2.1.1, niveau A. L indice trainait depuis toujours, une
+   regle `.pick-btn:focus-visible` qui ne pouvait jamais se declencher.
+
+   Ce motif retire l element de la PEINTURE, pas du document. Il ne doit
+   jamais etre remplace par `display: none` sur un controle actif. */
+.hors-ecran {
+  position: absolute;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px; border: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}

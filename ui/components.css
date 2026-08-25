@@ -97,9 +97,28 @@
   .btn:hover             { background: var(--salle-4); }
   .btn--principal:hover  { background: var(--papier-2); }
   .btn--discret:hover    { background: var(--papier-2); }
-  .btn--confirmer:hover  { background: var(--fixateur); }
-  .btn--destructif:hover { background: var(--encre); }
+  .btn--confirmer:hover  { background: var(--fixateur-p); }
+  .btn--destructif:hover { background: var(--encre-p); }
 }
+
+/* --- Presse : la MEME marche que le survol, mais HORS du garde -----------
+   Sur un ecran tactile, `@media (hover: hover)` est faux : le survol
+   n'existe pas. Sans `:active`, un doigt qui appuie sur << Confirmer >>
+   n'obtient AUCUN retour avant que la requete ne reponde -- et sur ce
+   projet, nommer des visages au telephone est le geste le plus repete.
+   C'est le seul retour immediat que le tactile possede : il vit donc
+   dehors. Meme marche que le survol pour ne pas inventer un second
+   vocabulaire de profondeur. */
+.btn:active             { background: var(--salle-4); }
+.btn--principal:active  { background: var(--papier-2); }
+.btn--discret:active    { background: var(--papier-2); }
+.btn--confirmer:active  { background: var(--fixateur-p); }
+.btn--destructif:active { background: var(--encre-p); }
+
+/* Desactive : `opacity` et pas une couleur, pour que la variante reste
+   RECONNAISSABLE en gris -- un << Supprimer >> desactive doit encore se lire
+   comme un Supprimer. WCAG 1.4.3 exempte les controles inactifs du seuil de
+   contraste : c'est ce qui rend cette baisse legitime. */
 .btn:disabled, .btn[aria-disabled="true"] {
   opacity: 0.5; cursor: not-allowed;
 }

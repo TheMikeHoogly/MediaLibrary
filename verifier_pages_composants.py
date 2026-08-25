@@ -50,7 +50,7 @@ BALISE_TOKENS = 'id="ui-shared"'
 
 # Les pages converties le 25/08. Une page ne s'ajoute ici qu'apres la preuve
 # de cascade (`verifier_css_cascade.py --page <page>.html`).
-ADOPTANTES = ('/residu', '/tranche', '/sujets', '/people', '/pets')
+ADOPTANTES = ('/residu', '/tranche', '/sujets', '/people', '/pets', '/')
 # Le temoin : une page qui n'a PAS adopte. Sans lui, un serveur qui injecterait
 # partout passerait ce banc en vert. Deux temoins ont ete essayes et ecartes,
 # chacun par un essai REEL : `/upload` n'est pas une route (404, la page d'envoi
@@ -65,7 +65,7 @@ TEMOIN = '/map'
 # seulement sur celles qui ont adopte les composants.
 # `/faces` n'y est pas : la page a ete retiree, la route repond 302 vers
 # `/people`. Un chemin qu'on ne peut pas lire chez lui ne temoigne de rien.
-AUTRES = ('/', '/files', '/browse', '/reglages')
+AUTRES = ('/files', '/browse', '/reglages')
 
 # Ce que la feuille commune DOIT porter. Si `components.css` se vide ou se
 # tronque, la page rend nue sans qu'aucune erreur ne remonte.

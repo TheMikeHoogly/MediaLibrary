@@ -24,6 +24,7 @@
   --veilleuse:    #FF7A1A;  /* lampe inactinique : « l'IA travaille », en attente */
   --veilleuse-d:  #7A3908;  /* variante sombre : liseres, fonds de badge */
   --encre:        #C8321E;  /* destructif, correction, erreur */
+  --encre-p:      #B82E1C;  /* survol / presse de --encre */
   /* 25/08 : assombri de #4A8C7B a #448172. Le blanc dessus etait a 3,94:1,
      sous le plancher AA de 4,5 -- sur le bouton qui CONFIRME une decision
      humaine, et sur le chip de filtre actif. Teinte et saturation intactes :
@@ -32,6 +33,12 @@
      bien au-dessus du 3:1 exige d'une bordure porteuse.
      Mesure par `verifier_contraste.py`, pas a l'oeil. */
   --fixateur:     #448172;  /* confirme, succes, assigne */
+  /* Marches PRESSEES des deux accents pleins (25/08). Un fond plein ne peut
+     pas emprunter une surface neutre au survol : il doit rester CET accent,
+     un cran plus fonce. Sans token, on retombe sur une couleur en dur.
+     -8 % de clarte, teinte et saturation intactes ; les deux AMELIORENT le
+     contraste du blanc (5,18:1 et 6,09:1) au lieu de le degrader. */
+  --fixateur-p:   #3F7769;  /* survol / presse de --fixateur */
 
   /* --- Texte --- */
   --texte:        #F2EDE6;  /* sur --salle */
