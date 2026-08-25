@@ -272,3 +272,11 @@ _xmp_fonds_final.json
 # versionner ferait vivre deux fois la meme page, et la copie perimee finirait
 # par servir de preuve.
 _avant_css/
+
+# --- Sorties JSON de la preuve de cascade (25/08) --------------------------
+# `verifier_css_cascade.py --json` ecrit le rapport d'UNE comparaison. C'est
+# une mesure, pas une source : elle se refait par la commande, et elle porte
+# le CSS de la page en clair. Deux sont entrees dans l'historique avant cette
+# ligne (`_preuve_browse.json`, `_preuve_faces.json`) : elles ont ete
+# deplacees dans `_to_delete/`, la prochaine livraison enregistre leur retrait.
+_preuve_*.json
