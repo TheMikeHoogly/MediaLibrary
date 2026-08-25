@@ -58,6 +58,36 @@
    toutes les deux : un vocabulaire ne devient canonique que quand deux pages
    l'ecrivent pareil sans se concerter. */
 .btn--discret { background: transparent; border-color: var(--papier-2); color: var(--texte-papier); }
+/* --- Survol et etat desactive (25/08, approuves par Mike) ----------------
+   Ils n'existaient nulle part dans le systeme : `pets` etait la seule page a
+   les ecrire, avec une couleur EN DUR, et `upload` ecrivait un desactive
+   different. Deux pages, deux facons : pas encore canonique -- jusqu'a ce que
+   quelqu'un tranche. C'est fait.
+
+   `not-allowed` et pas `default` : le curseur dit POURQUOI le clic ne fait
+   rien, au lieu de faire semblant qu'il n'y a pas de bouton.
+
+   `@media (hover:hover)` : sur un ecran tactile, `:hover` colle apres le
+   doigt et le bouton reste allume jusqu'au prochain appui ailleurs.
+
+   Chaque variante qui pose son propre fond DOIT le reposer ici : `.btn:hover`
+   pese (0,2,0) et ecraserait sans ca `.btn--principal` (0,1,0), repeignant le
+   bouton primaire en gris au passage de la souris.
+   `--confirmer` et `--destructif` se REPOSENT a l'identique -- elles n'ont pas
+   de marche tokenisee, et leur contraste de base est deja sous AA (3,94:1 et
+   3,68:1, mesures) : inventer une couleur la serait trancher la question
+   ouverte au lieu de la poser. Voir QUESTIONS_MIKE.md. */
+@media (hover: hover) {
+  .btn:hover             { background: var(--salle-4); }
+  .btn--principal:hover  { background: var(--papier-2); }
+  .btn--discret:hover    { background: var(--papier-2); }
+  .btn--confirmer:hover  { background: var(--fixateur); }
+  .btn--destructif:hover { background: transparent; }
+}
+.btn:disabled, .btn[aria-disabled="true"] {
+  opacity: 0.5; cursor: not-allowed;
+}
+
 .btn kbd {
   font: var(--t-xs)/1 var(--f-donnees);
   border: 1px solid currentColor; border-radius: var(--r-sm);

@@ -144,14 +144,59 @@ porte, donc la convergence la referme — c'est l'argument le plus fort du
 chantier, et il n'était pas dans le calcul de départ. `pets` perd en prime son
 `background: #ffffff0d`, la seule valeur non tokenisée du fichier.
 
-**Un trou du design system, trouvé et NON bouché** : le survol et l'état
-désactivé d'un bouton ne sont écrits **nulle part** dans `photo-ui`. Deux
-pages seulement les déclarent — `pets` (`opacity:.5`) et `upload`
-(`background`+`color`) — et **pas de la même façon**. La règle de promotion
-du projet dit non : un vocabulaire ne devient canonique que quand deux pages
-l'écrivent pareil sans se concerter. Ils restent donc des exceptions
-déclarées dans `pets`. **Question ouverte pour Mike** (voir
-`QUESTIONS_MIKE.md`).
+**Le trou du design system est bouché — et il en cachait un plus grave.**
+Le survol et l'état désactivé d'un bouton n'étaient écrits **nulle part** dans
+`photo-ui`. Une seule page les portait (`pets`), l'un avec un `#ffffff1a` en
+dur. Mike a tranché (25/08) : ils sont canoniques.
+
+- **`--salle-4: #24201D`** — élévation 3, la marche qu'emprunte un survol.
+  Même pas arithmétique que `--salle` → `-2` → `-3` (+8/+7/+7 par canal), donc
+  la chaleur du noir se conserve. `--texte` dessus : 13,9:1.
+- **`cursor: not-allowed`** et non `default` : le curseur dit *pourquoi* le
+  clic ne fait rien, au lieu de faire semblant qu'il n'y a pas de bouton.
+- `@media (hover: hover)` : sur un écran tactile, `:hover` colle après le
+  doigt et le bouton reste allumé jusqu'au prochain appui ailleurs.
+- **Chaque variante qui pose son propre fond le REPOSE au survol.**
+  `.btn:hover` pèse (0,2,0) et écraserait sinon `.btn--principal` (0,1,0) :
+  le bouton primaire virerait au gris sous la souris.
+
+### Le plancher AA était un vœu, il est devenu une mesure
+
+En écrivant ce survol, une question s'est posée : quelle couleur pour le
+survol du bouton *Confirmer* ? Y répondre demandait de calculer son contraste.
+Il ne l'avait jamais été. **`verifier_contraste.py`** (neuf, famille
+`verifier_`, lecture seule, **20 vérifications**) lit `tokens.css` et
+`components.css`, résout les `var()`, et calcule le ratio WCAG 2.1 de chaque
+couple `color`/`background` **réellement déclaré** — pas de couple inventé.
+
+**14 couples sur 19 tiennent. Trois échouent, sur deux tokens :**
+
+| composant | mesuré | seuil |
+|---|---|---|
+| `.btn--confirmer` — `#fff` sur `--fixateur` | **3,94:1** | 4,5 |
+| `.chip[aria-pressed="true"]` — même couple | **3,94:1** | 4,5 |
+| `.btn--destructif` — `--encre` sur fond hérité | **3,03:1** (pire cas) | 4,5 |
+
+**Rien n'a été changé** : modifier un token ripple sur les onze pages et sur
+le sens que Mike a donné aux accents. Deux pistes chiffrées par token sont
+dans `QUESTIONS_MIKE.md`. **Le banc reste rouge (code 1) tant que ce n'est pas
+tranché — c'est voulu** : une alarme qu'on éteint sans corriger ne protège
+plus rien.
+
+Trois choix de conception y sont écrits noir sur blanc, parce qu'ils décident
+de ce que l'instrument sait :
+
+1. **La famille de surfaces se lit dans le NOM du token, pas dans les
+   pixels.** Deviner à la luminance donnait la mauvaise réponse — `--encre`
+   est sombre et vit pourtant sur le noir. `--texte-papier` et `--graphite-p`
+   nomment leur surface ; `--texte` et `--graphite` sont documentés « sur
+   `--salle` ». Un token qui ne nomme rien est dit **INDÉTERMINÉ**, et jugé
+   sur le pire des deux mondes.
+2. **Un fond `transparent` n'a pas de contraste, il en hérite** : le pire cas
+   fait foi. Un bouton à contour ne choisit pas son voisinage.
+3. **Ce qu'il ne sait pas résoudre est COMPTÉ, jamais tu** (`rgb()`,
+   `color-mix()`, un `var()` inconnu) — un couple silencieusement sauté
+   serait un feu vert volé.
 
 **Suite** :
 

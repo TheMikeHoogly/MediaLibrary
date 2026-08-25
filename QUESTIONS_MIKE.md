@@ -6,32 +6,63 @@
 > `eval/DECISIONS.md` si elle tranche, dans `ROADMAP.md` si elle priorise.
 > Protocole : `CLAUDE.md`, « Traite autonome ».
 
-- **25/08 — le SURVOL et l'état DÉSACTIVÉ d'un bouton ne sont écrits nulle
-  part.** En convertissant `pets`, deux règles n'ont pas trouvé de place :
-  `.btn:hover { background: #ffffff1a }` et `.btn:disabled { opacity: .5 }`.
-  Le design system `photo-ui` décrit `.btn`, ses trois variantes et son focus
-  clavier — **ni survol, ni désactivé**.
+- **25/08 — DEUX COULEURS DU SYSTÈME SONT SOUS LE SEUIL AA, et l'une d'elles
+  est le bouton qui confirme.** Trouvé en écrivant le survol que tu venais
+  d'approuver : le plancher de `photo-ui` dit « Contraste AA : 4,5:1 texte.
+  **Toute nouvelle couleur vérifiée.** » La phrase était là depuis le début.
+  Personne ne l'avait calculée. `verifier_contraste.py` (neuf, famille
+  `verifier_`, lecture seule, 20 vérifications) la calcule maintenant :
 
-  **Ce qui empêche de trancher tout seul** : la règle de promotion du projet
-  dit qu'un vocabulaire devient canonique quand **deux pages l'écrivent
-  pareil sans se concerter**. Ici, deux pages les déclarent et **pas de la
-  même façon** : `pets` fait `opacity: .5 ; cursor: default`, `upload` fait
-  `background: var(--salle-3) ; color: var(--graphite) ; cursor: default`.
-  Seul `cursor: default` est commun — trop mince pour fonder un composant.
-  Et le survol n'existe que dans `pets`, avec une valeur **en dur**
-  (`#ffffff1a`), donc hors tokens : le hisser tel quel ferait entrer une
-  couleur non tokenisée dans le système, ce que le plancher interdit.
+  | composant | mesuré | seuil |
+  |---|---|---|
+  | `.btn--confirmer` — `#fff` sur `--fixateur` | **3,94:1** | 4,5 |
+  | `.chip[aria-pressed="true"]` — même couple | **3,94:1** | 4,5 |
+  | `.btn--destructif` — `--encre` sur fond hérité | **3,03:1** (pire cas) | 4,5 |
 
-  **Ma recommandation** : un désactivé neutre et sans couleur —
-  `opacity: .5 ; cursor: not-allowed` (et non `default` : `not-allowed` dit
-  *pourquoi* le clic ne fait rien) — et un survol qui **éclaircit d'un cran**
-  la surface, ce qui demande un token qui n'existe pas encore
-  (`--salle-4`, ou un `--survol`). C'est **un ajout au design system**, donc
-  ton choix, pas le mien.
+  *14 couples sur 19 tiennent.* Les trois qui manquent tiennent à **deux
+  tokens** : `--fixateur` et `--encre`.
 
-  **En attendant** : les deux règles restent des exceptions déclarées dans
-  `pets`, avec un commentaire qui dit que c'est un trou du système et non un
-  oubli. `upload` n'est pas encore convertie, donc rien n'est en conflit.
+  **Pourquoi je ne tranche pas seul** : changer un token de la palette ripple
+  sur les onze pages et sur le sens que tu leur as donné (`--fixateur` =
+  confirmé par un humain, `--encre` = destructif ou en erreur). C'est une
+  décision de design, pas un correctif.
+
+  **`--fixateur` — deux pistes, mesurées :**
+
+  - **A. assombrir le token** : `#4A8C7B` → **`#448172`** (teinte et saturation
+    intactes, seule la clarté bouge). `#fff` dessus : **4,54:1**. Effet de
+    bord : en bordure sur `--salle` il passe de 4,7 à **4,33:1** — toujours
+    au-dessus du 3:1 exigé d'une bordure porteuse.
+  - **B. changer le texte, pas le fond** : `--texte-papier` (`#1A1714`) au lieu
+    de `#fff` sur le vert. **4,53:1**. Aucun token ne bouge, mais un bouton
+    « Confirmer » à texte sombre sur vert se lit autrement — plus doux, moins
+    « bouton d'action ».
+
+  **Ma recommandation : A.** Le sens de `--fixateur` est porté par sa teinte,
+  pas par sa clarté ; A la garde intacte et corrige le seul défaut. B déplace
+  le problème vers la lisibilité perçue d'un libellé court.
+
+  **`--encre` — deux pistes, mesurées :**
+
+  - **A. éclaircir le token** : `#C8321E` → **`#E45A48`**, qui tient 4,51:1
+    même sur la surface la plus claire du sombre. **Mais** sur `--papier` il
+    tombe à **2,91:1** — et `--encre` sert aussi de texte d'erreur sur papier.
+    A réparerait un côté en cassant l'autre.
+  - **B. remplir le bouton destructif** : `#fff` sur `--encre` tel quel =
+    **5,34:1**, confortable, **aucun token ne bouge**. Le bouton passe de
+    « contour rouge » à « plein rouge ».
+
+  **Ma recommandation : B.** Elle ne touche pas la palette, elle est la plus
+  contrastée des quatre pistes, et un bouton destructif plein est cohérent
+  avec ce que le système dit déjà — `--encre` ne doit jamais être décoratif.
+  Le seul coût est visuel : un bouton rouge plein pèse plus lourd à l'œil
+  qu'un contour. C'est peut-être exactement ce qu'on veut d'un « Supprimer ».
+
+  **En attendant** : rien n'est changé. `.btn--confirmer:hover` et
+  `.btn--destructif:hover` reposent leur fond à l'identique — inventer une
+  couleur là serait trancher la question au lieu de la poser. Le banc
+  `verifier_contraste.py` reste rouge (code 1) tant que ce n'est pas décidé :
+  **c'est voulu**, une alarme qu'on éteint sans corriger ne protège plus rien.
 
 - **25/08 — la copie HORS SITE (12 bis). LE FONDS EST MESURÉ : 291 Go.**
   `inventaire_fonds.py` (neuf) : **76 947 fichiers, 290,9 Go** — dont

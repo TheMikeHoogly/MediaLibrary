@@ -55,18 +55,26 @@ passer les « apparues » de 69 à 25. Deux sur le banc d'observation (un témoi
 qui n'était pas une route ; un témoin qui **redirige**, lu ailleurs et jugé
 quand même — en vert).
 
-**Un changement visuel volontaire est parti avec** : dans `residu`, le
-`<h3 id="legref">` est dans `<section class="feuille">` et prend donc la police
-d'affichage condensée. Seule des 17 règles « apparues » à mordre vraiment.
+**Le survol et l'état désactivé sont devenus canoniques** (approuvés le
+25/08) : token **`--salle-4: #24201D`** (élévation 3), `cursor: not-allowed`,
+sous `@media (hover: hover)`, et **chaque variante à fond repose le sien** —
+`.btn:hover` pèse (0,2,0) et repeindrait sinon le bouton primaire en gris.
+
+**Et c'est en écrivant ce survol qu'un défaut plus grave est sorti** : le
+plancher AA n'avait jamais été calculé. `verifier_contraste.py` (neuf, 20
+vérifications) le calcule ; voir « Prochain pas ».
 
 ## Prochain pas
 
-1. **Une QUESTION attend Mike avant la suite** (`QUESTIONS_MIKE.md`, en
-   tête) : le **survol** et l'**état désactivé** d'un bouton ne sont écrits
-   nulle part dans `photo-ui`. Deux pages les déclarent, pas de la même
-   façon, et le survol de `pets` porte une couleur EN DUR (`#ffffff1a`). La
-   règle de promotion dit non ; c'est un ajout au design system, donc son
-   choix. En attendant : exceptions déclarées dans `pets`.
+1. **Une QUESTION attend Mike, et elle est chiffrée** (`QUESTIONS_MIKE.md`,
+   en tête) : **deux couleurs du système sont sous le seuil AA**, dont le
+   bouton qui confirme. `.btn--confirmer` et `.chip[aria-pressed="true"]` :
+   **3,94:1** (`#fff` sur `--fixateur`). `.btn--destructif` : **3,03:1**
+   (pire cas). 14 couples sur 19 tiennent ; les trois qui manquent tiennent à
+   **deux tokens**. Deux pistes mesurées par token sont écrites, avec ma
+   recommandation. **Rien n'a été changé** — un token ripple sur onze pages.
+   `verifier_contraste.py` reste **rouge (code 1)** tant que ce n'est pas
+   tranché : c'est voulu.
 
 2. **Finir la convergence `.btn`** : `upload` est le seul cas restant avec un
    vrai bouton, et son composant est **réellement différent** (pleine

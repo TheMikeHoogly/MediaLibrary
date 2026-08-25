@@ -33,13 +33,10 @@
      44 px, donc une breche du plancher d'accessibilite -- et avec un
      `background:#ffffff0d` en dur, la seule valeur non tokenisee du fichier.
      Les trois partent ensemble.
-     Ce qui reste ci-dessous est une EXCEPTION assumee, et un TROU du systeme :
-     le survol et l'etat desactive d'un bouton ne sont ecrits NULLE PART dans
-     `photo-ui`. Deux pages seulement les declarent (`pets`, `upload`) et pas
-     de la meme facon -- ils ne sont donc pas encore canoniques. A trancher
-     avec Mike avant de les hisser (voir ROADMAP). */
-  @media (hover:hover){ .btn:hover{background:#ffffff1a;} }
-  .btn:disabled{opacity:.5;cursor:default;}
+     Le survol et l'etat desactive sont partis avec, le 25/08 : ils etaient
+     ecrits ICI et nulle part ailleurs dans le systeme, l'un avec un
+     `#ffffff1a` EN DUR. Mike a tranche -- ils sont canoniques, sur le token
+     `--salle-4` (elevation 3) et sur `cursor: not-allowed`. */
   .cats{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:var(--e-4);}
   .cat{background:var(--salle-3);border:var(--trait);border-radius:var(--r-md);
     padding:var(--e-3);cursor:pointer;text-align:center;transition:transform .12s,border-color .15s;}

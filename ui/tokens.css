@@ -11,6 +11,12 @@
   --salle:        #0C0B0A;  /* fond : noir CHAUD, jamais gris neutre */
   --salle-2:      #14120F;  /* elevation 1 : barres, en-tetes */
   --salle-3:      #1C1916;  /* elevation 2 : cartes, cellules */
+  /* elevation 3 (25/08) : la marche que le SURVOL emprunte. Meme pas
+     arithmetique que 0C->14->1C : +8 / +7 / +7 par canal, donc la
+     chaleur du noir se conserve. --texte dessus : 13,9:1. Ajoutee
+     parce que le survol d'un bouton n'etait ecrit NULLE PART et que
+     la seule page qui l'ecrivait le faisait avec un #ffffff1a en dur. */
+  --salle-4:      #24201D;  /* elevation 3 : survol d'une surface sombre */
   --papier:       #EDE7DC;  /* surfaces de travail : panneaux de nommage */
   --papier-2:     #DDD5C6;  /* bordures et separateurs sur papier */
 

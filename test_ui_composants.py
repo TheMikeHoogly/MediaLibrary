@@ -175,6 +175,38 @@ class LesPagesConverties(unittest.TestCase):
                       '.btn--discret', '.btn kbd'):
             self.assertIn(regle, css, regle + " manque a components.css")
 
+    def test_le_survol_et_le_desactive_sont_canoniques(self):
+        """Ils vivaient dans `pets` seule, l'un avec un #ffffff1a EN DUR."""
+        css = (SERVER.parent / 'ui' / 'components.css').read_text(
+            encoding='utf-8')
+        self.assertIn('@media (hover: hover)', css)
+        self.assertIn('.btn:disabled', css)
+        self.assertIn('cursor: not-allowed', css)
+        self.assertIn('var(--salle-4)', css)
+
+    def test_chaque_variante_a_fond_REPOSE_son_fond_au_survol(self):
+        """`.btn:hover` pese (0,2,0) et ecraserait `.btn--principal` (0,1,0) :
+        le bouton primaire virerait au gris sous la souris."""
+        css = (SERVER.parent / 'ui' / 'components.css').read_text(
+            encoding='utf-8')
+        survol = css[css.index('@media (hover: hover)'):]
+        survol = survol[:survol.index('}\n.btn:disabled')]
+        for v in ('--principal', '--discret', '--confirmer', '--destructif'):
+            self.assertIn('.btn' + v + ':hover', survol,
+                          v + " n'a pas de survol : .btn:hover le repeindra")
+
+    def test_le_token_du_survol_existe_vraiment(self):
+        """Un var() qui ne resout pas rend une declaration INVALIDE, donc
+        muette : le bouton n'aurait simplement pas de survol, sans erreur."""
+        tok = (SERVER.parent / 'ui' / 'tokens.css').read_text(encoding='utf-8')
+        self.assertIn('--salle-4:', tok)
+
+    def test_aucune_page_convertie_ne_redeclare_le_survol(self):
+        for nom in CONVERTIES:
+            html = self._page(nom)
+            self.assertNotIn('.btn:hover', html, nom)
+            self.assertNotIn('.btn:disabled', html, nom)
+
 
 class LeBundleSuit(unittest.TestCase):
 
