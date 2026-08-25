@@ -6,6 +6,32 @@ dans **git** ; les rejets dans `eval/DECISIONS.md` (photothèque) et
 `eval/METHODE.md` ; l'éphémère dans `PROMPT_NOUVELLE_SESSION.md`. Audits :
 `docs/AUDIT_INTERNE_2026-08.md`, `docs/AUDIT_EXTERNE_2026.md`, `docs/RANGEMENT_2026.md`.
 
+## État (25/08/2026, session 46) — libérer Google sans rien perdre
+
+**`verifier_photos_google.py`** (neuf, famille `verifier_`, lecture seule,
+19 vérifications) répond à la seule question qui autorise à effacer 75 Go chez
+un tiers : **pour chaque photo que Google détient, le NAS la porte-t-il ?**
+
+**Pourquoi un export Takeout et pas l'API.** Depuis le **31 mars 2025** l'API
+Google Photos ne laisse plus une application tierce voir que ce qu'elle a
+elle-même envoyé — rclone le dit noir sur blanc. Aucun outil ne peut énumérer
+la photothèque à distance. Takeout, lui, dépose à côté de chaque média un
+`.json` portant son **nom d'origine** et sa **date de prise de vue** : deux
+choses que le nom exporté peut avoir perdues (Takeout tronque les noms longs
+et suffixe les collisions). Se fier au nom du fichier ferait déclarer ABSENTES
+des photos que le NAS porte — c'est le premier test du banc.
+
+**Quatre verdicts, un seul autorise.** CERTAIN (même nom, même taille) ·
+PROBABLE (taille différente : Google a ré-encodé en mode économiseur) ·
+AMBIGU · **ABSENT — et un seul ABSENT interdit tout**. Le rapport écrit
+alors NE RIEN EFFACER, et le code de sortie vaut 1 : un banc qui rendrait 0
+sur un fonds incomplet serait un feu vert.
+
+**Ce qu'il ne voit pas, et qui compte** : une photo arrivée chez Google par un
+autre chemin — album partagé, WhatsApp, le téléphone de quelqu'un d'autre —
+n'a aucune raison d'être sur le NAS. Elle sort ABSENTE, et c'est un ordre de
+COPIE, pas un écart à écarter.
+
 ## État (25/08/2026, session 45 quater) — la copie hors site est SPÉCIFIÉE
 
 **Le point 12 bis n'attend plus qu'un geste.** Tout ce qui manquait est mesuré
