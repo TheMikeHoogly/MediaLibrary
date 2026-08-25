@@ -6,6 +6,17 @@ dans **git** ; les rejets dans `eval/DECISIONS.md` (photothèque) et
 `eval/METHODE.md` ; l'éphémère dans `PROMPT_NOUVELLE_SESSION.md`. Audits :
 `docs/AUDIT_INTERNE_2026-08.md`, `docs/AUDIT_EXTERNE_2026.md`, `docs/RANGEMENT_2026.md`.
 
+## État (25/08/2026, session 45 ter)
+
+**La copie hors site a une cible, un prix et un obstacle chiffré.** NAS
+**Synology DS224+** → **Infomaniak Swiss Backup** par **Hyper Backup/Swift**,
+~**CHF 6 TTC/mois** pour 1 To (CHF 4,18/To + CHF 1,84/appareil, −10 % annuel),
+données en Suisse. L'obstacle n'est pas le prix : c'est le **lien montant
+mesuré à 13,8 Mbit/s** — 291 Go = **~50 h de ligne saturée** au premier envoi.
+L'offre du même opérateur à **+CHF 1/mois donne 100 Mbit/s symétriques** et
+ramène l'envoi à **~8 h**. Le débit, pas l'hébergeur, est ce qui décide de la
+faisabilité — et c'est le seul point où un franc par mois achète un facteur 7.
+
 ## État (25/08/2026, session 45 bis)
 
 **Le fonds est MESURÉ, et la copie hors site cesse d'être une opinion.**

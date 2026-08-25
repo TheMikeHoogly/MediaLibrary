@@ -21,9 +21,26 @@
   disque hors ligne redevient ce qu'il doit être — la copie que rien de
   connecté ne peut atteindre, pas le gros du plan.
 
-  **Ce qu'il reste à trancher** (voir la réponse détaillée du 25/08) : le
-  fournisseur, le chiffrement côté client — donc une clé que TU gardes et
-  peux perdre — et la perte maximale acceptable.
+  **Le reste est tranché (25/08)** : NAS **Synology DS224+**, cible
+  **Infomaniak Swiss Backup** par **Hyper Backup / Swift** — CHF 4,18 par To
+  et par mois + CHF 1,84 pour l'appareil, −10 % à l'année, soit **~CHF 6 TTC
+  par mois** pour 1 To, données en Suisse, ×3 copies sur 2 datacentres.
+
+  **LE VRAI OBSTACLE EST LE LIEN MONTANT, ET IL EST BON MARCHÉ À LEVER.**
+  Mesuré : **22,4 Mbit/s descendant, 13,8 montant** (Wingo « Internet Start »,
+  CHF 34.95). Le premier envoi des 291 Go coûte **~50 h de ligne saturée**,
+  60 h en vrai. L'offre Wingo actuelle **Internet Go** est à **CHF 35.95 —
+  un franc de plus — pour 100 Mbit/s SYMÉTRIQUES** : le même envoi tombe à
+  **~8 h**, une nuit. À vérifier avant de souscrire : l'éligibilité fibre à
+  l'adresse (la ligne actuelle se comporte comme du VDSL), la durée de la
+  promotion (−45 %, prix normal CHF 66.–), l'engagement 24 mois et les
+  CHF 99 d'activation.
+
+  **Deux pièges nommés** : la clé de chiffrement Hyper Backup est à imprimer
+  et ranger ailleurs — une sauvegarde chiffrée dont on perd la clé est perdue ;
+  et une mise à jour DSM 7.4.1 était en cours de téléchargement au moment de
+  la décision — ne pas lancer le premier envoi avant qu'elle soit finie et le
+  NAS redémarré.
 
 - **24/08 — l'ordre `reparation_xmp` au canal des bancs : sa raison d'être a
   expiré vingt minutes après ton accord.** Tu as dit oui pour qu'une mort à
