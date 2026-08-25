@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Animaux</title>
+<!--UI:components-->
 <style>
   /* Etape A tokenisation « chambre noire ». Anciennes vars nav (--bg/--card/
      --accent...) remplacees par les tokens. Bouton primaire = papier ; danger
@@ -13,7 +14,7 @@
      (rendu identique). Font-sizes en px laissees (px != rem, non equivalent aux
      tokens --t-*). Noirs/blancs translucides (fonds photo #000, ombres, overlays)
      laisses : hors palette de tokens, non interdits. */
-  body{font-family:var(--f-texte);margin:0;background:var(--salle);color:var(--texte);}
+  body { margin:0; }
   main{padding:var(--e-6) var(--e-4) 90px;max-width:1200px;margin:0 auto;}
   .strip{display:flex;align-items:center;gap:var(--e-4);flex-wrap:wrap;font-size:var(--t-sm);
     color:var(--graphite);background:var(--salle-3);border:var(--trait);
@@ -26,13 +27,18 @@
   /* ancre du lien profond /pets#groupes (onglet Classification de /sujets) */
   #groupes{scroll-margin-top:118px;}
   .sp{flex:1;}
-  .btn{padding:var(--e-2) var(--e-4);border-radius:var(--r-md);border:var(--trait);
-    background:#ffffff0d;color:var(--texte);cursor:pointer;font-size:var(--t-sm);font-weight:500;
-    transition:background .15s;}
-  .btn:hover{background:#ffffff1a;}
-  .btn.primary{background:var(--papier);
-    border:none;color:var(--texte-papier);box-shadow:0 2px 10px #0006;}
-  .btn.danger{color:var(--encre);border-color:var(--encre);}
+  /* .btn / .btn--principal / .btn--destructif viennent de ui/components.css.
+     Cette page ecrivait la meme idee sous DEUX autres noms (`.primary`,
+     `.danger`), SANS `min-height: var(--touch)` -- une cible tactile sous
+     44 px, donc une breche du plancher d'accessibilite -- et avec un
+     `background:#ffffff0d` en dur, la seule valeur non tokenisee du fichier.
+     Les trois partent ensemble.
+     Ce qui reste ci-dessous est une EXCEPTION assumee, et un TROU du systeme :
+     le survol et l'etat desactive d'un bouton ne sont ecrits NULLE PART dans
+     `photo-ui`. Deux pages seulement les declarent (`pets`, `upload`) et pas
+     de la meme facon -- ils ne sont donc pas encore canoniques. A trancher
+     avec Mike avant de les hisser (voir ROADMAP). */
+  @media (hover:hover){ .btn:hover{background:#ffffff1a;} }
   .btn:disabled{opacity:.5;cursor:default;}
   .cats{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:var(--e-4);}
   .cat{background:var(--salle-3);border:var(--trait);border-radius:var(--r-md);
@@ -143,11 +149,11 @@
         <option value="rnd">Al&eacute;atoire</option>
         <option value="assoc">Association</option>
       </select>
-      <button class="btn primary" id="d-play">&#9654; Diaporama</button>
+      <button class="btn btn--principal" id="d-play">&#9654; Diaporama</button>
       <span class="sp"></span>
       <button class="btn" id="d-find">&#128269; Rechercher plus</button>
       <button class="btn" id="d-rename">&#9998; Renommer</button>
-      <button class="btn danger" id="d-delete">&#128465; Supprimer</button>
+      <button class="btn btn--destructif" id="d-delete">&#128465; Supprimer</button>
     </div>
     <div class="hint">Les photos les <b>moins ressemblantes</b> sont en premier &mdash; ce sont les erreurs probables.
       Clique une photo pour la <b>s&eacute;lectionner</b> (intrus &agrave; retirer), ou l'ic&ocirc;ne &#9974; pour la voir en grand.</div>
@@ -157,7 +163,7 @@
 
 <div id="selbar">
   <span><b id="sel-n">0</b> s&eacute;lectionn&eacute;e(s)</span>
-  <button class="btn danger" id="sel-remove">Retirer de cet animal</button>
+  <button class="btn btn--destructif" id="sel-remove">Retirer de cet animal</button>
   <button class="btn" id="sel-clear">Annuler</button>
 </div>
 <div id="lightbox"><span class="x" onclick="closeLb()">&times;</span><img id="lb-img" src=""></div>
@@ -276,8 +282,8 @@ function carteGroupe(c){
       ' <span style="color:var(--graphite)">— clique pour désélectionner</span></div>'+
     '<div class="thumbs"></div>'+
     '<div class="nmrow"><input placeholder="C’est… (« Inti, Luna » si les deux)" autocomplete="off">'+
-    '<button class="btn primary">Attribuer</button>'+
-    '<button class="btn danger rejeter">Rejeter le groupe</button>'+
+    '<button class="btn btn--principal">Attribuer</button>'+
+    '<button class="btn btn--destructif rejeter">Rejeter le groupe</button>'+
     '<button class="btn archiver" title="Sortir ce groupe de la file, à re-tagger plus tard">Archiver (inconnu)</button></div>'+
     '<div class="props" style="margin-top:6px"></div>';
   var zone=card.querySelector('.thumbs');
@@ -292,7 +298,7 @@ function carteGroupe(c){
     b.style.outline='2px solid var(--fixateur)'; b.style.outlineOffset='-2px';
     zone.appendChild(b);
   });
-  var inp=card.querySelector('input'), btn=card.querySelector('button.primary');
+  var inp=card.querySelector('input'), btn=card.querySelector('button.btn--principal');
   var rej=card.querySelector('.rejeter');
   var arch=card.querySelector('.archiver');
   var props=card.querySelector('.props');

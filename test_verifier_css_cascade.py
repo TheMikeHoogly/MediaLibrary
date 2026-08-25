@@ -412,6 +412,44 @@ class UN_NOM_EST_UN_JETON_ENTIER_PAS_UN_MORCEAU(unittest.TestCase):
         self.assertFalse(C.mord_sur('.vue', 'class="vues"'))
 
 
+class LE_COMMENTAIRE_JS_EST_DE_LA_PROSE_LUI_AUSSI(unittest.TestCase):
+    """Troisieme rouge OBSERVE, sur `people.html`.
+
+    Le mot `chip` n'apparait qu'une fois dans toute la page : dans un
+    commentaire JavaScript (« MAJ legere (legende + chip + position...) »).
+    L'instrument a declare ACTIVES les treize regles `.chip` d'un coup. Meme
+    mecanique que le commentaire CSS deux heures plus tot -- et c'est ca qui
+    en fait une regle et non un rustine : **un commentaire est de la prose,
+    quel que soit le langage qui l'entoure.**
+
+    La limite, nommee : un `//` a l'interieur d'une chaine (`'a//b'`) coupe la
+    fin de la ligne. Un nom de classe qui ne vivrait QUE la serait dit inerte
+    a tort. On prefere cette erreur-la a l'inverse : elle se voit (une regle
+    manquante saute aux yeux), l'autre se tait.
+    """
+
+    def test_un_nom_dans_un_commentaire_JS_de_ligne_ne_rend_pas_actif(self):
+        page = '<body><script>\n// legende + chip + position\nf();</script>'
+        self.assertFalse(C.mord_sur('.chip', C.jetons(C.corpus_de_page(page))))
+
+    def test_un_nom_dans_un_commentaire_JS_de_bloc_non_plus(self):
+        page = '<body><script>/* on peignait une .planche ici */</script>'
+        self.assertFalse(C.mord_sur('.planche',
+                                    C.jetons(C.corpus_de_page(page))))
+
+    def test_une_URL_n_est_PAS_un_commentaire(self):
+        page = '<body><script>fetch("http://h/api/chip?x=1")</script>'
+        self.assertTrue(C.mord_sur('.chip', C.jetons(C.corpus_de_page(page))))
+
+    def test_le_code_APRES_un_commentaire_de_ligne_survit(self):
+        page = '<body><script>// rien\nel.className="chip";</script>'
+        self.assertTrue(C.mord_sur('.chip', C.jetons(C.corpus_de_page(page))))
+
+    def test_le_code_AVANT_un_commentaire_de_ligne_survit(self):
+        page = '<body><script>el.className="chip"; // le compteur</script>'
+        self.assertTrue(C.mord_sur('.chip', C.jetons(C.corpus_de_page(page))))
+
+
 class IlNeModifieRien(unittest.TestCase):
 
     def test_aucune_ecriture_ni_suppression_dans_le_module(self):

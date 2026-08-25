@@ -21,12 +21,27 @@ observé** après le dernier increment.
 seulement** — 6,2 Ko sur 67. Le vrai sujet est la **divergence** : `.btn` ne
 veut pas dire la même chose selon la page.
 
-**La convergence a donc commencé, en opt-in : 3 pages sur 11.** `residu`,
-`tranche` et `subjects` posent `<!--UI:components-->` et reçoivent
-`ui/components.css` ; leurs `<style>` ne redéclarent plus le bouton.
-`subjects` écrivait le canonique **sous deux autres noms** (`.btn.prim`,
-`.btn.warn`, valeurs identiques) — la divergence la plus chère, celle qui ne
-se voit pas à l'écran. **Le marqueur vit AVANT le `<style>` de la page**
+**La convergence a donc commencé, en opt-in : 5 pages sur 11.** `residu`,
+`tranche`, `subjects`, `people` et `pets` posent `<!--UI:components-->` et
+reçoivent `ui/components.css`. Les trois dernières écrivaient le canonique
+**sous d'autres noms** (`.prim`/`.warn`, `.primary`/`.danger`, valeurs
+identiques) — la divergence la plus chère, celle qui ne se voit pas à l'écran.
+**Et `people` comme `pets` n'avaient pas `min-height: var(--touch)`** : une
+cible tactile sous 44 px, donc une brèche du plancher d'accessibilité, refermée
+par le bouton canonique.
+
+**Les trois universelles sont hissées** : `body { background | color |
+font-family }`, écrit onze fois à l'identique, vit désormais dans `ui/base.css`
+seul — **11 pages sur 11 prouvées IDENTIQUE APRÈS LA CASCADE**. Elles étaient
+**trois, pas six** : le reset `*` ne vit que dans NEUF pages (`pets` et
+`subjects` ne l'ont jamais eu), donc le hisser serait un CHANGEMENT sur deux
+pages, pas un rangement.
+
+**L'ordre réel de la cascade est à quatre étages** : `components.css` (au
+marqueur) → `<style>` de la page → `tokens.css` → `base.css` (à `</head>`,
+donc il gagne les égalités). C'est pourquoi les trois déclarations ont été
+RETIRÉES des onze pages, et pas seulement ajoutées à `base.css` : laissées en
+place elles auraient été écrasées sans bruit. **Le marqueur vit AVANT le `<style>` de la page**
 — sinon la feuille commune gagnerait la cascade et la page perdrait le dernier
 mot au moment même où elle converge. Trois preuves, dans l'ordre : cascade
 (`verifier_css_cascade.py --page`), mécanisme (`test_ui_composants.py`, 12),
@@ -46,16 +61,18 @@ d'affichage condensée. Seule des 17 règles « apparues » à mordre vraiment.
 
 ## Prochain pas
 
-1. **Continuer la convergence `.btn`, par coût croissant.** (`subjects` est
-   faite : `.prim`/`.warn` sont morts.)
-   - `people` et `pets` : **les deux manquent `min-height: var(--touch)`**.
-     C'est une brèche du plancher d'accessibilité (cible < 44 px), pas un
-     goût — elle se corrige donc *avec* la convergence, pas après. `pets`
-     porte en plus un `#ffffff0d` en dur.
-   - Le reste du vocabulaire : `.primary` / `.danger` → `.btn--confirmer` /
-     `--destructif`.
-   - `upload` : composant réellement différent (pleine largeur). **À décider
-     avec Mike, pas à forcer.**
+1. **Une QUESTION attend Mike avant la suite** (`QUESTIONS_MIKE.md`, en
+   tête) : le **survol** et l'**état désactivé** d'un bouton ne sont écrits
+   nulle part dans `photo-ui`. Deux pages les déclarent, pas de la même
+   façon, et le survol de `pets` porte une couleur EN DUR (`#ffffff1a`). La
+   règle de promotion dit non ; c'est un ajout au design system, donc son
+   choix. En attendant : exceptions déclarées dans `pets`.
+
+2. **Finir la convergence `.btn`** : `upload` est le seul cas restant avec un
+   vrai bouton, et son composant est **réellement différent** (pleine
+   largeur) — à décider avec Mike, pas à forcer. Les cinq autres pages
+   (`gallery`, `browse`, `map`, `reglages`, `faces`) n'ont pas de `.btn`.
+   Ensuite `.chip`, même méthode.
    **La procédure est fixée** :
    `cp ui/pages/X.html _avant_css/` → convertir → **prouver** :
 
@@ -68,11 +85,6 @@ d'affichage condensée. Seule des 17 règles « apparues » à mordre vraiment.
    Puis : ajouter la page à `CONVERTIES` (`test_ui_composants.py`) **et** à
    `ADOPTANTES` (`verifier_pages_composants.py`) → **redémarrer** → le banc →
    livrer. Toute règle « apparue » qui MORD se dit à Mike avant de partir.
-
-2. **Les six déclarations universelles dans `base.css`** (approuvé, pas fait) :
-   `body{background|color|font-family}` (11 pages) et `*{box-sizing|margin|
-   padding}` (9 pages). Gain en octets nul ; une source de vérité au lieu de
-   onze. Même preuve `--avant/--apres`.
 
 3. **Reste d'audit** : O8–O9, O11, O13–O15 ; **I1** visible dans `/reglages`.
    O15 (purge de `photo_thumbs/`) gagne en poids.

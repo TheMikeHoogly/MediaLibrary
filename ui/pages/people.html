@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Personnes</title>
+<!--UI:components-->
 <style>
 /* Etape A tokenisation « chambre noire ». Barre/cartes/clusters = tokens
    (--salle-2 barre, --salle-3 cellules). Bouton primaire = papier ; focus =
@@ -15,8 +16,8 @@
    vignette, gris froid) -> --salle-3 (placeholder d'image standard) ; #f0a35b
    (« hesite avec X ») -> --veilleuse (incertitude IA) — voir le JS. */
 * { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: var(--f-texte);
-       background: var(--salle); color: var(--texte); }
+/* background, color et font-family de <body> vivent dans
+   ui/base.css : les onze pages les ecrivaient a l identique. */
 .bar { display: flex; align-items: center; gap: var(--e-3); padding: var(--e-3) var(--e-4);
        background: var(--salle-2); border-bottom: var(--trait); flex-wrap: wrap; }
 .bar a { color: var(--texte); text-decoration: none; font-size: var(--t-md); }
@@ -25,9 +26,11 @@ h2 { font-size: var(--t-md); padding: var(--e-4) var(--e-4) 6px; color: var(--te
 h2 .c { color: var(--graphite); font-size: var(--t-sm); font-weight: normal; }
 .msg { padding: var(--e-2) var(--e-4); color: var(--graphite); font-size: var(--t-sm); }
 button { font-family: inherit; }
-.btn { padding: var(--e-2) var(--e-4); border: var(--trait); border-radius: var(--r-md);
-       background: var(--salle-3); color: var(--texte); font-size: var(--t-sm); cursor: pointer; }
-.btn.prim { background: var(--papier); border-color: var(--papier); color: var(--texte-papier); }
+/* .btn / .btn--principal / .btn--destructif viennent de ui/components.css.
+   Cette page les ecrivait deja, valeurs pour valeurs, sous les noms `.prim` et
+   `.warn` -- et SANS `min-height: var(--touch)`. Ce n'etait pas une variante
+   de gout : une cible tactile sous 44 px est une breche du plancher
+   d'accessibilite. La convergence la referme au passage. */
 .people { display: flex; flex-wrap: wrap; gap: var(--e-3); padding: var(--e-2) var(--e-4) var(--e-3); }
 .pcard { background: var(--salle-3); border: var(--trait); border-radius: var(--r-md);
          padding: var(--e-3); width: 150px; text-align: center; }
@@ -84,7 +87,6 @@ input[type=text]:focus, input.qui:focus { border-color: var(--veilleuse); }
               padding: var(--e-3); }
 #panel h3 { font-size: var(--t-md); margin-bottom: var(--e-1); }
 #panel .acts { display: flex; gap: var(--e-2); flex-wrap: wrap; margin: var(--e-2) 0; }
-.btn.warn { background: transparent; border-color: var(--encre); color: var(--encre); }
 .prop .x { position: absolute; top: 3px; right: 4px; background: var(--encre);
            color: #fff; border: none; border-radius: var(--r-sm); font-size: var(--t-xs);
            padding: 1px 5px; cursor: pointer; }
@@ -130,7 +132,7 @@ input[type=text]:focus, input.qui:focus { border-color: var(--veilleuse); }
 #qn-input:focus { border-color: var(--veilleuse); }
 /* Controles sur papier : boutons a contour, primaire = fixateur (confirmer). */
 .qn-card .btn { background: transparent; border-color: var(--graphite-p); color: var(--texte-papier); }
-.qn-card .btn.prim { background: var(--fixateur); border-color: var(--fixateur); color: #fff; }
+.qn-card .btn--principal { background: var(--fixateur); border-color: var(--fixateur); color: #fff; }
 </style>
 </head>
 <body>
@@ -203,7 +205,7 @@ input[type=text]:focus, input.qui:focus { border-color: var(--veilleuse); }
     <div id="qn-body"></div>
     <div id="qn-actions">
       <input type="text" id="qn-input" placeholder="Nom de la personne (ou vide pour ignorer)" autocomplete="off">
-      <button class="btn prim" id="qn-name">Nommer &amp; suivant</button>
+      <button class="btn btn--principal" id="qn-name">Nommer &amp; suivant</button>
       <button class="btn" id="qn-skip">Ignorer</button>
       <button class="btn" id="qn-close" style="margin-left:auto">Fermer</button>
     </div>
@@ -256,14 +258,14 @@ function openPerson(p){
   panel.innerHTML='<div class="box"><h3>'+esc(p.name)+' <span style="color:var(--graphite);font-weight:normal;font-size:var(--t-sm)">'+
     p.photos+' photo'+(p.photos>1?'s':'')+'</span></h3>'+
     '<div class="acts">'+
-    '<button class="btn prim" id="a-ss">▶ Chronologique</button>'+
+    '<button class="btn btn--principal" id="a-ss">▶ Chronologique</button>'+
     '<button class="btn" id="a-ssr">🔀 Aléatoire</button>'+
     '<button class="btn" id="a-ssa">🔗 Association</button>'+
     '<button class="btn" id="a-find">Chercher d\'autres photos</button>'+
     '<button class="btn" id="a-corr">Corriger (retirer des photos)</button>'+
     '<button class="btn" id="a-clean">🧹 Nettoyer (référence)</button>'+
     '<button class="btn" id="a-ren">Renommer</button>'+
-    '<button class="btn warn" id="a-del">Supprimer</button>'+
+    '<button class="btn btn--destructif" id="a-del">Supprimer</button>'+
     '<button class="btn" id="a-close" style="margin-left:auto">Fermer</button>'+
     '</div><div id="a-box"></div></div>';
   var box=document.getElementById('a-box');
@@ -314,7 +316,7 @@ function scoredRemoval(container, name, ph, defThr, noteHtml){
     '<input type="number" id="thr" value="'+defThr+'" step="0.05" min="0" max="1" style="width:74px"> '+
     '&rarr; <b id="belowc">0</b> sous le seuil (cochées ci-dessous, décoche pour épargner).</div>'+
     '<div class="grid" id="cgrid"></div>'+
-    '<button class="btn warn" id="rm" style="margin-top:8px">Retirer &laquo; '+esc(name)+' &raquo; des photos sous le seuil</button>';
+    '<button class="btn btn--destructif" id="rm" style="margin-top:8px">Retirer &laquo; '+esc(name)+' &raquo; des photos sous le seuil</button>';
   var cg=container.querySelector('#cgrid');
   function below(){ var t=parseFloat(container.querySelector('#thr').value)||0;
     return ph.filter(function(f){ return (f.sim!=null?f.sim:1)<t; }); }
@@ -340,7 +342,7 @@ function cleanPerson(name,box){
   box.innerHTML='<div class="msg">Choisis <b>3 à 6</b> photos <b>nettes et de face</b> de '+esc(name)+
     ' comme référence (clique dessus) — ci-dessous, ses photos <b>les plus ressemblantes d\'abord</b>, donc les vraies. Elles redéfinissent sa signature « propre », sans les profils. Puis « Analyser ».</div>'+
     '<div class="grid" id="refgrid"><div class="msg">Chargement des photos les plus ressemblantes&hellip;</div></div>'+
-    '<button class="btn prim" id="anz" style="margin-top:8px">Analyser avec cette référence</button>'+
+    '<button class="btn btn--principal" id="anz" style="margin-top:8px">Analyser avec cette référence</button>'+
     '<div id="clean-res"></div>';
   var sel={};
   // order=best : les photos les PLUS ressemblantes d'abord. Sur une fiche
@@ -409,7 +411,7 @@ function findMore(name,box){
       html+='<label class="prop"><input type="checkbox" checked data-k="'+esc(f.key)+'">'+
         '<img loading="lazy" src="'+esc(f.crop_url)+'"><span class="s">'+f.sim+'</span></label>';
     });
-    html+='</div><button class="btn prim" style="margin-top:8px">Valider la sélection</button>';
+    html+='</div><button class="btn btn--principal" style="margin-top:8px">Valider la sélection</button>';
     box.innerHTML=html;
     box.querySelector('button').onclick=function(){
       var keys=[]; box.querySelectorAll('input:checked').forEach(function(c){keys.push(c.getAttribute('data-k'));});
@@ -448,8 +450,8 @@ function carteGroupeP(c){
       ' visage(s) <span style="color:var(--graphite)">— clique une vignette pour la désélectionner</span></div>'+
     '<div class="faces"></div>'+
     '<div class="row"><input type="text" class="qui" placeholder="C’est… (nom de la personne)" autocomplete="off">'+
-    '<button class="btn prim nommer">Attribuer</button>'+
-    '<button class="btn warn rejeter">Rejeter le groupe</button>'+
+    '<button class="btn btn--principal nommer">Attribuer</button>'+
+    '<button class="btn btn--destructif rejeter">Rejeter le groupe</button>'+
     '<button class="btn archiver" title="Sortir ce groupe de la file, à re-tagger plus tard">Archiver (inconnu)</button></div>'+
     '<div class="props2" style="margin-top:6px"></div>';
   var zone=el.querySelector('.faces');
@@ -587,7 +589,7 @@ function carteInconnu(c){
       ' visage(s) archivé(s) <span style="color:var(--graphite)">— nomme le groupe pour l’identifier, ou réactive-le</span></div>'+
     '<div class="faces"></div>'+
     '<div class="row"><input type="text" class="qui" placeholder="C’est… (nom de la personne)" autocomplete="off">'+
-    '<button class="btn prim nommer">Attribuer</button>'+
+    '<button class="btn btn--principal nommer">Attribuer</button>'+
     '<button class="btn reactiver" title="Renvoyer ce groupe dans Groupes à nommer">Réactiver</button></div>'+
     '<div class="props2" style="margin-top:6px"></div>';
   var zone=el.querySelector('.faces');

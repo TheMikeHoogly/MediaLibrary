@@ -38,6 +38,7 @@ SORTIE EN ASCII PUR (console cp1252 de l'agent).
 """
 
 import argparse
+import re
 import sys
 import urllib.error
 import urllib.parse
@@ -49,7 +50,7 @@ BALISE_TOKENS = 'id="ui-shared"'
 
 # Les pages converties le 25/08. Une page ne s'ajoute ici qu'apres la preuve
 # de cascade (`verifier_css_cascade.py --page <page>.html`).
-ADOPTANTES = ('/residu', '/tranche', '/sujets')
+ADOPTANTES = ('/residu', '/tranche', '/sujets', '/people', '/pets')
 # Le temoin : une page qui n'a PAS adopte. Sans lui, un serveur qui injecterait
 # partout passerait ce banc en vert. Deux temoins ont ete essayes et ecartes,
 # chacun par un essai REEL : `/upload` n'est pas une route (404, la page d'envoi
@@ -58,9 +59,23 @@ ADOPTANTES = ('/residu', '/tranche', '/sujets')
 # qu'on lit ailleurs, ne temoigne de rien. `/map` se sert elle-meme.
 TEMOIN = '/map'
 
+# Les autres pages servies, celles qui n'ont PAS adopte. Les trois
+# universelles ne sont pas un opt-in : elles ont quitte les ONZE `<style>` a
+# la fois, donc c'est sur les onze qu'il faut les revoir arriver -- pas
+# seulement sur celles qui ont adopte les composants.
+# `/faces` n'y est pas : la page a ete retiree, la route repond 302 vers
+# `/people`. Un chemin qu'on ne peut pas lire chez lui ne temoigne de rien.
+AUTRES = ('/', '/files', '/browse', '/reglages')
+
 # Ce que la feuille commune DOIT porter. Si `components.css` se vide ou se
 # tronque, la page rend nue sans qu'aucune erreur ne remonte.
 ATTENDU = ('.btn', '.btn--confirmer', '.btn--destructif', '.btn--discret')
+
+# Les trois declarations que les onze pages ecrivaient a l'identique et qui
+# vivent desormais dans `ui/base.css` seul (25/08). Elles ne sont PAS un
+# opt-in : elles valent pour les onze, converties ou non, et c'est pour ca que
+# le temoin les subit comme les autres.
+UNIVERSELLES = ('background', 'color', 'font-family')
 
 
 def chercher(hote, port, chemin, delai=10):
@@ -122,6 +137,34 @@ def juger_adoptante(chemin, html):
     return griefs
 
 
+def universelles(html):
+    """Les trois declarations arrivent-elles d'un seul endroit ?
+
+    Deux griefs distincts : la feuille partagee ne les porte pas (elles sont
+    perdues), ou une page les redeclare (deux sources pour une decision --
+    et comme `base.css` est injecte a `</head>`, c'est la PAGE qui perd,
+    silencieusement).
+    """
+    griefs = []
+    i = html.find(BALISE_TOKENS)
+    part = html[i:html.find('</style>', i)] if i >= 0 else ''
+    manquantes = [p for p in UNIVERSELLES
+                  if ('body' not in part or (p + ':') not in part
+                      and (p + ' :') not in part)]
+    if manquantes:
+        griefs.append("la feuille partagee ne porte pas les universelles : "
+                      + ", ".join(manquantes))
+    for bloc in re.findall(r'<style>(.*?)</style>', html, re.S):
+        for regle in re.findall(r'(?<![\w-])body\s*\{([^}]*)\}', bloc, re.S):
+            redites = [p for p in UNIVERSELLES if p in regle]
+            if redites:
+                griefs.append("la page redeclare " + ", ".join(redites)
+                              + " sur body : deux sources pour une decision, "
+                              "et c'est la page qui perd (base.css est injecte "
+                              "a </head>)")
+    return griefs
+
+
 def juger_temoin(chemin, html):
     griefs = []
     if BALISE in html:
@@ -146,8 +189,9 @@ def verifier(hote, port, ecrire=print, chercher=chercher):
     ecrire("")
     fautes = 0
     muettes = []
-    for chemin in ADOPTANTES + (TEMOIN,):
-        role = "temoin" if chemin == TEMOIN else "adoptante"
+    for chemin in ADOPTANTES + (TEMOIN,) + AUTRES:
+        role = ("temoin" if chemin == TEMOIN
+                else "adoptante" if chemin in ADOPTANTES else "autre")
         try:
             html, arrivee = chercher(hote, port, chemin)
         except urllib.error.HTTPError as e:
@@ -168,8 +212,9 @@ def verifier(hote, port, ecrire=print, chercher=chercher):
                    "rien : le verdict ne peut pas parler d'elle")
             fautes += 1
             continue
-        griefs = (juger_temoin if chemin == TEMOIN
-                  else juger_adoptante)(chemin, html)
+        griefs = (juger_adoptante(chemin, html)
+                  if chemin in ADOPTANTES else juger_temoin(chemin, html))
+        griefs += universelles(html)
         if griefs:
             ecrire("%-10s (%s) : %d GRIEF(S)" % (chemin, role, len(griefs)))
             for g in griefs:
@@ -178,7 +223,7 @@ def verifier(hote, port, ecrire=print, chercher=chercher):
         else:
             ecrire("%-10s (%s) : ok  (%d octets)" % (chemin, role, len(html)))
     ecrire("")
-    lues = len(ADOPTANTES) + 1 - len(muettes)
+    lues = len(ADOPTANTES) + 1 + len(AUTRES) - len(muettes)
     if muettes:
         ecrire("VERDICT : %d page(s) lue(s), %d NON REGARDEE(S) :"
                % (lues, len(muettes)))
@@ -193,6 +238,8 @@ def verifier(hote, port, ecrire=print, chercher=chercher):
                "commune," % len(ADOPTANTES))
         ecrire("          elles gardent le dernier mot, et la page temoin "
                "(%s) reste intacte." % TEMOIN)
+        ecrire("          Les trois universelles arrivent d'un seul endroit "
+               "sur les %d pages lues." % (len(ADOPTANTES) + 1 + len(AUTRES)))
     return fautes
 
 

@@ -128,7 +128,7 @@ class LaPageGardeLeDernierMot(unittest.TestCase):
 # La liste des pages converties vit ICI et dans `verifier_pages_composants.py`
 # (routes). Une page qui entre dans la convergence doit entrer dans les deux :
 # la premiere prouve le fichier, la seconde prouve le serveur qui le sert.
-CONVERTIES = ('residu', 'tranche', 'subjects')
+CONVERTIES = ('residu', 'tranche', 'subjects', 'people', 'pets')
 
 
 class LesPagesConverties(unittest.TestCase):

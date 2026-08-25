@@ -6,6 +6,33 @@
 > `eval/DECISIONS.md` si elle tranche, dans `ROADMAP.md` si elle priorise.
 > Protocole : `CLAUDE.md`, « Traite autonome ».
 
+- **25/08 — le SURVOL et l'état DÉSACTIVÉ d'un bouton ne sont écrits nulle
+  part.** En convertissant `pets`, deux règles n'ont pas trouvé de place :
+  `.btn:hover { background: #ffffff1a }` et `.btn:disabled { opacity: .5 }`.
+  Le design system `photo-ui` décrit `.btn`, ses trois variantes et son focus
+  clavier — **ni survol, ni désactivé**.
+
+  **Ce qui empêche de trancher tout seul** : la règle de promotion du projet
+  dit qu'un vocabulaire devient canonique quand **deux pages l'écrivent
+  pareil sans se concerter**. Ici, deux pages les déclarent et **pas de la
+  même façon** : `pets` fait `opacity: .5 ; cursor: default`, `upload` fait
+  `background: var(--salle-3) ; color: var(--graphite) ; cursor: default`.
+  Seul `cursor: default` est commun — trop mince pour fonder un composant.
+  Et le survol n'existe que dans `pets`, avec une valeur **en dur**
+  (`#ffffff1a`), donc hors tokens : le hisser tel quel ferait entrer une
+  couleur non tokenisée dans le système, ce que le plancher interdit.
+
+  **Ma recommandation** : un désactivé neutre et sans couleur —
+  `opacity: .5 ; cursor: not-allowed` (et non `default` : `not-allowed` dit
+  *pourquoi* le clic ne fait rien) — et un survol qui **éclaircit d'un cran**
+  la surface, ce qui demande un token qui n'existe pas encore
+  (`--salle-4`, ou un `--survol`). C'est **un ajout au design system**, donc
+  ton choix, pas le mien.
+
+  **En attendant** : les deux règles restent des exceptions déclarées dans
+  `pets`, avec un commentaire qui dit que c'est un trou du système et non un
+  oubli. `upload` n'est pas encore convertie, donc rien n'est en conflit.
+
 - **25/08 — la copie HORS SITE (12 bis). LE FONDS EST MESURÉ : 291 Go.**
   `inventaire_fonds.py` (neuf) : **76 947 fichiers, 290,9 Go** — dont
   **109 Go de photos** (73 079 fichiers, 1,5 Mo en moyenne) et **180 Go de

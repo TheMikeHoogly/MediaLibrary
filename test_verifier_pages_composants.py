@@ -22,7 +22,9 @@ import verifier_pages_composants as V  # noqa: E402
 FEUILLE = ('<style id="ui-components">.btn { min-height:44px }'
            '.btn--confirmer { } .btn--destructif { } .btn--discret { }'
            '</style>')
-TOKENS = '<style id="ui-shared">:root{--touch:44px}</style>'
+TOKENS = ('<style id="ui-shared">:root{--touch:44px}\n'
+          'body { background: var(--salle); color: var(--texte);'
+          ' font-family: var(--f-texte); }</style>')
 
 
 def page(feuille=FEUILLE, style_page='<style>.x{}</style>', tokens=TOKENS,
@@ -55,8 +57,8 @@ def lancer(pages, redirections=None):
 # Bati depuis V.ADOPTANTES : une page de plus dans la convergence ne doit
 # pas rendre ces tests faux -- ni, pire, les rendre verts pour rien.
 TOUT_BON = dict([(c, page()) for c in V.ADOPTANTES]
-                + [(V.TEMOIN, page(feuille='', tokens=TOKENS)),
-                   ('/ailleurs', page(feuille='', tokens=TOKENS))])
+                + [(c, page(feuille='', tokens=TOKENS))
+                   for c in (V.TEMOIN,) + V.AUTRES + ('/ailleurs',)])
 
 
 class LeCasNominal(unittest.TestCase):
@@ -101,7 +103,7 @@ class CE_QU_ON_N_A_PAS_REGARDE_NE_COMPTE_PAS_POUR_VERT(unittest.TestCase):
         del pages[V.TEMOIN]
         _n, texte = lancer(pages)
         self.assertIn("%d page(s) lue(s), 1 NON REGARDEE(S)"
-                      % len(V.ADOPTANTES), texte)
+                      % (len(V.ADOPTANTES) + len(V.AUTRES)), texte)
         self.assertIn("pas de preuve", texte)
 
     def test_et_il_nomme_la_page_qu_il_n_a_pas_pu_regarder(self):
@@ -209,6 +211,48 @@ class UNE_PAGE_QUI_REPOND_AILLEURS_N_EST_PAS_CETTE_PAGE(unittest.TestCase):
         _n, texte = lancer(TOUT_BON, redirections={V.TEMOIN: '/ailleurs'})
         self.assertIn(V.TEMOIN, texte)
         self.assertIn('/ailleurs', texte)
+
+
+class LES_TROIS_UNIVERSELLES_ARRIVENT_D_UN_SEUL_ENDROIT(unittest.TestCase):
+    """`body { background | color | font-family }` etait ecrit onze fois, a
+    l'identique. Il l'est desormais une seule, dans `ui/base.css`.
+
+    Ce que ce banc tient : la feuille commune les PORTE, et aucune page ne les
+    redeclare. Le second point est le vrai : une page qui les reecrit gagne la
+    cascade (son `<style>` precede `base.css`... non -- `base.css` est injecte
+    a `</head>`, donc il gagne, et la page perd sa declaration SANS le savoir).
+    Dans les deux sens, deux sources pour une meme decision, c'est la
+    divergence qui recommence.
+    """
+
+    def test_la_feuille_partagee_les_porte(self):
+        n, texte = lancer(TOUT_BON)
+        self.assertEqual(n, 0, texte)
+
+    def test_une_page_qui_redeclare_le_fond_est_un_grief(self):
+        pages = dict(TOUT_BON)
+        pages[V.ADOPTANTES[0]] = page(
+            style_page='<style>body{background:#000}</style>')
+        n, texte = lancer(pages)
+        self.assertGreater(n, 0)
+        self.assertIn("redeclare", texte)
+
+    def test_une_feuille_partagee_SANS_les_universelles_est_un_grief(self):
+        pages = dict(TOUT_BON)
+        pages[V.TEMOIN] = page(feuille='',
+                               tokens='<style id="ui-shared">:root{}</style>')
+        n, texte = lancer(pages)
+        self.assertGreater(n, 0)
+        self.assertIn("universelles", texte)
+
+    def test_le_temoin_est_verifie_LUI_AUSSI(self):
+        """Les universelles ne sont pas un opt-in : elles valent pour les onze
+        pages, converties ou non."""
+        pages = dict(TOUT_BON)
+        pages[V.TEMOIN] = page(feuille='',
+                               style_page='<style>body{color:#fff}</style>')
+        n, texte = lancer(pages)
+        self.assertGreater(n, 0)
 
 
 class IlNeModifieRien(unittest.TestCase):

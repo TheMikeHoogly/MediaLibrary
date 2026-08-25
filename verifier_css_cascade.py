@@ -343,7 +343,8 @@ def identifiants(selecteur):
 def corpus_de_page(html):
     """La source ou l'on cherche la PREUVE qu'un element existe.
 
-    Retire les commentaires HTML et les blocs `<style>`. Le CSS decrit ce qui
+    Retire les commentaires HTML, les blocs `<style>` et les commentaires
+    JavaScript. Le CSS decrit ce qui
     SERAIT peint, jamais ce qui EXISTE : une classe qui n'apparait que dans
     une regle -- ou pire, dans une phrase en francais a l'interieur d'un
     commentaire CSS -- n'est portee par aucun element.
@@ -358,8 +359,15 @@ def corpus_de_page(html):
     limite assumee de l'instrument (`'btn--' + genre`) vit la.
     """
     sans = re.sub(r'<!--.*?-->', ' ', html, flags=re.S)
-    return re.sub(r'<style\b[^>]*>.*?</style>', ' ', sans,
-                  flags=re.S | re.I)
+    sans = re.sub(r'<style\b[^>]*>.*?</style>', ' ', sans, flags=re.S | re.I)
+    # Les commentaires JS aussi : sur `people.html`, le mot `chip` n'existait
+    # que dans « // MAJ legere (legende + chip + position...) », et les treize
+    # regles `.chip` etaient declarees actives sur une page qui n'en porte
+    # aucune. Un commentaire est de la prose, quel que soit le langage.
+    sans = re.sub(r'/\*.*?\*/', ' ', sans, flags=re.S)
+    # `(?<![:/])` epargne `http://` : une URL n'est pas un commentaire. Limite
+    # assumee : un `//` DANS une chaine (`'a//b'`) coupe la fin de la ligne.
+    return re.sub(r'(?<![:/])//[^\n]*', ' ', sans)
 
 
 def jetons(source):

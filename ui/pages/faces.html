@@ -12,8 +12,8 @@
    mappings que les autres pages (0.9rem -> --t-md, 0.8/0.85rem -> --t-sm,
    0.68rem -> --t-xs, radius 8px -> --r-md, espacements -> echelle 4px). */
 * { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: var(--f-texte);
-       background: var(--salle); color: var(--texte); }
+/* background, color et font-family de <body> vivent dans
+   ui/base.css : les onze pages les ecrivaient a l identique. */
 .bar { display: flex; align-items: center; gap: var(--e-3); padding: var(--e-3) var(--e-4);
        background: var(--salle-2); border-bottom: var(--trait); flex-wrap: wrap; }
 .bar a { color: var(--texte); text-decoration: none; font-size: var(--t-md); }

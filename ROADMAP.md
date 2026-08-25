@@ -51,18 +51,20 @@ comptées À PART.
 déclarations universelles dans `base.css` (déjà injecté partout). Gain en
 octets : nul. Gain réel : une source unique de vérité là où il y en a onze.
 
-### Convergence `.btn` — 3 pages sur 11 ont adopté (25/08, session 46)
+### Convergence `.btn` — 5 pages sur 11 ont adopté (25/08, session 46)
 
 Le compteur du chantier n'est plus des kilo-octets, c'est **combien de pages
-écrivent le même bouton**. Trois y sont : `residu`, `tranche`, `subjects`.
+écrivent le même bouton**. Cinq y sont : `residu`, `tranche`, `subjects`,
+`people`, `pets`.
 
 `residu` et `tranche` avaient écrit le `.btn` canonique **à l'identique,
 toutes les deux, sans se concerter** — un vocabulaire ne devient canonique que
 là. Leurs `.btn--discret` et `.btn kbd` sont montés dans `ui/components.css`.
 
-`subjects` l'écrivait pareil **sous deux autres noms** : `.btn.prim` et
-`.btn.warn`, valeurs pour valeurs identiques à `.btn--principal` et
-`.btn--destructif`. C'est la divergence la plus chère, parce qu'elle **ne se
+`subjects`, `people` et `pets` l'écrivaient pareil **sous d'autres noms** :
+`.btn.prim` / `.btn.warn` pour les deux premières, `.btn.primary` /
+`.btn.danger` pour la troisième — valeurs pour valeurs identiques à
+`.btn--principal` et `.btn--destructif`. C'est la divergence la plus chère, parce qu'elle **ne se
 voit pas à l'écran** : rien n'est cassé, et pourtant le troisième développeur
 qui arrive invente un troisième nom. Le renommage est prouvé sûr par
 l'instrument lui-même — après conversion, `prim` et `warn` n'existent plus
@@ -135,15 +137,56 @@ dans le code** :
   passe de `margin-left: 6px` au `gap` canonique de 8 px — **une seule façon
   d'écarter deux choses**.
 
-**Suite, par ordre de coût croissant** :
+**Une brèche d'accessibilité refermée au passage** : ni `people` ni `pets`
+n'avaient `min-height: var(--touch)`. Une cible tactile sous 44 px n'est pas
+une variante de goût, c'est un manquement au plancher. Le bouton canonique la
+porte, donc la convergence la referme — c'est l'argument le plus fort du
+chantier, et il n'était pas dans le calcul de départ. `pets` perd en prime son
+`background: #ffffff0d`, la seule valeur non tokenisée du fichier.
 
-1. `people` et `pets` — **les deux manquent `min-height: var(--touch)`** :
-   c'est une brèche dans le plancher d'accessibilité (cible < 44 px), pas un
-   détail esthétique. `pets` porte en plus un `#ffffff0d` en dur.
-2. Le reste du vocabulaire : `.primary` / `.danger` → `.btn--confirmer` /
-   `--destructif`. (`.prim` / `.warn` sont morts avec `subjects`.)
-3. `upload` — composant réellement différent (pleine largeur) : à décider,
-   pas à forcer.
+**Un trou du design system, trouvé et NON bouché** : le survol et l'état
+désactivé d'un bouton ne sont écrits **nulle part** dans `photo-ui`. Deux
+pages seulement les déclarent — `pets` (`opacity:.5`) et `upload`
+(`background`+`color`) — et **pas de la même façon**. La règle de promotion
+du projet dit non : un vocabulaire ne devient canonique que quand deux pages
+l'écrivent pareil sans se concerter. Ils restent donc des exceptions
+déclarées dans `pets`. **Question ouverte pour Mike** (voir
+`QUESTIONS_MIKE.md`).
+
+**Suite** :
+
+1. `upload` — composant réellement différent (pleine largeur) : à décider,
+   pas à forcer. Ce sont les 6 pages restantes qui n'ont pas de `.btn` du
+   tout (`gallery`, `browse`, `map`, `reglages`, `faces`) ou un autre.
+2. Trancher le survol / désactivé, puis `.chip` — même méthode.
+
+### Les trois universelles sont hissées — et elles étaient trois, pas six
+
+`body { background | color | font-family }` était écrit **onze fois, à
+l'identique**. Il l'est désormais **une seule**, dans `ui/base.css`. Les onze
+pages ont été prouvées une par une : **11 sur 11 IDENTIQUE APRÈS LA CASCADE**,
+0 disparue, 0 apparue, 0 valeur changée. Gain en octets : nul. Gain réel : un
+seul endroit où changer le fond de l'archive.
+
+**Le reset `*` n'a PAS été hissé, et c'est la mesure qui l'a arrêté.** La
+roadmap disait « six déclarations universelles ». Elles ne sont pas six :
+`* { box-sizing | margin | padding }` vit dans **neuf** pages, pas onze —
+`pets` et `subjects` ne l'ont jamais eu. Le hisser ne serait pas un rangement,
+ce serait un **changement sur deux pages** : `box-sizing: border-box` refait
+le calcul de largeur de toute boîte qui a du padding ou une bordure. Neuf sur
+onze est une majorité, et une majorité ne se hisse pas sans preuve page par
+page.
+
+**L'ordre réel de la cascade est à quatre étages**, et la preuve doit le
+refléter : `components.css` (au marqueur, avant le `<style>` de la page) →
+`<style>` de la page → `tokens.css` → `base.css` (à `</head>`, donc il gagne
+les égalités). C'est pourquoi les trois déclarations ont été **retirées** des
+onze pages au lieu d'être simplement ajoutées à `base.css` : laissées en
+place, elles auraient été écrasées sans bruit, et la page aurait cru décider.
+
+Le banc d'observation les vérifie sur **dix pages servies** (les 5 converties,
+le témoin, et `/`, `/files`, `/browse`, `/reglages`) — pas seulement sur celles
+qui ont adopté les composants : les universelles ne sont pas un opt-in.
 
 ## Priorité (25/08/2026) — la sauvegarde passe EN FIN DE PROJET
 

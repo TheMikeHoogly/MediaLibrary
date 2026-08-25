@@ -38,3 +38,22 @@ textarea:focus-visible,
    et le bloc prefers-reduced-motion ci-dessus (comme la spec VT) neutralise
    l'animation si l'utilisateur la refuse. Cout par element : nul. */
 @view-transition { navigation: auto; }
+
+/* 4. Les TROIS declarations que les onze pages ecrivaient a l identique
+   (25/08). Mesurees, pas supposees : `verifier_css_cascade.py --commun` en a
+   trouve exactement trois sur 1 754, et ces trois-la pointaient DEJA des
+   tokens. Le gain n est pas en octets -- il est nul -- c est qu il y a
+   desormais UN endroit ou changer le fond de l archive au lieu de onze.
+
+   Ce qui n a PAS ete hisse, et pourquoi : le reset `* { box-sizing; margin;
+   padding }` vit dans NEUF pages, pas onze. `pets` et `subjects` ne l ont
+   jamais eu. Le hisser ne serait pas un rangement, ce serait un CHANGEMENT
+   sur deux pages -- `box-sizing: border-box` refait le calcul de largeur de
+   toute boite qui a du padding ou une bordure. Neuf sur onze n est pas
+   universel : c est une majorite, et une majorite ne se hisse pas sans
+   preuve page par page. */
+body {
+  background: var(--salle);
+  color: var(--texte);
+  font-family: var(--f-texte);
+}
