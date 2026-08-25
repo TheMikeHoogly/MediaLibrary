@@ -1,0 +1,182 @@
+{
+ "declarations": 1754,
+ "partagees": 226,
+ "hissables": 200,
+ "discordantes": 26,
+ "ecritures_differentes": 6,
+ "octets_economises": 6388,
+ "par_nombre_de_pages": {
+  "11": 3,
+  "9": 3,
+  "7": 5,
+  "6": 2,
+  "5": 1,
+  "4": 5,
+  "3": 10,
+  "2": 171
+ },
+ "exemples_discordants": [
+  [
+   "",
+   "#q",
+   "border-radius"
+  ],
+  [
+   "",
+   ".actes",
+   "margin"
+  ],
+  [
+   "",
+   ".bar",
+   "gap"
+  ],
+  [
+   "",
+   ".bar",
+   "padding"
+  ],
+  [
+   "",
+   ".btn",
+   "background"
+  ],
+  [
+   "",
+   ".btn",
+   "border"
+  ],
+  [
+   "",
+   ".btn",
+   "color"
+  ],
+  [
+   "",
+   ".btn",
+   "display"
+  ],
+  [
+   "",
+   ".btn",
+   "font-size"
+  ],
+  [
+   "",
+   ".btn",
+   "font-weight"
+  ],
+  [
+   "",
+   ".btn",
+   "padding"
+  ],
+  [
+   "",
+   ".chip",
+   "min-height"
+  ],
+  [
+   "",
+   ".chip",
+   "padding"
+  ],
+  [
+   "",
+   ".chip .n",
+   "margin-left"
+  ],
+  [
+   "",
+   ".feuille",
+   "max-width"
+  ],
+  [
+   "",
+   ".grid",
+   "gap"
+  ],
+  [
+   "",
+   ".grid",
+   "grid-template-columns"
+  ],
+  [
+   "",
+   ".grid",
+   "padding"
+  ],
+  [
+   "",
+   ".msg",
+   "padding"
+  ],
+  [
+   "",
+   ".note",
+   "padding"
+  ],
+  [
+   "",
+   ".refs",
+   "grid-template-columns"
+  ],
+  [
+   "",
+   ".tb",
+   "padding"
+  ],
+  [
+   "",
+   ".tb.active",
+   "border-color"
+  ],
+  [
+   "",
+   "h2",
+   "color"
+  ],
+  [
+   "",
+   "h2",
+   "font-size"
+  ],
+  [
+   "",
+   "h2",
+   "margin"
+  ]
+ ],
+ "exemples_ecritures": [
+  [
+   "@media (prefers-reduced-motion: reduce)",
+   "*",
+   "animation-duration"
+  ],
+  [
+   "@media (prefers-reduced-motion: reduce)",
+   "*",
+   "transition-duration"
+  ],
+  [
+   "@media (prefers-reduced-motion: reduce)",
+   "*::after",
+   "animation-duration"
+  ],
+  [
+   "@media (prefers-reduced-motion: reduce)",
+   "*::after",
+   "transition-duration"
+  ],
+  [
+   "@media (prefers-reduced-motion: reduce)",
+   "*::before",
+   "animation-duration"
+  ],
+  [
+   "@media (prefers-reduced-motion: reduce)",
+   "*::before",
+   "transition-duration"
+  ]
+ ]
+}

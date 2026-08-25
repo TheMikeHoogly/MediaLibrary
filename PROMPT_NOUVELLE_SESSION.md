@@ -28,25 +28,43 @@ de 292 ms à 0,6 ms par page, O7 est classé *mineur* (139–146 ms, calme).
 
 ## Prochain pas
 
-1. **Suite de `ui/` : le CSS commun.** Chaque page porte encore son `<style>`.
-   L'octet servi CHANGE, donc la preuve « identique au caractère près » qui a
-   tenu les onze gabarits ne s'applique plus. **La preuve proposée, à trancher
-   avant le code** : « identique APRÈS LA CASCADE » — un instrument qui lit le
-   `<style>` d'avant et l'ensemble (commun + reste de la page) d'après, et
-   compare les règles résolues, sélecteur par sélecteur, déclaration par
-   déclaration, dans l'ordre du cascade. Ce qu'il ne saura pas décider —
-   `@media` imbriqués, `!important`, ordre entre deux feuilles — il doit le
-   NOMMER, pas le laisser passer : c'est là que se cacherait la régression.
-   Une page à la fois, la plus simple d'abord.
-2. **Copie HORS SITE (12 bis)** — un sinistre qui emporte le PC ET le NAS
-   emporte tout. **Décision de Mike avant du code** : quel support, quelle
-   cadence, quel chiffrement.
-3. **Reste d'audit** : O8–O9, O11, O13–O15 ; **I1** visible dans `/reglages`.
+1. **Le CSS commun : MESURÉ, et le gisement est vide.**
+   `verifier_css_cascade.py --commun` : **1 754** déclarations distinctes sur
+   les onze pages, **200 hissables**, mais **171 d'entre elles ne concernent
+   que DEUX pages** — gain total **6,2 Ko sur 67 Ko**. Trois déclarations
+   seulement vivent dans les onze (`body{background|color|font-family}`, déjà
+   en tokens), trois autres dans neuf (le reset `*`).
+   **Ce qui reste à faire tient en un geste** : hisser ces **six**
+   déclarations dans `base.css` (déjà injecté partout), une par une, prouvées
+   par `--avant/--apres`. Gain en octets nul, source unique de vérité gagnée.
+   **Et le VRAI sujet, si Mike le veut** : les 26 discordantes disent que
+   `.btn` ne veut pas dire la même chose selon la page (background, border,
+   color, display, font-size, font-weight, padding), et pareil pour `.chip`,
+   `.bar`, `.grid`, `h2`. Ce n'est pas de la duplication, c'est de la
+   DIVERGENCE — chantier de design system, pas d'extraction, et
+   `components.css` l'attend en opt-in page par page. **Décision de Mike.**
+
+2. **Reste d'audit** : O8–O9, O11, O13–O15 ; **I1** visible dans `/reglages`.
    O15 (purge de `photo_thumbs/`) gagne en poids.
-4. **Ce que les 24 h ont laissé ouvert, sans urgence** : le serveur, lui aussi,
-   laisse des fantômes quand une de ses écritures est tuée — `person_writer`,
-   `tag_worker`. `inventaire_fantomes.py` le dira ; il n'a aucun `--balayer`.
-   Le lancer de temps en temps suffit tant que le chiffre reste à 0.
+
+## En fin de projet — décidé, mesuré, en attente d'un geste
+
+Ces deux points ne sont plus des questions ouvertes : tout est chiffré, il ne
+manque que le temps. **Ne pas les faire passer devant le code.**
+
+3. **Le Takeout Google tourne** (lancé le 25/08 par Mike, ~75 Go, plusieurs
+   heures). À son arrivée : dézipper, puis
+   `verifier_photos_google.py --takeout "<dossier>"`. Quatre verdicts, et
+   **un seul ABSENT interdit tout effacement**. Effacer se fait ensuite sur
+   `photos.google.com` — jamais depuis l'app du téléphone, qui efface aussi
+   l'appareil — et le quota ne bouge qu'une fois la CORBEILLE vidée (60 j).
+4. **La copie hors site (12 bis)** : Synology DS224+ → **Infomaniak Swiss
+   Backup**, Hyper Backup/Swift, ~**CHF 6 TTC/mois** pour 1 To, données en
+   Suisse. Premier envoi **~8 nuits** à 13,8 Mbit/s avec limite de débit
+   (photos ~3, vidéos ~5) — **le débit n'est PAS un préalable**. Compte
+   Infomaniak **personnel**. Clé de chiffrement imprimée et rangée ailleurs.
+   Et une restauration d'épreuve : une sauvegarde jamais restaurée n'est pas
+   une sauvegarde.
 
 ## Réflexes
 

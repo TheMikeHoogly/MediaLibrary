@@ -6,6 +6,62 @@ dans **git** ; les rejets dans `eval/DECISIONS.md` (photothèque) et
 `eval/METHODE.md` ; l'éphémère dans `PROMPT_NOUVELLE_SESSION.md`. Audits :
 `docs/AUDIT_INTERNE_2026-08.md`, `docs/AUDIT_EXTERNE_2026.md`, `docs/RANGEMENT_2026.md`.
 
+## État (25/08/2026, session 46) — LE CSS COMMUN NE VAUT PAS LE CHANTIER
+
+**La preuve a été écrite avant le code, et c'est la preuve qui a tué le
+chantier.** `verifier_css_cascade.py` (neuf, famille `verifier_`, lecture
+seule, **38 vérifications**) sait décider « identique APRÈS LA CASCADE » : pour
+chaque `(contexte @, sélecteur, propriété)`, la déclaration GAGNANTE doit être
+la même avant et après. Une règle peut alors changer de fichier, de place, de
+voisinage — tant que la table ne bouge pas, la page rend pareil.
+
+**Puis son mode `--commun` a mesuré le gisement, et il est vide** :
+
+| | |
+|---|---|
+| déclarations distinctes, 11 pages | **1 754** |
+| déclarées par plus d'une page | 226 |
+| **hissables** (même valeur) | **200** — dont **171 partagées par DEUX pages seulement** |
+| discordantes (à ne PAS hisser) | 26 |
+| gain estimé | **6,2 Ko sur 67 Ko** de `<style>` cumulé |
+
+**Trois déclarations seulement vivent dans les onze pages** :
+`body { background | color | font-family }` — et les trois pointent DÉJÀ des
+tokens (`var(--salle)`, `var(--texte)`, `var(--f-texte)`). Trois autres sont
+dans neuf pages : le reset `* { box-sizing | margin | padding }`. Après ça,
+la falaise : 171 des 200 ne concernent que deux pages. **Hisser ce qui est
+partagé par deux pages déplace un problème, il ne le résout pas.**
+
+**Le vrai sujet n'est pas la duplication, c'est la DIVERGENCE.** Les 26
+discordantes portent presque toutes sur les mêmes noms : `.btn` (background,
+border, color, display, font-size, font-weight, padding), `.chip`, `.bar`,
+`.grid`, `h2`. **`.btn` ne veut pas dire la même chose selon la page.** Ce
+n'est pas un chantier de dé-duplication, c'est un chantier de design system —
+et `components.css` existe déjà pour ça, en opt-in, page par page. Il se
+mesure autrement : combien de pages ont adopté le composant canonique.
+
+**Et l'instrument s'est corrigé au premier contact réel.** Il annonçait 32
+discordances ; six étaient `.01ms` contre `0.01ms` — la même durée écrite
+deux fois. Un instrument qui compte ça comme un écart gonfle ses alarmes de
+19 %, et une alarme qu'on apprend à ignorer ne protège plus rien. Les valeurs
+se comparent désormais normalisées, et les écritures divergentes sont
+comptées À PART.
+
+**Ce qui reste à faire, réduit à sa vraie taille** : hisser les **six**
+déclarations universelles dans `base.css` (déjà injecté partout). Gain en
+octets : nul. Gain réel : une source unique de vérité là où il y en a onze.
+
+## Priorité (25/08/2026) — la sauvegarde passe EN FIN DE PROJET
+
+Choix de Mike : le Takeout Google (en cours, plusieurs heures) et
+l'hébergement Infomaniak sont **décidés et chiffrés**, il ne leur manque que
+du temps de transfert. Ils passent donc **après** le code. Ce qui reprend la
+tête : le **CSS commun de `ui/`**, puis le reste d'audit.
+
+Ce n'est pas un renoncement : rien n'est exposé de plus qu'hier, et les deux
+points sont écrits assez précisément dans `PROMPT_NOUVELLE_SESSION.md` pour
+être exécutés sans les rouvrir.
+
 ## État (25/08/2026, session 46) — libérer Google sans rien perdre
 
 **`verifier_photos_google.py`** (neuf, famille `verifier_`, lecture seule,
