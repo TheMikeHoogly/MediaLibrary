@@ -44,13 +44,24 @@
   **Quatre pièges nommés** : (1) la clé de chiffrement Hyper Backup est à
   imprimer et ranger ailleurs — une sauvegarde chiffrée dont on perd la clé
   est perdue ; (2) DSM 7.4.1 était en cours de téléchargement — ne pas lancer
-  le premier envoi avant le redémarrage ; (3) le compte Infomaniak existant
-  porte le domaine d'un CLUB dont le compte prépayé a déjà échoué à se
-  renouveler le 15/04/2026 — **facturation séparée** pour la photothèque ;
-  (4) **Google One = 100 Go à CHF 2,00/mois** (Play Store, renouvelé le 14) :
-  il n'a jamais pu porter les 291 Go, mais le résilier ramènerait le compte
-  Google à 15 Go gratuits et **Gmail cesse de recevoir quand c'est plein**.
-  Regarder `one.google.com/storage` avant de décider.
+  le premier envoi avant le redémarrage ; (3) le compte Infomaniak vu dans les
+  mails est celui d'un club dont Mike ne fait plus partie — ouvrir Swiss
+  Backup sur un compte PERSONNEL, et vérifier qu'il n'est plus rattaché à
+  celui du club ; (4) **le compte Google est à 96 %** — voir ci-dessous.
+
+- **25/08 — le compte Google est à 3,8 Go de la panne.** `one.google.com` :
+  **96,23 Go sur 100**. Google Photos **75,03**, Gmail **12,82**, Drive 1,13,
+  divers 7,2. **Quand le quota est plein, Gmail cesse de RECEVOIR** — c'est
+  un problème actif, indépendant de la photothèque.
+  **Résilier Google One est impossible en l'état** : hors Photos le compte
+  pèse déjà 21,2 Go contre 15 Go gratuits.
+  **Ma recommandation** : les 75 Go de Google Photos sont un doublon de ce que
+  le NAS reçoit déjà (`_Uploads`). Les libérer ramène le compte à ~21 % pour
+  le même CHF 2/mois, et rend le palier 100 Go confortable pour des années.
+  **Dans cet ordre, sans exception** : (1) vérifier que le NAS porte bien ces
+  photos-là ; (2) seulement ensuite effacer chez Google — l'app Photos efface
+  AUSSI du téléphone quand la synchro est active. **En attendant** : rien
+  n'est touché, et le compte se rapproche de son plafond.
 
 - **24/08 — l'ordre `reparation_xmp` au canal des bancs : sa raison d'être a
   expiré vingt minutes après ton accord.** Tu as dit oui pour qu'une mort à

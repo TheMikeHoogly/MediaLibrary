@@ -25,15 +25,22 @@ en montée que ce qu'elle donne : ce n'est pas une limite physique, c'est le
 plafond de l'abonnement. Un franc par mois achète un facteur 7 sur le seul
 chiffre qui rend cette sauvegarde faisable ou non.
 
-**Deux couplages nommés avant qu'ils mordent.** (1) Le compte Infomaniak
-existe déjà, mais il porte le domaine d'un CLUB, avec un compte prépayé qui a
-déjà échoué à se renouveler (15/04/2026) : mêler la photothèque à cette
-facturation, c'est laisser un incident de trésorerie associatif emporter la
-sauvegarde familiale. **Compte ou moyen de paiement séparé.** (2) Google One
-n'a jamais été candidat — **100 Go pour 291 Go à sauvegarder** — mais le
-résilier ferait tomber le compte Google à 15 Go gratuits, et **Gmail cesse de
-recevoir quand le quota est plein**. Vérifier la répartition AVANT de toucher
-à quoi que ce soit.
+**Le débit n'est PAS un préalable.** À 13,8 Mbit/s le premier envoi tient en
+**~8 nuits** (photos ~3, vidéos ~5), avec une limite de débit pour ne pas
+étrangler la ligne ; ensuite les deltas quotidiens sont de quelques minutes.
+Passer à 100 Mbit/s ramène le premier envoi à une nuit — c'est du confort, pas
+une condition. **Ne pas attendre l'abonnement pour commencer la sauvegarde.**
+
+**Et un compte Google à 96 % — 3,8 Go de la panne.** `one.google.com` :
+**96,23 Go sur 100**, dont **Google Photos 75,03**, Gmail 12,82, Drive 1,13,
+divers 7,2. Quand le quota est plein, **Gmail cesse de RECEVOIR**. Deux
+conséquences : (1) résilier Google One est impossible en l'état — hors Photos
+le compte pèse déjà **21,2 Go**, contre 15 Go gratuits ; (2) les 75 Go de
+Google Photos sont un DOUBLON de ce que le NAS reçoit déjà par
+`_Uploads` — les libérer ramène le compte à ~21 % pour le même CHF 2/mois.
+Ordre impératif : vérifier que le NAS a bien les photos AVANT d'effacer quoi
+que ce soit chez Google (l'app Photos efface aussi du téléphone quand la
+synchro est active).
 
 ## État (25/08/2026, session 45 ter)
 
