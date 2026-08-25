@@ -10,8 +10,9 @@ dans **git** ; les rejets dans `eval/DECISIONS.md` (photothèque) et
 
 **LE CHANTIER DES XMP EST CLOS, à zéro.** `verifier_xmp_toutes_personnes.py`,
 machine calme, mêmes paramètres que la mesure de référence : **1 614 couples
-nom–photo lus, 0 en écart, 0 nom en écart** — contre **255 sur 1 364 (18,7 %)**
-le 23/08 et 0,2 % ce matin. Les 21 fantômes effacés, les 13 échecs repris
+nom–photo lus, 0 en écart, 0 nom en écart — taux 0,0 % (Wilson 0,0 – 0,2 %)**,
+contre **255 sur 1 364 (18,7 %, Wilson 16,7 – 20,9 %)** le 23/08 et 0,2 % ce
+matin. Les intervalles ne se touchent à aucun moment. Les 21 fantômes effacés, les 13 échecs repris
 (3 réécrits, le reste déjà conforme), `Val` rattrapé. Le fonds ne porte plus un
 seul nom que l'index connaît et que le fichier ignore.
 

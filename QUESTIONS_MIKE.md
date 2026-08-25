@@ -6,6 +6,35 @@
 > `eval/DECISIONS.md` si elle tranche, dans `ROADMAP.md` si elle priorise.
 > Protocole : `CLAUDE.md`, « Traite autonome ».
 
+- **25/08 — la copie HORS SITE (12 bis) : deux tiers, pas un.** Un sinistre
+  qui emporte le PC ET le NAS emporte tout. Avant de choisir un support, il
+  faut voir que le fonds n'est PAS homogène :
+
+  - **Ce qui est irremplaçable et minuscule** : les décisions humaines. Les
+    fiches (`people.json`, `pets.json`), les index de visages et d'animaux,
+    les journaux de quarantaine (`_corbeille_*`), `photos.db`. Quelques
+    centaines de Mo. Rien ne les régénère — un rattachement jugé à la main
+    est perdu pour de bon.
+  - **Ce qui est irremplaçable et lourd** : les photos elles-mêmes. Des
+    centaines de Go. Et comme les noms vivent dans leurs XMP (règle 2), les
+    sauver sauve aussi les noms : `photos.db` se reconstruit à partir des
+    fichiers, lentement mais sûrement.
+
+  **Ma recommandation : traiter les deux tiers séparément.** Le petit tiers
+  part CHAQUE JOUR, chiffré côté client, chez un hébergeur d'objets — quelques
+  centaines de Mo coûtent des centimes et l'automatisme est le seul qui tienne
+  dans la durée. Le gros tiers part sur un disque externe chiffré, rafraîchi
+  à la main et rangé AILLEURS (famille, bureau) — la bande passante d'une
+  ligne domestique ne fait pas mieux, et un disque chez quelqu'un d'autre est
+  une vraie copie hors site.
+
+  **Ce qu'il me manque pour aller plus loin** : la taille réelle du fonds en
+  Go, et ce que tu acceptes — un abonnement mensuel ? un chiffrement dont TU
+  gardes la clé (donc que tu peux perdre) ? quelle perte maximale acceptable
+  en cas de sinistre : un jour, une semaine, un mois ?
+
+  **En attendant** : rien n'est exposé, et rien n'est protégé non plus.
+
 - **24/08 — l'ordre `reparation_xmp` au canal des bancs : sa raison d'être a
   expiré vingt minutes après ton accord.** Tu as dit oui pour qu'une mort à
   3 h ne coûte pas la nuit — mais la passe a fini toute seule à 03:07. Ce
