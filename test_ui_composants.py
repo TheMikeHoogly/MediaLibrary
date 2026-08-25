@@ -125,27 +125,45 @@ class LaPageGardeLeDernierMot(unittest.TestCase):
         self.assertIn('id="ui-shared"', sortie)
 
 
-class LesDeuxPagesConverties(unittest.TestCase):
-    """`residu` et `tranche` ont ete converties le 25/08 : elles avaient ecrit
-    le `.btn` canonique a l'identique, toutes les deux, sans se concerter."""
+# La liste des pages converties vit ICI et dans `verifier_pages_composants.py`
+# (routes). Une page qui entre dans la convergence doit entrer dans les deux :
+# la premiere prouve le fichier, la seconde prouve le serveur qui le sert.
+CONVERTIES = ('residu', 'tranche', 'subjects')
+
+
+class LesPagesConverties(unittest.TestCase):
+    """`residu` et `tranche` le 25/08 : elles avaient ecrit le `.btn` canonique
+    a l'identique, toutes les deux, sans se concerter. `subjects` le meme jour :
+    elle l'ecrivait aussi pareil, sous DEUX AUTRES NOMS (`.btn.prim`,
+    `.btn.warn`) -- meme idee, meme valeurs, vocabulaire different. C'est la
+    forme la plus couteuse de divergence : elle ne se voit pas a l'ecran."""
 
     def _page(self, nom):
         return (SERVER.parent / 'ui' / 'pages' / (nom + '.html')).read_text(
             encoding='utf-8')
 
     def test_elles_posent_le_marqueur(self):
-        for nom in ('residu', 'tranche'):
+        for nom in CONVERTIES:
             self.assertIn('<!--UI:components-->', self._page(nom), nom)
 
     def test_elles_n_ont_plus_de_btn_a_elles(self):
         """Deux definitions du meme bouton, c'est la divergence qui recommence."""
-        for nom in ('residu', 'tranche'):
+        for nom in CONVERTIES:
             css = self._page(nom)
-            self.assertNotIn('\n.btn {', css, nom + " redeclare .btn")
-            self.assertNotIn('\n.btn--confirmer {', css, nom)
+            for redite in ('\n.btn {', '\n  .btn{', '\n.btn--confirmer {',
+                           '.btn.prim{', '.btn.warn{'):
+                self.assertNotIn(redite, css, nom + " redeclare " + redite)
+
+    def test_le_vocabulaire_est_UN(self):
+        """`.prim` / `.warn` etaient des synonymes locaux du canonique. Les
+        laisser vivre a cote, c'est garder deux mots pour une idee."""
+        for nom in CONVERTIES:
+            html = self._page(nom)
+            for vieux in ('btn prim', 'btn warn', 'btn primary', 'btn danger'):
+                self.assertNotIn(vieux, html, nom + " porte encore " + vieux)
 
     def test_le_marqueur_vient_AVANT_leur_style(self):
-        for nom in ('residu', 'tranche'):
+        for nom in CONVERTIES:
             html = self._page(nom)
             self.assertLess(html.index('<!--UI:components-->'),
                             html.index('<style'), nom)

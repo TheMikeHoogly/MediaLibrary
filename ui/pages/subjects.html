@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Sujets</title>
+<!--UI:components-->
 <style>
   /* « Sujets » (ROADMAP #4) : ENTREE UNIQUE des entites nommees (personnes,
      animaux, lieux) depuis la fusion — les onglets Personnes/Animaux ont quitte
@@ -24,7 +25,10 @@
   .chip{min-height:36px;padding:0 var(--e-4);border-radius:var(--r-pill);border:var(--trait);
     background:var(--salle-3);color:var(--graphite);cursor:pointer;
     font:500 var(--t-sm)/1 var(--f-texte);}
-  .chip .n{font-family:var(--f-donnees);font-size:var(--t-xs);opacity:.7;margin-left:6px;}
+  /* L'espace entre le libelle et le compteur vient desormais du `gap`
+     du chip canonique (8 px, un cran de l'echelle) au lieu d'une marge
+     de 6 px ecrite ici : une seule facon d'ecarter deux choses. */
+  .chip .n{font-family:var(--f-donnees);font-size:var(--t-xs);opacity:.7;}
   .chip[aria-pressed="true"]{background:var(--fixateur);border-color:var(--fixateur);color:#fff;}
   .chip[aria-pressed="true"] .n{opacity:.85;}
   .grille{display:grid;
@@ -70,11 +74,14 @@
   .qmsg{color:var(--graphite);font-size:var(--t-sm);margin:0 0 var(--e-2);}
   .kbd-hint{color:var(--graphite);font-size:var(--t-xs);font-family:var(--f-donnees);}
   .kbd-hint b{color:var(--texte);font-weight:600;}
-  .btn{min-height:var(--touch);padding:var(--e-2) var(--e-4);border:var(--trait);
-    border-radius:var(--r-md);background:var(--salle-3);color:var(--texte);
-    font:500 var(--t-sm)/1 var(--f-texte);cursor:pointer;}
-  .btn.prim{background:var(--papier);border-color:var(--papier);color:var(--texte-papier);}
-  .btn.warn{background:transparent;border-color:var(--encre);color:var(--encre);}
+  /* .btn / .btn--principal / .btn--destructif viennent de ui/components.css
+     (marqueur en tete de <head>). Cette page ecrivait `.btn.prim` et
+     `.btn.warn` avec EXACTEMENT les memes valeurs que le canonique : deux
+     noms pour une seule idee, c'est la divergence qui commence.
+     Ce qui reste ici est une EXCEPTION assumee, pas un oubli : le bouton
+     « Rafraichir » vit dans un titre de file et doit y tenir. Il est declare
+     APRES la feuille commune, donc il gagne -- c'est tout l'interet du
+     marqueur place avant le <style> de la page. */
   .ctype h3 .btn{min-height:0;font-size:var(--t-xs);padding:var(--e-1) var(--e-2);}
   .cl{background:var(--salle-3);border:var(--trait);border-radius:var(--r-md);
     padding:var(--e-3);margin-bottom:var(--e-3);}
@@ -421,13 +428,13 @@ function loadCurator(rebuild){
       var crop='<img loading="lazy" src="'+esc(s.crop_url)+'" style="width:80px;height:80px;object-fit:cover;border-radius:var(--r-md);background:var(--salle-3)" alt="">';
       if(s.type==='merge'){
         html='<div class="row"><span class="sz">M\u00eame personne ? <b>'+esc(s.a)+'</b> et <b>'+esc(s.b)+'</b> (sim '+s.sim+')</span>'+
-          '<button class="btn prim">\u2713 Fusionner</button><button class="btn">\u2717 Diff\u00e9rents</button></div>';
+          '<button class="btn btn--principal">\u2713 Fusionner</button><button class="btn">\u2717 Diff\u00e9rents</button></div>';
       } else if(s.type==='remove'){
         var labelR='<b>Faux positif ?</b> visage tagu\u00e9 <b>'+esc(s.person)+'</b> \u2014 score '+s.sim;
         html='<div class="row" style="align-items:center">'+crop+
           '<a href="'+esc(s.url)+'" target="_blank" rel="noopener" class="sz" style="text-decoration:none;color:var(--graphite)">'+labelR+'</a>'+
-          '<button class="btn prim">\u2713 Oui, c\u2019est '+esc(s.person)+'</button>'+
-          '<button class="btn warn">\u2717 Retirer le tag</button>'+
+          '<button class="btn btn--principal">\u2713 Oui, c\u2019est '+esc(s.person)+'</button>'+
+          '<button class="btn btn--destructif">\u2717 Retirer le tag</button>'+
           '<input class="qui" placeholder="ou : c\u2019est\u2026" autocomplete="off">'+
           '<button class="btn">Pas un visage</button>'+
           '<button class="btn anim">C\u2019est un animal</button></div>'+
@@ -439,7 +446,7 @@ function loadCurator(rebuild){
         var label='<b>Ajouter \u00e0 '+esc(s.person)+' ?</b> \u2014 score '+s.sim+doute;
         html='<div class="row" style="align-items:center">'+crop+
           '<a href="'+esc(s.url)+'" target="_blank" rel="noopener" class="sz" style="text-decoration:none;color:var(--graphite)">'+label+'</a>'+
-          '<button class="btn prim">\u2713 Oui, '+esc(s.person)+'</button>'+
+          '<button class="btn btn--principal">\u2713 Oui, '+esc(s.person)+'</button>'+
           '<input class="qui" placeholder="ou : c\u2019est\u2026" autocomplete="off">'+
           '<button class="btn">\u2717 Aucun</button>'+
           '<button class="btn anim">C\u2019est un animal</button></div>'+
@@ -516,7 +523,7 @@ function loadPetCurator(rebuild){
       var label='<b>Ajouter \u00e0 '+esc(s.animal)+' ?</b> \u2014 score '+s.sim+doute;
       el.innerHTML='<div class="row" style="align-items:center">'+crop+
         '<a href="'+esc(s.url)+'" target="_blank" rel="noopener" class="sz" style="text-decoration:none;color:var(--graphite)">'+label+'</a>'+
-        '<button class="btn prim">\u2713 Oui, '+esc(s.animal)+'</button>'+
+        '<button class="btn btn--principal">\u2713 Oui, '+esc(s.animal)+'</button>'+
         '<input class="qui" placeholder="ou : c\u2019est\u2026" autocomplete="off">'+
         '<button class="btn">\u2717 Aucun</button>'+
         '<button class="btn">Pas un animal</button></div>'+

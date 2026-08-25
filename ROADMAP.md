@@ -51,14 +51,23 @@ comptées À PART.
 déclarations universelles dans `base.css` (déjà injecté partout). Gain en
 octets : nul. Gain réel : une source unique de vérité là où il y en a onze.
 
-### Convergence `.btn` — 2 pages sur 11 ont adopté (25/08, session 46)
+### Convergence `.btn` — 3 pages sur 11 ont adopté (25/08, session 46)
 
 Le compteur du chantier n'est plus des kilo-octets, c'est **combien de pages
-écrivent le même bouton**. Deux y sont : `residu` et `tranche`. Elles ont été
-choisies parce qu'elles avaient déjà écrit le `.btn` canonique **à
-l'identique, toutes les deux, sans se concerter** — un vocabulaire ne devient
-canonique que là. Leurs `.btn--discret` et `.btn kbd` sont donc montés dans
-`ui/components.css` ; leurs `<style>` ne redéclarent plus le bouton.
+écrivent le même bouton**. Trois y sont : `residu`, `tranche`, `subjects`.
+
+`residu` et `tranche` avaient écrit le `.btn` canonique **à l'identique,
+toutes les deux, sans se concerter** — un vocabulaire ne devient canonique que
+là. Leurs `.btn--discret` et `.btn kbd` sont montés dans `ui/components.css`.
+
+`subjects` l'écrivait pareil **sous deux autres noms** : `.btn.prim` et
+`.btn.warn`, valeurs pour valeurs identiques à `.btn--principal` et
+`.btn--destructif`. C'est la divergence la plus chère, parce qu'elle **ne se
+voit pas à l'écran** : rien n'est cassé, et pourtant le troisième développeur
+qui arrive invente un troisième nom. Le renommage est prouvé sûr par
+l'instrument lui-même — après conversion, `prim` et `warn` n'existent plus
+nulle part dans la page, donc les six déclarations « disparues » sont
+déclarées INERTES.
 
 **L'adoption est un opt-in, et le mécanisme le dit** : une page pose
 `<!--UI:components-->` dans son `<head>`, le serveur le remplace par la
@@ -73,34 +82,67 @@ Trois preuves, dans cet ordre :
 
 | preuve | ce qu'elle tient | résultat |
 |---|---|---|
-| `verifier_css_cascade.py --page` | la cascade ne bouge pas | 0 disparue, 0 valeur changée, 6 + 11 apparues **inertes** |
-| `test_ui_composants.py` (11) | le mécanisme, sur le code de prod | vert |
-| `verifier_pages_composants.py` (14 tests) | le **serveur vivant** | vert après redémarrage |
+| `verifier_css_cascade.py --page` | la cascade ne bouge pas | `residu` 6, `tranche` 11, `subjects` 25 apparues actives — toutes tracées |
+| `test_ui_composants.py` (12) | le mécanisme, sur le code de prod | vert |
+| `verifier_pages_composants.py` (18 tests) | le **serveur vivant** | vert après redémarrage |
 
-Le troisième banc interroge `/residu`, `/tranche` **et un témoin non converti**
-(`/faces`) : sans témoin, un serveur qui injecterait partout passerait au vert.
-Il s'est corrigé à son premier contact réel — il pointait sur `/upload`, qui
-n'est pas une route, et a écrit « rien n'a pu être vérifié » alors qu'il venait
-de lire et de juger bonnes les deux pages converties. **Deux mensonges d'un
-coup**, sur ce qu'il avait vu et sur pourquoi il n'avait pas vu le reste. Un
-404 se dit désormais ROUTE MUETTE, un refus de connexion SERVEUR MUET, et le
-verdict compte les pages lues.
+**L'ORDRE DE `--apres` EST LA MOITIÉ DE LA PREUVE** : `--apres
+ui/components.css ui/pages/X.html`, la feuille commune **en premier**, parce
+que c'est là que le serveur l'injecte. Passée en dernier, elle gagne une
+cascade qu'elle ne gagne pas en vrai : la première mesure sur `subjects` a
+ainsi inventé deux changements de `.chip` qui n'existaient pas.
 
-**Un changement visuel volontaire, à l'œil de Mike** : dans `residu`, le
-`<h3 id="legref">` est à l'intérieur de `<section class="feuille">` ; il prend
-donc `.feuille h3 { font: 600 var(--t-lg)/1.2 var(--f-affichage) }` — le titre
-canonique de la fiche, en police d'affichage condensée. C'est la seule des 17
-règles « apparues » qui morde vraiment.
+**L'instrument s'est corrigé trois fois, sur trois rouges observés** — jamais
+sur une hypothèse :
+
+| ce qui le trompait | la preuve qu'il donnait | correction |
+|---|---|---|
+| l'ordre de `--apres` | 2 faux changements de `.chip` | l'ordre réel est documenté, ici et dans l'amorce |
+| un mot dans un **commentaire CSS** | « la feuille commune » rendait les 6 règles `.feuille` ACTIVES | `corpus_de_page()` : le CSS et les commentaires ne prouvent aucun élément |
+| une recherche par **sous-chaîne** | `toastP`, `vues`, `--f-donnees` rendaient `.toast`, `.vue`, `.donnee` ACTIVES | `jetons()` : un nom de classe est un jeton entier |
+
+Sur `subjects`, ces trois corrections font passer les « apparues » de **69 à
+25**, dont 7 restent un faux positif assumé et nommé (`get('vue')` dans une
+URL donne un jeton `vue`).
+
+Le troisième banc interroge les pages converties **et un témoin non converti** :
+sans témoin, un serveur qui injecterait partout passerait au vert — c'est-à-dire
+exactement le jour où les huit pages restantes cassent.
+
+**Il a menti deux fois en trois lancements réels, et les deux corrections sont
+dans le code** :
+
+1. Témoin sur `/upload` — qui n'est pas une route. Il a écrit « rien n'a pu
+   être vérifié » alors qu'il venait de lire et de juger bonnes deux pages sur
+   trois. Un 404 se dit désormais ROUTE MUETTE, un refus de connexion SERVEUR
+   MUET (ils envoient chercher la panne à deux endroits opposés), et le verdict
+   **compte les pages lues**.
+2. Témoin sur `/faces` — qui répond **302 vers `/people`**. urllib suit sans
+   rien dire : le banc a écrit « la page témoin (/faces) reste intacte » après
+   avoir lu `/people`. **Il a nommé une page et jugé une autre, en vert.** Il
+   compare désormais le chemin demandé au chemin servi et refuse de conclure
+   s'ils diffèrent. Témoin actuel : `/map`, qui se sert elle-même.
+
+**Les changements visuels volontaires, à l'œil de Mike** :
+
+- `residu` — le `<h3 id="legref">` est dans `<section class="feuille">` ; il
+  prend donc `.feuille h3` : le titre canonique de la fiche, en police
+  d'affichage condensée.
+- `subjects` — les boutons et les chips deviennent `inline-flex` (hauteur
+  toujours tenue par `min-height: var(--touch)`, donc rien ne bouge pour un
+  bouton de texte) ; le padding vertical du `.btn` passe de 8 px à 0, absorbé
+  par le centrage flex ; et l'écart entre le libellé d'un chip et son compteur
+  passe de `margin-left: 6px` au `gap` canonique de 8 px — **une seule façon
+  d'écarter deux choses**.
 
 **Suite, par ordre de coût croissant** :
 
-1. `subjects` — 3 propriétés + un `padding` différents à trancher.
-2. `people` et `pets` — **les deux manquent `min-height: var(--touch)`** :
+1. `people` et `pets` — **les deux manquent `min-height: var(--touch)`** :
    c'est une brèche dans le plancher d'accessibilité (cible < 44 px), pas un
    détail esthétique. `pets` porte en plus un `#ffffff0d` en dur.
-3. Unifier le vocabulaire : `.prim` / `.warn` / `.primary` / `.danger` →
-   `.btn--confirmer` / `--destructif` / `--discret`.
-4. `upload` — composant réellement différent (pleine largeur) : à décider,
+2. Le reste du vocabulaire : `.primary` / `.danger` → `.btn--confirmer` /
+   `--destructif`. (`.prim` / `.warn` sont morts avec `subjects`.)
+3. `upload` — composant réellement différent (pleine largeur) : à décider,
    pas à forcer.
 
 ## Priorité (25/08/2026) — la sauvegarde passe EN FIN DE PROJET

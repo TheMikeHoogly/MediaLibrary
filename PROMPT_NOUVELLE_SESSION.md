@@ -21,14 +21,24 @@ observé** après le dernier increment.
 seulement** — 6,2 Ko sur 67. Le vrai sujet est la **divergence** : `.btn` ne
 veut pas dire la même chose selon la page.
 
-**La convergence a donc commencé, en opt-in.** `residu` et `tranche` posent
-`<!--UI:components-->` et reçoivent `ui/components.css` ; leurs `<style>` ne
-redéclarent plus le bouton. **Le marqueur vit AVANT le `<style>` de la page**
+**La convergence a donc commencé, en opt-in : 3 pages sur 11.** `residu`,
+`tranche` et `subjects` posent `<!--UI:components-->` et reçoivent
+`ui/components.css` ; leurs `<style>` ne redéclarent plus le bouton.
+`subjects` écrivait le canonique **sous deux autres noms** (`.btn.prim`,
+`.btn.warn`, valeurs identiques) — la divergence la plus chère, celle qui ne
+se voit pas à l'écran. **Le marqueur vit AVANT le `<style>` de la page**
 — sinon la feuille commune gagnerait la cascade et la page perdrait le dernier
 mot au moment même où elle converge. Trois preuves, dans l'ordre : cascade
-(`verifier_css_cascade.py --page`), mécanisme (`test_ui_composants.py`, 11),
-**serveur vivant** (`verifier_pages_composants.py`, 14 tests) — les trois
+(`verifier_css_cascade.py --page`), mécanisme (`test_ui_composants.py`, 12),
+**serveur vivant** (`verifier_pages_composants.py`, 18 tests) — les trois
 vertes, la troisième après redémarrage réel.
+
+**Les deux instruments se sont corrigés cinq fois, sur cinq rouges OBSERVÉS.**
+Trois sur la preuve de cascade (l'ordre de `--apres` ; un mot dans un
+commentaire CSS ; la recherche par sous-chaîne) : sur `subjects`, elles font
+passer les « apparues » de 69 à 25. Deux sur le banc d'observation (un témoin
+qui n'était pas une route ; un témoin qui **redirige**, lu ailleurs et jugé
+quand même — en vert).
 
 **Un changement visuel volontaire est parti avec** : dans `residu`, le
 `<h3 id="legref">` est dans `<section class="feuille">` et prend donc la police
@@ -36,20 +46,28 @@ d'affichage condensée. Seule des 17 règles « apparues » à mordre vraiment.
 
 ## Prochain pas
 
-1. **Continuer la convergence `.btn`, par coût croissant.**
-   - `subjects` : 3 propriétés + un `padding` différents, à trancher.
+1. **Continuer la convergence `.btn`, par coût croissant.** (`subjects` est
+   faite : `.prim`/`.warn` sont morts.)
    - `people` et `pets` : **les deux manquent `min-height: var(--touch)`**.
      C'est une brèche du plancher d'accessibilité (cible < 44 px), pas un
      goût — elle se corrige donc *avec* la convergence, pas après. `pets`
      porte en plus un `#ffffff0d` en dur.
-   - Unifier le vocabulaire : `.prim` / `.warn` / `.primary` / `.danger`
-     → `.btn--confirmer` / `--destructif` / `--discret`.
+   - Le reste du vocabulaire : `.primary` / `.danger` → `.btn--confirmer` /
+     `--destructif`.
    - `upload` : composant réellement différent (pleine largeur). **À décider
      avec Mike, pas à forcer.**
-   **La procédure est fixée** : convertir → `verifier_css_cascade.py --avant
-   <copie> --apres <page> --page <page>.html` → ajouter la page à `ADOPTANTES`
-   dans `verifier_pages_composants.py` → **redémarrer** → le banc → livrer.
-   Toute règle « apparue » qui MORD se dit à Mike avant de partir.
+   **La procédure est fixée** :
+   `cp ui/pages/X.html _avant_css/` → convertir → **prouver** :
+
+       verifier_css_cascade.py --avant _avant_css/X.html \
+           --apres ui/components.css ui/pages/X.html --page ui/pages/X.html
+
+   **`ui/components.css` en PREMIER dans `--apres`** : c'est là que le serveur
+   l'injecte. Passée en dernier elle gagne une cascade qu'elle ne gagne pas en
+   vrai, et invente des changements (deux `.chip` sur `subjects`).
+   Puis : ajouter la page à `CONVERTIES` (`test_ui_composants.py`) **et** à
+   `ADOPTANTES` (`verifier_pages_composants.py`) → **redémarrer** → le banc →
+   livrer. Toute règle « apparue » qui MORD se dit à Mike avant de partir.
 
 2. **Les six déclarations universelles dans `base.css`** (approuvé, pas fait) :
    `body{background|color|font-family}` (11 pages) et `*{box-sizing|margin|
@@ -129,8 +147,20 @@ chercher la panne à deux endroits opposés : **ils ne se disent pas pareil**.
 
 **Un opt-in se prouve par son TÉMOIN** (25/08). Un banc qui ne regarde que les
 pages converties passerait au vert sur un serveur qui injecte partout — c'est-
-à-dire exactement le jour où les neuf pages restantes cassent. Le témoin
-(`/faces`) coûte une requête et vaut la garantie.
+à-dire exactement le jour où les huit pages restantes cassent. Le témoin coûte
+une requête et vaut la garantie. **Encore faut-il l'avoir lu** : `/upload`
+n'est pas une route (404), et `/faces` répond **302 vers `/people`** —
+urllib suit sans rien dire, et le banc a écrit « la page témoin (/faces) reste
+intacte » après avoir lu `/people`. Il compare désormais le chemin demandé au
+chemin servi. Témoin actuel : `/map`.
+
+**Ce qu'une classe PORTE ne se lit ni dans le CSS ni par sous-chaîne** (25/08).
+Le filtre « cette règle peut-elle mordre ici ? » cherchait le nom de classe
+n'importe où dans la page : un commentaire CSS disant « la feuille commune »
+rendait les six règles `.feuille` actives, et `toastP`, `vues`, `--f-donnees`
+rendaient `.toast`, `.vue`, `.donnee` actives. Le CSS décrit ce qui SERAIT
+peint ; seuls le markup et le JS disent ce qui EXISTE — et un nom de classe
+est un **jeton entier**.
 
 **Un cache donne DEUX prix à une mesure** (24/08). Le banc a crié « score
 parfait = ALARME » sur `/api/names` à 0,3 ms, et il avait raison de crier :

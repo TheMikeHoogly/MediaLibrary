@@ -329,12 +329,49 @@ def collisions_de_raccourcis(regles):
 _IDENT = re.compile(r'[.#]([A-Za-z_][\w-]*)|\[\s*([A-Za-z_][\w-]*)')
 
 
+_JETON = re.compile(r'[A-Za-z0-9_-]+')
+
+
 def identifiants(selecteur):
     """Les classes, id et noms d'attribut qu'un sélecteur EXIGE."""
     out = set()
     for cls, attr in _IDENT.findall(selecteur):
         out.add(cls or attr)
     return out
+
+
+def corpus_de_page(html):
+    """La source ou l'on cherche la PREUVE qu'un element existe.
+
+    Retire les commentaires HTML et les blocs `<style>`. Le CSS decrit ce qui
+    SERAIT peint, jamais ce qui EXISTE : une classe qui n'apparait que dans
+    une regle -- ou pire, dans une phrase en francais a l'interieur d'un
+    commentaire CSS -- n'est portee par aucun element.
+
+    Ce n'est pas une precaution theorique. En convertissant `subjects.html` le
+    25/08, le commentaire « ... viennent de la feuille commune » a suffi pour
+    que les six regles `.feuille` soient declarees ACTIVES sur une page qui
+    n'en porte aucune. Six fausses alarmes nees d'un mot de prose -- et une
+    alarme qu'on apprend a ignorer ne protege plus rien.
+
+    Le JS, lui, RESTE : c'est la ou les classes se posent vraiment, et la
+    limite assumee de l'instrument (`'btn--' + genre`) vit la.
+    """
+    sans = re.sub(r'<!--.*?-->', ' ', html, flags=re.S)
+    return re.sub(r'<style\b[^>]*>.*?</style>', ' ', sans,
+                  flags=re.S | re.I)
+
+
+def jetons(source):
+    """Les noms ENTIERS que porte une source : tout ce qui est separe par un
+    caractere qu'un nom de classe CSS ne peut pas contenir.
+
+    `class="a b"`, `className='a b'`, `classList.add("a")` donnent tous `a`.
+    `toastP`, `vues`, `vue-annuaire`, `--f-donnees` n'en donnent AUCUN qui
+    vaille `toast`, `vue` ou `donnee` -- et c'est le point : chercher par
+    sous-chaine trouvait les trois.
+    """
+    return set(_JETON.findall(source))
 
 
 def mord_sur(selecteur, source):
@@ -345,16 +382,22 @@ def mord_sur(selecteur, source):
     page n'utilise pas — `.planche`, `.toast`, `.chip` sur une page qui n'en a
     aucun. Les compter comme des changements noierait le seul qui compte.
 
-    La preuve du contraire est un texte : si le nom de classe n'apparaît NULLE
-    PART dans la source de la page — ni dans le HTML, ni dans le JS — aucun
-    élément ne peut le porter. **Sa limite** : une classe construite par
-    morceaux en JavaScript (`'btn--' + genre`) échappe à la recherche, et sera
-    dite inerte à tort. C'est pour ça que la sortie les COMPTE au lieu de les
-    taire."""
+    La preuve du contraire est un texte : si le nom de classe n'apparaît comme
+    JETON ENTIER nulle part dans le markup ou le JS de la page, aucun élément
+    ne peut le porter. **Ses deux limites, mesurées** : une classe construite
+    par morceaux en JavaScript (`'btn--' + genre`) est dite inerte à tort, et
+    un jeton qui n'est pas une classe (`get('vue')` dans une URL) est dit
+    actif à tort. La sortie les COMPTE au lieu de les taire.
+
+    `source` accepte une chaîne (tokenisée ici) ou un ensemble déjà tokenisé —
+    sur une page de 35 Ko et trois cents sélecteurs, tokeniser une fois vaut
+    mieux que trois cents.
+    """
     ids = identifiants(selecteur)
     if not ids:
         return True                      # sélecteur de type : toujours possible
-    return all(i in source for i in ids)
+    dispo = source if isinstance(source, (set, frozenset)) else jetons(source)
+    return ids <= dispo
 
 
 def comparer(avant_css, apres_css, source_page=None):
@@ -594,7 +637,8 @@ def main(argv=None):
             if not Path(a.page).is_file():
                 print("page introuvable : %s" % a.page)
                 return 2
-            src = Path(a.page).read_text(encoding='utf-8')
+            src = jetons(corpus_de_page(
+                Path(a.page).read_text(encoding='utf-8')))
         r = rapport(comparer(av, ap_, source_page=src))
 
     if a.sortie_json:

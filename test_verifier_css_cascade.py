@@ -323,6 +323,95 @@ class CeQuiNePeutMordreSurCettePage(unittest.TestCase):
         self.assertTrue(r['identique'])
 
 
+class LA_PREUVE_D_UN_ELEMENT_EST_LE_MARKUP_PAS_LA_PROSE(unittest.TestCase):
+    """Rouge OBSERVE le 25/08, pas invente.
+
+    En convertissant `subjects.html`, le commentaire laisse a la place des
+    regles cedees disait « ... viennent de la feuille commune ». Le mot
+    « feuille » suffisait : l'instrument a declare ACTIVES les six regles
+    `.feuille` sur une page qui n'a pas un seul element de ce nom. Six fausses
+    alarmes nees d'une phrase en francais.
+
+    La correction n'affaiblit rien : une classe qui n'apparait QUE dans le CSS
+    d'une page, jamais dans son markup ni dans son JS, n'est portee par aucun
+    element. Le CSS decrit ce qui SERAIT peint ; seuls le markup et le JS
+    disent ce qui EXISTE.
+    """
+
+    PAGE = ('<html><head>\n<style>\n'
+            '/* .btn vient de components.css -- la feuille commune */\n'
+            '.chip { color: red }\n</style></head>'
+            '<body><button class="chip">x</button></body></html>')
+
+    def test_un_nom_cite_dans_un_COMMENTAIRE_CSS_ne_rend_pas_actif(self):
+        self.assertFalse(C.mord_sur('.feuille', C.corpus_de_page(self.PAGE)))
+
+    def test_un_nom_declare_en_CSS_mais_jamais_porte_reste_inerte(self):
+        """`.btn` est stylise par la page et pourtant aucun element ne le
+        porte : la regle ne peut rien peindre."""
+        self.assertFalse(C.mord_sur('.btn', C.corpus_de_page(self.PAGE)))
+
+    def test_un_nom_reellement_porte_reste_ACTIF(self):
+        self.assertTrue(C.mord_sur('.chip', C.corpus_de_page(self.PAGE)))
+
+    def test_un_nom_bati_en_JS_reste_ACTIF(self):
+        """La limite assumee de l'instrument : le JS n'est pas retire."""
+        page = '<html><body><script>e.className="vue vue--attente"</script>'
+        self.assertTrue(C.mord_sur('.vue--attente', C.corpus_de_page(page)))
+
+    def test_un_commentaire_HTML_ne_rend_pas_actif_non_plus(self):
+        page = '<html><body><!-- ici vivait une .planche --></body></html>'
+        self.assertFalse(C.mord_sur('.planche', C.corpus_de_page(page)))
+
+    def test_le_marqueur_d_adoption_ne_se_lit_pas_comme_du_markup(self):
+        """`<!--UI:components-->` est un commentaire : il ne prouve rien."""
+        page = '<html><head><!--UI:components--></head><body></body></html>'
+        self.assertFalse(C.mord_sur('.components', C.corpus_de_page(page)))
+
+
+class UN_NOM_EST_UN_JETON_ENTIER_PAS_UN_MORCEAU(unittest.TestCase):
+    """Second rouge OBSERVE sur `subjects.html`, apres le premier.
+
+    Une fois les commentaires retires, l'instrument declarait encore ACTIVES
+    treize regles `.toast`, sept `.vue` et deux `.donnee` sur une page qui
+    n'en porte aucune. La preuve etait `toastP` (une fonction JS), `vues` et
+    `vue-annuaire` (un pluriel, un id) et `--f-donnees` (un token). Chercher
+    un nom de classe par SOUS-CHAINE, c'est le trouver partout.
+
+    Un nom de classe est un jeton entier : ce qui l'entoure dans un
+    `class="a b"` ou un `className = 'a b'` ne peut pas etre une lettre.
+    L'instrument reste une sur-approximation -- `get('vue')` dans une URL
+    donne encore un jeton `vue` -- mais il ne confond plus un pluriel
+    francais avec un composant.
+    """
+
+    def test_toastP_ne_prouve_pas_un_toast(self):
+        self.assertFalse(C.mord_sur('.toast', C.jetons('function toastP(){}')))
+
+    def test_le_pluriel_ne_prouve_pas_le_singulier(self):
+        self.assertFalse(C.mord_sur('.vue', C.jetons('<div id="vues"></div>')))
+
+    def test_un_token_CSS_ne_prouve_pas_une_classe(self):
+        self.assertFalse(C.mord_sur('.donnee', C.jetons('var(--f-donnees)')))
+
+    def test_un_id_compose_ne_prouve_pas_son_prefixe(self):
+        self.assertFalse(C.mord_sur('.vue', C.jetons('"vue-annuaire"')))
+
+    def test_mais_le_jeton_exact_prouve_toujours(self):
+        for source in ('<b class="a vue z">', "el.className='vue'",
+                       'classList.add("vue")'):
+            self.assertTrue(C.mord_sur('.vue', C.jetons(source)), source)
+
+    def test_un_selecteur_composite_exige_TOUS_ses_noms(self):
+        self.assertTrue(C.mord_sur('.a.b', C.jetons('class="a b"')))
+        self.assertFalse(C.mord_sur('.a.b', C.jetons('class="a"')))
+
+    def test_mord_sur_accepte_encore_une_chaine_brute(self):
+        """L'ancienne signature reste : les appels existants ne cassent pas."""
+        self.assertTrue(C.mord_sur('.vue', 'class="vue"'))
+        self.assertFalse(C.mord_sur('.vue', 'class="vues"'))
+
+
 class IlNeModifieRien(unittest.TestCase):
 
     def test_aucune_ecriture_ni_suppression_dans_le_module(self):

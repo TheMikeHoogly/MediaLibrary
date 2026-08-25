@@ -31,25 +31,32 @@ def page(feuille=FEUILLE, style_page='<style>.x{}</style>', tokens=TOKENS,
             '</head><body></body></html>')
 
 
-def faux_serveur(pages):
+def faux_serveur(pages, redirections=None):
+    """`redirections` : {chemin demande -> chemin realmente servi}."""
+    redirections = redirections or {}
     def chercher(hote, port, chemin, delai=10):
-        if chemin not in pages:
+        arrivee = redirections.get(chemin, chemin)
+        if arrivee not in pages:
             raise urllib.error.HTTPError(chemin, 404, 'nope', None, None)
-        v = pages[chemin]
+        v = pages[arrivee]
         if isinstance(v, Exception):
             raise v
-        return v
+        return v, arrivee
     return chercher
 
 
-def lancer(pages):
+def lancer(pages, redirections=None):
     dit = []
-    n = V.verifier('h', 1, ecrire=dit.append, chercher=faux_serveur(pages))
+    n = V.verifier('h', 1, ecrire=dit.append,
+                   chercher=faux_serveur(pages, redirections))
     return n, "\n".join(dit)
 
 
-TOUT_BON = {'/residu': page(), '/tranche': page(),
-            V.TEMOIN: page(feuille='', tokens=TOKENS)}
+# Bati depuis V.ADOPTANTES : une page de plus dans la convergence ne doit
+# pas rendre ces tests faux -- ni, pire, les rendre verts pour rien.
+TOUT_BON = dict([(c, page()) for c in V.ADOPTANTES]
+                + [(V.TEMOIN, page(feuille='', tokens=TOKENS)),
+                   ('/ailleurs', page(feuille='', tokens=TOKENS))])
 
 
 class LeCasNominal(unittest.TestCase):
@@ -72,7 +79,7 @@ class CE_QU_ON_N_A_PAS_REGARDE_NE_COMPTE_PAS_POUR_VERT(unittest.TestCase):
 
     def test_serveur_injoignable_compte_comme_faute(self):
         pages = dict(TOUT_BON)
-        pages['/residu'] = urllib.error.URLError('connexion refusee')
+        pages[V.ADOPTANTES[0]] = urllib.error.URLError('connexion refusee')
         n, texte = lancer(pages)
         self.assertGreater(n, 0)
         self.assertIn("SERVEUR MUET", texte)
@@ -93,7 +100,8 @@ class CE_QU_ON_N_A_PAS_REGARDE_NE_COMPTE_PAS_POUR_VERT(unittest.TestCase):
         pages = dict(TOUT_BON)
         del pages[V.TEMOIN]
         _n, texte = lancer(pages)
-        self.assertIn("2 page(s) lue(s), 1 NON REGARDEE(S)", texte)
+        self.assertIn("%d page(s) lue(s), 1 NON REGARDEE(S)"
+                      % len(V.ADOPTANTES), texte)
         self.assertIn("pas de preuve", texte)
 
     def test_et_il_nomme_la_page_qu_il_n_a_pas_pu_regarder(self):
@@ -107,7 +115,7 @@ class LeMarqueurRestant(unittest.TestCase):
 
     def test_un_marqueur_servi_est_un_grief(self):
         pages = dict(TOUT_BON)
-        pages['/residu'] = page(feuille='', marqueur=V.MARQUEUR)
+        pages[V.ADOPTANTES[0]] = page(feuille='', marqueur=V.MARQUEUR)
         n, texte = lancer(pages)
         self.assertGreater(n, 0)
         self.assertIn("marqueur est encore la", texte)
@@ -115,7 +123,7 @@ class LeMarqueurRestant(unittest.TestCase):
     def test_ni_marqueur_ni_feuille_est_aussi_un_grief(self):
         """La page ne passe peut-etre pas par _send_html du tout."""
         pages = dict(TOUT_BON)
-        pages['/tranche'] = page(feuille='')
+        pages[V.ADOPTANTES[1]] = page(feuille='')
         n, texte = lancer(pages)
         self.assertGreater(n, 0)
         self.assertIn("pas de <style id=\"ui-components\">", texte)
@@ -125,7 +133,7 @@ class LaPageGardeLeDernierMot(unittest.TestCase):
 
     def test_feuille_APRES_le_style_de_la_page_est_un_grief(self):
         pages = dict(TOUT_BON)
-        pages['/residu'] = ('<html><head><style>.x{}</style>' + FEUILLE +
+        pages[V.ADOPTANTES[0]] = ('<html><head><style>.x{}</style>' + FEUILLE +
                             TOKENS + '</head></html>')
         n, texte = lancer(pages)
         self.assertGreater(n, 0)
@@ -142,7 +150,7 @@ class LaFeuilleDoitPorterLesRegles(unittest.TestCase):
 
     def test_une_feuille_videe_est_un_grief(self):
         pages = dict(TOUT_BON)
-        pages['/residu'] = page(feuille='<style id="ui-components"></style>')
+        pages[V.ADOPTANTES[0]] = page(feuille='<style id="ui-components"></style>')
         n, texte = lancer(pages)
         self.assertGreater(n, 0)
         self.assertIn("ne porte pas .btn", texte)
@@ -150,7 +158,7 @@ class LaFeuilleDoitPorterLesRegles(unittest.TestCase):
     def test_les_tokens_absents_sont_un_grief(self):
         """components.css est ecrit en var(--...) : sans tokens il rend vide."""
         pages = dict(TOUT_BON)
-        pages['/tranche'] = page(tokens='')
+        pages[V.ADOPTANTES[1]] = page(tokens='')
         n, texte = lancer(pages)
         self.assertGreater(n, 0)
         self.assertIn("ui-shared", texte)
@@ -167,6 +175,40 @@ class LeTemoinProuveQueCEstUnOptIn(unittest.TestCase):
 
     def test_le_temoin_est_bien_une_page_NON_listee_comme_adoptante(self):
         self.assertNotIn(V.TEMOIN, V.ADOPTANTES)
+
+
+class UNE_PAGE_QUI_REPOND_AILLEURS_N_EST_PAS_CETTE_PAGE(unittest.TestCase):
+    """Troisieme rouge OBSERVE, le pire des trois.
+
+    Le temoin pointait sur `/faces`, qui repond **302 vers /people**. urllib
+    suit la redirection sans rien dire : le banc a ecrit « la page temoin
+    (/faces) reste intacte » en ayant lu `/people`. Il a nomme une page et
+    juge une autre -- et il l'a fait EN VERT.
+
+    Un temoin sert a prouver qu'une page NON convertie ne recoit rien. Si le
+    banc ne sait pas quelle page il a lue, le temoin ne temoigne de rien, et
+    le vert qu'il rapporte est un vert emprunte.
+    """
+
+    def test_une_redirection_silencieuse_est_un_grief(self):
+        n, texte = lancer(TOUT_BON, redirections={V.TEMOIN: '/ailleurs'})
+        self.assertGreater(n, 0)
+        self.assertIn("REPOND AILLEURS", texte)
+
+    def test_le_verdict_ne_passe_pas_au_vert_dessus(self):
+        _n, texte = lancer(TOUT_BON, redirections={V.TEMOIN: '/ailleurs'})
+        self.assertNotIn("reste intacte", texte)
+
+    def test_une_adoptante_redirigee_est_un_grief_aussi(self):
+        n, texte = lancer(TOUT_BON,
+                          redirections={V.ADOPTANTES[0]: V.ADOPTANTES[1]})
+        self.assertGreater(n, 0)
+        self.assertIn("REPOND AILLEURS", texte)
+
+    def test_et_le_grief_NOMME_les_deux_chemins(self):
+        _n, texte = lancer(TOUT_BON, redirections={V.TEMOIN: '/ailleurs'})
+        self.assertIn(V.TEMOIN, texte)
+        self.assertIn('/ailleurs', texte)
 
 
 class IlNeModifieRien(unittest.TestCase):

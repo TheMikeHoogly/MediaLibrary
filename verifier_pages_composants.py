@@ -40,6 +40,7 @@ SORTIE EN ASCII PUR (console cp1252 de l'agent).
 import argparse
 import sys
 import urllib.error
+import urllib.parse
 import urllib.request
 
 MARQUEUR = '<!--UI:components-->'
@@ -48,12 +49,14 @@ BALISE_TOKENS = 'id="ui-shared"'
 
 # Les pages converties le 25/08. Une page ne s'ajoute ici qu'apres la preuve
 # de cascade (`verifier_css_cascade.py --page <page>.html`).
-ADOPTANTES = ('/residu', '/tranche')
+ADOPTANTES = ('/residu', '/tranche', '/sujets')
 # Le temoin : une page qui n'a PAS adopte. Sans lui, un serveur qui injecterait
-# partout passerait ce banc en vert. `/faces` et pas `/upload` : `/upload` n'est
-# pas une route (la page d'envoi est servie a `/`), et le premier essai reel a
-# rendu 404 -- un temoin qu'on ne peut pas lire ne temoigne de rien.
-TEMOIN = '/faces'
+# partout passerait ce banc en vert. Deux temoins ont ete essayes et ecartes,
+# chacun par un essai REEL : `/upload` n'est pas une route (404, la page d'envoi
+# est servie a `/`), et `/faces` repond 302 vers `/people` -- le banc lisait
+# `/people` en croyant lire `/faces`. Un temoin qu'on ne peut pas lire, ou
+# qu'on lit ailleurs, ne temoigne de rien. `/map` se sert elle-meme.
+TEMOIN = '/map'
 
 # Ce que la feuille commune DOIT porter. Si `components.css` se vide ou se
 # tronque, la page rend nue sans qu'aucune erreur ne remonte.
@@ -61,10 +64,18 @@ ATTENDU = ('.btn', '.btn--confirmer', '.btn--destructif', '.btn--discret')
 
 
 def chercher(hote, port, chemin, delai=10):
-    """Rend le HTML, ou leve urllib.error.URLError / OSError."""
+    """Rend `(html, chemin REELLEMENT servi)`, ou leve URLError / OSError.
+
+    Le chemin d'arrivee n'est pas un detail : urllib suit les redirections
+    sans rien dire. `/faces` repond 302 vers `/people` sur ce serveur, et le
+    banc a un jour ecrit « la page temoin (/faces) reste intacte » apres avoir
+    lu `/people`. Nommer une page et en juger une autre, c'est exactement le
+    genre de vert qui ne vaut rien.
+    """
     url = "http://%s:%d%s" % (hote, port, chemin)
     with urllib.request.urlopen(url, timeout=delai) as r:
-        return r.read().decode('utf-8', errors='replace')
+        arrivee = urllib.parse.urlsplit(r.geturl()).path or chemin
+        return r.read().decode('utf-8', errors='replace'), arrivee
 
 
 def style_de_la_page(html):
@@ -138,7 +149,7 @@ def verifier(hote, port, ecrire=print, chercher=chercher):
     for chemin in ADOPTANTES + (TEMOIN,):
         role = "temoin" if chemin == TEMOIN else "adoptante"
         try:
-            html = chercher(hote, port, chemin)
+            html, arrivee = chercher(hote, port, chemin)
         except urllib.error.HTTPError as e:
             ecrire("%-10s (%s) : ROUTE MUETTE -- HTTP %s" % (chemin, role,
                                                              e.code))
@@ -148,6 +159,13 @@ def verifier(hote, port, ecrire=print, chercher=chercher):
         except (urllib.error.URLError, OSError) as e:
             ecrire("%-10s (%s) : SERVEUR MUET -- %s" % (chemin, role, e))
             muettes.append((chemin, "serveur injoignable"))
+            fautes += 1
+            continue
+        if arrivee != chemin:
+            ecrire("%-10s (%s) : REPOND AILLEURS -- servie depuis %s"
+                   % (chemin, role, arrivee))
+            ecrire("             une page nommee ici et lue la-bas ne prouve "
+                   "rien : le verdict ne peut pas parler d'elle")
             fautes += 1
             continue
         griefs = (juger_temoin if chemin == TEMOIN
