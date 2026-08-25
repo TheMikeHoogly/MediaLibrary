@@ -169,19 +169,57 @@ Il ne l'avait jamais été. **`verifier_contraste.py`** (neuf, famille
 `components.css`, résout les `var()`, et calcule le ratio WCAG 2.1 de chaque
 couple `color`/`background` **réellement déclaré** — pas de couple inventé.
 
-**14 couples sur 19 tiennent. Trois échouent, sur deux tokens :**
+**Il a trouvé trois échecs au premier lancement. Mike a tranché le soir même,
+et ils sont corrigés :**
 
-| composant | mesuré | seuil |
-|---|---|---|
-| `.btn--confirmer` — `#fff` sur `--fixateur` | **3,94:1** | 4,5 |
-| `.chip[aria-pressed="true"]` — même couple | **3,94:1** | 4,5 |
-| `.btn--destructif` — `--encre` sur fond hérité | **3,03:1** (pire cas) | 4,5 |
+| composant | avant | après | comment |
+|---|---|---|---|
+| `.btn--confirmer` | 3,94:1 | **4,54:1** | `--fixateur` assombri `#4A8C7B` → **`#448172`** |
+| `.chip[aria-pressed="true"]` | 3,94:1 | **4,54:1** | même token |
+| `.btn--destructif` | 3,03:1 | **5,34:1** | le bouton passe du **contour au PLEIN** |
 
-**Rien n'a été changé** : modifier un token ripple sur les onze pages et sur
-le sens que Mike a donné aux accents. Deux pistes chiffrées par token sont
-dans `QUESTIONS_MIKE.md`. **Le banc reste rouge (code 1) tant que ce n'est pas
-tranché — c'est voulu** : une alarme qu'on éteint sans corriger ne protège
-plus rien.
+`--fixateur` bouge en clarté seulement : teinte et saturation intactes, donc
+le *sens* de l'accent — confirmé par un humain — ne bouge pas. En bordure sur
+`--salle` il tient encore 4,33:1, bien au-dessus du 3:1 d'une bordure
+porteuse.
+
+`--encre` n'a **pas** bougé, et c'est délibéré : l'éclaircir aurait donné
+4,51:1 sur le sombre mais **2,91:1 sur le papier**, où le même token sert de
+texte d'erreur — réparer un côté en cassant l'autre. Remplir le bouton donne
+5,34:1 sans toucher à la palette, et colle à ce que le système dit déjà :
+`--encre` n'est jamais décoratif. Un bouton rouge plein pèse plus lourd à
+l'œil qu'un contour — c'est ce qu'on veut d'un « Supprimer ».
+
+**19 couples sur 19 mesurés tiennent maintenant.** Les cinq pages converties
+ont été prouvées : **4 valeurs changées chacune, exactement les quatre
+attendues** (`.btn--destructif` background + color + hover, et `:root
+--fixateur`), 0 disparue, 0 apparue.
+
+**Et le banc s'est corrigé deux fois en se mesurant lui-même**, sur deux
+rouges observés à quelques minutes d'intervalle :
+
+1. **Un commentaire avale le token qui le suit.** Le commentaire que j'avais
+   écrit au-dessus de `--fixateur` contenait « en bordure sur `--salle` :
+   4,33:1 ». Le lecteur de tokens, qui ne retirait pas les commentaires, a lu
+   `--salle` puis avalé tout le texte jusqu'au premier `;` — c'est-à-dire la
+   déclaration `--fixateur` elle-même. **Troisième fois de la journée qu'un
+   commentaire se fait passer pour du code** ; c'est devenu une règle.
+2. **Et le banc est passé au VERT.** Ses trois couples devenus irrésolubles
+   sont tombés dans « non décidables », le verdict a dit « le plancher tient
+   sur tout ce qui est déclaré », et le code de sortie valait **0**. Trois
+   couples avaient cessé d'être mesurés et rien ne criait. **Un couple non
+   mesuré compte désormais comme un grief**, et le rapport dit sa PORTÉE :
+   il ne juge que `components.css`, pas les couleurs écrites dans les onze
+   `<style>`.
+
+**Ce qui ne se calcule pas se DÉCLARE.** Il reste un cas qu'aucun ratio ne
+tranche : `.vue__num`, le numéro d'une vignette, écrit **par-dessus une
+photo** — son fond n'est pas une couleur. Le laisser en « non mesuré »
+laisserait le banc rouge pour toujours, et une alarme toujours allumée ne
+protège plus rien ; le coder en dur dans l'instrument le rendrait aveugle au
+prochain cas. La sortie est une **déclaration dans le CSS**
+(`/* contraste: hors-portee -- raison */`), qui **exige une raison**, ne vaut
+que pour la règle suivante, et n'exempte pas un couple qui se calcule.
 
 Trois choix de conception y sont écrits noir sur blanc, parce qu'ils décident
 de ce que l'instrument sait :

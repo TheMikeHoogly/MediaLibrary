@@ -24,7 +24,14 @@
   --veilleuse:    #FF7A1A;  /* lampe inactinique : « l'IA travaille », en attente */
   --veilleuse-d:  #7A3908;  /* variante sombre : liseres, fonds de badge */
   --encre:        #C8321E;  /* destructif, correction, erreur */
-  --fixateur:     #4A8C7B;  /* confirme, succes, assigne */
+  /* 25/08 : assombri de #4A8C7B a #448172. Le blanc dessus etait a 3,94:1,
+     sous le plancher AA de 4,5 -- sur le bouton qui CONFIRME une decision
+     humaine, et sur le chip de filtre actif. Teinte et saturation intactes :
+     seule la clarte bouge, donc le sens de l'accent (confirme par un humain)
+     ne bouge pas. #fff dessus : 4,54:1. En bordure sur --salle : 4,33:1,
+     bien au-dessus du 3:1 exige d'une bordure porteuse.
+     Mesure par `verifier_contraste.py`, pas a l'oeil. */
+  --fixateur:     #448172;  /* confirme, succes, assigne */
 
   /* --- Texte --- */
   --texte:        #F2EDE6;  /* sur --salle */

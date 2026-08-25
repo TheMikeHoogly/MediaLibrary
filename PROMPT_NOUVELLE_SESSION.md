@@ -66,15 +66,15 @@ vérifications) le calcule ; voir « Prochain pas ».
 
 ## Prochain pas
 
-1. **Une QUESTION attend Mike, et elle est chiffrée** (`QUESTIONS_MIKE.md`,
-   en tête) : **deux couleurs du système sont sous le seuil AA**, dont le
-   bouton qui confirme. `.btn--confirmer` et `.chip[aria-pressed="true"]` :
-   **3,94:1** (`#fff` sur `--fixateur`). `.btn--destructif` : **3,03:1**
-   (pire cas). 14 couples sur 19 tiennent ; les trois qui manquent tiennent à
-   **deux tokens**. Deux pistes mesurées par token sont écrites, avec ma
-   recommandation. **Rien n'a été changé** — un token ripple sur onze pages.
-   `verifier_contraste.py` reste **rouge (code 1)** tant que ce n'est pas
-   tranché : c'est voulu.
+1. **Le plancher AA est tenu, et mesuré.** Les trois échecs trouvés le 25/08
+   sont corrigés : `--fixateur` assombri `#4A8C7B` → **`#448172`** (4,54:1
+   sous `#fff`, teinte et saturation intactes) et le bouton destructif passe
+   du **contour au PLEIN** (5,34:1, **sans toucher `--encre`** — l'éclaircir
+   aurait cassé son usage comme texte d'erreur sur papier : 2,91:1).
+   **19 couples sur 19 mesurés tiennent.** `verifier_contraste.py` rend 0.
+   **⚠ La skill `photo-ui` a été mise à jour et envoyée à Mike en fichier —
+   si elle n'a pas été enregistrée, sa table de tokens dit encore `#4A8C7B`
+   et la prochaine session le réintroduira.** Vérifier avant de toucher au CSS.
 
 2. **Finir la convergence `.btn`** : `upload` est le seul cas restant avec un
    vrai bouton, et son composant est **réellement différent** (pleine

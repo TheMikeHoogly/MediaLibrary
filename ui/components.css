@@ -25,6 +25,13 @@
   contain-intrinsic-size: 160px 160px;
 }
 .vue--attente { box-shadow: inset 0 0 0 2px var(--veilleuse); }  /* IA en cours */
+/* contraste: hors-portee -- ce numero est ecrit PAR-DESSUS UNE PHOTO. Son
+   fond n'est pas une couleur mais une image quelconque : il n'y a pas de
+   ratio a calculer. Sa lisibilite tient au `text-shadow` noir. Declare ici
+   plutot que code dans l'instrument, pour que la prochaine regle du meme
+   genre ait a se declarer aussi. Piste si on veut faire mieux : `--texte`
+   (#F2EDE6) au lieu de `--graphite` (#A39C93) -- plus clair sur une photo
+   claire, mais un numero plus present sur la planche. */
 .vue__num {
   position: absolute; bottom: 2px; left: 4px;
   font: var(--t-xs)/1 var(--f-donnees);
@@ -53,7 +60,16 @@
 }
 .btn--principal { background: var(--papier); color: var(--texte-papier); border-color: var(--papier); }
 .btn--confirmer { background: var(--fixateur); border-color: var(--fixateur); color: #fff; }
-.btn--destructif { background: transparent; border-color: var(--encre); color: var(--encre); }
+/* 25/08 : le destructif passe du CONTOUR au PLEIN. En contour, `--encre` en
+   texte sur un fond herite plafonnait a 3,03:1 dans le pire cas -- sous le
+   plancher AA, et sur le bouton qui SUPPRIME. Deux pistes existaient :
+   eclaircir `--encre` (4,51:1 sur le sombre, mais 2,91:1 sur le papier ou le
+   meme token sert de texte d'erreur : reparer un cote en cassant l'autre),
+   ou remplir. Le plein donne 5,34:1 SANS toucher au token, et il est
+   coherent avec ce que le systeme dit deja -- `--encre` n'est jamais
+   decoratif. Un bouton rouge plein pese plus lourd a l'oeil qu'un contour :
+   c'est exactement ce qu'on veut d'un << Supprimer >>. */
+.btn--destructif { background: var(--encre); border-color: var(--encre); color: #fff; }
 /* Promus le 25/08 depuis residu/tranche, qui les avaient inventes a l'identique
    toutes les deux : un vocabulaire ne devient canonique que quand deux pages
    l'ecrivent pareil sans se concerter. */
@@ -73,16 +89,16 @@
    Chaque variante qui pose son propre fond DOIT le reposer ici : `.btn:hover`
    pese (0,2,0) et ecraserait sans ca `.btn--principal` (0,1,0), repeignant le
    bouton primaire en gris au passage de la souris.
-   `--confirmer` et `--destructif` se REPOSENT a l'identique -- elles n'ont pas
-   de marche tokenisee, et leur contraste de base est deja sous AA (3,94:1 et
-   3,68:1, mesures) : inventer une couleur la serait trancher la question
-   ouverte au lieu de la poser. Voir QUESTIONS_MIKE.md. */
+   `--confirmer` et `--destructif` se REPOSENT a l'identique : leurs fonds
+   (`--fixateur`, `--encre`) n'ont pas de marche tokenisee au-dessus d'eux.
+   Un survol invisible vaut mieux qu'une couleur inventee ; le focus clavier,
+   lui, est garanti par base.css. */
 @media (hover: hover) {
   .btn:hover             { background: var(--salle-4); }
   .btn--principal:hover  { background: var(--papier-2); }
   .btn--discret:hover    { background: var(--papier-2); }
   .btn--confirmer:hover  { background: var(--fixateur); }
-  .btn--destructif:hover { background: transparent; }
+  .btn--destructif:hover { background: var(--encre); }
 }
 .btn:disabled, .btn[aria-disabled="true"] {
   opacity: 0.5; cursor: not-allowed;

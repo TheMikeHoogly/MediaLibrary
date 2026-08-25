@@ -118,6 +118,150 @@ class CE_QU_IL_NE_SAIT_PAS_EST_COMPTE(unittest.TestCase):
         self.assertIn('.x', indecis[0][0])
 
 
+class UN_COMMENTAIRE_AVALE_LE_TOKEN_QUI_LE_SUIT(unittest.TestCase):
+    """Rouge OBSERVE, et le plus retors de la journee.
+
+    J'ai ecrit au-dessus de `--fixateur` un commentaire qui contenait la
+    phrase « en bordure sur --salle : 4,33:1 ». Le lecteur de tokens cherche
+    `--nom : valeur ;` SANS retirer les commentaires : il a vu `--salle`,
+    puis a avale tout le texte jusqu'au premier `;` -- c'est-a-dire la
+    declaration `--fixateur` elle-meme. Le token a disparu de la table.
+
+    **Et le banc est passe au VERT.** Ses trois couples devenus irresolubles
+    sont tombes dans « non decidables », le verdict a dit « le plancher tient
+    sur tout ce qui est declare », et le code de sortie valait 0. Trois
+    couples avaient cesse d'etre mesures et rien ne criait.
+
+    Meme lecon que sur la preuve de cascade, deux fois deja : un commentaire
+    est de la prose, et il faut le retirer AVANT de lire.
+    """
+
+    def test_un_commentaire_ne_mange_plus_le_token_suivant(self):
+        css = (":root {\n"
+               "  /* en bordure sur --salle : 4,33:1, bien au-dessus */\n"
+               "  --fixateur: #448172;\n}")
+        self.assertEqual(K.lire_tokens(css).get('--fixateur'), '#448172')
+
+    def test_un_faux_token_cite_dans_un_commentaire_n_entre_pas(self):
+        css = ":root { /* --invente: #FF0000; */ --vrai: #00FF00; }"
+        t = K.lire_tokens(css)
+        self.assertNotIn('--invente', t)
+        self.assertEqual(t.get('--vrai'), '#00FF00')
+
+    def test_un_commentaire_n_ecrase_pas_un_token_deja_lu(self):
+        css = ":root { --salle: #0C0B0A;\n /* --salle : 4,33:1 */\n --x: #FFF; }"
+        self.assertEqual(K.lire_tokens(css).get('--salle'), '#0C0B0A')
+
+
+class UN_COUPLE_NON_MESURE_N_EST_PAS_UN_VERT(unittest.TestCase):
+    """Le defaut de fond, et il precedait le commentaire fautif.
+
+    « Le plancher AA tient sur tout ce qui est declare » plus un code 0, avec
+    quatre couples listes juste au-dessus comme non decidables : c'est la
+    troncature silencieuse deguisee en exhaustivite. Un banc qui ne sait pas
+    ne rend pas vert.
+    """
+
+    def test_un_non_decidable_empeche_le_code_zero(self):
+        css = ".x { color: rgb(1 2 3); background: var(--salle); }"
+        io_dit = []
+        n = K.verifier_css(css, K.lire_tokens(TOKENS), ecrire=io_dit.append)
+        self.assertGreater(n, 0)
+
+    def test_et_le_verdict_ne_dit_pas_que_TOUT_tient(self):
+        css = ".x { color: rgb(1 2 3); background: var(--salle); }"
+        dit = []
+        K.verifier_css(css, K.lire_tokens(TOKENS), ecrire=dit.append)
+        texte = "\n".join(dit)
+        self.assertNotIn("le plancher AA tient", texte)
+
+    def test_tout_resolu_et_tout_au_dessus_rend_bien_zero(self):
+        css = (".x { color: var(--texte); background: var(--salle-3); }")
+        dit = []
+        n = K.verifier_css(css, K.lire_tokens(TOKENS), ecrire=dit.append)
+        self.assertEqual(n, 0, "\n".join(dit))
+
+    def test_le_rapport_dit_sa_PORTEE(self):
+        """Il ne mesure que components.css : les couleurs ecrites dans les
+        onze pages ne sont pas jugees. Le taire ferait lire un vert partiel
+        comme un vert general."""
+        dit = []
+        K.verifier_css(".x { color: var(--texte); background: var(--salle); }",
+                       K.lire_tokens(TOKENS), ecrire=dit.append)
+        self.assertIn("components.css", "\n".join(dit))
+
+
+class CE_QUI_EST_HORS_PORTEE_SE_DECLARE(unittest.TestCase):
+    """Il reste un cas qu'aucun calcul ne tranche : `.vue__num`, le numero
+    d'une vignette, ecrit PAR-DESSUS UNE PHOTO. Son fond n'est pas une
+    couleur, c'est une image quelconque ; sa lisibilite vient d'un
+    `text-shadow`. Il n'y a pas de ratio a calculer.
+
+    Le laisser en << non mesure >> laisse le banc rouge pour toujours -- et
+    une alarme toujours allumee ne protege plus rien. Le declarer en dur dans
+    l'instrument le rendrait aveugle au prochain cas du meme genre, sans
+    qu'on le sache.
+
+    La sortie est donc une DECLARATION, ecrite dans le CSS a cote de la
+    regle, avec sa raison. Elle se relit, elle se conteste, et elle sort du
+    compte des griefs -- pas du rapport.
+    """
+
+    CSS = ("/* contraste: hors-portee -- texte sur une PHOTO */\n"
+           ".v { color: var(--graphite); text-shadow: 0 1px 2px #000; }")
+
+    def test_une_regle_declaree_hors_portee_ne_compte_pas_comme_grief(self):
+        dit = []
+        n = K.verifier_css(self.CSS, K.lire_tokens(TOKENS), ecrire=dit.append)
+        self.assertEqual(n, 0, "\n".join(dit))
+
+    def test_mais_elle_reste_DITE_dans_le_rapport(self):
+        dit = []
+        K.verifier_css(self.CSS, K.lire_tokens(TOKENS), ecrire=dit.append)
+        texte = "\n".join(dit)
+        self.assertIn("HORS PORTEE", texte)
+        self.assertIn("PHOTO", texte)
+
+    def test_une_declaration_SANS_raison_ne_vaut_pas(self):
+        """Une exemption sans motif est une exemption qu'on ne peut pas
+        contester : elle ne sort pas du compte."""
+        css = "/* contraste: hors-portee */\n.v { color: rgb(1 2 3); }"
+        dit = []
+        n = K.verifier_css(css, K.lire_tokens(TOKENS), ecrire=dit.append)
+        self.assertGreater(n, 0)
+
+    def test_elle_ne_couvre_PAS_la_regle_suivante(self):
+        """Sinon un commentaire pose une fois exempterait toute la feuille."""
+        css = (self.CSS + "\n.w { color: rgb(9 9 9); background: #000; }")
+        dit = []
+        n = K.verifier_css(css, K.lire_tokens(TOKENS), ecrire=dit.append)
+        self.assertGreater(n, 0, "\n".join(dit))
+
+    def test_elle_n_exempte_pas_un_couple_MESURABLE_et_mauvais(self):
+        """Declarer hors portee ce qui se calcule serait une porte de sortie
+        pour tout : la declaration ne vaut que si le couple est irresoluble."""
+        css = ("/* contraste: hors-portee -- parce que ca m arrange */\n"
+               ".v { color: #777777; background: var(--salle); }")
+        dit = []
+        n = K.verifier_css(css, K.lire_tokens(TOKENS), ecrire=dit.append)
+        self.assertGreater(n, 0, "\n".join(dit))
+
+
+class LaRaisonSeLitTelleQuEcrite(unittest.TestCase):
+
+    def test_les_tirets_d_un_nom_de_token_survivent(self):
+        css = ("/* contraste: hors-portee -- piste : var(--texte) */\n"
+               ".v { color: rgb(1 2 3); }")
+        self.assertIn('--texte', list(K.exemptions(css).values())[0])
+
+    def test_une_raison_longue_est_COUPEE_VISIBLEMENT(self):
+        css = ("/* contraste: hors-portee -- " + "a" * 200 + " */\n"
+               ".v { color: rgb(1 2 3); }")
+        dit = []
+        K.verifier_css(css, K.lire_tokens(TOKENS), ecrire=dit.append)
+        self.assertIn("[... suite dans components.css]", "\n".join(dit))
+
+
 class ILNeCorrigeRien(unittest.TestCase):
 
     def test_aucune_ecriture_dans_le_module(self):

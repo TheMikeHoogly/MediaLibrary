@@ -75,8 +75,21 @@ def contraste(a, b):
     return (haut + 0.05) / (bas + 0.05)
 
 
+def sans_commentaires(css):
+    return re.sub(r'/\*.*?\*/', ' ', css, flags=re.S)
+
+
 def lire_tokens(texte):
-    """{'--salle': '#0C0B0A', ...} -- seulement ce qui est une COULEUR hex."""
+    """{'--salle': '#0C0B0A', ...} -- seulement ce qui est une COULEUR hex.
+
+    Les commentaires partent AVANT la lecture. Sans ca, une phrase comme
+    "en bordure sur --salle : 4,33:1" est lue comme une declaration, et le
+    `[^;]+` avale tout jusqu'au premier `;` -- donc le token qui SUIT le
+    commentaire. Observe le 25/08 : `--fixateur` a disparu de la table, ses
+    trois couples sont tombes dans les non-decidables, et le banc est passe
+    au vert.
+    """
+    texte = sans_commentaires(texte)
     out = {}
     for nom, val in re.findall(r'(--[\w-]+)\s*:\s*([^;]+);', texte):
         v = val.strip()
@@ -107,9 +120,30 @@ def resoudre(valeur, tokens, vus=None):
     return None
 
 
+# Une regle peut DECLARER que son contraste ne se calcule pas -- typiquement
+# un texte pose sur une PHOTO, dont le fond n'est pas une couleur. La
+# declaration porte sa raison, elle se relit et se conteste. Elle ne vaut que
+# pour la regle qui la SUIT immediatement, et seulement si le couple est
+# vraiment irresoluble : declarer hors portee ce qui se calcule serait une
+# porte de sortie pour tout.
+_HORS = re.compile(r'/\*\s*contraste\s*:\s*hors-portee\s*(.*?)\*/', re.S)
+
+
+def exemptions(css):
+    """{selecteur -> raison} pour les regles precedees d'une declaration."""
+    out = {}
+    for m in _HORS.finditer(css):
+        raison = ' '.join(m.group(1).split()).lstrip('- ').strip()
+        suite = css[m.end():]
+        t = re.match(r'\s*([^{}]+)\{', suite)
+        if t and raison:
+            out[' '.join(t.group(1).split())] = raison
+    return out
+
+
 def regles(css):
     """[(selecteur, {prop: valeur})] -- a plat, at-regles comprises."""
-    css = re.sub(r'/\*.*?\*/', ' ', css, flags=re.S)
+    css = sans_commentaires(css)
     out = []
     for sel, corps in re.findall(r'([^{}]+)\{([^{}]*)\}', css):
         sel = ' '.join(sel.split())
@@ -194,7 +228,20 @@ def juger(sel, fg, bg, tokens, fg_brut=None):
 def verifier(ui, ecrire=print):
     tokens = lire_tokens((ui / 'tokens.css').read_text(encoding='utf-8'))
     css = (ui / 'components.css').read_text(encoding='utf-8')
+    return verifier_css(css, tokens, ecrire)
+
+
+def verifier_css(css, tokens, ecrire=print):
+    """Rend le nombre de GRIEFS : sous le seuil + non mesures.
+
+    Un couple non mesure compte comme un grief. Le contraire -- rendre 0
+    parce qu'on n'a pas su decider -- est la troncature silencieuse deguisee
+    en exhaustivite, et ce banc l'a faite une fois.
+    """
     cps, indecis = couples(css, tokens)
+    exempt = exemptions(css)
+    hors = [(sel, exempt[sel]) for sel, _f, _b in indecis if sel in exempt]
+    indecis = [x for x in indecis if x[0] not in exempt]
     ecrire("# verifier_contraste -- %d tokens couleur, %d couples declares"
            % (len(tokens), len(cps)))
     ecrire("")
@@ -215,23 +262,43 @@ def verifier(ui, ecrire=print):
         else:
             ok += 1
     if not sous:
-        ecrire("  Les %d couples declares tiennent le seuil AA de %.1f:1."
+        ecrire("  Les %d couples mesures tiennent le seuil AA de %.1f:1."
                % (ok, SEUIL_TEXTE))
     ecrire("")
+    if hors:
+        ecrire("HORS PORTEE, DECLARE dans le CSS (%d) :" % len(hors))
+        for sel, raison in hors:
+            # Coupee pour la lisibilite -- et la coupe SE VOIT. La raison
+            # entiere vit dans le CSS, a cote de la regle qu'elle exempte.
+            if len(raison) > 96:
+                raison = raison[:96] + " [... suite dans components.css]"
+            ecrire("  %-24s %s" % (sel, raison))
+        ecrire("")
     if indecis:
         ecrire("NON DECIDABLES (%d) -- comptes, pas tus :" % len(indecis))
         for sel, fg, bg in indecis:
             ecrire("  %-24s color=%s background=%s" % (sel, fg, bg))
         ecrire("")
+    ecrire("PORTEE : tokens.css et components.css. Les couleurs ecrites dans")
+    ecrire("les <style> des onze pages ne sont PAS jugees ici -- un vert")
+    ecrire("partiel ne doit pas se lire comme un vert general.")
+    ecrire("")
     if sous:
-        ecrire("VERDICT : %d couple(s) sous le plancher, %d au-dessus."
-               % (len(sous), ok))
-        ecrire("Le plancher dit : toute nouvelle couleur verifiee. Ces")
-        ecrire("couleurs-la ne l'avaient jamais ete. Changer un token ripple")
-        ecrire("sur les onze pages : c'est une DECISION, pas un correctif.")
+        ecrire("VERDICT : %d couple(s) sous le plancher, %d au-dessus, %d non"
+               " mesure(s)." % (len(sous), ok, len(indecis)))
+        ecrire("Le plancher dit : toute nouvelle couleur verifiee. Changer un")
+        ecrire("token ripple sur les onze pages : c'est une DECISION, pas un")
+        ecrire("correctif.")
+    elif indecis:
+        ecrire("VERDICT : rien sous le plancher PARMI LES %d COUPLES MESURES,"
+               " mais" % ok)
+        ecrire("%d n'ont pas pu l'etre. Ce n'est pas un plancher tenu, c'est"
+               " un" % len(indecis))
+        ecrire("plancher partiellement regarde.")
     else:
-        ecrire("VERDICT : le plancher AA tient sur tout ce qui est declare.")
-    return len(sous)
+        ecrire("VERDICT : le plancher AA tient sur les %d couples declares,"
+               " tous mesures." % ok)
+    return len(sous) + len(indecis)
 
 
 def main(argv=None):
