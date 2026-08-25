@@ -36,11 +36,21 @@
   promotion (−45 %, prix normal CHF 66.–), l'engagement 24 mois et les
   CHF 99 d'activation.
 
-  **Deux pièges nommés** : la clé de chiffrement Hyper Backup est à imprimer
-  et ranger ailleurs — une sauvegarde chiffrée dont on perd la clé est perdue ;
-  et une mise à jour DSM 7.4.1 était en cours de téléchargement au moment de
-  la décision — ne pas lancer le premier envoi avant qu'elle soit finie et le
-  NAS redémarré.
+  **Vérifié le 25/08** : la ligne PEUT donner **425 / 100 Mbit/s** à
+  l'adresse (rue du Pressoir 10) — la fibre, elle, n'arrive qu'entre
+  **décembre 2027 et mars 2028**. Les 13,8 Mbit/s mesurés ne sont donc pas une
+  limite physique mais le plafond de l'abonnement.
+
+  **Quatre pièges nommés** : (1) la clé de chiffrement Hyper Backup est à
+  imprimer et ranger ailleurs — une sauvegarde chiffrée dont on perd la clé
+  est perdue ; (2) DSM 7.4.1 était en cours de téléchargement — ne pas lancer
+  le premier envoi avant le redémarrage ; (3) le compte Infomaniak existant
+  porte le domaine d'un CLUB dont le compte prépayé a déjà échoué à se
+  renouveler le 15/04/2026 — **facturation séparée** pour la photothèque ;
+  (4) **Google One = 100 Go à CHF 2,00/mois** (Play Store, renouvelé le 14) :
+  il n'a jamais pu porter les 291 Go, mais le résilier ramènerait le compte
+  Google à 15 Go gratuits et **Gmail cesse de recevoir quand c'est plein**.
+  Regarder `one.google.com/storage` avant de décider.
 
 - **24/08 — l'ordre `reparation_xmp` au canal des bancs : sa raison d'être a
   expiré vingt minutes après ton accord.** Tu as dit oui pour qu'une mort à

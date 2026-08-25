@@ -6,6 +6,35 @@ dans **git** ; les rejets dans `eval/DECISIONS.md` (photothèque) et
 `eval/METHODE.md` ; l'éphémère dans `PROMPT_NOUVELLE_SESSION.md`. Audits :
 `docs/AUDIT_INTERNE_2026-08.md`, `docs/AUDIT_EXTERNE_2026.md`, `docs/RANGEMENT_2026.md`.
 
+## État (25/08/2026, session 45 quater) — la copie hors site est SPÉCIFIÉE
+
+**Le point 12 bis n'attend plus qu'un geste.** Tout ce qui manquait est mesuré
+ou vérifié :
+
+| | |
+|---|---|
+| à sauvegarder | **290,9 Go** (109 photos + 180 vidéo) + ~300 Mo de décisions |
+| source | NAS **Synology DS224+**, DSM 7.3.2 (7.4.1 en attente) |
+| cible | **Infomaniak Swiss Backup**, Hyper Backup/Swift, ~**CHF 6 TTC/mois** pour 1 To, données en Suisse ×3 |
+| ligne, mesurée | **22,4 / 13,8 Mbit/s** — premier envoi **~50 h** |
+| ligne, CAPACITÉ à l'adresse | **425 / 100 Mbit/s** (fibre seulement entre déc. 2027 et mars 2028) |
+| ligne, offre à +CHF 1/mois | **100 Mbit/s** — premier envoi **~8 h**, une nuit |
+
+**Le débit décide, pas l'hébergeur.** La ligne peut déjà donner sept fois plus
+en montée que ce qu'elle donne : ce n'est pas une limite physique, c'est le
+plafond de l'abonnement. Un franc par mois achète un facteur 7 sur le seul
+chiffre qui rend cette sauvegarde faisable ou non.
+
+**Deux couplages nommés avant qu'ils mordent.** (1) Le compte Infomaniak
+existe déjà, mais il porte le domaine d'un CLUB, avec un compte prépayé qui a
+déjà échoué à se renouveler (15/04/2026) : mêler la photothèque à cette
+facturation, c'est laisser un incident de trésorerie associatif emporter la
+sauvegarde familiale. **Compte ou moyen de paiement séparé.** (2) Google One
+n'a jamais été candidat — **100 Go pour 291 Go à sauvegarder** — mais le
+résilier ferait tomber le compte Google à 15 Go gratuits, et **Gmail cesse de
+recevoir quand le quota est plein**. Vérifier la répartition AVANT de toucher
+à quoi que ce soit.
+
 ## État (25/08/2026, session 45 ter)
 
 **La copie hors site a une cible, un prix et un obstacle chiffré.** NAS
