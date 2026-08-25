@@ -1,0 +1,81 @@
+{
+ "par_famille": {
+  "photo": {
+   "n": 73079,
+   "octets": 117107685254
+  },
+  "autre": {
+   "n": 1415,
+   "octets": 1884452237
+  },
+  "video": {
+   "n": 2453,
+   "octets": 193363697920
+  }
+ },
+ "total_n": 76947,
+ "total_octets": 312355835411,
+ "illisibles": 0,
+ "gros": [
+  {
+   "octets": 3885053592,
+   "chemin": "\\\\NAS-Bremblens\\home\\Photos\\2025\\Seychelles 2025\\Plongée\\GX010310.MP4"
+  },
+  {
+   "octets": 3445431330,
+   "chemin": "\\\\NAS-Bremblens\\home\\Photos\\2015\\06 Alkimia\\Al'kimia - Création Marilène - juin 2015 - résodanse.mov"
+  },
+  {
+   "octets": 3388701014,
+   "chemin": "\\\\NAS-Bremblens\\home\\Photos\\2023\\BOLIVIE-2023-V4.mp4"
+  },
+  {
+   "octets": 2536110540,
+   "chemin": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\250914_Samsung_Mike\\20250912_194001.mp4"
+  },
+  {
+   "octets": 2262696507,
+   "chemin": "\\\\NAS-Bremblens\\home\\Photos\\2025\\Seychelles 2025\\Plongée\\GX010307.MP4"
+  },
+  {
+   "octets": 1972742762,
+   "chemin": "\\\\NAS-Bremblens\\home\\Photos\\2018\\09 Septembre\\20180923_103444.mp4"
+  },
+  {
+   "octets": 1911314404,
+   "chemin": "\\\\NAS-Bremblens\\home\\Photos\\2017\\04 Avril\\20170407_202109.mp4"
+  },
+  {
+   "octets": 1715307148,
+   "chemin": "\\\\NAS-Bremblens\\home\\Photos\\2025\\Seychelles 2025\\Plongée\\GX010534.MP4"
+  },
+  {
+   "octets": 1627064158,
+   "chemin": "\\\\NAS-Bremblens\\home\\Photos\\2025\\250130_Menerga\\DJI_0043.MP4"
+  },
+  {
+   "octets": 1602743612,
+   "chemin": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\250914_Samsung_Mike\\20240922_115704.mp4"
+  },
+  {
+   "octets": 1466171392,
+   "chemin": "\\\\NAS-Bremblens\\home\\Photos\\2016\\05 Anni Floufline\\DSCN0362.MOV"
+  },
+  {
+   "octets": 1429925062,
+   "chemin": "\\\\NAS-Bremblens\\home\\Photos\\2024\\240621_Fiesta Menerga et départ MadMat\\For The Love of Money.mp4"
+  },
+  {
+   "octets": 1416037734,
+   "chemin": "\\\\NAS-Bremblens\\home\\Photos\\Syneco\\For The Love Of Money.mp4"
+  },
+  {
+   "octets": 1198890828,
+   "chemin": "\\\\NAS-Bremblens\\home\\Photos\\2017\\10 Octobre\\Balabagui\\20171008_191632.mp4"
+  },
+  {
+   "octets": 1192554699,
+   "chemin": "\\\\NAS-Bremblens\\home\\Photos\\2025\\250130_Menerga\\DJI_0042.MP4"
+  }
+ ]
+}

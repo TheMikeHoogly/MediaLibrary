@@ -6,6 +6,20 @@ dans **git** ; les rejets dans `eval/DECISIONS.md` (photothèque) et
 `eval/METHODE.md` ; l'éphémère dans `PROMPT_NOUVELLE_SESSION.md`. Audits :
 `docs/AUDIT_INTERNE_2026-08.md`, `docs/AUDIT_EXTERNE_2026.md`, `docs/RANGEMENT_2026.md`.
 
+## État (25/08/2026, session 45 bis)
+
+**Le fonds est MESURÉ, et la copie hors site cesse d'être une opinion.**
+`inventaire_fonds.py` (neuf, famille `inventaire_`, lecture seule, 14
+vérifications) : **76 947 fichiers, 290,9 Go** — **109 Go de photos** (73 079
+fichiers) et **180 Go de vidéos** (2 453 fichiers). **62 % du poids dans 3 %
+des fichiers.** Le tiers des décisions humaines pèse ~300 Mo.
+
+**Et la première version de l'instrument s'est fait tuer par le plafond du
+banc** : `os.walk` + `os.path.getsize` demande un aller-retour SMB PAR FICHIER
+pour une réponse que l'énumération du dossier portait déjà — plus de 600 s.
+`os.scandir` rend la même mesure en **193 s**. Sur un disque local la
+différence ne se verrait pas ; c'est le réseau qui la fait.
+
 ## État (24/08/2026, session 45)
 
 **LE CHANTIER DES XMP EST CLOS, à zéro.** `verifier_xmp_toutes_personnes.py`,
