@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Le residu a juger</title>
+<!--UI:components-->
 <style>
 /* Surface de TRAVAIL : on decide, donc papier. Tokens seuls.
    La PHOTO, elle, se regarde : fond salle, comme partout ailleurs. */
@@ -69,16 +70,10 @@ body { font-family: var(--f-texte); background: var(--salle); color: var(--texte
             border-radius: var(--r-sm); padding: var(--e-2) var(--e-3); }
 .suite { margin: var(--e-3) 0 0; font-size: var(--t-sm); font-weight: 600; }
 .actes { display: flex; gap: var(--e-2); flex-wrap: wrap; margin: var(--e-3) 0; }
-.btn { min-height: var(--touch); padding: 0 var(--e-4);
-       font: 500 var(--t-sm)/1 var(--f-texte); border: var(--trait);
-       border-radius: var(--r-md); background: var(--salle-3); color: var(--texte);
-       cursor: pointer; display: inline-flex; align-items: center; gap: var(--e-2); }
-.btn--confirmer { background: var(--fixateur); border-color: var(--fixateur); color: #fff; }
-.btn--destructif { background: transparent; border-color: var(--encre); color: var(--encre); }
-.btn--discret { background: transparent; border-color: var(--papier-2);
-                color: var(--texte-papier); }
-.btn kbd { font: var(--t-xs)/1 var(--f-donnees); border: 1px solid currentColor;
-           border-radius: var(--r-sm); padding: 2px 5px; opacity: 0.75; }
+/* Les boutons sont partis dans ui/components.css le 25/08 : cette page les
+   avait ecrits a l'identique de la skill, et tranche aussi. Adoptes par le
+   marqueur pose plus haut, qui vient AVANT ce <style> — la page garde donc le
+   dernier mot si elle a besoin d'une exception. */
 .pied { display: flex; gap: var(--e-3); flex-wrap: wrap; align-items: center;
         font-size: var(--t-sm); }
 .pied a { color: var(--texte-papier); text-decoration: underline; }

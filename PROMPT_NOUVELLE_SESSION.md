@@ -9,42 +9,54 @@ FUSIONNÉ — ce document, non. Puis `ROADMAP.md`, `eval/DECISIONS.md`,
 `eval/METHODE.md` — et `docs/DECISIONS_OUTILLAGE.md` si le sujet touche aux
 canaux, à la livraison ou au MCP. Débrief en 2–3 lignes, puis on attaque.
 
-## Où on en est (25/08/2026, fin de session 45)
+## Où on en est (25/08/2026, session 46)
 
-**Rien ne tourne, rien n'attend.** Le chantier des XMP est CLOS et le serveur
-est à jour. `main` = `b6943f3`.
+**Rien ne tourne, rien n'attend.** Le chantier des XMP est CLOS (1 614 couples
+nom–photo lus, **0 en écart**, Wilson 0,0 – 0,2 %, contre 18,7 % le 23/08) ;
+les 21 fantômes `_exiftool_tmp` sont effacés. Le serveur a été **redémarré et
+observé** après le dernier increment.
 
-**Le chiffre de clôture** : `verifier_xmp_toutes_personnes.py`, machine calme
-— **1 614 couples nom–photo lus, 0 en écart** (Wilson 0,0 – 0,2 %), contre
-**255 sur 1 364 (18,7 %)** le 23/08. La réparation a réécrit 3 128 photos sur
-18 828 balayées ; les 21 fantômes `_exiftool_tmp` sont effacés ;
-`inventaire_fantomes.py` en trouve **0**. La règle 2 tient dans les fichiers.
+**Le CSS commun a été mesuré, et la mesure a tué le chantier d'extraction** :
+200 déclarations hissables sur 1 754, dont **171 partagées par deux pages
+seulement** — 6,2 Ko sur 67. Le vrai sujet est la **divergence** : `.btn` ne
+veut pas dire la même chose selon la page.
 
-**Trois défauts trouvés en chemin, tous corrigés** : la reprise notait un échec
-comme fait (les 13 échecs étaient irrattrapables) ; un échec ne disait que son
-compte, jamais sa cause ; « jamais deux écrivains » ne valait pas contre
-soi-même. **Et `/api/search` rend enfin `total`/`tronque`**, `/api/names` passe
-de 292 ms à 0,6 ms par page, O7 est classé *mineur* (139–146 ms, calme).
+**La convergence a donc commencé, en opt-in.** `residu` et `tranche` posent
+`<!--UI:components-->` et reçoivent `ui/components.css` ; leurs `<style>` ne
+redéclarent plus le bouton. **Le marqueur vit AVANT le `<style>` de la page**
+— sinon la feuille commune gagnerait la cascade et la page perdrait le dernier
+mot au moment même où elle converge. Trois preuves, dans l'ordre : cascade
+(`verifier_css_cascade.py --page`), mécanisme (`test_ui_composants.py`, 11),
+**serveur vivant** (`verifier_pages_composants.py`, 14 tests) — les trois
+vertes, la troisième après redémarrage réel.
+
+**Un changement visuel volontaire est parti avec** : dans `residu`, le
+`<h3 id="legref">` est dans `<section class="feuille">` et prend donc la police
+d'affichage condensée. Seule des 17 règles « apparues » à mordre vraiment.
 
 ## Prochain pas
 
-1. **Le CSS commun : MESURÉ, et le gisement est vide.**
-   `verifier_css_cascade.py --commun` : **1 754** déclarations distinctes sur
-   les onze pages, **200 hissables**, mais **171 d'entre elles ne concernent
-   que DEUX pages** — gain total **6,2 Ko sur 67 Ko**. Trois déclarations
-   seulement vivent dans les onze (`body{background|color|font-family}`, déjà
-   en tokens), trois autres dans neuf (le reset `*`).
-   **Ce qui reste à faire tient en un geste** : hisser ces **six**
-   déclarations dans `base.css` (déjà injecté partout), une par une, prouvées
-   par `--avant/--apres`. Gain en octets nul, source unique de vérité gagnée.
-   **Et le VRAI sujet, si Mike le veut** : les 26 discordantes disent que
-   `.btn` ne veut pas dire la même chose selon la page (background, border,
-   color, display, font-size, font-weight, padding), et pareil pour `.chip`,
-   `.bar`, `.grid`, `h2`. Ce n'est pas de la duplication, c'est de la
-   DIVERGENCE — chantier de design system, pas d'extraction, et
-   `components.css` l'attend en opt-in page par page. **Décision de Mike.**
+1. **Continuer la convergence `.btn`, par coût croissant.**
+   - `subjects` : 3 propriétés + un `padding` différents, à trancher.
+   - `people` et `pets` : **les deux manquent `min-height: var(--touch)`**.
+     C'est une brèche du plancher d'accessibilité (cible < 44 px), pas un
+     goût — elle se corrige donc *avec* la convergence, pas après. `pets`
+     porte en plus un `#ffffff0d` en dur.
+   - Unifier le vocabulaire : `.prim` / `.warn` / `.primary` / `.danger`
+     → `.btn--confirmer` / `--destructif` / `--discret`.
+   - `upload` : composant réellement différent (pleine largeur). **À décider
+     avec Mike, pas à forcer.**
+   **La procédure est fixée** : convertir → `verifier_css_cascade.py --avant
+   <copie> --apres <page> --page <page>.html` → ajouter la page à `ADOPTANTES`
+   dans `verifier_pages_composants.py` → **redémarrer** → le banc → livrer.
+   Toute règle « apparue » qui MORD se dit à Mike avant de partir.
 
-2. **Reste d'audit** : O8–O9, O11, O13–O15 ; **I1** visible dans `/reglages`.
+2. **Les six déclarations universelles dans `base.css`** (approuvé, pas fait) :
+   `body{background|color|font-family}` (11 pages) et `*{box-sizing|margin|
+   padding}` (9 pages). Gain en octets nul ; une source de vérité au lieu de
+   onze. Même preuve `--avant/--apres`.
+
+3. **Reste d'audit** : O8–O9, O11, O13–O15 ; **I1** visible dans `/reglages`.
    O15 (purge de `photo_thumbs/`) gagne en poids.
 
 ## En fin de projet — décidé, mesuré, en attente d'un geste
@@ -106,6 +118,19 @@ treize étaient le même fantôme. Les causes sont comptées et dites.
 **Jamais deux écrivains, y compris contre soi-même** (24/08) :
 `appliquer_xmp_personnes.py` pose un verrou (`_corbeille_xmp/_ecriture.lock`,
 preuve par FRAÎCHEUR, repris après 10 min sans signe de vie).
+
+**Un banc d'observation ment de deux façons** (25/08). Il peut manquer une
+panne — et il peut déclarer vert ce qu'il n'a **pas pu regarder**.
+`verifier_pages_composants.py` a fait le second à son premier lancement réel :
+son témoin pointait sur une route inexistante et il a écrit « rien n'a pu être
+vérifié » alors qu'il venait de lire et de juger bonnes deux pages sur trois.
+Un 404 (mauvaise adresse) et un refus de connexion (serveur mort) envoient
+chercher la panne à deux endroits opposés : **ils ne se disent pas pareil**.
+
+**Un opt-in se prouve par son TÉMOIN** (25/08). Un banc qui ne regarde que les
+pages converties passerait au vert sur un serveur qui injecte partout — c'est-
+à-dire exactement le jour où les neuf pages restantes cassent. Le témoin
+(`/faces`) coûte une requête et vaut la garantie.
 
 **Un cache donne DEUX prix à une mesure** (24/08). Le banc a crié « score
 parfait = ALARME » sur `/api/names` à 0,3 ms, et il avait raison de crier :

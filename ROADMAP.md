@@ -51,6 +51,58 @@ comptées À PART.
 déclarations universelles dans `base.css` (déjà injecté partout). Gain en
 octets : nul. Gain réel : une source unique de vérité là où il y en a onze.
 
+### Convergence `.btn` — 2 pages sur 11 ont adopté (25/08, session 46)
+
+Le compteur du chantier n'est plus des kilo-octets, c'est **combien de pages
+écrivent le même bouton**. Deux y sont : `residu` et `tranche`. Elles ont été
+choisies parce qu'elles avaient déjà écrit le `.btn` canonique **à
+l'identique, toutes les deux, sans se concerter** — un vocabulaire ne devient
+canonique que là. Leurs `.btn--discret` et `.btn kbd` sont donc montés dans
+`ui/components.css` ; leurs `<style>` ne redéclarent plus le bouton.
+
+**L'adoption est un opt-in, et le mécanisme le dit** : une page pose
+`<!--UI:components-->` dans son `<head>`, le serveur le remplace par la
+feuille commune. **Le marqueur vit AVANT le `<style>` de la page**, pas à
+`</head>` comme les tokens : sinon la feuille commune gagnerait la cascade et
+la page perdrait le dernier mot **au moment même où elle converge** — plus
+aucun moyen de garder une exception le temps de la migration. Le marqueur est
+remplacé **même par du vide** (`ui/` absent) : un commentaire muet ne se
+distingue pas d'un oubli.
+
+Trois preuves, dans cet ordre :
+
+| preuve | ce qu'elle tient | résultat |
+|---|---|---|
+| `verifier_css_cascade.py --page` | la cascade ne bouge pas | 0 disparue, 0 valeur changée, 6 + 11 apparues **inertes** |
+| `test_ui_composants.py` (11) | le mécanisme, sur le code de prod | vert |
+| `verifier_pages_composants.py` (14 tests) | le **serveur vivant** | vert après redémarrage |
+
+Le troisième banc interroge `/residu`, `/tranche` **et un témoin non converti**
+(`/faces`) : sans témoin, un serveur qui injecterait partout passerait au vert.
+Il s'est corrigé à son premier contact réel — il pointait sur `/upload`, qui
+n'est pas une route, et a écrit « rien n'a pu être vérifié » alors qu'il venait
+de lire et de juger bonnes les deux pages converties. **Deux mensonges d'un
+coup**, sur ce qu'il avait vu et sur pourquoi il n'avait pas vu le reste. Un
+404 se dit désormais ROUTE MUETTE, un refus de connexion SERVEUR MUET, et le
+verdict compte les pages lues.
+
+**Un changement visuel volontaire, à l'œil de Mike** : dans `residu`, le
+`<h3 id="legref">` est à l'intérieur de `<section class="feuille">` ; il prend
+donc `.feuille h3 { font: 600 var(--t-lg)/1.2 var(--f-affichage) }` — le titre
+canonique de la fiche, en police d'affichage condensée. C'est la seule des 17
+règles « apparues » qui morde vraiment.
+
+**Suite, par ordre de coût croissant** :
+
+1. `subjects` — 3 propriétés + un `padding` différents à trancher.
+2. `people` et `pets` — **les deux manquent `min-height: var(--touch)`** :
+   c'est une brèche dans le plancher d'accessibilité (cible < 44 px), pas un
+   détail esthétique. `pets` porte en plus un `#ffffff0d` en dur.
+3. Unifier le vocabulaire : `.prim` / `.warn` / `.primary` / `.danger` →
+   `.btn--confirmer` / `--destructif` / `--discret`.
+4. `upload` — composant réellement différent (pleine largeur) : à décider,
+   pas à forcer.
+
 ## Priorité (25/08/2026) — la sauvegarde passe EN FIN DE PROJET
 
 Choix de Mike : le Takeout Google (en cours, plusieurs heures) et

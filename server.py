@@ -6036,6 +6036,21 @@ UI_DIR = SCRIPT_DIR / "ui"
 _UI_GLOBAL_FILES = ("tokens.css", "base.css")   # ordre : variables puis a11y
 _UI_CACHE = {"css": None, "sig": None}
 
+# ─── Adoption du design system, page par page ────────────────────────────────
+# `components.css` redefinit `.btn`, `.chip`, `.feuille`… : l'injecter partout
+# ecraserait les pages historiques (voir plus haut). Une page l'ADOPTE en
+# posant le marqueur `<!--UI:components-->` a l'endroit exact ou elle veut la
+# feuille — en pratique JUSTE AVANT son propre `<style>`.
+#
+# POURQUOI DANS LA PAGE, ET AVANT SON STYLE. Le CSS injecte a `</head>` arrive
+# APRES le `<style>` de la page et gagnerait donc la cascade : la page perdrait
+# le dernier mot au moment meme ou elle converge, et n'aurait plus aucun moyen
+# de garder une exception le temps de la migration. Le marqueur laisse la page
+# choisir sa place, et donc garder la main.
+_UI_COMPOSANTS_FILES = ("components.css",)
+_UI_COMPOSANTS_MARQUEUR = "<!--UI:components-->"
+_UI_COMPOSANTS_CACHE = {"css": None, "sig": None}
+
 
 def _ui_signature():
     """(nom, mtime, taille) par fichier : detecte une edition sans tout relire."""
@@ -6047,6 +6062,39 @@ def _ui_signature():
         except OSError:
             sig.append((name, 0, 0))
     return tuple(sig)
+
+
+def _composants_signature():
+    """Même idiome que `_ui_signature` : une edition se voit sans tout relire."""
+    sig = []
+    for name in _UI_COMPOSANTS_FILES:
+        try:
+            st = (UI_DIR / name).stat()
+            sig.append((name, int(st.st_mtime), st.st_size))
+        except OSError:
+            sig.append((name, 0, 0))
+    return tuple(sig)
+
+
+def ui_composants_css():
+    """Le bloc `<style id="ui-components">` des pages qui ont ADOPTE le design
+    system. Chaine vide si `ui/` est absent — le serveur demarre quand meme
+    (invariant zero-dependance), la page rend alors avec son CSS a elle."""
+    sig = _composants_signature()
+    if _UI_COMPOSANTS_CACHE["sig"] != sig:
+        parts = []
+        for name in _UI_COMPOSANTS_FILES:
+            try:
+                txt = (UI_DIR / name).read_text(encoding="utf-8")
+            except Exception:
+                txt = ""
+            if txt.strip():
+                parts.append(f"/* {name} */\n{txt}")
+        _UI_COMPOSANTS_CACHE["css"] = (
+            '<style id="ui-components">\n' + "\n".join(parts) + "\n</style>"
+        ) if parts else ""
+        _UI_COMPOSANTS_CACHE["sig"] = sig
+    return _UI_COMPOSANTS_CACHE["css"]
 
 
 def ui_shared_css():
@@ -12460,6 +12508,13 @@ class Handler(BaseHTTPRequestHandler):
             shared = ui_shared_css()
             if shared:
                 html_str = html_str.replace('</head>', shared + '</head>', 1)
+        # Adoption du design system : la page a pose le marqueur la ou elle
+        # veut la feuille. Remplace meme par une chaine vide — un marqueur qui
+        # resterait dans le HTML serait un commentaire muet, et on ne saurait
+        # pas si la page a adopte ou si ui/ manquait.
+        if _UI_COMPOSANTS_MARQUEUR in html_str:
+            html_str = html_str.replace(_UI_COMPOSANTS_MARQUEUR,
+                                        ui_composants_css(), 1)
         if '<!--APPNAV-->' in html_str:
             html_str = html_str.replace('<!--APPNAV-->', APP_NAV_HTML)
         # Sous-navigation Sujets (guichet unique) : /sujets, /people, /pets.

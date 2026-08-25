@@ -254,6 +254,75 @@ class LaMemeValeurEcriteAutrement(unittest.TestCase):
         self.assertTrue(r['identique'])
 
 
+
+class CeQuiNePeutMordreSurCettePage(unittest.TestCase):
+    """Ne de la premiere conversion reelle (25/08).
+
+    Adopter `components.css` sur `residu` apporte 59 declarations nouvelles —
+    `.planche`, `.toast`, `.chip`, `.donnee` — dont la page n'a AUCUN element.
+    Les compter comme des changements noie le seul qui compte : le
+    `justify-content` ajoute a `.btn`, que la page, elle, porte. Un instrument
+    qui crie 59 fois pour une vraie alarme n'est plus lu.
+    """
+
+    def test_une_classe_absente_de_la_page_ne_mord_pas(self):
+        self.assertFalse(C.mord_sur('.toast', '<div class="bar"></div>'))
+
+    def test_une_classe_PRESENTE_mord(self):
+        self.assertTrue(C.mord_sur('.bar', '<div class="bar"></div>'))
+
+    def test_un_selecteur_de_TYPE_mord_toujours(self):
+        """`body`, `h2` : aucun identifiant a chercher, donc jamais inerte."""
+        self.assertTrue(C.mord_sur('body', '<p>rien</p>'))
+
+    def test_un_selecteur_COMPOSE_exige_tous_ses_identifiants(self):
+        self.assertFalse(C.mord_sur('.bar .toast', '<div class="bar"></div>'))
+        self.assertTrue(C.mord_sur('.bar .n', '<div class="bar"><i class="n">'))
+
+    def test_un_attribut_compte_comme_un_identifiant(self):
+        self.assertFalse(C.mord_sur('.chip[aria-pressed="true"]',
+                                    '<div class="chip"></div>'))
+
+    def test_une_classe_batie_en_JS_est_trouvee_dans_la_SOURCE(self):
+        """C'est pourquoi on cherche dans toute la source, pas dans le HTML
+        rendu : `b.className = 'btn btn--confirmer'` compte."""
+        self.assertTrue(C.mord_sur(
+            '.btn--confirmer', "<script>b.className='btn btn--confirmer'</script>"))
+
+    def test_les_inertes_sont_COMPTEES_a_part_et_le_verdict_les_ignore(self):
+        r = C.comparer([("a.css", ".bar{color:red}")],
+                       [("a.css", ".bar{color:red}"),
+                        ("commun.css", ".toast{color:blue}")],
+                       source_page='<div class="bar"></div>')
+        self.assertEqual(r['apparues_actives'], [])
+        self.assertEqual(len(r['apparues_inertes']), 1)
+        self.assertTrue(r['identique_sur_ce_qui_mord'])
+
+    def test_une_apparue_qui_MORD_fait_tomber_le_verdict(self):
+        r = C.comparer([("a.css", ".bar{color:red}")],
+                       [("a.css", ".bar{color:red;padding:0}")],
+                       source_page='<div class="bar"></div>')
+        self.assertEqual(len(r['apparues_actives']), 1)
+        self.assertFalse(r['identique_sur_ce_qui_mord'])
+
+    def test_le_rapport_DIT_que_le_compte_des_inertes_est_un_plancher(self):
+        dit = []
+        C.rapport(C.comparer([("a.css", ".bar{color:red}")],
+                             [("a.css", ".bar{color:red}"),
+                              ("c.css", ".toast{color:blue}")],
+                             source_page='<div class="bar"></div>'),
+                  ecrire=dit.append)
+        texte = "\n".join(dit)
+        self.assertIn("INERTES", texte)
+        self.assertIn("PLANCHER", texte)
+
+    def test_sans_page_fournie_rien_ne_change(self):
+        """L'ancien comportement reste : pas de page, pas de tri."""
+        r = cmp_(".a{color:red}", ".a{color:red}")
+        self.assertFalse(r['inertes_connues'])
+        self.assertTrue(r['identique'])
+
+
 class IlNeModifieRien(unittest.TestCase):
 
     def test_aucune_ecriture_ni_suppression_dans_le_module(self):

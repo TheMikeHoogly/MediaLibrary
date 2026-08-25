@@ -25,6 +25,10 @@ SCRIPT_DIR = Path(__file__).resolve().parent
 UI_DIR = SCRIPT_DIR / "ui"
 UI_GLOBAL_FILES = ("tokens.css", "base.css")   # DOIT refleter server._UI_GLOBAL_FILES
 MARQUEUR = '_UI_CACHE = {"css": None, "sig": None}'
+# Meme principe pour la feuille des composants, ADOPTEE page par page : sans
+# elle, un dist sans ui/ servirait les pages converties SANS leurs boutons.
+UI_COMPOSANTS_FILES = ("components.css",)  # DOIT refleter server._UI_COMPOSANTS_FILES
+MARQUEUR_COMPOSANTS = '_UI_COMPOSANTS_CACHE = {"css": None, "sig": None}'
 # Gabarits de pages sortis du monolithe (point 7). Meme principe que le CSS :
 # le dist embarque ce que ui/pages/ contient, donc il se deploie seul.
 UI_PAGES_DIR = UI_DIR / "pages"
@@ -43,9 +47,21 @@ def construire_css():
     return '<style id="ui-shared">\n' + "\n".join(parts) + "\n</style>"
 
 
-def signature_absente():
+def construire_composants():
+    """Reproduit exactement le bloc que server.ui_composants_css() assemble."""
+    parts = []
+    for name in UI_COMPOSANTS_FILES:
+        txt = (UI_DIR / name).read_text(encoding="utf-8")
+        if txt.strip():
+            parts.append(f"/* {name} */\n{txt}")
+    if not parts:
+        return ""
+    return '<style id="ui-components">\n' + "\n".join(parts) + "\n</style>"
+
+
+def signature_absente(fichiers=None):
     """Signature renvoyee par server._ui_signature() quand ui/ est absent."""
-    return tuple((name, 0, 0) for name in UI_GLOBAL_FILES)
+    return tuple((name, 0, 0) for name in (fichiers or UI_GLOBAL_FILES))
 
 
 def cuire_les_pages():
@@ -77,6 +93,17 @@ def main(argv):
     remplacement = f'_UI_CACHE = {{"css": {css!r}, "sig": {signature_absente()!r}}}'
     out = src.replace(MARQUEUR, remplacement, 1)
 
+    composants = construire_composants()
+    if composants:
+        if MARQUEUR_COMPOSANTS not in out:
+            print("ERREUR : marqueur des composants introuvable dans server.py.")
+            print(f"  Attendu : {MARQUEUR_COMPOSANTS}")
+            return 2
+        out = out.replace(
+            MARQUEUR_COMPOSANTS,
+            f'_UI_COMPOSANTS_CACHE = {{"css": {composants!r}, '
+            f'"sig": {signature_absente(UI_COMPOSANTS_FILES)!r}}}', 1)
+
     # Les gabarits : sans eux, un dist sans ui/ servirait « Gabarit
     # introuvable » a la place des pages extraites.
     pages = cuire_les_pages()
@@ -92,6 +119,8 @@ def main(argv):
     dst.write_text(out, encoding="utf-8")
     print(f"OK : {dst}")
     print(f"  CSS cuit : {len(css)} caracteres depuis {', '.join(UI_GLOBAL_FILES)}")
+    print(f"  Composants cuits : {len(composants)} caracteres"
+          if composants else "  Composants cuits : aucun (components.css absent).")
     if pages:
         print(f"  Gabarits cuits : {len(pages)} page(s) — "
               + ", ".join(sorted(pages)))

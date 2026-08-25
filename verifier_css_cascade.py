@@ -326,7 +326,38 @@ def collisions_de_raccourcis(regles):
     return sorted(out)
 
 
-def comparer(avant_css, apres_css):
+_IDENT = re.compile(r'[.#]([A-Za-z_][\w-]*)|\[\s*([A-Za-z_][\w-]*)')
+
+
+def identifiants(selecteur):
+    """Les classes, id et noms d'attribut qu'un sélecteur EXIGE."""
+    out = set()
+    for cls, attr in _IDENT.findall(selecteur):
+        out.add(cls or attr)
+    return out
+
+
+def mord_sur(selecteur, source):
+    """Ce sélecteur peut-il toucher un élément de cette page ?
+
+    SUR-APPROXIMATION VOLONTAIRE : on répond OUI dès qu'on ne peut pas prouver
+    le contraire. Adopter une feuille de composants apporte des règles que la
+    page n'utilise pas — `.planche`, `.toast`, `.chip` sur une page qui n'en a
+    aucun. Les compter comme des changements noierait le seul qui compte.
+
+    La preuve du contraire est un texte : si le nom de classe n'apparaît NULLE
+    PART dans la source de la page — ni dans le HTML, ni dans le JS — aucun
+    élément ne peut le porter. **Sa limite** : une classe construite par
+    morceaux en JavaScript (`'btn--' + genre`) échappe à la recherche, et sera
+    dite inerte à tort. C'est pour ça que la sortie les COMPTE au lieu de les
+    taire."""
+    ids = identifiants(selecteur)
+    if not ids:
+        return True                      # sélecteur de type : toujours possible
+    return all(i in source for i in ids)
+
+
+def comparer(avant_css, apres_css, source_page=None):
     """Rend le dict de rapport. `*_css` : liste de (nom, texte)."""
     def cumul(paquet):
         regles, opaques, non_dec = [], [], []
@@ -345,7 +376,23 @@ def comparer(avant_css, apres_css):
     apparues = sorted(set(gb) - set(ga))
     changees = sorted(c for c in (set(ga) & set(gb)) if ga[c] != gb[c])
 
+    def tri(cles):
+        if source_page is None:
+            return list(cles), []
+        act = [c for c in cles if mord_sur(c[1], source_page)]
+        return act, [c for c in cles if c not in act]
+
+    apparues_a, apparues_i = tri(apparues)
+    disparues_a, disparues_i = tri(disparues)
+    changees_a, changees_i = tri(changees)
+
     return {
+        'inertes_connues': source_page is not None,
+        'apparues_actives': apparues_a, 'apparues_inertes': apparues_i,
+        'disparues_actives': disparues_a, 'disparues_inertes': disparues_i,
+        'changees_actives': changees_a, 'changees_inertes': changees_i,
+        'identique_sur_ce_qui_mord': not (apparues_a or disparues_a
+                                          or changees_a),
         'declarations_avant': len(ra), 'declarations_apres': len(rb),
         'gagnantes_avant': len(ga), 'gagnantes_apres': len(gb),
         'disparues': disparues, 'apparues': apparues, 'changees': changees,
@@ -371,8 +418,21 @@ def rapport(r, ecrire=print):
     ecrire("  apparues            : %d" % len(r['apparues']))
     ecrire("  valeurs changees    : %d" % len(r['changees']))
 
-    for titre, cle in (("DISPARUES", 'disparues'), ("APPARUES", 'apparues'),
-                       ("CHANGEES", 'changees')):
+    if r.get('inertes_connues'):
+        ecrire("")
+        ecrire("  Dont INERTES sur cette page (aucun element ne peut les")
+        ecrire("  porter) : %d apparues, %d disparues, %d changees."
+               % (len(r['apparues_inertes']), len(r['disparues_inertes']),
+                  len(r['changees_inertes'])))
+        ecrire("  Une classe batie par morceaux en JS y echappe : ce compte")
+        ecrire("  est un PLANCHER, pas une certitude.")
+
+    for titre, cle in (("DISPARUES", 'disparues_actives' if
+                        r.get('inertes_connues') else 'disparues'),
+                       ("APPARUES", 'apparues_actives' if
+                        r.get('inertes_connues') else 'apparues'),
+                       ("CHANGEES", 'changees_actives' if
+                        r.get('inertes_connues') else 'changees')):
         lignes = r[cle]
         if not lignes:
             continue
@@ -399,8 +459,12 @@ def rapport(r, ecrire=print):
     ecrire("    pareil, et le style= en ligne : hors de portee, toujours.")
 
     ecrire("")
-    if r['identique'] and not r['opaques_differents']:
-        ecrire("  IDENTIQUE sur tout ce que cet instrument sait decider.")
+    vert = (r['identique'] if not r.get('inertes_connues')
+            else r['identique_sur_ce_qui_mord'])
+    if vert and not r['opaques_differents']:
+        ecrire("  IDENTIQUE sur tout ce que cet instrument sait decider%s."
+               % (" (regles inertes mises a part)"
+                  if r.get('inertes_connues') else ""))
         ecrire("  Ce n est PAS un feu vert : lire les angles morts ci-dessus.")
     else:
         ecrire("  DIFFERENT. Ne pas livrer l extraction en l etat.")
@@ -493,6 +557,9 @@ def main(argv=None):
                     help="inventaire de ce que les pages partagent")
     ap.add_argument('--avant', nargs='*', default=[])
     ap.add_argument('--apres', nargs='*', default=[])
+    ap.add_argument('--page', default='',
+                    help="la page HTML dont on juge : ce qui ne peut mordre "
+                         "aucun de ses elements est compte a part")
     ap.add_argument('--json', dest='sortie_json', default='')
     a = ap.parse_args(argv)
 
@@ -522,13 +589,21 @@ def main(argv=None):
         av, ap_ = lire(a.avant), lire(a.apres)
         if av is None or ap_ is None:
             return 2
-        r = rapport(comparer(av, ap_))
+        src = None
+        if a.page:
+            if not Path(a.page).is_file():
+                print("page introuvable : %s" % a.page)
+                return 2
+            src = Path(a.page).read_text(encoding='utf-8')
+        r = rapport(comparer(av, ap_, source_page=src))
 
     if a.sortie_json:
         Path(a.sortie_json).write_text(
             json.dumps(r, ensure_ascii=False, indent=1, default=list),
             encoding='utf-8')
         print("  ecrit : %s" % a.sortie_json)
+    if r.get('inertes_connues'):
+        return 0 if r.get('identique_sur_ce_qui_mord') else 1
     return 0 if r.get('identique', True) else 1
 
 

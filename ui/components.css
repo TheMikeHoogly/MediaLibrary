@@ -54,6 +54,15 @@
 .btn--principal { background: var(--papier); color: var(--texte-papier); border-color: var(--papier); }
 .btn--confirmer { background: var(--fixateur); border-color: var(--fixateur); color: #fff; }
 .btn--destructif { background: transparent; border-color: var(--encre); color: var(--encre); }
+/* Promus le 25/08 depuis residu/tranche, qui les avaient inventes a l'identique
+   toutes les deux : un vocabulaire ne devient canonique que quand deux pages
+   l'ecrivent pareil sans se concerter. */
+.btn--discret { background: transparent; border-color: var(--papier-2); color: var(--texte-papier); }
+.btn kbd {
+  font: var(--t-xs)/1 var(--f-donnees);
+  border: 1px solid currentColor; border-radius: var(--r-sm);
+  padding: 2px 5px; opacity: 0.75;
+}
 
 .chip {
   min-height: 32px; padding: 0 var(--e-3); border-radius: var(--r-pill);

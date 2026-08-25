@@ -265,3 +265,10 @@ _base_avant_cache.json
 _base_apres_cache.json
 _xmp_fonds_apres.json
 _xmp_fonds_final.json
+
+# --- Copies AVANT du chantier de convergence CSS (25/08) -------------------
+# `verifier_css_cascade.py --avant X --apres Y` compare deux etats d'une page.
+# La copie d'AVANT est un echafaudage : la vraie reference est git. La
+# versionner ferait vivre deux fois la meme page, et la copie perimee finirait
+# par servir de preuve.
+_avant_css/
