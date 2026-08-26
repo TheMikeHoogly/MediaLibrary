@@ -64,19 +64,26 @@ le mécanisme n'était pas à écrire : il attendait une décision.
 - **Le chantier 17 (multi-utilisateurs) est SPÉCIFIÉ** — six décisions de
   Mike, dans `ROADMAP.md`. Ne pas le rouvrir, l'exécuter.
 
-### Le déplacement `Photos Mike` est PRÊT, et il n'a pas été lancé
+### Le déplacement `Photos Mike` est FAIT et VÉRIFIÉ (26/08, 22:18)
 
-`deplacer_dossiers.py` + `dossiers_a_deplacer.txt` (26 noms) +
-`test_deplacer_dossiers.py` (23 tests, trois mutations vues). **26 dossiers,
-25 559 photos, 983 décisions humaines.** Aperçu par défaut ; `--appliquer` et
-`--undo <journal>` ; le serveur doit être arrêté et le script le **prouve**.
+26 dossiers, **25 559 photos**, **2 271 décisions humaines** transportées.
+Prouvé en comparant la base d'avant (`_avant_deplacement/`) à celle d'après :
+43 065 clés des deux côtés, **3 767 décisions des deux côtés**, 140 orphelines
+sur les MÊMES 119 clés (elles pré-existaient), tous les compteurs de noms
+identiques au photo près, **0 clé restée sur un ancien chemin**.
 
-**Ce qu'il a fallu trouver avant de l'écrire** : `appliquer_plan.rekey_stores`
-se dit « miroir de `server.rekey_everywhere` » et **re-clé cinq magasins sur
+Restent à la racine : `Photos Flo` 12 084, `Photos Papa` 4 843, `_A TRIER` 559.
+
+**Ce qu'il a fallu trouver pour l'écrire** : `appliquer_plan.rekey_stores` se
+dit « miroir de `server.rekey_everywhere` » et **re-clé cinq magasins sur
 sept**. Manquent les décisions humaines dans `people`/`pets` (keyés par NOM :
 `.rekey(chemin)` n'y trouve rien et **ne dit rien**) et `gps_places.json`.
-C'est l'incident du 22/08 — 928 décisions perdues — dont le correctif n'a été
-porté que côté serveur. **Ne jamais déplacer avec `rekey_stores`.**
+**Elle est toujours cassée** — le rangement par année et le dédoublonnage la
+portent. **Ne jamais déplacer avec elle.**
+
+**Effet de bord à surveiller** : la clé du cache de vignettes contient le
+chemin. Les 3 047 vignettes en cache sont orphelines et se refont au premier
+affichage. À balayer avec O15.
 
 ## Prochain pas
 
@@ -98,11 +105,9 @@ porté que côté serveur. **Ne jamais déplacer avec `rekey_stores`.**
    injecté sur toutes les pages**, comme `tokens.css` et `base.css`. Il n'en
    existe aucun ; ce serait le premier. Contenu déjà relevé dans
    `docs/RACCOURCIS.md`.
-4. **Le déplacement `Photos Mike`** — le script est écrit et testé, il attend
-   le geste de Mike : arrêter le serveur, `python deplacer_dossiers.py` pour
-   l'aperçu, puis `--appliquer`. **Ensuite seulement** : redémarrer, vérifier
-   que les compteurs de noms n'ont pas bougé (`/api/names`), et relancer
-   `verifier_orphelins`.
+4. **La suite du chantier 17** : la notion de PROPRIÉTAIRE, puis
+   l'attribution rétroactive des 3 767 décisions à Mike. Le déplacement est
+   fait ; c'est l'étape suivante de l'ordre de travail (ROADMAP, point 17).
 5. **Unifier les deux chemins de re-clé.** La primitive complète existe
    maintenant DEUX fois (`server.rekey_everywhere` et `deplacer_dossiers`) :
    le troisième appelant reproduira le défaut. Et

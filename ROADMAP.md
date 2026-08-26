@@ -414,6 +414,62 @@ référence dont on savait qu'elle mentait.
   étaient en `display:none` derrière des `<label for>`.
 - **Le chantier XMP est clos** : 0 écart sur 1 614 couples (Wilson 0,0–0,2 %).
 
+## État (26/08/2026, session 52) — LE DÉPLACEMENT EST FAIT, ET VÉRIFIÉ
+
+**`Photos Mike` existe. 26 dossiers, 25 559 photos, 2 271 décisions humaines
+transportées.** Journal :
+`_corbeille_deplacements/deplacement_20260826_221815.jsonl`. Copie de la base
+avant l'opération dans `_avant_deplacement/` — c'est elle qui a permis de
+PROUVER le résultat au lieu de le croire.
+
+### Le contrôle : la base d'avant contre la base d'après
+
+| | avant | après |
+|---|---|---|
+| clés dans l'index | 43 065 | **43 065** |
+| clés sous `Photos Mike` | 0 | **25 559** |
+| clés restées sur un ancien chemin | — | **0** |
+| **décisions humaines** | **3 767** | **3 767** |
+| décisions orphelines | 140 sur 119 clés | **140 sur les MÊMES 119 clés** |
+| compteurs de noms d'animaux | 18 noms | **les 18, au photo près** |
+
+**Aucune décision perdue, aucune orpheline neuve.** Les 119 orphelines
+pré-existaient : ce sont celles dont aucun journal de déplacement ne dit où le
+fichier est parti (le contrôle à blanc de `/reglages` les annonçait déjà).
+`verifier_orphelins --sans-disque` le confirme sur le serveur vivant : 119 hors
+index sur 42 195, les mêmes.
+
+Restent à la racine, et c'est voulu : `Photos Flo` 12 084, `Photos Papa`
+4 843, `_A TRIER` 559.
+
+### Ce que la vérification a corrigé chez moi
+
+Mon compte du 26/08 annonçait **983** décisions concernées. Le script en a
+trouvé **2 271**. Ce n'est pas la base qui avait bougé : **ma requête était
+fausse.** Elle exigeait que chaque décision soit une paire `[clé, index]`, or
+`exclude` et `confirmed` sont des listes de clés SIMPLES — j'ai donc sauté
+toutes les exclusions et toutes les confirmations. Sur la MÊME base du 22/08,
+`recle_decisions` en compte 2 028 et ma requête 983.
+
+**Troisième fois dans la journée qu'une requête maison se trompe là où
+l'instrument du projet a raison** (après « Caline n'existe nulle part » et le
+`total: null` lu comme un zéro). La règle n'est pas « mesurer », c'est
+**mesurer avec l'instrument que le projet s'est donné** — il a déjà payé pour
+connaître les cas limites.
+
+### Ce qui reste ouvert sur ce chantier
+
+- **Les vignettes se refont.** Leur clé de cache contient le chemin : les
+  3 047 vignettes en cache (293 Mo) sont orphelines. Elles se recalculent au
+  premier affichage. À balayer avec O15.
+- **Unifier les deux chemins de re-clé** — la primitive complète existe
+  maintenant DANS `server.rekey_everywhere` ET dans `deplacer_dossiers`. Le
+  troisième appelant reproduira le défaut.
+- **`appliquer_plan.rekey_stores` est toujours cassée** : le rangement par
+  année et le dédoublonnage la portent, et elle re-clé cinq magasins sur sept.
+- **`animal:luna` en minuscule** existe toujours sur 3 photos à côté de
+  `animal:Luna` sur 355. I7 devait fermer ça.
+
 ## État (26/08/2026, session 51) — LE DÉPLACEMENT, ET LE MIROIR QUI N'EN EST PAS UN
 
 **Le script du déplacement `Photos Mike` est PRÊT, en aperçu seulement.**
