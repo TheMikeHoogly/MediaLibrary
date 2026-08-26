@@ -1,0 +1,35 @@
+# Dossiers a deplacer dans "Photos Mike" (chantier 17, propriete du fonds).
+# Un nom de dossier par ligne, RELATIF a la racine des photos. Ni chemin, ni
+# "..", ni barre oblique : le script refuse.
+# Les lignes vides et celles commencant par # sont ignorees.
+#
+# Etabli le 26/08/2026 d'apres la selection de Mike dans l'explorateur.
+# NE RESTENT PAS DANS CETTE LISTE, et c'est voulu :
+#   Photos Flo   -> Florine        Photos Papa -> le pere de Mike
+#   _A TRIER, _Uploads, .corbeille-rangement, .thumbs -> dossiers de travail
+40 ans du Mike
+2005
+2006
+2007
+2008
+2009
+2010
+2015
+2016
+2017
+2018
+2019
+2020
+2021
+2022
+2023
+2024
+2025
+2026
+Appart Bremblens
+Caline
+Calinous
+FUN
+Nikola
+Syneco
+Véronique

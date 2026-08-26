@@ -414,6 +414,69 @@ référence dont on savait qu'elle mentait.
   étaient en `display:none` derrière des `<label for>`.
 - **Le chantier XMP est clos** : 0 écart sur 1 614 couples (Wilson 0,0–0,2 %).
 
+## État (26/08/2026, session 51) — LE DÉPLACEMENT, ET LE MIROIR QUI N'EN EST PAS UN
+
+**Le script du déplacement `Photos Mike` est PRÊT, en aperçu seulement.**
+`deplacer_dossiers.py` (+ `dossiers_a_deplacer.txt`, 26 noms auditables, +
+`test_deplacer_dossiers.py`, 23 tests, **trois mutations posées, trois vues**).
+Il n'a **pas** été exécuté : c'est un geste de Mike, et l'agent des bancs le
+refuse de lui-même — « ce qui écrit reste un geste de Mike ».
+
+### Le défaut qui aurait coûté 983 décisions humaines
+
+`appliquer_plan.rekey_stores` — la primitive du chemin HORS-LIGNE, utilisée
+par le rangement par année et le dédoublonnage — **dit d'elle-même « miroir de
+server.rekey_everywhere » et ne l'est pas.** Elle re-clé **cinq magasins sur
+sept** :
+
+| magasin | serveur | hors-ligne |
+|---|---|---|
+| `tags` · `faces` · `animals` · sémantique | ✔ | ✔ |
+| **décisions humaines dans `people`/`pets`** | ✔ (`recle_decisions`, 22/08) | **✘** |
+| **`gps_places.json`** | ✔ | **✘** |
+
+`people` et `pets` sont keyés par NOM : `.rekey(chemin)` n'y trouve rien,
+renvoie faux, **et ne dit rien**. C'est exactement l'incident du 22/08 — 928
+décisions perdues sur 3 364 — dont le correctif n'a été porté que d'un côté.
+
+**Mesuré sur la copie de la base : 983 décisions humaines** (739 personnes,
+244 animaux) pointent vers les 25 559 photos à déplacer. Le tag aurait
+survécu (règle 2 : il vit dans les `kw` et le XMP) ; c'est la vérité terrain
+qui serait partie.
+
+`deplacer_dossiers.py` transporte les sept, et un test **grave le défaut du
+voisin** pour que personne ne « simplifie » le script en réutilisant
+`rekey_stores`.
+
+### Volumétrie du déplacement
+
+| | |
+|---|---|
+| dossiers à déplacer | **26** |
+| photos concernées | **25 559** |
+| décisions humaines transportées | **983** |
+| restent en place | `Photos Flo` 12 084 · `Photos Papa` 4 843 · `_A TRIER` 559 |
+| total sous la racine | 43 045 (+20 hors racine) |
+
+**Un dossier se déplace en UN `rename`** — le NAS ne recopie pas un octet, les
+25 559 changements sont dans l'index. Ordre garanti par dossier : la source
+existe et la destination n'existe PAS · `rename` · re-clé des sept magasins ·
+journal. `--undo` rejoue à l'envers.
+
+**Le serveur doit être arrêté, et le script le PROUVE** (`BEGIN IMMEDIATE` sur
+`photos.db`) au lieu de le demander : invariant 4, un seul écrivain.
+
+### Reste à faire sur ce chantier
+
+- **Unifier les deux chemins de re-clé.** Aujourd'hui la primitive complète
+  existe deux fois : `server.rekey_everywhere` et `deplacer_dossiers`. Le
+  troisième appelant reproduira le défaut. `recle_decisions` est déjà un
+  module partagé ; il manque son équivalent pour `gps_places`.
+- **Réparer `appliquer_plan.rekey_stores`** — le rangement par année et le
+  dédoublonnage la portent encore.
+- **HTTPS : FAIT par Mike** (26/08). `tailscale serve --bg --https=443
+  localhost:8080` → `https://msi-mike.goat-draco.ts.net/`.
+
 ## Priorité (26/08/2026, refixée session 50) — l'ordre a changé
 
 **1. Le garde-fou du filtre, AVANT tout le reste.** Un filtre qui ment est

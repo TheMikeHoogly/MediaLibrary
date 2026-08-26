@@ -64,6 +64,20 @@ le mécanisme n'était pas à écrire : il attendait une décision.
 - **Le chantier 17 (multi-utilisateurs) est SPÉCIFIÉ** — six décisions de
   Mike, dans `ROADMAP.md`. Ne pas le rouvrir, l'exécuter.
 
+### Le déplacement `Photos Mike` est PRÊT, et il n'a pas été lancé
+
+`deplacer_dossiers.py` + `dossiers_a_deplacer.txt` (26 noms) +
+`test_deplacer_dossiers.py` (23 tests, trois mutations vues). **26 dossiers,
+25 559 photos, 983 décisions humaines.** Aperçu par défaut ; `--appliquer` et
+`--undo <journal>` ; le serveur doit être arrêté et le script le **prouve**.
+
+**Ce qu'il a fallu trouver avant de l'écrire** : `appliquer_plan.rekey_stores`
+se dit « miroir de `server.rekey_everywhere` » et **re-clé cinq magasins sur
+sept**. Manquent les décisions humaines dans `people`/`pets` (keyés par NOM :
+`.rekey(chemin)` n'y trouve rien et **ne dit rien**) et `gps_places.json`.
+C'est l'incident du 22/08 — 928 décisions perdues — dont le correctif n'a été
+porté que côté serveur. **Ne jamais déplacer avec `rekey_stores`.**
+
 ## Prochain pas
 
 **L'ordre est celui de la section « Priorité » du ROADMAP, et il a changé.**
@@ -84,9 +98,16 @@ le mécanisme n'était pas à écrire : il attendait une décision.
    injecté sur toutes les pages**, comme `tokens.css` et `base.css`. Il n'en
    existe aucun ; ce serait le premier. Contenu déjà relevé dans
    `docs/RACCOURCIS.md`.
-4. **Le déplacement `Photos Mike`** — premier geste du chantier 17, sans code
-   de comptes. C'est un `rekey` massif : plan à blanc, journal, quarantaine
-   réversible. Ce qui a coûté 748 décisions le 22/08.
+4. **Le déplacement `Photos Mike`** — le script est écrit et testé, il attend
+   le geste de Mike : arrêter le serveur, `python deplacer_dossiers.py` pour
+   l'aperçu, puis `--appliquer`. **Ensuite seulement** : redémarrer, vérifier
+   que les compteurs de noms n'ont pas bougé (`/api/names`), et relancer
+   `verifier_orphelins`.
+5. **Unifier les deux chemins de re-clé.** La primitive complète existe
+   maintenant DEUX fois (`server.rekey_everywhere` et `deplacer_dossiers`) :
+   le troisième appelant reproduira le défaut. Et
+   `appliquer_plan.rekey_stores` est toujours cassée — le rangement par année
+   et le dédoublonnage la portent.
 
 ## En fin de projet — décidé, mesuré, en attente d'un geste
 
@@ -137,6 +158,13 @@ ce qui allait bien. **Et l'inverse existe** : une seule règle non prouvable
 AFFIRMÉE disait « trop petit » là où il fallait lire « pas de plancher ».
 Deux défauts opposés sous le même mot envoient chercher la panne à deux
 endroits opposés.
+
+**Un docstring qui dit « miroir de » n'est pas une preuve** (26/08).
+`appliquer_plan.rekey_stores` l'affirmait et re-cléait cinq magasins sur sept.
+Deux d'entre eux échouent en SILENCE : `people` et `pets` sont keyés par NOM,
+donc `.rekey(chemin)` n'y trouve rien et renvoie faux sans rien dire. **Quand
+deux chemins font « la même chose », c'est un test qui doit le dire, pas un
+commentaire.**
 
 **Un nom inventé doit rendre ZÉRO** (26/08). Avant de croire un filtre,
 demande-lui une valeur qui n'existe pas. `q=animal:Zzzznexistepas` rend 1500
