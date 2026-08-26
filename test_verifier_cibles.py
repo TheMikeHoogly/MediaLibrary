@@ -290,6 +290,29 @@ class ROUGE_7_CE_QUE_LE_JS_BATIT_EST_UNE_CIBLE_AUSSI(unittest.TestCase):
             ['INERTE'])
 
 
+class ROUGE_8_UNE_FEUILLE_DE_STYLE_NE_PORTE_PAS_DE_BALISE(unittest.TestCase):
+    """Un commentaire est de la PROSE, quel que soit le langage.
+
+    `gallery` expliquait dans un commentaire CSS que << les chips sont des
+    <button> ... un <span> ne recoit jamais le focus >>. L'instrument y a lu
+    deux cibles qui n'existent pas."""
+
+    def test_un_button_cite_dans_un_commentaire_CSS_n_est_pas_une_cible(self):
+        self.assertEqual(
+            verdicts('/* les chips sont des <button> depuis le 26/08 */', ''),
+            [])
+
+    def test_ni_un_selecteur_qui_ressemble_a_une_balise(self):
+        self.assertEqual(verdicts('.a{min-height:44px} /* <input> ici */', ''),
+                         [])
+
+    def test_et_le_vrai_bouton_du_corps_reste_compte(self):
+        self.assertEqual(
+            verdicts('/* <button> en commentaire */ .b{min-height:44px}',
+                     '<button class="b">x</button>'),
+            ['OK'])
+
+
 class CE_QUI_N_EST_PAS_DECLARE_NE_REND_PAS_VERT(unittest.TestCase):
 
     def test_un_bouton_sans_aucune_regle(self):

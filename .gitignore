@@ -281,3 +281,4 @@ _avant_css/
 # deplacees dans `_to_delete/`, la prochaine livraison enregistre leur retrait.
 _preuve_*.json
 _avant_cibles/
+_avant_chip/

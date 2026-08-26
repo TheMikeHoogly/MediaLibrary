@@ -221,6 +221,26 @@ def sans_commentaires_html(html):
     return re.sub(r'<!--.*?-->', blanc, html, flags=re.S)
 
 
+_STYLE = re.compile(r'(<style\b[^>]*>)(.*?)(</style\s*>)', re.S | re.I)
+
+
+def sans_le_css(html):
+    """Le document avec le CONTENU des blocs <style> blanchi.
+
+    Un commentaire est de la PROSE, quel que soit le langage -- et une
+    feuille de style ne porte pas de balise. Trouve le 26/08, sur un rouge
+    provoque : un commentaire CSS qui EXPLIQUE la conversion
+    (<< les chips sont des <span onclick> convertis en <button> >>) etait lu
+    comme un grief de niveau A. Aucune des onze pages n'en portait un avec
+    `onclick=` -- mais `gallery` en portait un avec `<button>` et `<span>`,
+    a une virgule pres du cas qui mord. Nommer l'angle mort ne l'aurait pas
+    ferme."""
+    def blanc(m):
+        milieu = ''.join(c if c == '\n' else ' ' for c in m.group(2))
+        return m.group(1) + milieu + m.group(3)
+    return _STYLE.sub(blanc, html)
+
+
 def decouper(html):
     """Rend (html_hors_script, js_avec_positions).
 
@@ -566,7 +586,7 @@ def resoudre_cible(expr, pos, js, ids, crees, tous, alias,
 
 def analyser(nom, brut):
     """Rend {page, natifs, bricoles, griefs, oeil, indecidables, liens, ...}."""
-    html = sans_commentaires_html(brut)
+    html = sans_le_css(sans_commentaires_html(brut))
     hors, brut_js = decouper(html)
     js = sans_commentaires_js(brut_js)
     chaines = chaines_seules(js)

@@ -136,9 +136,17 @@
    n'est plus une regle, c'est une intention. Mike a tranche : la regle
    tient, une seule, partout. Le chip de filtre est justement ce qu'on
    vise au pouce en nommant des visages au telephone. */
+/* 26/08 : le `font:` rejoint le chip canonique. Il manquait, et ca se voyait
+   des qu'un chip devenait un vrai <button> : un bouton n'herite pas de
+   `body`, il prend Arial 13,3 px. `subjects` et `gallery` l'avaient donc
+   REECRIT, a l'identique et sans se concerter -- c'est exactement le critere
+   que ce fichier se donne pour promouvoir un vocabulaire. Le laisser dehors
+   revenait a livrer un composant canonique qui n'est complet qu'accompagne
+   d'une regle locale : la divergence recommence a la page suivante. */
 .chip {
   min-height: var(--touch); padding: 0 var(--e-3); border-radius: var(--r-pill);
   border: var(--trait); background: var(--salle-3); color: var(--graphite);
+  font: 500 var(--t-sm)/1 var(--f-texte);
   display: inline-flex; align-items: center; gap: var(--e-2); cursor: pointer;
 }
 .chip[aria-pressed="true"] { background: var(--fixateur); border-color: var(--fixateur); color: #fff; }

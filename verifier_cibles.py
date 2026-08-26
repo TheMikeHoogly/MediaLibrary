@@ -610,6 +610,11 @@ def honore_la_hauteur(display, balise):
 
 _BALISE = re.compile(r'<([A-Za-z][\w-]*)\b([^<>]*)', re.S)
 
+# `sans_le_css` vit dans verifier_controles : les deux instruments lisent le
+# meme document, ils doivent l'ecarter de la meme facon. Une regle de lecture
+# ecrite deux fois, c'est une divergence qui attend son heure.
+sans_le_css = vct.sans_le_css
+
 NATIVES = ('button', 'select', 'textarea', 'summary')
 
 
@@ -707,7 +712,7 @@ def elements(nom, brut):
     mauvais motif envoie chercher la panne au mauvais endroit.
     """
     hors, js = vct.decouper(brut)
-    hors = vct.sans_commentaires_html(hors)
+    hors = vct.sans_le_css(vct.sans_commentaires_html(hors))
     chaines = vct.chaines_seules(js)
     decls = declarations(brut)
     out = []
@@ -1080,7 +1085,9 @@ def rapport(resultats, ecrire=print):
     ecrire("le HTML statique, celui des chaines JS, et ce que")
     ecrire("`document.createElement` batit (lu de sa creation jusqu'a la")
     ecrire("prochaine affectation du meme nom ; ce qu'une fonction pose sur un")
-    ecrire("element RECU en parametre n'est pas remonte).")
+    ecrire("element RECU en parametre n'est pas remonte). Le contenu des blocs")
+    ecrire("<style> est ECARTE : une feuille de style ne porte pas de balise,")
+    ecrire("et sa prose en cite.")
     ecrire("Cascade a quatre etages. components.css n'entre que la ou")
     ecrire("le marqueur est pose -- absent de : %s."
            % (', '.join(sans_comp) if sans_comp else 'aucune'))

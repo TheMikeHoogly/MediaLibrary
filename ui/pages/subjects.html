@@ -27,14 +27,17 @@
      ce changement ici, le chip canonique passerait a 44 px et celui-ci
      resterait a 36 -- exactement la divergence que la convergence sert a
      supprimer. */
-  .chip{min-height:var(--touch);padding:0 var(--e-4);border-radius:var(--r-pill);border:var(--trait);
-    background:var(--salle-3);color:var(--graphite);cursor:pointer;
-    font:500 var(--t-sm)/1 var(--f-texte);}
+  /* 26/08 : ne reste ici que ce qui DIFFERE du chip canonique -- un padding
+     horizontal d'un cran plus large (--e-4 au lieu de --e-3), parce que ces
+     chips portent des libelles longs. Les sept autres declarations etaient
+     la feuille commune recopiee : deux endroits ou changer le meme chip,
+     c'est la divergence qui attend son heure. */
+  .chip{padding:0 var(--e-4);}
   /* L'espace entre le libelle et le compteur vient desormais du `gap`
      du chip canonique (8 px, un cran de l'echelle) au lieu d'une marge
      de 6 px ecrite ici : une seule facon d'ecarter deux choses. */
-  .chip .n{font-family:var(--f-donnees);font-size:var(--t-xs);opacity:.7;}
-  .chip[aria-pressed="true"]{background:var(--fixateur);border-color:var(--fixateur);color:#fff;}
+  /* `.chip .n` et `.chip[aria-pressed]` viennent de la feuille commune, a
+     l'identique. Seule la nuance du compteur ACTIF reste locale. */
   .chip[aria-pressed="true"] .n{opacity:.85;}
   .grille{display:grid;
     grid-template-columns:repeat(auto-fill,minmax(clamp(120px,20vw,180px),1fr));

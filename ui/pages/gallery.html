@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Galerie photos</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<!--UI:components-->
 <style>
 /* Etape A tokenisation « chambre noire ». Filtres actifs (personne, tag, tri,
    geo) = fixateur (selection humaine) ; bandeau IA + barre de progression =
@@ -15,42 +16,41 @@
    pointent vers lui (12px->--e-3, 8px->--e-2, 16px->--e-4, 0.75rem->--t-xs,
    0.85rem->--t-sm, 999px->--r-pill) — rendu identique, valeurs calculees
    prouvees. .pchip et .chip fusionnes en un seul jeu (fin de la divergence
-   connue : ils etaient deux forks identiques).
+   connue : ils etaient deux forks identiques) ; .pchip RETIRE le 26/08, la
+   page prenant le chip de components.css.
    Passe DESIGN (11/08) : valeurs hors echelle calees sur les tokens, memes
    mappings que PEOPLE/PETS/MAP (0.8-0.82rem/13px -> --t-sm, 0.65-0.7rem ->
    --t-xs, 0.9rem -> --t-md, 1.1rem -> --t-lg, radius 8/10px -> --r-md,
    gaps/paddings -> echelle 4px : 5px -> --e-1, 6/7px -> --e-2, 10px -> --e-3,
    14/18px -> --e-4). Divergences tranchees : outline:none de #q RETIRE (le
-   plancher base.css fournit l'anneau focus) ; .pchip/.chip alignes sur le chip
-   canonique (min-height 32px, comme .mchip). Tailles fixes (180px, 300px,
-   positions) non tokenisees. */
+   plancher base.css fournit l'anneau focus) ; le chip vient desormais de
+   components.css (min-height --touch, 44 px depuis le 26/08 -- la valeur
+   32 px que ce commentaire citait n'existe plus nulle part). Tailles fixes
+   (180px, 300px, positions) non tokenisees. */
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { min-height: 100vh; }
 /* -- filtres personnes + geo -- */
 .selbar { display: flex; align-items: center; gap: var(--e-2); padding: var(--e-2) var(--e-4);
           background: var(--salle-2); border-bottom: var(--trait); flex-wrap: wrap; }
 .selbar .lbl { color: var(--graphite); font-size: var(--t-xs); margin-right: 2px; }
-/* .pchip + .chip : jeu unique, selecteurs groupes (rendu inchange). */
-/* Les chips sont des <button> depuis le 26/08 (WCAG 2.1.1) : un <span> ne
-   recoit jamais le focus. Le passage change trois choses par DEFAUT et les
-   trois sont reposees ici, sinon la conversion se voit a l'ecran :
-     - la police (un bouton prend Arial 13,3px, il n'herite pas de body) ;
-     - `display` (inline -> inline-block, ce qui REND ACTIF le min-height
-       qui dormait : c'est ce qui fait passer le chip a la cible tactile) ;
-     - l'alignement du texte, centre d'office sur un bouton.
-   `min-height` passe a --touch : le plancher du design system exige 44 px,
-   et 32 px etait la contradiction que ce meme document portait (tranchee
-   par Mike le 26/08). L'ecart libelle-compteur passe du `margin-left` de
-   4 px au `gap` canonique de 8 px -- une seule facon d'ecarter deux
-   choses, comme sur `subjects`. */
-.pchip, .chip { min-height: var(--touch); padding: 0 var(--e-3); border-radius: var(--r-pill); border: var(--trait);
-         background: var(--salle-3); color: var(--graphite); cursor: pointer;
-         font: 500 var(--t-sm)/1 var(--f-texte); text-align: center;
-         display: inline-flex; align-items: center; gap: var(--e-2);
-         user-select: none; }
-.pchip.on, .chip.on { background: var(--fixateur); border-color: var(--fixateur); color: #fff; }
-.pchip .n, .chip .n { color: var(--graphite); font-size: var(--t-xs); font-family: var(--f-donnees); }
-.pchip.on .n, .chip.on .n { color: #fff; }
+/* 26/08 : le chip vient de components.css. Ce bloc portait onze
+   declarations dont NEUF etaient la feuille commune recopiee -- la page
+   ecrivait le chip canonique sous ses propres noms sans le savoir, et deux
+   endroits ou changer le meme composant sont une divergence qui attend son
+   heure. `.pchip` etait un ALIAS EXACT de `.chip` (meme bloc, meme etat,
+   un seul usage) : il disparait, son unique appel devient `chip`.
+   Ce qui reste ici n'est que ce qui DIFFERE :
+     - `user-select` : ecrit par cette seule page. Un vocabulaire ne devient
+       canonique que quand deux pages l'ecrivent pareil sans se concerter --
+       une seule, ca reste local, et ca se dit.
+     - `.on` : cette page PEINT l'etat par une classe et le DIT par
+       `aria-pressed`. La feuille commune ne connait que le second ; tant
+       que les deux coexistent, la classe garde sa regle.
+   Changement visuel volontaire : le compteur `.n` passe du graphite plein a
+   l'opacite 0,7 de la feuille commune -- c'est deja ce que montre
+   `subjects`, et c'est le but de la convergence. */
+.chip { text-align: center; user-select: none; }
+.chip.on { background: var(--fixateur); border-color: var(--fixateur); color: #fff; }
 .geobtn { padding: var(--e-1) var(--e-3); border-radius: var(--r-md); border: var(--trait);
           background: var(--salle-3); color: var(--texte); font-size: var(--t-sm); cursor: pointer; }
 .geobtn.on { background: var(--fixateur); border-color: var(--fixateur); color: #fff; }
@@ -1568,7 +1568,7 @@ __FOLDERS__
       var b = document.createElement('button');
       b.type = 'button';
       var actif = selPersons.indexOf(tag) >= 0;
-      b.className = 'pchip' + (actif ? ' on' : '');
+      b.className = 'chip' + (actif ? ' on' : '');
       b.setAttribute('aria-pressed', actif ? 'true' : 'false');
       b.textContent = tag.slice(9);
       b.onclick = function() {

@@ -6,6 +6,64 @@ dans **git** ; les rejets dans `eval/DECISIONS.md` (photothèque) et
 `eval/METHODE.md` ; l'éphémère dans `PROMPT_NOUVELLE_SESSION.md`. Audits :
 `docs/AUDIT_INTERNE_2026-08.md`, `docs/AUDIT_EXTERNE_2026.md`, `docs/RANGEMENT_2026.md`.
 
+## État (26/08/2026, session 49) — `gallery` ADOPTE, ET LE CHIP EST FINI
+
+**Sept pages sur onze reçoivent `components.css`**, et `gallery` — la page la
+plus utilisée — en fait partie. Ce n'est pas un rangement : c'est la fin de la
+divergence du chip.
+
+**Le chip canonique était INCOMPLET, et deux pages l'avaient réparé chacune
+de son côté.** `components.css` ne donnait pas de `font:` à `.chip`. Or un
+`<button>` n'hérite pas de `body` : il prend Arial 13,3 px. `subjects` et
+`gallery` avaient donc écrit `font: 500 var(--t-sm)/1 var(--f-texte)`,
+**à l'identique et sans se concerter** — exactement le critère que la feuille
+commune se donne pour promouvoir un vocabulaire. Livrer un composant
+« canonique » qui n'est complet qu'accompagné d'une règle locale, c'est
+programmer la divergence de la page suivante.
+
+| | avant | après |
+|---|---|---|
+| pages adoptantes | 6/11 | **7/11** |
+| déclarations lues, `subjects` | 396 | **384** |
+| déclarations lues, `gallery` | 624 | **590** |
+| **gagnantes changées après la cascade** | — | **2, toutes deux voulues** |
+
+**`subjects` : 12 déclarations en moins, 383 gagnantes des deux côtés, ZÉRO
+écart après la cascade.** Douze lignes qui recopiaient la feuille commune :
+deux endroits où changer le même chip.
+
+**`gallery` : `.pchip` était un ALIAS EXACT de `.chip`** — même bloc, même
+état, un seul usage. Retiré ; 20 déclarations disparaissent et l'instrument
+les compte INERTES (plus aucun élément ne les porte). Les deux seuls écarts
+réels sont voulus : le compteur `.n` passe du graphite plein à l'opacité 0,7
+de la feuille commune — **ce que `subjects` montre déjà**.
+
+**Observé en réel** : 67 chips sur `/files`, tous `<button>`, tous à 44 px,
+police canonique, `gap` 8 px, compteur en monospace à 0,7 ; Entrée sur
+`personne:Florine` filtre 20 vignettes à 8, `aria-pressed` passe à `true`,
+le fond devient `#448172`.
+
+### Le banc a signalé sa propre configuration périmée
+
+`verifier_pages_composants` a rendu ROUGE avant qu'on pense à le mettre à
+jour : « une page NON convertie reçoit la feuille commune ». C'est le
+comportement voulu — une page non déclarée qui reçoit la feuille est
+indiscernable d'un opt-in cassé. `/files` rejoint les adoptantes.
+
+### Deux instruments lisaient la PROSE d'une feuille de style
+
+**Un commentaire est de la prose, quel que soit le langage** — sixième fois.
+`gallery` documentait sa conversion en citant `<button>` et `<span>` dans un
+commentaire CSS. `verifier_cibles` y lisait deux cibles : il annonçait
+**223** cibles là où il y en a **221**. Et le rouge PROVOQUÉ sur
+`verifier_controles` a montré qu'il avait le même trou : un
+`<span onclick="f()">` cité en commentaire CSS y comptait comme un grief de
+niveau A. Les onze pages n'en portaient aucun — **à un `onclick=` près**.
+Une feuille de style ne porte pas de balise : son contenu est écarté, par
+une règle de lecture unique (`verifier_controles.sans_le_css`) que les deux
+instruments partagent. Une règle de lecture écrite deux fois est une
+divergence qui attend son heure.
+
 ## État (26/08/2026, session 48) — LE PLANCHER TACTILE ÉTAIT UN VŒU
 
 **Le point 3 du plancher a son instrument, et c'est le troisième point sur
@@ -263,7 +321,14 @@ référence dont on savait qu'elle mentait.
 
 ## Priorité (26/08/2026, refixée session 48) — la convergence a un CHIFFRE
 
-**Ce qui prend la tête : les cinq pages qui n'ont pas adopté
+**`gallery` a adopté le 26/08 (session 49) — reste QUATRE pages** : `browse`,
+`faces`, `map`, `reglages`. Et l'adoption seule ne suffit plus : sur les 16
+cibles sans plancher de `gallery`, aucune n'est un chip — ce sont ses boutons
+maison (`.tb`, `.geobtn`, `.fchip`, `#lb-*`). **Le prochain gain n'est pas
+d'ajouter le marqueur, c'est de converger les NOMS vers `.btn`** — et ça, ça
+change ce qu'on voit : c'est un choix de Mike, pas un rangement.
+
+**Ce qui prenait la tête : les cinq pages qui n'avaient pas adopté
 `components.css`.** Ce n'était jusqu'ici qu'un rangement à moitié fait ;
 c'est devenu une mesure. Les 59 cibles dont le plancher tactile n'est pas
 déclaré vivent **à 39 sur 68 dans ces cinq pages-là** (browse 0, faces 1,
@@ -1221,9 +1286,15 @@ dossier d'avant 1990 n'y passe. Le **plafond 2100** (`22082010141.jpg` → 2082)
 
 ## Acquis — ne pas reproposer (détail : git + `eval/DECISIONS.md`)
 
-- **Cibles tactiles (26/08)** : les **223** cibles des onze pages sont
+- **Le chip est FINI (26/08)** : `.chip` vit dans `components.css` seul,
+  `font:` compris, et **7 pages sur 11** reçoivent la feuille commune.
+  `.pchip` n'existe plus. Ne pas re-proposer de re-déclarer un chip dans une
+  page : ce qui reste local doit DIFFÉRER et se dire (`subjects` :
+  `padding: 0 var(--e-4)` ; `gallery` : `user-select` et l'état `.on`).
+
+- **Cibles tactiles (26/08)** : les **221** cibles des onze pages sont
   comptées — **0 manquement prouvé** (0 sous le plancher, 0 inerte), 112
-  planchers déclarés et honorés, 10 non décidables, 68 dont la hauteur n'est
+  planchers déclarés et honorés, 10 non décidables, 66 dont la hauteur n'est
   pas déclarée (le contenu décide) et 33 exemptées. Mesuré par
   `verifier_cibles.py`, qui lit l'imbrication du HTML, ce que
   `document.createElement` bâtit, et la cascade à quatre étages. **Ne pas

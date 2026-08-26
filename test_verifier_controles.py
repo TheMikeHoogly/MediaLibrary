@@ -340,6 +340,32 @@ class LE_RAPPORT_DIT_SA_PORTEE(unittest.TestCase):
         t.encode('ascii')
 
 
+class UNE_FEUILLE_DE_STYLE_NE_PORTE_PAS_DE_BALISE(unittest.TestCase):
+    """Un commentaire est de la PROSE, quel que soit le langage (26/08).
+
+    Rouge PROVOQUE, pas rencontre : aucune des onze pages ne portait le cas
+    exact, mais `gallery` documentait sa conversion en citant `<button>` et
+    `<span>` dans un commentaire CSS -- a un `onclick=` pres du grief."""
+
+    def test_un_span_onclick_cite_dans_un_commentaire_CSS_n_est_pas_un_grief(self):
+        page = ('<!doctype html><html><head><style>\n'
+                '/* les chips sont des <span onclick="f()"> convertis. */\n'
+                '.chip { color: red; }\n'
+                '</style></head><body>'
+                '<button onclick="g()">ok</button></body></html>')
+        r = K.analyser('essai', page)
+        self.assertEqual(r['griefs'], [])
+        self.assertEqual(r['natifs'], 1)
+
+    def test_le_vrai_span_du_corps_reste_un_grief(self):
+        page = ('<!doctype html><html><head><style>\n'
+                '/* <span onclick="f()"> en prose */\n'
+                '</style></head><body>'
+                '<span onclick="g()">x</span></body></html>')
+        r = K.analyser('essai', page)
+        self.assertEqual(len(r['griefs']), 1)
+
+
 class L_INSTRUMENT_NE_TOUCHE_A_RIEN(unittest.TestCase):
 
     def test_il_n_ouvre_aucun_fichier_en_ecriture(self):

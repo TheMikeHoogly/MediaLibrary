@@ -9,45 +9,43 @@ FUSIONNÉ — ce document, non. Puis `ROADMAP.md`, `eval/DECISIONS.md`,
 `eval/METHODE.md` — et `docs/DECISIONS_OUTILLAGE.md` si le sujet touche aux
 canaux, à la livraison ou au MCP. Débrief en 2–3 lignes, puis on attaque.
 
-## Où on en est (26/08/2026, fin de session 48)
+## Où on en est (26/08/2026, fin de session 49)
 
-**Rien ne tourne, rien n'attend.** Le serveur porte le code livré ; `/sujets`
-et `/people` ont été observés au clavier dans Chrome après la modification —
-les pages de `ui/` sont relues À CHAUD, seul `server.py` exige un redémarrage.
+**Rien ne tourne, rien n'attend.** Le serveur porte le code livré ; `/files`,
+`/sujets`, `/people` et `/browse` ont été observés dans Chrome après
+modification — les pages de `ui/` sont relues À CHAUD, seul `server.py` exige
+un redémarrage.
 
-**Le point 3 du plancher a enfin un instrument.** `verifier_cibles.py`
-(neuf, 62 tests) lit la hauteur DÉCLARÉE de chaque cible dans la cascade à
-quatre étages, et son verdict a **deux chiffres qui ne disent pas la même
-chose** : **0 manquement prouvé** sur **223** cibles, et **68 cibles dont le
-plancher n'est pas déclaré** — le contenu décide, le texte ne peut pas le
-savoir. La seconde moitié n'est pas un feu vert.
+**Le point 3 du plancher a son instrument, et le chip est FINI.**
 
-**192 puis 223 : il ne lisait que le HTML.** `document.createElement` bâtit
-49 contrôles sur les onze pages, dont **12 dans `gallery`**. Corrigé, et ce
-qui est tombé aussitôt :
+`verifier_cibles.py` (neuf, 65 tests) lit la hauteur DÉCLARÉE de chaque cible
+dans la cascade à quatre étages. Verdict en **deux chiffres qui ne disent pas
+la même chose** : **0 manquement prouvé** sur **221** cibles, et **66 cibles
+dont le plancher n'est pas déclaré** — le contenu décide, le texte ne peut pas
+le savoir. La seconde moitié n'est pas un feu vert.
 
-- `subjects` adoptait `components.css` puis **annulait son plancher**
-  (`.ctype h3 .btn { min-height: 0 }`) — et cette seule règle rendait
-  **quinze** autres boutons NON DÉCIDABLES ;
-- `gallery` déclarait `.mchip { min-height: 32px }` sur des `<a>` bâtis en
-  JS, donc `display: inline` : **la règle ne faisait rien** ;
-- les deux boutons « Annuler » des toasts (`gallery`, `browse`) étaient à
-  36 px — le bouton qui annule une action destructive.
+Ce qu'il a fait tomber, tout corrigé et observé : `subjects` annulait son
+propre plancher (`min-height: 0`, et cette seule règle rendait quinze boutons
+non décidables) ; `gallery` déclarait 32 px sur des `<a>` **inline** — la
+règle ne faisait rien ; les deux boutons « Annuler » des toasts étaient à
+36 px. La case de 18 px de `people` est un indicateur (déclarée, deux chemins
+de code) ; la loupe de `pets` reste à 26 px, **tranché par Mike**.
 
-Tout est corrigé et **observé sur le serveur vivant**. La case de 18 px de
-`people` est un INDICATEUR (déclarée, deux chemins de code, deux
-déclarations) ; la loupe de `pets` reste à 26 px, **tranché par Mike**.
-
-**Une action en attente est levée** : la skill `photo-ui` du compte est
-enregistrée et identique au fichier du dépôt (md5 `0389708e…`).
+**`gallery` adopte `components.css` — 7 pages sur 11.** Le chip canonique
+n'avait pas de `font:` ; `subjects` et `gallery` l'avaient réparé à
+l'identique sans se concerter, donc il est monté dans la feuille commune.
+`.pchip` était un alias exact : supprimé. Preuve : `subjects` 0 écart après la
+cascade, `gallery` 2 écarts, tous deux voulus.
 
 ## Prochain pas
 
-1. **`gallery` adopte `components.css`.** Ce n'est plus un rangement, c'est
-   une mesure : sur les 68 cibles sans plancher déclaré, **39 vivent dans les
-   cinq pages non adoptantes**, et `gallery` en porte **17** à elle seule.
-   Elle écrit déjà le chip canonique (44 px, `inline-flex`, `gap`, `font`)
-   sous ses propres noms `.chip`/`.pchip`, et son `.btn` n'existe pas.
+1. **Converger les NOMS de boutons, et c'est un choix de Mike.** Les 66
+   cibles sans plancher déclaré ne sont plus un problème de marqueur : sur
+   les 16 de `gallery`, aucune n'est un chip — ce sont ses boutons maison
+   (`.tb`, `.geobtn`, `.fchip`, `#lb-*`). Adopter la feuille ne leur donne
+   rien ; les renommer en `.btn` leur donnerait le plancher **et changerait
+   ce qu'on voit**. Ne pas le faire sans lui. Restent aussi quatre pages sans
+   marqueur : `browse`, `faces`, `map`, `reglages`.
    **L'ordre de `--apres` est la moitié de la preuve** : la feuille commune
    EN PREMIER. Preuve attendue, dans cet ordre : `verifier_css_cascade --page`,
    `verifier_cibles`, `verifier_contraste`, `verifier_controles`, les tests
@@ -108,6 +106,15 @@ ce qui allait bien. **Et l'inverse existe** : une seule règle non prouvable
 AFFIRMÉE disait « trop petit » là où il fallait lire « pas de plancher ».
 Deux défauts opposés sous le même mot envoient chercher la panne à deux
 endroits opposés.
+
+**Un commentaire CSS est de la PROSE, et une feuille de style ne porte pas
+de balise** (26/08, la sixième fois pour la première moitié). Deux
+instruments lisaient les `<button>` cités dans les commentaires de `<style>`
+comme des éléments réels — `verifier_cibles` annonçait 223 cibles au lieu de
+221, et `verifier_controles` comptait un `<span onclick>` cité en prose comme
+un grief de niveau A. Règle de lecture unique :
+`verifier_controles.sans_le_css`, partagée. **Une règle de lecture écrite
+deux fois est une divergence qui attend son heure.**
 
 **Ne pas voir une cible ne la rend pas conforme** (26/08). Ça retire
 seulement le dénominateur. Un banc d'UI qui ne lit que le HTML est aveugle à
