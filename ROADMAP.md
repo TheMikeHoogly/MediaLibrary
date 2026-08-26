@@ -6,6 +6,97 @@ dans **git** ; les rejets dans `eval/DECISIONS.md` (photothèque) et
 `eval/METHODE.md` ; l'éphémère dans `PROMPT_NOUVELLE_SESSION.md`. Audits :
 `docs/AUDIT_INTERNE_2026-08.md`, `docs/AUDIT_EXTERNE_2026.md`, `docs/RANGEMENT_2026.md`.
 
+## État (26/08/2026, session 48) — LE PLANCHER TACTILE ÉTAIT UN VŒU
+
+**Le point 3 du plancher a son instrument, et c'est le troisième point sur
+sept qui trouve un manquement réel au premier lancement.** Contraste (25/08),
+contrôles (26/08), cibles (26/08) : trois pour trois. **Une règle qu'on ne
+mesure pas n'est pas un plancher, c'est une intention** — et cette phrase
+n'est plus une leçon, c'est un compte.
+
+`verifier_cibles.py` (neuf, famille `verifier_`, lecture seule, 52 tests)
+apparie chaque élément interactif des onze pages à sa hauteur DÉCLARÉE, dans
+la cascade à quatre étages, et compare à `--touch`.
+
+| sur les onze pages | avant | après |
+|---|---|---|
+| cibles lues | 192 | 192 |
+| plancher déclaré, honoré, ≥ 44 px | 88 | **96** |
+| **sous le plancher** | **3** | **0** |
+| non décidables | 21 | **9** |
+| hauteur NON DÉCLARÉE (le contenu décide) | 59 | 59 |
+| exemptées (déclarée, hors-écran, non peinte, lien en ligne) | 27 | 28 |
+
+**Ce qui était cassé, et c'est le même motif que le chip du 26/08 :**
+`subjects` adopte `components.css` — donc `.btn { min-height: var(--touch) }`
+— **puis annule ce plancher** sur deux boutons avec
+`.ctype h3 .btn { min-height: 0 }`. Une règle que le système s'écrit à
+lui-même et ne tient pas ailleurs n'est pas une règle. Retirée : les deux
+boutons « Rafraîchir » passent à 44 px, **observés à 44 px sur le serveur
+vivant**, et **quinze boutons cessent d'être NON DÉCIDABLES** — dans un
+fragment assemblé en JS, rien ne disait si l'ancêtre `.ctype h3` était là,
+donc `0` et `--touch` restaient deux lectures possibles. **Une seule règle
+en trop rendait douze boutons illisibles à leur propre instrument.**
+
+**La case à cocher de 18 px de `people` n'est pas un défaut, et ça se
+DÉCLARE** : c'est un indicateur posé sur une vignette ; la cible est le
+`<label class="prop">` entier. `/* cible: hors-portee -- raison */`, à côté
+du code, jamais en dur dans l'instrument. Une seule déclaration sur les onze
+pages.
+
+### L'instrument s'est corrigé SIX fois, sur six rouges OBSERVÉS
+
+Jamais sur une hypothèse. Les six sont gravés dans `test_verifier_cibles.py`.
+
+| ce qui le trompait | ce qu'il rendait | correction |
+|---|---|---|
+| il comparait le TEXTE de deux valeurs | **52 non-décidables sur 192**, dont aucune ne l'était : `44px` et `var(--touch)` sont la même hauteur | ce qui doit s'accorder n'est pas la valeur, c'est le **VERDICT** |
+| il jugeait un sélecteur descendant sur son seul SUJET | cinq boutons de 44 px accusés d'en faire 36 (`.actbar .b` contre `.fxtoast .b`, même poids) | l'imbrication du HTML statique est LUE |
+| `calc(var(--touch) + var(--e-2))` | non décidable | une addition de pixels se calcule |
+| un fragment JS était traité comme sans contexte | `.prop input { height: 18px }` mis au débit d'un `<input type="number">` cent lignes plus loin | la chaîne d'ancêtres d'un fragment est PARTIELLE : elle prouve, elle ne réfute pas |
+| une seule règle non prouvable était AFFIRMÉE | « trop petit » là où « pas de plancher » | quand rien n'est prouvé, que RIEN ne s'applique reste une lecture |
+| une déclaration liait tout dans un rayon d'octets | le bouton « Valider » exempté par la déclaration de la case voisine | une déclaration couvre le PROCHAIN élément, un seul |
+
+**Le deuxième est le plus instructif : sans l'ancêtre, deux règles de même
+poids rendent un verdict au HASARD.** « La dernière écrite gagne » n'est
+vrai que si les deux s'appliquent. Un verdict tiré à pile ou face est pire
+qu'un aveu d'ignorance : il fait corriger ce qui va bien.
+
+### Le verdict a DEUX chiffres, et ils ne disent pas la même chose
+
+**0 manquement prouvé** ; **59 cibles dont le plancher n'est pas DÉCLARÉ**.
+La seconde moitié n'est pas un feu vert — c'est là où l'instrument s'arrête
+(une hauteur qui vient du contenu demande le navigateur, pas le texte) **et
+c'est, page par page, là où `components.css` n'est pas adopté** :
+
+    browse 0/6 · faces 1/2 · gallery 16/22 · map 14/16 · reglages 7/33
+    contre  people 7/39 · pets 7/23 · residu 1/6 · subjects 2/30 · tranche 0/6
+
+**La convergence du design system a maintenant un chiffre qui la réclame.**
+
+### Deux angles morts assumés, dits dans le rapport
+
+La **LARGEUR** n'est pas lue : elle vient du texte et serait « non déclarée »
+partout. Les **liens en ligne** (27) sont une catégorie NOMMÉE — exception
+WCAG 2.5.8 — que l'instrument ne sait pas distinguer d'un lien servant de
+bouton : à relire à l'œil, une fois. Même forme que le « SÉMANTIQUE, PAS
+NIVEAU A » de `verifier_controles`.
+
+### Une portée qui se sous-estime fait re-faire un correctif qui existe
+
+`verifier_controles.py` déclarait encore, dans son docstring ET dans sa
+sortie, que les littéraux d'expression régulière JS ne sont pas distingués
+d'une division — **alors qu'il les distingue depuis le 26/08**, c'était sa
+quatrième correction. Corrigé des deux côtés. Le paragraphe reste, pour ce
+qu'il enseigne : nommer un angle mort dit où l'on ne voit pas ; le fermer
+demande de RÉÉCRIRE ce qu'on a nommé.
+
+### ✔ L'action en attente est LEVÉE
+
+La skill `photo-ui` du COMPTE est enregistrée et **identique au fichier du
+dépôt** (md5 `0389708e…`, 18 776 o, vérifié des deux côtés). Deux sessions
+d'attente closes. Une session qui s'y fie ne réintroduit plus `#4A8C7B`.
+
 ## État (26/08/2026, session 47) — UN CONTRÔLE QUI N'EN ÉTAIT PAS UN
 
 **Le chantier de l'accessibilité des contrôles est CLOS, et il a son chiffre.**
@@ -107,12 +198,10 @@ page.
 six pages ont changé de taille sur le serveur sans redémarrage. Seul
 `server.py` l'exige.
 
-**⚠ ACTION EN ATTENTE DE MIKE, deuxième session de suite** : la skill
-`photo-ui` du COMPTE date du 30/07 — elle dit encore `#4A8C7B`, un destructif
-en contour, et ignore `--salle-4`, les `-p`, `.hors-ecran` et le chip à 44 px.
-Le fichier du dépôt est à jour et le fichier a été renvoyé. **Tant qu'elle
-n'est pas enregistrée, toute session qui s'y fie réintroduit la couleur qui
-échoue l'AA.**
+**L'action qui attendait Mike est LEVÉE le 26/08 (session 48)** : la skill
+`photo-ui` du compte est enregistrée et identique au fichier du dépôt.
+Ce qu'elle a coûté, pour mémoire : deux sessions à travailler avec une
+référence dont on savait qu'elle mentait.
 
 ## Ce qu'il faut garder de la session 46 (le récit vit dans git)
 
@@ -140,12 +229,33 @@ n'est pas enregistrée, toute session qui s'y fie réintroduit la couleur qui
   étaient en `display:none` derrière des `<label for>`.
 - **Le chantier XMP est clos** : 0 écart sur 1 614 couples (Wilson 0,0–0,2 %).
 
-## Priorité (25/08/2026) — la sauvegarde passe EN FIN DE PROJET
+## Priorité (26/08/2026, refixée session 48) — la convergence a un CHIFFRE
 
-Choix de Mike : le Takeout Google (en cours, plusieurs heures) et
-l'hébergement Infomaniak sont **décidés et chiffrés**, il ne leur manque que
-du temps de transfert. Ils passent donc **après** le code. Ce qui reprend la
-tête : le **CSS commun de `ui/`**, puis le reste d'audit.
+**Ce qui prend la tête : les cinq pages qui n'ont pas adopté
+`components.css`.** Ce n'était jusqu'ici qu'un rangement à moitié fait ;
+c'est devenu une mesure. Les 59 cibles dont le plancher tactile n'est pas
+déclaré vivent **à 37 sur 59 dans ces cinq pages-là** (browse 0, faces 1,
+gallery 16, map 14, reglages 7 — contre 6 pour les six pages adoptantes hors
+`people`/`pets`). Adopter la feuille commune ne range pas du CSS : ça
+DÉCLARE un plancher là où il n'y en a aucun, et ça rend mesurable ce qui ne
+l'est pas. **`gallery` d'abord** — c'est la page la plus utilisée, elle écrit
+déjà le chip canonique sous ses propres noms, et elle porte 16 des 37.
+
+Ensuite : le reste d'audit (O8–O9, O11, O13–O15 ; **I1** visible dans
+`/reglages`), puis le point 7 (l'extraction `ui/`, dont il ne reste que le
+CSS commun de chaque page).
+
+**Le point 3 du plancher est CLOS côté instrument** (session 48). Les trois
+points du plancher qui avaient un instrument en ont trouvé un manquement
+réel au premier lancement, trois fois sur trois. **Les quatre autres n'en ont
+toujours pas** : mouvement réduit (4), sémantique (5) — partiellement couvert
+par `verifier_controles` —, navigation clavier des tâches répétitives (6),
+états vides et erreurs rédigés (7). Le pari le plus rentable des trois
+dernières sessions a été d'instrumenter un vœu ; il reste quatre vœux.
+
+Choix de Mike (25/08) : le Takeout Google et l'hébergement Infomaniak sont
+**décidés et chiffrés**, il ne leur manque que du temps de transfert. Ils
+passent donc **après** le code.
 
 Ce n'est pas un renoncement : rien n'est exposé de plus qu'hier, et les deux
 points sont écrits assez précisément dans `PROMPT_NOUVELLE_SESSION.md` pour
@@ -1079,6 +1189,14 @@ dossier d'avant 1990 n'y passe. Le **plafond 2100** (`22082010141.jpg` → 2082)
 6 min, cause non cherchée.
 
 ## Acquis — ne pas reproposer (détail : git + `eval/DECISIONS.md`)
+
+- **Cibles tactiles (26/08)** : les **192** cibles des onze pages sont
+  comptées — **0 manquement prouvé**, 96 planchers déclarés et honorés, 9 non
+  décidables, 59 dont la hauteur n'est pas déclarée (le contenu décide) et 28
+  exemptées. Mesuré par `verifier_cibles.py`, qui lit l'imbrication du HTML et
+  la cascade à quatre étages. **Ne pas re-parcourir les pages à l'œil pour ça,
+  et ne pas re-proposer de lire la LARGEUR** : angle mort assumé, dit dans le
+  rapport.
 
 - **Accessibilité des contrôles (26/08)** : les **154** gestionnaires de clic
   des onze pages sont posés sur des contrôles — 138 natifs, 3 opérables à la

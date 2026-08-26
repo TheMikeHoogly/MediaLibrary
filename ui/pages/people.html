@@ -424,6 +424,12 @@ function findMore(name,box){
     var html='<div style="margin:var(--e-2) 0;font-size:var(--t-sm);color:var(--graphite)">'+pr.length+
       ' proposition(s) — décoche les erreurs :</div><div class="grid">';
     pr.forEach(function(f,i){
+      /* cible: hors-portee -- la case de 18 px est un INDICATEUR, pas la
+         cible : c'est le `<label class="prop">` entier, une vignette carree,
+         qui bascule la selection au clic comme au clavier. Le plancher
+         s'applique a ce qu'on VISE, et ce qu'on vise ici fait toute la
+         vignette. Declare ici plutot que code dans l'instrument, pour que la
+         prochaine case du meme genre ait a se declarer aussi. */
       html+='<label class="prop"><input type="checkbox" checked data-k="'+esc(f.key)+'">'+
         '<img loading="lazy" src="'+esc(f.crop_url)+'"><span class="s">'+f.sim+'</span></label>';
     });

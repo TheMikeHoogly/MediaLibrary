@@ -9,59 +9,52 @@ FUSIONNÉ — ce document, non. Puis `ROADMAP.md`, `eval/DECISIONS.md`,
 `eval/METHODE.md` — et `docs/DECISIONS_OUTILLAGE.md` si le sujet touche aux
 canaux, à la livraison ou au MCP. Débrief en 2–3 lignes, puis on attaque.
 
-## Où on en est (26/08/2026, fin de session 47)
+## Où on en est (26/08/2026, fin de session 48)
 
-**Rien ne tourne, rien n'attend.** Le serveur porte le code livré et il a été
-OBSERVÉ page par page, au clavier, dans Chrome.
+**Rien ne tourne, rien n'attend.** Le serveur porte le code livré ; `/sujets`
+et `/people` ont été observés au clavier dans Chrome après la modification —
+les pages de `ui/` sont relues À CHAUD, seul `server.py` exige un redémarrage.
 
-**Le chantier de l'accessibilité des contrôles est CLOS.**
-`verifier_controles.py` (neuf, 42 vérifications) apparie chaque élément
-cliquable à sa balise, sur les onze pages :
+**⚠ La branche de la session 48 est POUSSÉE mais PAS FUSIONNÉE** (traite
+autonome : `commit`, `main` intacte). Si le travail tient, la fusion est un
+geste de Mike : `27 - Git.bat`. Vérifier `.git/logs/refs/heads/main`.
 
-| | avant | après |
-|---|---|---|
-| gestionnaires de clic | 154 | 154 |
-| sur un contrôle **natif** | 132 | **138** |
-| opérables à la main | 0 | 3 |
-| déclarés redondants | — | 13 |
-| **griefs de niveau A** | **18** | **0** |
+**Le point 3 du plancher a enfin un instrument.** `verifier_cibles.py`
+(neuf, 52 tests) lit la hauteur DÉCLARÉE de chaque cible dans la cascade à
+quatre étages, et son verdict a **deux chiffres qui ne disent pas la même
+chose** : **0 manquement prouvé** sur 192 cibles, et **59 cibles dont le
+plancher n'est pas déclaré** — le contenu décide, le texte ne peut pas le
+savoir. La seconde moitié n'est pas un feu vert.
 
-Ce qui était cassé : **le filtre de la page la plus utilisée** (les chips de
-`gallery`, en `span` + `onclick`), **ouvrir une photo** (43 000 vignettes sans
-chemin clavier), sélectionner une photo d'animal, ouvrir une fiche d'animal,
-choisir une photo de référence. Tout est joignable au clavier, mesuré et
-observé.
+Corrigé au passage : `subjects` adoptait `components.css` puis **annulait son
+plancher** (`.ctype h3 .btn { min-height: 0 }`) sur deux boutons — et cette
+seule règle rendait **quinze** autres boutons NON DÉCIDABLES. La case de
+18 px de `people` est un INDICATEUR, pas une cible : déclarée dans la source.
 
-**Le chip est passé de 32 px à `--touch` (44)** — Mike a tranché la
-contradiction que `components.css` portait contre son propre plancher. Effet
-de bord observé : le chip fait maintenant exactement la hauteur du champ de
-filtre voisin.
+**Une action en attente est levée** : la skill `photo-ui` du compte est
+enregistrée et identique au fichier du dépôt (md5 `0389708e…`).
 
-**⚠ ACTION EN ATTENTE DE MIKE, deuxième session de suite** : la skill
-`photo-ui` du COMPTE date du 30/07 — `#4A8C7B`, destructif en contour, ni
-`--salle-4`, ni les `-p`, ni `.hors-ecran`, ni le chip à 44 px. **Le fichier
-du dépôt est à jour ; c'est la copie du compte qui manque.** Tant qu'elle
-n'est pas enregistrée, une session qui s'y fie réintroduit la couleur qui
-échoue l'AA. **Vérifier AVANT de toucher au CSS** — et se fier à
-`ui/tokens.css` + `ui/components.css`, qui sont la vérité.
+**Une question attend Mike** (`QUESTIONS_MIKE.md`) : la loupe des vignettes
+d'animaux (`pets`, `.ph .zoom`) fait 26 px et c'est le seul chemin vers la
+visionneuse. Recommandation écrite : la garder et la DÉCLARER.
 
 ## Prochain pas
 
-1. **Le point 3 du plancher n'a toujours pas d'instrument.** « Cibles ≥ 44 px »
-   est écrit depuis le début et n'a jamais été COMPTÉ — exactement l'histoire
-   du contraste (25/08) et des contrôles (26/08), deux fois sur deux avec des
-   manquements réels au bout. Un cas est déjà tombé par hasard pendant la
-   session : `browse` déclare `.fxtoast .b { min-height: 36px }`. Un
-   `verifier_cibles.py` (famille `verifier_`, lecture seule) lirait la taille
-   déclarée de chaque élément interactif des onze pages. **Deux pièges connus
-   d'avance** : une hauteur ne se lit pas toujours dans le CSS (un `<span>`
-   inline ignore `min-height` — c'est ce qui dormait dans `gallery`), et la
-   taille réelle demande le navigateur, pas le texte. Dire la portée, comme
-   toujours.
-2. **`gallery` peut adopter `components.css`** — 7 pages sur 11. Elle écrit
-   maintenant le chip canonique (44 px, `inline-flex`, `gap`, `font`) sous ses
-   propres noms `.chip`/`.pchip`, et son `.btn` n'existe pas. **L'ordre de
-   `--apres` est la moitié de la preuve** : la feuille commune EN PREMIER.
+1. **`gallery` adopte `components.css`.** Ce n'est plus un rangement, c'est
+   une mesure : sur les 59 cibles sans plancher déclaré, **37 vivent dans les
+   cinq pages non adoptantes**, et `gallery` en porte **16** à elle seule.
+   Elle écrit déjà le chip canonique (44 px, `inline-flex`, `gap`, `font`)
+   sous ses propres noms `.chip`/`.pchip`, et son `.btn` n'existe pas.
+   **L'ordre de `--apres` est la moitié de la preuve** : la feuille commune
+   EN PREMIER. Preuve attendue, dans cet ordre : `verifier_css_cascade --page`,
+   `verifier_cibles`, `verifier_contraste`, `verifier_controles`, les tests
+   UI, le banc des pages composants sur le **serveur vivant**, puis l'œil.
+2. **Quatre points du plancher n'ont toujours pas d'instrument** : mouvement
+   réduit (4), sémantique (5, partiellement couverte par
+   `verifier_controles`), navigation clavier des tâches répétitives (6),
+   états vides et erreurs rédigés (7). Trois sur trois des points
+   instrumentés ont trouvé un manquement RÉEL au premier lancement. C'est le
+   pari le plus rentable des trois dernières sessions.
 3. **Reste d'audit** : O8–O9, O11, O13–O15 ; **I1** visible dans `/reglages`.
    O15 (purge de `photo_thumbs/`) gagne en poids.
 
@@ -96,56 +89,54 @@ supposer** — et depuis la DERNIÈRE bannière, pas la première :
 Plantage dur d'une lib native : `_journal_serveur_crash.log`.
 
 **`ui/pages/` et `ui/*.css` sont relus À CHAUD** (signature mtime + taille) :
-une page corrigée est servie sans redémarrage — vérifié le 26/08, six pages
-ont changé de taille sur le serveur vivant. **Seul `server.py` exige le
+une page corrigée est servie sans redémarrage. **Seul `server.py` exige le
 redémarrage.** Ça ne dispense pas d'OBSERVER.
 
-**Un nom accentué passe au banc par le jeton `b64:`** (23/08) :
+**Un banc en lecture seule tourne aussi dans la VM.** `verifier_*` qui ne lit
+que des fichiers se relance en une seconde par `device_bash` — c'est ce qui
+permet d'itérer. Le banc Windows reste la PREUVE (console cp1252, chemins
+réels) et le seul chemin vers le serveur : la VM n'atteint pas le LAN.
 
-    verifier_xmp_personnes.py --nom b64:U3TDqXBoYW5lIFBsb3V2aW4
+**Un verdict tiré à pile ou face est pire qu'un aveu d'ignorance** (26/08).
+`.actbar .b` et `.fxtoast .b` pèsent pareil : « la dernière écrite gagne »
+n'est vrai que **si les deux s'appliquent**. Sans lire l'ancêtre, un
+instrument accusait cinq boutons de 44 px d'en faire 36 — il faisait corriger
+ce qui allait bien. **Et l'inverse existe** : une seule règle non prouvable
+AFFIRMÉE disait « trop petit » là où il fallait lire « pas de plancher ».
+Deux défauts opposés sous le même mot envoient chercher la panne à deux
+endroits opposés.
 
-`python3 -c "import base64;print(base64.urlsafe_b64encode('Béa'.encode()).decode().rstrip('='))"`.
+**Une chaîne d'ancêtres PARTIELLE prouve, elle ne réfute pas** (26/08). Un
+fragment assemblé en JS dit bien ce qu'il contient, jamais ce qu'il y a
+au-dessus de lui. Ne pas trouver l'ancêtre dans le connu ne dit pas qu'il
+n'existe pas.
 
-**Le contrôle 5 ne réclame plus de redémarrage pour l'outillage** (23/08) : il
-lit le graphe des imports de `server.py`. `git_agent.py`, `banc_agent.py`,
-`mcp_serveur.py`, `appliquer_*`, `verifier_*`, `inventaire_*`, `bundle.py`,
-`ui_gabarits.py` sont DEHORS — plus besoin de `force=` pour eux.
+**Ce qui doit s'accorder, c'est le VERDICT, pas la valeur** (26/08). `44px`
+et `var(--touch)` sont la même hauteur : les comparer en TEXTE rendait 52
+non-décidables sur 192, dont aucune ne l'était. Même leçon que `.01ms` contre
+`0.01ms` le 25/08, un étage plus haut.
 
-**Un `_exiftool_tmp` condamne sa photo** (24/08). ExifTool recopie la photo à
-côté avant d'écrire et REFUSE d'écrire tant que ce temporaire est là : une
-écriture tuée en route rend la photo non réécrivable, définitivement et sans
-bruit. Balayage possible mais **jamais par défaut** (`--balayer-fantomes`) ;
-surveillance par `inventaire_fantomes.py`. **Un fantôme SANS original à côté
-ne s'efface pas en lot** : c'est peut-être la seule copie qui reste.
+**Une portée qui se sous-estime fait re-faire un correctif qui existe**
+(26/08). `verifier_controles` déclarait encore, docstring ET sortie, un angle
+mort qu'il avait fermé la veille. **Nommer un angle mort dit où l'on ne voit
+pas ; le FERMER demande de réécrire ce qu'on a nommé.**
 
-**Un compte d'échecs ne se répare pas ; une cause, si** (24/08). La passe
-disait `en echec : 3` et onze des treize étaient le même fantôme.
-
-**Jamais deux écrivains, y compris contre soi-même** (24/08) :
-`appliquer_xmp_personnes.py` pose un verrou (`_corbeille_xmp/_ecriture.lock`,
-preuve par FRAÎCHEUR, repris après 10 min sans signe de vie).
+**Une exception qui déborde n'est plus une exception, c'est un trou** (26/08).
+Une déclaration `/* cible: … */` liée à tout ce qui la suivait dans un rayon
+d'octets exemptait aussi le bouton d'à côté. Elle couvre **le prochain
+élément, un seul**.
 
 **Un commentaire est de la PROSE, quel que soit le langage** (25/08, appris
-quatre fois le même jour ; 26/08, une cinquième). Un commentaire CSS disant
-« la feuille commune » a rendu six règles `.feuille` actives sur une page qui
-n'en porte aucune. **Retirer les commentaires AVANT de lire** — et un nom de
-classe est un **jeton entier**, pas un morceau de mot. **L'exception est une
-DÉCLARATION** (`/* contraste: hors-portee -- … */`, `/* controle: redondant
--- … */`) : elle vit dans un commentaire, donc elle se lit AVANT le retrait.
+cinq fois). **L'exception est une DÉCLARATION** (`/* contraste: hors-portee
+-- … */`, `/* controle: redondant -- … */`, `/* cible: hors-portee -- … */`) :
+elle vit dans un commentaire, donc elle se lit AVANT le retrait. Elle se
+ferme sur `*/`, pas sur la première fin de ligne — une raison tronquée est
+une raison qu'on ne relira pas.
 
-**Un banc qui ne SAIT pas ne rend pas vert** (25/08). Un couple non mesuré
-compte comme un grief, et tout rapport dit sa PORTÉE. **Ce qui ne se calcule
-pas se DÉCLARE dans la source, avec une raison obligatoire — jamais en dur
-dans l'instrument**, sinon il devient aveugle au cas suivant sans qu'on le
-sache.
-
-**Nommer un angle mort ne le ferme pas** (26/08). Le docstring de
-`verifier_controles.py` listait les littéraux d'expression régulière JS comme
-un angle mort THÉORIQUE. Il était réel : le `"` de `/[&<>"]/g`, en tête de
-`subjects`, ouvrait une fausse chaîne et faisait disparaître un bouton écrit
-cent lignes plus bas — l'instrument rendait « non décidable » là où il fallait
-lire « c'est un bouton, donc c'est vert ». **Nommer dit où l'on ne voit pas ;
-ça ne fait pas voir.** Quand un angle mort nommé MORD, il se ferme.
+**Un banc qui ne SAIT pas ne rend pas vert** (25/08). Tout rapport dit sa
+PORTÉE, et **ce qui ne se calcule pas se DÉCLARE dans la source, avec une
+raison obligatoire — jamais en dur dans l'instrument**, sinon il devient
+aveugle au cas suivant sans qu'on le sache.
 
 **L'ordre de la cascade a QUATRE étages** (25/08), et il est la moitié de
 toute preuve CSS : `components.css` (au marqueur, AVANT le `<style>` de la
@@ -153,31 +144,28 @@ page) → la page → `tokens.css` → `base.css` (à `</head>`, il gagne les
 égalités). Une feuille qui ne change pas doit figurer **des deux côtés**.
 
 **Changer une BALISE change son style par défaut** (26/08). `<span>` →
-`<button>` : la police (Arial 13,3 px, un bouton n'hérite pas de `body`),
-l'alignement (centré d'office) et surtout `display` (inline → inline-block,
-ce qui **rend actif** un `min-height` qui dormait). Les trois se reposent
-explicitement, sinon la correction sémantique se voit à l'écran.
+`<button>` : la police, l'alignement et surtout `display` (inline →
+inline-block, ce qui **rend actif** un `min-height` qui dormait). Un
+`<button>` n'admet que du contenu de PHRASE ; sinon `tabindex` + `role` +
+`keydown` Entrée **et** Espace avec `preventDefault` — **les trois**.
 
-**Un `<button>` n'admet que du contenu de PHRASE** (26/08). Les navigateurs
-tolèrent un `<div>` dedans, mais un lecteur d'écran lit alors tout le contenu
-comme libellé : une vignette s'annoncerait sur trois lignes. Pour ces cas-là,
-`tabindex` + `role="button"` + `keydown` Entrée **et** Espace (avec
-`preventDefault`, sinon Espace fait défiler la page) — **les trois**.
+**Un nom accentué passe au banc par le jeton `b64:`** (23/08) :
 
-**Un banc d'observation ment de deux façons** (25/08). Il peut manquer une
-panne — et il peut déclarer vert ce qu'il n'a **pas pu regarder**. Un 404
-(mauvaise adresse) et un refus de connexion (serveur mort) envoient chercher
-la panne à deux endroits opposés : ils ne se disent pas pareil. Et un opt-in
-se prouve par son TÉMOIN, encore faut-il l'avoir lu (`/faces` répond **302
-vers `/people`** ; urllib suit sans rien dire). Témoin actuel : `/map`.
+    verifier_xmp_personnes.py --nom b64:U3TDqXBoYW5lIFBsb3V2aW4
 
-**Un cache donne DEUX prix à une mesure** (24/08) : premier appel après
-expiration, et ce que paie une page.
+`python3 -c "import base64;print(base64.urlsafe_b64encode('Béa'.encode()).decode().rstrip('='))"`.
+
+**Un `_exiftool_tmp` condamne sa photo** (24/08) : ExifTool REFUSE d'écrire
+tant que ce temporaire est là. Balayage possible mais **jamais par défaut**
+(`--balayer-fantomes`) ; surveillance par `inventaire_fantomes.py`. **Un
+fantôme SANS original à côté ne s'efface pas en lot.**
+
+**Jamais deux écrivains, y compris contre soi-même** (24/08) :
+`appliquer_xmp_personnes.py` pose un verrou (preuve par FRAÎCHEUR).
 
 > **Piège d'horloge, payé le 23/08** : `device_bash` tourne dans une VM en
-> **UTC**. `date` y annonce 14:25 quand il est 16:25 chez Mike. Les epochs du
-> serveur (`/api/maint/status`, `now`) sont la seule heure fiable.
+> **UTC**. Les epochs du serveur (`/api/maint/status`, `now`) sont la seule
+> heure fiable.
 >
 > **Et le dossier monté a un cache** (24/08) : `tail` peut rendre un contenu
-> vieux de 25 min alors que le fichier vient d'être écrit. Le `mtime` (`ls -l`,
-> `date -r`) dit la vérité ; `device_stage_files` attend le cache.
+> vieux de 25 min. Le `mtime` (`ls -l`, `date -r`) dit la vérité.

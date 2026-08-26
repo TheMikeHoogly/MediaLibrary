@@ -87,7 +87,15 @@
      « Rafraichir » vit dans un titre de file et doit y tenir. Il est declare
      APRES la feuille commune, donc il gagne -- c'est tout l'interet du
      marqueur place avant le <style> de la page. */
-  .ctype h3 .btn{min-height:0;font-size:var(--t-xs);padding:var(--e-1) var(--e-2);}
+  /* 26/08 : `min-height:0` retire. La page adoptait components.css PUIS
+     annulait son plancher tactile sur deux boutons -- une regle que le
+     systeme s'ecrit a lui-meme et ne tient pas ailleurs n'est plus une
+     regle. Trouve par `verifier_cibles.py`, qui comptait aussi 15
+     boutons NON DECIDABLES a cause d'elle : dans un fragment assemble
+     en JS, rien ne dit si l'ancetre `.ctype h3` est la, donc `0` et
+     `--touch` restaient deux lectures possibles. Une seule regle en
+     trop rendait douze boutons illisibles a l'instrument. */
+  .ctype h3 .btn{font-size:var(--t-xs);padding:var(--e-1) var(--e-2);}
   .cl{background:var(--salle-3);border:var(--trait);border-radius:var(--r-md);
     padding:var(--e-3);margin-bottom:var(--e-3);}
   /* Tri au clavier : la carte « en cours de décision » porte l'anneau veilleuse. */

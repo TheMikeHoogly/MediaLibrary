@@ -49,10 +49,14 @@ Ce qu'il refuse d'affirmer
    les NON DECIDABLES -- et un non-decidable compte comme un grief. Rendre 0
    parce qu'on n'a pas su regarder est la troncature silencieuse deguisee en
    exhaustivite ; ce projet l'a payee une fois (`verifier_contraste`, 25/08).
-3. **Les litteraux d'expression reguliere JS** (`/ab+c/`) : le retrait des
-   commentaires les traverse comme du code. Aucune des onze pages n'en porte
-   qui ouvre un faux commentaire -- et si l'une en portait un, le compte
-   changerait sans que rien ne crie. Angle mort NOMME, pas corrige.
+3. **Les litteraux d'expression reguliere JS** (`/ab+c/`) : angle mort
+   NOMME ici comme theorique, puis trouve REEL et FERME le 26/08. Le `"` de
+   `/[&<>"]/g`, en tete de `subjects`, ouvrait une fausse chaine et faisait
+   disparaitre un bouton ecrit cent lignes plus bas. Le scanner distingue
+   desormais une regex d'une division (`_AVANT_REGEX`). Ce paragraphe reste
+   pour ce qu'il enseigne : NOMMER un angle mort dit ou l'on ne voit pas, ca
+   ne fait pas voir -- et une portee qui se sous-estime fait re-faire un
+   correctif qui existe.
 4. **Il ne juge pas la PERTINENCE du controle.** `<a href="#">` qui agit au
    lieu de naviguer est operable au clavier : ce n'est pas un grief de
    niveau A, c'est un choix semantique. Compte a part, jamais tu.
@@ -748,8 +752,8 @@ def rapport(resultats, ecrire=print):
            % len(resultats))
     ecrire("Ni ce que le serveur injecte, ni ce que le navigateur calcule. Un")
     ecrire("gestionnaire pose par delegation sur un ancetre n'est pas remonte")
-    ecrire("a son cliquable ; les litteraux d'expression reguliere JS ne sont")
-    ecrire("pas distingues d'une division.")
+    ecrire("a son cliquable. Les litteraux d'expression reguliere JS, eux,")
+    ecrire("sont distingues d'une division depuis le 26/08.")
     ecrire("")
     a_traiter = tot_g + tot_o + tot_i
     if not a_traiter:

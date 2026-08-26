@@ -6,6 +6,28 @@
 > `eval/DECISIONS.md` si elle tranche, dans `ROADMAP.md` si elle priorise.
 > Protocole : `CLAUDE.md`, « Traite autonome ».
 
+- **26/08 — le bouton « voir en grand » des vignettes d'animaux fait 26 px.**
+  `verifier_cibles.py` (neuf) a compté le point 3 du plancher pour la
+  première fois. Sur 192 cibles, **0 manquement prouvé subsiste** — sauf
+  celui-ci, que je te laisse : `pets` déclare
+  `.ph .zoom { width: 26px; height: 26px }`. C'est la loupe posée en haut à
+  droite d'une vignette d'animal, et c'est **le seul chemin vers la
+  visionneuse** : le clic sur la vignette, lui, sélectionne. Ce n'est donc
+  pas un doublon qu'on peut déclarer hors portée.
+
+  **Ma recommandation : la laisser à 26 px et la DÉCLARER**, avec sa raison.
+  Une pastille de 44 px sur une vignette de ~160 px mange un quart de
+  l'image et se pose sur le sujet ; le geste au pouce existe déjà ailleurs
+  (la vignette entière est cliquable, la visionneuse s'ouvre depuis la fiche).
+  WCAG 2.5.8 demande 24 px, pas 44 — c'est **notre** plancher qui demande 44,
+  et il a été écrit pour les gestes répétés du tri, pas pour une loupe
+  accessoire. Si tu préfères l'inverse — « une seule règle, partout », comme
+  pour le chip le 26/08 —, c'est une ligne à changer et je la fais.
+
+  **En attendant** : rien n'est modifié, et l'instrument la compte NON
+  DÉCIDABLE (elle est écrite dans un fragment JS dont l'ancêtre `.ph` ne se
+  lit pas). Elle ne disparaît donc pas du rapport.
+
 - **25/08 — la copie HORS SITE (12 bis). LE FONDS EST MESURÉ : 291 Go.**
   `inventaire_fonds.py` (neuf) : **76 947 fichiers, 290,9 Go** — dont
   **109 Go de photos** (73 079 fichiers, 1,5 Mo en moyenne) et **180 Go de

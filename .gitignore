@@ -280,3 +280,4 @@ _avant_css/
 # ligne (`_preuve_browse.json`, `_preuve_faces.json`) : elles ont ete
 # deplacees dans `_to_delete/`, la prochaine livraison enregistre leur retrait.
 _preuve_*.json
+_avant_cibles/
