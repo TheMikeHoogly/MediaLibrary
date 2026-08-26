@@ -6,6 +6,165 @@ dans **git** ; les rejets dans `eval/DECISIONS.md` (photothèque) et
 `eval/METHODE.md` ; l'éphémère dans `PROMPT_NOUVELLE_SESSION.md`. Audits :
 `docs/AUDIT_INTERNE_2026-08.md`, `docs/AUDIT_EXTERNE_2026.md`, `docs/RANGEMENT_2026.md`.
 
+## Priorité (26/08/2026, refixée session 50) — l'ordre a changé
+
+**1. Le garde-fou du filtre, AVANT tout le reste.** Un filtre qui ment est
+plus grave que dix boutons trop petits : il a produit un verdict faux sur une
+chatte qui a vécu seize ans dans cette maison. Trois gestes, dans l'ordre :
+un jeton `<axe>:<valeur>` inconnu rend RIEN et le DIT · la barre de recherche
+comprend ce que les pastilles ÉCRIVENT (ou les pastilles cessent de l'écrire)
+· **un banc de contrôle NÉGATIF** (`verifier_`) : pour chaque axe, une valeur
+inventée doit rendre 0. C'est le test qui manquait.
+
+**2. Les boutons de `gallery` — option 1, tranchée par Mike le 26/08 :
+tout convertir d'un coup.** Les cinq familles maison (`.tb` 34 px, `.geobtn`
+28 px, `.fchip` 35 px, `.georow button` 34 px, `#ss-stop` 34 px) passent au
+`.btn` canonique. Coût mesuré et accepté : **+19 px** de hauteur de barres.
+Aperçu validé (artefact « Boutons de la Galerie »). Preuve dans l'ordre
+habituel, l'œil en dernier.
+
+**3. Le pense-bête des raccourcis DANS l'interface** (point 6 du plancher).
+Il manque la brique : **un fichier JS commun injecté sur toutes les pages**,
+comme `tokens.css` et `base.css` (`_UI_GLOBAL_FILES`). Il n'y en a aucun. La
+brique d'abord, le panneau `?` ensuite, l'instrument en dernier. Contenu
+déjà relevé : `docs/RACCOURCIS.md`.
+
+**4. Le déplacement `Photos Mike`** — premier geste du chantier 17, et il ne
+demande aucun code de comptes. C'est un `rekey` massif : plan à blanc,
+journal, quarantaine réversible. Ce qui a coûté 748 décisions le 22/08.
+
+**5. Le reste d'audit** : O8–O9, O11, O13–O15 ; **I1** visible dans
+`/reglages`. Puis les quatre pages sans `components.css` (`browse`, `faces`,
+`map`, `reglages`).
+
+**Ce qui a changé de nature (26/08)** : les animaux non nommés ne sont plus un
+chantier. Deux noms posés par Mike ont fait tomber les groupes de **189 à 99**
+et les apparitions non nommées à **442**, plus gros groupe à 31. C'est une
+finition, à faire au fil de l'eau.
+
+**En fin de projet, dans cet ordre** : le chantier 17 (multi-utilisateurs),
+PUIS la copie hors site — choix de Mike du 26/08. Le Takeout Google, lui, est
+en cours de téléchargement (~2 jours au 26/08) et ne dépend de rien.
+
+## État (26/08/2026, session 52) — LE DÉPLACEMENT EST FAIT, ET VÉRIFIÉ
+
+**`Photos Mike` existe. 26 dossiers, 25 559 photos, 2 271 décisions humaines
+transportées.** Journal :
+`_corbeille_deplacements/deplacement_20260826_221815.jsonl`. Copie de la base
+avant l'opération dans `_avant_deplacement/` — c'est elle qui a permis de
+PROUVER le résultat au lieu de le croire.
+
+### Le contrôle : la base d'avant contre la base d'après
+
+| | avant | après |
+|---|---|---|
+| clés dans l'index | 43 065 | **43 065** |
+| clés sous `Photos Mike` | 0 | **25 559** |
+| clés restées sur un ancien chemin | — | **0** |
+| **décisions humaines** | **3 767** | **3 767** |
+| décisions orphelines | 140 sur 119 clés | **140 sur les MÊMES 119 clés** |
+| compteurs de noms d'animaux | 18 noms | **les 18, au photo près** |
+
+**Aucune décision perdue, aucune orpheline neuve.** Les 119 orphelines
+pré-existaient : ce sont celles dont aucun journal de déplacement ne dit où le
+fichier est parti (le contrôle à blanc de `/reglages` les annonçait déjà).
+`verifier_orphelins --sans-disque` le confirme sur le serveur vivant : 119 hors
+index sur 42 195, les mêmes.
+
+Restent à la racine, et c'est voulu : `Photos Flo` 12 084, `Photos Papa`
+4 843, `_A TRIER` 559.
+
+### Ce que la vérification a corrigé chez moi
+
+Mon compte du 26/08 annonçait **983** décisions concernées. Le script en a
+trouvé **2 271**. Ce n'est pas la base qui avait bougé : **ma requête était
+fausse.** Elle exigeait que chaque décision soit une paire `[clé, index]`, or
+`exclude` et `confirmed` sont des listes de clés SIMPLES — j'ai donc sauté
+toutes les exclusions et toutes les confirmations. Sur la MÊME base du 22/08,
+`recle_decisions` en compte 2 028 et ma requête 983.
+
+**Troisième fois dans la journée qu'une requête maison se trompe là où
+l'instrument du projet a raison** (après « Caline n'existe nulle part » et le
+`total: null` lu comme un zéro). La règle n'est pas « mesurer », c'est
+**mesurer avec l'instrument que le projet s'est donné** — il a déjà payé pour
+connaître les cas limites.
+
+### Ce qui reste ouvert sur ce chantier
+
+- **Les vignettes se refont.** Leur clé de cache contient le chemin : les
+  3 047 vignettes en cache (293 Mo) sont orphelines. Elles se recalculent au
+  premier affichage. À balayer avec O15.
+- **Unifier les deux chemins de re-clé** — la primitive complète existe
+  maintenant DANS `server.rekey_everywhere` ET dans `deplacer_dossiers`. Le
+  troisième appelant reproduira le défaut.
+- **`appliquer_plan.rekey_stores` est toujours cassée** : le rangement par
+  année et le dédoublonnage la portent, et elle re-clé cinq magasins sur sept.
+- **`animal:luna` en minuscule** existe toujours sur 3 photos à côté de
+  `animal:Luna` sur 355. I7 devait fermer ça.
+
+## État (26/08/2026, session 51) — LE DÉPLACEMENT, ET LE MIROIR QUI N'EN EST PAS UN
+
+**Le script du déplacement `Photos Mike` est PRÊT, en aperçu seulement.**
+`deplacer_dossiers.py` (+ `dossiers_a_deplacer.txt`, 26 noms auditables, +
+`test_deplacer_dossiers.py`, 23 tests, **trois mutations posées, trois vues**).
+Il n'a **pas** été exécuté : c'est un geste de Mike, et l'agent des bancs le
+refuse de lui-même — « ce qui écrit reste un geste de Mike ».
+
+### Le défaut qui aurait coûté 983 décisions humaines
+
+`appliquer_plan.rekey_stores` — la primitive du chemin HORS-LIGNE, utilisée
+par le rangement par année et le dédoublonnage — **dit d'elle-même « miroir de
+server.rekey_everywhere » et ne l'est pas.** Elle re-clé **cinq magasins sur
+sept** :
+
+| magasin | serveur | hors-ligne |
+|---|---|---|
+| `tags` · `faces` · `animals` · sémantique | ✔ | ✔ |
+| **décisions humaines dans `people`/`pets`** | ✔ (`recle_decisions`, 22/08) | **✘** |
+| **`gps_places.json`** | ✔ | **✘** |
+
+`people` et `pets` sont keyés par NOM : `.rekey(chemin)` n'y trouve rien,
+renvoie faux, **et ne dit rien**. C'est exactement l'incident du 22/08 — 928
+décisions perdues sur 3 364 — dont le correctif n'a été porté que d'un côté.
+
+**Mesuré sur la copie de la base : 983 décisions humaines** (739 personnes,
+244 animaux) pointent vers les 25 559 photos à déplacer. Le tag aurait
+survécu (règle 2 : il vit dans les `kw` et le XMP) ; c'est la vérité terrain
+qui serait partie.
+
+`deplacer_dossiers.py` transporte les sept, et un test **grave le défaut du
+voisin** pour que personne ne « simplifie » le script en réutilisant
+`rekey_stores`.
+
+### Volumétrie du déplacement
+
+| | |
+|---|---|
+| dossiers à déplacer | **26** |
+| photos concernées | **25 559** |
+| décisions humaines transportées | **983** |
+| restent en place | `Photos Flo` 12 084 · `Photos Papa` 4 843 · `_A TRIER` 559 |
+| total sous la racine | 43 045 (+20 hors racine) |
+
+**Un dossier se déplace en UN `rename`** — le NAS ne recopie pas un octet, les
+25 559 changements sont dans l'index. Ordre garanti par dossier : la source
+existe et la destination n'existe PAS · `rename` · re-clé des sept magasins ·
+journal. `--undo` rejoue à l'envers.
+
+**Le serveur doit être arrêté, et le script le PROUVE** (`BEGIN IMMEDIATE` sur
+`photos.db`) au lieu de le demander : invariant 4, un seul écrivain.
+
+### Reste à faire sur ce chantier
+
+- **Unifier les deux chemins de re-clé.** Aujourd'hui la primitive complète
+  existe deux fois : `server.rekey_everywhere` et `deplacer_dossiers`. Le
+  troisième appelant reproduira le défaut. `recle_decisions` est déjà un
+  module partagé ; il manque son équivalent pour `gps_places`.
+- **Réparer `appliquer_plan.rekey_stores`** — le rangement par année et le
+  dédoublonnage la portent encore.
+- **HTTPS : FAIT par Mike** (26/08). `tailscale serve --bg --https=443
+  localhost:8080` → `https://msi-mike.goat-draco.ts.net/`.
+
 ## État (26/08/2026, session 50) — CALINE, ET LE FILTRE QUI N'EN ÉTAIT PAS UN
 
 **Mike : « Caline a disparu ?!? Nous avons des centaines de photos de notre
@@ -413,165 +572,6 @@ référence dont on savait qu'elle mentait.
 - **Niveau A, déjà corrigé le 25/08** : les deux `<input type="file">` de `/`
   étaient en `display:none` derrière des `<label for>`.
 - **Le chantier XMP est clos** : 0 écart sur 1 614 couples (Wilson 0,0–0,2 %).
-
-## État (26/08/2026, session 52) — LE DÉPLACEMENT EST FAIT, ET VÉRIFIÉ
-
-**`Photos Mike` existe. 26 dossiers, 25 559 photos, 2 271 décisions humaines
-transportées.** Journal :
-`_corbeille_deplacements/deplacement_20260826_221815.jsonl`. Copie de la base
-avant l'opération dans `_avant_deplacement/` — c'est elle qui a permis de
-PROUVER le résultat au lieu de le croire.
-
-### Le contrôle : la base d'avant contre la base d'après
-
-| | avant | après |
-|---|---|---|
-| clés dans l'index | 43 065 | **43 065** |
-| clés sous `Photos Mike` | 0 | **25 559** |
-| clés restées sur un ancien chemin | — | **0** |
-| **décisions humaines** | **3 767** | **3 767** |
-| décisions orphelines | 140 sur 119 clés | **140 sur les MÊMES 119 clés** |
-| compteurs de noms d'animaux | 18 noms | **les 18, au photo près** |
-
-**Aucune décision perdue, aucune orpheline neuve.** Les 119 orphelines
-pré-existaient : ce sont celles dont aucun journal de déplacement ne dit où le
-fichier est parti (le contrôle à blanc de `/reglages` les annonçait déjà).
-`verifier_orphelins --sans-disque` le confirme sur le serveur vivant : 119 hors
-index sur 42 195, les mêmes.
-
-Restent à la racine, et c'est voulu : `Photos Flo` 12 084, `Photos Papa`
-4 843, `_A TRIER` 559.
-
-### Ce que la vérification a corrigé chez moi
-
-Mon compte du 26/08 annonçait **983** décisions concernées. Le script en a
-trouvé **2 271**. Ce n'est pas la base qui avait bougé : **ma requête était
-fausse.** Elle exigeait que chaque décision soit une paire `[clé, index]`, or
-`exclude` et `confirmed` sont des listes de clés SIMPLES — j'ai donc sauté
-toutes les exclusions et toutes les confirmations. Sur la MÊME base du 22/08,
-`recle_decisions` en compte 2 028 et ma requête 983.
-
-**Troisième fois dans la journée qu'une requête maison se trompe là où
-l'instrument du projet a raison** (après « Caline n'existe nulle part » et le
-`total: null` lu comme un zéro). La règle n'est pas « mesurer », c'est
-**mesurer avec l'instrument que le projet s'est donné** — il a déjà payé pour
-connaître les cas limites.
-
-### Ce qui reste ouvert sur ce chantier
-
-- **Les vignettes se refont.** Leur clé de cache contient le chemin : les
-  3 047 vignettes en cache (293 Mo) sont orphelines. Elles se recalculent au
-  premier affichage. À balayer avec O15.
-- **Unifier les deux chemins de re-clé** — la primitive complète existe
-  maintenant DANS `server.rekey_everywhere` ET dans `deplacer_dossiers`. Le
-  troisième appelant reproduira le défaut.
-- **`appliquer_plan.rekey_stores` est toujours cassée** : le rangement par
-  année et le dédoublonnage la portent, et elle re-clé cinq magasins sur sept.
-- **`animal:luna` en minuscule** existe toujours sur 3 photos à côté de
-  `animal:Luna` sur 355. I7 devait fermer ça.
-
-## État (26/08/2026, session 51) — LE DÉPLACEMENT, ET LE MIROIR QUI N'EN EST PAS UN
-
-**Le script du déplacement `Photos Mike` est PRÊT, en aperçu seulement.**
-`deplacer_dossiers.py` (+ `dossiers_a_deplacer.txt`, 26 noms auditables, +
-`test_deplacer_dossiers.py`, 23 tests, **trois mutations posées, trois vues**).
-Il n'a **pas** été exécuté : c'est un geste de Mike, et l'agent des bancs le
-refuse de lui-même — « ce qui écrit reste un geste de Mike ».
-
-### Le défaut qui aurait coûté 983 décisions humaines
-
-`appliquer_plan.rekey_stores` — la primitive du chemin HORS-LIGNE, utilisée
-par le rangement par année et le dédoublonnage — **dit d'elle-même « miroir de
-server.rekey_everywhere » et ne l'est pas.** Elle re-clé **cinq magasins sur
-sept** :
-
-| magasin | serveur | hors-ligne |
-|---|---|---|
-| `tags` · `faces` · `animals` · sémantique | ✔ | ✔ |
-| **décisions humaines dans `people`/`pets`** | ✔ (`recle_decisions`, 22/08) | **✘** |
-| **`gps_places.json`** | ✔ | **✘** |
-
-`people` et `pets` sont keyés par NOM : `.rekey(chemin)` n'y trouve rien,
-renvoie faux, **et ne dit rien**. C'est exactement l'incident du 22/08 — 928
-décisions perdues sur 3 364 — dont le correctif n'a été porté que d'un côté.
-
-**Mesuré sur la copie de la base : 983 décisions humaines** (739 personnes,
-244 animaux) pointent vers les 25 559 photos à déplacer. Le tag aurait
-survécu (règle 2 : il vit dans les `kw` et le XMP) ; c'est la vérité terrain
-qui serait partie.
-
-`deplacer_dossiers.py` transporte les sept, et un test **grave le défaut du
-voisin** pour que personne ne « simplifie » le script en réutilisant
-`rekey_stores`.
-
-### Volumétrie du déplacement
-
-| | |
-|---|---|
-| dossiers à déplacer | **26** |
-| photos concernées | **25 559** |
-| décisions humaines transportées | **983** |
-| restent en place | `Photos Flo` 12 084 · `Photos Papa` 4 843 · `_A TRIER` 559 |
-| total sous la racine | 43 045 (+20 hors racine) |
-
-**Un dossier se déplace en UN `rename`** — le NAS ne recopie pas un octet, les
-25 559 changements sont dans l'index. Ordre garanti par dossier : la source
-existe et la destination n'existe PAS · `rename` · re-clé des sept magasins ·
-journal. `--undo` rejoue à l'envers.
-
-**Le serveur doit être arrêté, et le script le PROUVE** (`BEGIN IMMEDIATE` sur
-`photos.db`) au lieu de le demander : invariant 4, un seul écrivain.
-
-### Reste à faire sur ce chantier
-
-- **Unifier les deux chemins de re-clé.** Aujourd'hui la primitive complète
-  existe deux fois : `server.rekey_everywhere` et `deplacer_dossiers`. Le
-  troisième appelant reproduira le défaut. `recle_decisions` est déjà un
-  module partagé ; il manque son équivalent pour `gps_places`.
-- **Réparer `appliquer_plan.rekey_stores`** — le rangement par année et le
-  dédoublonnage la portent encore.
-- **HTTPS : FAIT par Mike** (26/08). `tailscale serve --bg --https=443
-  localhost:8080` → `https://msi-mike.goat-draco.ts.net/`.
-
-## Priorité (26/08/2026, refixée session 50) — l'ordre a changé
-
-**1. Le garde-fou du filtre, AVANT tout le reste.** Un filtre qui ment est
-plus grave que dix boutons trop petits : il a produit un verdict faux sur une
-chatte qui a vécu seize ans dans cette maison. Trois gestes, dans l'ordre :
-un jeton `<axe>:<valeur>` inconnu rend RIEN et le DIT · la barre de recherche
-comprend ce que les pastilles ÉCRIVENT (ou les pastilles cessent de l'écrire)
-· **un banc de contrôle NÉGATIF** (`verifier_`) : pour chaque axe, une valeur
-inventée doit rendre 0. C'est le test qui manquait.
-
-**2. Les boutons de `gallery` — option 1, tranchée par Mike le 26/08 :
-tout convertir d'un coup.** Les cinq familles maison (`.tb` 34 px, `.geobtn`
-28 px, `.fchip` 35 px, `.georow button` 34 px, `#ss-stop` 34 px) passent au
-`.btn` canonique. Coût mesuré et accepté : **+19 px** de hauteur de barres.
-Aperçu validé (artefact « Boutons de la Galerie »). Preuve dans l'ordre
-habituel, l'œil en dernier.
-
-**3. Le pense-bête des raccourcis DANS l'interface** (point 6 du plancher).
-Il manque la brique : **un fichier JS commun injecté sur toutes les pages**,
-comme `tokens.css` et `base.css` (`_UI_GLOBAL_FILES`). Il n'y en a aucun. La
-brique d'abord, le panneau `?` ensuite, l'instrument en dernier. Contenu
-déjà relevé : `docs/RACCOURCIS.md`.
-
-**4. Le déplacement `Photos Mike`** — premier geste du chantier 17, et il ne
-demande aucun code de comptes. C'est un `rekey` massif : plan à blanc,
-journal, quarantaine réversible. Ce qui a coûté 748 décisions le 22/08.
-
-**5. Le reste d'audit** : O8–O9, O11, O13–O15 ; **I1** visible dans
-`/reglages`. Puis les quatre pages sans `components.css` (`browse`, `faces`,
-`map`, `reglages`).
-
-**Ce qui a changé de nature (26/08)** : les animaux non nommés ne sont plus un
-chantier. Deux noms posés par Mike ont fait tomber les groupes de **189 à 99**
-et les apparitions non nommées à **442**, plus gros groupe à 31. C'est une
-finition, à faire au fil de l'eau.
-
-**En fin de projet, dans cet ordre** : le chantier 17 (multi-utilisateurs),
-PUIS la copie hors site — choix de Mike du 26/08. Le Takeout Google, lui, est
-en cours de téléchargement (~2 jours au 26/08) et ne dépend de rien.
 
 ## État (25/08/2026, session 46) — libérer Google sans rien perdre
 
