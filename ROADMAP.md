@@ -53,6 +53,32 @@ que le site lui montre dans la barre de recherche du même site obtient une
 recherche sémantique muette sur 43 000 photos. **Deux autorités, un seul
 vocabulaire, aucune ne connaît l'autre.**
 
+### Mike a nommé les groupes, et la médiathèque s'est réorganisée seule
+
+Une heure après, **mesuré sur le serveur vivant** :
+
+| | avant | après |
+|---|---|---|
+| photos de **Caline** | 0 | **730** — la plus photographiée du fonds |
+| Inti | 530 | 619 |
+| Luna | 207 | 353 |
+| **groupes d'animaux non nommés** | **189** | **99** |
+| apparitions non nommées restantes | ~1 500 | **442** |
+| plus gros groupe non nommé | 439 | **31** |
+
+**C'est la thèse du point 16 enfin CHIFFRÉE** — « la médiathèque s'améliore à
+chaque information humaine ». Deux noms posés à la main ont déclenché
+`curator_loop` (240 s) et `AUTO_ADD` (`sim ≥ 0,40`, marge `≥ 0,10`,
+`CAT_AUTO_LOG` côté animaux, symétrique de celui des personnes) : non
+seulement Caline s'est peuplée, mais **Inti et Luna ont gagné 235 photos à
+elles deux** — la signature neuve a désambiguïsé des détections que rien ne
+départageait. Le mécanisme n'était pas à écrire ; il attendait une seule
+décision humaine.
+
+**Ce que ça dit du reste** : il reste 442 apparitions dans 99 groupes, le plus
+gros à 31. La file « à nommer » des animaux est passée d'un chantier à une
+finition.
+
 ### Ce que j'ai fait de faux, et la règle que j'ai enfreinte
 
 J'ai conclu « Caline n'existe nulle part » à partir de `/api/names` (qui ne lit
@@ -388,60 +414,45 @@ référence dont on savait qu'elle mentait.
   étaient en `display:none` derrière des `<label for>`.
 - **Le chantier XMP est clos** : 0 écart sur 1 614 couples (Wilson 0,0–0,2 %).
 
-## Priorité (26/08/2026, refixée session 48) — la convergence a un CHIFFRE
+## Priorité (26/08/2026, refixée session 50) — l'ordre a changé
 
-**`gallery` a adopté le 26/08 (session 49) — reste QUATRE pages** : `browse`,
-`faces`, `map`, `reglages`. Et l'adoption seule ne suffit plus : sur les 16
-cibles sans plancher de `gallery`, aucune n'est un chip — ce sont ses boutons
-maison (`.tb`, `.geobtn`, `.fchip`, `#lb-*`). **Le prochain gain n'est pas
-d'ajouter le marqueur, c'est de converger les NOMS vers `.btn`** — et ça, ça
-change ce qu'on voit : c'est un choix de Mike, pas un rangement.
+**1. Le garde-fou du filtre, AVANT tout le reste.** Un filtre qui ment est
+plus grave que dix boutons trop petits : il a produit un verdict faux sur une
+chatte qui a vécu seize ans dans cette maison. Trois gestes, dans l'ordre :
+un jeton `<axe>:<valeur>` inconnu rend RIEN et le DIT · la barre de recherche
+comprend ce que les pastilles ÉCRIVENT (ou les pastilles cessent de l'écrire)
+· **un banc de contrôle NÉGATIF** (`verifier_`) : pour chaque axe, une valeur
+inventée doit rendre 0. C'est le test qui manquait.
 
-**Ce qui prenait la tête : les cinq pages qui n'avaient pas adopté
-`components.css`.** Ce n'était jusqu'ici qu'un rangement à moitié fait ;
-c'est devenu une mesure. Les 59 cibles dont le plancher tactile n'est pas
-déclaré vivent **à 39 sur 68 dans ces cinq pages-là** (browse 0, faces 1,
-gallery 17, map 14, reglages 7). Adopter la feuille commune ne range pas du CSS : ça
-DÉCLARE un plancher là où il n'y en a aucun, et ça rend mesurable ce qui ne
-l'est pas. **`gallery` d'abord** — c'est la page la plus utilisée, elle écrit
-déjà le chip canonique sous ses propres noms, et elle porte 17 des 39.
+**2. Les boutons de `gallery` — option 1, tranchée par Mike le 26/08 :
+tout convertir d'un coup.** Les cinq familles maison (`.tb` 34 px, `.geobtn`
+28 px, `.fchip` 35 px, `.georow button` 34 px, `#ss-stop` 34 px) passent au
+`.btn` canonique. Coût mesuré et accepté : **+19 px** de hauteur de barres.
+Aperçu validé (artefact « Boutons de la Galerie »). Preuve dans l'ordre
+habituel, l'œil en dernier.
 
-Ensuite : le reste d'audit (O8–O9, O11, O13–O15 ; **I1** visible dans
-`/reglages`), puis le point 7 (l'extraction `ui/`, dont il ne reste que le
-CSS commun de chaque page).
+**3. Le pense-bête des raccourcis DANS l'interface** (point 6 du plancher).
+Il manque la brique : **un fichier JS commun injecté sur toutes les pages**,
+comme `tokens.css` et `base.css` (`_UI_GLOBAL_FILES`). Il n'y en a aucun. La
+brique d'abord, le panneau `?` ensuite, l'instrument en dernier. Contenu
+déjà relevé : `docs/RACCOURCIS.md`.
 
-**Le point 3 du plancher est CLOS côté instrument** (session 48). Les trois
-points du plancher qui avaient un instrument en ont trouvé un manquement
-réel au premier lancement, trois fois sur trois. **Les quatre autres n'en ont
-toujours pas** : mouvement réduit (4), sémantique (5) — partiellement couvert
-par `verifier_controles` —, navigation clavier des tâches répétitives (6),
-états vides et erreurs rédigés (7). Le pari le plus rentable des trois
-dernières sessions a été d'instrumenter un vœu ; il reste quatre vœux.
+**4. Le déplacement `Photos Mike`** — premier geste du chantier 17, et il ne
+demande aucun code de comptes. C'est un `rekey` massif : plan à blanc,
+journal, quarantaine réversible. Ce qui a coûté 748 décisions le 22/08.
 
-**Le point 6 est choisi par Mike (26/08), et il a deux moitiés.** Les
-raccourcis EXISTENT — relevés dans `docs/RACCOURCIS.md`, sept contextes — mais
-**une seule page les affiche** (`/sujets`, une ligne). Le plancher exige
-« documente les raccourcis dans l'interface elle-même » : il manque donc la
-mise en œuvre avant l'instrument. Et elle bute sur une brique absente — **un
-fichier JS commun injecté sur toutes les pages**, comme `tokens.css` et
-`base.css` le sont déjà (`_UI_GLOBAL_FILES`). Il n'y en a aucun aujourd'hui.
-Écrire le panneau `?` onze fois recréerait la divergence que `components.css`
-vient de supprimer : **la brique d'abord, le panneau ensuite, l'instrument en
-dernier.**
+**5. Le reste d'audit** : O8–O9, O11, O13–O15 ; **I1** visible dans
+`/reglages`. Puis les quatre pages sans `components.css` (`browse`, `faces`,
+`map`, `reglages`).
 
-**Choix de Mike (26/08), qui déplace la fin du projet** : la copie hors site
-ne se fait **qu'une fois TOUS les points de la feuille de route terminés**, et
-notamment une **gestion multi-utilisateurs de la médiathèque, efficace et
-fonctionnelle** (point 17, neuf). Raison : sauvegarder hors site un produit
-dont le modèle d'accès va changer reviendrait à figer un état intermédiaire.
+**Ce qui a changé de nature (26/08)** : les animaux non nommés ne sont plus un
+chantier. Deux noms posés par Mike ont fait tomber les groupes de **189 à 99**
+et les apparitions non nommées à **442**, plus gros groupe à 31. C'est une
+finition, à faire au fil de l'eau.
 
-Le Takeout Google, lui, est **en cours de téléchargement — ~2 jours** (dit le
-26/08). À son arrivée : `verifier_photos_google.py --takeout "<dossier>"`,
-quatre verdicts, **un seul ABSENT interdit tout effacement**.
-
-Ce n'est pas un renoncement : rien n'est exposé de plus qu'hier, et les deux
-points sont écrits assez précisément dans `PROMPT_NOUVELLE_SESSION.md` pour
-être exécutés sans les rouvrir.
+**En fin de projet, dans cet ordre** : le chantier 17 (multi-utilisateurs),
+PUIS la copie hors site — choix de Mike du 26/08. Le Takeout Google, lui, est
+en cours de téléchargement (~2 jours au 26/08) et ne dépend de rien.
 
 ## État (25/08/2026, session 46) — libérer Google sans rien perdre
 
@@ -1028,25 +1039,84 @@ qui en découle : éditer → redémarrer → **observer** → livrer.
     (c) **un journal avant/après** à chaque re-tag — sans l'AVANT, on ne saura
     jamais si l'agent améliore ou dérive.
 
-17. **Gestion multi-utilisateurs de la médiathèque — NEUF (26/08, demande de
-    Mike). Dernier chantier avant la copie hors site.** Rien n'est spécifié :
-    ce point est ouvert et attend une INSTRUCTION avant tout code. Les
-    questions qu'il faudra trancher, dans cet ordre :
-    (a) **Qui** — combien de comptes, qui les crée, un mot de passe par
-    personne ou un lien par appareil ? Le serveur est en `http.server` stdlib
-    pur et vit sur le réseau domestique : pas de HTTPS, donc pas de mot de
-    passe qui traverse le LAN en clair sans y penser d'abord.
-    (b) **Quoi** — qui voit quoi. Le fonds est familial : le partage par
-    défaut est probablement TOTAL en lecture, et c'est l'ÉCRITURE qui se
-    restreint (nommer, effacer, ranger). Les décisions humaines portent déjà
-    un auteur implicite : elles n'en portent aucun explicite aujourd'hui.
-    (c) **Ce que ça change dans les invariants** — la règle 2 (« les noms
-    humains ne se perdent jamais ») devient « les noms de QUI » ; un conflit
-    entre deux jugements contradictoires n'a aujourd'hui aucune règle.
-    (d) **Le coût réel** — chaque route du serveur devient un point de
-    contrôle. C'est le premier chantier du projet qui touche TOUTES les
-    routes ; le monolithe a 12 000 lignes et `monolith-surgery` s'applique.
-    **Ne rien commencer sans que (a) et (b) soient tranchés par Mike.**
+17. **Gestion multi-utilisateurs — SPÉCIFIÉ par Mike le 26/08. Dernier
+    chantier avant la copie hors site.** ~20 comptes, médiathèque familiale.
+    Les six questions ouvertes sont TRANCHÉES ; ce qui suit fait foi.
+
+    **(a) Le partage se fait par DOSSIER.** Chaque utilisateur a un dossier à
+    lui sous `\\NAS-Bremblens\home\Photos`, où il dépose ses photos. Tout
+    y est PARTAGÉ avec tous, **sauf un sous-dossier `PRIVE`** qui n'est visible
+    que de lui. Pas de marquage photo par photo : rendre une photo privée, c'est
+    la déplacer. Simple à comprendre, impossible à contourner par erreur.
+    **Contrainte qui en découle** : l'onboarding d'un nouvel utilisateur doit
+    l'expliquer NOIR SUR BLANC, avant son premier envoi. Une règle de
+    confidentialité qu'on découvre après coup est une fuite.
+
+    **(b) Le privé ne se trahit PAS, y compris par un compteur.** Si Florine
+    est identifiée sur une photo du `PRIVE` de Mike, la fiche de Florine ne
+    doit pas la compter **pour les autres**. Chacun voit les compteurs de ce
+    qu'il a le droit de voir. C'est la contrainte la plus structurante du
+    chantier : `faits` est une VUE recalculée à la lecture, donc elle devient
+    une vue **par utilisateur** — et tout ce qui agrège (fiches, `/api/names`,
+    chips de filtre, `/sujets`, la carte) hérite du même filtre. **Un compteur
+    qui fuit est un défaut de niveau A de ce chantier.**
+
+    **(c) Le fonds existant appartient à Mike.** 43 065 photos. Deux dossiers
+    sont DÉJÀ ceux de leur propriétaire : `Photos Flo` (Florine) et
+    `Photos Papa` (le père de Mike). **Tout le reste part dans un
+    `Photos Mike` à créer** — et ce déplacement est une opération à préparer
+    avec soin : c'est un `rekey` massif de l'index, exactement ce qui a coûté
+    748 décisions humaines le 22/08. **Le déplacement se fait par l'outillage
+    du projet (plan à blanc, journal, quarantaine réversible), jamais à la
+    main dans l'explorateur.** Mike a demandé de l'aide pour ce geste : c'est
+    une tâche à part entière, à faire AVANT le code des comptes.
+
+    **(d) Effacer, c'est effacer du NAS — via une corbeille de 6 MOIS.**
+    Chacun n'efface que ses propres photos. La corbeille actuelle est
+    réversible mais sans rétention définie : il faut une purge datée, et un
+    endroit où l'admin voit ce qui va expirer.
+
+    **(e) Les 3 364 décisions humaines existantes sont attribuées à Mike.**
+    Rétroactivement, en une migration. Les nouvelles portent leur auteur.
+
+    **(f) HTTPS : par TAILSCALE, et c'est presque gratuit.** L'accès passe
+    déjà par Tailscale, qui chiffre le transport. Pour avoir en plus un vrai
+    certificat — donc plus d'avertissement de navigateur, et des mots de passe
+    qui ne circulent jamais en clair même sur le LAN :
+    activer MagicDNS + « Enable HTTPS » dans la console Tailscale, puis, sur
+    le PC qui héberge le serveur :
+    `tailscale serve --bg --https=443 localhost:8080`.
+    Tailscale termine le TLS, **le serveur Python n'a pas une ligne à
+    changer**, le certificat Let's Encrypt est obtenu et renouvelé tout seul
+    (DNS-01), et `--bg` le fait survivre au redémarrage. Ni port forwarding,
+    ni nom de domaine public. L'adresse devient
+    `https://<machine>.<tailnet>.ts.net`. **Caveat à dire à Mike** : le nom de
+    la machine est publié dans les journaux publics de Certificate
+    Transparency — choisir un nom qui ne dit rien de la famille.
+    *Alternative si un jour il faut l'accès LAN SANS Tailscale* : le reverse
+    proxy de DSM 7 + certificat Let's Encrypt par défi DNS, côté NAS. À ne
+    faire que si le besoin apparaît.
+
+    **Ce que ça change dans les invariants du projet.** La règle 2 (« les noms
+    humains ne se perdent jamais ») devient « les noms de QUI ». Un conflit
+    entre deux jugements contradictoires n'a aujourd'hui **aucune règle** —
+    à trancher avant d'ouvrir l'écriture à d'autres que Mike.
+
+    **Le coût.** C'est le premier chantier qui touche TOUTES les routes du
+    serveur : chacune devient un point de contrôle. `monolith-surgery`
+    s'applique. Et il n'y a **aucun test d'autorisation** aujourd'hui : le
+    plancher de ce chantier, c'est un banc qui prouve qu'un utilisateur B ne
+    voit RIEN du `PRIVE` de A — ni photo, ni vignette, ni compteur, ni
+    suggestion.
+
+    **Ordre de travail proposé** :
+    1. le déplacement `Photos Mike` (avant tout code) ;
+    2. la notion de propriétaire + l'attribution rétroactive à Mike ;
+    3. la VUE par utilisateur et son banc de non-fuite ;
+    4. les comptes et l'authentification ;
+    5. l'écriture restreinte (effacement, nommage, renommage) ;
+    6. la corbeille à 6 mois ;
+    7. l'onboarding rédigé.
 
 ### Résiduels faible valeur (ne pas prioriser)
 **MESURÉ le 15/08, et c'est pourquoi on n'y touche pas** : les deux planchers

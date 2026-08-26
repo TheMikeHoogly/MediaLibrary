@@ -9,60 +9,91 @@ FUSIONNÉ — ce document, non. Puis `ROADMAP.md`, `eval/DECISIONS.md`,
 `eval/METHODE.md` — et `docs/DECISIONS_OUTILLAGE.md` si le sujet touche aux
 canaux, à la livraison ou au MCP. Débrief en 2–3 lignes, puis on attaque.
 
-## Où on en est (26/08/2026, fin de session 49)
+## Où on en est (26/08/2026, fin de session 50)
 
-**Rien ne tourne, rien n'attend.** Le serveur porte le code livré ; `/files`,
-`/sujets`, `/people` et `/browse` ont été observés dans Chrome après
-modification — les pages de `ui/` sont relues À CHAUD, seul `server.py` exige
-un redémarrage.
+**Rien ne tourne, rien n'attend.** Le serveur porte le code livré et il a été
+observé page par page dans Chrome. Les pages de `ui/` sont relues À CHAUD ;
+seul `server.py` exige un redémarrage.
 
-**Le point 3 du plancher a son instrument, et le chip est FINI.**
+### Ce que la session a appris, et qui doit changer ta façon de vérifier
 
-`verifier_cibles.py` (neuf, 65 tests) lit la hauteur DÉCLARÉE de chaque cible
-dans la cascade à quatre étages. Verdict en **deux chiffres qui ne disent pas
-la même chose** : **0 manquement prouvé** sur **221** cibles, et **66 cibles
-dont le plancher n'est pas déclaré** — le contenu décide, le texte ne peut pas
-le savoir. La seconde moitié n'est pas un feu vert.
+**Un filtre qui ment a produit un verdict faux sur une chatte de la famille.**
+`/files?q=animal:Caline` affiche « 1500 photo(s) — animal:Caline ». Le
+contrôle le prouve : `q=animal:Zzzznexistepas` affiche la même chose, et
+`q=animal:Luna` aussi — alors que Luna en a 353. `_extraire_noms` cherche le
+nom NU dans la requête et **ne connaît aucun préfixe `personne:` / `animal:`**
+; le jeton part donc en recherche SÉMANTIQUE sur 43 000 photos, qui rend ses
+1500 meilleures, et la page l'annonce comme un filtre. C'est **exactement** le
+défaut corrigé le 21/08 pour `espece:licorne`, appliqué à un axe et oublié sur
+les quatre autres. Et l'interface **écrit elle-même** ce vocabulaire sur ses
+pastilles : recopier l'étiquette que le site affiche dans la barre de
+recherche du même site donne une recherche muette.
 
-Ce qu'il a fait tomber, tout corrigé et observé : `subjects` annulait son
-propre plancher (`min-height: 0`, et cette seule règle rendait quinze boutons
-non décidables) ; `gallery` déclarait 32 px sur des `<a>` **inline** — la
-règle ne faisait rien ; les deux boutons « Annuler » des toasts étaient à
-36 px. La case de 18 px de `people` est un indicateur (déclarée, deux chemins
-de code) ; la loupe de `pets` reste à 26 px, **tranché par Mike**.
+**La règle enfreinte est celle du projet** : j'ai conclu « Caline n'existe
+nulle part » à partir de `/api/names` (qui ne lit que les FICHES) et d'un
+`total: null` lu comme un zéro. *Un banc qui ne SAIT pas ne rend pas vert* —
+ça vaut pour les instruments ET pour celui qui les lit. **Le contrôle qui
+manquait tenait en une requête : un nom inventé doit rendre zéro.**
 
-**`gallery` adopte `components.css` — 7 pages sur 11.** Le chip canonique
-n'avait pas de `font:` ; `subjects` et `gallery` l'avaient réparé à
-l'identique sans se concerter, donc il est monté dans la feuille commune.
-`.pchip` était un alias exact : supprimé. Preuve : `subjects` 0 écart après la
-cascade, `gallery` 2 écarts, tous deux voulus.
+### Et ce que deux noms posés à la main ont produit
+
+Caline n'était pas perdue : elle n'avait **jamais été saisie**. Mike a nommé
+les groupes, et une heure plus tard, mesuré sur le serveur vivant :
+
+    Caline    0 -> 730 photos (la plus photographiee du fonds)
+    Inti    530 -> 619        Luna  207 -> 353
+    groupes d animaux NON NOMMES  189 -> 99
+    apparitions restantes  ~1500 -> 442   plus gros groupe  439 -> 31
+
+`curator_loop` (240 s) + `AUTO_ADD` (`sim ≥ 0,40`, marge `≥ 0,10`,
+`CAT_AUTO_LOG` côté animaux) ont fait le reste. **C'est la thèse du point 16
+enfin chiffrée** — la médiathèque s'améliore à chaque information humaine, et
+le mécanisme n'était pas à écrire : il attendait une décision.
+
+### Les autres acquis de la journée
+
+- **Le plancher tactile a son instrument** : `verifier_cibles.py` (65 tests,
+  huit rouges observés gravés). **221 cibles, 0 manquement prouvé**, 66 dont
+  la hauteur n'est pas déclarée. Il lit le HTML statique, les chaînes JS ET ce
+  que `document.createElement` bâtit — 31 cibles étaient invisibles avant.
+- **Le chip est fini** : `.chip` vit dans `components.css` seul, `font:`
+  compris ; `.pchip` supprimé ; **7 pages sur 11** reçoivent la feuille
+  commune. `subjects` : 0 écart après la cascade.
+- **Deux instruments lisaient la PROSE des commentaires CSS** comme des
+  balises. Règle de lecture unique et partagée : `verifier_controles.sans_le_css`.
+- **Le chantier 17 (multi-utilisateurs) est SPÉCIFIÉ** — six décisions de
+  Mike, dans `ROADMAP.md`. Ne pas le rouvrir, l'exécuter.
 
 ## Prochain pas
 
-1. **Converger les NOMS de boutons, et c'est un choix de Mike.** Les 66
-   cibles sans plancher déclaré ne sont plus un problème de marqueur : sur
-   les 16 de `gallery`, aucune n'est un chip — ce sont ses boutons maison
-   (`.tb`, `.geobtn`, `.fchip`, `#lb-*`). Adopter la feuille ne leur donne
-   rien ; les renommer en `.btn` leur donnerait le plancher **et changerait
-   ce qu'on voit**. Ne pas le faire sans lui. Restent aussi quatre pages sans
-   marqueur : `browse`, `faces`, `map`, `reglages`.
-   **L'ordre de `--apres` est la moitié de la preuve** : la feuille commune
-   EN PREMIER. Preuve attendue, dans cet ordre : `verifier_css_cascade --page`,
-   `verifier_cibles`, `verifier_contraste`, `verifier_controles`, les tests
-   UI, le banc des pages composants sur le **serveur vivant**, puis l'œil.
-2. **Quatre points du plancher n'ont toujours pas d'instrument** : mouvement
-   réduit (4), sémantique (5, partiellement couverte par
-   `verifier_controles`), navigation clavier des tâches répétitives (6),
-   états vides et erreurs rédigés (7). Trois sur trois des points
-   instrumentés ont trouvé un manquement RÉEL au premier lancement. C'est le
-   pari le plus rentable des trois dernières sessions.
-3. **Reste d'audit** : O8–O9, O11, O13–O15 ; **I1** visible dans `/reglages`.
-   O15 (purge de `photo_thumbs/`) gagne en poids.
+**L'ordre est celui de la section « Priorité » du ROADMAP, et il a changé.**
+
+1. **Le garde-fou du filtre.** Un jeton `<axe>:<valeur>` que le filtre ne sait
+   pas satisfaire rend RIEN et le DIT — comme `espece:` déjà. Puis la barre de
+   recherche comprend ce que les pastilles écrivent (ou les pastilles cessent
+   de l'écrire). Puis **un banc de contrôle NÉGATIF** : pour chaque axe, une
+   valeur inventée doit rendre 0.
+2. **Les boutons de `gallery` — option 1, tranchée : tout convertir.** Les
+   cinq familles maison (`.tb` 34 px, `.geobtn` 28 px, `.fchip` 35 px,
+   `.georow button` 34 px, `#ss-stop` 34 px) passent au `.btn` canonique.
+   Coût accepté : **+19 px** de hauteur de barres. Preuve dans l'ordre
+   habituel : `verifier_css_cascade --page` (feuille commune EN PREMIER dans
+   `--apres`), `verifier_cibles`, `verifier_contraste`, `verifier_controles`,
+   tests UI, banc des pages composants sur le **serveur vivant**, puis l'œil.
+3. **Le panneau `?` des raccourcis**, et d'abord sa brique : **un JS commun
+   injecté sur toutes les pages**, comme `tokens.css` et `base.css`. Il n'en
+   existe aucun ; ce serait le premier. Contenu déjà relevé dans
+   `docs/RACCOURCIS.md`.
+4. **Le déplacement `Photos Mike`** — premier geste du chantier 17, sans code
+   de comptes. C'est un `rekey` massif : plan à blanc, journal, quarantaine
+   réversible. Ce qui a coûté 748 décisions le 22/08.
 
 ## En fin de projet — décidé, mesuré, en attente d'un geste
 
-Ces deux points ne sont plus des questions ouvertes : tout est chiffré, il ne
-manque que le temps. **Ne pas les faire passer devant le code.**
+Tout est chiffré, il ne manque que le temps. **Ne pas les faire passer devant
+le code** — et, décision de Mike du 26/08, **la copie hors site attend que le
+chantier 17 (multi-utilisateurs) soit fini.** Le Takeout, lui, ne dépend de
+rien : il se télécharge (~2 jours au 26/08).
 
 - **Le Takeout Google** (lancé le 25/08 par Mike, ~75 Go). À son arrivée :
   dézipper, puis `verifier_photos_google.py --takeout "<dossier>"`. Quatre
@@ -106,6 +137,19 @@ ce qui allait bien. **Et l'inverse existe** : une seule règle non prouvable
 AFFIRMÉE disait « trop petit » là où il fallait lire « pas de plancher ».
 Deux défauts opposés sous le même mot envoient chercher la panne à deux
 endroits opposés.
+
+**Un nom inventé doit rendre ZÉRO** (26/08). Avant de croire un filtre,
+demande-lui une valeur qui n'existe pas. `q=animal:Zzzznexistepas` rend 1500
+photos : l'axe n'existe pas, la requête part en sémantique, et la page
+l'annonce comme un filtre. **Le contrôle négatif coûte une requête et vaut un
+verdict.**
+
+**Et avant de croire une ABSENCE, vérifie que l'instrument mesure la bonne
+chose** (26/08). `/api/names` ne lit que les FICHES : un nom qui vit sur des
+photos sans fiche y est invisible. Trois instruments, trois questions
+différentes — les fiches (`/api/names`), les tags (`kw` de l'index), les
+détections (`animals`). Répondre avec le mauvais, c'est ce qui a fait déclarer
+disparue une chatte qui a 730 photos.
 
 **Un commentaire CSS est de la PROSE, et une feuille de style ne porte pas
 de balise** (26/08, la sixième fois pour la première moitié). Deux

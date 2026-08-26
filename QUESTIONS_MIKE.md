@@ -6,6 +6,26 @@
 > `eval/DECISIONS.md` si elle tranche, dans `ROADMAP.md` si elle priorise.
 > Protocole : `CLAUDE.md`, « Traite autonome ».
 
+- **26/08 — multi-utilisateurs : DEUX questions restent, et elles bloquent
+  l'écriture partagée.** Les six premières sont tranchées (spécification
+  complète : `ROADMAP.md`, point 17).
+
+  **(1) Deux jugements contradictoires, qui gagne ?** Florine dit « ce visage
+  est Ellie », quelqu'un d'autre dit « non ». Aujourd'hui la dernière écriture
+  gagne, en silence — c'était sans conséquence avec un seul utilisateur. À
+  vingt, c'est une règle manquante. *Ma recommandation : le dernier jugement
+  gagne MAIS les deux sont conservés et la fiche dit qu'il y a désaccord ; toi
+  seul tranches. Aucune décision humaine ne s'écrase silencieusement — c'est
+  la règle 2 du projet étendue à « les noms de QUI ».*
+
+  **(2) Le renommage par un non-admin, sur « ses propres photos ».** Tu as dit
+  : renommage réservé à l'admin, ou autorisé sur ses propres photos si la
+  personne n'apparaissait jamais avant. Le cas limite : Florine nomme
+  quelqu'un sur SES photos, puis cette personne apparaît sur les tiennes.
+  *Ma recommandation : le nom devient commun dès qu'il touche les photos d'un
+  deuxième propriétaire, et son renommage repasse alors par toi. Le
+  basculement est automatique et se dit dans la fiche.*
+
 - **25/08 — la copie HORS SITE (12 bis). LE FONDS EST MESURÉ : 291 Go.**
   `inventaire_fonds.py` (neuf) : **76 947 fichiers, 290,9 Go** — dont
   **109 Go de photos** (73 079 fichiers, 1,5 Mo en moyenne) et **180 Go de
