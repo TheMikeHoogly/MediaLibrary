@@ -22,7 +22,12 @@
     border:var(--trait);border-radius:var(--r-md);}
   .barre input::placeholder{color:var(--graphite);}
   .filtres{display:flex;gap:var(--e-2);}
-  .chip{min-height:36px;padding:0 var(--e-4);border-radius:var(--r-pill);border:var(--trait);
+  /* 26/08 : 36px -> --touch, comme le chip canonique. La page gagne la
+     cascade sur components.css (le marqueur vit AVANT son <style>) : sans
+     ce changement ici, le chip canonique passerait a 44 px et celui-ci
+     resterait a 36 -- exactement la divergence que la convergence sert a
+     supprimer. */
+  .chip{min-height:var(--touch);padding:0 var(--e-4);border-radius:var(--r-pill);border:var(--trait);
     background:var(--salle-3);color:var(--graphite);cursor:pointer;
     font:500 var(--t-sm)/1 var(--f-texte);}
   /* L'espace entre le libelle et le compteur vient desormais du `gap`

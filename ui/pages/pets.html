@@ -163,11 +163,19 @@
   <button class="btn btn--destructif" id="sel-remove">Retirer de cet animal</button>
   <button class="btn" id="sel-clear">Annuler</button>
 </div>
+<!-- controle: redondant -- Echap ferme la visionneuse (voir le keydown en
+     bas de page) : cette croix est un raccourci de souris. -->
 <div id="lightbox"><span class="x" onclick="closeLb()">&times;</span><img id="lb-img" src=""></div>
 
 <div id="pshow">
+  <!-- controle: redondant -- Echap ferme le diaporama, et #pshow-pp est
+       atteignable au clavier juste en dessous. -->
   <span class="x" onclick="pshowClose()">&times;</span>
+  <!-- controle: redondant -- la fleche gauche fait deja reculer, et le
+       bouton .pcbtn Precedent est atteignable au clavier. -->
   <div class="pnav l" onclick="pshowStep(-1)"></div>
+  <!-- controle: redondant -- la fleche droite fait deja avancer, et le
+       bouton .pcbtn Suivant est atteignable au clavier. -->
   <div class="pnav r" onclick="pshowStep(1)"></div>
   <img id="pshow-img" src="" alt="">
   <div class="pmeta">
@@ -211,7 +219,18 @@ function loadNamed(){
       var c=document.createElement('div'); c.className='cat';
       c.innerHTML=(p.crop?'<img class="av" src="'+p.crop+'">':'<div class="av ph"></div>')
         +'<div class="nm">'+esc(p.name)+'</div><div class="ct">'+p.photos+' photo(s)</div>';
+      // Ouvrir la fiche d'un animal etait un geste de souris uniquement.
+      // Meme raison qu'une vignette de planche pour le `role` plutot qu'un
+      // `<button>` : la carte porte une vignette, un nom et un compte,
+      // c'est-a-dire des `<div>` -- un bouton les lirait tous comme son
+      // libelle. `aria-label` dit ce que le clic fait.
+      c.tabIndex=0;
+      c.setAttribute('role','button');
+      c.setAttribute('aria-label','Ouvrir la fiche de '+p.name);
       c.onclick=function(){ openCat(p.name); };
+      c.onkeydown=function(e){
+        if(e.key==='Enter'||e.key===' '){ e.preventDefault(); openCat(p.name); }
+      };
       el.appendChild(c);
     });
     // Lien profond depuis /sujets : ?name=X ouvre directement la fiche.
@@ -383,7 +402,22 @@ function openCat(name){
       var sim=(p.sim==null?'':'<span class="sim">'+p.sim+'</span>');
       d1.innerHTML='<img loading="lazy" decoding="async" src="'+(p.crop_url||p.url)+'">'+sim
         +'<button class="zoom" title="Voir en grand">&#9974;</button>';
+      // La vignette porte DEUX actions : « voir en grand » (le bouton
+      // .zoom, qui recoit deja le focus et dont l'activation clavier
+      // remonte jusqu'ici) et SELECTIONNER, qui n'avait aucun chemin
+      // clavier. C'est cette seconde qui manquait, et c'est elle que la
+      // barre « Retirer de cet animal » consomme.
+      d1.tabIndex=0;
+      d1.setAttribute('role','button');
+      d1.setAttribute('aria-pressed','false');
+      d1.setAttribute('aria-label','Selectionner cette photo');
       d1.onclick=function(ev){ if(ev.target.classList.contains('zoom')){ openLb(p.url); return; } toggleSel(d1,p.key); };
+      d1.onkeydown=function(e){
+        // Le bouton .zoom a le sien : sans ce garde, Entree sur « voir en
+        // grand » ouvrirait la photo ET la selectionnerait.
+        if(e.target!==d1) return;
+        if(e.key==='Enter'||e.key===' '){ e.preventDefault(); toggleSel(d1,p.key); }
+      };
       g.appendChild(d1);
     });
   }).catch(function(){
@@ -450,8 +484,13 @@ document.addEventListener('keydown',function(e){
 })();
 
 function toggleSel(el,key){ if(SEL[key]){ delete SEL[key]; el.classList.remove('sel'); }
-  else { SEL[key]=1; el.classList.add('sel'); } updateSelbar(); }
-function clearSel(){ SEL={}; document.querySelectorAll('.ph.sel').forEach(function(e){e.classList.remove('sel');}); updateSelbar(); }
+  else { SEL[key]=1; el.classList.add('sel'); }
+  // La classe PEINT la selection, `aria-pressed` la DIT : sans elle, une
+  // photo selectionnee s'annonce exactement comme une photo qui ne l'est pas.
+  el.setAttribute('aria-pressed', SEL[key]?'true':'false');
+  updateSelbar(); }
+function clearSel(){ SEL={}; document.querySelectorAll('.ph.sel').forEach(function(e){
+  e.classList.remove('sel'); e.setAttribute('aria-pressed','false'); }); updateSelbar(); }
 function updateSelbar(){ var n=Object.keys(SEL).length; document.getElementById('sel-n').textContent=n;
   document.getElementById('selbar').style.display=n?'flex':'none'; }
 
@@ -481,6 +520,9 @@ document.getElementById('d-delete').onclick=function(){
 
 function openLb(url){ document.getElementById('lb-img').src=url; document.getElementById('lightbox').style.display='flex'; }
 function closeLb(){ document.getElementById('lightbox').style.display='none'; document.getElementById('lb-img').src=''; }
+// controle: redondant -- fermer en cliquant a cote de la photo. Echap
+// ferme deja (voir le keydown juste au-dessus) ; le fond n'est pas un
+// controle, c'est la zone qui reste.
 document.getElementById('lightbox').onclick=function(e){ if(e.target.id==='lightbox') closeLb(); };
 document.addEventListener('keydown',function(e){ if(e.key==='Escape') closeLb(); });
 

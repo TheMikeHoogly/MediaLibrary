@@ -105,8 +105,20 @@ body { height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
   prises avec la géolocalisation activée.</div>
 
 <div id="show">
+  <!-- Les trois zones ci-dessous sont des raccourcis de SOURIS. Tout ce
+       qu'elles font a deja un chemin clavier : Echap ferme, les fleches
+       gauche/droite changent de photo, Espace met en pause, et les boutons
+       .cbtn juste en dessous portent les memes trois actions. Elles restent
+       des zones de confort, pas des controles -- declare une par une, parce
+       qu'une exception se relit element par element. -->
+  <!-- controle: redondant -- Echap ferme le diaporama, et #show-pp est
+       atteignable au clavier juste en dessous. -->
   <span class="x" onclick="showClose()">&times;</span>
+  <!-- controle: redondant -- la fleche gauche fait deja reculer, et le
+       bouton .cbtn Precedent est atteignable au clavier. -->
   <div class="nav l" onclick="showStep(-1)"></div>
+  <!-- controle: redondant -- la fleche droite fait deja avancer, et le
+       bouton .cbtn Suivant est atteignable au clavier. -->
   <div class="nav r" onclick="showStep(1)"></div>
   <img id="show-img" src="" alt="">
   <div class="meta">

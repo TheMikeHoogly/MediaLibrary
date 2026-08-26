@@ -31,11 +31,25 @@ body { min-height: 100vh; }
           background: var(--salle-2); border-bottom: var(--trait); flex-wrap: wrap; }
 .selbar .lbl { color: var(--graphite); font-size: var(--t-xs); margin-right: 2px; }
 /* .pchip + .chip : jeu unique, selecteurs groupes (rendu inchange). */
-.pchip, .chip { min-height: 32px; padding: var(--e-1) var(--e-3); border-radius: var(--r-pill); border: var(--trait);
-         background: var(--salle-3); color: var(--graphite); font-size: var(--t-sm); cursor: pointer;
+/* Les chips sont des <button> depuis le 26/08 (WCAG 2.1.1) : un <span> ne
+   recoit jamais le focus. Le passage change trois choses par DEFAUT et les
+   trois sont reposees ici, sinon la conversion se voit a l'ecran :
+     - la police (un bouton prend Arial 13,3px, il n'herite pas de body) ;
+     - `display` (inline -> inline-block, ce qui REND ACTIF le min-height
+       qui dormait : c'est ce qui fait passer le chip a la cible tactile) ;
+     - l'alignement du texte, centre d'office sur un bouton.
+   `min-height` passe a --touch : le plancher du design system exige 44 px,
+   et 32 px etait la contradiction que ce meme document portait (tranchee
+   par Mike le 26/08). L'ecart libelle-compteur passe du `margin-left` de
+   4 px au `gap` canonique de 8 px -- une seule facon d'ecarter deux
+   choses, comme sur `subjects`. */
+.pchip, .chip { min-height: var(--touch); padding: 0 var(--e-3); border-radius: var(--r-pill); border: var(--trait);
+         background: var(--salle-3); color: var(--graphite); cursor: pointer;
+         font: 500 var(--t-sm)/1 var(--f-texte); text-align: center;
+         display: inline-flex; align-items: center; gap: var(--e-2);
          user-select: none; }
 .pchip.on, .chip.on { background: var(--fixateur); border-color: var(--fixateur); color: #fff; }
-.pchip .n, .chip .n { color: var(--graphite); font-size: var(--t-xs); margin-left: var(--e-1); font-family: var(--f-donnees); }
+.pchip .n, .chip .n { color: var(--graphite); font-size: var(--t-xs); font-family: var(--f-donnees); }
 .pchip.on .n, .chip.on .n { color: #fff; }
 .geobtn { padding: var(--e-1) var(--e-3); border-radius: var(--r-md); border: var(--trait);
           background: var(--salle-3); color: var(--texte); font-size: var(--t-sm); cursor: pointer; }
@@ -652,8 +666,10 @@ __FOLDERS__
     try { collapsed = localStorage.getItem('tagbarOpen') !== '1'; } catch (e) {}
     if (selTags.length) collapsed = false;
 
-    var toggle = document.createElement('span');
+    var toggle = document.createElement('button');
+    toggle.type = 'button';
     toggle.className = 'chip mode';
+    toggle.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
     var wrap = document.createElement('div');
     wrap.className = 'tagchips' + (collapsed ? ' hidden' : '');
 
@@ -665,12 +681,14 @@ __FOLDERS__
     toggle.onclick = function() {
       collapsed = !collapsed;
       wrap.className = 'tagchips' + (collapsed ? ' hidden' : '');
+      toggle.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
       try { localStorage.setItem('tagbarOpen', collapsed ? '0' : '1'); } catch (e) {}
       updToggle();
     };
     bar.appendChild(toggle);
 
-    var modeBtn = document.createElement('span');
+    var modeBtn = document.createElement('button');
+    modeBtn.type = 'button';
     modeBtn.className = 'chip mode';
     modeBtn.id = 'modeBtn';
     modeBtn.textContent = (mode === 'and') ? 'ET' : 'OU';
@@ -685,9 +703,13 @@ __FOLDERS__
 
     tagsArr.forEach(function(tn) {
       var t = tn[0], n = tn[1];
-      var c = document.createElement('span');
+      var c = document.createElement('button');
+      c.type = 'button';
       var on = selTags.indexOf(t) >= 0;
       c.className = 'chip' + (on ? ' on' : '');
+      // `on` peint, `aria-pressed` DIT. La classe seule laissait un lecteur
+      // d'ecran annoncer un filtre actif exactement comme un inactif.
+      c.setAttribute('aria-pressed', on ? 'true' : 'false');
       c.innerHTML = esc(t) + '<span class="n">' + n + '</span>';
       c.onclick = function() {
         var i = selTags.indexOf(t);
@@ -699,23 +721,28 @@ __FOLDERS__
         }
         if (i >= 0) selTags.splice(i, 1); else selTags.push(t);
         c.className = 'chip' + (i < 0 ? ' on' : '');
-        document.getElementById('clearBtn').style.display = selTags.length ? 'inline-block' : 'none';
+        c.setAttribute('aria-pressed', i < 0 ? 'true' : 'false');
+        document.getElementById('clearBtn').style.display = selTags.length ? 'inline-flex' : 'none';
         updToggle();
         applyFilter();
       };
       wrap.appendChild(c);
     });
 
-    var clr = document.createElement('span');
+    var clr = document.createElement('button');
+    clr.type = 'button';
     clr.className = 'chip clear';
     clr.id = 'clearBtn';
     clr.textContent = 'Tout effacer';
-    clr.style.display = selTags.length ? 'inline-block' : 'none';
+    clr.style.display = selTags.length ? 'inline-flex' : 'none';
     clr.onclick = function() {
       if (srvNav) { location.href = tagNavUrl([], mode); return; }
       selTags = [];
       var chips = wrap.querySelectorAll('.chip.on');
-      for (var i = 0; i < chips.length; i++) chips[i].className = 'chip';
+      for (var i = 0; i < chips.length; i++) {
+        chips[i].className = 'chip';
+        chips[i].setAttribute('aria-pressed', 'false');
+      }
       clr.style.display = 'none';
       updToggle();
       applyFilter();
@@ -848,7 +875,27 @@ __FOLDERS__
                      + (fh ? '<div class="faits">' + fh + '</div>' : '')
                      + '<div class="caption' + (cap ? '' : ' empty') + '">'
                      + (cap ? esc(cap) : 'pas encore analysée') + '</div>';
+      // Ouvrir une photo etait un geste de SOURIS uniquement : la planche
+      // est la page la plus utilisee du site, et rien au clavier n'y
+      // ouvrait quoi que ce soit (WCAG 2.1.1, niveau A).
+      //
+      // Pourquoi un `role="button"` et pas un vrai `<button>` : une cellule
+      // porte une image, une ligne de faits et une legende, c'est-a-dire
+      // des `<div>`. Un bouton n'admet que du contenu de phrase -- les
+      // navigateurs tolerent le reste, mais un lecteur d'ecran lit alors
+      // TOUT le contenu comme libelle du bouton, et une vignette annoncerait
+      // trois lignes. L'element garde donc sa mise en page et recoit les
+      // trois choses qui font un controle : on l'atteint, on l'annonce, on
+      // l'actionne. `aria-label` dit ce que le clic FAIT, pas ce qu'on voit.
+      cell.tabIndex = 0;
+      cell.setAttribute('role', 'button');
+      cell.setAttribute('aria-label', 'Ouvrir ' + (f.name || 'la photo'));
       cell.onclick = function() { openLb(i); };
+      cell.onkeydown = function(e) {
+        // Espace est la touche d'un bouton autant qu'Entree, et sans
+        // `preventDefault` elle fait defiler la page sous la photo.
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openLb(i); }
+      };
       grid.appendChild(cell);
       observer.observe(cell);
     });
@@ -939,6 +986,9 @@ __FOLDERS__
   }
   function closeLb() { document.getElementById('lb').classList.remove('open'); }
 
+  // controle: redondant -- fermer en cliquant a cote de la photo. Le meme
+  // geste a deja son bouton (#lb-close) et sa touche (Echap) ; le fond
+  // n'est pas un controle, c'est la zone qui reste.
   document.getElementById('lb').addEventListener('click', function(e) {
     if (e.target === this) closeLb();
   });
@@ -959,6 +1009,11 @@ __FOLDERS__
   });
 
   // 5 bandes verticales : seules les bandes des bords (20%) naviguent
+  // controle: redondant -- raccourci de souris pur. Les memes deux gestes
+  // ont deja leurs boutons (#lb-prev, #lb-next) et leurs touches (fleches,
+  // Echap), tous atteignables : aucune fonctionnalite n'est perdue au
+  // clavier. Rendre l'image elle-meme focusable ajouterait un arret de
+  // tabulation qui ne fait rien de plus.
   document.getElementById('lb-img').addEventListener('click', function(e) {
     var w = this.clientWidth;
     if (e.offsetX < w / 5) lbMove(-1);
@@ -1296,6 +1351,8 @@ __FOLDERS__
   }
 
   // 5 bandes verticales : bords = précédent/suivant, milieu = pause
+  // controle: redondant -- meme raison que la visionneuse : #ss-stop, les
+  // fleches et Echap font deja tout ce que ces bandes font.
   document.getElementById('ss-img').addEventListener('click', function(e) {
     var w = this.clientWidth;
     if (e.offsetX < w / 5) ssMove(-1);
@@ -1494,8 +1551,11 @@ __FOLDERS__
     var box = document.getElementById('personchips'); box.innerHTML = '';
     if (!PERSONS.length) { box.innerHTML = '<span class="lbl">(aucune ici)</span>'; return; }
     PERSONS.forEach(function(tag) {
-      var b = document.createElement('span');
-      b.className = 'pchip' + (selPersons.indexOf(tag) >= 0 ? ' on' : '');
+      var b = document.createElement('button');
+      b.type = 'button';
+      var actif = selPersons.indexOf(tag) >= 0;
+      b.className = 'pchip' + (actif ? ' on' : '');
+      b.setAttribute('aria-pressed', actif ? 'true' : 'false');
       b.textContent = tag.slice(9);
       b.onclick = function() {
         var i = selPersons.indexOf(tag);

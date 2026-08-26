@@ -129,8 +129,15 @@
   padding: 2px 5px; opacity: 0.75;
 }
 
+/* 26/08 : 32px -> --touch. Le meme document exigeait « cibles >= 44 px »
+   dans son plancher d'accessibilite et donnait 32 px a son propre chip.
+   32 px passe WCAG 2.5.8 (24 px), donc rien n'etait « faux » -- mais une
+   regle que le systeme s'ecrit a lui-meme et qu'il ne tient pas ailleurs
+   n'est plus une regle, c'est une intention. Mike a tranche : la regle
+   tient, une seule, partout. Le chip de filtre est justement ce qu'on
+   vise au pouce en nommant des visages au telephone. */
 .chip {
-  min-height: 32px; padding: 0 var(--e-3); border-radius: var(--r-pill);
+  min-height: var(--touch); padding: 0 var(--e-3); border-radius: var(--r-pill);
   border: var(--trait); background: var(--salle-3); color: var(--graphite);
   display: inline-flex; align-items: center; gap: var(--e-2); cursor: pointer;
 }

@@ -37,6 +37,7 @@ Déclarés une seule fois, dans `ui/tokens.css` (ou en tête du bloc `<style>` p
   --salle:        #0C0B0A;  /* fond : noir CHAUD, jamais gris neutre */
   --salle-2:      #14120F;  /* élévation 1 : barres, en-têtes */
   --salle-3:      #1C1916;  /* élévation 2 : cartes, cellules */
+  --salle-4:      #24201D;  /* élévation 3 : SURVOL d'une surface sombre (25/08) */
   --papier:       #EDE7DC;  /* surfaces de travail : panneaux de nommage */
   --papier-2:     #DDD5C6;  /* bordures et séparateurs sur papier */
 
@@ -44,7 +45,14 @@ Déclarés une seule fois, dans `ui/tokens.css` (ou en tête du bloc `<style>` p
   --veilleuse:    #FF7A1A;  /* lampe inactinique : « l'IA travaille », en attente */
   --veilleuse-d:  #7A3908;  /* variante sombre : liserés, fonds de badge */
   --encre:        #C8321E;  /* destructif, correction, erreur */
-  --fixateur:     #4A8C7B;  /* confirmé, succès, assigné */
+  --encre-p:      #B82E1C;  /* sa marche pressée / survolée */
+  /* Assombri le 25/08 (#4A8C7B → #448172) : le blanc dessus était à 3,94:1,
+     sous le plancher AA — sur le bouton qui CONFIRME une décision humaine et
+     sur le chip de filtre actif. Clarté seule ; teinte et saturation intactes,
+     donc le SENS de l'accent ne bouge pas. #fff dessus : 4,54:1. MESURÉ par
+     `verifier_contraste.py`, pas jugé à l'œil. */
+  --fixateur:     #448172;  /* confirmé, succès, assigné */
+  --fixateur-p:   #3F7769;  /* sa marche pressée / survolée */
 
   /* ─── Texte ─── */
   --texte:        #F2EDE6;  /* sur --salle */
@@ -179,16 +187,67 @@ regardent sur `--salle`. Le papier accueille les vignettes de tri, les champs, l
 }
 .btn--principal { background: var(--papier); color: var(--texte-papier); border-color: var(--papier); }
 .btn--confirmer { background: var(--fixateur); border-color: var(--fixateur); color: #fff; }
-.btn--destructif { background: transparent; border-color: var(--encre); color: var(--encre); }
+.btn--discret   { background: transparent; border-color: var(--papier-2); color: var(--texte-papier); }
+/* PLEIN, pas en contour : `--encre` en texte sur un fond hérité plafonnait à
+   3,03:1 dans le pire cas — sur le bouton qui SUPPRIME. Éclaircir le token
+   aurait réparé le sombre en cassant le papier, où il sert de texte d'erreur.
+   Le plein donne 5,34:1 sans y toucher, et un rouge plein pèse plus lourd à
+   l'œil : c'est ce qu'on veut d'un « Supprimer ». */
+.btn--destructif { background: var(--encre); border-color: var(--encre); color: #fff; }
 
-.chip { min-height: 32px; padding: 0 var(--e-3); border-radius: var(--r-pill);
-        border: var(--trait); background: var(--salle-3); color: var(--graphite); }
+/* Survol et état pressé (25/08). Chaque variante qui pose son propre fond le
+   REPOSE ici : `.btn:hover` pèse (0,2,0) et repeindrait sinon le bouton
+   principal en gris au passage de la souris. Le garde `hover: hover` évite
+   qu'un `:hover` colle après le doigt sur écran tactile. */
+@media (hover: hover) {
+  .btn:hover { background: var(--salle-4); }
+  .btn--principal:hover, .btn--discret:hover { background: var(--papier-2); }
+  .btn--confirmer:hover  { background: var(--fixateur-p); }
+  .btn--destructif:hover { background: var(--encre-p); }
+}
+/* Le PRESSÉ vit HORS du garde : sur tactile, `hover` est faux et c'est le SEUL
+   retour immédiat qu'un doigt obtienne — or nommer des visages au téléphone
+   est le geste le plus répété du projet. Mêmes marches, pour ne pas inventer
+   un second vocabulaire de profondeur. */
+.btn:active { background: var(--salle-4); }
+.btn--confirmer:active  { background: var(--fixateur-p); }
+.btn--destructif:active { background: var(--encre-p); }
+/* `not-allowed` et pas `default` : le curseur dit POURQUOI le clic ne fait
+   rien, au lieu de faire semblant qu'il n'y a pas de bouton. `opacity` et pas
+   une couleur, pour qu'un « Supprimer » désactivé se lise encore comme un
+   Supprimer (WCAG 1.4.3 exempte les contrôles inactifs du seuil). */
+.btn:disabled, .btn[aria-disabled="true"] { opacity: 0.5; cursor: not-allowed; }
+
+/* 44 px et pas 32 : le plancher ci-dessous exige « cibles ≥ 44 px » et ce
+   document donnait 32 px à son propre chip. 32 px passe WCAG 2.5.8 (24 px),
+   donc rien n'était faux — mais une règle que le système s'écrit à lui-même et
+   ne tient pas ailleurs n'est plus une règle, c'est une intention. Tranché par
+   Mike le 26/08 : une seule, partout. Le chip de filtre est justement ce qu'on
+   vise au pouce. */
+.chip { min-height: var(--touch); padding: 0 var(--e-3); border-radius: var(--r-pill);
+        border: var(--trait); background: var(--salle-3); color: var(--graphite);
+        display: inline-flex; align-items: center; gap: var(--e-2); cursor: pointer; }
 .chip[aria-pressed="true"] { background: var(--fixateur); border-color: var(--fixateur); color: #fff; }
 .chip .n { font-family: var(--f-donnees); font-size: var(--t-xs); opacity: 0.7; }
 ```
 
 Un chip de filtre est un **bouton bascule** : `<button aria-pressed="true|false">`, pas un
-`<div class="on">`. L'état doit être lisible par un lecteur d'écran.
+`<div class="on">`. La classe PEINT l'état, `aria-pressed` le DIT : avec la
+classe seule, un filtre actif s'annonce exactement comme un inactif.
+
+### Visuellement caché, mais présent pour le clavier
+```css
+.hors-ecran { position: absolute; width: 1px; height: 1px; padding: 0;
+  margin: -1px; border: 0; overflow: hidden; clip-path: inset(50%);
+  white-space: nowrap; }
+```
+`display: none` et `visibility: hidden` retirent un élément de l'ordre de
+tabulation ET de l'arbre d'accessibilité. Le 25/08, les deux `<input
+type="file">` de la page d'envoi étaient cachés ainsi derrière des `<label
+for>` : **les deux actions principales du site étaient injoignables au
+clavier**. L'indice traînait depuis toujours — une règle `:focus-visible` sur
+un contrôle qui ne pouvait jamais recevoir le focus. **Quand une règle
+d'accessibilité semble inutile, chercher pourquoi elle a été écrite.**
 
 ### Centre de tâches
 
@@ -228,6 +287,19 @@ Aucune UI ne part sans ces sept points. Traite-les comme des tests, pas des inte
    Cela couvre les survols `transform: scale()` et les diaporamas à défilement automatique.
 5. **Sémantique** : `<button>` pour les actions, `<a>` pour la navigation. Jamais un `<div>`
    avec un `onclick`. Les images de contenu ont un `alt` ; les vignettes décoratives ont `alt=""`.
+   Un `<a>` **sans `href`** sort de la tabulation aussi sûrement qu'un `<span>`.
+   Quand la mise en page interdit un vrai `<button>` — une vignette porte une
+   image, une ligne de faits et une légende, c'est-à-dire des `<div>`, qu'un
+   bouton lirait tous comme son libellé —, il en faut **les trois** :
+   `tabindex="0"` pour l'atteindre, `role="button"` pour l'annoncer, et un
+   `keydown` sur Entrée **et** Espace (avec `preventDefault`, sinon Espace fait
+   défiler la page) pour l'actionner. Deux sur trois donne un contrôle qu'on
+   atteint sans pouvoir s'en servir, ou qu'on actionne sans savoir ce que c'est.
+   Un clic qui **double** une action déjà offerte au clavier (bande latérale à
+   côté d'un bouton « Suivant », croix à côté d'Échap) n'est pas un manquement :
+   il se **déclare dans la source** — `/* controle: redondant -- raison */` —
+   jamais en dur dans l'instrument, sinon celui-ci devient aveugle au cas
+   suivant sans qu'on le sache.
 6. **Navigation clavier** dans les tâches répétitives de tri : `1`–`9` pour assigner à une
    personne connue, `Espace` pour confirmer, `X` pour rejeter, `Z` pour annuler,
    `Maj+clic` pour sélectionner une plage. Documente les raccourcis dans l'interface elle-même.
@@ -259,6 +331,13 @@ Aucune UI ne part sans ces sept points. Traite-les comme des tests, pas des inte
 
 Avant de déclarer une UI terminée :
 
+0. **MESURE, ne relis pas.** Trois points de ce plancher ont un instrument, et
+   chacun a trouvé au premier lancement ce qu'aucune relecture n'avait vu :
+   `verifier_contraste.py` (trois échecs AA, dont le bouton qui confirme),
+   `verifier_controles.py` (dix-huit éléments cliquables qui n'étaient pas des
+   contrôles, dont le filtre de la page la plus utilisée), et
+   `verifier_css_cascade.py` (« identique après la cascade »). **Une règle qu'on
+   ne mesure pas n'est pas un plancher, c'est un vœu.**
 1. Relis le CSS produit contre la liste des **interdits explicites**. Une seule occurrence de
    `#0a84ff` ou d'un nombre de colonnes en dur invalide la livraison.
 2. Vérifie les sept points du plancher d'accessibilité, un par un.

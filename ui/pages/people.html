@@ -70,7 +70,13 @@ input[type=text], input.qui { padding: var(--e-2) var(--e-3); border-radius: var
 input[type=text]:focus, input.qui:focus { border-color: var(--veilleuse); }
 .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(90px,1fr));
         gap: var(--e-1); }
-.prop { position: relative; }
+/* `.prop` habille un <label> (grille de propositions) ET un <button>
+   (grille de references, depuis le 26/08). Un bouton arrive avec fond,
+   bordure, marge interne et police propres : les quatre sont remis a plat
+   ici, sinon la conversion se voit a l'ecran. Sans effet sur le <label>,
+   qui n'en portait aucun. */
+.prop { position: relative; padding: 0; border: 0; background: none;
+        display: block; font: inherit; color: inherit; cursor: pointer; }
 .prop img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: var(--r-md);
             background: var(--salle-3); display: block; }
 .prop input { position: absolute; top: 4px; left: 4px; width: 18px; height: 18px; }
@@ -224,6 +230,11 @@ function carteP(p){
     '<div class="nm">'+esc(p.name)+'</div>'+
     '<div class="ct">'+p.photos+' photo'+(p.photos>1?'s':'')+'</div>'+
     '<button class="btn">Gérer</button>';
+  // controle: redondant -- la carte entiere est cliquable a la souris, mais
+  // elle CONTIENT deja son controle : le bouton « Gerer » recoit le focus,
+  // et l'activer au clavier declenche ce meme gestionnaire par remontee de
+  // l'evenement. Rendre la carte focusable ajouterait un second arret de
+  // tabulation pour la meme action.
   d.onclick=function(){openPerson(p);};
   return d;
 }
@@ -353,7 +364,12 @@ function cleanPerson(name,box){
     var photos=d.photos||[];
     if(!photos.length){ g.innerHTML='<div class="msg">Aucune photo &agrave; afficher.</div>'; return; }
     photos.forEach(function(f){
-      var img=f.crop_url||f.url; var el=document.createElement('div'); el.className='prop';
+      // Choisir une photo de reference etait un geste de souris uniquement.
+      // Ici un VRAI bouton passe : la case ne contient qu'une image, donc
+      // rien qui sorte du contenu admis par `<button>` -- et un vrai bouton
+      // vaut mieux qu'un `role` quand la balise peut le porter.
+      var img=f.crop_url||f.url; var el=document.createElement('button');
+      el.type='button'; el.className='prop';
       el.innerHTML='<img loading="lazy" src="'+esc(img)+'">';
       el.onclick=function(){
         if(sel[f.key]){ delete sel[f.key]; el.style.outline=''; }
