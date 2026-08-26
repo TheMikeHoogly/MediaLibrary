@@ -6,6 +6,75 @@ dans **git** ; les rejets dans `eval/DECISIONS.md` (photothèque) et
 `eval/METHODE.md` ; l'éphémère dans `PROMPT_NOUVELLE_SESSION.md`. Audits :
 `docs/AUDIT_INTERNE_2026-08.md`, `docs/AUDIT_EXTERNE_2026.md`, `docs/RANGEMENT_2026.md`.
 
+## État (26/08/2026, session 50) — CALINE, ET LE FILTRE QUI N'EN ÉTAIT PAS UN
+
+**Mike : « Caline a disparu ?!? Nous avons des centaines de photos de notre
+chatte. »** Il a raison, et mon verdict de la veille était FAUX.
+
+### Ce que dit la base (`copie.db`, lecture seule)
+
+| | |
+|---|---|
+| photos dans `\\NAS-Bremblens\home\Photos\Caline\` | **215** (2014 → 2021) |
+| détections d'animaux sur ces photos | **172** |
+| dont **non nommées** | **169** (3 écartées, **0 attribuée**) |
+| photos portant un tag `animal:Caline` | **0** |
+| fiches dans `PETS` | 12 — Inti 530, Luna 207, Mutz 163, … **pas de Caline** |
+| groupes d'animaux NON NOMMÉS | **189** |
+
+**Rien n'est perdu. Caline n'a jamais été SAISIE.** Le pipeline la voit — 169
+détections l'attendent —, elle vit dans les groupes `cat:2` (130 apparitions,
+9 photos du dossier Caline dans le seul échantillon de 18) et `cat:3` (54
+apparitions, 11 sur 18). Un nom à poser, deux fois.
+
+Les 9 mots-clés contenant « caline » sont le mot **câline** produit par le
+tagueur sur des photos du dossier `Calinous` — un homonyme, pas la chatte.
+
+### La cause de MON erreur : un filtre qui n'en est pas un
+
+`/files?q=animal:Caline` affiche **« 1500 photo(s) — animal:Caline »**. Le
+contrôle le prouve : `q=animal:Zzzznexistepas` affiche **« 1500 photo(s) —
+animal:Zzzznexistepas »**, et `q=animal:Luna` aussi — alors que Luna en a 207.
+
+`_extraire_noms` cherche le nom NU (« Luna ») dans la requête ; elle ne
+connaît **aucun préfixe** `personne:` / `animal:`. Le jeton entier tombe donc
+dans `reste`, aucun candidat n'est retenu, et la requête part en **recherche
+sémantique** sur tout le fonds, qui rend ses 1500 meilleures. La page l'annonce
+comme un résultat de filtre.
+
+**C'est exactement le défaut corrigé le 21/08 pour `espece:licorne`** — « un
+filtre qu'on ne sait pas satisfaire ne rend RIEN, et la page le dit ; le
+laisser passer rendrait tout le fonds, ce que l'utilisateur lirait comme un
+accord ». La leçon a été appliquée à UN axe et pas aux quatre autres.
+
+**Et le pire est ailleurs : l'interface ÉCRIT ce vocabulaire.** Les pastilles
+de filtre affichent `personne:Florine`. Un utilisateur qui recopie l'étiquette
+que le site lui montre dans la barre de recherche du même site obtient une
+recherche sémantique muette sur 43 000 photos. **Deux autorités, un seul
+vocabulaire, aucune ne connaît l'autre.**
+
+### Ce que j'ai fait de faux, et la règle que j'ai enfreinte
+
+J'ai conclu « Caline n'existe nulle part » à partir de `/api/names` (qui ne lit
+que les FICHES) et d'un `/api/search?q=Caline` dont j'ai lu `total: null`
+comme un zéro. **Aucun des deux ne répondait à la question posée**, et j'ai
+rendu un verdict quand même. C'est la règle que ce projet répète à chaque
+session — *un banc qui ne SAIT pas ne rend pas vert* — appliquée aux
+instruments et pas à moi. Le contrôle qui manquait tenait en une requête :
+**un nom inventé doit rendre zéro.**
+
+### À faire, dans cet ordre
+
+1. **Le garde-fou** : un jeton `<axe>:<valeur>` que le filtre ne sait pas
+   satisfaire ne rend RIEN et le DIT — comme `espece:` déjà. Vaut pour
+   `personne:`, `animal:`, `lieu:` et tout axe à venir.
+2. **Le vocabulaire partagé** : la barre de recherche doit comprendre ce que
+   les pastilles écrivent. Sinon retirer le préfixe des étiquettes.
+3. **Un banc de contrôle NÉGATIF** dans la famille `verifier_` : pour chaque
+   axe, une valeur inventée doit rendre 0. C'est le test qui manquait.
+4. Mineur, et c'est I7 qui devait le fermer : **`animal:luna` en minuscule
+   existe sur 3 photos** à côté de `animal:Luna` sur 207.
+
 ## État (26/08/2026, session 49) — `gallery` ADOPTE, ET LE CHIP EST FINI
 
 **Sept pages sur onze reçoivent `components.css`**, et `gallery` — la page la
@@ -568,376 +637,28 @@ signe de vie se reprend tout seul), rafraîchi à chaque tranche, rendu dans un
 `finally`, et jamais posé par une passe à blanc.
 **11 vérifications neuves, 14 rouges sur l'ancien code, 79/79 vertes.**
 
-## État (23/08/2026, session 43)
+## Ce qu'il faut garder des sessions 36 → 43 (le récit vit dans git)
 
-**Le contrôle 5 de l'agent git cesse de réclamer une preuve qui n'existe pas.**
-Il jugeait sur le NOM — tout `.py` sauf `test_`/`mesure_` — et exigeait donc de
-`mcp_serveur.py`, `banc_agent.py`, `git_agent.py` lui-même et des familles
-`appliquer_`/`verifier_` qu'un serveur les fasse tourner. Le serveur ne les
-importe jamais. C'est ce qui obligeait à forcer, et un contrôle qu'on contourne
-par habitude ne contrôle plus rien. Il lit maintenant le GRAPHE des imports de
-`server.py`, imports paresseux compris : **29 modules dedans, 134 dehors**. Un
-import dynamique illisible est un TROU nommé, qui fait retomber sur la vieille
-règle, plus large. **17 vérifications neuves, 13 rouges sur l'ancien code,
-45/45 vertes sous Windows** — dont quatre sur le VRAI dépôt.
+Condensé le 26/08 : ces huit sessions sont CLOSES, leurs acquis vivent dans
+« Acquis », leurs rejets dans `eval/DECISIONS.md`, leur détail dans git. Ce
+qui reste utile à qui reprend :
 
-**Et la réparation des XMP est morte au bout de 31 minutes — la cause est
-trouvée et bouchée.** Lancée à 21:38, arrêtée à **22:09:40, à 4 800 photos sur
-~18 900**, onze secondes après un `🤖 Auto-ajout : 14 visage(s)` du curateur.
-Celui-ci rattache des visages TOUT SEUL toutes les quatre à cinq minutes, et
-chaque auto-ajout remplit `PERSON_QUEUE` : la passe, qui s'arrêtait au premier
-signe, ne pouvait pas finir. Elle **ATTEND** désormais que la file retombe
-(patience bornée, temps attendu compté), l'invariant « jamais deux écrivains »
-intact — aucune invocation d'ExifTool pendant l'attente. **7 fonctions de test
-neuves, 7 rouges sur l'ancien code, 56/56 vertes sous Windows.**
+- **Le MCP en lecture seule est livré et observé** (23/08) — `mcp_serveur.py`,
+  sept outils, 48 vérifications, mesuré contre le serveur vivant. L'écriture
+  n'est pas faite et ne se fera pas sans décision.
+- **Le chantier XMP est clos** : 0 écart sur 1 614 couples. Les noms attribués
+  vivent dans les fichiers ; ils survivent à la base. C'est l'invariant 2.
+- **Flo → Florine et le groupe de Stéphane Plouvin sont appliqués et vérifiés
+  sur le DISQUE** (200/200 et 58/58).
+- **La répétition de restauration a réussi** (22/08) : six tables identiques,
+  363 noms des deux côtés, aucun écart de décision. Elle a trouvé au passage
+  trois défauts que rien d'autre n'aurait vus — dont un garde-fou qui testait
+  le NOM du fichier et refusait donc la base restaurée.
+- **Les rattachements, le résidu et le recalage sont clos et mesurés** : ne
+  pas rouvrir sans chiffre neuf.
+- **`ui/` : les onze gabarits sont sortis de `server.py`** (17 200 → 11 986
+  lignes), les onze pages identiques au caractère près.
 
-**O7 est MESURÉ, et ce n'est pas lui le sujet.** Le filtre nommé coûte
-**191–208 ms** de coût fixe (deux passes, seuil écrit d'avance à 200 ms : le
-verdict bascule d'une passe à l'autre — mesure prise pendant que le tagueur
-tourne). Mais `/api/names`, appelé au chargement de **chaque** page pour
-l'autocomplétion, coûte **359–364 ms** : même index, même balayage, plus
-`parse_tag_nomme` sur chaque mot-clé. `mesure_recherche_nommee.py` (21
-vérifications) le dit, et signale au passage que `/api/search` **calcule**
-`total`/`tronque` et ne les rend PAS — le plafond silencieux corrigé pour la
-page le 22/08 et pour le MCP le 23/08 est toujours dans la route.
-
-Gestes de fin de la réparation : `PROMPT_NOUVELLE_SESSION.md`.
-
-## État (23/08/2026, session 42)
-
-**Le canal des bancs portait tout, sauf un nom humain.** Mike nomme le groupe
-de « Stéphane Plouvin » ; la preuve DISQUE de son geste —
-`verifier_xmp_personnes.py --nom "Stéphane Plouvin"` — est refusée par
-`banc_agent` : `ARG_OK` n'admet ni accent ni espace. Le chiffre trouvé en
-comptant : **168 des 352 noms, 6 119 photos**, hors de portée du seul
-instrument qui vérifie la règle 2 dans les fichiers. Le jeton **`b64:`** rend
-la valeur **sans desserrer la porte** — ce qui transite est du base64url,
-qu'`ARG_OK` admettait déjà ; les trois barrières jugent la forme écrite ; la
-valeur ne renaît qu'APRÈS elles, pour la LISTE de `subprocess.run`.
-**11 vérifications neuves, 8 rouges sur l'ancien code**, 32 vertes au banc.
-
-**Et le geste de Mike est PROUVÉ sur le disque.** `personne:Stéphane Plouvin` :
-**58 photos à l'index, 58 lues par ExifTool, 58 portent le nom, 0 manque, 0
-illisible**, file à 0.
-
-**Puis le canal débloqué a trouvé une FUITE, et c'est le vrai sujet de la 42.**
-Un second geste de Mike (confirmation sur Ellie) a fait poser la question au
-bon nom : `personne:Ellie` — **342 photos à l'index, 54 dont le fichier ne
-porte pas le nom**, file à ZÉRO, donc rien ne viendra les combler. Mike :
-**37 sur 200** tirées. Florine : **200/200**. Le balayage de tous les noms
-(`verifier_xmp_toutes_personnes.py`, 21 vérifications) tranche :
-**18,7 % des couples nom–photo** (Wilson 16,7–20,9 %, 255 écarts sur 1 364 lus,
-352 noms) — soit **~5 800 photos** que l'index nomme et que le fichier ignore.
-La règle 2 était en défaut depuis des mois, sans une ligne nulle part.
-
-**La cause, et elle est bouchée.** `_enqueue_person_write` testait
-`p.is_file()` avant de noter : sur un « non », le geste disparaissait en
-silence. Or `is_file()` interroge un partage SMB, qui répond « non » quand le
-NAS hoquette. `_file_personnes_reprise` faisait de même AU DÉMARRAGE — le pire
-moment, le partage n'étant pas toujours monté : la prudence de la reprise
-jetait la file que le journal existait pour sauver. Les deux jugent désormais
-zéro ; le seul qui déclare une écriture impossible est celui qui l'a TENTÉE.
-**4 rouges observés sur l'ancien code reconstitué**, dont deux tests de la 41
-qui affirmaient l'inverse.
-
-**La réparation est PROUVÉE sur un premier lot.** Mike a passé
-`appliquer_xmp_personnes.py` sur Ellie : **54 réécrites, 0 en échec**, journal
-d'annulation de 54 lignes portant l'état AVANT de chaque photo. Vérifié
-ensuite par l'instrument indépendant, qui relit le disque : **346 à l'index,
-346 portent le nom, 0 manque** (292 avant). **Débit mesuré : 191 s pour 54
-photos, soit 3,5 s/photo** — au-dessus des 2,91 s/op du matin, le NAS étant
-chargé. Le reste (~5 700) coûtera donc **~5 h 30**, pas 4 h 40.
-**Et l'outil pour le reste est livré** : `appliquer_xmp_personnes.py --tous`
-balaie le fonds **par PHOTO** (une photo à deux noms manquants coûte UNE
-invocation, pas deux), **reprend** où il s'arrête, et **s'arrête** si la file
-du serveur repart — jamais deux écrivains sur les mêmes fichiers.
-**13 vérifications neuves, 6 des 7 fonctions rouges** sur le code sans `--tous`
-(41/41 vertes après).
-
-**Et le premier lancement réel a trouvé un défaut en trois minutes.** Sur 352
-requêtes enchaînées, le serveur en ferme deux (« Remote end closed connection
-without response ») : **`Val` — 1 205 photos — a été SAUTÉ**, et ses photos
-marquées « faites » parce qu'elles portent un autre nom. La reprise ne les
-rattrapait donc jamais. Corrigé : `cles_du_nom` **réessaie trois fois** et
-LÈVE si ça échoue encore (rendre une liste vide ferait passer un nom perdu
-pour un nom sans photo) ; les noms sautés sont écrits dans
-`_corbeille_xmp/_tous_noms_sautes.txt` et **redits à la fin**, la console
-défilant cinq heures. **5 vérifications neuves.**
-
-**Aussi vu au lancement, et à ne pas mal lire** : sur les 1 400 premières
-photos, **5 réécritures** — 0,4 %, loin des 18,7 %. Le balayage suit l'ordre
-alphabétique des CHEMINS, donc les années anciennes d'abord ; les 54 écarts
-d'Ellie étaient sur 2022 et 2024. Le taux doit monter à mesure qu'il avance.
-
-## État (23/08/2026, session 41)
-
-**La file XMP ne prend plus onze heures en otage : elle a un journal.** Elle
-n'existait qu'en `queue.Queue()` — un redémarrage, une coupure ou un plantage
-perdait le travail restant SANS RIEN pour le retrouver, et des milliers de
-fichiers auraient gardé `Flo` quand l'index dit `Florine`. Désormais chaque
-geste est noté sur disque **avant** d'être enfilé (`_file_personnes.jsonl`) ;
-l'écrivain étant unique et consommant dans l'ordre, **une position suffit**
-(`_file_personnes.pos`), et au démarrage ce qui est au-delà repart en file. Une
-ligne tronquée par la coupure est sautée, une photo rangée ailleurs est suivie
-par sa CLÉ, la position avance MÊME sur échec — sans quoi un fichier illisible
-serait rejoué à jamais — et ce qui échoue est NOMMÉ
-(`_file_personnes_echecs.jsonl`). File vide, le journal se remet à zéro.
-
-**Et le prix n'est plus payé deux fois.** `person_writer` lançait un processus
-ExifTool par GESTE, or un renommage en pose deux par photo, coup sur coup. Les
-gestes qui se suivent sur la MÊME photo partent maintenant ensemble, en UNE
-invocation (`write_person_tags`) ; le dernier geste posé sur un tag l'emporte,
-exactement comme deux appels successifs. **21 vérifications neuves, 21 ROUGES
-sur l'ancien code**, vertes au banc sous Windows.
-
-**`-stay_open` : le chiffre le range APRÈS le reste.** Mesuré sur 30 photos du
-fonds (`mesure_xmp_debit.py`, lecture seule, trois régimes) : un processus par
-photo coûte **0,80 s**, `-stay_open` **0,07 s** — 12×. Mais ce 12× est celui de
-la LECTURE ; il isole le seul terme que `-stay_open` supprime, le **démarrage
-du processus : 0,74 s**. Une écriture réelle coûte **2,91 s/op** (mesurée sur
-7 172 s de file vivante), dont la réécriture du fichier sur SMB, à laquelle
-`-stay_open` ne touche pas. Gain réel : **2,91 → 2,17 s/op, soit 25 %**, quand
-le groupement, lui, valait un facteur 2.
-
-**Vu en chemin, et payé 600 s :** `-q` emporte le `{ready}` de `-stay_open`. Le
-banc a attendu sans fin, et la fenêtre des bancs avec lui, jusqu'à ce que
-l'agent le tue. Deux parades : `-q` retiré, et **un délai par ordre** — un banc
-doit ÉCHOUER, jamais se figer.
-
-**Les quatre branches sont FUSIONNÉES** (23/08, 17:50) : `main`
-**8f48b26 → 9df303d** en fast-forward, ce qui emporte d'un coup la chaîne
-entière — les trois de la 40 (`fix/la-fiche-est-le-verrou`,
-`feat/ce-que-la-file-xmp-doit-encore`,
-`feat/reparer-ce-que-la-file-xmp-n-a-pas-fait`) et celle du jour, qui en
-descend. Vérifié dans `.git/logs/refs/heads/main`, pas dans le rapport de
-l'agent. **Le contrôle 5 avait raison, et il a fini par s'ouvrir tout seul** :
-il suffisait que le serveur tourne enfin le code qu'on gravait.
-
-**La file a fini, le serveur a redémarré, et le fonds porte ce que l'index
-dit.** 17:45 : `queues.personnes` à 0 après onze heures ; redémarrage, bannière
-neuve dans `_journal_serveur.log`, **aucun `THREAD MORT`**, `code_a_jour` vrai.
-17:47 : `verifier_xmp_personnes.py` lit 200 fichiers du disque — **200 portent
-`Florine`, 0 portent `Flo`** (19 et 119 le matin même). La fusion décidée le
-22/08 est ACQUISE, et `appliquer_xmp_personnes.py` n'a rien à réparer.
-**Une seule chose n'a PAS été observée** : le journal de la file sur un geste
-VIVANT. `_file_personnes.jsonl` naît au premier geste de nom, et il n'y en a pas
-eu depuis le redémarrage — l'observer coûte une vraie écriture XMP dans une
-vraie photo. Les 21 vérifications tiennent la mécanique (21 rouges sur l'ancien
-code) ; le prochain nom attribué produira la preuve gratuitement.
-
-**La photothèque s'ouvre à un agent — et le chantier a trouvé DEUX plafonds
-muets, aucun par la lecture du code.** `mcp_serveur.py`
-(point 13) n'appelle aucune route neuve : c'est ce qui l'a rendu observable un
-jour où `server.py` a changé sous un serveur qui n'a pas redémarré. Le chiffre
-du chantier est le COÛT EN CONTEXTE : `/api/people/photos` rend **4 013 486
-octets** pour Florine, l'outil en rend **5 775** — **695× moins, 0,14 %
-gardé**. Les deux plafonds, eux, se sont vus en OBSERVANT : le mien, qui
-annonçait « 5 trouvées » pour `espece:chat` parce qu'il comptait ce qu'il avait
-demandé ; et celui de la route, qui rend **2 000** photos pour Florine — elle en
-porte **5 909** — sans le dire. `total_est_un_plancher` distingue désormais un
-compte d'un plafond atteint. La leçon de la page de recherche (14a), re-payée
-deux fois le même jour dans un module écrit pour l'appliquer.
-
-**Deux demandes de Mike, faites le jour même.** (1) Le budget des docs de
-suivi passe à **100 000** octets — quatrième relèvement, et pour la même raison
-que les trois premiers : rogner sous le plafond coûte la PRÉCISION des raisons.
-(2) **Le serveur a un JOURNAL** (`journal_serveur.py`, 15 vérifications) : sa
-console est mirée, datée, dans `_journal_serveur.log`, lisible à distance et
-sans lui. Ce qu'il attrape et que rien n'attrapait : les **threads qui meurent**
-— un worker tombe, sa file se remplit, le serveur a l'air vivant — et les
-plantages durs des libs natives (`faulthandler`). Une bannière par démarrage
-rend « qu'est-ce qui a planté depuis que ce serveur tourne ? » lisible d'un
-`sed`. Désormais : **lire le journal avant de supposer.**
-
-## État (23/08/2026, session 40)
-
-**La question ouverte de la 39 est répondue — et reproduite en trois lignes,
-sans serveur ni NAS. Personne ne met de verrou dans une fiche : la fiche EST le
-verrou.** `store.data.get(nom)` ne rend pas un `dict` mais un **`TrackedEntry`**
-(sous-classe de `dict`, `__slots__ = ('_store', '_key')`). `copy.deepcopy` d'une
-sous-classe de dict copie AUSSI l'état d'instance : il suit `_store` jusqu'au
-`SqliteStore` et bute sur son `lock`, un **RLock** délibéré (`store_sqlite.py`,
-en-tête). Ce n'était donc pas la fiche de Flo — **toute fiche vivante de tout
-index SQLite** était indeepcopyable, hier comme demain. Conséquence directe :
-**la ligne console de `_fiche_pour_journal` ne nommera jamais rien**, aucun
-CHAMP n'étant en faute. **Parade** : `__deepcopy__` / `__copy__` / `__reduce__`
-sur `TrackedEntry` et `TrackedDict` rendent un **dict NU** — une copie n'a ni
-clé ni store à prévenir. **4 vérifications rouges sur l'ancien code, 52/52 sur
-le nouveau**, dont une qui deepcopy le store LUI-MÊME pour prouver que le piège
-existe toujours.
-
-**La file XMP est 3× plus lente que ne le disait la session 39** : **0,28 op/s**
-mesuré sur le fonds vivant (deux fenêtres indépendantes), soit ~11 h et non
-3,4 h. Le 0,95 venait d'une fenêtre courte juste après la fusion.
-
-**L'accident est maintenant RÉPARABLE : `verifier_xmp_personnes.py` (29 tests)
-recompte, DEPUIS LE DISQUE, ce que la file doit encore.** Il ne lit pas la file
-— elle est en mémoire, donc invisible — il compare les deux choses qui
-survivent : ce que l'index dit (`/api/people/photos`) et ce que les fichiers
-portent (ExifTool, une invocation par lot de 300). Il NOMME les photos en écart
-(`--json`), n'écrit rien, et compte à part ce qu'il n'a pas pu lire.
-
-**Ce qu'il a mesuré au banc (23/08, 10:37, échantillon de 200 tiré à graine
-fixe sur les 5 909) : seules 19 photos sur 200 portent `personne:Florine` dans
-leur FICHIER, et 119 portent encore `Flo`.** Le fonds est donc à ~10 % du geste,
-neuf heures après le clic. Les deux chiffres indépendants concordent — 10 801
-opérations en file ≈ 2 × 5 400 photos restantes : **la file ne se répète pas,
-elle est seulement lente**. 70 s pour 200 fichiers (~2,9 f/s sur SMB) : une
-passe complète demande `--echantillon`, ou plus que les 600 s du banc.
-
-**Et l'autre moitié : `appliquer_xmp_personnes.py` (23 tests) REFAIT ce que la
-file n'a pas fait.** Il REFUSE net tant que `queues.personnes` n'est pas à 0 —
-deux écrivains sur les mêmes fichiers, c'est la bagarre du 22/08 en pire ; il
-est à blanc par défaut ; il relit les tags avant d'écrire, donc **relancer
-reprend** et une photo déjà réparée n'est pas réécrite ; son journal
-(`_corbeille_xmp/`) s'écrit dans un `finally` et note l'état d'AVANT, donc une
-passe interrompue reste annulable. Il fait le retrait et l'ajout d'une photo en
-**UNE** invocation exiftool, là où `person_writer` en lance deux. **Il n'a
-jamais écrit un vrai fichier** : famille `appliquer_`, hors de portée du banc —
-la première passe à blanc est un geste de Mike.
-
-
-## État (22/08/2026, session 38)
-
-**Mike a tranché : Flo et Florine sont la même personne** (5 907 photos portent
-Flo, 153 Florine, 149 les deux). En préparant la fusion, `SubjectStore.rename`
-s'est révélée perdre des décisions humaines : elle transportait `refs`,
-`exclude` et `faces` mais **pas `confirmed`, `avatar`, `nomerge`** — les **143**
-« oui, c'est bien elle » de la fiche Flo, et autant à **chaque fusion du
-curateur** depuis que la fonction existe. Règle 2, corrigé. Et la fusion est
-devenue **réversible** : `_corbeille_fusions/` note les deux fiches et, photo
-par photo, si elle portait **déjà** le nom d'arrivée — sans quoi annuler
-volerait Florine aux 149. Bouton `Annuler la derniere fusion` dans `/reglages`.
-
-**Trouvé en chemin — les deux portes du projet ne jugeaient pas la même
-chose.** Deux livraisons refusées d'affilée sur « FAILED (errors=11) », sans
-que le message nomme sa cause : le banc lance les tests avec `PYTHONUTF8=1`,
-l'agent git SANS. Sur une console cp1252, le « ↻ » de la ligne de journal levait
-une `UnicodeEncodeError` qui faisait tomber 11 tests. La ligne est passée en
-ASCII pur (deux tests la tiennent) — mais **la divergence d'environnement entre
-`banc_agent.py` et `git_agent.py` reste ouverte** : un test vert d'un côté et
-rouge de l'autre n'enseigne rien.
-
-## État (22/08/2026, session 37)
-
-**Les 21 couples d'animaux « à trancher » ne demandent AUCUN geste sur le
-fonds — et c'est l'instrument qui avait tort.** `--a-juger` (17 tests neufs)
-cherche la contrepartie de chaque couple ; ce qu'il a trouvé retourne les deux
-tas.
-
-**Les 6 « espèce incohérente » sont JUSTES, 6 sur 6. H4 est réfutée.** Le banc
-tenait l'espèce pour son verdict le plus solide — « faux sans qu'aucun seuil
-ait à le dire ». Le score de la détection DÉSIGNÉE, qui manquait, dit
-l'inverse : **0,441 / 0,594 / 0,604 / 0,623 / 0,666** contre une médiane de
-**0,603** sur les couples confirmés. Les six crops ouverts dans
-`/api/animalcrop` : **six chats crème**, dont un vu deux fois sous deux
-chemins. **C'est l'ÉTIQUETTE d'espèce de YOLO qui ment, pas le rattachement.**
-Et l'erreur est VISIBLE : ces photos rangent Luna sous « chien » dans l'axe
-espèce. Deux détails qui valent leçon : un couple à **0,441** — sous le
-seuil — est juste (un seuil bas nomme une cécité, encore) ; et le seul
-« recalage évident », i=0 → i=1 à **+0,036**, était deux BOÎTES du même chat —
-recaler aurait été un rebrassage, exactement l'erreur que le 22/08 avait déjà
-nommée côté visages.
-
-**Les 15 clés mortes n'ont aucune contrepartie, et trois chemins le disent.**
-Les journaux d'annulation (19 331 déplacements) n'en connaissent aucune ;
-aucune clé VIVANTE ne porte le même nom de fichier ; et le DISQUE tranche —
-`verifier_orphelins --filtre ARZOPA --table animals` rend **115 entrées, 0
-présente, 115 « disparu »**, dont 12 jugées par un humain. Ces photos
-n'existent plus nulle part. Suite du choix du 22/08 sur le résidu des visages :
-on **garde**. Leurs détections survivent sous l'ancien chemin — un humain peut
-encore les regarder, ce qu'une purge lui retirerait pour rien.
-
-**Ce que ça ouvre** : l'étiquette d'espèce se trompe au moins **6 fois sur 351**
-couples d'animaux nommés (1,7 %), en silence, et l'axe espèce en dépend. Aucun
-instrument ne mesure aujourd'hui cette erreur-là sur le fonds entier.
-
-## État (22/08/2026, session 36)
-
-**`PETS` est mesuré pour la première fois, et le mal n'est pas où on le
-cherchait.** 12 fiches, **351 couples** `[photo, animal]`, 330 mesurables.
-**0 index hors bornes**, et **10 décalés dont 8 sur des photos que la fiche
-cite plusieurs fois** — Mutz cité **7 fois** sur `111-1103_IMG.JPG`, qui porte
-10 animaux : c'est le nommage d'un GROUPE, pas un index qui glisse. Restent
-**2 vrais candidats sur 330 (0,6 %)**, contre 3,5 % côté visages avant
-réparation. Le code disait pourquoi : rien ne ré-embarque une photo déjà connue
-côté animaux (`animal_worker` saute `ANIMAL_STORE.has`), et
-`migrate_animal_pipeline` vide TOUT puis remet `faces = []`. **Porter le
-recalage aux animaux est donc rejeté** : il traiterait 2 couples.
-
-**Le résultat qui compte porte, là encore, sur l'INSTRUMENT.** Sur 330 couples
-**confirmés par des humains**, **122 (37 %) scorent sous `PET_MATCH_SIM =
-0,55`** — médiane 0,603, p10 0,392, min 0,231. Le seuil coupe au MILIEU de la
-distribution des rattachements justes ; la même colonne vaut **1,1 %** côté
-visages. DINOv2 lit une robe, une posture, une lumière — pas une identité.
-C'est ce plafond-là qui limite tout ce qu'on voudrait automatiser sur les
-animaux, et il ne se règle pas sur ce chiffre seul : il faudra des jugements,
-comme pour la tranche 0,35–0,40.
-
-**Deux petits tas précis, pour un geste humain.** **15 clés mortes** (4,3 % —
-Inti 7, Luna 5, Pins 2, Pticon 1), corroborées par un **second chemin** : le
-croisement par le tag `animal:` en rend exactement 15, les mêmes fiches. Et
-**6 couples d'espèce incohérente** — Luna, un chat, posée sur une détection
-**`dog`**, sur 4 photos : faux certains, sans qu'aucun seuil ait à le dire.
-
-**Une réserve, qui n'est pas un défaut : 651 photos portent un nom d'animal
-sans aucun rattachement** (Inti 420, Mutz 111, Luna 94). Puma, Kevin et Le chat
-de Bremblens ont **zéro couple** pour 7, 6 et 2 photos taguées.
-
-**Deux corroborations gratuites.** Toutes les empreintes sont en **768** — la
-protection de dimension du code n'a rien à attraper aujourd'hui. Et **4 628
-détections sur 7 704** portent une empreinte : l'écart de **3 076** est
-*exactement* bird 1 729 + sheep 710 + cow 637, les espèces non nommables. Aucun
-trou.
-
-**Le banc s'est trompé le premier, et c'est son ZÉRO qui l'a dit** : première
-version, « 0 photo taguée » pour les **douze** fiches. Il lisait `kw` ; la prod
-écrit `kw_fr`. Un compte identique sur toutes les lignes d'un tableau accuse la
-COLONNE, pas les lignes.
-
-## État (22/08/2026, session 38)
-
-**I7 est corrigé, et la mesure dit que c'était un défaut LATENT — sauf sur
-trois tags.** L'audit du 11/08 annonçait « un `personne:nom` importé n'est
-jamais auto-guéri » ; personne n'avait demandé au FONDS s'il en portait la
-trace. `mesure_noms_casse.py` (18 tests) le demande : sur **37 707 tags nommés,
-0 préfixe non canonique, 0 doublon de casse, 3 tags en casse divergente** —
-`animal:luna` là où la fiche dit `Luna`. Le correctif reste juste, mais il
-s'annonce pour ce qu'il est : de la robustesse, pas une réparation.
-**Une règle unique** — `tagging_meta.parse_tag_nomme` — remplace six lectures
-(trois normalisées, trois en casse sensible) dans `server.py`, `tagging_meta`
-et `renommage_facts` : le préfixe se lit sans égard à la casse, le NOM ne
-s'abaisse jamais (règle 2), et la fiche fait foi sur l'orthographe partout où
-un nom part dans une suggestion, un retrait ou un fichier XMP.
-**Observé en réel** (`code_a_jour` vrai) : `/api/names` passe Luna de **207 à
-210** — exactement les trois tags que la mesure avait nommés — et les 351 noms
-de personnes ne bougent pas d'un compte.
-
-**Quatre défauts d'audit qui ne cassaient rien sont corrigés — et le premier
-d'entre eux en a rendu un cinquième VISIBLE.** I5 : `/reglages` affirmait
-« Reconnaissance des visages : CPU (seul Ollama utilise le GPU) » en dur, faux
-depuis le GPU adaptatif ; le libellé vient maintenant du serveur et DIT la
-raison (« choix delibere : la VRAM va au tagging »). I6 : l'arbitre VRAM et
-l'ordonnanceur n'existaient que dans `/api/search/status` — un mécanisme qu'on
-ne voit pas ne se diagnostique pas ; la carte « Arbitre VRAM » montre les baux,
-les Mo libres, les refus et les évictions (observé : bail `semantique` 1 400 Mo,
-1 811 Mo libres, 0 refus). **Et elle a immédiatement montré I1** : `tours` reste
-à `visages: 0, animaux: 0` — les deux boucles les plus lourdes ne passent
-toujours pas par `creneau()`, exactement ce que l'audit du 11/08 annonçait.
-I8 : `/api/pets/name` et `/api/hardware` retirés (404 vérifiés), les chemins
-vivants intacts. I4 : 57 lignes rejetées le 30/07 retirées de `classifier.py` —
-le défaut n'était pas le code mort mais l'en-tête, qui décrivait depuis 22 jours
-un comportement que le logiciel n'avait pas.
-
-**Le chiffre neuf est ailleurs, et il ne se répare pas tout seul : `personne:
-Florine` vit sur 153 photos SANS AUCUNE FICHE.** C'est le seul nom du fonds
-dans ce cas. Conséquence visible : la galerie propose « Florine » comme puce de
-filtre (les puces viennent des `kw` des photos) pendant que `/api/names` — donc
-`/people`, l'autocomplétion et tout curateur — l'ignore. **Deux autorités
-divergent sur « qui est une personne ».** Et **149 de ces 153 photos portent
-aussi `personne:Flo`** : soit Florine EST Flo et c'est un doublon d'identité à
-fusionner, soit c'est quelqu'un d'autre et il lui manque une fiche. Aucune
-colonne ne tranche ça — c'est un jugement, il est dans `QUESTIONS_MIKE.md`.
 
 ## Ce qu'il faut garder des sessions 28 → 35 (le récit vit dans git)
 
