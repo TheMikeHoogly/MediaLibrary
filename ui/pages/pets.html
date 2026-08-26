@@ -400,6 +400,13 @@ function openCat(name){
     ph.forEach(function(p){
       var d1=document.createElement('div'); d1.className='ph'; d1.dataset.key=p.key;
       var sim=(p.sim==null?'':'<span class="sim">'+p.sim+'</span>');
+      /* cible: hors-portee -- la loupe fait 26 px et le reste (tranche par
+         Mike le 26/08). Une pastille de 44 px sur une vignette de ~160 px
+         mange un quart de l'image et se pose sur le sujet. WCAG 2.5.8
+         demande 24 px : c'est NOTRE plancher qui demande 44, et il a ete
+         ecrit pour les gestes repetes du tri, pas pour une loupe
+         accessoire. Elle reste joignable au clavier (elle recoit le focus,
+         voir le keydown plus bas). */
       d1.innerHTML='<img loading="lazy" decoding="async" src="'+(p.crop_url||p.url)+'">'+sim
         +'<button class="zoom" title="Voir en grand">&#9974;</button>';
       // La vignette porte DEUX actions : « voir en grand » (le bouton

@@ -46,7 +46,13 @@ Ce qu'il refuse d'affirmer
    PSEUDO-ELEMENTS (`::before`) ne dimensionnent pas la cible au repos : ils
    sont ecartes du calcul, et ce retrait est dit ici.
 5. **Ce que le serveur injecte a l'execution** n'est pas lu : la portee est
-   le HTML tel qu'ECRIT, y compris celui qui vit dans les chaines JS.
+   le HTML tel qu'ECRIT -- le statique, celui qui vit dans les chaines JS,
+   et celui que `document.createElement` BATIT.
+6. **Ce qu'une fonction pose sur un element RECU en parametre.** Les
+   attributs d'un element bati en JS se lisent depuis sa creation jusqu'a la
+   prochaine affectation du meme nom ; une classe posee ailleurs, sur une
+   variable qui n'est plus la meme, n'est pas remontee. Angle mort NOMME --
+   et, celui-la, encore ouvert.
 
 Ce qui ne se calcule pas se DECLARE
 -----------------------------------
@@ -242,7 +248,9 @@ def touche(compose, elem):
             if texte.lower() != elem['balise']:
                 return False
         elif genre == 'classe':
-            if texte[1:] not in elem['classes']:
+            if texte[1:] in elem.get('classes_peut_etre', ()):
+                verdict = None
+            elif texte[1:] not in elem['classes']:
                 return False
         elif genre == 'id':
             if texte[1:] != elem['id']:
@@ -704,15 +712,19 @@ def elements(nom, brut):
     decls = declarations(brut)
     out = []
 
-    def ajouter(source, ou, pos, balise, attrs, ancetres, chaine):
+    def ajouter(source, ou, pos, balise, attrs, ancetres, chaine,
+                classes=None, peut_etre=(), style=None):
         genre = genre_interactif(balise, attrs)
         if not genre:
             return
         out.append({
             'page': nom, 'balise': balise, 'attrs': attrs,
-            'classes': set((_valeur_attr(attrs, 'class') or '').split()),
+            'classes': set((_valeur_attr(attrs, 'class') or '').split())
+                       if classes is None else set(classes),
+            'classes_peut_etre': set(peut_etre),
             'id': _valeur_attr(attrs, 'id') or '',
-            'style': _valeur_attr(attrs, 'style') or '',
+            'style': (_valeur_attr(attrs, 'style') or '') if style is None
+                     else style,
             'genre': genre, 'ou': ou, 'pos': pos,
             'ancetres': ancetres, 'chaine': chaine,
             'ligne': vct.ligne_de(source, pos),
@@ -723,8 +735,128 @@ def elements(nom, brut):
         ajouter(hors, 'html', pos, balise, attrs, ancetres, 'complete')
     for pos, balise, attrs, ancetres in avec_ancetres(chaines):
         ajouter(chaines, 'js', pos, balise, attrs, ancetres, 'partielle')
+    for pos, balise, attrs, style, sures, peut in \
+            elements_crees(vct.sans_commentaires_js(js)):
+        ajouter(js, 'cree', pos, balise, attrs, [], 'inconnue',
+                classes=sures | peut, peut_etre=peut, style=style)
     attribuer_declarations(decls, out)
     out.sort(key=lambda e: e['ligne'])
+    return out
+
+
+_CREE_JS = re.compile(
+    r'\b([A-Za-z_$][\w$]*)\s*=\s*document\s*\.\s*createElement\s*\('
+    r'\s*[\'"]([A-Za-z][\w-]*)[\'"]\s*\)')
+
+_LITTERAL = re.compile(r'[\'"]([^\'"]*)[\'"]')
+
+
+def _jusqu_au_point_virgule(js, debut):
+    """L'expression a droite d'un `=`, arretee au `;` de meme niveau."""
+    prof, i, n = 0, debut, len(js)
+    while i < n:
+        c = js[i]
+        if c in '([{':
+            prof += 1
+        elif c in ')]}':
+            if prof == 0:
+                break
+            prof -= 1
+        elif c == ';' and prof == 0:
+            break
+        elif c in '"\'':
+            j = i + 1
+            while j < n and js[j] != c:
+                j += 2 if js[j] == '\\' else 1
+            i = j
+        elif c == '\n' and prof == 0:
+            break
+        i += 1
+    return js[debut:i]
+
+
+def _classes_de(expr):
+    """(sures, peut_etre) -- une affectation de classe n'est pas toujours
+    une constante.
+
+    `c.className = 'mchip' + (sel === k ? ' on' : '')` : `mchip` est
+    CERTAINE (le premier litteral est la base), ` on` ne l'est pas. Les
+    verser toutes dans le meme sac ferait passer pour vert un element que
+    seule sa variante rend conforme."""
+    litteraux = _LITTERAL.findall(expr)
+    if not litteraux:
+        return (set(), set())
+    sures = set(litteraux[0].split())
+    peut = set()
+    for extra in litteraux[1:]:
+        peut |= set(extra.split())
+    return (sures, peut - sures)
+
+
+def elements_crees(js):
+    """[(pos, balise, attrs, style, sures, peut_etre)] -- ce que le JS BATIT.
+
+    Septieme rouge observe (26/08), et le plus grave : l'instrument ne lisait
+    que le HTML, statique ou dans une chaine. Or `gallery` -- la page la plus
+    utilisee -- construit DOUZE de ses controles par `document.createElement`,
+    dont les chips de motif (`.mchip`, declares a 32 px) et le bouton
+    << Annuler >> de son toast (`.gtoast .b`, 36 px). Aucun n'existait pour
+    le banc : il annoncait 22 cibles sur une page qui en a davantage, et
+    rendait 0 sous le plancher sur deux regles qui sont sous le plancher.
+    **Ne pas voir une cible ne la rend pas conforme ; ca retire seulement le
+    denominateur.**
+
+    Portee de la lecture : depuis le `createElement` jusqu'au prochain
+    `createElement` affecte a la MEME variable. Ce qui est pose ailleurs
+    (une fonction qui recoit l'element en parametre) n'est pas remonte.
+    """
+    out = []
+    bornes = [(m.start(), m.group(1), m.group(2).lower())
+              for m in _CREE_JS.finditer(js)]
+    for k, (pos, nom, balise) in enumerate(bornes):
+        fin = len(js)
+        for pos2, nom2, _b2 in bornes[k + 1:]:
+            if nom2 == nom:
+                fin = pos2
+                break
+        zone = js[pos:fin]
+        sures, peut = set(), set()
+        attrs, style = [], []
+        for m in re.finditer(r'\b%s\s*\.\s*className\s*=' % re.escape(nom),
+                             zone):
+            a, b = _classes_de(_jusqu_au_point_virgule(zone, m.end()))
+            sures |= a
+            peut |= b
+        for m in re.finditer(r'\b%s\s*\.\s*classList\s*\.\s*add\s*\(([^)]*)\)'
+                             % re.escape(nom), zone):
+            for lit in _LITTERAL.findall(m.group(1)):
+                sures |= set(lit.split())
+        for prop, att in (('id', 'id'), ('type', 'type'), ('href', 'href'),
+                          ('title', 'title'), ('tabIndex', 'tabindex')):
+            m = re.search(r'\b%s\s*\.\s*%s\s*=\s*([^\n;]*)'
+                          % (re.escape(nom), prop), zone)
+            if m:
+                lit = _LITTERAL.search(m.group(1))
+                attrs.append('%s="%s"' % (att, lit.group(1) if lit else '1'))
+        for m in re.finditer(r'\b%s\s*\.\s*setAttribute\s*\(\s*[\'"]'
+                             r'([\w-]+)[\'"]\s*,\s*([^)]*)\)'
+                             % re.escape(nom), zone):
+            lit = _LITTERAL.search(m.group(2))
+            attrs.append('%s="%s"' % (m.group(1),
+                                      lit.group(1) if lit else '1'))
+        if re.search(r'\b%s\s*\.\s*onclick\s*=|\b%s\s*\.\s*'
+                     r'addEventListener\s*\(\s*[\'"]click'
+                     % (re.escape(nom), re.escape(nom)), zone):
+            attrs.append('onclick="1"')
+        for m in re.finditer(r'\b%s\s*\.\s*style\s*\.\s*([A-Za-z]+)\s*=\s*'
+                             r'[\'"]([^\'"]*)[\'"]' % re.escape(nom), zone):
+            prop = re.sub(r'([A-Z])', lambda x: '-' + x.group(1).lower(),
+                          m.group(1))
+            style.append('%s:%s' % (prop, m.group(2)))
+        if sures or peut:
+            attrs.append('class="%s"' % ' '.join(sorted(sures | peut)))
+        out.append((pos, balise, ' ' + ' '.join(attrs), ';'.join(style),
+                    sures, peut))
     return out
 
 
@@ -943,9 +1075,13 @@ def rapport(resultats, ecrire=print):
             ecrire("")
 
     sans_comp = [r['page'] for r in resultats if not r['composants']]
-    ecrire("PORTEE : les %d page(s) LUES dans ui/pages, telles qu'ecrites,"
+    ecrire("PORTEE : les %d page(s) LUES dans ui/pages, telles qu'ecrites --"
            % len(resultats))
-    ecrire("dans la cascade a quatre etages. components.css n'entre que la ou")
+    ecrire("le HTML statique, celui des chaines JS, et ce que")
+    ecrire("`document.createElement` batit (lu de sa creation jusqu'a la")
+    ecrire("prochaine affectation du meme nom ; ce qu'une fonction pose sur un")
+    ecrire("element RECU en parametre n'est pas remonte).")
+    ecrire("Cascade a quatre etages. components.css n'entre que la ou")
     ecrire("le marqueur est pose -- absent de : %s."
            % (', '.join(sans_comp) if sans_comp else 'aucune'))
     ecrire("La HAUTEUR DECLAREE, jamais la hauteur calculee : une boite dont")

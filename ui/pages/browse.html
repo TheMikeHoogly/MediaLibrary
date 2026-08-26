@@ -52,7 +52,10 @@ body { min-height: 100vh; }
 .fxtoast { position: sticky; bottom: var(--e-2); margin: var(--e-2) auto 0; max-width: 560px;
            display: flex; gap: var(--e-3); align-items: center; background: var(--salle-3);
            border: var(--trait); border-radius: var(--r-pill); padding: var(--e-3) var(--e-3) var(--e-3) var(--e-4); font-size: var(--t-sm); }
-.fxtoast .b { min-height: 36px; padding: 0 var(--e-3); border-radius: var(--r-pill); border: var(--trait);
+/* 26/08 : 36px -> --touch, comme `.actbar .b` juste au-dessus. Meme
+   bouton << Annuler >>, meme geste, deux hauteurs : la barre d'actions
+   tenait le plancher, le toast ne le tenait pas. */
+.fxtoast .b { min-height: var(--touch); padding: 0 var(--e-3); border-radius: var(--r-pill); border: var(--trait);
               background: var(--salle-2); color: var(--texte); cursor: pointer; }
 </style>
 </head>

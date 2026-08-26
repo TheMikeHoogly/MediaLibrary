@@ -305,6 +305,11 @@ function openPerson(p){
 // souci d'echappement. `checked` = etat initial de la case.
 function _photoCard(f, checked){
   var lab=document.createElement('label'); lab.className='prop';
+  /* cible: hors-portee -- meme raison qu'a la grille batie en chaine plus
+     bas : la case de 18 px est un INDICATEUR, la cible est le
+     `<label class="prop">` entier, une vignette carree qui bascule la
+     selection au clic comme au clavier. Deux chemins de code, deux
+     declarations : une exception ne se propage pas toute seule. */
   var cb=document.createElement('input'); cb.type='checkbox'; cb.checked=!!checked;
   cb.setAttribute('data-k', f.key); if(f.sim!=null) cb.setAttribute('data-s', f.sim);
   var a=document.createElement('a'); a.href=f.url||'#'; a.target='_blank'; a.rel='noopener';

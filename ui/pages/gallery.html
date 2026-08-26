@@ -212,8 +212,18 @@ body { min-height: 100vh; }
             background: var(--salle-2); border-bottom: var(--trait); flex-wrap: wrap; }
 .motifbar.show { display: flex; }
 .motifbar .lbl { color: var(--graphite); font-size: var(--t-xs); margin-right: 2px; }
-.mchip { min-height: 32px; padding: var(--e-1) var(--e-3); border-radius: var(--r-pill); border: var(--trait);
+/* 26/08 : 32px -> --touch, et `inline-flex`. Ce chip est un <a> bati par
+   `document.createElement` : il etait donc `display: inline` par defaut, et
+   un element inline non remplace IGNORE `min-height`. La regle etait ecrite,
+   elle etait lue, et elle ne faisait rien -- meme piege que les chips en
+   <span> du 26/08, un etage plus bas. Trouve par `verifier_cibles.py` le
+   jour ou il a appris a voir ce que le JS BATIT : douze controles de cette
+   page n'existaient pas pour lui. Le plancher a 44 px suit la decision de
+   Mike du 26/08 (une seule regle, partout) ; `align-items` recentre ce que
+   `line-height` tenait avant. */
+.mchip { min-height: var(--touch); padding: var(--e-1) var(--e-3); border-radius: var(--r-pill); border: var(--trait);
          background: var(--salle-3); color: var(--graphite); font-size: var(--t-sm);
+         display: inline-flex; align-items: center; gap: var(--e-1);
          cursor: pointer; text-decoration: none; }
 .mchip.on { background: var(--fixateur); border-color: var(--fixateur); color: #fff; }
 .mchip .n { font-family: var(--f-donnees); font-size: var(--t-xs); margin-left: var(--e-1); opacity: 0.75; }
@@ -232,7 +242,11 @@ body { min-height: 100vh; }
           border-radius: var(--r-pill); padding: var(--e-3) var(--e-3) var(--e-3) var(--e-4); font-size: var(--t-sm);
           color: var(--texte); box-shadow: 0 8px 24px #0008; }
 .gtoast.show { display: flex; }
-.gtoast .b { min-height: 36px; padding: 0 var(--e-4); border-radius: var(--r-pill); border: var(--trait);
+/* 26/08 : 36px -> --touch. C'est le bouton << Annuler >> d'une action
+   DESTRUCTIVE differee de 10 s -- celui qu'il faut pouvoir viser vite,
+   et souvent au pouce. Il etait bati en JS, donc invisible au banc
+   jusqu'a ce jour. */
+.gtoast .b { min-height: var(--touch); padding: 0 var(--e-4); border-radius: var(--r-pill); border: var(--trait);
              background: var(--salle-2); color: var(--texte); cursor: pointer; }
 </style>
 </head>

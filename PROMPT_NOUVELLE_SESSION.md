@@ -15,34 +15,37 @@ canaux, à la livraison ou au MCP. Débrief en 2–3 lignes, puis on attaque.
 et `/people` ont été observés au clavier dans Chrome après la modification —
 les pages de `ui/` sont relues À CHAUD, seul `server.py` exige un redémarrage.
 
-**⚠ La branche de la session 48 est POUSSÉE mais PAS FUSIONNÉE** (traite
-autonome : `commit`, `main` intacte). Si le travail tient, la fusion est un
-geste de Mike : `27 - Git.bat`. Vérifier `.git/logs/refs/heads/main`.
-
 **Le point 3 du plancher a enfin un instrument.** `verifier_cibles.py`
-(neuf, 52 tests) lit la hauteur DÉCLARÉE de chaque cible dans la cascade à
+(neuf, 62 tests) lit la hauteur DÉCLARÉE de chaque cible dans la cascade à
 quatre étages, et son verdict a **deux chiffres qui ne disent pas la même
-chose** : **0 manquement prouvé** sur 192 cibles, et **59 cibles dont le
+chose** : **0 manquement prouvé** sur **223** cibles, et **68 cibles dont le
 plancher n'est pas déclaré** — le contenu décide, le texte ne peut pas le
 savoir. La seconde moitié n'est pas un feu vert.
 
-Corrigé au passage : `subjects` adoptait `components.css` puis **annulait son
-plancher** (`.ctype h3 .btn { min-height: 0 }`) sur deux boutons — et cette
-seule règle rendait **quinze** autres boutons NON DÉCIDABLES. La case de
-18 px de `people` est un INDICATEUR, pas une cible : déclarée dans la source.
+**192 puis 223 : il ne lisait que le HTML.** `document.createElement` bâtit
+49 contrôles sur les onze pages, dont **12 dans `gallery`**. Corrigé, et ce
+qui est tombé aussitôt :
+
+- `subjects` adoptait `components.css` puis **annulait son plancher**
+  (`.ctype h3 .btn { min-height: 0 }`) — et cette seule règle rendait
+  **quinze** autres boutons NON DÉCIDABLES ;
+- `gallery` déclarait `.mchip { min-height: 32px }` sur des `<a>` bâtis en
+  JS, donc `display: inline` : **la règle ne faisait rien** ;
+- les deux boutons « Annuler » des toasts (`gallery`, `browse`) étaient à
+  36 px — le bouton qui annule une action destructive.
+
+Tout est corrigé et **observé sur le serveur vivant**. La case de 18 px de
+`people` est un INDICATEUR (déclarée, deux chemins de code, deux
+déclarations) ; la loupe de `pets` reste à 26 px, **tranché par Mike**.
 
 **Une action en attente est levée** : la skill `photo-ui` du compte est
 enregistrée et identique au fichier du dépôt (md5 `0389708e…`).
 
-**Une question attend Mike** (`QUESTIONS_MIKE.md`) : la loupe des vignettes
-d'animaux (`pets`, `.ph .zoom`) fait 26 px et c'est le seul chemin vers la
-visionneuse. Recommandation écrite : la garder et la DÉCLARER.
-
 ## Prochain pas
 
 1. **`gallery` adopte `components.css`.** Ce n'est plus un rangement, c'est
-   une mesure : sur les 59 cibles sans plancher déclaré, **37 vivent dans les
-   cinq pages non adoptantes**, et `gallery` en porte **16** à elle seule.
+   une mesure : sur les 68 cibles sans plancher déclaré, **39 vivent dans les
+   cinq pages non adoptantes**, et `gallery` en porte **17** à elle seule.
    Elle écrit déjà le chip canonique (44 px, `inline-flex`, `gap`, `font`)
    sous ses propres noms `.chip`/`.pchip`, et son `.btn` n'existe pas.
    **L'ordre de `--apres` est la moitié de la preuve** : la feuille commune
@@ -105,6 +108,11 @@ ce qui allait bien. **Et l'inverse existe** : une seule règle non prouvable
 AFFIRMÉE disait « trop petit » là où il fallait lire « pas de plancher ».
 Deux défauts opposés sous le même mot envoient chercher la panne à deux
 endroits opposés.
+
+**Ne pas voir une cible ne la rend pas conforme** (26/08). Ça retire
+seulement le dénominateur. Un banc d'UI qui ne lit que le HTML est aveugle à
+tout ce que `document.createElement` bâtit — 49 contrôles sur les onze pages,
+12 dans `gallery`. **Avant de croire un « 0 grief », demander sur COMBIEN.**
 
 **Une chaîne d'ancêtres PARTIELLE prouve, elle ne réfute pas** (26/08). Un
 fragment assemblé en JS dit bien ce qu'il contient, jamais ce qu'il y a

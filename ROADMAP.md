@@ -20,12 +20,20 @@ la cascade à quatre étages, et compare à `--touch`.
 
 | sur les onze pages | avant | après |
 |---|---|---|
-| cibles lues | 192 | 192 |
-| plancher déclaré, honoré, ≥ 44 px | 88 | **96** |
+| cibles lues | 192 puis **223** | **223** |
+| plancher déclaré, honoré, ≥ 44 px | 88 | **112** |
 | **sous le plancher** | **3** | **0** |
-| non décidables | 21 | **9** |
-| hauteur NON DÉCLARÉE (le contenu décide) | 59 | 59 |
-| exemptées (déclarée, hors-écran, non peinte, lien en ligne) | 27 | 28 |
+| **inertes** (déclaré, mais le `display` l'ignore) | **2** | **0** |
+| non décidables | 21 | **10** |
+| hauteur NON DÉCLARÉE (le contenu décide) | 59 | 68 |
+| exemptées (déclarée, hors-écran, non peinte, lien en ligne) | 27 | 33 |
+
+**192 puis 223 : le banc ne lisait que le HTML.** `document.createElement`
+bâtit **49 contrôles** sur les onze pages, dont **12 dans `gallery`** — la
+page la plus utilisée. **31 cibles n'existaient pas pour lui**, et il rendait
+« 0 sous le plancher » sur deux règles qui étaient sous le plancher. **Ne pas
+voir une cible ne la rend pas conforme : ça retire seulement le
+dénominateur.** C'est le septième rouge, et le plus grave.
 
 **Ce qui était cassé, et c'est le même motif que le chip du 26/08 :**
 `subjects` adopte `components.css` — donc `.btn { min-height: var(--touch) }`
@@ -38,15 +46,38 @@ fragment assemblé en JS, rien ne disait si l'ancêtre `.ctype h3` était là,
 donc `0` et `--touch` restaient deux lectures possibles. **Une seule règle
 en trop rendait douze boutons illisibles à leur propre instrument.**
 
+**Ce que la lecture du JS a fait tomber ensuite, et qui dormait depuis
+toujours :**
+
+- **`gallery` déclarait `.mchip { min-height: 32px }` sur des `<a>` bâtis en
+  JS** — donc `display: inline` par défaut, et **un élément inline non
+  remplacé ignore `min-height`**. La règle était écrite, elle était lue, et
+  elle ne faisait rien : les chips de motif faisaient la hauteur de leur
+  texte. Même piège que les chips en `<span>` de la session 47, un étage plus
+  bas. Passés en `inline-flex` + `--touch` : **observés à 44 px sur le
+  serveur vivant**, à la hauteur exacte des chips de tags voisins.
+- **Les deux boutons « Annuler » des toasts** — `gallery` (`.gtoast .b`) et
+  `browse` (`.fxtoast .b`) — étaient à **36 px**. C'est le bouton qui annule
+  une action DESTRUCTIVE différée de 10 s : celui qu'il faut viser vite. Dans
+  `browse`, la barre d'actions juste au-dessus tenait le plancher et le toast
+  ne le tenait pas — **même bouton, même geste, deux hauteurs**.
+
+**La loupe des vignettes d'animaux (26 px) reste, et se DÉCLARE** — tranché
+par Mike le 26/08. Elle est le seul chemin vers la visionneuse, donc pas
+redondante ; mais une pastille de 44 px sur une vignette de ~160 px mange un
+quart de l'image. Les deux décisions du jour ne se contredisent pas : le chip
+de filtre est un geste RÉPÉTÉ du tri, la loupe est accessoire.
+
 **La case à cocher de 18 px de `people` n'est pas un défaut, et ça se
 DÉCLARE** : c'est un indicateur posé sur une vignette ; la cible est le
 `<label class="prop">` entier. `/* cible: hors-portee -- raison */`, à côté
 du code, jamais en dur dans l'instrument. Une seule déclaration sur les onze
 pages.
 
-### L'instrument s'est corrigé SIX fois, sur six rouges OBSERVÉS
+### L'instrument s'est corrigé SEPT fois, sur sept rouges OBSERVÉS
 
-Jamais sur une hypothèse. Les six sont gravés dans `test_verifier_cibles.py`.
+Jamais sur une hypothèse. Les sept sont gravés dans `test_verifier_cibles.py`
+(62 tests, **trois mutations posées, trois vues**).
 
 | ce qui le trompait | ce qu'il rendait | correction |
 |---|---|---|
@@ -56,6 +87,7 @@ Jamais sur une hypothèse. Les six sont gravés dans `test_verifier_cibles.py`.
 | un fragment JS était traité comme sans contexte | `.prop input { height: 18px }` mis au débit d'un `<input type="number">` cent lignes plus loin | la chaîne d'ancêtres d'un fragment est PARTIELLE : elle prouve, elle ne réfute pas |
 | une seule règle non prouvable était AFFIRMÉE | « trop petit » là où « pas de plancher » | quand rien n'est prouvé, que RIEN ne s'applique reste une lecture |
 | une déclaration liait tout dans un rayon d'octets | le bouton « Valider » exempté par la déclaration de la case voisine | une déclaration couvre le PROCHAIN élément, un seul |
+| il ne lisait que le HTML | **31 cibles invisibles**, dont les douze contrôles que `gallery` bâtit en JS — et « 0 sous le plancher » sur deux règles qui l'étaient | `document.createElement` est lu, de la création à la prochaine affectation du même nom |
 
 **Le deuxième est le plus instructif : sans l'ancêtre, deux règles de même
 poids rendent un verdict au HASARD.** « La dernière écrite gagne » n'est
@@ -64,13 +96,13 @@ qu'un aveu d'ignorance : il fait corriger ce qui va bien.
 
 ### Le verdict a DEUX chiffres, et ils ne disent pas la même chose
 
-**0 manquement prouvé** ; **59 cibles dont le plancher n'est pas DÉCLARÉ**.
+**0 manquement prouvé** ; **68 cibles dont le plancher n'est pas DÉCLARÉ**.
 La seconde moitié n'est pas un feu vert — c'est là où l'instrument s'arrête
 (une hauteur qui vient du contenu demande le navigateur, pas le texte) **et
 c'est, page par page, là où `components.css` n'est pas adopté** :
 
-    browse 0/6 · faces 1/2 · gallery 16/22 · map 14/16 · reglages 7/33
-    contre  people 7/39 · pets 7/23 · residu 1/6 · subjects 2/30 · tranche 0/6
+    browse 0/7 · faces 1/2 · gallery 17/32 · map 14/16 · reglages 7/33
+    contre  people 11/48 · pets 10/29 · residu 1/6 · subjects 3/35 · tranche 0/6
 
 **La convergence du design system a maintenant un chiffre qui la réclame.**
 
@@ -234,12 +266,11 @@ référence dont on savait qu'elle mentait.
 **Ce qui prend la tête : les cinq pages qui n'ont pas adopté
 `components.css`.** Ce n'était jusqu'ici qu'un rangement à moitié fait ;
 c'est devenu une mesure. Les 59 cibles dont le plancher tactile n'est pas
-déclaré vivent **à 37 sur 59 dans ces cinq pages-là** (browse 0, faces 1,
-gallery 16, map 14, reglages 7 — contre 6 pour les six pages adoptantes hors
-`people`/`pets`). Adopter la feuille commune ne range pas du CSS : ça
+déclaré vivent **à 39 sur 68 dans ces cinq pages-là** (browse 0, faces 1,
+gallery 17, map 14, reglages 7). Adopter la feuille commune ne range pas du CSS : ça
 DÉCLARE un plancher là où il n'y en a aucun, et ça rend mesurable ce qui ne
 l'est pas. **`gallery` d'abord** — c'est la page la plus utilisée, elle écrit
-déjà le chip canonique sous ses propres noms, et elle porte 16 des 37.
+déjà le chip canonique sous ses propres noms, et elle porte 17 des 39.
 
 Ensuite : le reste d'audit (O8–O9, O11, O13–O15 ; **I1** visible dans
 `/reglages`), puis le point 7 (l'extraction `ui/`, dont il ne reste que le
@@ -1190,13 +1221,14 @@ dossier d'avant 1990 n'y passe. Le **plafond 2100** (`22082010141.jpg` → 2082)
 
 ## Acquis — ne pas reproposer (détail : git + `eval/DECISIONS.md`)
 
-- **Cibles tactiles (26/08)** : les **192** cibles des onze pages sont
-  comptées — **0 manquement prouvé**, 96 planchers déclarés et honorés, 9 non
-  décidables, 59 dont la hauteur n'est pas déclarée (le contenu décide) et 28
-  exemptées. Mesuré par `verifier_cibles.py`, qui lit l'imbrication du HTML et
-  la cascade à quatre étages. **Ne pas re-parcourir les pages à l'œil pour ça,
-  et ne pas re-proposer de lire la LARGEUR** : angle mort assumé, dit dans le
-  rapport.
+- **Cibles tactiles (26/08)** : les **223** cibles des onze pages sont
+  comptées — **0 manquement prouvé** (0 sous le plancher, 0 inerte), 112
+  planchers déclarés et honorés, 10 non décidables, 68 dont la hauteur n'est
+  pas déclarée (le contenu décide) et 33 exemptées. Mesuré par
+  `verifier_cibles.py`, qui lit l'imbrication du HTML, ce que
+  `document.createElement` bâtit, et la cascade à quatre étages. **Ne pas
+  re-parcourir les pages à l'œil pour ça, et ne pas re-proposer de lire la
+  LARGEUR** : angle mort assumé, dit dans le rapport.
 
 - **Accessibilité des contrôles (26/08)** : les **154** gestionnaires de clic
   des onze pages sont posés sur des contrôles — 138 natifs, 3 opérables à la

@@ -205,6 +205,91 @@ class UNE_HAUTEUR_QUE_LE_DISPLAY_IGNORE_EST_INERTE(unittest.TestCase):
                                   '<button class="b">x</button>'), ['OK'])
 
 
+class ROUGE_7_CE_QUE_LE_JS_BATIT_EST_UNE_CIBLE_AUSSI(unittest.TestCase):
+    """`document.createElement` echappait entierement au banc.
+
+    Ne pas voir une cible ne la rend pas conforme : ca retire seulement le
+    denominateur. Sur `gallery`, DOUZE controles etaient batis ainsi -- dont
+    les chips de motif, declares a 32 px sur un `<a>` qui les ignore."""
+
+    def test_un_bouton_bati_en_JS_est_compte(self):
+        self.assertEqual(
+            verdicts('.b{min-height:36px}',
+                     '', "var x=document.createElement('button');"
+                         "x.className='b';"),
+            ['SOUS'])
+
+    def test_une_classe_posee_par_classList_add_compte(self):
+        self.assertEqual(
+            verdicts('.b{min-height:44px}',
+                     '', "var x=document.createElement('button');"
+                         "x.classList.add('b');"),
+            ['OK'])
+
+    def test_un_div_sans_onclick_n_est_pas_une_cible(self):
+        self.assertEqual(
+            verdicts('.b{min-height:36px}',
+                     '', "var x=document.createElement('div');"
+                         "x.className='b';"),
+            [])
+
+    def test_le_meme_div_avec_onclick_en_est_une(self):
+        self.assertEqual(
+            verdicts('.b{min-height:36px;display:block}',
+                     '', "var x=document.createElement('div');"
+                         "x.className='b';x.onclick=f;"),
+            ['SOUS'])
+
+    def test_un_a_sans_href_n_est_pas_une_cible(self):
+        self.assertEqual(
+            verdicts('.b{min-height:36px}',
+                     '', "var x=document.createElement('a');x.className='b';"),
+            [])
+
+    def test_une_classe_seulement_POSSIBLE_ne_tranche_pas(self):
+        # `x.className = 'b' + (on ? ' grand' : '')` : `b` est la base,
+        # `grand` depend d'une condition. Une regle qui n'a besoin que de
+        # `grand` ne peut pas rendre vert.
+        self.assertEqual(
+            verdicts('.grand{min-height:44px}',
+                     '', "var x=document.createElement('button');"
+                         "x.className='b'+(on?' grand':'');"),
+            ['NON DECIDABLE'])
+
+    def test_mais_la_classe_de_BASE_tranche(self):
+        self.assertEqual(
+            verdicts('.b{min-height:44px}',
+                     '', "var x=document.createElement('button');"
+                         "x.className='b'+(on?' grand':'');"),
+            ['OK'])
+
+    def test_un_style_pose_en_JS_est_lu(self):
+        self.assertEqual(
+            verdicts('.b{min-height:44px}',
+                     '', "var x=document.createElement('button');"
+                         "x.className='b';x.style.minHeight='10px';"),
+            ['SOUS'])
+
+    def test_la_lecture_s_arrete_a_la_prochaine_creation_du_MEME_nom(self):
+        # Le second `x` est un `<a>` sans href : pas une cible. La classe
+        # posee apres lui ne doit pas remonter au premier.
+        self.assertEqual(
+            verdicts('.b{min-height:36px} .c{min-height:44px}',
+                     '', "var x=document.createElement('button');"
+                         "x.className='b';"
+                         "x=document.createElement('a');x.className='c';"),
+            ['SOUS'])
+
+    def test_une_hauteur_declaree_sur_un_a_inline_est_INERTE(self):
+        # Le cas exact de `.mchip` : la regle est ecrite, elle est lue,
+        # et elle ne fait rien.
+        self.assertEqual(
+            verdicts('.b{min-height:32px}',
+                     '', "var x=document.createElement('a');"
+                         "x.className='b';x.href='/y';"),
+            ['INERTE'])
+
+
 class CE_QUI_N_EST_PAS_DECLARE_NE_REND_PAS_VERT(unittest.TestCase):
 
     def test_un_bouton_sans_aucune_regle(self):
