@@ -1041,9 +1041,14 @@ qui en découle : éditer → redémarrer → **observer** → livrer.
    sont perdues. La CAUSE est structurelle et corrigée : `rekey_everywhere` ne
    transportait pas les décisions, `PEOPLE` et `PETS` étant keyés par NOM.
    **Correctif préventif + réparation rétroactive LIVRÉS (22/08)** ; l'aperçu à
-   blanc tourne sur le serveur vivant (685 clés, 0 hors bornes). Reste **un clic
-   de Mike** : `/reglages` → « Décisions humaines restées sur l'ancien chemin »
-   → 2 · Appliquer. La vérité terrain réelle est de **3 364** décisions (1 576
+   blanc annonçait 685 clés à re-clé. **LE SAUVETAGE A EU LIEU — vérifié le
+   26/08 sur le serveur vivant** : l'aperçu à blanc rend désormais
+   « **0 clé(s) à re-clé sur 119 orpheline(s) ; 119 sans destination connue,
+   0 hors bornes** ». Le clic qui manquait a donc été fait ; il ne reste que
+   les clés dont aucun journal ne dit où le fichier est parti — l'ordre de
+   grandeur des 124 annoncées perdues. **La doc annonçait une action en
+   attente qui ne l'était plus.**
+   La vérité terrain réelle est de **3 364** décisions (1 576
    rattachements — 1 196 comptait des CLÉS —, 1 496 exclusions, 292
    confirmations).
    **Le reste du point est parqué, et son chiffre avait déjà été corrigé la
@@ -1080,7 +1085,11 @@ qui en découle : éditer → redémarrer → **observer** → livrer.
    30/07. I8 — deux routes orphelines retirées (404 vérifiés). Restent
    O7–O9, O11–O15. O1 clos ; O15 (purge de
    `photo_thumbs/`) gagne en poids. **Ce que I7 a laissé ouvert** :
-   `personne:Florine`, 153 photos sans fiche — question posée à Mike.
+   `personne:Florine`, 153 photos sans fiche — **CLOS** : Mike a répondu « c'est
+   Flo », la fusion a été faite le 23/08 et **vérifiée le 26/08 sur le serveur
+   vivant** (`/api/names` : `Florine` porte une fiche de **5 907** photos,
+   `Flo` n'existe plus, 364 noms au total). La ligne annonçait une question
+   déjà répondue.
 6. **Navigation par similarité et par date** : « Semblables » et « même jour »
    livrés et observés. Reste : doublons proches bridés (>0,98 + même journée →
    quarantaine réversible, 50 paires jugées avant geste).
