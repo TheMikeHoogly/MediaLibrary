@@ -6,45 +6,138 @@ dans **git** ; les rejets dans `eval/DECISIONS.md` (photothèque) et
 `eval/METHODE.md` ; l'éphémère dans `PROMPT_NOUVELLE_SESSION.md`. Audits :
 `docs/AUDIT_INTERNE_2026-08.md`, `docs/AUDIT_EXTERNE_2026.md`, `docs/RANGEMENT_2026.md`.
 
-## Priorité (26/08/2026, refixée session 50) — l'ordre a changé
+## Priorité (26/08/2026, refixée session 53) — le garde-fou est POSÉ
 
-**1. Le garde-fou du filtre, AVANT tout le reste.** Un filtre qui ment est
-plus grave que dix boutons trop petits : il a produit un verdict faux sur une
-chatte qui a vécu seize ans dans cette maison. Trois gestes, dans l'ordre :
-un jeton `<axe>:<valeur>` inconnu rend RIEN et le DIT · la barre de recherche
-comprend ce que les pastilles ÉCRIVENT (ou les pastilles cessent de l'écrire)
-· **un banc de contrôle NÉGATIF** (`verifier_`) : pour chaque axe, une valeur
-inventée doit rendre 0. C'est le test qui manquait.
+**Le point 1 est fait, prouvé, livré** (voir l'état de session 53 ci-dessous) :
+un jeton `<axe>:<valeur>` insatisfaisable rend RIEN et le DIT sur les cinq
+axes, la barre comprend enfin ce que les pastilles écrivent, et le contrôle
+NÉGATIF est un banc (`verifier_filtre_negatif.py`, 15 contrôles, deux canaux).
+Le point 4 de la liste précédente — le déplacement `Photos Mike` — était déjà
+fait en session 52. L'ordre reprend donc à ce qui reste.
 
-**2. Les boutons de `gallery` — option 1, tranchée par Mike le 26/08 :
+**1. Les boutons de `gallery` — option 1, tranchée par Mike le 26/08 :
 tout convertir d'un coup.** Les cinq familles maison (`.tb` 34 px, `.geobtn`
 28 px, `.fchip` 35 px, `.georow button` 34 px, `#ss-stop` 34 px) passent au
 `.btn` canonique. Coût mesuré et accepté : **+19 px** de hauteur de barres.
 Aperçu validé (artefact « Boutons de la Galerie »). Preuve dans l'ordre
-habituel, l'œil en dernier.
+habituel : `verifier_css_cascade --page` (feuille commune EN PREMIER dans
+`--apres`), `verifier_cibles`, `verifier_contraste`, `verifier_controles`,
+tests UI, banc des pages composants sur le serveur VIVANT, l'œil en dernier.
 
-**3. Le pense-bête des raccourcis DANS l'interface** (point 6 du plancher).
+**2. Le pense-bête des raccourcis DANS l'interface** (point 6 du plancher).
 Il manque la brique : **un fichier JS commun injecté sur toutes les pages**,
 comme `tokens.css` et `base.css` (`_UI_GLOBAL_FILES`). Il n'y en a aucun. La
 brique d'abord, le panneau `?` ensuite, l'instrument en dernier. Contenu
 déjà relevé : `docs/RACCOURCIS.md`.
 
-**4. Le déplacement `Photos Mike`** — premier geste du chantier 17, et il ne
-demande aucun code de comptes. C'est un `rekey` massif : plan à blanc,
-journal, quarantaine réversible. Ce qui a coûté 748 décisions le 22/08.
+**3. La suite du chantier 17 (multi-utilisateurs)** : la notion de
+PROPRIÉTAIRE, puis l'attribution rétroactive des 3 767 décisions à Mike.
+Spécifié — six décisions de Mike, plus bas dans ce fichier : l'exécuter, ne
+pas le rouvrir. Deux questions ouvertes dans `QUESTIONS_MIKE.md` bloquent
+l'écriture partagée.
+
+**4. Réparer `appliquer_plan.rekey_stores`** — elle re-clé cinq magasins sur
+sept, et le rangement par année comme le dédoublonnage la portent. Puis
+**unifier** : la primitive complète existe maintenant DEUX fois
+(`server.rekey_everywhere` et `deplacer_dossiers`).
 
 **5. Le reste d'audit** : O8–O9, O11, O13–O15 ; **I1** visible dans
-`/reglages`. Puis les quatre pages sans `components.css` (`browse`, `faces`,
-`map`, `reglages`).
+`/reglages` ; `animal:luna` en minuscule sur 3 photos à côté de `animal:Luna`
+sur 355. Puis les quatre pages sans `components.css` (`browse`, `faces`,
+`map`, `reglages`). O15 balaie au passage les 3 047 vignettes orphelines du
+déplacement — effet de bord attendu, pas une panne.
 
 **Ce qui a changé de nature (26/08)** : les animaux non nommés ne sont plus un
 chantier. Deux noms posés par Mike ont fait tomber les groupes de **189 à 99**
 et les apparitions non nommées à **442**, plus gros groupe à 31. C'est une
 finition, à faire au fil de l'eau.
 
-**En fin de projet, dans cet ordre** : le chantier 17 (multi-utilisateurs),
-PUIS la copie hors site — choix de Mike du 26/08. Le Takeout Google, lui, est
-en cours de téléchargement (~2 jours au 26/08) et ne dépend de rien.
+**En fin de projet, dans cet ordre** : le chantier 17, PUIS la copie hors site
+— choix de Mike du 26/08. Le Takeout Google, lui, ne dépend de rien : les
+`.zip` sont arrivés dans `C:\GOOGLE PHOTOS` et l'outil de dézippage est prêt
+(`31 - Dezipper le Takeout Google.bat`).
+
+## État (26/08/2026, session 53) — UN FILTRE QUI MENT NE MENT PLUS
+
+**`/files?q=animal:Zzzznexistepas` rendait 1 500 photos ; il en rend zéro, et
+il dit pourquoi.** La cause n'était pas dans le filtre : `_extraire_noms`
+cherche le nom NU et **ne connaît aucun préfixe**, donc le jeton n'était
+réclamé par personne et partait en recherche sémantique — qui classe tout le
+fonds et ne rend jamais vide. Une grille pleine annoncée comme un filtre.
+
+**Et le même chemin rendait `personne:Luna` inutilisable** — ce que
+l'interface dit elle-même d'écrire (« le FILTRE de la planche garde les tags
+nommés : y chercher personne:Luna a du sens », `gallery.html`). Le défaut
+n'était donc pas seulement un mensonge : c'était une capacité annoncée et
+absente.
+
+### Ce qui a été posé
+
+| | |
+|---|---|
+| primitive | `recherche.extraire_jetons` — pure, testée, commune aux 5 axes |
+| axes servis | `personne:`, `animal:`, `lieu:` (neufs), `espece:` (devenu une VUE) |
+| valeurs | multi-mots (`personne:Cédric Baudin`), guillemets, pluriels, accents |
+| refus | valeur inconnue → on nomme la valeur ; AXE inconnu → on nomme l'axe |
+| canaux | `/api/search` **et** la page `/files?q=` : même producteur, même dire |
+| banc | `verifier_filtre_negatif.py` — 15 contrôles, 5 axes, deux sens |
+| tests | +19 sur `recherche`, +28 sur le banc ; 90 et 28 verts |
+
+**Le bon axe est exigé pour le bon nom** : « Luna » est une chatte,
+`personne:Luna` ne rend pas ses photos — il dit qu'aucune PERSONNE ne porte ce
+nom. Et « Luna : la chatte » comme « 18:30 » traversent intacts : le
+deux-points COLLÉ n'est exigé que sur un axe inconnu.
+
+### Le banc a payé son écriture à sa PREMIÈRE exécution
+
+Première version livrée au banc : **8 griefs**. `extraire_especes`, devenu
+générique, annonçait « espèce inconnue : Caline » sur `animal:Caline` **et
+mangeait le jeton** — un extracteur qui juge les axes des autres. Corrigé le
+jour même (`axe_inconnu_refuse`, False par défaut ; seul le dernier extracteur
+refuse), gravé en test. Deuxième passage : **15/15 verts**, `code_a_jour=True`,
+`animal:Caline` 730 photos comme le nom nu, `lieu:Achumani` 198,
+`couleur:rouge` zéro et nommé, la page `/files?q=` vide **et** parlante.
+
+**Ce que le banc contrôle dans l'autre sens compte autant** : une valeur
+RÉELLE doit rendre au moins une photo. Sans ces contrôles-là, un moteur qui
+rendrait zéro pour tout serait vert — le mode de panne des deux bancs que ce
+projet a déjà démasqués. Et les valeurs positives sont lues dans le fonds
+(`/api/names`, `lieux.txt`), jamais en dur.
+
+**Ce qui n'a PAS été fait** : l'œil. La page a été prouvée par ce qu'elle
+SERT (`var FILES` vide, `var SEARCHMETA` portant le refus), pas par une
+capture — Mike était absent, et le banc voit ce que le navigateur afficherait.
+
+## État (26/08/2026, session 53 bis) — le Takeout a de quoi s'ouvrir
+
+**Les `.zip` sont arrivés dans `C:\GOOGLE PHOTOS`** (Mike, 26/08).
+`dezipper_takeout.py` + `31 - Dezipper le Takeout Google.bat` : inventaire
+d'abord, écriture ensuite, et **rien ne s'écrit sur un verdict rouge**.
+
+Trois pannes silencieuses guettent un dézippage de Takeout, et l'instrument
+les regarde AVANT le premier octet :
+
+- **un lot manquant** — Google numérote `-1-of-24` ; un téléchargement
+  interrompu laisse un trou, et l'arbre paraît complet. `verifier_photos_google`
+  déclarerait alors ABSENTES des photos que Google détient : un verdict faux
+  dans le sens le plus cher, celui qui interdit d'effacer 75 Go. Le total
+  ANNONCÉ prime sur le plus grand numéro vu — c'est lui qui dit qu'il manque
+  la FIN de la série ;
+- **la place** — un disque plein en cours de route laisse un fichier tronqué
+  qui porte le bon nom. La place demandée est comparée à la place libre ;
+- **les chemins longs** des albums, au-delà des 260 caractères où
+  `Expand-Archive` s'arrête. On écrit par `\\?\`.
+
+**Reprenable** : ce qui est déjà ouvert à la bonne taille est sauté — relancer
+après une coupure ne recommence pas 75 Go, et sur un dossier déjà ouvert
+l'outil ne fait rien (le « si nécessaire » demandé). Un membre dont le chemin
+sortirait de la cible est refusé, compté et nommé : un `.zip` est une donnée,
+pas une instruction. 32 tests.
+
+**Ce qui n'a pas pu être fait ici** : l'inventaire RÉEL. `C:\GOOGLE PHOTOS`
+n'est pas un dossier connecté à la session et la demande d'accès est restée
+sans réponse. Le compte des lots, la place et les trous seront dits par le
+bat au premier lancement.
 
 ## État (26/08/2026, session 52) — LE DÉPLACEMENT EST FAIT, ET VÉRIFIÉ
 

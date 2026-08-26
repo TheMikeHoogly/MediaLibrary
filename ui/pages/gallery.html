@@ -428,6 +428,16 @@ __FOLDERS__
     if (d.especes_inconnues && d.especes_inconnues.length)
       bouts.push('espece inconnue : ' + d.especes_inconnues.join(', ')
                  + ' (aucune photo)');
+    // Un jeton que le moteur ne sait pas satisfaire rend ZERO photo, et le
+    // DIT — la regle de `espece:licorne`, etendue le 26/08 aux quatre autres
+    // axes. Sans cette ligne, la page affichait 1500 photos pour un nom
+    // invente : un filtre muet se lit comme un accord.
+    if (d.noms_inconnus && d.noms_inconnus.length)
+      bouts.push('inconnu au fichier : ' + d.noms_inconnus.join(', ')
+                 + ' (aucune photo)');
+    if (d.axes_inconnus && d.axes_inconnus.length)
+      bouts.push('filtre inconnu : ' + d.axes_inconnus.join(': , ')
+                 + ': (aucune photo)');
     if (d.periode) bouts.push(d.periode);
     if (d.reste) bouts.push(d.reste);
     iaCompris = bouts.join(' · ');

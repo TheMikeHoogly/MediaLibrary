@@ -4206,6 +4206,47 @@ def noms_connus():
     return index
 
 
+# ─── Le garde-fou du filtre (26/08) ──────────────────────────────────────────
+# `/files?q=animal:Zzzznexistepas` rendait **1 500 photos**, et la page
+# annonçait un FILTRE. Le jeton ne ressemblait à aucun nom NU — `_extraire_noms`
+# ne connaît aucun préfixe — il partait donc en recherche sémantique. Le défaut
+# corrigé le 21/08 pour `espece:licorne` vivait encore sur les quatre autres
+# axes, et l'interface écrit elle-même ce vocabulaire : « le FILTRE de la
+# planche garde les tags nommés : y chercher personne:Luna a du sens »
+# (`gallery.html`). La règle est désormais commune aux cinq axes, dans
+# `recherche.extraire_jetons` : ce qu'on ne sait pas satisfaire rend RIEN.
+#
+# `espece:` n'est PAS dans cette table : `extraire_especes` l'a déjà consommé
+# quand on arrive ici. L'ordre de `semantic_search` reste l'invariant.
+AXES_DE_JETON = {'personne': 'personne', 'personnes': 'personne',
+                 'animal': 'animal', 'animaux': 'animal',
+                 'lieu': 'lieu', 'lieux': 'lieu'}
+
+
+def _resoudre_jeton(axe, valeur):
+    """Valeur canonique d'un jeton `<axe>:<valeur>`, ou None.
+
+    **L'axe doit être le bon.** « Luna » est une chatte : `personne:Luna` ne
+    doit pas rendre ses photos — il doit dire qu'aucune PERSONNE ne porte ce
+    nom. Rendre les photos de l'animal serait deviner à la place de
+    l'utilisateur ; les rendre TOUTES était le défaut d'hier.
+
+    Lit les mêmes autorités que le reste du moteur : `noms_connus()` (fiches
+    personnes et animaux) et `lieux_connus()`. Aucun vocabulaire en dur.
+    """
+    v = _sans_accents(valeur)
+    if axe in ('personne', 'animal'):
+        tag = noms_connus().get(v)
+        if tag:
+            prefixe, nom = tag.split(':', 1)
+            if prefixe == axe:
+                return nom
+        return None
+    if axe == 'lieu':
+        return lieux_connus().get(v)
+    return None
+
+
 def _extraire_noms(requete):
     """Détache de la requête les noms de personnes/animaux qu'elle contient.
 
@@ -4633,23 +4674,43 @@ def semantic_search(requete, limite=80, detail=None):
     import faits_vue
     especes, esp_inconnues, reste = recherche.extraire_especes(
         requete, faits_vue.espece_canonique)
+    # Les jetons EXPLICITES avant les noms nus : `personne:Mai` doit gagner sur
+    # le mois, et un jeton préfixé n'est ambigu avec rien. Ce que le résolveur
+    # ne reconnaît pas ressort dans `jetons_inconnus` au lieu de retomber dans
+    # le sens — c'est là que 1 500 photos sortaient d'un nom inventé.
+    # `axe_inconnu_refuse=True` : on est le DERNIER extracteur de jetons —
+    # `espece:` est déjà consommé — donc ce qui reste sous la forme
+    # `<mot>:<valeur>` n'a plus personne pour le satisfaire.
+    jetons, jetons_inconnus, reste = recherche.extraire_jetons(
+        reste, AXES_DE_JETON, _resoudre_jeton, axe_inconnu_refuse=True)
+    tags_dits = [f"{axe}:{val}" for axe, val in jetons
+                 if axe in ('personne', 'animal')]
+    lieux_dits = [val for axe, val in jetons if axe == 'lieu']
+    noms_inconnus = [f"{axe}:{val}" for axe, val, connu in jetons_inconnus
+                     if connu]
+    axes_inconnus = [axe for axe, _val, connu in jetons_inconnus if not connu]
     tags, reste = _extraire_noms(reste)
+    tags = tags_dits + [t for t in tags if t not in tags_dits]
     lieux, reste = _extraire_lieux(reste)
+    lieux = lieux_dits + [l for l in lieux if l not in lieux_dits]
     periode, reste = recherche.extraire_periode(reste)
     if detail is not None:
         detail.update(noms=[t.split(':', 1)[-1] for t in tags], lieux=lieux,
                       periode=periode.libelle if periode else '',
                       especes=especes, especes_inconnues=esp_inconnues,
+                      noms_inconnus=noms_inconnus, axes_inconnus=axes_inconnus,
                       reste=reste, sans_date=0, sans_date_tri=0)
 
     candidats = _cles_portant(tags) if tags else None
     if lieux:
         du_lieu = _cles_du_lieu(lieux)
         candidats = du_lieu if candidats is None else (candidats & du_lieu)
-    if esp_inconnues:
-        # `espece:licorne` : un filtre qu'on ne sait pas satisfaire ne rend
-        # RIEN, et la page le dit. Le laisser passer rendrait tout le fonds,
-        # ce que l'utilisateur lirait comme un accord.
+    if esp_inconnues or noms_inconnus or axes_inconnus:
+        # `espece:licorne`, `animal:Zzz`, `couleur:rouge` : un filtre qu'on ne
+        # sait pas satisfaire ne rend RIEN, et la page le dit. Le laisser
+        # passer rendrait tout le fonds, ce que l'utilisateur lirait comme un
+        # accord — et c'est ce qui a produit un verdict faux sur une chatte
+        # qui a vécu seize ans ici (26/08).
         return []
     if especes:
         de_l_espece = _cles_de_l_espece(especes)
@@ -10673,6 +10734,13 @@ class Handler(BaseHTTPRequestHandler):
              # ferait passer un filtre impossible pour un fonds vide.
              'especes': detail.get('especes', []),
              'especes_inconnues': detail.get('especes_inconnues', []),
+             # Les jetons que le moteur n'a pas su satisfaire, et qui rendent
+             # donc ZÉRO photo : `noms_inconnus` porte la valeur (« animal:Zzz
+             # »), `axes_inconnus` la seule graphie de l'axe (« couleur »).
+             # Sans eux, l'appelant ne distingue pas « ce nom n'existe pas » de
+             # « ce nom n'a pas de photo », et c'est toute la différence.
+             'noms_inconnus': detail.get('noms_inconnus', []),
+             'axes_inconnus': detail.get('axes_inconnus', []),
              'sans_date': detail.get('sans_date', 0),
              # `sans_date_tri` : photos RENDUES mais placées sans aucune date
              # sûre — elles vont en fin de liste. Une protection qui s'annule

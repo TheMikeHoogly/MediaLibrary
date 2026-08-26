@@ -469,5 +469,146 @@ class TestJetonEspece(unittest.TestCase):
         self.assertEqual(reste2, '')
 
 
+
+# ─── JETONS D'AXE — le garde-fou du 26/08 ───────────────────────────────────
+# `/files?q=animal:Zzzznexistepas` rendait 1 500 photos, et la page annoncait
+# un FILTRE. Ce qui suit est le controle NEGATIF qui manquait, au niveau pur :
+# un jeton qu'on ne sait pas satisfaire ne doit jamais retomber dans le sens.
+
+AXES = {'personne': 'personne', 'personnes': 'personne',
+        'animal': 'animal', 'animaux': 'animal', 'lieu': 'lieu'}
+
+CONNUS = {('personne', 'mike'): 'Mike',
+          ('personne', 'cedric baudin'): 'Cedric Baudin',
+          ('animal', 'luna'): 'Luna',
+          ('animal', 'caline'): 'Caline',
+          ('lieu', 'sion'): 'Sion'}
+
+
+def resoudre(axe, valeur):
+    return CONNUS.get((axe, r._cle_de_comparaison(valeur)))
+
+
+class LesJetonsDAxe(unittest.TestCase):
+
+    def test_un_jeton_connu_est_RETENU_et_retire_du_reste(self):
+        ret, inc, reste = r.extraire_jetons('animal:Luna sur le canape',
+                                            AXES, resoudre)
+        self.assertEqual(ret, [('animal', 'Luna')])
+        self.assertEqual(inc, [])
+        self.assertEqual(reste, 'sur le canape')
+
+    def test_une_VALEUR_inconnue_est_rendue_pas_ignoree(self):
+        # LE defaut du 26/08 : ignoree, elle rendait tout le fonds.
+        ret, inc, reste = r.extraire_jetons('animal:Zzzznexistepas',
+                                            AXES, resoudre)
+        self.assertEqual(ret, [])
+        self.assertEqual(inc, [('animal', 'Zzzznexistepas', True)])
+        self.assertEqual(reste, '')
+
+    def test_un_AXE_inconnu_est_rendu_avec_sa_graphie(self):
+        ret, inc, reste = r.extraire_jetons('couleur:rouge', AXES, resoudre,
+                                            axe_inconnu_refuse=True)
+        self.assertEqual(ret, [])
+        self.assertEqual(inc, [('couleur', 'rouge', False)])
+        self.assertEqual(reste, '')
+
+    def test_par_DEFAUT_l_axe_d_un_autre_extracteur_traverse_INTACT(self):
+        # Rouge observe au banc le 26/08 : appele pour `espece:`, l'extracteur
+        # annoncait << espece inconnue : Caline >> sur `animal:Caline` et
+        # mangeait le jeton. Huit griefs d'un coup. Chacun ne juge que SON axe.
+        ret, inc, reste = r.extraire_jetons('animal:Luna',
+                                            {'espece': 'espece'}, resoudre)
+        self.assertEqual((ret, inc), ([], []))
+        self.assertEqual(reste, 'animal:Luna')
+
+    def test_l_extracteur_d_especes_ne_touche_pas_aux_autres_axes(self):
+        esp, inc, reste = r.extraire_especes(
+            'animal:Caline espece:chat', lambda m: 'chat' if m == 'chat' else None)
+        self.assertEqual(esp, ['chat'])
+        self.assertEqual(inc, [])
+        self.assertEqual(reste, 'animal:Caline')
+
+    def test_le_bon_axe_est_exige_pour_le_bon_nom(self):
+        # « Luna » est un animal : la demander comme PERSONNE ne doit pas
+        # rendre les photos de la chatte, ni rendre tout le fonds.
+        ret, inc, _ = r.extraire_jetons('personne:Luna', AXES, resoudre)
+        self.assertEqual(ret, [])
+        self.assertEqual(inc, [('personne', 'Luna', True)])
+
+    def test_un_nom_COMPOSE_est_pris_en_entier(self):
+        # C'est ce que la galerie ecrit : « personne:Cedric Baudin ».
+        ret, _inc, reste = r.extraire_jetons(
+            'personne:Cedric Baudin a Sion', AXES, resoudre)
+        self.assertEqual(ret, [('personne', 'Cedric Baudin')])
+        self.assertEqual(reste, 'a Sion')
+
+    def test_un_nom_compose_INCONNU_ne_nomme_que_le_premier_mot(self):
+        ret, inc, reste = r.extraire_jetons('personne:Zzz Yyy dort',
+                                            AXES, resoudre)
+        self.assertEqual(ret, [])
+        self.assertEqual(inc, [('personne', 'Zzz', True)])
+        self.assertEqual(reste, 'Yyy dort')
+
+    def test_les_guillemets_ferment_la_valeur(self):
+        ret, _i, reste = r.extraire_jetons('personne:"Cedric Baudin" dort',
+                                           AXES, resoudre)
+        self.assertEqual(ret, [('personne', 'Cedric Baudin')])
+        self.assertEqual(reste, 'dort')
+
+    def test_une_valeur_n_avale_pas_le_jeton_SUIVANT(self):
+        ret, _i, reste = r.extraire_jetons('personne:Zzz animal:Luna',
+                                           AXES, resoudre)
+        self.assertEqual(ret, [('animal', 'Luna')])
+        self.assertEqual(reste, '')
+
+    def test_deux_jetons_connus_se_cumulent(self):
+        ret, inc, reste = r.extraire_jetons('animal:Luna lieu:Sion en 2015',
+                                            AXES, resoudre)
+        self.assertEqual(ret, [('animal', 'Luna'), ('lieu', 'Sion')])
+        self.assertEqual(inc, [])
+        self.assertEqual(reste, 'en 2015')
+
+    def test_le_pluriel_et_les_accents_de_l_axe_sont_acceptes(self):
+        for q in ('animaux:Luna', 'ANIMAL : Luna', 'personnes:Mike'):
+            ret, _i, _re = r.extraire_jetons(q, AXES, resoudre)
+            self.assertTrue(ret, q)
+
+    def test_une_PHRASE_a_deux_points_espace_reste_une_phrase(self):
+        # « Luna : la chatte » n'est pas un filtre. Un axe inconnu exige le
+        # deux-points COLLE, sinon toute ponctuation deviendrait un refus.
+        ret, inc, reste = r.extraire_jetons('Luna : la chatte', AXES, resoudre)
+        self.assertEqual((ret, inc), ([], []))
+        self.assertEqual(reste, 'Luna : la chatte')
+
+    def test_une_heure_n_est_pas_un_axe(self):
+        ret, inc, reste = r.extraire_jetons('photos de 18:30', AXES, resoudre)
+        self.assertEqual((ret, inc), ([], []))
+        self.assertEqual(reste, 'photos de 18:30')
+
+    def test_un_jeton_sans_valeur_est_laisse_tel_quel(self):
+        ret, inc, reste = r.extraire_jetons('animal:', AXES, resoudre)
+        self.assertEqual((ret, inc), ([], []))
+        self.assertEqual(reste, 'animal:')
+
+    def test_une_requete_sans_jeton_traverse_intacte(self):
+        ret, inc, reste = r.extraire_jetons('chat endormi sur le canape',
+                                            AXES, resoudre)
+        self.assertEqual((ret, inc), ([], []))
+        self.assertEqual(reste, 'chat endormi sur le canape')
+
+    def test_le_meme_jeton_deux_fois_ne_compte_qu_une(self):
+        ret, _i, reste = r.extraire_jetons('animal:Luna animal:luna',
+                                           AXES, resoudre)
+        self.assertEqual(ret, [('animal', 'Luna')])
+        self.assertEqual(reste, '')
+
+    def test_une_virgule_termine_la_valeur(self):
+        ret, _i, reste = r.extraire_jetons('animal:Luna, endormie',
+                                           AXES, resoudre)
+        self.assertEqual(ret, [('animal', 'Luna')])
+        self.assertEqual(reste, ', endormie')
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

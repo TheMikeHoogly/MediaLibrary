@@ -260,6 +260,13 @@ _journal_serveur.log.1
 _journal_serveur_crash.log
 
 # Rapports d'instruments (regenerables par leur banc)
+# `verifier_filtre_negatif.py --json` : le controle NEGATIF des filtres. Un
+# rapport de banc dit l'etat d'un serveur A UN INSTANT ; versionne, il
+# deviendrait une preuve perimee. La preuve vit dans le banc, pas dans sa
+# sortie.
+_filtre_negatif.json
+# `dezipper_takeout.py --json` : inventaire des lots du Takeout Google.
+_takeout.json
 _fantomes.json
 _base_avant_cache.json
 _base_apres_cache.json

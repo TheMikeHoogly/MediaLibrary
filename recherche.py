@@ -480,6 +480,143 @@ def _nettoyer_reste(reste):
     return ' '.join(garder)
 
 
+# ─── JETONS D'AXE — `<axe>:<valeur>`, et ce qu'on ne sait pas satisfaire ─────
+# Le 26/08, `/files?q=animal:Zzzznexistepas` rendait **1 500 photos**. Le jeton
+# ne ressemblait à aucun nom NU, aucun extracteur ne le réclamait : il partait
+# donc en recherche sémantique, et la page l'annonçait comme un FILTRE. Le
+# défaut avait été corrigé le 21/08 pour `espece:licorne` et oublié sur les
+# autres axes — alors que l'interface écrit elle-même ce vocabulaire (« le
+# FILTRE de la planche garde les tags nommés : y chercher personne:Luna a du
+# sens », `gallery.html`). Un filtre qui ment a produit un verdict faux sur une
+# chatte qui a vécu seize ans dans cette maison.
+#
+# Trois règles, et elles valent pour TOUS les axes :
+#   1. axe connu, valeur inconnue  → RIEN, et on nomme la valeur ;
+#   2. axe inconnu                 → RIEN, et on nomme l'axe ;
+#   3. jamais de repli silencieux sur le sens : c'est ce repli qui rendait
+#      tout le fonds pour un nom inventé.
+#
+# La valeur peut tenir en PLUSIEURS MOTS — `personne:Cédric Baudin` est
+# exactement ce que la galerie écrit. On garde le plus long groupe de mots que
+# le résolveur reconnaît (comme `_extraire_noms` teste les noms composés en
+# premier) ; à défaut le PREMIER mot, et c'est lui qu'on nomme dans le refus.
+# Des guillemets ferment la question : `personne:"Anne Marie"`.
+#
+# Un espace AVANT le deux-points n'est toléré que sur un axe CONNU
+# (`espece : chats`, graphie acceptée depuis le 20/08). Sur un axe inconnu il
+# faut le deux-points COLLÉ : sans cette nuance, « Luna : la chatte » — une
+# phrase, pas un filtre — ne rendrait plus rien.
+
+_JETON_AXE = re.compile(
+    r"(?<![\w:/])([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ0-9'’_-]*)(\s*):\s*(?=[^\s,;])")
+
+MOTS_MAX_VALEUR = 4          # « Le chat de Bremblens » : quatre mots suffisent
+_FERMANTE = {'"': '"', '“': '”', '«': '»'}
+
+
+def _cle_de_comparaison(mot):
+    """Même clé que `geocode.sans_accents` — une seule dans tout le projet."""
+    return _normaliser_avec_positions(mot)[0]
+
+
+def _valeur_du_jeton(texte, debut, borne, axe, resoudre):
+    """(valeur, fin) — la plus LONGUE valeur que `resoudre` reconnaît.
+
+    `borne` : là où commence le jeton suivant. Sans elle, la valeur de
+    `personne:X` avalerait `animal:Y` écrit juste après."""
+    zone = texte[debut:borne]
+    for fin_de_valeur in (',', ';'):
+        i = zone.find(fin_de_valeur)
+        if i >= 0:
+            zone = zone[:i]
+    if zone[:1] in _FERMANTE:
+        j = zone.find(_FERMANTE[zone[0]], 1)
+        if j > 0:
+            return zone[1:j].strip(), debut + j + 1
+    mots, pos = [], 0
+    while len(mots) < MOTS_MAX_VALEUR:
+        while pos < len(zone) and zone[pos].isspace():
+            pos += 1
+        if pos >= len(zone):
+            break
+        d = pos
+        while pos < len(zone) and not zone[pos].isspace():
+            pos += 1
+        mots.append((zone[d:pos], debut + pos))
+    if not mots:
+        return '', debut
+    if axe is not None:
+        for n in range(len(mots), 0, -1):
+            candidat = ' '.join(m for m, _f in mots[:n])
+            if resoudre(axe, candidat) is not None:
+                return candidat, mots[n - 1][1]
+    return mots[0][0], mots[0][1]
+
+
+def extraire_jetons(requete, axes, resoudre, axe_inconnu_refuse=False):
+    """Détache tous les jetons `<axe>:<valeur>` d'une requête.
+
+    `axes`    : {graphie sans accent en minuscules -> axe canonique}. Le module
+                ne connaît AUCUN vocabulaire, il le reçoit — comme il reçoit
+                ses lecteurs de date.
+    `resoudre`: (axe, valeur) -> valeur canonique | None.
+    `axe_inconnu_refuse` : **False par défaut, et c'est un rouge observé.**
+                Un extracteur qui ne s'occupe que de SON axe croise forcément
+                ceux des autres : appelé pour `espece:` sur « animal:Caline »,
+                il a annoncé « espèce inconnue : Caline » et mangé le jeton
+                (banc du 26/08, huit griefs d'un coup). Chaque extracteur
+                laisse donc passer ce qui n'est pas à lui ; SEUL le dernier —
+                celui qui connaît tous les axes — met ce drapeau à True et
+                refuse ce qui reste.
+
+    Rend `(retenus, inconnus, reste)` :
+      retenus  [(axe, valeur canonique)]  — dédoublonnés, dans l'ordre lu ;
+      inconnus [(axe, valeur, axe_connu)] — `axe_connu` False = l'AXE lui-même
+               est inconnu, et alors `axe` est la graphie telle qu'écrite ;
+      reste    la requête amputée de ses jetons, espaces normalisés.
+
+    Les INCONNUS sont rendus, jamais avalés : c'est toute la correction. Un
+    appelant qui en reçoit un doit rendre ZÉRO photo et le DIRE.
+    """
+    texte = requete or ''
+    trouves = list(_JETON_AXE.finditer(texte))
+    retenus, inconnus, morceaux = [], [], []
+    i = 0
+    for rang, m in enumerate(trouves):
+        if m.start() < i:                     # avalé par la valeur précédente
+            continue
+        axe = axes.get(_cle_de_comparaison(m.group(1)))
+        if axe is None and (m.group(2) or not axe_inconnu_refuse):
+            # Espace avant le deux-points : « Luna : la chatte » est une
+            # phrase. Axe d'un AUTRE extracteur : ce n'est pas à celui-ci de
+            # le juger — il le laisse intact pour le suivant.
+            continue
+        borne = len(texte)
+        for suivant in trouves[rang + 1:]:
+            if suivant.start() >= m.end():
+                borne = suivant.start()
+                break
+        valeur, fin = _valeur_du_jeton(texte, m.end(), borne, axe, resoudre)
+        if not valeur:
+            continue
+        morceaux.append(texte[i:m.start()])
+        i = fin
+        if axe is None:
+            trace = (m.group(1), valeur, False)
+            if trace not in inconnus:
+                inconnus.append(trace)
+            continue
+        canonique = resoudre(axe, valeur)
+        if canonique is None:
+            trace = (axe, valeur, True)
+            if trace not in inconnus:
+                inconnus.append(trace)
+        elif (axe, canonique) not in retenus:
+            retenus.append((axe, canonique))
+    morceaux.append(texte[i:])
+    return retenus, inconnus, ' '.join(' '.join(morceaux).split())
+
+
 # ─── ESPÈCE — le 5ᵉ axe, et il est EXPLICITE ────────────────────────────────
 # Forme A (choix de Mike, 20/08) : un jeton que l'utilisateur écrit, jamais une
 # promotion silencieuse d'un mot de la phrase. « chat » tapé seul reste du SENS
@@ -489,7 +626,14 @@ def _nettoyer_reste(reste):
 #
 # `especes:` au pluriel et `espèce:` accentué sont acceptés : refuser une
 # graphie que l'utilisateur écrira forcément serait une panne, pas une règle.
-_JETON_ESPECE = re.compile(r'esp[eè]ces?\s*:\s*([^\s,;]+)', re.I)
+# Le mécanisme est COMMUN depuis le 26/08 (voir « JETONS D'AXE » plus haut) :
+# `espece:` avait déjà sa règle — un jeton qu'on ne sait pas satisfaire rend
+# RIEN — et les autres axes ne l'avaient pas. Deux implémentations de la même
+# règle auraient divergé une deuxième fois ; celle-ci est la seule.
+#
+# `especes:` au pluriel et `espèce:` accentué sont acceptés : refuser une
+# graphie que l'utilisateur écrira forcément serait une panne, pas une règle.
+AXES_ESPECE = {'espece': 'espece', 'especes': 'espece'}
 
 
 def extraire_especes(requete, canonique):
@@ -510,21 +654,16 @@ def extraire_especes(requete, canonique):
     L'extraction passe AVANT les noms — contrairement à l'ordre des trois
     autres axes — parce qu'un jeton préfixé n'est ambigu avec rien : personne
     ne s'appelle « espece:… ». C'est le retirer TARD qui serait risqué.
+
+    Depuis le 26/08 ce n'est plus qu'une VUE sur `extraire_jetons` : la règle
+    du jeton insatisfaisable est la même pour les cinq axes, et elle n'a plus
+    qu'un seul endroit où être fausse.
     """
-    especes, inconnues = [], []
-
-    def prendre(m):
-        brut = m.group(1)
-        c = canonique(brut)
-        if c:
-            if c not in especes:
-                especes.append(c)
-        elif brut not in inconnues:
-            inconnues.append(brut)
-        return ' '
-
-    reste = _JETON_ESPECE.sub(prendre, requete)
-    return especes, inconnues, ' '.join(reste.split())
+    retenus, inconnus, reste = extraire_jetons(
+        requete, AXES_ESPECE, lambda _axe, valeur: canonique(valeur))
+    return ([v for _a, v in retenus],
+            [v for _a, v, _connu in inconnus],
+            reste)
 
 
 def filtrer_periode(entrees, periode, epoch_precis, annee_fiable):
