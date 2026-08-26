@@ -349,9 +349,26 @@ par `verifier_controles` —, navigation clavier des tâches répétitives (6),
 états vides et erreurs rédigés (7). Le pari le plus rentable des trois
 dernières sessions a été d'instrumenter un vœu ; il reste quatre vœux.
 
-Choix de Mike (25/08) : le Takeout Google et l'hébergement Infomaniak sont
-**décidés et chiffrés**, il ne leur manque que du temps de transfert. Ils
-passent donc **après** le code.
+**Le point 6 est choisi par Mike (26/08), et il a deux moitiés.** Les
+raccourcis EXISTENT — relevés dans `docs/RACCOURCIS.md`, sept contextes — mais
+**une seule page les affiche** (`/sujets`, une ligne). Le plancher exige
+« documente les raccourcis dans l'interface elle-même » : il manque donc la
+mise en œuvre avant l'instrument. Et elle bute sur une brique absente — **un
+fichier JS commun injecté sur toutes les pages**, comme `tokens.css` et
+`base.css` le sont déjà (`_UI_GLOBAL_FILES`). Il n'y en a aucun aujourd'hui.
+Écrire le panneau `?` onze fois recréerait la divergence que `components.css`
+vient de supprimer : **la brique d'abord, le panneau ensuite, l'instrument en
+dernier.**
+
+**Choix de Mike (26/08), qui déplace la fin du projet** : la copie hors site
+ne se fait **qu'une fois TOUS les points de la feuille de route terminés**, et
+notamment une **gestion multi-utilisateurs de la médiathèque, efficace et
+fonctionnelle** (point 17, neuf). Raison : sauvegarder hors site un produit
+dont le modèle d'accès va changer reviendrait à figer un état intermédiaire.
+
+Le Takeout Google, lui, est **en cours de téléchargement — ~2 jours** (dit le
+26/08). À son arrivée : `verifier_photos_google.py --takeout "<dossier>"`,
+quatre verdicts, **un seul ABSENT interdit tout effacement**.
 
 Ce n'est pas un renoncement : rien n'est exposé de plus qu'hier, et les deux
 points sont écrits assez précisément dans `PROMPT_NOUVELLE_SESSION.md` pour
@@ -1074,7 +1091,13 @@ qui en découle : éditer → redémarrer → **observer** → livrer.
 4. **Gestes Mike** : `gps_place` ✔ ; renommage appliqué ✔ (7 058) ; **Flo →
    Florine ✔ (23/08 — 11 heures de file, 5 909 photos, vérifié 200/200 sur le
    DISQUE)** ; **groupe de Stéphane Plouvin ✔ (23/08 — 58/58 sur le DISQUE)** ;
-   re-rejeter Caline.
+   **re-rejeter Caline : SANS OBJET (vérifié le 26/08 sur le serveur vivant)**
+   — « Caline » n'existe nulle part : ni fiche personne, ni fiche animal (les
+   12 nommés sont Inti, Luna, Mutz, Pticon, Ava, Pins, Puma, Kevin, Wilbur,
+   Dolly, Yuri, Le chat de Bremblens), ni résultat de recherche, ni
+   proposition en file. **Troisième ligne de cette doc qui annonçait un geste
+   sans objet.** L'outil cross-pipeline (point 8) reste là si un nom d'animal
+   ressort un jour en `personne:`.
 5. **Correctifs d'audit** : **I4, I5, I6, I7 et I8 CLOS (22/08)**, tous
    observés en réel, 32 tests neufs. I7 — règle unique `parse_tag_nomme`,
    mesurée avant (3 tags en casse divergente sur 37 707 : défaut latent) et
@@ -1283,6 +1306,26 @@ qui en découle : éditer → redémarrer → **observer** → livrer.
     mesurerait son propre écho (les 82 photos qui RÉCITENT, 20/08) ;
     (c) **un journal avant/après** à chaque re-tag — sans l'AVANT, on ne saura
     jamais si l'agent améliore ou dérive.
+
+17. **Gestion multi-utilisateurs de la médiathèque — NEUF (26/08, demande de
+    Mike). Dernier chantier avant la copie hors site.** Rien n'est spécifié :
+    ce point est ouvert et attend une INSTRUCTION avant tout code. Les
+    questions qu'il faudra trancher, dans cet ordre :
+    (a) **Qui** — combien de comptes, qui les crée, un mot de passe par
+    personne ou un lien par appareil ? Le serveur est en `http.server` stdlib
+    pur et vit sur le réseau domestique : pas de HTTPS, donc pas de mot de
+    passe qui traverse le LAN en clair sans y penser d'abord.
+    (b) **Quoi** — qui voit quoi. Le fonds est familial : le partage par
+    défaut est probablement TOTAL en lecture, et c'est l'ÉCRITURE qui se
+    restreint (nommer, effacer, ranger). Les décisions humaines portent déjà
+    un auteur implicite : elles n'en portent aucun explicite aujourd'hui.
+    (c) **Ce que ça change dans les invariants** — la règle 2 (« les noms
+    humains ne se perdent jamais ») devient « les noms de QUI » ; un conflit
+    entre deux jugements contradictoires n'a aujourd'hui aucune règle.
+    (d) **Le coût réel** — chaque route du serveur devient un point de
+    contrôle. C'est le premier chantier du projet qui touche TOUTES les
+    routes ; le monolithe a 12 000 lignes et `monolith-surgery` s'applique.
+    **Ne rien commencer sans que (a) et (b) soient tranchés par Mike.**
 
 ### Résiduels faible valeur (ne pas prioriser)
 **MESURÉ le 15/08, et c'est pourquoi on n'y touche pas** : les deux planchers
