@@ -19,12 +19,13 @@ prouvé (45 lots, 89,2 Go, **25 864 fichiers, 0 absent, 0 tronqué**), confront�
 au NAS sur **13 905 médias** : CERTAIN 1 112 · PROBABLE 9 017 ·
 **ABSENT 3 776** (12,6 Go, dont **2 017 vidéos**, concentrées sur 2024-2026).
 
-**Il reste UN geste, et il appartient à Mike : lancer
-`32 - Copier les absentes de Google.bat`.** Il copie les 3 776 sous
-`_A TRIER\Takeout Google\<année>` — à blanc d'abord, rien n'est jamais
-écrasé, journal d'annulation. Puis `26 - Ranger par annee.bat`, puis laisser
-le serveur scanner. **Rien ne s'efface chez Google avant que
-`verifier_photos_google.py` ne compte ZÉRO absente.**
+**Le rapatriement est LANCÉ** (Mike, 27/08) : contrôle à blanc au vert
+— 3 776 fichiers, 12,61 Go, une année pour chacune, aucune collision — puis
+copie vers `_A TRIER\Takeout Google\<année>`. Suite : `26 - Ranger par
+annee.bat`, laisser le serveur scanner, **et relancer
+`verifier_photos_google.py` : rien ne s'efface chez Google avant qu'il ne
+compte ZÉRO absente.** Vérifier au passage le compte du journal
+`_corbeille_copies/` contre les 3 776.
 
 **Deux thèses sont tombées cette semaine, et les deux étaient écrites.**
 (1) « PROBABLE = Google a ré-encodé » : faux — le NAS est plus gros 8 741 fois
@@ -55,10 +56,15 @@ passe de tagging qui regarde déjà chaque photo**, pas un cinquième pipeline.
 
 ## Prochain pas
 
-1. **Mesurer si l'écriture XMP coupe le trailer** (question 1 de
-   `QUESTIONS_MIKE.md`). Dix photos Samsung non taguées : relever le trailer,
-   taguer, relever à nouveau. Si c'est oui, c'est un défaut qui court depuis
-   le début du projet, et il se corrige avant d'être chiffré.
+1. **Le trailer Samsung : la corrélation d'abord (banc prêt), la cause
+   ensuite (geste de Mike).** `verifier_trailer_samsung.py` croise, fichier
+   par fichier, « porte un SEF » et « porte un nom écrit par nous », sur les
+   seules photos Samsung. **Le lancer avec `--exclure=Takeout`** : les 3 776
+   photos rapatriées sont des copies de Google, SEF intact et pas encore
+   nommées — les compter fabriquerait la corrélation cherchée. Si le tableau
+   accuse, la PREUVE reste un avant/après sur le même fichier : relever le
+   trailer, nommer la photo, relever à nouveau. Écriture, donc geste de Mike.
+   Si c'est confirmé, c'est un défaut qui court depuis le début du projet.
 2. **Les boutons de `gallery` — option 1, tranchée par Mike : tout
    convertir.** `.tb` 34 px, `.geobtn` 28 px, `.fchip` 35 px, `.georow
    button` 34 px, `#ss-stop` 34 px → `.btn` canonique. Coût accepté :

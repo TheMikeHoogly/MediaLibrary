@@ -72,6 +72,38 @@ de la liste**, avant les boutons et avant le chantier 17 : ces fichiers ne
 vivent aujourd'hui qu'à un seul endroit, et c'est chez un tiers dont le quota
 est à 96 %. Deux questions dans `QUESTIONS_MIKE.md` (27/08).
 
+## État (27/08/2026, session 56) — LE RAPATRIEMENT EST LANCÉ, ET LE SOUPÇON A SON BANC
+
+**Mike a lancé `32 - Copier les absentes de Google.bat`.** Le contrôle à blanc
+est passé au vert avant le premier octet : cible
+`\\NAS-Bremblens\home\Photos\_A TRIER\Takeout Google`, **3 776 fichiers,
+12,61 Go**, place suffisante, aucun homonyme, aucune collision — une année
+pour chacune, aucune en `_SANS_DATE`.
+
+**Et le soupçon qui compte a maintenant un instrument.**
+`verifier_trailer_samsung.py` (neuf, famille `verifier_`, lecture seule) lit
+dans CHAQUE fichier deux faits, sans base ni serveur :
+
+  A. porte-t-il un trailer Samsung SEF après le `EOI` (marque `SEFT`) ?
+  B. porte-t-il un nom écrit par nous (`personne:` / `animal:`) ?
+
+Croisés sur les seules photos dont l'EXIF dit SAMSUNG, ils font un tableau à
+quatre cases, avec un intervalle de Wilson par ligne. Si les nommées n'ont
+jamais de SEF là où les autres en ont, la corrélation est établie.
+
+**Trois précautions, et elles font l'instrument** :
+
+- **Ce qui vient d'être importé doit être EXCLU.** Les 3 776 photos rapatriées
+  sont des copies de Google : SEF intact, pas encore nommées. Les compter
+  gonflerait la case « non nommée, avec SEF » et **fabriquerait la corrélation
+  qu'on cherche**. `--exclure=Takeout`, et le rapport dit ce qu'il a exclu.
+- **Un trailer non vide n'est pas un SEF** : on demande la MARQUE, pas la
+  taille. Une vignette oubliée n'est pas un bloc Samsung.
+- **Une corrélation n'est pas une cause, et le rapport l'écrit même quand il
+  est vert.** La preuve est un avant/après sur LE MÊME fichier — relever le
+  trailer, nommer la photo, relever à nouveau. C'est une écriture, donc un
+  geste de Mike, donc pas ce banc.
+
 ## État (27/08/2026, session 54) — 3 776 PHOTOS N'EXISTENT QUE CHEZ GOOGLE
 
 **L'export est ouvert, prouvé, et confronté au NAS.** 45 lots, 89,2 Go,
