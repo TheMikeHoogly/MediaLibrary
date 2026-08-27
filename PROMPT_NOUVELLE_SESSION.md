@@ -9,54 +9,70 @@ FUSIONNÉ — ce document, non. Puis `ROADMAP.md`, `eval/DECISIONS.md`,
 `eval/METHODE.md` — et `docs/DECISIONS_OUTILLAGE.md` si le sujet touche aux
 canaux, à la livraison ou au MCP. Débrief en 2–3 lignes, puis on attaque.
 
-## Où on en est (27/08/2026, fin de session 55)
+## Où on en est (27/08/2026, fin de session 58)
 
-**Tout est fusionné** (Mike, 27/08) — vérifie-le dans `.git/logs/`, pas ici.
-Le serveur tourne. Aucun canal n'attend.
+**Le serveur est ARRÊTÉ** (mon `arret` de 21:09) — le rangement par année
+l'exigeait. Le redémarrer est le premier geste de la reprise.
 
-**Le Takeout est allé jusqu'au bout de sa question.** Export ouvert et
-prouvé (45 lots, 89,2 Go, **25 864 fichiers, 0 absent, 0 tronqué**), confronté
-au NAS sur **13 905 médias** : CERTAIN 1 112 · PROBABLE 9 017 ·
-**ABSENT 3 776** (12,6 Go, dont **2 017 vidéos**, concentrées sur 2024-2026).
+**Les 3 776 photos que Google seul détenait sont sur le NAS.** Copiées sous
+`_A TRIER\Takeout Google\<année>` (12,6 Go, 0 grief, journal dans
+`_corbeille_copies/`), puis le serveur a commencé à les taguer. **Rien ne
+s'efface chez Google** avant que `verifier_photos_google.py` ne compte ZÉRO
+absente.
 
-**Le rapatriement est LANCÉ** (Mike, 27/08) : contrôle à blanc au vert
-— 3 776 fichiers, 12,61 Go, une année pour chacune, aucune collision — puis
-copie vers `_A TRIER\Takeout Google\<année>`. Suite : `26 - Ranger par
-annee.bat`, laisser le serveur scanner, **et relancer
-`verifier_photos_google.py` : rien ne s'efface chez Google avant qu'il ne
-compte ZÉRO absente.** Vérifier au passage le compte du journal
-`_corbeille_copies/` contre les 3 776.
+**Le rangement par année décrochait encore les décisions humaines — corrigé et
+PROUVÉ EN RÉEL.** `appliquer_plan.rekey_stores` se disait « miroir de
+`server.rekey_everywhere` » et re-cléait DEUX magasins de sujets sur quatre :
+`people` et `pets` sont keyés par NOM, `store.rekey(chemin)` n'y trouve
+jamais rien, et la boucle ne regardait pas le retour. Le rangement des 559
+photos de `_A TRIER` a rendu `{'ok': 539, 'skip': 20, 'decisions': 27}` :
+**27 décisions transportées** que l'ancien code aurait laissées derrière. Le
+premier lot de 20 en avait rendu **zéro** — un échantillon qu'on n'a pas
+choisi ne prouve rien, ni dans un sens ni dans l'autre.
 
-**Deux thèses sont tombées cette semaine, et les deux étaient écrites.**
-(1) « PROBABLE = Google a ré-encodé » : faux — le NAS est plus gros 8 741 fois
-sur 9 017, ratio médian 1,001, et **seulement sur les JPEG**. C'est le XMP que
-la photothèque écrit elle-même ; **8 802 sont la MÊME image**. (2) « les 173
-flux différents sont deux photos de même nom » — c'était moi, et l'écart
-**toujours du même signe** disait le contraire : un **trailer Samsung SEF**
-côté Google, à **0 octet côté NAS**. Notre écriture XMP le coupe, très
-probablement sur TOUT ce qu'elle tague. C'est la question ouverte n° 1 de
-`QUESTIONS_MIKE.md`, et elle vaut bien plus que 99 photos.
+Au passage, le script **PROUVE** désormais que le serveur est arrêté au lieu
+de le demander dans son en-tête — et **deux fois**, parce que la base est en
+WAL : `BEGIN IMMEDIATE` peut réussir pendant que le serveur vit, donc on lui
+demande AUSSI s'il répond.
 
-**Chantier 18, neuf, demandé par Mike le 27/08** : un agent signale à l'envoi
-les photos qui portent des données personnelles (factures, fiches de paie,
-pièces d'identité), pour que leur auteur les déplace dans son `PRIVE` ou les
-efface. Spécifié dans `ROADMAP.md`, point 18 — **le détecteur se greffe sur la
-passe de tagging qui regarde déjà chaque photo**, pas un cinquième pipeline.
+**Six familles de boutons de `gallery` passent au `.btn` canonique** —
+livré en `commit`, **branche non fusionnée**, parce que l'ŒIL manque. Cascade :
+69 déclarations disparues, 0 apparue, 0 valeur changée. Plancher 44 px prouvé :
+**9 → 22 cibles sur 31**. Et le bouton qui **supprime une photo** était en
+contour à **3,03:1** — la forme que le système avait mesurée et remplacée deux
+jours plus tôt ; elle survivait parce que `verifier_contraste` ne lit que
+`tokens.css` et `components.css`, jamais les `<style>` des pages.
 
-### Les trois choses de la semaine qui changent la suite
+**L'AVANT du trailer Samsung est photographié** (`_rapport_sef_avant.json`,
+**à ne pas supprimer**) : 1 736 JPEG rapatriés, 746 avec leur SEF, 1 715 sans
+aucun nom. Quand le serveur en aura nommé, `--comparer` donnera l'avant/après
+du MÊME fichier.
+
+### Les trois choses de la journée qui changent la suite
 
 1. **Un écart TOUJOURS du même signe n'est pas du bruit.** Six lignes de
-   contrôle ont renversé un verdict que j'avais écrit dans le ROADMAP.
-2. **« Extraction effectuée OK » n'est pas une preuve** — le fichier écrit à
-   moitié porte le bon nom. Le contrôle est le geste MOINS l'écriture : la
-   même traversée, donc ils ne peuvent pas diverger.
-3. **Le canal du banc n'admet que `[A-Za-z0-9_.:/=-]`.** Une option en liste
-   séparée par des virgules sera REFUSÉE ; la rendre répétable, dès
-   l'écriture. Un espace passe par le jeton `b64:`.
+   contrôle ont renversé un verdict que j'avais écrit dans le ROADMAP : les
+   173 « flux différents » portaient toutes un trailer Samsung, pas une autre
+   image.
+2. **Un docstring qui dit « miroir de » n'est pas une preuve** — et le test
+   qui le dit doit ROUGIR sur l'ancien code, sinon il ne dit rien.
+3. **Une portée qu'on ne lit pas est une portée qui ment pour vous.**
+   `verifier_contraste` annonce depuis toujours qu'il ne juge que deux
+   feuilles. Un « Supprimer » à 3:1 a vécu dans l'angle mort qu'il déclarait.
 
 ## Prochain pas
 
-1. **Le trailer Samsung : l'AVANT est photographié, il n'y a plus qu'à
+1. **REDÉMARRER le serveur**, puis **l'ŒIL sur `gallery`** : c'est ce qui
+   manque pour fusionner la branche
+   `feat/six-familles-de-boutons-maison-passent-au-btn-canonique`. Dans
+   l'ordre : `verifier_pages_composants` sur le serveur VIVANT, puis regarder
+   la barre d'outils, la barre géo, la visionneuse et le diaporama. Le coût
+   accepté est +19 px de hauteur de barres — vérifier que ça ne casse pas le
+   retour à la ligne sur petit écran.
+2. **`.fchip`** : une seule classe pour des `<a>` de navigation ET des
+   `<span>` d'information. Décision en attente dans `QUESTIONS_MIKE.md` ;
+   ça vit dans `server.py`, donc redémarrage.
+3. **Le trailer Samsung : l'AVANT est photographié, il n'y a plus qu'à
    attendre puis comparer.** `_rapport_sef_avant.json` porte l'état des
    **1 736 JPEG rapatriés — 746 avec leur SEF, 1 715 sans aucun nom**. Quand
    le serveur en aura nommé, lancer au banc :
@@ -73,29 +89,22 @@ passe de tagging qui regarde déjà chaque photo**, pas un cinquième pipeline.
    corrélation cherchée. Si c'est confirmé, c'est un défaut qui court depuis
    le début du projet.
 
-2. **Les boutons de `gallery` — option 1, tranchée par Mike : tout
-   convertir.** `.tb` 34 px, `.geobtn` 28 px, `.fchip` 35 px, `.georow
-   button` 34 px, `#ss-stop` 34 px → `.btn` canonique. Coût accepté :
-   **+19 px**. Preuve dans l'ordre : `verifier_css_cascade --page` (feuille
-   commune EN PREMIER dans `--apres`), `verifier_cibles`,
-   `verifier_contraste`, `verifier_controles`, tests UI, banc des pages
-   composants sur le **serveur vivant**, puis l'œil.
-3. **Le chantier 18 (confidentialité), partie qui ne dépend pas de 17** : le
+4. **Le chantier 18 (confidentialité), partie qui ne dépend pas de 17** : le
    détecteur greffé sur le tagueur, l'axe `sensible:`, et **d'abord le jeu
    étiqueté et son banc** — sans banc, le seuil est une opinion. Attention :
    le verdict ne va PAS dans le XMP (l'étiquette serait elle-même la fuite).
-4. **Le panneau `?` des raccourcis**, et d'abord sa brique : **un JS commun
+5. **Le panneau `?` des raccourcis**, et d'abord sa brique : **un JS commun
    injecté sur toutes les pages** (`_UI_GLOBAL_FILES`). Il n'en existe aucun.
    Contenu dans `docs/RACCOURCIS.md`.
-5. **La suite du chantier 17** : la notion de PROPRIÉTAIRE, puis
+6. **La suite du chantier 17** : la notion de PROPRIÉTAIRE, puis
    l'attribution rétroactive des 3 767 décisions à Mike. Deux questions
    ouvertes bloquent l'écriture partagée.
-6. **UNIFIER le re-clé** : la réparation est faite (27/08), mais la
+7. **UNIFIER le re-clé** : la réparation est faite (27/08), mais la
    primitive complète existe désormais **TROIS fois**
    (`server.rekey_everywhere`, `deplacer_dossiers.recle_une_cle`,
    `appliquer_plan.rekey_stores`). Trois endroits où la même règle peut
    diverger — elle l'a déjà fait pendant cinq jours. Une seule doit rester.
-7. **Reste d'audit** : O8–O9, O11, O13–O15 ; **I1** dans `/reglages` ;
+8. **Reste d'audit** : O8–O9, O11, O13–O15 ; **I1** dans `/reglages` ;
    `animal:luna` en minuscule sur 3 photos à côté de `animal:Luna` sur 355.
    Puis les quatre pages sans `components.css`. O15 balaie au passage les
    3 047 vignettes orphelines du déplacement du 26/08.

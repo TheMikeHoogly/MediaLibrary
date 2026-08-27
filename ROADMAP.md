@@ -168,6 +168,16 @@ humaine(s) re-clée(s) `) : ce qui n'est pas compté n'est pas diagnosticable
 après coup, et c'est précisément ce qui a laissé 928 décisions partir en
 silence.
 
+### PROUVÉ EN RÉEL, le soir même : **27 décisions**
+
+Le rangement des 559 photos a rendu
+`{'ok': 539, 'dry': 0, 'skip': 20, 'decisions': 27}`. **27 rattachements,
+exclusions ou confirmations ont suivi leur photo** — et l'ancien code les
+aurait laissés sur l'ancien chemin, sans erreur, sans trace. Le premier lot de
+20 en avait rendu **zéro**, ce qui ne prouvait rien : ces vingt-là n'en
+portaient simplement aucune. C'est le lot complet qui a produit le chiffre, et
+c'est pour ça qu'on ne conclut pas sur un échantillon qu'on n'a pas choisi.
+
 **18 tests neufs** (`test_recle_hors_ligne.py`), dont le ROUGE observé : la
 boucle des quatre magasins laissée telle quelle, qui ne déplace ni le
 rattachement, ni l'exclusion, ni la confirmation — et ne lève aucune erreur.
