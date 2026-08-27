@@ -95,9 +95,12 @@ echo ==============================================================
 echo   OK - les absentes sont sur le NAS
 echo ==============================================================
 echo.
-echo   Suite, dans cet ordre :
-echo     1. "26 - Ranger par annee.bat"
-echo     2. laisser le serveur scanner et taguer
+echo   Suite, dans cet ORDRE - il compte :
+echo     1. laisser le serveur SCANNER. Le rangement par annee
+echo        travaille depuis l'index : tant que ces photos n'y sont
+echo        pas, son plan ne les voit pas. Rien ne presse, elles
+echo        sont deja sous "Takeout Google\<annee>", donc datees.
+echo     2. "26 - Ranger par annee.bat", une fois qu'elles y sont
 echo     3. relancer la verification :
 echo        "%PY%" verifier_photos_google.py --takeout "..." --json _google.json
 echo.

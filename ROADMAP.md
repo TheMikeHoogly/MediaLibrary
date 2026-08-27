@@ -91,6 +91,18 @@ Croisés sur les seules photos dont l'EXIF dit SAMSUNG, ils font un tableau à
 quatre cases, avec un intervalle de Wilson par ligne. Si les nommées n'ont
 jamais de SEF là où les autres en ont, la corrélation est établie.
 
+**L'AVANT est photographié — et il n'est pas reproductible.** Le rapatriement
+a déposé sur le NAS **1 736 JPEG dont 746 portent encore leur trailer SEF et
+1 715 ne portent aucun nom** : un état que le fonds n'offrait plus nulle part.
+`--photographier` l'a gravé dans **`_rapport_sef_avant.json`** (428 Ko,
+non versionné, **à ne pas supprimer**). Le jour où la photothèque en nommera
+une, `--comparer` rendra l'avant/après du MÊME fichier — la CAUSE, pas la
+corrélation. Une fois ces photos nommées, cet « avant » ne se refabrique plus.
+
+Le rapprochement se fait par NOM DE FICHIER, pas par chemin : `26 - Ranger par
+annee.bat` les aura déplacées entre les deux relevés, et un instrument qui les
+chercherait à leur ancien chemin conclurait « disparues ».
+
 **Trois précautions, et elles font l'instrument** :
 
 - **Ce qui vient d'être importé doit être EXCLU.** Les 3 776 photos rapatriées
@@ -100,9 +112,20 @@ jamais de SEF là où les autres en ont, la corrélation est établie.
 - **Un trailer non vide n'est pas un SEF** : on demande la MARQUE, pas la
   taille. Une vignette oubliée n'est pas un bloc Samsung.
 - **Une corrélation n'est pas une cause, et le rapport l'écrit même quand il
-  est vert.** La preuve est un avant/après sur LE MÊME fichier — relever le
-  trailer, nommer la photo, relever à nouveau. C'est une écriture, donc un
-  geste de Mike, donc pas ce banc.
+  est vert.** La preuve est l'avant/après ci-dessus — et elle n'a plus besoin
+  d'un geste exprès de Mike : le serveur va nommer ces photos tout seul.
+
+**Et deux rouges observés au banc, gravés en test** : le jeton `b64:` **ne se
+décode que sur un argument SÉPARÉ** (`--racine b64:XXX`, jamais
+`--racine=b64:XXX` — `dejeton` regarde le DÉBUT de l'argument), et une
+photographie de **zéro fichier sortait VERTE** sur un JSON de deux octets.
+Les deux se seraient lus comme un succès.
+
+**Défaut corrigé dans le bat 32** : son texte de fin disait « 1. ranger par
+année, 2. laisser le serveur scanner ». C'est l'INVERSE — le rangement par
+année travaille depuis l'index, et le plan ne voit pas ce qui n'a pas encore
+été scanné. Constaté en réel : le plan proposait 559 fichiers (l'ancien
+contenu de `_A TRIER`) et zéro des 3 776.
 
 ## État (27/08/2026, session 54) — 3 776 PHOTOS N'EXISTENT QUE CHEZ GOOGLE
 

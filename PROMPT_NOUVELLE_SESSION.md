@@ -56,15 +56,23 @@ passe de tagging qui regarde déjà chaque photo**, pas un cinquième pipeline.
 
 ## Prochain pas
 
-1. **Le trailer Samsung : la corrélation d'abord (banc prêt), la cause
-   ensuite (geste de Mike).** `verifier_trailer_samsung.py` croise, fichier
-   par fichier, « porte un SEF » et « porte un nom écrit par nous », sur les
-   seules photos Samsung. **Le lancer avec `--exclure=Takeout`** : les 3 776
-   photos rapatriées sont des copies de Google, SEF intact et pas encore
-   nommées — les compter fabriquerait la corrélation cherchée. Si le tableau
-   accuse, la PREUVE reste un avant/après sur le même fichier : relever le
-   trailer, nommer la photo, relever à nouveau. Écriture, donc geste de Mike.
-   Si c'est confirmé, c'est un défaut qui court depuis le début du projet.
+1. **Le trailer Samsung : l'AVANT est photographié, il n'y a plus qu'à
+   attendre puis comparer.** `_rapport_sef_avant.json` porte l'état des
+   **1 736 JPEG rapatriés — 746 avec leur SEF, 1 715 sans aucun nom**. Quand
+   le serveur en aura nommé, lancer au banc :
+   `verifier_trailer_samsung.py --racine b64:<le fonds> --echantillon 0
+   --comparer _rapport_sef_avant.json` — le rapprochement se fait par NOM de
+   fichier, donc le rangement par année ne le casse pas. Une seule transition
+   compte : **un nom apparu ET le SEF disparu**. **Ne pas supprimer
+   `_rapport_sef_avant.json`** : une fois ces photos nommées, cet « avant »
+   ne se refabrique plus.
+   En attendant qu'il y ait des noms, le tableau de corrélation
+   (`croiser`, sans `--comparer`) répond déjà — mais **avec
+   `--exclure Takeout`** : les photos rapatriées sont des copies de Google,
+   SEF intact et pas encore nommées, et les compter fabriquerait la
+   corrélation cherchée. Si c'est confirmé, c'est un défaut qui court depuis
+   le début du projet.
+
 2. **Les boutons de `gallery` — option 1, tranchée par Mike : tout
    convertir.** `.tb` 34 px, `.geobtn` 28 px, `.fchip` 35 px, `.georow
    button` 34 px, `#ss-stop` 34 px → `.btn` canonique. Coût accepté :

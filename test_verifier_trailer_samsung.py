@@ -230,5 +230,94 @@ class LExclusion(unittest.TestCase):
         self.assertTrue(any('EXCLUS' in l and '3776' in l for l in lignes))
 
 
+class LAvantApresSurLeMemeFichier(unittest.TestCase):
+    """L'experience que le rapatriement a rendue possible.
+
+    Les 3 776 photos arrivent avec leur SEF et sans nom. Le jour ou la
+    phototheque en nomme une, l'avant/apres du MEME fichier donne la CAUSE,
+    et plus seulement la correlation."""
+
+    def setUp(self):
+        self.d = tempfile.mkdtemp(prefix="test_sef3_")
+
+    def test_la_photographie_garde_l_etat_pas_le_verdict(self):
+        p = ecrire(self.d, 'a.jpg', jpeg(trailer=SEF))
+        etat = T.photographier([p], ecrire=lambda *x: None, chaque=0)
+        self.assertEqual(list(etat), ['a.jpg'])
+        self.assertTrue(etat['a.jpg']['sef'])
+        self.assertFalse(etat['a.jpg']['nomme'])
+
+    def test_LA_transition_qui_prouve(self):
+        # avant : SEF, pas de nom. apres : nom, plus de SEF.
+        p = ecrire(self.d, 'a.jpg', jpeg(trailer=SEF))
+        avant = T.photographier([p], ecrire=lambda *x: None, chaque=0)
+        Path(p).write_bytes(jpeg(nomme=True))       # nommee, trailer coupe
+        compte, ex = T.comparer(avant, [p], ecrire=lambda *x: None, chaque=0)
+        self.assertEqual(compte['preuve'], 1)
+        self.assertTrue(ex['preuve'])
+
+    def test_nommee_MAIS_le_SEF_survit_fait_TOMBER_le_soupcon(self):
+        p = ecrire(self.d, 'b.jpg', jpeg(trailer=SEF))
+        avant = T.photographier([p], ecrire=lambda *x: None, chaque=0)
+        Path(p).write_bytes(jpeg(nomme=True, trailer=SEF))
+        compte, _e = T.comparer(avant, [p], ecrire=lambda *x: None, chaque=0)
+        self.assertEqual(compte['preuve'], 0)
+        self.assertEqual(compte['nomme_sef_garde'], 1)
+
+    def test_un_SEF_perdu_SANS_nom_neuf_accuse_autre_chose(self):
+        p = ecrire(self.d, 'c.jpg', jpeg(trailer=SEF))
+        avant = T.photographier([p], ecrire=lambda *x: None, chaque=0)
+        Path(p).write_bytes(jpeg())
+        compte, _e = T.comparer(avant, [p], ecrire=lambda *x: None, chaque=0)
+        self.assertEqual(compte['sef_perdu_sans_nom'], 1)
+        self.assertEqual(compte['preuve'], 0)
+
+    def test_un_fichier_DEPLACE_est_retrouve_par_son_NOM(self):
+        # Entre les deux photographies, le rangement par annee est passe.
+        p = ecrire(self.d, 'ancien/d.jpg', jpeg(trailer=SEF))
+        avant = T.photographier([p], ecrire=lambda *x: None, chaque=0)
+        q = ecrire(self.d, '2024/d.jpg', jpeg(nomme=True))
+        os.remove(p)
+        compte, _e = T.comparer(avant, [q], ecrire=lambda *x: None, chaque=0)
+        self.assertEqual(compte['introuvable'], 0)
+        self.assertEqual(compte['preuve'], 1)
+
+    def test_un_fichier_vraiment_disparu_est_COMPTE(self):
+        p = ecrire(self.d, 'e.jpg', jpeg(trailer=SEF))
+        avant = T.photographier([p], ecrire=lambda *x: None, chaque=0)
+        compte, _e = T.comparer(avant, [], ecrire=lambda *x: None, chaque=0)
+        self.assertEqual(compte['introuvable'], 1)
+
+    def test_rien_de_nomme_ne_conclut_RIEN(self):
+        lignes = []
+        ok = T.rapport_comparaison(
+            {'preuve': 0, 'sef_perdu_sans_nom': 0, 'nomme_sef_garde': 0,
+             'inchange': 500, 'introuvable': 0, 'illisible': 0}, {},
+            ecrire=lignes.append)
+        self.assertTrue(ok)
+        self.assertTrue(any('rien a conclure' in l for l in lignes))
+
+    def test_une_seule_preuve_rend_ROUGE(self):
+        ok = T.rapport_comparaison(
+            {'preuve': 1, 'sef_perdu_sans_nom': 0, 'nomme_sef_garde': 300,
+             'inchange': 0, 'introuvable': 0, 'illisible': 0}, {},
+            ecrire=lambda *x: None)
+        self.assertFalse(ok)
+
+
+class UnePhotographieDeRien(unittest.TestCase):
+
+    def test_zero_fichier_ne_rend_PAS_vert(self):
+        # Observe au banc le 27/08 : `--racine=b64:...` colle avec un `=`
+        # n'est pas decode par le canal (dejeton regarde le DEBUT de
+        # l'argument), la racine n'existait pas, et le banc sortait VERT sur
+        # un fichier de deux octets.
+        d = tempfile.mkdtemp(prefix="test_sef4_")
+        code = T.main(['--racine', os.path.join(d, 'nexistepas'),
+                       '--echantillon', '0',
+                       '--photographier', os.path.join(d, 'photo.json')])
+        self.assertEqual(code, 1)
+
+
 if __name__ == '__main__':
     unittest.main(verbosity=0)

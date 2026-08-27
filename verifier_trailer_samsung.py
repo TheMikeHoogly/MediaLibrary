@@ -22,6 +22,24 @@ explication tient debout : la copie du NAS et celle de Google ne viennent
 peut-être pas du même chemin — le téléphone a pu envoyer l'une par la synchro
 et l'autre autrement, et perdre le SEF en route.
 
+L'EXPÉRIENCE QUE LE 27/08 A RENDUE POSSIBLE
+
+Les **3 776 photos rapatriées du Takeout** arrivent dans un état que le fonds
+n'offrait plus nulle part : **trailer Samsung intact, et aucun nom écrit par
+nous**. Le jour où la photothèque en nommera une, on aura l'avant et l'après
+**du MÊME fichier** — c'est-à-dire la CAUSE, et plus seulement la corrélation.
+
+Encore faut-il avoir photographié l'avant. D'où `--photographier` : il écrit
+l'état de chaque fichier (a-t-il un SEF, porte-t-il un nom, combien pèse son
+trailer), et `--comparer` relit ces mêmes fichiers plus tard et NOMME les
+transitions. Une seule compte vraiment : **un nom est apparu ET le SEF a
+disparu**.
+
+Le rapprochement se fait par NOM DE FICHIER, pas par chemin : entre les deux
+photographies, `26 - Ranger par annee.bat` aura déplacé ces photos vers leur
+dossier d'année. Un instrument qui les chercherait à leur ancien chemin
+conclurait « disparues » et ne prouverait rien.
+
 CE QUE CET INSTRUMENT MESURE — ET CE QU'IL NE PROUVE PAS
 
 Il lit des fichiers du fonds, et pour chacun deux faits, **dans le fichier
@@ -152,6 +170,102 @@ def echantillon(racines, combien, parcours=None, exclure=()):
     return [tous[int(i * pas)] for i in range(combien)], len(tous)
 
 
+def photographier(chemins, lire=lire_faits, sef=a_un_sef, ecrire=print,
+                  chaque=200):
+    """{nom de fichier: état} — l'ÉTAT, jamais le verdict.
+
+    Indexé par NOM et non par chemin : le rangement par année déplacera ces
+    photos entre les deux photographies, et une comparaison qui les
+    chercherait à leur ancien chemin dirait « disparues »."""
+    etat = {}
+    for i, c in enumerate(chemins, 1):
+        f = lire(c)
+        if f is None:
+            continue
+        etat[os.path.basename(c)] = {
+            'chemin': c, 'samsung': f['samsung'], 'nomme': f['nomme'],
+            'trailer': f['trailer'], 'octets': f['octets'],
+            'sef': bool(sef(c, f['trailer']))}
+        if chaque and i % chaque == 0:
+            ecrire("    %d / %d" % (i, len(chemins)))
+    return etat
+
+
+def comparer(avant, chemins, lire=lire_faits, sef=a_un_sef, ecrire=print,
+             chaque=200):
+    """Les transitions entre une photographie et l'état actuel.
+
+    Rend (compte, exemples). La transition qui PROUVE est `preuve` : un nom
+    est apparu ET le SEF a disparu, sur le même fichier."""
+    par_nom = {}
+    for c in chemins:
+        par_nom.setdefault(os.path.basename(c), c)
+    compte = {'preuve': 0, 'sef_perdu_sans_nom': 0, 'nomme_sef_garde': 0,
+              'inchange': 0, 'introuvable': 0, 'illisible': 0}
+    exemples = {}
+    for i, (nom, av) in enumerate(sorted(avant.items()), 1):
+        c = par_nom.get(nom)
+        if c is None:
+            compte['introuvable'] += 1
+            continue
+        f = lire(c)
+        if f is None:
+            compte['illisible'] += 1
+            continue
+        ap_sef = bool(sef(c, f['trailer']))
+        nom_neuf = f['nomme'] and not av['nomme']
+        sef_perdu = av['sef'] and not ap_sef
+        if sef_perdu and nom_neuf:
+            cle = 'preuve'
+        elif sef_perdu:
+            cle = 'sef_perdu_sans_nom'
+        elif nom_neuf and av['sef']:
+            cle = 'nomme_sef_garde'
+        else:
+            cle = 'inchange'
+        compte[cle] += 1
+        if cle != 'inchange' and len(exemples.setdefault(cle, [])) < LISTE_MAX:
+            exemples[cle].append('%s (trailer %d -> %d)'
+                                 % (nom, av['trailer'], f['trailer']))
+        if chaque and i % chaque == 0:
+            ecrire("    %d / %d" % (i, len(avant)))
+    return compte, exemples
+
+
+def rapport_comparaison(compte, exemples, ecrire=print):
+    """True si RIEN ne prouve que notre écriture coupe le trailer."""
+    ecrire("")
+    ecrire("=" * 74)
+    ecrire("  AVANT / APRES SUR LES MEMES FICHIERS")
+    ecrire("=" * 74)
+    ecrire("  un nom est apparu ET le SEF a disparu : %d" % compte['preuve'])
+    ecrire("  le SEF a disparu sans nom neuf         : %d"
+           % compte['sef_perdu_sans_nom'])
+    ecrire("  un nom est apparu, le SEF est reste    : %d"
+           % compte['nomme_sef_garde'])
+    ecrire("  inchange                               : %d" % compte['inchange'])
+    ecrire("  introuvables / illisibles              : %d / %d"
+           % (compte['introuvable'], compte['illisible']))
+    for cle in ('preuve', 'sef_perdu_sans_nom', 'nomme_sef_garde'):
+        for x in (exemples.get(cle) or []):
+            ecrire("    [%s] %s" % (cle, x[:60]))
+    ecrire("")
+    if compte['preuve']:
+        ecrire("  PROUVE, SUR LE MEME FICHIER : nommer une photo lui fait")
+        ecrire("  perdre son trailer Samsung. Ce n est plus une correlation.")
+    elif compte['nomme_sef_garde']:
+        ecrire("  Des photos ont ete nommees et ont GARDE leur SEF : notre")
+        ecrire("  ecriture ne le coupe pas. Le soupcon tombe.")
+    elif compte['sef_perdu_sans_nom']:
+        ecrire("  Des SEF ont disparu SANS qu un nom apparaisse : la cause")
+        ecrire("  est ailleurs que dans notre ecriture de noms.")
+    else:
+        ecrire("  Aucune photo n a encore ete nommee : rien a conclure.")
+        ecrire("  Relancer plus tard, quand le serveur aura fait son travail.")
+    ecrire("=" * 74)
+    return not compte['preuve']
+
+
 def croiser(chemins, lire=lire_faits, sef=a_un_sef, ecrire=print, chaque=100):
     """Le tableau à quatre cases, et ce qui n'a pas pu être jugé."""
     t = {('nomme', 'sef'): 0, ('nomme', 'sans'): 0,
@@ -249,6 +363,11 @@ def main(argv=None):
                     help='morceau de chemin a retirer de l echantillon ; '
                          'repeter l option pour plusieurs (le canal du banc '
                          'refuse les virgules et les espaces)')
+    ap.add_argument('--photographier', default=None,
+                    help='ecrit l ETAT de chaque fichier dans ce json '
+                         '(l AVANT de l experience)')
+    ap.add_argument('--comparer', default=None,
+                    help='relit ces memes fichiers et NOMME les transitions')
     ap.add_argument('--json', dest='sortie_json', default=None)
     a = ap.parse_args(argv)
 
@@ -260,6 +379,39 @@ def main(argv=None):
     chemins, total = echantillon(racines, a.echantillon,
                                  exclure=a.exclure or ())
     print("  %d JPEG au fonds ; %d juges." % (total, len(chemins)))
+    if a.photographier:
+        # Une photographie de RIEN n'est pas un succes. Observe le 27/08 :
+        # `--racine=b64:...` colle avec un `=` n'est pas decode par le canal
+        # du banc (`dejeton` regarde le DEBUT de l'argument), la racine
+        # n'existait pas, l'enumeration a rendu zero fichier — et le banc
+        # sortait VERT sur un fichier de deux octets.
+        if not chemins:
+            print("  AUCUN JPEG trouve sous cette racine : rien a")
+            print("  photographier. Verifie le chemin — et si tu passes un")
+            print("  jeton b64:, il doit etre un argument SEPARE")
+            print("  (--racine b64:XXX), jamais colle par un =.")
+            return 1
+        etat = photographier(chemins)
+        Path(a.photographier).write_text(
+            json.dumps(etat, indent=1, ensure_ascii=False), encoding='utf-8')
+        avec = sum(1 for v in etat.values() if v['sef'])
+        nommes = sum(1 for v in etat.values() if v['nomme'])
+        print("  photographie : %d fichier(s), %d avec un SEF, %d deja nommes"
+              % (len(etat), avec, nommes))
+        print("  ecrit : %s" % a.photographier)
+        return 0
+    if a.comparer:
+        avant = json.loads(Path(a.comparer).read_text(encoding='utf-8'))
+        print("  photographie de reference : %d fichier(s)" % len(avant))
+        compte, exemples = comparer(avant, chemins)
+        ok = rapport_comparaison(compte, exemples)
+        if a.sortie_json:
+            Path(a.sortie_json).write_text(json.dumps(
+                {'reference': a.comparer, 'compte': compte,
+                 'exemples': exemples, 'ok': ok},
+                indent=2, ensure_ascii=False), encoding='utf-8')
+        return 0 if ok else 1
+
     t, hors, exemples = croiser(chemins)
     ok = rapport(t, hors, total, len(chemins), exclure=a.exclure or (),
                  ecartes=globals().get('_ECARTES_CHEMIN', 0))
