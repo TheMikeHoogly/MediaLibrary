@@ -51,8 +51,15 @@ body { min-height: 100vh; }
    `subjects`, et c'est le but de la convergence. */
 .chip { text-align: center; user-select: none; }
 .chip.on { background: var(--fixateur); border-color: var(--fixateur); color: #fff; }
-.geobtn { padding: var(--e-1) var(--e-3); border-radius: var(--r-md); border: var(--trait);
-          background: var(--salle-3); color: var(--texte); font-size: var(--t-sm); cursor: pointer; }
+/* Converti au `.btn` canonique le 27/08 (option 1, tranchee par Mike) : la
+   TAILLE, la forme, la police et les etats survol/presse viennent desormais de
+   `components.css`. Ce qui reste ici ne PEINT que l'etat, et rien d'autre --
+   une regle qui reposerait un padding ou une bordure recreerait la divergence
+   qu'on vient de supprimer. Cout accepte et mesure : +19 px de hauteur de
+   barres, pour des cibles au plancher tactile de 44 px.
+   `.geobtn.on` pese (0,2,0) comme `.btn:hover`, et la page passe APRES
+   `components.css` dans la cascade : l'etat actif ne se fait donc pas
+   repeindre au survol. */
 .geobtn.on { background: var(--fixateur); border-color: var(--fixateur); color: #fff; }
 #geopanel { display: none; padding: var(--e-3) var(--e-4); background: var(--salle);
             border-bottom: var(--trait); }
@@ -61,8 +68,6 @@ body { min-height: 100vh; }
 .georow { display: flex; align-items: center; gap: var(--e-3); margin-top: var(--e-2); flex-wrap: wrap; }
 .georow input[type=range] { flex: 1; min-width: 140px; accent-color: var(--fixateur); }
 .georow .cnt { color: var(--graphite); font-size: var(--t-sm); font-family: var(--f-donnees); }
-.georow button { padding: var(--e-2) var(--e-3); border-radius: var(--r-md); border: var(--trait);
-                 background: var(--salle-3); color: var(--texte); font-size: var(--t-sm); cursor: pointer; }
 .georow button.prim { background: var(--papier); border-color: var(--papier); color: var(--texte-papier); }
 
 /* -- toolbar -- */
@@ -70,8 +75,6 @@ body { min-height: 100vh; }
         background: var(--salle-2); border-bottom: var(--trait); flex-wrap: wrap; }
 .back { color: var(--texte); text-decoration: none; font-size: var(--t-md); margin-right: auto; }
 .btn-group { display: flex; gap: var(--e-2); }
-.tb { padding: var(--e-2) var(--e-4); border: var(--trait); border-radius: var(--r-md);
-       background: var(--salle-3); color: var(--texte); font-size: var(--t-sm); cursor: pointer; }
 .tb.active { background: var(--fixateur); border-color: var(--fixateur); color: #fff; }
 .tb.demo { background: var(--salle-3); border-color: var(--graphite); }
 .tb.demo.on { background: var(--fixateur); border-color: var(--fixateur); color: #fff; }
@@ -158,15 +161,15 @@ body { min-height: 100vh; }
            align-items: center; gap: var(--e-3); flex-shrink: 0; }
 #lb-name { flex: 1; font-size: var(--t-sm); color: var(--graphite);
             overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-#lb-close { color: #fff; background: var(--salle-3); border: none; border-radius: var(--r-md);
-             padding: var(--e-2) var(--e-4); cursor: pointer; font-size: var(--t-md); }
+#lb-close { font-size: var(--t-md); }
 /* -- semblables / meme jour : navigation, pas une action -- neutre, cible 44px.
    Deux portes de sortie de la visionneuse : par le SENS (vecteur SigLIP) et par
    la DATE (meme mois-jour, toutes annees). Meme poids visuel, donc meme regle. */
-#lb-sim, #lb-jour { min-height: var(--touch); padding: 0 var(--e-4); border-radius: var(--r-md);
-          background: var(--salle-3); border: var(--trait); color: var(--texte);
-          cursor: pointer; font-size: var(--t-md); }
-#lb-sim:hover, #lb-jour:hover { background: var(--salle-2); }
+#lb-sim, #lb-jour { font-size: var(--t-md); }
+/* Le survol vient de `.btn` (--salle-4). La regle d ID qui posait --salle-2
+   ici pesait (1,0,0) et gagnait sur la marche commune : deux profondeurs de
+   survol pour un meme registre de bouton, c est le genre de divergence que
+   cette conversion existe pour supprimer. */
 #lb-jour[hidden] { display: none; }
 /* Millesime d'une annee dans le bandeau « meme jour » : une MESURE, donc
    --f-donnees (plancher photo-ui : les nombres s'alignent et se comparent). */
@@ -182,8 +185,10 @@ body { min-height: 100vh; }
   *:not(#ss-fill), *::before, *::after { transition-duration: 0.01ms !important;
                                          animation-duration: 0.01ms !important; }
 }
-#lb-prev, #lb-next { color: #fff; background: var(--salle-3); border: none;
-                      border-radius: var(--r-md); padding: var(--e-2) var(--e-3); cursor: pointer; font-size: var(--t-lg); }
+/* Les fleches gardent leur TAILLE DE TEXTE : ce sont deux glyphes, et le
+   `.btn` canonique ecrit en --t-sm les rendrait minuscules. Tout le reste
+   (hauteur, forme, bordure, survol, presse) vient de `.btn`. */
+#lb-prev, #lb-next { font-size: var(--t-lg); }
 
 /* -- slideshow -- */
 #ss { display: none; position: fixed; inset: 0; background: #000;
@@ -202,9 +207,12 @@ body { min-height: 100vh; }
 #ss-folder.hidden { display: none; }
 #ss-track { height: 4px; background: var(--salle-3); border-radius: 2px; overflow: hidden; }
 #ss-fill { height: 100%; background: var(--veilleuse); width: 0%; transition: width linear; }
+/* Le fond translucide RESTE : ce bouton est pose sur une photo plein ecran,
+   pas sur une barre. L'ID pese (1,0,0) et gagne donc sur `.btn` sans que
+   personne ait a le forcer. Tout le reste -- taille, forme, police, survol --
+   vient de `.btn`. */
 #ss-stop { position: absolute; top: 14px; right: 14px; background: rgba(0,0,0,0.6);
-            color: #fff; border: var(--trait); border-radius: var(--r-md);
-            padding: var(--e-2) var(--e-4); cursor: pointer; font-size: var(--t-sm); z-index: 201; }
+            color: #fff; z-index: 201; }
 
 /* -- barre de filtre par motif (point 21) : regroupe la vue par regle. Actif =
    fixateur (choix humain), coherent avec les chips personnes/tags. -- */
@@ -229,11 +237,15 @@ body { min-height: 100vh; }
 .mchip .n { font-family: var(--f-donnees); font-size: var(--t-xs); margin-left: var(--e-1); opacity: 0.75; }
 .mchip.on .n { opacity: 1; }
 
-/* -- bouton supprimer dans la visionneuse : destructif = encre, cible 44px -- */
-#lb-del { min-height: var(--touch); padding: 0 var(--e-4); border-radius: var(--r-md);
-          background: transparent; border: 1px solid var(--encre); color: var(--encre);
-          cursor: pointer; font-size: var(--t-md); }
-#lb-del:hover { background: var(--encre); color: #fff; }
+/* Le bouton qui SUPPRIME une photo passe a `.btn--destructif` (27/08).
+   Il etait en CONTOUR -- `--encre` en texte sur fond herite --, exactement la
+   forme que le systeme a mesuree a **3,03:1** et remplacee par du PLEIN
+   (5,34:1). Elle avait survecu ici parce que `verifier_contraste` ne lit que
+   `tokens.css` et `components.css` : une couleur ecrite dans le <style> d une
+   page n etait jugee par personne. La convertir, c est la faire entrer dans
+   le perimetre mesure -- et un rouge plein pese plus lourd a l oeil, ce qu on
+   veut d un << Supprimer >>. */
+#lb-del { font-size: var(--t-md); }
 
 /* -- toast d'annulation 10s (meme registre que /browse et /people) -- */
 .gtoast { position: fixed; left: 50%; bottom: var(--e-4); transform: translateX(-50%);
@@ -255,7 +267,7 @@ body { min-height: 100vh; }
 
 <div class="bar">
   <input type="search" id="q" placeholder="Recherche tags&hellip;">
-  <button class="tb" id="btn-ia" aria-pressed="false"
+  <button class="btn tb" id="btn-ia" aria-pressed="false"
           title="Recherche par le sens : d&eacute;cris la photo en fran&ccedil;ais">IA</button>
   <span class="count" id="cnt"></span>
   <!-- Page de RESULTATS : la barre ne cherche plus a chaque frappe (elle
@@ -263,14 +275,14 @@ body { min-height: 100vh; }
        a faire — un compte faux serait pire qu'une touche a presser. -->
   <span class="count" id="relance" style="display:none">&#8629; Entr&eacute;e pour relancer</span>
   <div class="btn-group">
-    <button class="tb active" id="btn-date" aria-pressed="true">Date</button>
-    <button class="tb" id="btn-name" aria-pressed="false">Nom A-Z</button>
-    <button class="tb" id="btn-rel" aria-pressed="false" style="display:none">Pertinence</button>
+    <button class="btn tb active" id="btn-date" aria-pressed="true">Date</button>
+    <button class="btn tb" id="btn-name" aria-pressed="false">Nom A-Z</button>
+    <button class="btn tb" id="btn-rel" aria-pressed="false" style="display:none">Pertinence</button>
   </div>
   <div class="btn-group">
-    <button class="tb demo" id="btn-seq">&#9654; Demo</button>
-    <button class="tb demo" id="btn-rnd">&#9654; Aleatoire</button>
-    <button class="tb demo" id="btn-asc" title="Chaque photo partage un tag avec la precedente">&#9654; Association</button>
+    <button class="btn tb demo" id="btn-seq">&#9654; Demo</button>
+    <button class="btn tb demo" id="btn-rnd">&#9654; Aleatoire</button>
+    <button class="btn tb demo" id="btn-asc" title="Chaque photo partage un tag avec la precedente">&#9654; Association</button>
   </div>
 </div>
 
@@ -292,7 +304,7 @@ __FOLDERS__
 <div class="selbar" id="selbar">
   <span class="lbl">Personnes :</span>
   <span id="personchips"></span>
-  <button class="geobtn" id="geotoggle">&#128506; Géo</button>
+  <button class="btn geobtn" id="geotoggle">&#128506; Géo</button>
   <span class="lbl" id="selinfo"></span>
 </div>
 <div id="geopanel">
@@ -302,8 +314,8 @@ __FOLDERS__
     <input type="range" id="georadius" min="1" max="500" value="25">
     <span class="cnt" id="georadlbl">25 km</span>
     <span class="cnt" id="geocount"></span>
-    <button class="prim" id="geoapply">Appliquer</button>
-    <button id="geoclear">Effacer</button>
+    <button class="btn prim" id="geoapply">Appliquer</button>
+    <button class="btn" id="geoclear">Effacer</button>
   </div>
   <div class="lbl" style="margin-top:var(--e-2)">Clique un point sur la carte pour définir le centre, règle le rayon, puis « Appliquer ».</div>
 </div>
@@ -319,13 +331,13 @@ __FOLDERS__
     <div id="lb-desc"></div>
   </div>
   <div id="lb-bar">
-    <button id="lb-prev">&#8592;</button>
+    <button class="btn" id="lb-prev">&#8592;</button>
     <span id="lb-name"></span>
-    <button id="lb-next">&#8594;</button>
-    <button id="lb-sim" aria-label="Voir les photos semblables">&#128269; Semblables</button>
-    <button id="lb-jour" aria-label="Voir les photos du m&ecirc;me jour, toutes ann&eacute;es">&#128197; M&ecirc;me jour</button>
-    <button id="lb-del" aria-label="Supprimer cette photo">&#128465;&#65039; Supprimer</button>
-    <button id="lb-close">Fermer</button>
+    <button class="btn" id="lb-next">&#8594;</button>
+    <button class="btn" id="lb-sim" aria-label="Voir les photos semblables">&#128269; Semblables</button>
+    <button class="btn" id="lb-jour" aria-label="Voir les photos du m&ecirc;me jour, toutes ann&eacute;es">&#128197; M&ecirc;me jour</button>
+    <button class="btn btn--destructif" id="lb-del" aria-label="Supprimer cette photo">&#128465;&#65039; Supprimer</button>
+    <button class="btn" id="lb-close">Fermer</button>
   </div>
 </div>
 
@@ -334,7 +346,7 @@ __FOLDERS__
 
 <!-- slideshow -->
 <div id="ss">
-  <button id="ss-stop">&#9632; Arreter</button>
+  <button class="btn" id="ss-stop">&#9632; Arreter</button>
   <img id="ss-img" src="" alt="">
   <div id="ss-footer">
     <div id="ss-name"></div>
@@ -532,7 +544,7 @@ __FOLDERS__
   var btnIA = document.getElementById('btn-ia');
   btnIA.addEventListener('click', function() {
     modeIA = !modeIA;
-    btnIA.className = 'tb' + (modeIA ? ' active' : '');
+    btnIA.className = 'btn tb' + (modeIA ? ' active' : '');
     btnIA.setAttribute('aria-pressed', modeIA ? 'true' : 'false');
     qInput.placeholder = modeIA ? 'Décris la photo…' : 'Recherche tags…';
     iaResultats = null;
@@ -608,10 +620,10 @@ __FOLDERS__
     // « Pertinence » n'existe que quand un classement a ete rendu : proposer un
     // ordre qu'on ne saurait pas produire serait un troisieme mensonge.
     p.style.display = iaResultats ? '' : 'none';
-    p.className = 'tb' + (currentSort==='pertinence' ? ' active' : '');
+    p.className = 'btn tb' + (currentSort==='pertinence' ? ' active' : '');
     p.title = 'Ordre rendu par la recherche : la photo la plus proche de la requete en tete';
-    d.className = 'tb' + (currentSort==='date' ? ' active' : '');
-    n.className = 'tb' + (currentSort==='name' ? ' active' : '');
+    d.className = 'btn tb' + (currentSort==='date' ? ' active' : '');
+    n.className = 'btn tb' + (currentSort==='name' ? ' active' : '');
     d.setAttribute('aria-pressed', currentSort==='date' ? 'true' : 'false');
     n.setAttribute('aria-pressed', currentSort==='name' ? 'true' : 'false');
     p.setAttribute('aria-pressed', currentSort==='pertinence' ? 'true' : 'false');
@@ -1656,7 +1668,7 @@ __FOLDERS__
   if (SEARCHQ) {
     qInput.value = SEARCHQ;
     modeIA = true;
-    btnIA.className = 'tb active';
+    btnIA.className = 'btn tb active';
     btnIA.setAttribute('aria-pressed', 'true');
     qInput.placeholder = 'Décris la photo…';
     iaResultats = {};

@@ -15,8 +15,12 @@ NÉGATIF est un banc (`verifier_filtre_negatif.py`, 15 contrôles, deux canaux).
 Le point 4 de la liste précédente — le déplacement `Photos Mike` — était déjà
 fait en session 52. L'ordre reprend donc à ce qui reste.
 
-**1. Les boutons de `gallery` — option 1, tranchée par Mike le 26/08 :
-tout convertir d'un coup.** Les cinq familles maison (`.tb` 34 px, `.geobtn`
+**1. Les boutons de `gallery` — FAIT pour cinq familles sur six (27/08),
+reste `.fchip` et l'ŒIL.** Voir l'état de session 58. Ce qui manque : le banc
+des pages composants sur le serveur VIVANT, la capture, et une décision sur
+`.fchip` (question ouverte dans `QUESTIONS_MIKE.md`).
+
+**1 bis. Ce qui restait de l'option 1 tranchée le 26/08 :** Les cinq familles maison (`.tb` 34 px, `.geobtn`
 28 px, `.fchip` 35 px, `.georow button` 34 px, `#ss-stop` 34 px) passent au
 `.btn` canonique. Coût mesuré et accepté : **+19 px** de hauteur de barres.
 Aperçu validé (artefact « Boutons de la Galerie »). Preuve dans l'ordre
@@ -72,6 +76,59 @@ s'efface chez Google tant qu'il en reste une. **C'est le geste le plus urgent
 de la liste**, avant les boutons et avant le chantier 17 : ces fichiers ne
 vivent aujourd'hui qu'à un seul endroit, et c'est chez un tiers dont le quota
 est à 96 %. Deux questions dans `QUESTIONS_MIKE.md` (27/08).
+
+## État (27/08/2026, session 58) — LES BOUTONS DE `gallery`, ET UN « SUPPRIMER » JAMAIS MESURÉ
+
+**Six familles de boutons maison passent au `.btn` canonique.** Cinq étaient
+prévues (`.tb`, `.geobtn`, `.georow button`, `#ss-stop`, `.fchip`) ; la
+sixième, la barre de la visionneuse, ne l'était pas — et c'est elle qui
+portait la trouvaille.
+
+### Ce que la cascade dit du changement
+
+`verifier_css_cascade --page` : **69 déclarations disparues, 0 apparue,
+0 valeur changée.** Rien n'a été ajouté ni redéfini : la taille, la forme, la
+police et les états survol/pressé viennent maintenant de `components.css`, qui
+figurait déjà des deux côtés. Ce qui reste dans la page ne PEINT que l'état.
+
+### Ce que ça change pour le pouce
+
+| `gallery`, 31 cibles | avant | après |
+|---|---|---|
+| plancher 44 px **prouvé** | 9 | **22** |
+| hauteur **non déclarée** | 16 | **3** |
+| sous 44 px prouvé | 0 | 0 |
+
+**Le gain n'est pas « des boutons trop petits réparés »** — aucun n'était
+prouvé trop petit. C'est « je ne sais pas » qui devient « prouvé » : seize
+cibles dont aucune règle ne déclarait la hauteur, contre trois. Ne pas voir
+une cible ne la rendait pas conforme, ça retirait le dénominateur.
+
+### Le « Supprimer » de la visionneuse était en CONTOUR
+
+`#lb-del` — le bouton qui **supprime une photo** — posait `--encre` en TEXTE
+sur un fond hérité. C'est exactement la forme que le système a mesurée à
+**3,03:1** et remplacée par du plein (`.btn--destructif`, 5,34:1). Elle avait
+survécu là **parce que `verifier_contraste` ne lit que `tokens.css` et
+`components.css`** : une couleur écrite dans le `<style>` d'une page n'était
+jugée par personne. L'instrument le DIT dans sa portée — encore fallait-il
+lire sa portée. Le convertir le fait entrer dans le périmètre mesuré.
+
+Deux autres divergences tombent au passage : `#lb-sim`/`#lb-jour` posaient un
+survol `--salle-2` par un sélecteur d'ID, qui gagnait sur la marche commune —
+deux profondeurs de survol pour un même registre de bouton.
+
+### Ce qui n'est PAS fait
+
+- **`.fchip` reste**, et pour une raison qui mérite une décision : la classe
+  habille à la fois des `<a>` de navigation ET des `<span>` d'information
+  (« Cette photo n'a pas encore été analysée », le libellé de jour). Les
+  convertir en bloc ferait des étiquettes qui ressemblent à des boutons.
+  Question ouverte dans `QUESTIONS_MIKE.md`. Elle vit dans `server.py`, donc
+  elle demandera un redémarrage.
+- **L'ŒIL, et le banc des pages composants sur le serveur vivant** : le
+  serveur est arrêté pour le rangement par année. Livré sur branche
+  (`commit`), `main` intacte, jusqu'à ce qu'on ait regardé.
 
 ## État (27/08/2026, session 57) — LE RANGEMENT PAR ANNÉE DÉCROCHAIT ENCORE LES DÉCISIONS
 

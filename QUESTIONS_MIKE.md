@@ -6,6 +6,20 @@
 > `eval/DECISIONS.md` si elle tranche, dans `ROADMAP.md` si elle priorise.
 > Protocole : `CLAUDE.md`, « Traite autonome ».
 
+- **27/08 — `.fchip` : une seule classe pour deux choses qui ne sont pas de la
+  même nature.** Les cinq autres familles de boutons de `gallery` sont passées
+  au `.btn` canonique. `.fchip` résiste, parce qu'elle habille à la fois des
+  **`<a>` de navigation** (« ⬆️ Dossiers », un dossier voisin) et des
+  **`<span>` d'information** (« Cette photo n'a pas encore été analysée »,
+  « 📅 14 août », « 🔍 Semblables à… »). Les convertir en bloc donnerait des
+  étiquettes qui ressemblent à des boutons — et le plancher n° 5 dit
+  l'inverse : `<button>` pour agir, `<a>` pour naviguer, et rien qui fasse
+  semblant. *Ma recommandation : les `<a>` prennent `.btn` (cible 44 px, un
+  seul vocabulaire) ; les `<span>` gardent une classe à eux, renommée
+  `.fetiquette`, sans bordure ni curseur — pour qu'on ne puisse plus les
+  confondre en les lisant. Deux noms, deux natures.* Ça vit dans `server.py`,
+  donc ça demandera un redémarrage : je ne l'ai pas fait pendant ton rangement.
+
 - **27/08 — Google Photos : le rapatriement est OUTILLÉ, une seule question
   reste, et elle est en amont.** Tu as dit « mets-les dans A_TRIER et laisse
   faire la magie » : c'est fait côté outil —
