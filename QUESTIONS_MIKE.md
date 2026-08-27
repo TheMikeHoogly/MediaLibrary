@@ -6,43 +6,32 @@
 > `eval/DECISIONS.md` si elle tranche, dans `ROADMAP.md` si elle priorise.
 > Protocole : `CLAUDE.md`, « Traite autonome ».
 
-- **27/08 — Google Photos : la doc se trompait sur les PROBABLE, et il reste
-  3 776 photos qui n'existent QUE chez Google.** Deux choses à trancher, et
-  la première ne peut pas l'être par un instrument.
+- **27/08 — Google Photos : le rapatriement est OUTILLÉ, une seule question
+  reste, et elle est en amont.** Tu as dit « mets-les dans A_TRIER et laisse
+  faire la magie » : c'est fait côté outil —
+  **`32 - Copier les absentes de Google.bat`** copie les **3 776 ABSENTES**
+  (12,6 Go) sous `_A TRIER\Takeout Google\<année>`, à blanc d'abord, rien
+  n'est jamais écrasé, journal d'annulation dans `_corbeille_copies/`. Le
+  plan a été vérifié sur les 3 776 réelles : une année pour chacune, aucune
+  collision. **Lance-le, puis `26 - Ranger par annee.bat`.** Rien ne s'efface
+  chez Google avant que la vérification ne compte ZÉRO absente.
 
-  **(1) Les 3 776 ABSENTES — 12,6 Go — sont-elles à COPIER ou à laisser ?**
-  Elles se concentrent sur le récent : **2024 → 1 532, 2025 → 709,
-  2026 → 699, 2022-23 → 583**, et **2 017 sur 3 776 sont des vidéos**. Ce
-  n'est pas un écart d'inventaire, c'est un fonds qui n'est jamais arrivé sur
-  le NAS. *Ma recommandation : les copier dans `_Uploads` AVANT tout
-  effacement — c'est la règle écrite de cette chaîne (« un seul ABSENT
-  interdit tout »), et ce sont deux ans de vidéos de famille. Puis relancer
-  `verifier_photos_google.py` : c'est lui qui dira quand le feu passe au
-  vert.* Je ne copie rien : c'est un geste sur l'archive.
-
-  **(2) Effacer chez Google une fois les ABSENTES rapatriées : sur quelle
-  preuve ?** Les 9 017 PROBABLE sont, à **8 802**, la MÊME image — mêmes
-  tables, même cadre, même longueur de flux, et un écart de taille de
-  **+4,2 Ko médian** qui est la métadonnée que la photothèque écrit
-  elle-même. Mais la preuve rapide compare la LONGUEUR du flux, pas ses
-  octets. `verifier_google_pixels.py --octets` les hache — il faut lire ~32 Go
-  côté NAS, soit trois ou quatre tranches de banc. *Ma recommandation : la
-  faire tourner avant d'effacer 75 Go chez un tiers. Le coût est une heure de
-  machine ; l'erreur, elle, ne se rattrape pas.*
-
-  **(3) Les 99 photos dont le NAS a perdu le TRAILER.** Même image des deux
-  côtés, mais le fichier de Google porte des octets APRÈS le JPEG que le NAS
-  n'a plus. C'est là que vit une « photo animée » de téléphone. *Ma
-  recommandation : les traiter comme les ABSENTES — récupérer le fichier de
-  Google, qui est le plus complet des deux. 99 fichiers, c'est une poignée.*
-  Et une question qui t'appartient pour la suite : **est-ce que la
-  photothèque, en écrivant ses XMP, coupe ce trailer ?** Si oui, elle abîme
-  en silence tout ce qu'elle tague — à mesurer avant d'accuser.
+  **La question qui reste : la photothèque coupe-t-elle le trailer des photos
+  qu'elle tague ?** Les 99 « même image » ont, côté Google, un bloc **Samsung
+  SEF** de ~2 Ko après le JPEG (`Image_UTC_Data`, `PhotoEditor_Re_Edit_Data`)
+  — et **côté NAS, ce trailer fait 0 octet sur les 99**. Le seul écrivain de
+  ces fichiers est notre écriture XMP à l'exiftool. Si c'est bien elle, ce
+  n'est pas 99 photos : c'est **tout ce que la photothèque tague depuis le
+  début**. *Ma recommandation : le mesurer avant d'accuser — prendre dix
+  photos Samsung non encore taguées, relever leur trailer, les taguer, le
+  relever à nouveau. Une demi-heure, et on saura. Je ne rapatrie pas les 99 :
+  leur pixel est déjà là, les copier ferait 99 doublons, et écraser par la
+  version Google détruirait les XMP — donc les noms. La cause d'abord.*
 
   **Reste indéterminé** : 95 paires (74 dont le trailer contient lui-même un
   `FF D9`, 21 qui ne sont pas des JPEG des deux côtés) et 21 vraiment
-  différentes. Listées nommément dans `_pix_reprise.json`. À regarder avec
-  les ABSENTES, pas séparément.
+  différentes. Listées nommément dans `_reprise_google.json`. À regarder une
+  fois les ABSENTES rapatriées, pas avant.
 
 - **26/08 — multi-utilisateurs : DEUX questions restent, et elles bloquent
   l'écriture partagée.** Les six premières sont tranchées (spécification

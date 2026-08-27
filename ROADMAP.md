@@ -36,6 +36,14 @@ Spécifié — six décisions de Mike, plus bas dans ce fichier : l'exécuter, n
 pas le rouvrir. Deux questions ouvertes dans `QUESTIONS_MIKE.md` bloquent
 l'écriture partagée.
 
+**3 bis. Le garde-fou de la confidentialité (chantier 18, demandé le 27/08)** :
+signaler à l'envoi les photos qui portent des données personnelles — factures,
+fiches de paie, pièces d'identité — pour que leur auteur les déplace dans son
+`PRIVE` ou les efface. **Le détecteur se greffe sur la passe de tagging qui
+regarde déjà chaque photo** : pas de cinquième pipeline. Le geste « déplacer
+dans PRIVE » attend 17a ; le reste, non. C'est la seule fuite de ce projet qui
+ne demande AUCUNE erreur de manipulation — juste l'oubli d'un geste.
+
 **4. Réparer `appliquer_plan.rekey_stores`** — elle re-clé cinq magasins sur
 sept, et le rangement par année comme le dédoublonnage la portent. Puis
 **unifier** : la primitive complète existe maintenant DEUX fois
@@ -428,292 +436,36 @@ instruments et pas à moi. Le contrôle qui manquait tenait en une requête :
 4. Mineur, et c'est I7 qui devait le fermer : **`animal:luna` en minuscule
    existe sur 3 photos** à côté de `animal:Luna` sur 207.
 
-## État (26/08/2026, session 49) — `gallery` ADOPTE, ET LE CHIP EST FINI
+## Ce qu'il faut garder des sessions 47 → 49 (le récit vit dans git)
 
-**Sept pages sur onze reçoivent `components.css`**, et `gallery` — la page la
-plus utilisée — en fait partie. Ce n'est pas un rangement : c'est la fin de la
-divergence du chip.
-
-**Le chip canonique était INCOMPLET, et deux pages l'avaient réparé chacune
-de son côté.** `components.css` ne donnait pas de `font:` à `.chip`. Or un
-`<button>` n'hérite pas de `body` : il prend Arial 13,3 px. `subjects` et
-`gallery` avaient donc écrit `font: 500 var(--t-sm)/1 var(--f-texte)`,
-**à l'identique et sans se concerter** — exactement le critère que la feuille
-commune se donne pour promouvoir un vocabulaire. Livrer un composant
-« canonique » qui n'est complet qu'accompagné d'une règle locale, c'est
-programmer la divergence de la page suivante.
-
-| | avant | après |
-|---|---|---|
-| pages adoptantes | 6/11 | **7/11** |
-| déclarations lues, `subjects` | 396 | **384** |
-| déclarations lues, `gallery` | 624 | **590** |
-| **gagnantes changées après la cascade** | — | **2, toutes deux voulues** |
-
-**`subjects` : 12 déclarations en moins, 383 gagnantes des deux côtés, ZÉRO
-écart après la cascade.** Douze lignes qui recopiaient la feuille commune :
-deux endroits où changer le même chip.
-
-**`gallery` : `.pchip` était un ALIAS EXACT de `.chip`** — même bloc, même
-état, un seul usage. Retiré ; 20 déclarations disparaissent et l'instrument
-les compte INERTES (plus aucun élément ne les porte). Les deux seuls écarts
-réels sont voulus : le compteur `.n` passe du graphite plein à l'opacité 0,7
-de la feuille commune — **ce que `subjects` montre déjà**.
-
-**Observé en réel** : 67 chips sur `/files`, tous `<button>`, tous à 44 px,
-police canonique, `gap` 8 px, compteur en monospace à 0,7 ; Entrée sur
-`personne:Florine` filtre 20 vignettes à 8, `aria-pressed` passe à `true`,
-le fond devient `#448172`.
-
-### Le banc a signalé sa propre configuration périmée
-
-`verifier_pages_composants` a rendu ROUGE avant qu'on pense à le mettre à
-jour : « une page NON convertie reçoit la feuille commune ». C'est le
-comportement voulu — une page non déclarée qui reçoit la feuille est
-indiscernable d'un opt-in cassé. `/files` rejoint les adoptantes.
-
-### Deux instruments lisaient la PROSE d'une feuille de style
-
-**Un commentaire est de la prose, quel que soit le langage** — sixième fois.
-`gallery` documentait sa conversion en citant `<button>` et `<span>` dans un
-commentaire CSS. `verifier_cibles` y lisait deux cibles : il annonçait
-**223** cibles là où il y en a **221**. Et le rouge PROVOQUÉ sur
-`verifier_controles` a montré qu'il avait le même trou : un
-`<span onclick="f()">` cité en commentaire CSS y comptait comme un grief de
-niveau A. Les onze pages n'en portaient aucun — **à un `onclick=` près**.
-Une feuille de style ne porte pas de balise : son contenu est écarté, par
-une règle de lecture unique (`verifier_controles.sans_le_css`) que les deux
-instruments partagent. Une règle de lecture écrite deux fois est une
-divergence qui attend son heure.
-
-## État (26/08/2026, session 48) — LE PLANCHER TACTILE ÉTAIT UN VŒU
-
-**Le point 3 du plancher a son instrument, et c'est le troisième point sur
-sept qui trouve un manquement réel au premier lancement.** Contraste (25/08),
-contrôles (26/08), cibles (26/08) : trois pour trois. **Une règle qu'on ne
-mesure pas n'est pas un plancher, c'est une intention** — et cette phrase
-n'est plus une leçon, c'est un compte.
-
-`verifier_cibles.py` (neuf, famille `verifier_`, lecture seule, 52 tests)
-apparie chaque élément interactif des onze pages à sa hauteur DÉCLARÉE, dans
-la cascade à quatre étages, et compare à `--touch`.
-
-| sur les onze pages | avant | après |
-|---|---|---|
-| cibles lues | 192 puis **223** | **223** |
-| plancher déclaré, honoré, ≥ 44 px | 88 | **112** |
-| **sous le plancher** | **3** | **0** |
-| **inertes** (déclaré, mais le `display` l'ignore) | **2** | **0** |
-| non décidables | 21 | **10** |
-| hauteur NON DÉCLARÉE (le contenu décide) | 59 | 68 |
-| exemptées (déclarée, hors-écran, non peinte, lien en ligne) | 27 | 33 |
-
-**192 puis 223 : le banc ne lisait que le HTML.** `document.createElement`
-bâtit **49 contrôles** sur les onze pages, dont **12 dans `gallery`** — la
-page la plus utilisée. **31 cibles n'existaient pas pour lui**, et il rendait
-« 0 sous le plancher » sur deux règles qui étaient sous le plancher. **Ne pas
-voir une cible ne la rend pas conforme : ça retire seulement le
-dénominateur.** C'est le septième rouge, et le plus grave.
-
-**Ce qui était cassé, et c'est le même motif que le chip du 26/08 :**
-`subjects` adopte `components.css` — donc `.btn { min-height: var(--touch) }`
-— **puis annule ce plancher** sur deux boutons avec
-`.ctype h3 .btn { min-height: 0 }`. Une règle que le système s'écrit à
-lui-même et ne tient pas ailleurs n'est pas une règle. Retirée : les deux
-boutons « Rafraîchir » passent à 44 px, **observés à 44 px sur le serveur
-vivant**, et **quinze boutons cessent d'être NON DÉCIDABLES** — dans un
-fragment assemblé en JS, rien ne disait si l'ancêtre `.ctype h3` était là,
-donc `0` et `--touch` restaient deux lectures possibles. **Une seule règle
-en trop rendait douze boutons illisibles à leur propre instrument.**
-
-**Ce que la lecture du JS a fait tomber ensuite, et qui dormait depuis
-toujours :**
-
-- **`gallery` déclarait `.mchip { min-height: 32px }` sur des `<a>` bâtis en
-  JS** — donc `display: inline` par défaut, et **un élément inline non
-  remplacé ignore `min-height`**. La règle était écrite, elle était lue, et
-  elle ne faisait rien : les chips de motif faisaient la hauteur de leur
-  texte. Même piège que les chips en `<span>` de la session 47, un étage plus
-  bas. Passés en `inline-flex` + `--touch` : **observés à 44 px sur le
-  serveur vivant**, à la hauteur exacte des chips de tags voisins.
-- **Les deux boutons « Annuler » des toasts** — `gallery` (`.gtoast .b`) et
-  `browse` (`.fxtoast .b`) — étaient à **36 px**. C'est le bouton qui annule
-  une action DESTRUCTIVE différée de 10 s : celui qu'il faut viser vite. Dans
-  `browse`, la barre d'actions juste au-dessus tenait le plancher et le toast
-  ne le tenait pas — **même bouton, même geste, deux hauteurs**.
-
-**La loupe des vignettes d'animaux (26 px) reste, et se DÉCLARE** — tranché
-par Mike le 26/08. Elle est le seul chemin vers la visionneuse, donc pas
-redondante ; mais une pastille de 44 px sur une vignette de ~160 px mange un
-quart de l'image. Les deux décisions du jour ne se contredisent pas : le chip
-de filtre est un geste RÉPÉTÉ du tri, la loupe est accessoire.
-
-**La case à cocher de 18 px de `people` n'est pas un défaut, et ça se
-DÉCLARE** : c'est un indicateur posé sur une vignette ; la cible est le
-`<label class="prop">` entier. `/* cible: hors-portee -- raison */`, à côté
-du code, jamais en dur dans l'instrument. Une seule déclaration sur les onze
-pages.
-
-### L'instrument s'est corrigé SEPT fois, sur sept rouges OBSERVÉS
-
-Jamais sur une hypothèse. Les sept sont gravés dans `test_verifier_cibles.py`
-(62 tests, **trois mutations posées, trois vues**).
-
-| ce qui le trompait | ce qu'il rendait | correction |
-|---|---|---|
-| il comparait le TEXTE de deux valeurs | **52 non-décidables sur 192**, dont aucune ne l'était : `44px` et `var(--touch)` sont la même hauteur | ce qui doit s'accorder n'est pas la valeur, c'est le **VERDICT** |
-| il jugeait un sélecteur descendant sur son seul SUJET | cinq boutons de 44 px accusés d'en faire 36 (`.actbar .b` contre `.fxtoast .b`, même poids) | l'imbrication du HTML statique est LUE |
-| `calc(var(--touch) + var(--e-2))` | non décidable | une addition de pixels se calcule |
-| un fragment JS était traité comme sans contexte | `.prop input { height: 18px }` mis au débit d'un `<input type="number">` cent lignes plus loin | la chaîne d'ancêtres d'un fragment est PARTIELLE : elle prouve, elle ne réfute pas |
-| une seule règle non prouvable était AFFIRMÉE | « trop petit » là où « pas de plancher » | quand rien n'est prouvé, que RIEN ne s'applique reste une lecture |
-| une déclaration liait tout dans un rayon d'octets | le bouton « Valider » exempté par la déclaration de la case voisine | une déclaration couvre le PROCHAIN élément, un seul |
-| il ne lisait que le HTML | **31 cibles invisibles**, dont les douze contrôles que `gallery` bâtit en JS — et « 0 sous le plancher » sur deux règles qui l'étaient | `document.createElement` est lu, de la création à la prochaine affectation du même nom |
-
-**Le deuxième est le plus instructif : sans l'ancêtre, deux règles de même
-poids rendent un verdict au HASARD.** « La dernière écrite gagne » n'est
-vrai que si les deux s'appliquent. Un verdict tiré à pile ou face est pire
-qu'un aveu d'ignorance : il fait corriger ce qui va bien.
-
-### Le verdict a DEUX chiffres, et ils ne disent pas la même chose
-
-**0 manquement prouvé** ; **68 cibles dont le plancher n'est pas DÉCLARÉ**.
-La seconde moitié n'est pas un feu vert — c'est là où l'instrument s'arrête
-(une hauteur qui vient du contenu demande le navigateur, pas le texte) **et
-c'est, page par page, là où `components.css` n'est pas adopté** :
-
-    browse 0/7 · faces 1/2 · gallery 17/32 · map 14/16 · reglages 7/33
-    contre  people 11/48 · pets 10/29 · residu 1/6 · subjects 3/35 · tranche 0/6
-
-**La convergence du design system a maintenant un chiffre qui la réclame.**
-
-### Deux angles morts assumés, dits dans le rapport
-
-La **LARGEUR** n'est pas lue : elle vient du texte et serait « non déclarée »
-partout. Les **liens en ligne** (27) sont une catégorie NOMMÉE — exception
-WCAG 2.5.8 — que l'instrument ne sait pas distinguer d'un lien servant de
-bouton : à relire à l'œil, une fois. Même forme que le « SÉMANTIQUE, PAS
-NIVEAU A » de `verifier_controles`.
-
-### Une portée qui se sous-estime fait re-faire un correctif qui existe
-
-`verifier_controles.py` déclarait encore, dans son docstring ET dans sa
-sortie, que les littéraux d'expression régulière JS ne sont pas distingués
-d'une division — **alors qu'il les distingue depuis le 26/08**, c'était sa
-quatrième correction. Corrigé des deux côtés. Le paragraphe reste, pour ce
-qu'il enseigne : nommer un angle mort dit où l'on ne voit pas ; le fermer
-demande de RÉÉCRIRE ce qu'on a nommé.
-
-### ✔ L'action en attente est LEVÉE
-
-La skill `photo-ui` du COMPTE est enregistrée et **identique au fichier du
-dépôt** (md5 `0389708e…`, 18 776 o, vérifié des deux côtés). Deux sessions
-d'attente closes. Une session qui s'y fie ne réintroduit plus `#4A8C7B`.
-
-## État (26/08/2026, session 47) — UN CONTRÔLE QUI N'EN ÉTAIT PAS UN
-
-**Le chantier de l'accessibilité des contrôles est CLOS, et il a son chiffre.**
-`verifier_controles.py` (neuf, famille `verifier_`, lecture seule,
-**42 vérifications**) apparie chaque élément CLIQUABLE à la balise qui le
-porte — attribut `onclick` écrit, `onclick` dans une chaîne HTML assemblée en
-JS, gestionnaire posé en JS — et compte ce qui n'est pas un contrôle.
-
-| sur les onze pages | avant | après |
-|---|---|---|
-| gestionnaires de clic | 154 | 154 |
-| posés sur un contrôle **natif** | 132 | **138** |
-| rendus opérables à la main (`role`+`tabindex`+clavier) | 0 | 3 |
-| **déclarés redondants dans la source** | — | 13 |
-| **griefs de niveau A (WCAG 2.1.1)** | **18** | **0** |
-| cibles non remontées | 1 | 0 |
-
-**`subjects` sortait blanche des deux côtés** — elle écrivait déjà
-`<button class="chip" aria-pressed>`. C'est ce qui rendait la divergence
-lisible : elle n'est pas visuelle, elle est SÉMANTIQUE, donc invisible à
-l'écran comme à une relecture qui ne la cherche pas.
-
-**Ce qui était réellement cassé, par ordre de gravité :**
-
-- **le filtre de la page la plus utilisée.** `gallery` fabriquait ses chips de
-  tags ET de personnes en `createElement('span')` + `.onclick` : ni focus, ni
-  clavier, ni annonce. Cinq chips convertis en `<button aria-pressed>`.
-- **ouvrir une photo était un geste de SOURIS.** La cellule de la planche
-  contact n'avait aucun chemin clavier — 43 000 photos.
-- **sélectionner une photo d'animal** (`pets`), **ouvrir la fiche d'un
-  animal**, **choisir une photo de référence** (`people`) : idem.
-
-**Trois éléments gardent leur mise en page et reçoivent les trois marques**
-(`tabindex`, `role="button"`, `keydown` Entrée + Espace avec
-`preventDefault`) au lieu d'un `<button>` : une vignette porte une image, une
-ligne de faits et une légende — c'est-à-dire des `<div>`, qu'un bouton lirait
-**tous** comme son libellé. Un bouton qui s'annonce sur trois lignes n'est pas
-un progrès.
-
-### Ce qui ne se DÉCIDE pas se DÉCLARE — dans la source, avec sa raison
-
-Dix des dix-huit griefs n'en étaient pas : une bande latérale à côté d'un
-bouton « Suivant », une croix à côté d'Échap, une carte cliquable qui CONTIENT
-déjà son bouton « Gérer ». La fonctionnalité existe au clavier ; l'élément
-reste un `<div>`, et WCAG 2.1.1 porte sur la fonctionnalité.
-
-Cette exception **ne se calcule pas** : elle demande de savoir qu'un autre
-chemin existe. Elle se déclare donc à côté du code —
-`/* controle: redondant -- raison */`, ou `natif` quand la cible est un vrai
-contrôle que l'instrument ne sait pas remonter — **jamais en dur dans
-l'instrument, sinon il devient aveugle au cas suivant sans qu'on le sache**.
-C'est la règle que `verifier_contraste` s'est donnée le 25/08, appliquée au
-même problème. Les treize sont COMPTÉES et listées : une exception qui
-prolifère n'en est plus une.
-
-### L'instrument s'est corrigé SIX fois, sur six rouges OBSERVÉS
-
-Jamais sur une hypothèse. Les six sont gravés dans `test_verifier_controles.py`.
-
-| ce qui le trompait | ce qu'il rendait | correction |
-|---|---|---|
-| `var b = getElementById(…)` puis `b.onclick` — **119 fois** sur les onze pages | non décidable | table des alias |
-| le `<` d'une comparaison JS (`1<t`) | une balise `<t>` inventée, sur de l'arithmétique | le HTML ne se cherche que dans les CHAÎNES |
-| `a.href` posé en JS | « lien hors tabulation » sur un lien qui y est | ce qu'une balise porte ne se lit pas qu'au même endroit |
-| **`/[&<>"]/g`** en tête de `subjects` | le `"` de la regex ouvrait une fausse chaîne : un bouton écrit cent lignes plus bas cessait d'exister | un scanner qui distingue regex et division |
-| `querySelectorAll('.chip').forEach(c => …)` | la page qui fait CORRECTEMENT ses chips passait pour non décidable | le paramètre du rappel EST l'élément |
-| `button.btn--principal`, `.actes .btn` | non décidable | un sélecteur écrit sa balise ; le dernier segment décide |
-
-**Le quatrième est le plus instructif : mon propre docstring nommait les
-littéraux d'expression régulière comme un angle mort THÉORIQUE.** Il était
-réel et il mordait. **Nommer un angle mort dit où l'on ne voit pas ; ça ne
-fait pas voir.**
-
-### Le chip passe à 44 px — la contradiction que le système portait
-
-`components.css` donnait `min-height: 32px` au chip pendant que son propre
-plancher exigeait « cibles ≥ 44 px ». 32 px passe WCAG 2.5.8 (24 px), donc
-rien n'était faux — mais **une règle que le système s'écrit à lui-même et ne
-tient pas ailleurs n'est plus une règle, c'est une intention.** Mike a tranché
-le 26/08 : une seule, partout (`components.css`, `subjects`, `gallery`).
-Observé en réel : le chip fait exactement la hauteur du champ de filtre à
-côté de lui — l'alignement était cassé par la contradiction.
-
-**Changements visuels volontaires, à l'œil de Mike** : les chips de `gallery`
-passent de 32 à 44 px et de la graisse 400 à 500 (le `font:` canonique) ;
-l'écart libellé-compteur passe du `margin-left` de 4 px au `gap` de 8 px,
-comme sur `subjects` — une seule façon d'écarter deux choses.
-
-**Preuves, dans cet ordre** : `verifier_css_cascade --page` sur les trois
-pages au CSS touché (gallery 4 disparues / 10 apparues / 4 changées, subjects
-1 changée, people 7 apparues — **toutes attendues, aucune parasite**) ;
-`verifier_contraste` 24/24 ; 157 tests UI verts ; le banc des pages
-composants vert sur le **serveur vivant** ; et l'observation au clavier dans
-Chrome — Entrée sur `personne:Florine` filtre 20 photos à 8, anneau de focus
-visible, Entrée sur une vignette ouvre la visionneuse sans faire défiler la
-page.
-
-**Les pages `ui/pages/` sont relues À CHAUD** (signature mtime + taille) : les
-six pages ont changé de taille sur le serveur sans redémarrage. Seul
-`server.py` l'exige.
-
-**L'action qui attendait Mike est LEVÉE le 26/08 (session 48)** : la skill
-`photo-ui` du compte est enregistrée et identique au fichier du dépôt.
-Ce qu'elle a coûté, pour mémoire : deux sessions à travailler avec une
-référence dont on savait qu'elle mentait.
+- **Le plancher tactile était un VŒU, il a un instrument.** `verifier_cibles.py`
+  (65 tests, huit rouges observés gravés) lit le HTML statique, les chaînes JS
+  **et** ce que `document.createElement` bâtit — **31 cibles lui étaient
+  invisibles**. Verdict : **221 cibles, 0 manquement prouvé**, 66 dont la
+  hauteur n'est pas déclarée. Ne pas voir une cible ne la rend pas conforme :
+  ça retire seulement le dénominateur.
+- **Un contrôle qui n'en était pas un (47).** Deux instruments lisaient les
+  `<button>` cités dans les COMMENTAIRES d'un `<style>` comme des éléments
+  réels. Un commentaire est de la prose, CSS compris — règle de lecture unique
+  et partagée : `verifier_controles.sans_le_css`. L'exception est une
+  DÉCLARATION (`/* cible: hors-portee -- … */`), qui se lit AVANT le retrait et
+  se ferme sur `*/`, pas sur la fin de ligne.
+- **Le chip est FINI (49).** `.chip` vit dans `components.css` seul, `font:`
+  compris ; `.pchip` supprimé ; **7 pages sur 11** reçoivent la feuille
+  commune. La cascade a QUATRE étages, et c'est la moitié de toute preuve CSS :
+  `components.css` (au marqueur) → la page → `tokens.css` → `base.css` (à
+  `</head>`, il gagne les égalités). Une feuille qui ne change pas doit figurer
+  **des deux côtés** de `--avant`/`--apres`.
+- **Changer une BALISE change son style par défaut** : `<span>` → `<button>`
+  change police, alignement et surtout `display` — ce qui **réveille** un
+  `min-height` qui dormait. Un `<button>` n'admet que du contenu de PHRASE ;
+  sinon `tabindex` + `role` + `keydown` Entrée **et** Espace avec
+  `preventDefault` — les trois.
+- **Un verdict tiré à pile ou face est pire qu'un aveu d'ignorance.** « La
+  dernière règle écrite gagne » n'est vrai que **si les deux s'appliquent** ; et
+  une règle non prouvable AFFIRMÉE disait « trop petit » là où il fallait lire
+  « pas de plancher ». Ce qui doit s'accorder, c'est le VERDICT, pas la valeur :
+  `44px` et `var(--touch)` sont la même hauteur.
 
 ## Ce qu'il faut garder de la session 46 (le récit vit dans git)
 
@@ -1404,6 +1156,69 @@ qui en découle : éditer → redémarrer → **observer** → livrer.
     5. l'écriture restreinte (effacement, nommage, renommage) ;
     6. la corbeille à 6 mois ;
     7. l'onboarding rédigé.
+
+18. **Le garde-fou de la confidentialité — DEMANDÉ par Mike le 27/08.**
+    Un agent repère les photos qui portent des **données personnelles**
+    (factures, fiches de paie, pièces d'identité, relevés bancaires,
+    ordonnances, captures de messages) et **prévient celui qui les envoie**,
+    au moment où il les envoie, pour qu'il les déplace dans son dossier
+    `PRIVE` ou les efface.
+
+    **Pourquoi c'est un chantier et pas une finition.** Une fiche de paie
+    photographiée pour la transmettre au comptable finit dans la pellicule,
+    la pellicule se synchronise, et la photo se retrouve dans un dossier que
+    ~20 personnes voient. Personne ne l'a décidé ; personne ne le sait. C'est
+    la seule fuite de ce projet qui ne demande AUCUNE erreur de manipulation
+    — juste l'oubli d'un geste.
+
+    **(a) Le détecteur se greffe sur la passe qui existe déjà.** Le tagueur
+    (`qwen3-vl:2b`) regarde DÉJÀ chaque photo, modèle chargé et image
+    décodée. Une question de plus dans la même invocation ne coûte ni un
+    deuxième pipeline, ni une seconde de GPU sur les 4 Go de VRAM. **Ne pas
+    écrire un cinquième pipeline** : c'est l'invariant n° 4 de
+    `monolith-surgery`.
+
+    **(b) Le verdict est un AXE, pas un mot-clé.** `sensible:facture`,
+    `sensible:paie`, `sensible:identite`… — comme `espece:`, donc couvert par
+    le garde-fou du 26/08 : une valeur inventée rend zéro et le dit. Un tag
+    libre se noierait dans les 43 000 autres.
+
+    **(c) Le verdict NE VA PAS dans le XMP du fichier.** C'est l'exception à
+    la règle du projet, et elle est délibérée : un fichier qui porte
+    `sensible:fiche_de_paie` dans ses métadonnées ANNONCE son contenu à qui
+    le reçoit — l'étiquette devient elle-même la fuite. Elle vit dans la base
+    seulement. Corollaire : elle ne survit pas à la base, et c'est accepté.
+
+    **(d) Ce que l'utilisateur voit.** À la fin d'un envoi : « 3 photos
+    ressemblent à des documents personnels », les vignettes, et **deux
+    gestes** — « déplacer dans mon dossier PRIVE » (dépend de 17a) et
+    « supprimer » (par la corbeille réversible, jamais en dur). Plus un
+    troisième, indispensable : **« non, ce n'en est pas un »**, mémorisé, qui
+    ne repose plus jamais la question sur cette photo. Une alerte qu'on ne
+    peut pas faire taire finit par être ignorée en bloc.
+
+    **(e) Les deux erreurs ne coûtent PAS le même prix.** Un faux négatif est
+    une fiche de paie visible par vingt personnes ; un faux positif est une
+    photo de vacances signalée à tort, que l'on écarte d'un clic. Le seuil
+    penche donc vers le signalement — **et c'est une décision, donc elle se
+    mesure** : jeu étiqueté et banc `vision-eval` avant tout réglage. Sans
+    banc, le seuil est une opinion ; et un score parfait serait une alarme.
+
+    **(f) La passe rétroactive.** Les 43 000 photos déjà là n'ont jamais été
+    regardées sous cet angle. La passe est longue mais sans risque (lecture
+    seule + écriture en base) ; son résultat est une LISTE à trancher par
+    Mike, jamais un déplacement automatique. Rien ne bouge sans un humain.
+
+    **Ce qui dépend de 17** : le geste « déplacer dans PRIVE » et la notion de
+    propriétaire. **Ce qui n'en dépend pas** : le détecteur, l'axe
+    `sensible:`, le banc, et l'écran d'envoi — livrables avant 17, pour Mike
+    seul d'abord.
+
+    **Questions ouvertes** (à instruire, pas à trancher ici) : (1) quelle
+    liste de catégories, et qui la fixe ? (2) que fait-on des photos DÉJÀ
+    partagées quand la passe rétroactive en trouve une — on prévient les
+    autres, ou on la retire en silence ? (3) le signalement doit-il bloquer
+    l'envoi ou seulement l'accompagner ?
 
 ### Résiduels faible valeur (ne pas prioriser)
 **MESURÉ le 15/08, et c'est pourquoi on n'y touche pas** : les deux planchers

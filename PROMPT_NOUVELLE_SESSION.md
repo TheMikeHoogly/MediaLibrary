@@ -9,52 +9,56 @@ FUSIONNÉ — ce document, non. Puis `ROADMAP.md`, `eval/DECISIONS.md`,
 `eval/METHODE.md` — et `docs/DECISIONS_OUTILLAGE.md` si le sujet touche aux
 canaux, à la livraison ou au MCP. Débrief en 2–3 lignes, puis on attaque.
 
-## Où on en est (27/08/2026, fin de session 54)
+## Où on en est (27/08/2026, fin de session 55)
 
-**Le serveur tourne le code de la session 53** (garde-fou du filtre, 15/15 au
-banc négatif). Traite autonome : les branches sont **poussées, `main`
-INTACTE** — la fusion attend Mike.
+**Tout est fusionné** (Mike, 27/08) — vérifie-le dans `.git/logs/`, pas ici.
+Le serveur tourne. Aucun canal n'attend.
 
-**Le Takeout Google a rendu son chiffre, et il change l'ordre du jour :
-3 776 photos (12,6 Go) n'existent QUE chez Google**, dont **2 017 vidéos**,
-concentrées sur 2024–2026. Rien ne s'efface là-bas tant qu'il en reste une —
-et ces fichiers ne vivent aujourd'hui qu'à un seul endroit, chez un tiers dont
-le quota est à 96 %. **C'est le geste le plus urgent du projet.**
+**Le Takeout est allé jusqu'au bout de sa question.** Export ouvert et
+prouvé (45 lots, 89,2 Go, **25 864 fichiers, 0 absent, 0 tronqué**), confronté
+au NAS sur **13 905 médias** : CERTAIN 1 112 · PROBABLE 9 017 ·
+**ABSENT 3 776** (12,6 Go, dont **2 017 vidéos**, concentrées sur 2024-2026).
 
-L'export est ouvert et prouvé : 45 lots, 89,2 Go, **25 864 fichiers, 0 absent,
-0 tronqué** (`verifier_takeout_ouvert.py` ; le bat de Mike arrive au même
-compte par l'autre bout). Sur **13 905 médias** : CERTAIN 1 112 · PROBABLE
-9 017 · **ABSENT 3 776**.
+**Il reste UN geste, et il appartient à Mike : lancer
+`32 - Copier les absentes de Google.bat`.** Il copie les 3 776 sous
+`_A TRIER\Takeout Google\<année>` — à blanc d'abord, rien n'est jamais
+écrasé, journal d'annulation. Puis `26 - Ranger par annee.bat`, puis laisser
+le serveur scanner. **Rien ne s'efface chez Google avant que
+`verifier_photos_google.py` ne compte ZÉRO absente.**
 
-**Et la documentation de l'instrument avait tort sur les PROBABLE.** Elle
-posait « Google a ré-encodé en mode économiseur » ; la mesure dit l'inverse —
-le NAS est plus gros 8 741 fois sur 9 017, ratio médian **1,001**, et
-seulement sur les JPEG. C'est **le XMP que la photothèque écrit elle-même**.
-`verifier_google_pixels.py` (neuf) le compte : **8 802 sont la MÊME image**,
-99 le sont avec un TRAILER en moins côté NAS, 95 restent indéterminées,
-21 sont vraiment différentes.
+**Deux thèses sont tombées cette semaine, et les deux étaient écrites.**
+(1) « PROBABLE = Google a ré-encodé » : faux — le NAS est plus gros 8 741 fois
+sur 9 017, ratio médian 1,001, et **seulement sur les JPEG**. C'est le XMP que
+la photothèque écrit elle-même ; **8 802 sont la MÊME image**. (2) « les 173
+flux différents sont deux photos de même nom » — c'était moi, et l'écart
+**toujours du même signe** disait le contraire : un **trailer Samsung SEF**
+côté Google, à **0 octet côté NAS**. Notre écriture XMP le coupe, très
+probablement sur TOUT ce qu'elle tague. C'est la question ouverte n° 1 de
+`QUESTIONS_MIKE.md`, et elle vaut bien plus que 99 photos.
 
-### Les trois choses de la journée qui changent la suite
+**Chantier 18, neuf, demandé par Mike le 27/08** : un agent signale à l'envoi
+les photos qui portent des données personnelles (factures, fiches de paie,
+pièces d'identité), pour que leur auteur les déplace dans son `PRIVE` ou les
+efface. Spécifié dans `ROADMAP.md`, point 18 — **le détecteur se greffe sur la
+passe de tagging qui regarde déjà chaque photo**, pas un cinquième pipeline.
 
-1. **Un chiffre m'a contredit et j'ai failli ne pas l'écouter.** J'avais écrit
-   que les 173 « flux différent » étaient sans doute deux photos différentes
-   de même nom. L'écart était **toujours du même signe** — un signal qu'une
-   coïncidence n'explique pas. Contrôle : les 173 portent des octets APRÈS le
-   `EOI` côté Google. L'instrument rangeait le TRAILER dans l'image.
+### Les trois choses de la semaine qui changent la suite
+
+1. **Un écart TOUJOURS du même signe n'est pas du bruit.** Six lignes de
+   contrôle ont renversé un verdict que j'avais écrit dans le ROADMAP.
 2. **« Extraction effectuée OK » n'est pas une preuve** — le fichier écrit à
-   moitié porte le bon nom. Le contrôle est le dézippage MOINS l'écriture :
-   la même traversée, donc le geste et sa preuve ne peuvent pas diverger.
-3. **Le canal du banc n'admet pas la virgule.** `--reprendre=a,b,c` a été
-   REFUSÉ ; l'option est devenue répétable. Un argument que le canal refuse
-   est un argument qui n'existe pas — à savoir AVANT d'écrire l'option.
+   moitié porte le bon nom. Le contrôle est le geste MOINS l'écriture : la
+   même traversée, donc ils ne peuvent pas diverger.
+3. **Le canal du banc n'admet que `[A-Za-z0-9_.:/=-]`.** Une option en liste
+   séparée par des virgules sera REFUSÉE ; la rendre répétable, dès
+   l'écriture. Un espace passe par le jeton `b64:`.
 
 ## Prochain pas
 
-1. **Copier les 3 776 ABSENTES sur le NAS** — geste de Mike, sur l'archive.
-   Liste nommée dans `_google.json`. Puis relancer
-   `verifier_photos_google.py` : c'est lui qui dira quand le feu passe au
-   vert. **Rien ne s'efface chez Google avant.** Trois questions ouvertes
-   dans `QUESTIONS_MIKE.md` (27/08), dont celle-ci.
+1. **Mesurer si l'écriture XMP coupe le trailer** (question 1 de
+   `QUESTIONS_MIKE.md`). Dix photos Samsung non taguées : relever le trailer,
+   taguer, relever à nouveau. Si c'est oui, c'est un défaut qui court depuis
+   le début du projet, et il se corrige avant d'être chiffré.
 2. **Les boutons de `gallery` — option 1, tranchée par Mike : tout
    convertir.** `.tb` 34 px, `.geobtn` 28 px, `.fchip` 35 px, `.georow
    button` 34 px, `#ss-stop` 34 px → `.btn` canonique. Coût accepté :
@@ -62,16 +66,19 @@ seulement sur les JPEG. C'est **le XMP que la photothèque écrit elle-même**.
    commune EN PREMIER dans `--apres`), `verifier_cibles`,
    `verifier_contraste`, `verifier_controles`, tests UI, banc des pages
    composants sur le **serveur vivant**, puis l'œil.
-3. **Le panneau `?` des raccourcis**, et d'abord sa brique : **un JS commun
-   injecté sur toutes les pages**, comme `tokens.css` et `base.css`
-   (`_UI_GLOBAL_FILES`). Il n'en existe aucun. Contenu dans
-   `docs/RACCOURCIS.md`.
-4. **La suite du chantier 17** : la notion de PROPRIÉTAIRE, puis
-   l'attribution rétroactive des 3 767 décisions à Mike (ordre de travail
-   complet dans `ROADMAP.md`).
-5. **Réparer `appliquer_plan.rekey_stores`** — cinq magasins sur sept. Puis
+3. **Le chantier 18 (confidentialité), partie qui ne dépend pas de 17** : le
+   détecteur greffé sur le tagueur, l'axe `sensible:`, et **d'abord le jeu
+   étiqueté et son banc** — sans banc, le seuil est une opinion. Attention :
+   le verdict ne va PAS dans le XMP (l'étiquette serait elle-même la fuite).
+4. **Le panneau `?` des raccourcis**, et d'abord sa brique : **un JS commun
+   injecté sur toutes les pages** (`_UI_GLOBAL_FILES`). Il n'en existe aucun.
+   Contenu dans `docs/RACCOURCIS.md`.
+5. **La suite du chantier 17** : la notion de PROPRIÉTAIRE, puis
+   l'attribution rétroactive des 3 767 décisions à Mike. Deux questions
+   ouvertes bloquent l'écriture partagée.
+6. **Réparer `appliquer_plan.rekey_stores`** — cinq magasins sur sept. Puis
    **unifier** : la primitive complète existe DEUX fois.
-6. **Reste d'audit** : O8–O9, O11, O13–O15 ; **I1** dans `/reglages` ;
+7. **Reste d'audit** : O8–O9, O11, O13–O15 ; **I1** dans `/reglages` ;
    `animal:luna` en minuscule sur 3 photos à côté de `animal:Luna` sur 355.
    Puis les quatre pages sans `components.css`. O15 balaie au passage les
    3 047 vignettes orphelines du déplacement du 26/08.
@@ -81,10 +88,12 @@ seulement sur les JPEG. C'est **le XMP que la photothèque écrit elle-même**.
 **La copie hors site attend que le chantier 17 soit fini** (choix de Mike,
 26/08). Le Takeout, lui, ne dépend de rien.
 
-- **Le Takeout Google : OUVERT et CONFRONTÉ** (27/08). Ce qui reste est un
-  geste sur l'archive, pas une mesure : **copier les 3 776 ABSENTES**, puis
-  relancer `verifier_photos_google.py` (famille `verifier_`, lançable au
-  banc — le chemin passe par le jeton `b64:`, il porte des espaces). Effacer
+- **Le Takeout Google : OUVERT, CONFRONTÉ, et le rapatriement est OUTILLÉ**
+  (27/08). Ce qui reste est un geste sur l'archive :
+  **`32 - Copier les absentes de Google.bat`**, puis `26 - Ranger par
+  annee.bat`, puis relancer `verifier_photos_google.py` (famille `verifier_`,
+  lançable au banc — le chemin passe par le jeton `b64:`, il porte des
+  espaces). Effacer
   se fait sur `photos.google.com` — jamais depuis l'app du téléphone, qui
   efface aussi l'appareil — et le quota ne bouge qu'une fois la CORBEILLE
   vidée (60 j). **Le compte est à 96 %** : quand il est plein, Gmail cesse de
