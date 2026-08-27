@@ -234,14 +234,20 @@ def chemin_sur(cible, nom):
 
 
 def extraire_un(zf, info, cible, appliquer=True):
-    """('ecrit'|'saute'|'a_ecrire'|'refuse', destination|None)."""
+    """('ecrit'|'saute'|'absent'|'tronque'|'refuse', destination|None).
+
+    **`absent` et `tronque` sont distingues, et c'est le sens du controle.**
+    Un fichier qui manque se voit ; un fichier ecrit a moitie porte le bon nom
+    et la mauvaise taille — c'est la trace d'un disque plein ou d'une coupure,
+    et c'est la seule panne de dezippage qui se lit comme un succes."""
     dest = chemin_sur(cible, info.filename)
     if dest is None:
         return 'refuse', None
-    if _taille(dest) == info.file_size:
+    vue = _taille(dest)
+    if vue == info.file_size:
         return 'saute', dest
     if not appliquer:
-        return 'a_ecrire', dest
+        return ('absent' if vue < 0 else 'tronque'), dest
     os.makedirs(_long(dest.parent), exist_ok=True)
     with zf.open(info) as src, open(_long(dest), 'wb') as out:
         shutil.copyfileobj(src, out, TAMPON)
@@ -253,11 +259,23 @@ def extraire_un(zf, info, cible, appliquer=True):
     return 'ecrit', dest
 
 
+ETATS = ('ecrit', 'saute', 'absent', 'tronque', 'refuse')
+
+
 def extraire(zips, cible, appliquer=False, ecrire=print):
-    """Ouvre chaque lot dans `cible`. Reprenable : ce qui est deja la est saute."""
-    compte = {'ecrit': 0, 'saute': 0, 'a_ecrire': 0, 'refuse': 0}
+    """Ouvre chaque lot dans `cible`. Reprenable : ce qui est deja la est saute.
+
+    Sans `appliquer`, rien n'est ecrit et la fonction devient le CONTROLE de
+    l'extraction : elle dit, membre par membre, ce qui manque et ce qui est
+    tronque. Une seule traversee dans le projet — le dezippage et son controle
+    ne peuvent pas diverger, parce que c'est le meme code.
+
+    Rend `(compte, octets_ecrits, griefs, complet)` ; `griefs` est un dict
+    {'absent': [...], 'tronque': [...], 'refuse': [...]} borne a `LISTE_MAX`
+    par famille : ce qui n'est pas liste est COMPTE, jamais tu."""
+    compte = {e: 0 for e in ETATS}
     octets = 0
-    refuses = []
+    griefs = {'absent': [], 'tronque': [], 'refuse': []}
     for p in zips:
         p = Path(p)
         t0 = time.time()
@@ -271,17 +289,17 @@ def extraire(zips, cible, appliquer=False, ecrire=print):
                     compte[etat] += 1
                     if etat == 'ecrit':
                         octets += info.file_size
-                    elif etat == 'refuse':
-                        refuses.append(info.filename)
+                    elif etat in griefs and len(griefs[etat]) < LISTE_MAX:
+                        griefs[etat].append(info.filename)
         except Exception as e:                          # noqa: BLE001
             ecrire("  %-40s INTERROMPU : %s" % (p.name[:40], e))
-            return compte, octets, refuses, False
+            return compte, octets, griefs, False
+        a_faire = sum(compte[e] - avant[e] for e in ('ecrit', 'absent',
+                                                     'tronque'))
         ecrire("  %-40s +%-7d =%-7d  (%.0f s)"
-               % (p.name[:40],
-                  compte['ecrit'] - avant['ecrit'] + compte['a_ecrire'] - avant['a_ecrire'],
-                  compte['saute'] - avant['saute'],
+               % (p.name[:40], a_faire, compte['saute'] - avant['saute'],
                   time.time() - t0))
-    return compte, octets, refuses, True
+    return compte, octets, griefs, True
 
 
 # ──────────────────────────────────────────────────────── le rapport ─────────
@@ -434,17 +452,16 @@ def main(argv=None):
         print("  EXTRACTION vers %s" % cible)
         print("  (deja ecrit a la bonne taille = saute ; relancer reprend)")
         os.makedirs(_long(cible), exist_ok=True)
-        compte, octets, refuses, complet = extraire(zips, cible, appliquer=True)
+        compte, octets, griefs, complet = extraire(zips, cible, appliquer=True)
         print("")
         print("  ecrits %d (%s), sautes %d, refuses %d"
               % (compte['ecrit'], go(octets), compte['saute'], compte['refuse']))
-        if refuses:
+        if griefs['refuse']:
             print("  REFUSES (chemin sortant de la cible) :")
-            for r in refuses[:LISTE_MAX]:
+            for r in griefs['refuse']:
                 print("    %s" % r[:66])
         resultat['extraction'] = {'compte': compte, 'octets_ecrits': octets,
-                                  'refuses': refuses[:LISTE_MAX],
-                                  'complete': complet}
+                                  'griefs': griefs, 'complete': complet}
         ok = ok and complet
     elif a.extraire and not ok:
         print("")

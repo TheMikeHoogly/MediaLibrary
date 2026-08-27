@@ -1,0 +1,1627 @@
+{
+  "rapport": "_google.json",
+  "octets": false,
+  "depuis": 0,
+  "limite": 0,
+  "total_probables": 215,
+  "juges": 215,
+  "compte": {
+    "IMAGE_DIFFERENTE": 21,
+    "MEME_IMAGE_TRAILER": 99,
+    "FLUX_DIFFERENT": 74,
+    "HORS_PORTEE": 21
+  },
+  "exemples": {
+    "IMAGE_DIFFERENTE": [
+      "20260109_080043.jpg  [tables ou cadre differents (re-encodage)]",
+      "20260426_181958.jpg  [tables ou cadre differents (re-encodage)]",
+      "20260709_185049.jpg  [tables ou cadre differents (re-encodage)]",
+      "20260709_185109.jpg  [tables ou cadre differents (re-encodage)]",
+      "20250822_171430.jpg  [tables ou cadre differents (re-encodage)]",
+      "20251228_181330.jpg  [tables ou cadre differents (re-encodage)]",
+      "20251228_181343.jpg  [tables ou cadre differents (re-encodage)]",
+      "20240723_154641.jpg  [tables ou cadre differents (re-encodage)]",
+      "20240726_140643.jpg  [tables ou cadre differents (re-encodage)]",
+      "20240727_113109.jpg  [tables ou cadre differents (re-encodage)]",
+      "Luzarches 2016 (18).jpg  [tables ou cadre differents (re-encodage)]",
+      "Luzarches 2016 (33).jpg  [tables ou cadre differents (re-encodage)]",
+      "10.JPG  [tables ou cadre differents (re-encodage)]",
+      "4.JPG  [tables ou cadre differents (re-encodage)]",
+      "5.JPG  [tables ou cadre differents (re-encodage)]",
+      "74.JPG  [tables ou cadre differents (re-encodage)]",
+      "26.jpg  [tables ou cadre differents (re-encodage)]",
+      "39.jpg  [tables ou cadre differents (re-encodage)]",
+      "51.jpg  [tables ou cadre differents (re-encodage)]",
+      "DSC00668.JPG  [tables ou cadre differents (re-encodage)]",
+      "Florine.jpg  [tables ou cadre differents (re-encodage)]"
+    ],
+    "MEME_IMAGE_TRAILER": [
+      "20260109_150443.jpg  [meme image ; apres le JPEG : 1954 octets chez Google, 0 sur le NAS]",
+      "20260110_213930.jpg  [meme image ; apres le JPEG : 2020 octets chez Google, 0 sur le NAS]",
+      "20260111_122548.jpg  [meme image ; apres le JPEG : 2078 octets chez Google, 0 sur le NAS]",
+      "20260112_181232.jpg  [meme image ; apres le JPEG : 1992 octets chez Google, 0 sur le NAS]",
+      "20260122_094001.jpg  [meme image ; apres le JPEG : 2023 octets chez Google, 0 sur le NAS]",
+      "20260201_202154.jpg  [meme image ; apres le JPEG : 2006 octets chez Google, 0 sur le NAS]",
+      "20260201_202209.jpg  [meme image ; apres le JPEG : 2023 octets chez Google, 0 sur le NAS]",
+      "20260201_202226.jpg  [meme image ; apres le JPEG : 2023 octets chez Google, 0 sur le NAS]",
+      "20260201_202251.jpg  [meme image ; apres le JPEG : 2007 octets chez Google, 0 sur le NAS]",
+      "20260201_202648.jpg  [meme image ; apres le JPEG : 2007 octets chez Google, 0 sur le NAS]",
+      "20260201_202929.jpg  [meme image ; apres le JPEG : 2021 octets chez Google, 0 sur le NAS]",
+      "20260205_135137.jpg  [meme image ; apres le JPEG : 2024 octets chez Google, 0 sur le NAS]",
+      "20260302_224321.jpg  [meme image ; apres le JPEG : 2024 octets chez Google, 0 sur le NAS]",
+      "20260302_224329.jpg  [meme image ; apres le JPEG : 2023 octets chez Google, 0 sur le NAS]",
+      "20260302_224336.jpg  [meme image ; apres le JPEG : 1991 octets chez Google, 0 sur le NAS]",
+      "20260302_224350.jpg  [meme image ; apres le JPEG : 2024 octets chez Google, 0 sur le NAS]",
+      "20260302_224418.jpg  [meme image ; apres le JPEG : 2006 octets chez Google, 0 sur le NAS]",
+      "20260302_224424.jpg  [meme image ; apres le JPEG : 2023 octets chez Google, 0 sur le NAS]",
+      "20260302_224428.jpg  [meme image ; apres le JPEG : 2005 octets chez Google, 0 sur le NAS]",
+      "20260304_201945.jpg  [meme image ; apres le JPEG : 59653 octets chez Google, 0 sur le NAS]",
+      "20260304_202237.jpg  [meme image ; apres le JPEG : 188465 octets chez Google, 0 sur le NAS]",
+      "20260311_105602.jpg  [meme image ; apres le JPEG : 2093 octets chez Google, 0 sur le NAS]",
+      "20260311_120211.jpg  [meme image ; apres le JPEG : 1968 octets chez Google, 0 sur le NAS]",
+      "20260314_001249(1).jpg  [meme image ; apres le JPEG : 1959 octets chez Google, 0 sur le NAS]",
+      "20260324_205340.jpg  [meme image ; apres le JPEG : 2041 octets chez Google, 0 sur le NAS]"
+    ],
+    "FLUX_DIFFERENT": [
+      "20260408_151012.jpg  [meme cadre, flux de 2265925 octets chez Google et 2253027 sur le NAS]",
+      "20250114_213511.jpg  [meme cadre, flux de 3592361 octets chez Google et 1035064 sur le NAS]",
+      "20250201_141126.jpg  [meme cadre, flux de 6413163 octets chez Google et 3022729 sur le NAS]",
+      "20250201_160227.jpg  [meme cadre, flux de 5131800 octets chez Google et 2143155 sur le NAS]",
+      "20250201_192153.jpg  [meme cadre, flux de 4260386 octets chez Google et 1397993 sur le NAS]",
+      "20250303_162026.jpg  [meme cadre, flux de 2214386 octets chez Google et 360898 sur le NAS]",
+      "20250405_132609.jpg  [meme cadre, flux de 5679525 octets chez Google et 2520888 sur le NAS]",
+      "20250407_171532.jpg  [meme cadre, flux de 2552062 octets chez Google et 771868 sur le NAS]",
+      "20250408_154908.jpg  [meme cadre, flux de 3301499 octets chez Google et 466879 sur le NAS]",
+      "20250420_205613.jpg  [meme cadre, flux de 4220623 octets chez Google et 3419038 sur le NAS]",
+      "20240331_140247.jpg  [meme cadre, flux de 5607984 octets chez Google et 4552584 sur le NAS]",
+      "20240426_163504.jpg  [meme cadre, flux de 2921997 octets chez Google et 2877081 sur le NAS]",
+      "20240510_172508.jpg  [meme cadre, flux de 5745066 octets chez Google et 3176184 sur le NAS]",
+      "20240511_112538.jpg  [meme cadre, flux de 5987594 octets chez Google et 2660753 sur le NAS]",
+      "20240511_113445.jpg  [meme cadre, flux de 6605976 octets chez Google et 2622846 sur le NAS]",
+      "20240513_184703.jpg  [meme cadre, flux de 7747441 octets chez Google et 4252099 sur le NAS]",
+      "20240524_124351.jpg  [meme cadre, flux de 5937069 octets chez Google et 3601493 sur le NAS]",
+      "20240524_173547.jpg  [meme cadre, flux de 6856338 octets chez Google et 3221315 sur le NAS]",
+      "20240528_154920.jpg  [meme cadre, flux de 8995397 octets chez Google et 4391671 sur le NAS]",
+      "20240528_172822.jpg  [meme cadre, flux de 5556463 octets chez Google et 3282588 sur le NAS]",
+      "20240530_173740.jpg  [meme cadre, flux de 5435727 octets chez Google et 3101207 sur le NAS]",
+      "20240606_091220.jpg  [meme cadre, flux de 5456732 octets chez Google et 2317807 sur le NAS]",
+      "20240606_200626.jpg  [meme cadre, flux de 6028717 octets chez Google et 3475293 sur le NAS]",
+      "20240607_091417.jpg  [meme cadre, flux de 7143586 octets chez Google et 3139460 sur le NAS]",
+      "20240702_092349.jpg  [meme cadre, flux de 5180213 octets chez Google et 2721523 sur le NAS]"
+    ],
+    "HORS_PORTEE": [
+      "20260724_201256.mp4  [pas un JPEG lisible : les deux]",
+      "BEA.png  [pas un JPEG lisible : les deux]",
+      "OK Mathilde fait trempette.png  [pas un JPEG lisible : les deux]",
+      "20250510_213412.mp4  [pas un JPEG lisible : les deux]",
+      "20250510_213701.mp4  [pas un JPEG lisible : les deux]",
+      "20250510_214847.mp4  [pas un JPEG lisible : les deux]",
+      "20250717_212635.mp4  [pas un JPEG lisible : les deux]",
+      "20250814_203639.mp4  [pas un JPEG lisible : les deux]",
+      "20250814_213911.mp4  [pas un JPEG lisible : les deux]",
+      "20250814_214518.mp4  [pas un JPEG lisible : les deux]",
+      "20250814_222300.mp4  [pas un JPEG lisible : les deux]",
+      "20250815_000138.mp4  [pas un JPEG lisible : les deux]",
+      "20240727_180354_1.gif  [pas un JPEG lisible : les deux]",
+      "20220207_083912(0).gif  [pas un JPEG lisible : les deux]",
+      "20220325_105302.gif  [pas un JPEG lisible : les deux]",
+      "20220727_201849.gif  [pas un JPEG lisible : les deux]",
+      "20220904_105607.gif  [pas un JPEG lisible : les deux]",
+      "20221223_192759.gif  [pas un JPEG lisible : les deux]",
+      "20211225_141806(0).gif  [pas un JPEG lisible : les deux]",
+      "20211225_141808(0).gif  [pas un JPEG lisible : les deux]",
+      "20211230_121717(0).gif  [pas un JPEG lisible : les deux]"
+    ]
+  },
+  "restantes": [
+    {
+      "nom": "20260109_080043.jpg",
+      "verdict": "IMAGE_DIFFERENTE",
+      "detail": "tables ou cadre differents (re-encodage)",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2026\\20260109_080043.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\20260109_080043.jpg"
+    },
+    {
+      "nom": "20260109_150443.jpg",
+      "verdict": "MEME_IMAGE_TRAILER",
+      "detail": "meme image ; apres le JPEG : 1954 octets chez Google, 0 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2026\\20260109_150443.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\20260109_150443.jpg"
+    },
+    {
+      "nom": "20260110_213930.jpg",
+      "verdict": "MEME_IMAGE_TRAILER",
+      "detail": "meme image ; apres le JPEG : 2020 octets chez Google, 0 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2026\\20260110_213930.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\20260110_213930.jpg"
+    },
+    {
+      "nom": "20260111_122548.jpg",
+      "verdict": "MEME_IMAGE_TRAILER",
+      "detail": "meme image ; apres le JPEG : 2078 octets chez Google, 0 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2026\\20260111_122548.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\20260111_122548.jpg"
+    },
+    {
+      "nom": "20260112_181232.jpg",
+      "verdict": "MEME_IMAGE_TRAILER",
+      "detail": "meme image ; apres le JPEG : 1992 octets chez Google, 0 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2026\\20260112_181232.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\20260112_181232.jpg"
+    },
+    {
+      "nom": "20260122_094001.jpg",
+      "verdict": "MEME_IMAGE_TRAILER",
+      "detail": "meme image ; apres le JPEG : 2023 octets chez Google, 0 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2026\\20260122_094001.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\20260122_094001.jpg"
+    },
+    {
+      "nom": "20260201_202154.jpg",
+      "verdict": "MEME_IMAGE_TRAILER",
+      "detail": "meme image ; apres le JPEG : 2006 octets chez Google, 0 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2026\\20260201_202154.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\20260201_202154.jpg"
+    },
+    {
+      "nom": "20260201_202209.jpg",
+      "verdict": "MEME_IMAGE_TRAILER",
+      "detail": "meme image ; apres le JPEG : 2023 octets chez Google, 0 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2026\\20260201_202209.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\20260201_202209.jpg"
+    },
+    {
+      "nom": "20260201_202226.jpg",
+      "verdict": "MEME_IMAGE_TRAILER",
+      "detail": "meme image ; apres le JPEG : 2023 octets chez Google, 0 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2026\\20260201_202226.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\20260201_202226.jpg"
+    },
+    {
+      "nom": "20260201_202251.jpg",
+      "verdict": "MEME_IMAGE_TRAILER",
+      "detail": "meme image ; apres le JPEG : 2007 octets chez Google, 0 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2026\\20260201_202251.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\20260201_202251.jpg"
+    },
+    {
+      "nom": "20260201_202648.jpg",
+      "verdict": "MEME_IMAGE_TRAILER",
+      "detail": "meme image ; apres le JPEG : 2007 octets chez Google, 0 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2026\\20260201_202648.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\260531_Samsung_MHU\\Camera\\20260201_202648.jpg"
+    },
+    {
+      "nom": "20260201_202929.jpg",
+      "verdict": "MEME_IMAGE_TRAILER",
+      "detail": "meme image ; apres le JPEG : 2021 octets chez Google, 0 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2026\\20260201_202929.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\20260201_202929.jpg"
+    },
+    {
+      "nom": "20260205_135137.jpg",
+      "verdict": "MEME_IMAGE_TRAILER",
+      "detail": "meme image ; apres le JPEG : 2024 octets chez Google, 0 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2026\\20260205_135137.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\260531_Samsung_MHU\\Camera\\20260205_135137.jpg"
+    },
+    {
+      "nom": "20260302_224321.jpg",
+      "verdict": "MEME_IMAGE_TRAILER",
+      "detail": "meme image ; apres le JPEG : 2024 octets chez Google, 0 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2026\\20260302_224321.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\260531_Samsung_MHU\\Camera\\20260302_224321.jpg"
+    },
+    {
+      "nom": "20260302_224329.jpg",
+      "verdict": "MEME_IMAGE_TRAILER",
+      "detail": "meme image ; apres le JPEG : 2023 octets chez Google, 0 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2026\\20260302_224329.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\260531_Samsung_MHU\\Camera\\20260302_224329.jpg"
+    },
+    {
+      "nom": "20260302_224336.jpg",
+      "verdict": "MEME_IMAGE_TRAILER",
+      "detail": "meme image ; apres le JPEG : 1991 octets chez Google, 0 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2026\\20260302_224336.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\260531_Samsung_MHU\\Camera\\20260302_224336.jpg"
+    },
+    {
+      "nom": "20260302_224350.jpg",
+      "verdict": "MEME_IMAGE_TRAILER",
+      "detail": "meme image ; apres le JPEG : 2024 octets chez Google, 0 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2026\\20260302_224350.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\260531_Samsung_MHU\\Camera\\20260302_224350.jpg"
+    },
+    {
+      "nom": "20260302_224418.jpg",
+      "verdict": "MEME_IMAGE_TRAILER",
+      "detail": "meme image ; apres le JPEG : 2006 octets chez Google, 0 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2026\\20260302_224418.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\260531_Samsung_MHU\\Camera\\20260302_224418.jpg"
+    },
+    {
+      "nom": "20260302_224424.jpg",
+      "verdict": "MEME_IMAGE_TRAILER",
+      "detail": "meme image ; apres le JPEG : 2023 octets chez Google, 0 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2026\\20260302_224424.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\260531_Samsung_MHU\\Camera\\20260302_224424.jpg"
+    },
+    {
+      "nom": "20260302_224428.jpg",
+      "verdict": "MEME_IMAGE_TRAILER",
+      "detail": "meme image ; apres le JPEG : 2005 octets chez Google, 0 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2026\\20260302_224428.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\260531_Samsung_MHU\\Camera\\20260302_224428.jpg"
+    },
+    {
+      "nom": "20260304_201945.jpg",
+      "verdict": "MEME_IMAGE_TRAILER",
+      "detail": "meme image ; apres le JPEG : 59653 octets chez Google, 0 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2026\\20260304_201945.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\260531_Samsung_MHU\\Camera\\20260304_201945.jpg"
+    },
+    {
+      "nom": "20260304_202237.jpg",
+      "verdict": "MEME_IMAGE_TRAILER",
+      "detail": "meme image ; apres le JPEG : 188465 octets chez Google, 0 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2026\\20260304_202237.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\260531_Samsung_MHU\\Camera\\20260304_202237.jpg"
+    },
+    {
+      "nom": "20260311_105602.jpg",
+      "verdict": "MEME_IMAGE_TRAILER",
+      "detail": "meme image ; apres le JPEG : 2093 octets chez Google, 0 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2026\\20260311_105602.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\260531_Samsung_MHU\\Camera\\20260311_105602.jpg"
+    },
+    {
+      "nom": "20260311_120211.jpg",
+      "verdict": "MEME_IMAGE_TRAILER",
+      "detail": "meme image ; apres le JPEG : 1968 octets chez Google, 0 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2026\\20260311_120211.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\260531_Samsung_MHU\\Camera\\20260311_120211.jpg"
+    },
+    {
+      "nom": "20260314_001249(1).jpg",
+      "verdict": "MEME_IMAGE_TRAILER",
+      "detail": "meme image ; apres le JPEG : 1959 octets chez Google, 0 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2026\\20260314_001249(1).jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\260531_Samsung_MHU\\Camera\\20260314_001249(1).jpg"
+    },
+    {
+      "nom": "20260324_205340.jpg",
+      "verdict": "MEME_IMAGE_TRAILER",
+      "detail": "meme image ; apres le JPEG : 2041 octets chez Google, 0 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2026\\20260324_205340.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\260531_Samsung_MHU\\Camera\\20260324_205340.jpg"
+    },
+    {
+      "nom": "20260408_151012.jpg",
+      "verdict": "FLUX_DIFFERENT",
+      "detail": "meme cadre, flux de 2265925 octets chez Google et 2253027 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2026\\20260408_151012.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\260531_Samsung_MHU\\Camera\\20260408_151012.jpg"
+    },
+    {
+      "nom": "20260411_160937.jpg",
+      "verdict": "MEME_IMAGE_TRAILER",
+      "detail": "meme image ; apres le JPEG : 2025 octets chez Google, 0 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2026\\20260411_160937.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\260531_Samsung_MHU\\Camera\\20260411_160937.jpg"
+    },
+    {
+      "nom": "20260411_161016.jpg",
+      "verdict": "MEME_IMAGE_TRAILER",
+      "detail": "meme image ; apres le JPEG : 2007 octets chez Google, 0 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2026\\20260411_161016.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\260531_Samsung_MHU\\Camera\\20260411_161016.jpg"
+    },
+    {
+      "nom": "20260411_162946.jpg",
+      "verdict": "MEME_IMAGE_TRAILER",
+      "detail": "meme image ; apres le JPEG : 2024 octets chez Google, 0 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2026\\20260411_162946.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\260531_Samsung_MHU\\Camera\\20260411_162946.jpg"
+    },
+    {
+      "nom": "20260422_141347.jpg",
+      "verdict": "MEME_IMAGE_TRAILER",
+      "detail": "meme image ; apres le JPEG : 2022 octets chez Google, 0 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2026\\20260422_141347.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\260531_Samsung_MHU\\Camera\\20260422_141347.jpg"
+    },
+    {
+      "nom": "20260426_181958.jpg",
+      "verdict": "IMAGE_DIFFERENTE",
+      "detail": "tables ou cadre differents (re-encodage)",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2026\\20260426_181958.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\260531_Samsung_MHU\\Camera\\20260426_181958.jpg"
+    },
+    {
+      "nom": "20260502_093501.jpg",
+      "verdict": "MEME_IMAGE_TRAILER",
+      "detail": "meme image ; apres le JPEG : 1985 octets chez Google, 0 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2026\\20260502_093501.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\260531_Samsung_MHU\\Camera\\20260502_093501.jpg"
+    },
+    {
+      "nom": "20260502_094116.jpg",
+      "verdict": "MEME_IMAGE_TRAILER",
+      "detail": "meme image ; apres le JPEG : 2024 octets chez Google, 0 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2026\\20260502_094116.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\260531_Samsung_MHU\\Camera\\20260502_094116.jpg"
+    },
+    {
+      "nom": "20260503_185126.jpg",
+      "verdict": "MEME_IMAGE_TRAILER",
+      "detail": "meme image ; apres le JPEG : 2025 octets chez Google, 0 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2026\\20260503_185126.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\260531_Samsung_MHU\\Camera\\20260503_185126.jpg"
+    },
+    {
+      "nom": "20260526_200757.jpg",
+      "verdict": "MEME_IMAGE_TRAILER",
+      "detail": "meme image ; apres le JPEG : 2007 octets chez Google, 0 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2026\\20260526_200757.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\260531_Samsung_MHU\\Camera\\20260526_200757.jpg"
+    },
+    {
+      "nom": "20260606_200305.jpg",
+      "verdict": "MEME_IMAGE_TRAILER",
+      "detail": "meme image ; apres le JPEG : 221 octets chez Google, 0 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2026\\20260606_200305.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\20260606_200305.jpg"
+    },
+    {
+      "nom": "20260606_200308.jpg",
+      "verdict": "MEME_IMAGE_TRAILER",
+      "detail": "meme image ; apres le JPEG : 182 octets chez Google, 0 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2026\\20260606_200308.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\20260606_200308.jpg"
+    },
+    {
+      "nom": "20260607_155659.jpg",
+      "verdict": "MEME_IMAGE_TRAILER",
+      "detail": "meme image ; apres le JPEG : 2069 octets chez Google, 0 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2026\\20260607_155659.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\20260607_155659.jpg"
+    },
+    {
+      "nom": "20260623_202948.jpg",
+      "verdict": "MEME_IMAGE_TRAILER",
+      "detail": "meme image ; apres le JPEG : 13222 octets chez Google, 0 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2026\\20260623_202948.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\20260623_202948.jpg"
+    },
+    {
+      "nom": "20260628_185128.jpg",
+      "verdict": "MEME_IMAGE_TRAILER",
+      "detail": "meme image ; apres le JPEG : 2132 octets chez Google, 0 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2026\\20260628_185128.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\20260628_185128.jpg"
+    },
+    {
+      "nom": "20260629_213802.jpg",
+      "verdict": "MEME_IMAGE_TRAILER",
+      "detail": "meme image ; apres le JPEG : 2046 octets chez Google, 0 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2026\\20260629_213802.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\20260629_213802.jpg"
+    },
+    {
+      "nom": "20260629_213828.jpg",
+      "verdict": "MEME_IMAGE_TRAILER",
+      "detail": "meme image ; apres le JPEG : 2051 octets chez Google, 0 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2026\\20260629_213828.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\20260629_213828.jpg"
+    },
+    {
+      "nom": "20260709_185049.jpg",
+      "verdict": "IMAGE_DIFFERENTE",
+      "detail": "tables ou cadre differents (re-encodage)",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2026\\20260709_185049.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\20260709_185049.jpg"
+    },
+    {
+      "nom": "20260709_185109.jpg",
+      "verdict": "IMAGE_DIFFERENTE",
+      "detail": "tables ou cadre differents (re-encodage)",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2026\\20260709_185109.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\20260709_185109.jpg"
+    },
+    {
+      "nom": "20260712_194159.jpg",
+      "verdict": "MEME_IMAGE_TRAILER",
+      "detail": "meme image ; apres le JPEG : 2046 octets chez Google, 0 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2026\\20260712_194159.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\20260712_194159.jpg"
+    },
+    {
+      "nom": "20260712_194216.jpg",
+      "verdict": "MEME_IMAGE_TRAILER",
+      "detail": "meme image ; apres le JPEG : 2046 octets chez Google, 0 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2026\\20260712_194216.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\20260712_194216.jpg"
+    },
+    {
+      "nom": "20260712_194230.jpg",
+      "verdict": "MEME_IMAGE_TRAILER",
+      "detail": "meme image ; apres le JPEG : 2044 octets chez Google, 0 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2026\\20260712_194230.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\20260712_194230.jpg"
+    },
+    {
+      "nom": "20260713_161813.jpg",
+      "verdict": "MEME_IMAGE_TRAILER",
+      "detail": "meme image ; apres le JPEG : 2013 octets chez Google, 0 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2026\\20260713_161813.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\20260713_161813.jpg"
+    },
+    {
+      "nom": "20260720_144047.jpg",
+      "verdict": "MEME_IMAGE_TRAILER",
+      "detail": "meme image ; apres le JPEG : 1945 octets chez Google, 0 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2026\\20260720_144047.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\20260720_144047.jpg"
+    },
+    {
+      "nom": "20260724_201256.mp4",
+      "verdict": "HORS_PORTEE",
+      "detail": "pas un JPEG lisible : les deux",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2026\\20260724_201256.mp4",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\260731_Samsung Mike\\20260724_201256.mp4"
+    },
+    {
+      "nom": "BEA.png",
+      "verdict": "HORS_PORTEE",
+      "detail": "pas un JPEG lisible : les deux",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2026\\BEA.png",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2017\\04 Avril\\Anni Bea\\BEA.png"
+    },
+    {
+      "nom": "OK Mathilde fait trempette.png",
+      "verdict": "HORS_PORTEE",
+      "detail": "pas un JPEG lisible : les deux",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2026\\OK Mathilde fait trempette.png",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\EVJF Mathilde\\OK Mathilde fait trempette.png"
+    },
+    {
+      "nom": "20250114_213511.jpg",
+      "verdict": "FLUX_DIFFERENT",
+      "detail": "meme cadre, flux de 3592361 octets chez Google et 1035064 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2025\\20250114_213511.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2025\\20250114_213511.jpg"
+    },
+    {
+      "nom": "20250201_141126.jpg",
+      "verdict": "FLUX_DIFFERENT",
+      "detail": "meme cadre, flux de 6413163 octets chez Google et 3022729 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2025\\20250201_141126.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2025\\20250201_141126.jpg"
+    },
+    {
+      "nom": "20250201_160227.jpg",
+      "verdict": "FLUX_DIFFERENT",
+      "detail": "meme cadre, flux de 5131800 octets chez Google et 2143155 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2025\\20250201_160227.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2025\\20250201_160227.jpg"
+    },
+    {
+      "nom": "20250201_192153.jpg",
+      "verdict": "FLUX_DIFFERENT",
+      "detail": "meme cadre, flux de 4260386 octets chez Google et 1397993 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2025\\20250201_192153.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2025\\20250201_192153.jpg"
+    },
+    {
+      "nom": "20250303_162026.jpg",
+      "verdict": "FLUX_DIFFERENT",
+      "detail": "meme cadre, flux de 2214386 octets chez Google et 360898 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2025\\20250303_162026.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2025\\20250303_162026.jpg"
+    },
+    {
+      "nom": "20250405_132609.jpg",
+      "verdict": "FLUX_DIFFERENT",
+      "detail": "meme cadre, flux de 5679525 octets chez Google et 2520888 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2025\\20250405_132609.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2025\\20250405_132609.jpg"
+    },
+    {
+      "nom": "20250407_171532.jpg",
+      "verdict": "FLUX_DIFFERENT",
+      "detail": "meme cadre, flux de 2552062 octets chez Google et 771868 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2025\\20250407_171532.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2025\\20250407_171532.jpg"
+    },
+    {
+      "nom": "20250408_154908.jpg",
+      "verdict": "FLUX_DIFFERENT",
+      "detail": "meme cadre, flux de 3301499 octets chez Google et 466879 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2025\\20250408_154908.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2025\\20250408_154908.jpg"
+    },
+    {
+      "nom": "20250420_205613.jpg",
+      "verdict": "FLUX_DIFFERENT",
+      "detail": "meme cadre, flux de 4220623 octets chez Google et 3419038 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2025\\20250420_205613.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\Photos Floflo\\Miki\\20250420_205613.jpg"
+    },
+    {
+      "nom": "20250422_141934.jpg",
+      "verdict": "MEME_IMAGE_TRAILER",
+      "detail": "meme image ; apres le JPEG : 1611 octets chez Google, 0 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2025\\20250422_141934.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2025\\20250422_141934.jpg"
+    },
+    {
+      "nom": "20250503_205343.jpg",
+      "verdict": "MEME_IMAGE_TRAILER",
+      "detail": "meme image ; apres le JPEG : 1607 octets chez Google, 0 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2025\\20250503_205343.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2025\\20250503_205343.jpg"
+    },
+    {
+      "nom": "20250510_213412.mp4",
+      "verdict": "HORS_PORTEE",
+      "detail": "pas un JPEG lisible : les deux",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2025\\20250510_213412.mp4",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\250914_Samsung_Mike\\20250510_213412.mp4"
+    },
+    {
+      "nom": "20250510_213701.mp4",
+      "verdict": "HORS_PORTEE",
+      "detail": "pas un JPEG lisible : les deux",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2025\\20250510_213701.mp4",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\250914_Samsung_Mike\\20250510_213701.mp4"
+    },
+    {
+      "nom": "20250510_214847.mp4",
+      "verdict": "HORS_PORTEE",
+      "detail": "pas un JPEG lisible : les deux",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2025\\20250510_214847.mp4",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\250914_Samsung_Mike\\20250510_214847.mp4"
+    },
+    {
+      "nom": "20250521_115017.jpg",
+      "verdict": "MEME_IMAGE_TRAILER",
+      "detail": "meme image ; apres le JPEG : 1985 octets chez Google, 0 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2025\\20250521_115017.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2025\\20250521_115017.jpg"
+    },
+    {
+      "nom": "20250530_152309.jpg",
+      "verdict": "MEME_IMAGE_TRAILER",
+      "detail": "meme image ; apres le JPEG : 1985 octets chez Google, 0 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2025\\20250530_152309.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2025\\20250530_152309.jpg"
+    },
+    {
+      "nom": "20250602_220045.jpg",
+      "verdict": "MEME_IMAGE_TRAILER",
+      "detail": "meme image ; apres le JPEG : 1986 octets chez Google, 0 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2025\\20250602_220045.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2025\\20250602_220045.jpg"
+    },
+    {
+      "nom": "20250602_220055.jpg",
+      "verdict": "MEME_IMAGE_TRAILER",
+      "detail": "meme image ; apres le JPEG : 2016 octets chez Google, 0 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2025\\20250602_220055.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2025\\20250602_220055.jpg"
+    },
+    {
+      "nom": "20250607_171523.jpg",
+      "verdict": "MEME_IMAGE_TRAILER",
+      "detail": "meme image ; apres le JPEG : 2017 octets chez Google, 0 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2025\\20250607_171523.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2025\\20250607_171523.jpg"
+    },
+    {
+      "nom": "20250607_171533.jpg",
+      "verdict": "MEME_IMAGE_TRAILER",
+      "detail": "meme image ; apres le JPEG : 2017 octets chez Google, 0 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2025\\20250607_171533.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2025\\20250607_171533.jpg"
+    },
+    {
+      "nom": "20250609_165703.jpg",
+      "verdict": "MEME_IMAGE_TRAILER",
+      "detail": "meme image ; apres le JPEG : 2018 octets chez Google, 0 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2025\\20250609_165703.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2025\\20250609_165703.jpg"
+    },
+    {
+      "nom": "20250616_093730.jpg",
+      "verdict": "MEME_IMAGE_TRAILER",
+      "detail": "meme image ; apres le JPEG : 2019 octets chez Google, 0 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2025\\20250616_093730.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2025\\20250616_093730.jpg"
+    },
+    {
+      "nom": "20250619_211519.jpg",
+      "verdict": "MEME_IMAGE_TRAILER",
+      "detail": "meme image ; apres le JPEG : 2018 octets chez Google, 0 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2025\\20250619_211519.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2025\\20250619_211519.jpg"
+    },
+    {
+      "nom": "20250628_023437.jpg",
+      "verdict": "MEME_IMAGE_TRAILER",
+      "detail": "meme image ; apres le JPEG : 3656 octets chez Google, 0 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2025\\20250628_023437.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2025\\20250628_023437.jpg"
+    },
+    {
+      "nom": "20250702_122542.jpg",
+      "verdict": "MEME_IMAGE_TRAILER",
+      "detail": "meme image ; apres le JPEG : 1980 octets chez Google, 0 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2025\\20250702_122542.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2025\\20250702_122542.jpg"
+    },
+    {
+      "nom": "20250717_212635.mp4",
+      "verdict": "HORS_PORTEE",
+      "detail": "pas un JPEG lisible : les deux",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2025\\20250717_212635.mp4",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\250914_Samsung_Mike\\20250717_212635.mp4"
+    },
+    {
+      "nom": "20250720_130344.jpg",
+      "verdict": "MEME_IMAGE_TRAILER",
+      "detail": "meme image ; apres le JPEG : 1986 octets chez Google, 0 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2025\\20250720_130344.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2025\\20250720_130344.jpg"
+    },
+    {
+      "nom": "20250720_145323.jpg",
+      "verdict": "MEME_IMAGE_TRAILER",
+      "detail": "meme image ; apres le JPEG : 1986 octets chez Google, 0 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2025\\20250720_145323.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2025\\20250720_145323.jpg"
+    },
+    {
+      "nom": "20250722_194349.jpg",
+      "verdict": "MEME_IMAGE_TRAILER",
+      "detail": "meme image ; apres le JPEG : 1979 octets chez Google, 0 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2025\\20250722_194349.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2025\\20250722_194349.jpg"
+    },
+    {
+      "nom": "20250722_194353.jpg",
+      "verdict": "MEME_IMAGE_TRAILER",
+      "detail": "meme image ; apres le JPEG : 1979 octets chez Google, 0 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2025\\20250722_194353.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2025\\20250722_194353.jpg"
+    },
+    {
+      "nom": "20250722_194354.jpg",
+      "verdict": "MEME_IMAGE_TRAILER",
+      "detail": "meme image ; apres le JPEG : 1979 octets chez Google, 0 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2025\\20250722_194354.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2025\\20250722_194354.jpg"
+    },
+    {
+      "nom": "20250722_194355.jpg",
+      "verdict": "MEME_IMAGE_TRAILER",
+      "detail": "meme image ; apres le JPEG : 1979 octets chez Google, 0 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2025\\20250722_194355.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2025\\20250722_194355.jpg"
+    },
+    {
+      "nom": "20250723_011634.jpg",
+      "verdict": "MEME_IMAGE_TRAILER",
+      "detail": "meme image ; apres le JPEG : 2106 octets chez Google, 0 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2025\\20250723_011634.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2025\\20250723_011634.jpg"
+    },
+    {
+      "nom": "20250814_203639.mp4",
+      "verdict": "HORS_PORTEE",
+      "detail": "pas un JPEG lisible : les deux",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2025\\20250814_203639.mp4",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\250914_Samsung_Mike\\20250814_203639.mp4"
+    },
+    {
+      "nom": "20250814_213911.mp4",
+      "verdict": "HORS_PORTEE",
+      "detail": "pas un JPEG lisible : les deux",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2025\\20250814_213911.mp4",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\250914_Samsung_Mike\\20250814_213911.mp4"
+    },
+    {
+      "nom": "20250814_214518.mp4",
+      "verdict": "HORS_PORTEE",
+      "detail": "pas un JPEG lisible : les deux",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2025\\20250814_214518.mp4",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\250914_Samsung_Mike\\20250814_214518.mp4"
+    },
+    {
+      "nom": "20250814_222300.mp4",
+      "verdict": "HORS_PORTEE",
+      "detail": "pas un JPEG lisible : les deux",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2025\\20250814_222300.mp4",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\250914_Samsung_Mike\\20250814_222300.mp4"
+    },
+    {
+      "nom": "20250815_000138.mp4",
+      "verdict": "HORS_PORTEE",
+      "detail": "pas un JPEG lisible : les deux",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2025\\20250815_000138.mp4",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\250914_Samsung_Mike\\20250815_000138.mp4"
+    },
+    {
+      "nom": "20250819_193444.jpg",
+      "verdict": "MEME_IMAGE_TRAILER",
+      "detail": "meme image ; apres le JPEG : 2019 octets chez Google, 0 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2025\\20250819_193444.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2025\\20250819_193444.jpg"
+    },
+    {
+      "nom": "20250822_171430.jpg",
+      "verdict": "IMAGE_DIFFERENTE",
+      "detail": "tables ou cadre differents (re-encodage)",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2025\\20250822_171430.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2025\\20250822_171430.jpg"
+    },
+    {
+      "nom": "20250912_171422.jpg",
+      "verdict": "MEME_IMAGE_TRAILER",
+      "detail": "meme image ; apres le JPEG : 1986 octets chez Google, 0 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2025\\20250912_171422.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2025\\20250912_171422.jpg"
+    },
+    {
+      "nom": "20250914_132102.jpg",
+      "verdict": "MEME_IMAGE_TRAILER",
+      "detail": "meme image ; apres le JPEG : 2018 octets chez Google, 0 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2025\\20250914_132102.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2025\\20250914_132102.jpg"
+    },
+    {
+      "nom": "20250921_152351.jpg",
+      "verdict": "MEME_IMAGE_TRAILER",
+      "detail": "meme image ; apres le JPEG : 2056 octets chez Google, 0 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2025\\20250921_152351.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\260531_Samsung_MHU\\Camera\\20250921_152351.jpg"
+    },
+    {
+      "nom": "20250921_152443.jpg",
+      "verdict": "MEME_IMAGE_TRAILER",
+      "detail": "meme image ; apres le JPEG : 2002 octets chez Google, 0 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2025\\20250921_152443.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\260531_Samsung_MHU\\Camera\\20250921_152443.jpg"
+    },
+    {
+      "nom": "20250921_152505.jpg",
+      "verdict": "MEME_IMAGE_TRAILER",
+      "detail": "meme image ; apres le JPEG : 2001 octets chez Google, 0 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2025\\20250921_152505.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\260531_Samsung_MHU\\Camera\\20250921_152505.jpg"
+    },
+    {
+      "nom": "20250922_140616.jpg",
+      "verdict": "MEME_IMAGE_TRAILER",
+      "detail": "meme image ; apres le JPEG : 2000 octets chez Google, 0 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2025\\20250922_140616.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\260531_Samsung_MHU\\Camera\\20250922_140616.jpg"
+    },
+    {
+      "nom": "20250922_151336.jpg",
+      "verdict": "MEME_IMAGE_TRAILER",
+      "detail": "meme image ; apres le JPEG : 1981 octets chez Google, 0 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2025\\20250922_151336.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\260531_Samsung_MHU\\Camera\\20250922_151336.jpg"
+    },
+    {
+      "nom": "20250922_151340.jpg",
+      "verdict": "MEME_IMAGE_TRAILER",
+      "detail": "meme image ; apres le JPEG : 1917 octets chez Google, 0 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2025\\20250922_151340.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\260531_Samsung_MHU\\Camera\\20250922_151340.jpg"
+    },
+    {
+      "nom": "20250927_163351.jpg",
+      "verdict": "MEME_IMAGE_TRAILER",
+      "detail": "meme image ; apres le JPEG : 1985 octets chez Google, 0 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2025\\20250927_163351.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\260531_Samsung_MHU\\Camera\\20250927_163351.jpg"
+    },
+    {
+      "nom": "20251019_131624.jpg",
+      "verdict": "MEME_IMAGE_TRAILER",
+      "detail": "meme image ; apres le JPEG : 1985 octets chez Google, 0 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2025\\20251019_131624.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\260531_Samsung_MHU\\Camera\\20251019_131624.jpg"
+    },
+    {
+      "nom": "20251020_140339.jpg",
+      "verdict": "MEME_IMAGE_TRAILER",
+      "detail": "meme image ; apres le JPEG : 1991 octets chez Google, 0 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2025\\20251020_140339.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\260531_Samsung_MHU\\Camera\\20251020_140339.jpg"
+    },
+    {
+      "nom": "20251228_181330.jpg",
+      "verdict": "IMAGE_DIFFERENTE",
+      "detail": "tables ou cadre differents (re-encodage)",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2025\\20251228_181330.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\260531_Samsung_MHU\\Camera\\20251228_181330.jpg"
+    },
+    {
+      "nom": "20251228_181343.jpg",
+      "verdict": "IMAGE_DIFFERENTE",
+      "detail": "tables ou cadre differents (re-encodage)",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2025\\20251228_181343.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\260531_Samsung_MHU\\Camera\\20251228_181343.jpg"
+    },
+    {
+      "nom": "20240217_125321.jpg",
+      "verdict": "MEME_IMAGE_TRAILER",
+      "detail": "meme image ; apres le JPEG : 1370 octets chez Google, 0 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2024\\20240217_125321.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20240217_125321.jpg"
+    },
+    {
+      "nom": "20240330_161656.jpg",
+      "verdict": "MEME_IMAGE_TRAILER",
+      "detail": "meme image ; apres le JPEG : 1652 octets chez Google, 0 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2024\\20240330_161656.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20240330_161656.jpg"
+    },
+    {
+      "nom": "20240331_140247.jpg",
+      "verdict": "FLUX_DIFFERENT",
+      "detail": "meme cadre, flux de 5607984 octets chez Google et 4552584 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2024\\20240331_140247.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20240331_140247.jpg"
+    },
+    {
+      "nom": "20240403_160218.jpg",
+      "verdict": "MEME_IMAGE_TRAILER",
+      "detail": "meme image ; apres le JPEG : 1650 octets chez Google, 0 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2024\\20240403_160218.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20240403_160218.jpg"
+    },
+    {
+      "nom": "20240406_194721.jpg",
+      "verdict": "MEME_IMAGE_TRAILER",
+      "detail": "meme image ; apres le JPEG : 1610 octets chez Google, 0 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2024\\20240406_194721.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20240406_194721.jpg"
+    },
+    {
+      "nom": "20240413_131331.jpg",
+      "verdict": "MEME_IMAGE_TRAILER",
+      "detail": "meme image ; apres le JPEG : 1606 octets chez Google, 0 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2024\\20240413_131331.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20240413_131331.jpg"
+    },
+    {
+      "nom": "20240415_115432.jpg",
+      "verdict": "MEME_IMAGE_TRAILER",
+      "detail": "meme image ; apres le JPEG : 1602 octets chez Google, 0 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2024\\20240415_115432.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20240415_115432.jpg"
+    },
+    {
+      "nom": "20240426_163504.jpg",
+      "verdict": "FLUX_DIFFERENT",
+      "detail": "meme cadre, flux de 2921997 octets chez Google et 2877081 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2024\\20240426_163504.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20240426_163504.jpg"
+    },
+    {
+      "nom": "20240504_170129.jpg",
+      "verdict": "MEME_IMAGE_TRAILER",
+      "detail": "meme image ; apres le JPEG : 1575 octets chez Google, 0 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2024\\20240504_170129.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20240504_170129.jpg"
+    },
+    {
+      "nom": "20240504_170242.jpg",
+      "verdict": "MEME_IMAGE_TRAILER",
+      "detail": "meme image ; apres le JPEG : 1695 octets chez Google, 0 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2024\\20240504_170242.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20240504_170242.jpg"
+    },
+    {
+      "nom": "20240504_170323.jpg",
+      "verdict": "MEME_IMAGE_TRAILER",
+      "detail": "meme image ; apres le JPEG : 1605 octets chez Google, 0 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2024\\20240504_170323.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20240504_170323.jpg"
+    },
+    {
+      "nom": "20240504_170356.jpg",
+      "verdict": "MEME_IMAGE_TRAILER",
+      "detail": "meme image ; apres le JPEG : 1607 octets chez Google, 0 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2024\\20240504_170356.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20240504_170356.jpg"
+    },
+    {
+      "nom": "20240504_170441.jpg",
+      "verdict": "MEME_IMAGE_TRAILER",
+      "detail": "meme image ; apres le JPEG : 1605 octets chez Google, 0 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2024\\20240504_170441.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20240504_170441.jpg"
+    },
+    {
+      "nom": "20240504_170520.jpg",
+      "verdict": "MEME_IMAGE_TRAILER",
+      "detail": "meme image ; apres le JPEG : 1607 octets chez Google, 0 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2024\\20240504_170520.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20240504_170520.jpg"
+    },
+    {
+      "nom": "20240504_193851.jpg",
+      "verdict": "MEME_IMAGE_TRAILER",
+      "detail": "meme image ; apres le JPEG : 1608 octets chez Google, 0 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2024\\20240504_193851.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20240504_193851.jpg"
+    },
+    {
+      "nom": "20240505_141421.jpg",
+      "verdict": "MEME_IMAGE_TRAILER",
+      "detail": "meme image ; apres le JPEG : 1608 octets chez Google, 0 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2024\\20240505_141421.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20240505_141421.jpg"
+    },
+    {
+      "nom": "20240510_172508.jpg",
+      "verdict": "FLUX_DIFFERENT",
+      "detail": "meme cadre, flux de 5745066 octets chez Google et 3176184 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2024\\20240510_172508.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20240510_172508.jpg"
+    },
+    {
+      "nom": "20240511_112538.jpg",
+      "verdict": "FLUX_DIFFERENT",
+      "detail": "meme cadre, flux de 5987594 octets chez Google et 2660753 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2024\\20240511_112538.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20240511_112538.jpg"
+    },
+    {
+      "nom": "20240511_113445.jpg",
+      "verdict": "FLUX_DIFFERENT",
+      "detail": "meme cadre, flux de 6605976 octets chez Google et 2622846 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2024\\20240511_113445.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20240511_113445.jpg"
+    },
+    {
+      "nom": "20240513_184703.jpg",
+      "verdict": "FLUX_DIFFERENT",
+      "detail": "meme cadre, flux de 7747441 octets chez Google et 4252099 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2024\\20240513_184703.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20240513_184703.jpg"
+    },
+    {
+      "nom": "20240524_124351.jpg",
+      "verdict": "FLUX_DIFFERENT",
+      "detail": "meme cadre, flux de 5937069 octets chez Google et 3601493 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2024\\20240524_124351.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20240524_124351.jpg"
+    },
+    {
+      "nom": "20240524_173547.jpg",
+      "verdict": "FLUX_DIFFERENT",
+      "detail": "meme cadre, flux de 6856338 octets chez Google et 3221315 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2024\\20240524_173547.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20240524_173547.jpg"
+    },
+    {
+      "nom": "20240528_154920.jpg",
+      "verdict": "FLUX_DIFFERENT",
+      "detail": "meme cadre, flux de 8995397 octets chez Google et 4391671 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2024\\20240528_154920.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20240528_154920.jpg"
+    },
+    {
+      "nom": "20240528_172822.jpg",
+      "verdict": "FLUX_DIFFERENT",
+      "detail": "meme cadre, flux de 5556463 octets chez Google et 3282588 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2024\\20240528_172822.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20240528_172822.jpg"
+    },
+    {
+      "nom": "20240530_173740.jpg",
+      "verdict": "FLUX_DIFFERENT",
+      "detail": "meme cadre, flux de 5435727 octets chez Google et 3101207 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2024\\20240530_173740.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20240530_173740.jpg"
+    },
+    {
+      "nom": "20240606_091220.jpg",
+      "verdict": "FLUX_DIFFERENT",
+      "detail": "meme cadre, flux de 5456732 octets chez Google et 2317807 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2024\\20240606_091220.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20240606_091220.jpg"
+    },
+    {
+      "nom": "20240606_200626.jpg",
+      "verdict": "FLUX_DIFFERENT",
+      "detail": "meme cadre, flux de 6028717 octets chez Google et 3475293 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2024\\20240606_200626.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20240606_200626.jpg"
+    },
+    {
+      "nom": "20240607_091417.jpg",
+      "verdict": "FLUX_DIFFERENT",
+      "detail": "meme cadre, flux de 7143586 octets chez Google et 3139460 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2024\\20240607_091417.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20240607_091417.jpg"
+    },
+    {
+      "nom": "20240623_160804.jpg",
+      "verdict": "MEME_IMAGE_TRAILER",
+      "detail": "meme image ; apres le JPEG : 67 octets chez Google, 0 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2024\\20240623_160804.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20240623_160804.jpg"
+    },
+    {
+      "nom": "20240702_092349.jpg",
+      "verdict": "FLUX_DIFFERENT",
+      "detail": "meme cadre, flux de 5180213 octets chez Google et 2721523 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2024\\20240702_092349.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20240702_092349.jpg"
+    },
+    {
+      "nom": "20240703_125851.jpg",
+      "verdict": "FLUX_DIFFERENT",
+      "detail": "meme cadre, flux de 7887940 octets chez Google et 4248888 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2024\\20240703_125851.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20240703_125851.jpg"
+    },
+    {
+      "nom": "20240707_144955.jpg",
+      "verdict": "MEME_IMAGE_TRAILER",
+      "detail": "meme image ; apres le JPEG : 67 octets chez Google, 0 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2024\\20240707_144955.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20240707_144955.jpg"
+    },
+    {
+      "nom": "20240707_145150.jpg",
+      "verdict": "MEME_IMAGE_TRAILER",
+      "detail": "meme image ; apres le JPEG : 67 octets chez Google, 0 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2024\\20240707_145150.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20240707_145150.jpg"
+    },
+    {
+      "nom": "20240707_173735.jpg",
+      "verdict": "MEME_IMAGE_TRAILER",
+      "detail": "meme image ; apres le JPEG : 67 octets chez Google, 0 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2024\\20240707_173735.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20240707_173735.jpg"
+    },
+    {
+      "nom": "20240711_082208.jpg",
+      "verdict": "FLUX_DIFFERENT",
+      "detail": "meme cadre, flux de 7382689 octets chez Google et 3388979 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2024\\20240711_082208.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20240711_082208.jpg"
+    },
+    {
+      "nom": "20240713_145129.jpg",
+      "verdict": "FLUX_DIFFERENT",
+      "detail": "meme cadre, flux de 5975134 octets chez Google et 2972182 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2024\\20240713_145129.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20240713_145129.jpg"
+    },
+    {
+      "nom": "20240713_145303.jpg",
+      "verdict": "FLUX_DIFFERENT",
+      "detail": "meme cadre, flux de 2385392 octets chez Google et 694999 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2024\\20240713_145303.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20240713_145303.jpg"
+    },
+    {
+      "nom": "20240716_175647.jpg",
+      "verdict": "FLUX_DIFFERENT",
+      "detail": "meme cadre, flux de 5875054 octets chez Google et 4411742 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2024\\20240716_175647.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20240716_175647.jpg"
+    },
+    {
+      "nom": "20240717_205619.jpg",
+      "verdict": "FLUX_DIFFERENT",
+      "detail": "meme cadre, flux de 6286279 octets chez Google et 4160215 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2024\\20240717_205619.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20240717_205619.jpg"
+    },
+    {
+      "nom": "20240718_102200.jpg",
+      "verdict": "FLUX_DIFFERENT",
+      "detail": "meme cadre, flux de 6738717 octets chez Google et 4530920 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2024\\20240718_102200.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20240718_102200.jpg"
+    },
+    {
+      "nom": "20240719_210442.jpg",
+      "verdict": "FLUX_DIFFERENT",
+      "detail": "meme cadre, flux de 3576254 octets chez Google et 1045214 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2024\\20240719_210442.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20240719_210442.jpg"
+    },
+    {
+      "nom": "20240720_114736.jpg",
+      "verdict": "FLUX_DIFFERENT",
+      "detail": "meme cadre, flux de 3604324 octets chez Google et 1154140 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2024\\20240720_114736.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20240720_114736.jpg"
+    },
+    {
+      "nom": "20240720_152935.jpg",
+      "verdict": "FLUX_DIFFERENT",
+      "detail": "meme cadre, flux de 8643522 octets chez Google et 3815225 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2024\\20240720_152935.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20240720_152935.jpg"
+    },
+    {
+      "nom": "20240721_122802.jpg",
+      "verdict": "FLUX_DIFFERENT",
+      "detail": "meme cadre, flux de 3888788 octets chez Google et 1916346 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2024\\20240721_122802.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20240721_122802.jpg"
+    },
+    {
+      "nom": "20240723_154641.jpg",
+      "verdict": "IMAGE_DIFFERENTE",
+      "detail": "tables ou cadre differents (re-encodage)",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2024\\20240723_154641.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20240723_154641.jpg"
+    },
+    {
+      "nom": "20240724_113409.jpg",
+      "verdict": "FLUX_DIFFERENT",
+      "detail": "meme cadre, flux de 5519252 octets chez Google et 2388694 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2024\\20240724_113409.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20240724_113409.jpg"
+    },
+    {
+      "nom": "20240724_125807.jpg",
+      "verdict": "FLUX_DIFFERENT",
+      "detail": "meme cadre, flux de 5430107 octets chez Google et 2131727 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2024\\20240724_125807.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20240724_125807.jpg"
+    },
+    {
+      "nom": "20240724_132432.jpg",
+      "verdict": "FLUX_DIFFERENT",
+      "detail": "meme cadre, flux de 2824566 octets chez Google et 892526 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2024\\20240724_132432.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20240724_132432.jpg"
+    },
+    {
+      "nom": "20240724_133027.jpg",
+      "verdict": "FLUX_DIFFERENT",
+      "detail": "meme cadre, flux de 4364255 octets chez Google et 1539028 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2024\\20240724_133027.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20240724_133027.jpg"
+    },
+    {
+      "nom": "20240724_134129.jpg",
+      "verdict": "FLUX_DIFFERENT",
+      "detail": "meme cadre, flux de 5880226 octets chez Google et 2624512 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2024\\20240724_134129.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20240724_134129.jpg"
+    },
+    {
+      "nom": "20240724_135501.jpg",
+      "verdict": "FLUX_DIFFERENT",
+      "detail": "meme cadre, flux de 1881670 octets chez Google et 1094462 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2024\\20240724_135501.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20240724_135501.jpg"
+    },
+    {
+      "nom": "20240724_135911.jpg",
+      "verdict": "FLUX_DIFFERENT",
+      "detail": "meme cadre, flux de 4289099 octets chez Google et 1337607 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2024\\20240724_135911.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20240724_135911.jpg"
+    },
+    {
+      "nom": "20240724_135912.jpg",
+      "verdict": "FLUX_DIFFERENT",
+      "detail": "meme cadre, flux de 2116063 octets chez Google et 1544178 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2024\\20240724_135912.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20240724_135912.jpg"
+    },
+    {
+      "nom": "20240724_140115.jpg",
+      "verdict": "FLUX_DIFFERENT",
+      "detail": "meme cadre, flux de 3820034 octets chez Google et 780595 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2024\\20240724_140115.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20240724_140115.jpg"
+    },
+    {
+      "nom": "20240724_141607.jpg",
+      "verdict": "FLUX_DIFFERENT",
+      "detail": "meme cadre, flux de 4528070 octets chez Google et 1496133 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2024\\20240724_141607.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20240724_141607.jpg"
+    },
+    {
+      "nom": "20240724_141901.jpg",
+      "verdict": "FLUX_DIFFERENT",
+      "detail": "meme cadre, flux de 4048431 octets chez Google et 988160 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2024\\20240724_141901.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20240724_141901.jpg"
+    },
+    {
+      "nom": "20240724_142550.jpg",
+      "verdict": "FLUX_DIFFERENT",
+      "detail": "meme cadre, flux de 4304826 octets chez Google et 1353246 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2024\\20240724_142550.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20240724_142550.jpg"
+    },
+    {
+      "nom": "20240726_070233.jpg",
+      "verdict": "FLUX_DIFFERENT",
+      "detail": "meme cadre, flux de 6356953 octets chez Google et 4253045 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2024\\20240726_070233.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20240726_070233.jpg"
+    },
+    {
+      "nom": "20240726_140643.jpg",
+      "verdict": "IMAGE_DIFFERENTE",
+      "detail": "tables ou cadre differents (re-encodage)",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2024\\20240726_140643.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20240726_140643.jpg"
+    },
+    {
+      "nom": "20240727_105328.jpg",
+      "verdict": "FLUX_DIFFERENT",
+      "detail": "meme cadre, flux de 9374502 octets chez Google et 4686901 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2024\\20240727_105328.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20240727_105328.jpg"
+    },
+    {
+      "nom": "20240727_110202.jpg",
+      "verdict": "FLUX_DIFFERENT",
+      "detail": "meme cadre, flux de 8057105 octets chez Google et 4214583 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2024\\20240727_110202.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20240727_110202.jpg"
+    },
+    {
+      "nom": "20240727_113109.jpg",
+      "verdict": "IMAGE_DIFFERENTE",
+      "detail": "tables ou cadre differents (re-encodage)",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2024\\20240727_113109.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20240727_113109.jpg"
+    },
+    {
+      "nom": "20240727_113224.jpg",
+      "verdict": "FLUX_DIFFERENT",
+      "detail": "meme cadre, flux de 7206273 octets chez Google et 3269176 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2024\\20240727_113224.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20240727_113224.jpg"
+    },
+    {
+      "nom": "20240727_180354_1.gif",
+      "verdict": "HORS_PORTEE",
+      "detail": "pas un JPEG lisible : les deux",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2024\\20240727_180354_1.gif",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20240727_180354_1.gif"
+    },
+    {
+      "nom": "20240728_111709.jpg",
+      "verdict": "FLUX_DIFFERENT",
+      "detail": "meme cadre, flux de 4544734 octets chez Google et 3763366 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2024\\20240728_111709.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20240728_111709.jpg"
+    },
+    {
+      "nom": "20240728_141539.jpg",
+      "verdict": "FLUX_DIFFERENT",
+      "detail": "meme cadre, flux de 2746594 octets chez Google et 946428 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2024\\20240728_141539.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20240728_141539.jpg"
+    },
+    {
+      "nom": "20240728_141542.jpg",
+      "verdict": "FLUX_DIFFERENT",
+      "detail": "meme cadre, flux de 1621143 octets chez Google et 678307 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2024\\20240728_141542.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20240728_141542.jpg"
+    },
+    {
+      "nom": "20240728_141711.jpg",
+      "verdict": "FLUX_DIFFERENT",
+      "detail": "meme cadre, flux de 5505343 octets chez Google et 2279247 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2024\\20240728_141711.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20240728_141711.jpg"
+    },
+    {
+      "nom": "20240730_093707.jpg",
+      "verdict": "FLUX_DIFFERENT",
+      "detail": "meme cadre, flux de 3349319 octets chez Google et 1009113 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2024\\20240730_093707.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20240730_093707.jpg"
+    },
+    {
+      "nom": "20240806_140940.jpg",
+      "verdict": "FLUX_DIFFERENT",
+      "detail": "meme cadre, flux de 4851658 octets chez Google et 1871879 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2024\\20240806_140940.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20240806_140940.jpg"
+    },
+    {
+      "nom": "20240820_194900.jpg",
+      "verdict": "FLUX_DIFFERENT",
+      "detail": "meme cadre, flux de 7082651 octets chez Google et 3857611 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2024\\20240820_194900.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20240820_194900.jpg"
+    },
+    {
+      "nom": "20240820_200049.jpg",
+      "verdict": "FLUX_DIFFERENT",
+      "detail": "meme cadre, flux de 7924593 octets chez Google et 4018620 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2024\\20240820_200049.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20240820_200049.jpg"
+    },
+    {
+      "nom": "20240820_200108.jpg",
+      "verdict": "FLUX_DIFFERENT",
+      "detail": "meme cadre, flux de 8221315 octets chez Google et 4304878 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2024\\20240820_200108.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20240820_200108.jpg"
+    },
+    {
+      "nom": "20240821_201115.jpg",
+      "verdict": "FLUX_DIFFERENT",
+      "detail": "meme cadre, flux de 7493271 octets chez Google et 3612389 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2024\\20240821_201115.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20240821_201115.jpg"
+    },
+    {
+      "nom": "20240904_084355.jpg",
+      "verdict": "FLUX_DIFFERENT",
+      "detail": "meme cadre, flux de 6007816 octets chez Google et 3561125 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2024\\20240904_084355.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20240904_084355.jpg"
+    },
+    {
+      "nom": "20240928_191804.jpg",
+      "verdict": "FLUX_DIFFERENT",
+      "detail": "meme cadre, flux de 9824579 octets chez Google et 5974608 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2024\\20240928_191804.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20240928_191804.jpg"
+    },
+    {
+      "nom": "20241008_170828.jpg",
+      "verdict": "FLUX_DIFFERENT",
+      "detail": "meme cadre, flux de 7101698 octets chez Google et 3464317 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2024\\20241008_170828.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20241008_170828.jpg"
+    },
+    {
+      "nom": "20241008_170831.jpg",
+      "verdict": "FLUX_DIFFERENT",
+      "detail": "meme cadre, flux de 5642041 octets chez Google et 2851262 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2024\\20241008_170831.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20241008_170831.jpg"
+    },
+    {
+      "nom": "20241010_162956.jpg",
+      "verdict": "FLUX_DIFFERENT",
+      "detail": "meme cadre, flux de 6422017 octets chez Google et 3230201 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2024\\20241010_162956.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20241010_162956.jpg"
+    },
+    {
+      "nom": "20241011_233015.jpg",
+      "verdict": "FLUX_DIFFERENT",
+      "detail": "meme cadre, flux de 7404609 octets chez Google et 3910984 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2024\\20241011_233015.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20241011_233015.jpg"
+    },
+    {
+      "nom": "20241011_233035.jpg",
+      "verdict": "FLUX_DIFFERENT",
+      "detail": "meme cadre, flux de 7712379 octets chez Google et 4413987 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2024\\20241011_233035.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20241011_233035.jpg"
+    },
+    {
+      "nom": "20241013_133021.jpg",
+      "verdict": "FLUX_DIFFERENT",
+      "detail": "meme cadre, flux de 8692551 octets chez Google et 4820397 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2024\\20241013_133021.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20241013_133021.jpg"
+    },
+    {
+      "nom": "20241013_214538.jpg",
+      "verdict": "FLUX_DIFFERENT",
+      "detail": "meme cadre, flux de 7429678 octets chez Google et 3953238 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2024\\20241013_214538.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20241013_214538.jpg"
+    },
+    {
+      "nom": "20241014_103224.jpg",
+      "verdict": "FLUX_DIFFERENT",
+      "detail": "meme cadre, flux de 7650032 octets chez Google et 3685305 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2024\\20241014_103224.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20241014_103224.jpg"
+    },
+    {
+      "nom": "20241014_104700.jpg",
+      "verdict": "FLUX_DIFFERENT",
+      "detail": "meme cadre, flux de 4693322 octets chez Google et 1855282 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2024\\20241014_104700.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20241014_104700.jpg"
+    },
+    {
+      "nom": "20241102_182559.jpg",
+      "verdict": "FLUX_DIFFERENT",
+      "detail": "meme cadre, flux de 8826683 octets chez Google et 6250629 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2024\\20241102_182559.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20241102_182559.jpg"
+    },
+    {
+      "nom": "20241118_162324.jpg",
+      "verdict": "MEME_IMAGE_TRAILER",
+      "detail": "meme image ; apres le JPEG : 747 octets chez Google, 0 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2024\\20241118_162324.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20241118_162324.jpg"
+    },
+    {
+      "nom": "20241201_171305.jpg",
+      "verdict": "MEME_IMAGE_TRAILER",
+      "detail": "meme image ; apres le JPEG : 69884 octets chez Google, 0 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2024\\20241201_171305.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20241201_171305.jpg"
+    },
+    {
+      "nom": "20241205_234603.jpg",
+      "verdict": "MEME_IMAGE_TRAILER",
+      "detail": "meme image ; apres le JPEG : 67 octets chez Google, 0 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2024\\20241205_234603.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20241205_234603.jpg"
+    },
+    {
+      "nom": "20231111_130407.jpg",
+      "verdict": "MEME_IMAGE_TRAILER",
+      "detail": "meme image ; apres le JPEG : 1371 octets chez Google, 0 sur le NAS",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2023\\20231111_130407.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2023\\20231111_130407.jpg"
+    },
+    {
+      "nom": "20220207_083912(0).gif",
+      "verdict": "HORS_PORTEE",
+      "detail": "pas un JPEG lisible : les deux",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2022\\20220207_083912(0).gif",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2022\\20220207_083912(0).gif"
+    },
+    {
+      "nom": "20220325_105302.gif",
+      "verdict": "HORS_PORTEE",
+      "detail": "pas un JPEG lisible : les deux",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2022\\20220325_105302.gif",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2022\\20220325_105302.gif"
+    },
+    {
+      "nom": "20220727_201849.gif",
+      "verdict": "HORS_PORTEE",
+      "detail": "pas un JPEG lisible : les deux",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2022\\20220727_201849.gif",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2022\\20220727_201849.gif"
+    },
+    {
+      "nom": "20220904_105607.gif",
+      "verdict": "HORS_PORTEE",
+      "detail": "pas un JPEG lisible : les deux",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2022\\20220904_105607.gif",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2022\\20220904_105607.gif"
+    },
+    {
+      "nom": "20221223_192759.gif",
+      "verdict": "HORS_PORTEE",
+      "detail": "pas un JPEG lisible : les deux",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2022\\20221223_192759.gif",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2022\\20221223_192759.gif"
+    },
+    {
+      "nom": "20211225_141806(0).gif",
+      "verdict": "HORS_PORTEE",
+      "detail": "pas un JPEG lisible : les deux",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2021\\20211225_141806(0).gif",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2021\\20211225_141806(0).gif"
+    },
+    {
+      "nom": "20211225_141808(0).gif",
+      "verdict": "HORS_PORTEE",
+      "detail": "pas un JPEG lisible : les deux",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2021\\20211225_141808(0).gif",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2021\\20211225_141808(0).gif"
+    },
+    {
+      "nom": "20211230_121717(0).gif",
+      "verdict": "HORS_PORTEE",
+      "detail": "pas un JPEG lisible : les deux",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2021\\20211230_121717(0).gif",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2021\\20211230_121717(0).gif"
+    },
+    {
+      "nom": "Luzarches 2016 (18).jpg",
+      "verdict": "IMAGE_DIFFERENTE",
+      "detail": "tables ou cadre differents (re-encodage)",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2016\\Luzarches 2016 (18).jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2016\\Luzarches\\Luzarches 2016 (18).jpg"
+    },
+    {
+      "nom": "Luzarches 2016 (33).jpg",
+      "verdict": "IMAGE_DIFFERENTE",
+      "detail": "tables ou cadre differents (re-encodage)",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2016\\Luzarches 2016 (33).jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2016\\Luzarches\\Luzarches 2016 (33).jpg"
+    },
+    {
+      "nom": "10.JPG",
+      "verdict": "IMAGE_DIFFERENTE",
+      "detail": "tables ou cadre differents (re-encodage)",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2010\\10.JPG",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Papa\\2004\\20041204 Ajuankota_Dic04\\10.jpg"
+    },
+    {
+      "nom": "4.JPG",
+      "verdict": "IMAGE_DIFFERENTE",
+      "detail": "tables ou cadre differents (re-encodage)",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2010\\4.JPG",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Papa\\2004\\20040815 VisitaMic_Eli\\4.JPG"
+    },
+    {
+      "nom": "5.JPG",
+      "verdict": "IMAGE_DIFFERENTE",
+      "detail": "tables ou cadre differents (re-encodage)",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2010\\5.JPG",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Papa\\2001\\20001010 Irpavi\\Dia de la Madre 2001\\5.JPG"
+    },
+    {
+      "nom": "74.JPG",
+      "verdict": "IMAGE_DIFFERENTE",
+      "detail": "tables ou cadre differents (re-encodage)",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2010\\74.JPG",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Papa\\2004\\20041204 Ajuankota_Dic04\\74.jpg"
+    },
+    {
+      "nom": "26.jpg",
+      "verdict": "IMAGE_DIFFERENTE",
+      "detail": "tables ou cadre differents (re-encodage)",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2009\\26.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\JJ\\Entraînement juillet 2010\\26.JPG"
+    },
+    {
+      "nom": "39.jpg",
+      "verdict": "IMAGE_DIFFERENTE",
+      "detail": "tables ou cadre differents (re-encodage)",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2009\\39.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Papa\\2004\\20041204 Ajuankota_Dic04\\39.jpg"
+    },
+    {
+      "nom": "51.jpg",
+      "verdict": "IMAGE_DIFFERENTE",
+      "detail": "tables ou cadre differents (re-encodage)",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2009\\51.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Papa\\2004\\20041204 Ajuankota_Dic04\\51.jpg"
+    },
+    {
+      "nom": "DSC00668.JPG",
+      "verdict": "IMAGE_DIFFERENTE",
+      "detail": "tables ou cadre differents (re-encodage)",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2008\\DSC00668.JPG",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Photos mams\\DSC00668.jpg"
+    },
+    {
+      "nom": "Florine.jpg",
+      "verdict": "IMAGE_DIFFERENTE",
+      "detail": "tables ou cadre differents (re-encodage)",
+      "chemin_google": "C:\\GOOGLE PHOTOS\\extrait\\Takeout\\Google Photos\\Photos from 2008\\Florine.jpg",
+      "chemin_nas": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\FUN\\Flouff\\Florine.jpg"
+    }
+  ],
+  "ecart_median": null,
+  "ecart_min": null,
+  "ecart_max": null,
+  "ok": false
+}

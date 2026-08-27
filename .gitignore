@@ -267,6 +267,16 @@ _journal_serveur_crash.log
 _filtre_negatif.json
 # `dezipper_takeout.py --json` : inventaire des lots du Takeout Google.
 _takeout.json
+# `verifier_takeout_ouvert.py --json` : le controle de l extraction.
+_takeout_ouvert.json
+# `verifier_photos_google.py --json` et `verifier_google_pixels.py --json` :
+# l inventaire Google contre le NAS, et le jugement des PROBABLE. Ces
+# rapports pesent des Mo et disent l etat d un instant.
+_google.json
+_google_pixels.json
+_pix_a.json
+_pix_b.json
+_pix_c.json
 _fantomes.json
 _base_avant_cache.json
 _base_apres_cache.json

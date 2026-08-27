@@ -158,11 +158,12 @@ class LExtraction(unittest.TestCase):
     def test_sans_appliquer_rien_n_est_ecrit(self):
         d = self._source()
         cible = d / "extrait"
-        compte, octets, _r, complet = D.extraire(D.lister_zips(d), cible,
-                                                 appliquer=False,
-                                                 ecrire=lambda *x: None)
+        compte, octets, griefs, complet = D.extraire(D.lister_zips(d), cible,
+                                                     appliquer=False,
+                                                     ecrire=lambda *x: None)
         self.assertTrue(complet)
-        self.assertEqual(compte['a_ecrire'], 3)
+        self.assertEqual(compte['absent'], 3)
+        self.assertEqual(len(griefs['absent']), 3)
         self.assertEqual(compte['ecrit'], 0)
         self.assertEqual(octets, 0)
         self.assertFalse(cible.exists())
@@ -170,7 +171,7 @@ class LExtraction(unittest.TestCase):
     def test_l_arbre_est_reconstitue(self):
         d = self._source()
         cible = d / "extrait"
-        compte, octets, _r, complet = D.extraire(D.lister_zips(d), cible,
+        compte, octets, _g, complet = D.extraire(D.lister_zips(d), cible,
                                                  appliquer=True,
                                                  ecrire=lambda *x: None)
         self.assertTrue(complet)
@@ -184,7 +185,7 @@ class LExtraction(unittest.TestCase):
         cible = d / "extrait"
         D.extraire(D.lister_zips(d), cible, appliquer=True,
                    ecrire=lambda *x: None)
-        compte, octets, _r, _c = D.extraire(D.lister_zips(d), cible,
+        compte, octets, _g, _c = D.extraire(D.lister_zips(d), cible,
                                             appliquer=True,
                                             ecrire=lambda *x: None)
         self.assertEqual(compte['ecrit'], 0)
@@ -198,7 +199,7 @@ class LExtraction(unittest.TestCase):
         D.extraire(D.lister_zips(d), cible, appliquer=True,
                    ecrire=lambda *x: None)
         (cible / "Takeout/Google Photos/a.jpg").write_bytes(b"a" * 3)
-        compte, _o, _r, _c = D.extraire(D.lister_zips(d), cible,
+        compte, _o, _g, _c = D.extraire(D.lister_zips(d), cible,
                                         appliquer=True, ecrire=lambda *x: None)
         self.assertEqual(compte['ecrit'], 1)
         self.assertEqual((cible / "Takeout/Google Photos/a.jpg").stat().st_size, 10)
@@ -208,13 +209,63 @@ class LExtraction(unittest.TestCase):
         zip_de(d / "t-1.zip", {"Takeout/ok.jpg": b"o" * 4,
                                "../evade.txt": b"non"})
         cible = d / "extrait"
-        compte, _o, refuses, _c = D.extraire(D.lister_zips(d), cible,
-                                             appliquer=True,
-                                             ecrire=lambda *x: None)
+        compte, _o, griefs, _c = D.extraire(D.lister_zips(d), cible,
+                                            appliquer=True,
+                                            ecrire=lambda *x: None)
         self.assertEqual(compte['refuse'], 1)
-        self.assertEqual(refuses, ["../evade.txt"])
+        self.assertEqual(griefs['refuse'], ["../evade.txt"])
         self.assertEqual(compte['ecrit'], 1)
         self.assertFalse((d / "evade.txt").exists())
+
+
+class LeControleDeLExtraction(unittest.TestCase):
+    """Sans `appliquer`, la meme traversee CONTROLE ce qui a ete ouvert.
+
+    « Extraction effectuee OK » n'est pas une preuve : le fichier tronque
+    porte le bon nom, et c'est la seule panne de dezippage qui se lit comme un
+    succes."""
+
+    def _source(self):
+        d = tmp("test_ctrl_")
+        zip_de(d / "t-1-of-1.zip", {"Takeout/a.jpg": b"a" * 10,
+                                    "Takeout/b.jpg": b"b" * 20})
+        return d
+
+    def test_une_extraction_complete_ne_laisse_aucun_grief(self):
+        d = self._source()
+        cible = d / "extrait"
+        D.extraire(D.lister_zips(d), cible, appliquer=True,
+                   ecrire=lambda *x: None)
+        compte, _o, griefs, _c = D.extraire(D.lister_zips(d), cible,
+                                            appliquer=False,
+                                            ecrire=lambda *x: None)
+        self.assertEqual(compte['saute'], 2)
+        self.assertEqual((compte['absent'], compte['tronque']), (0, 0))
+        self.assertEqual(griefs, {'absent': [], 'tronque': [], 'refuse': []})
+
+    def test_un_fichier_MANQUANT_est_nomme_comme_absent(self):
+        d = self._source()
+        cible = d / "extrait"
+        D.extraire(D.lister_zips(d), cible, appliquer=True,
+                   ecrire=lambda *x: None)
+        (cible / "Takeout/a.jpg").unlink()
+        compte, _o, griefs, _c = D.extraire(D.lister_zips(d), cible,
+                                            appliquer=False,
+                                            ecrire=lambda *x: None)
+        self.assertEqual(compte['absent'], 1)
+        self.assertEqual(griefs['absent'], ["Takeout/a.jpg"])
+
+    def test_un_fichier_TRONQUE_n_est_pas_confondu_avec_un_absent(self):
+        d = self._source()
+        cible = d / "extrait"
+        D.extraire(D.lister_zips(d), cible, appliquer=True,
+                   ecrire=lambda *x: None)
+        (cible / "Takeout/b.jpg").write_bytes(b"b" * 7)
+        compte, _o, griefs, _c = D.extraire(D.lister_zips(d), cible,
+                                            appliquer=False,
+                                            ecrire=lambda *x: None)
+        self.assertEqual((compte['absent'], compte['tronque']), (0, 1))
+        self.assertEqual(griefs['tronque'], ["Takeout/b.jpg"])
 
 
 class LeVerdict(unittest.TestCase):

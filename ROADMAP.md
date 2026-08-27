@@ -53,9 +53,84 @@ et les apparitions non nommées à **442**, plus gros groupe à 31. C'est une
 finition, à faire au fil de l'eau.
 
 **En fin de projet, dans cet ordre** : le chantier 17, PUIS la copie hors site
-— choix de Mike du 26/08. Le Takeout Google, lui, ne dépend de rien : les
-`.zip` sont arrivés dans `C:\GOOGLE PHOTOS` et l'outil de dézippage est prêt
-(`31 - Dezipper le Takeout Google.bat`).
+— choix de Mike du 26/08.
+
+**Le Takeout Google a RENDU son chiffre le 27/08, et il change l'ordre du
+jour** : **3 776 photos (12,6 Go) n'existent QUE chez Google**, dont
+**2 017 vidéos**, concentrées sur 2024–2026. Ce n'est pas un écart
+d'inventaire, c'est un fonds qui n'est jamais arrivé sur le NAS — et rien ne
+s'efface chez Google tant qu'il en reste une. **C'est le geste le plus urgent
+de la liste**, avant les boutons et avant le chantier 17 : ces fichiers ne
+vivent aujourd'hui qu'à un seul endroit, et c'est chez un tiers dont le quota
+est à 96 %. Deux questions dans `QUESTIONS_MIKE.md` (27/08).
+
+## État (27/08/2026, session 54) — 3 776 PHOTOS N'EXISTENT QUE CHEZ GOOGLE
+
+**L'export est ouvert, prouvé, et confronté au NAS.** 45 lots, 89,2 Go,
+**25 864 fichiers** — `verifier_takeout_ouvert.py` : **0 absent, 0 tronqué,
+0 refusé**, aucun trou dans la numérotation. Le bat de Mike et le banc
+arrivent au même compte par les deux bouts.
+
+`verifier_photos_google.py` sur **13 905 médias** de l'export :
+
+| verdict | n | quoi |
+|---|---|---|
+| CERTAIN | 1 112 | 44,0 Go — et **1 087 sont des `.mp4`** |
+| PROBABLE | 9 017 | même nom, taille différente — **8 996 `.jpg`** |
+| AMBIGU | 0 | |
+| **ABSENT** | **3 776** | **12,6 Go, dont 2 017 vidéos** |
+
+### Ce que la mesure a renversé
+
+La documentation de l'instrument posait que PROBABLE = « Google a
+probablement ré-encodé en mode économiseur de stockage ». **C'est faux, et
+d'un facteur qui saute aux yeux** : le NAS est plus gros **8 741 fois sur
+9 017**, ratio médian **1,001** — quelques kilo-octets, toujours du même
+côté, et **uniquement sur les JPEG** ; les vidéos tombent exactes au bit près.
+Or ce projet écrit ses noms dans les **XMP des fichiers**, à l'exiftool, et
+seulement dans les images.
+
+`verifier_google_pixels.py` (neuf) transforme l'hypothèse en compte. Il
+compare ce qui fait l'IMAGE — tables de quantification, tables de Huffman,
+cadre, en-tête de balayage, longueur du flux compressé — en SAUTANT les
+segments `APPn`/`COM`, là où vivent EXIF, XMP et IPTC. Sur les 9 017 :
+
+| | n |
+|---|---|
+| **MÊME IMAGE** (écart médian **+4,2 Ko**, de la métadonnée) | **8 802** |
+| même image, mais un TRAILER d'un seul côté | 99 |
+| flux non départageable par la voie rapide | 74 |
+| image vraiment différente (ré-encodage) | 21 |
+| hors portée (`.gif`, `.mp4`, `.png` — pas un JPEG des deux côtés) | 21 |
+
+### L'instrument s'est trompé une fois, et le chiffre l'a dit
+
+Première version : **173 paires en « flux différent »** — j'ai écrit dans ce
+fichier qu'il s'agissait probablement de deux photos DIFFÉRENTES de même nom.
+Le chiffre disait le contraire et je ne l'avais pas écouté : l'écart était
+**toujours du même signe** (le NAS plus court, médiane −2 046). Contrôle
+direct sur les 173 : **toutes portent, côté Google, des octets APRÈS le
+`EOI`** — médiane 2 046, exactement l'écart. L'instrument rangeait le TRAILER
+dans l'image. Corrigé : le trailer est mesuré à part, et 99 des 173 sont la
+même image. Les 74 restantes ont un trailer qui contient lui-même un `FF D9`
+(médiane 52 Ko au-delà) : la recherche à reculons y tombe, le verdict sort
+ROUGE — **l'erreur possible va du côté prudent, et c'est écrit dans le code.**
+
+**Portée déclarée** : la preuve comparée est la LONGUEUR du flux, pas ses
+octets. `--octets` les hache — ~32 Go à lire côté NAS, trois ou quatre
+tranches de banc. À faire AVANT d'effacer 75 Go chez un tiers, pas après.
+
+### Ce qui se déduit, et ce qui ne se déduit pas
+
+**Se déduit** : le NAS couvre **9 914 des 13 905** médias de l'export
+(1 112 CERTAIN + 8 802 même image). **Ne se déduit pas** : que le reste soit
+négligeable — 3 776 ABSENTES, 99 dont le NAS a perdu le trailer (une « photo
+animée » vit là), 95 indéterminées, 21 vraiment différentes. Toutes listées
+NOMMÉMENT dans `_google.json` et `_pix_reprise.json`.
+
+**Le geste qui suit n'appartient pas à un instrument** : copier les ABSENTES
+sur le NAS. Rien ne s'efface chez Google avant, et le rapport le dit lui-même
+(code de sortie 1, « NE RIEN EFFACER »).
 
 ## État (26/08/2026, session 53) — UN FILTRE QUI MENT NE MENT PLUS
 
