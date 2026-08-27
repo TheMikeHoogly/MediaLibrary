@@ -35,8 +35,8 @@ de le demander dans son en-tête — et **deux fois**, parce que la base est en
 WAL : `BEGIN IMMEDIATE` peut réussir pendant que le serveur vit, donc on lui
 demande AUSSI s'il répond.
 
-**Six familles de boutons de `gallery` passent au `.btn` canonique** —
-livré en `commit`, **branche non fusionnée**, parce que l'ŒIL manque. Cascade :
+**Six familles de boutons de `gallery` passent au `.btn` canonique**, vues à
+l'œil sur le serveur vivant et **fusionnées**. Cascade :
 69 déclarations disparues, 0 apparue, 0 valeur changée. Plancher 44 px prouvé :
 **9 → 22 cibles sur 31**. Et le bouton qui **supprime une photo** était en
 contour à **3,03:1** — la forme que le système avait mesurée et remplacée deux
@@ -62,18 +62,28 @@ du MÊME fichier.
 
 ## Prochain pas
 
-1. **REDÉMARRER le serveur**, puis **l'ŒIL sur `gallery`** : c'est ce qui
-   manque pour fusionner la branche
-   `feat/six-familles-de-boutons-maison-passent-au-btn-canonique`. Dans
-   l'ordre : `verifier_pages_composants` sur le serveur VIVANT, puis regarder
-   la barre d'outils, la barre géo, la visionneuse et le diaporama. Le coût
-   accepté est +19 px de hauteur de barres — vérifier que ça ne casse pas le
-   retour à la ligne sur petit écran.
+1. **Les boutons de `gallery` sur un ÉCRAN DE TÉLÉPHONE.** Le reste est
+   fait et fusionné — banc des composants vert sur le serveur vivant, œil
+   posé sur la barre d'outils et sur la visionneuse (le « Supprimer » est
+   bien rouge plein). Ce qui manque : le coût accepté de **+19 px** de
+   hauteur de barres n'a été vérifié que sur bureau ; le redimensionnement de
+   fenêtre n'a pas changé la capture et je n'ai pas insisté. À regarder au
+   premier passage sur mobile — c'est là que le retour à la ligne mord.
 2. **`.fchip`** : une seule classe pour des `<a>` de navigation ET des
    `<span>` d'information. Décision en attente dans `QUESTIONS_MIKE.md` ;
    ça vit dans `server.py`, donc redémarrage.
-3. **Le trailer Samsung : l'AVANT est photographié, il n'y a plus qu'à
-   attendre puis comparer.** `_rapport_sef_avant.json` porte l'état des
+3. **Le trailer Samsung : l'expérience est ARMÉE et le mécanisme est
+   PROUVÉ ; il ne manque que le temps.** Premier passage de `--comparer` sur
+   le fonds entier (27/08, 240 s) : **74 320 JPEG énumérés, les 1 736
+   retrouvés par leur NOM, 0 introuvable, 1 736 inchangés — aucune photo
+   encore nommée**, donc « rien à conclure », et le banc le dit au lieu de
+   rendre vert. Relancer quand le curateur aura travaillé :
+   `verifier_trailer_samsung.py --racine b64:XFxOQVMtQnJlbWJsZW5zXGhvbWVcUGhvdG9z
+   --echantillon=0 --comparer=_rapport_sef_avant.json`.
+   **Rappel de forme : le jeton `b64:` doit être un argument SÉPARÉ**
+   (`--racine b64:XXX`), jamais collé par un `=`.
+
+   Détail de l'expérience : `_rapport_sef_avant.json` porte l'état des
    **1 736 JPEG rapatriés — 746 avec leur SEF, 1 715 sans aucun nom**. Quand
    le serveur en aura nommé, lancer au banc :
    `verifier_trailer_samsung.py --racine b64:<le fonds> --echantillon 0

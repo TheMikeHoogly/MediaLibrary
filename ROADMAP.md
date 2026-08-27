@@ -126,9 +126,23 @@ deux profondeurs de survol pour un même registre de bouton.
   convertir en bloc ferait des étiquettes qui ressemblent à des boutons.
   Question ouverte dans `QUESTIONS_MIKE.md`. Elle vit dans `server.py`, donc
   elle demandera un redémarrage.
-- **L'ŒIL, et le banc des pages composants sur le serveur vivant** : le
-  serveur est arrêté pour le rangement par année. Livré sur branche
-  (`commit`), `main` intacte, jusqu'à ce qu'on ait regardé.
+### L'ŒIL, fait (27/08, serveur relancé)
+
+`verifier_pages_composants` sur le serveur VIVANT : les 7 pages converties
+reçoivent la feuille commune et gardent le dernier mot, la page témoin
+(`/map`) est intacte. Puis regardé, pour de vrai :
+
+- la barre d'outils (`IA`, `Date ↑`, `Nom A-Z`, `▶ Demo`, `▶ Aléatoire`,
+  `▶ Association`) et la puce `Géo` — même hauteur, même forme, l'actif en
+  `--fixateur`. Un seul vocabulaire ;
+- la visionneuse : `←`, `→`, `🔍 Semblables`, `📅 Même jour`, `Fermer`
+  alignés, et **`🗑️ Supprimer` en rouge PLEIN**. Le contour à 3,03:1 a
+  disparu de l'écran, pas seulement du CSS.
+
+**Ce qui n'a PAS été regardé** : le rendu en largeur de téléphone. Le
+redimensionnement de la fenêtre n'a pas changé la capture, et je n'ai pas
+insisté — le coût accepté de **+19 px** de hauteur de barres reste donc
+vérifié sur bureau seulement. À faire au premier passage sur mobile.
 
 ## État (27/08/2026, session 57) — LE RANGEMENT PAR ANNÉE DÉCROCHAIT ENCORE LES DÉCISIONS
 
