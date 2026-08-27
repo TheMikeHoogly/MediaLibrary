@@ -274,9 +274,12 @@ _takeout_ouvert.json
 # rapports pesent des Mo et disent l etat d un instant.
 _google.json
 _google_pixels.json
-_pix_a.json
-_pix_b.json
-_pix_c.json
+# Motif et non liste : `_pix_reprise.json` s'est fait committer le 27/08
+# parce que trois noms avaient ete cites un par un. Un rapport de banc
+# versionne devient une preuve perimee — c'est le motif qui tient, pas
+# l'enumeration.
+_pix_*.json
+_reprise_google.json
 _fantomes.json
 _base_avant_cache.json
 _base_apres_cache.json
