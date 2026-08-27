@@ -299,6 +299,16 @@ _avant_css/
 # le CSS de la page en clair. Deux sont entrees dans l'historique avant cette
 # ligne (`_preuve_browse.json`, `_preuve_faces.json`) : elles ont ete
 # deplacees dans `_to_delete/`, la prochaine livraison enregistre leur retrait.
+# CONVENTION (27/08, apres trois fuites en deux jours) : le rapport `--json`
+# d'un instrument s'appelle desormais `_rapport_<nom>.json`. Un motif tient
+# ce que douze lignes nommees n'ont pas tenu — `_pix_reprise.json` puis
+# `_copie_absentes.json` sont passes parce qu'ils avaient ete cites un par un.
+#
+# Et surtout : le motif large `_*.json` serait FAUX. `_residu_jugements.json`
+# porte des JUGEMENTS HUMAINS, `_css_commun.json` et `_fonds.json` des etats
+# de reference : eux se versionnent. C'est le ROLE qui decide, pas le prefixe.
+_rapport_*.json
+_copie_absentes.json
 _preuve_*.json
 _avant_cibles/
 _avant_chip/
