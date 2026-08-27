@@ -44,10 +44,11 @@ regarde déjà chaque photo** : pas de cinquième pipeline. Le geste « déplace
 dans PRIVE » attend 17a ; le reste, non. C'est la seule fuite de ce projet qui
 ne demande AUCUNE erreur de manipulation — juste l'oubli d'un geste.
 
-**4. Réparer `appliquer_plan.rekey_stores`** — elle re-clé cinq magasins sur
-sept, et le rangement par année comme le dédoublonnage la portent. Puis
-**unifier** : la primitive complète existe maintenant DEUX fois
-(`server.rekey_everywhere` et `deplacer_dossiers`).
+**4. UNIFIER le re-clé** — la réparation est faite (27/08, voir l'état de
+session 57), mais la primitive complète existe désormais **TROIS fois** :
+`server.rekey_everywhere`, `deplacer_dossiers.recle_une_cle` et
+`appliquer_plan.rekey_stores`. Trois endroits où la même règle peut diverger,
+et elle a déjà divergé une fois pendant cinq jours. Une seule doit rester.
 
 **5. Le reste d'audit** : O8–O9, O11, O13–O15 ; **I1** visible dans
 `/reglages` ; `animal:luna` en minuscule sur 3 photos à côté de `animal:Luna`
@@ -71,6 +72,51 @@ s'efface chez Google tant qu'il en reste une. **C'est le geste le plus urgent
 de la liste**, avant les boutons et avant le chantier 17 : ces fichiers ne
 vivent aujourd'hui qu'à un seul endroit, et c'est chez un tiers dont le quota
 est à 96 %. Deux questions dans `QUESTIONS_MIKE.md` (27/08).
+
+## État (27/08/2026, session 57) — LE RANGEMENT PAR ANNÉE DÉCROCHAIT ENCORE LES DÉCISIONS
+
+**Mike allait lancer `26 - Ranger par annee.bat` sur 559 photos. Deux défauts
+l'attendaient, et aucun des deux ne se serait annoncé.**
+
+**Le premier : `appliquer_plan.rekey_stores` n'était pas le miroir qu'elle
+disait être.** Son docstring affirmait « miroir de `server.rekey_everywhere` » ;
+elle bouclait sur les quatre magasins de sujets en appelant
+`store.rekey(ancien_chemin, nouveau_chemin)`. Or **`people` et `pets` sont
+keyés par NOM** — leurs chemins vivent DANS la fiche. `rekey` y cherche une
+entrée dont la clé serait un chemin, n'en trouve jamais, renvoie faux, **et la
+boucle ne regardait même pas le retour**. Quatre magasins à l'écran, deux en
+vrai. Le correctif (`recle_decisions.recler_fiche`) existait depuis le 22/08 —
+**branché dans `server.py` et nulle part ailleurs**. L'applicateur hors ligne,
+que portent le rangement par année ET le dédoublonnage, décrochait donc encore
+des décisions cinq jours plus tard.
+
+Ce qui se perdait n'a jamais été le NOM (il vit dans l'index et dans le XMP,
+règle 2 tenue) : c'est la **vérité terrain** — quel visage est qui, quelles
+photos ont été écartées d'un nom, lesquelles ont été confirmées. Une exclusion
+perdue est un faux positif qui revient. Le compte du 22/08 : **928 décisions
+sur 3 364** décrochées, sur 804 clés.
+
+**Le second : l'en-tête disait « À LANCER SERVEUR ARRÊTÉ » et personne ne le
+vérifiait.** Le serveur de Mike tournait. Deux écrivains sur `photos.db`, c'est
+l'invariant 4 du projet. Le script le **PROUVE** désormais, comme
+`deplacer_dossiers` — et avec **deux** preuves, parce qu'une seule ne suffit
+pas : la base est en **WAL**, donc le serveur ne tient le verrou d'écriture que
+pendant ses transactions, et `BEGIN IMMEDIATE` peut l'obtenir alors qu'il est
+bel et bien vivant. On demande donc AUSSI au serveur s'il répond
+(`GET /api/serveur`) — une preuve qui ne dépend pas de l'instant. `--forcer`
+lève les deux, explicitement.
+
+**Et les décisions re-clées se COMPTENT** (`Bilan : … dont N décision(s)
+humaine(s) re-clée(s) `) : ce qui n'est pas compté n'est pas diagnosticable
+après coup, et c'est précisément ce qui a laissé 928 décisions partir en
+silence.
+
+**18 tests neufs** (`test_recle_hors_ligne.py`), dont le ROUGE observé : la
+boucle des quatre magasins laissée telle quelle, qui ne déplace ni le
+rattachement, ni l'exclusion, ni la confirmation — et ne lève aucune erreur.
+Au passage, mon premier jeu d'essai écrivait l'`avatar` en chaîne alors que
+c'est une PAIRE `[chemin, index]` : **c'était le test qui était faux, pas
+l'instrument.**
 
 ## État (27/08/2026, session 56) — LE RAPATRIEMENT EST LANCÉ, ET LE SOUPÇON A SON BANC
 

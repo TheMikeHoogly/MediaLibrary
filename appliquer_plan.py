@@ -56,9 +56,66 @@ def open_stores(db_path):
     return stores, semantic
 
 
-def rekey_stores(old, new, stores, semantic):
+# Les deux magasins keyes par NOM, et non par chemin : leurs chemins vivent
+# DANS la fiche (`faces` = [[chemin, index]], `exclude`, `confirmed`, `avatar`).
+STORES_PAR_NOM = ('people', 'pets')
+
+
+def recler_decisions_humaines(old, new, stores):
+    """Re-cle les decisions humaines A L'INTERIEUR des fiches. Rend le compte.
+
+    POURQUOI CETTE FONCTION EXISTE ICI AUSSI
+
+    `store.rekey(ancien_chemin, nouveau_chemin)` est un NO-OP sur `people` et
+    `pets` : leur cle est le NOM, pas un chemin. Il cherche une entree dont la
+    cle serait un chemin, n'en trouve jamais, renvoie faux -- et la boucle des
+    << quatre magasins de sujets >> n'en regardait meme pas le retour. Elle
+    avait l'air d'en couvrir quatre ; elle en couvrait DEUX.
+
+    Mesure du 22/08/2026 : **928** decisions humaines sur 3 364 pointaient vers
+    une cle absente de l'index, sur 804 cles -- la trace de chaque rangement par
+    annee et de chacun des 7 058 renommages. Le TAG survivait (index + XMP), donc
+    la photo gardait son nom, la regle 2 tenait. C'est la VERITE TERRAIN qui
+    partait : quel VISAGE est qui, quelles photos ont ete ecartees d'un nom,
+    lesquelles ont ete confirmees. Une exclusion perdue est un faux positif qui
+    revient.
+
+    Le correctif etait branche dans `server.rekey_everywhere` le 22/08 et NULLE
+    PART AILLEURS : l'applicateur hors-ligne -- que portent le rangement par
+    annee ET le dedoublonnage -- decrochait encore des decisions le 27/08. Deux
+    chemins qui font << la meme chose >> : c'est un test qui doit le dire, pas
+    un docstring.
+
+    `save=False` : la sauvegarde suit celle des autres magasins, deja assuree
+    par l'appelant. Reassigner les CHAMPS -- et non muter au fond d'une liste --
+    est ce qui marque l'entree << sale >> cote store (`TrackedEntry`)."""
+    import recle_decisions
+    n = 0
+    for t in STORES_PAR_NOM:
+        st = stores.get(t)
+        if st is None:
+            continue
+        for pk, pe in list(st.data.items()):
+            if not isinstance(pe, dict):
+                continue
+            champs, k = recle_decisions.recler_fiche(pe, old, new)
+            if not champs:
+                continue
+            for champ, valeur in champs.items():
+                pe[champ] = valeur
+            st.set(pk, pe, save=False)
+            n += k
+    return n
+
+
+def rekey_stores(old, new, stores, semantic, compte=None):
     """Miroir de server.rekey_everywhere : tags decide, sujets rekey+save
-    (transport auto des vecteurs), semantique rekey_prefix_all."""
+    (transport auto des vecteurs), semantique rekey_prefix_all, et les
+    DECISIONS humaines a l'interieur des fiches personnes/animaux.
+
+    `compte` : dict optionnel ou s'additionne le nombre de decisions re-clees.
+    Ce qui n'est pas COMPTE n'est pas diagnosticable apres coup -- et c'est
+    precisement ce qui a laisse 928 decisions se decrocher en silence."""
     moved = stores['tags'].rekey(old, new)
     if not moved:
         return False
@@ -67,6 +124,12 @@ def rekey_stores(old, new, stores, semantic):
             stores[t].rekey(old, new)
         except Exception as e:
             print(f"    ! rekey {t} {old} -> {new} : {e}")
+    try:
+        n = recler_decisions_humaines(old, new, stores)
+        if n and compte is not None:
+            compte['decisions'] = compte.get('decisions', 0) + n
+    except Exception as e:                                    # noqa: BLE001
+        print(f"    ! recle des decisions {old} -> {new} : {e}")
     try:
         semantic.rekey_prefix_all(old, new)
     except Exception as e:

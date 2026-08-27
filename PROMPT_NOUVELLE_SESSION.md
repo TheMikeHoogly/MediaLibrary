@@ -90,8 +90,11 @@ passe de tagging qui regarde déjà chaque photo**, pas un cinquième pipeline.
 5. **La suite du chantier 17** : la notion de PROPRIÉTAIRE, puis
    l'attribution rétroactive des 3 767 décisions à Mike. Deux questions
    ouvertes bloquent l'écriture partagée.
-6. **Réparer `appliquer_plan.rekey_stores`** — cinq magasins sur sept. Puis
-   **unifier** : la primitive complète existe DEUX fois.
+6. **UNIFIER le re-clé** : la réparation est faite (27/08), mais la
+   primitive complète existe désormais **TROIS fois**
+   (`server.rekey_everywhere`, `deplacer_dossiers.recle_une_cle`,
+   `appliquer_plan.rekey_stores`). Trois endroits où la même règle peut
+   diverger — elle l'a déjà fait pendant cinq jours. Une seule doit rester.
 7. **Reste d'audit** : O8–O9, O11, O13–O15 ; **I1** dans `/reglages` ;
    `animal:luna` en minuscule sur 3 photos à côté de `animal:Luna` sur 355.
    Puis les quatre pages sans `components.css`. O15 balaie au passage les
@@ -149,8 +152,15 @@ d'espace (jeton `b64:`). Une option en liste séparée par des virgules est une
 option qui sera REFUSÉE — la rendre répétable, dès l'écriture.
 
 **Un docstring qui dit « miroir de » n'est pas une preuve.**
-`appliquer_plan.rekey_stores` l'affirmait et re-cléait cinq magasins sur sept.
-Quand deux chemins font « la même chose », c'est un test qui doit le dire.
+`appliquer_plan.rekey_stores` l'affirmait, et re-cléait DEUX magasins de
+sujets sur quatre — sans lever d'erreur, parce que la boucle ne regardait même
+pas le retour de `rekey`. Corrigé le 27/08, cinq jours après que le serveur,
+lui, l'ait été. **Quand deux chemins font « la même chose », c'est un test qui
+doit le dire** — et il doit ROUGIR sur l'ancien code, sinon il ne dit rien.
+
+**Et une preuve d'arrêt qui dépend de l'instant n'en est pas une.** La base est
+en WAL : `BEGIN IMMEDIATE` peut réussir pendant que le serveur vit. On lui
+demande AUSSI s'il répond.
 
 ### Lire
 
