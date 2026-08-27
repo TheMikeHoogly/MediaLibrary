@@ -227,12 +227,31 @@ class LaLigneDeCommande(unittest.TestCase):
              'chemin_google': str(d / 'Photos from 2024/a.jpg')}])
         cible = d / '_A TRIER' / 'T'
         code = C.main(['--rapport', r, '--cible', str(cible), '--copier',
+                       '--journal', str(d / '_corbeille_copies'),
                        '--json', str(d / 'sortie.json')])
         self.assertEqual(code, 0)
         self.assertTrue((cible / '2024' / 'a.jpg').is_file())
         s = json.loads((d / 'sortie.json').read_text(encoding='utf-8'))
         self.assertEqual(s['compte']['copie'], 1)
         self.assertTrue(s['journal'])
+
+    def test_le_journal_ne_TOMBE_PAS_dans_le_dossier_du_projet(self):
+        # Rouge observe le 27/08 : un test a ecrit un journal a la racine du
+        # projet, et l'agent git l'a committe. Un test qui touche le projet
+        # est un test qui salit.
+        d = Path(tempfile.mkdtemp(prefix="test_cop6_"))
+        export(d, {'Photos from 2024/a.jpg': 10})
+        r = rapport_google(d / 'r.json', [
+            {'nom': 'a.jpg', 'octets': 10,
+             'chemin_google': str(d / 'Photos from 2024/a.jpg')}])
+        C.main(['--rapport', r, '--cible', str(d / '_A TRIER' / 'T'),
+                '--copier', '--journal', str(d / '_corbeille_copies')])
+        self.assertTrue((d / '_corbeille_copies').is_dir())
+        # Le dossier du PROJET n'a rien recu de ce test.
+        recus = list((C.RACINE / '_corbeille_copies').glob('*.jsonl')) \
+            if (C.RACINE / '_corbeille_copies').is_dir() else []
+        for f in recus:
+            self.assertLess(f.stat().st_mtime, time.time() - 5, str(f))
 
     def test_un_rapport_introuvable_ne_tombe_pas(self):
         self.assertEqual(C.main(['--rapport', '/nexistepas.json']), 2)

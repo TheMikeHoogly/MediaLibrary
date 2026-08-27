@@ -285,6 +285,13 @@ def main(argv=None):
     ap.add_argument('--copier', action='store_true',
                     help='ECRIT. Sans lui, rien n est ecrit.')
     ap.add_argument('--hors-a-trier', dest='hors_a_trier', action='store_true')
+    # Le journal d'annulation vit avec les autres quarantaines du projet.
+    # L'option existe pour que les TESTS ne laissent rien dans le dossier du
+    # projet : le 27/08, l'un d'eux y a ecrit un journal, qui s'est fait
+    # committer. Un test qui touche le projet est un test qui salit.
+    ap.add_argument('--journal', dest='dossier_journal', default=None,
+                    help='ou ecrire le journal d annulation '
+                         '(defaut : _corbeille_copies/ du projet)')
     ap.add_argument('--json', dest='sortie_json', default=None)
     a = ap.parse_args(argv)
 
@@ -317,7 +324,7 @@ def main(argv=None):
         print("")
         print("  COPIE vers %s" % cible)
         compte, griefs, ecrits = copier(travaux)
-        chemin_journal = journal(ecrits)
+        chemin_journal = journal(ecrits, dossier=a.dossier_journal)
         ok = rapport(travaux, cible, octets, libre, compte, griefs,
                      hors_a_trier=a.hors_a_trier)
         if chemin_journal:

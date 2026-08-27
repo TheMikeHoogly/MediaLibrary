@@ -304,3 +304,8 @@ _avant_cibles/
 _avant_chip/
 _avant_deplacement/
 _corbeille_deplacements/
+# Le MOTIF, pas l'enumeration : neuf dossiers de quarantaine etaient cites un
+# par un, et le dixieme (_corbeille_copies, 27/08) est passe au travers — un
+# journal ecrit par un TEST s'est retrouve committe. Une quarantaine est un
+# etat de machine : jamais versionnee.
+_corbeille_*/
