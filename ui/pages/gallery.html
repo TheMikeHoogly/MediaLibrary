@@ -158,7 +158,13 @@ body { min-height: 100vh; }
 #lb-faits .src { font-size: var(--t-xs); color: var(--graphite); }
 #lb-faits.none { font-style: italic; }
 #lb-bar { background: var(--salle-2); padding: var(--e-3) var(--e-4); display: flex;
-           align-items: center; gap: var(--e-3); flex-shrink: 0; }
+           align-items: center; gap: var(--e-3); flex-shrink: 0; flex-wrap: wrap; }
+/* Telephone (mesure a 390px, 27/08) : en nowrap la rangee faisait 566px dans
+   370 -- << Fermer >> etait HORS ECRAN, sans aucun defilement pour l'atteindre.
+   Le repli garde chaque bouton entier et atteignable. Et nowrap sur les
+   LIBELLES pour que ce soit le BOUTON qui passe a la ligne, jamais son texte :
+   << Meme jour (31 mai) >> se pliait en quatre lignes de 78px de haut. */
+#lb-bar .btn { white-space: nowrap; }
 #lb-name { flex: 1; font-size: var(--t-sm); color: var(--graphite);
             overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 #lb-close { font-size: var(--t-md); }

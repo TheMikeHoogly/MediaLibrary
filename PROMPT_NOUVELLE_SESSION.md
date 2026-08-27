@@ -9,235 +9,148 @@ FUSIONNÉ — ce document, non. Puis `ROADMAP.md`, `eval/DECISIONS.md`,
 `eval/METHODE.md` — et `docs/DECISIONS_OUTILLAGE.md` si le sujet touche aux
 canaux, à la livraison ou au MCP. Débrief en 2–3 lignes, puis on attaque.
 
-## Où on en est (27/08/2026, fin de session 58)
+## Où on en est (27/08/2026, fin de session 59)
 
-**Le serveur est ARRÊTÉ** (mon `arret` de 21:09) — le rangement par année
-l'exigeait. Le redémarrer est le premier geste de la reprise.
+**Le serveur TOURNE et TAGUE** (redémarré 22:02 par Mike ; ~1 650 photos du
+Takeout rapatrié en analyse). Session 59 menée SANS restart ni écriture base
+— tout ce qui suit est lecture seule ou `ui/` relu à chaud.
 
-**Les 3 776 photos que Google seul détenait sont sur le NAS.** Copiées sous
-`_A TRIER\Takeout Google\<année>` (12,6 Go, 0 grief, journal dans
-`_corbeille_copies/`), puis le serveur a commencé à les taguer. **Rien ne
-s'efface chez Google** avant que `verifier_photos_google.py` ne compte ZÉRO
-absente.
+**La visionneuse débordait sur téléphone — trouvé, corrigé, prouvé.** À
+390 px, `#lb-bar` en `nowrap` faisait 566 px dans 370 : **« Fermer » était
+HORS ÉCRAN sans aucun défilement**, « Supprimer » à moitié coupé, et
+« 📅 Même jour (31 mai) » plié en quatre lignes de 78 px. Correctif : deux
+déclarations dans `gallery.html` (relu à chaud) — `flex-wrap: wrap` sur la
+barre, `white-space: nowrap` sur ses `.btn`. Cascade 0 disparue / 0 changée /
+2 apparues (les voulues), cibles 0 manquement, 35 tests UI verts, l'œil posé
+à 390 (trois rangées, tout à 44 px) et à 1 200 (une rangée, inchangé).
+**Pourquoi la session 58 ne voyait rien : le zoom navigateur (~50 %) gardait
+~1 020 px CSS quelle que soit la fenêtre. La mesure mobile se fait par une
+IFRAME de 390 px posée sur une page du même origine** — serveur vivant, zoom
+et fenêtre de Mike intacts.
 
-**Le rangement par année décrochait encore les décisions humaines — corrigé et
-PROUVÉ EN RÉEL.** `appliquer_plan.rekey_stores` se disait « miroir de
-`server.rekey_everywhere` » et re-cléait DEUX magasins de sujets sur quatre :
-`people` et `pets` sont keyés par NOM, `store.rekey(chemin)` n'y trouve
-jamais rien, et la boucle ne regardait pas le retour. Le rangement des 559
-photos de `_A TRIER` a rendu `{'ok': 539, 'skip': 20, 'decisions': 27}` :
-**27 décisions transportées** que l'ancien code aurait laissées derrière. Le
-premier lot de 20 en avait rendu **zéro** — un échantillon qu'on n'a pas
-choisi ne prouve rien, ni dans un sens ni dans l'autre.
-
-Au passage, le script **PROUVE** désormais que le serveur est arrêté au lieu
-de le demander dans son en-tête — et **deux fois**, parce que la base est en
-WAL : `BEGIN IMMEDIATE` peut réussir pendant que le serveur vit, donc on lui
-demande AUSSI s'il répond.
-
-**Six familles de boutons de `gallery` passent au `.btn` canonique**, vues à
-l'œil sur le serveur vivant et **fusionnées**. Cascade :
-69 déclarations disparues, 0 apparue, 0 valeur changée. Plancher 44 px prouvé :
-**9 → 22 cibles sur 31**. Et le bouton qui **supprime une photo** était en
-contour à **3,03:1** — la forme que le système avait mesurée et remplacée deux
-jours plus tôt ; elle survivait parce que `verifier_contraste` ne lit que
-`tokens.css` et `components.css`, jamais les `<style>` des pages.
-
-**L'AVANT du trailer Samsung est photographié** (`_rapport_sef_avant.json`,
-**à ne pas supprimer**) : 1 736 JPEG rapatriés, 746 avec leur SEF, 1 715 sans
-aucun nom. Quand le serveur en aura nommé, `--comparer` donnera l'avant/après
-du MÊME fichier.
-
-### Les trois choses de la journée qui changent la suite
-
-1. **Un écart TOUJOURS du même signe n'est pas du bruit.** Six lignes de
-   contrôle ont renversé un verdict que j'avais écrit dans le ROADMAP : les
-   173 « flux différents » portaient toutes un trailer Samsung, pas une autre
-   image.
-2. **Un docstring qui dit « miroir de » n'est pas une preuve** — et le test
-   qui le dit doit ROUGIR sur l'ancien code, sinon il ne dit rien.
-3. **Une portée qu'on ne lit pas est une portée qui ment pour vous.**
-   `verifier_contraste` annonce depuis toujours qu'il ne juge que deux
-   feuilles. Un « Supprimer » à 3:1 a vécu dans l'angle mort qu'il déclarait.
+**Le tableau trailer/tag a parlé : la corrélation N'EST PAS LÀ.** `croiser
+--exclure Takeout`, 3 000 tirés des 72 584 (le plein fonds dépasse le plafond
+600 s du banc — refusé une fois, relancé en échantillon) : sur 975 Samsung
+jugés, nommées **86,9 %** avec SEF (Wilson 83,4–89,8), non nommées
+**83,9 %** (80,5–86,7). Recouvrement, et le signe du mauvais côté pour
+accuser : **rien n'accuse notre écriture XMP** ; les 99 paires Google au
+trailer zéro étaient un sous-ensemble biaisé. La CAUSE reste au juge armé :
+l'avant/après du MÊME fichier (`_rapport_sef_avant.json`, **à ne pas
+supprimer** — il n'est PAS dans git, le disque en porte la seule copie).
 
 ## Prochain pas
 
-1. **Les boutons de `gallery` sur un ÉCRAN DE TÉLÉPHONE.** Le reste est
-   fait et fusionné — banc des composants vert sur le serveur vivant, œil
-   posé sur la barre d'outils et sur la visionneuse (le « Supprimer » est
-   bien rouge plein). Ce qui manque : le coût accepté de **+19 px** de
-   hauteur de barres n'a été vérifié que sur bureau ; le redimensionnement de
-   fenêtre n'a pas changé la capture et je n'ai pas insisté. À regarder au
-   premier passage sur mobile — c'est là que le retour à la ligne mord.
-2. **`.fchip`** : une seule classe pour des `<a>` de navigation ET des
-   `<span>` d'information. Décision en attente dans `QUESTIONS_MIKE.md` ;
-   ça vit dans `server.py`, donc redémarrage.
-3. **Le trailer Samsung : l'expérience est ARMÉE et le mécanisme est
-   PROUVÉ ; il ne manque que le temps.** Premier passage de `--comparer` sur
-   le fonds entier (27/08, 240 s) : **74 320 JPEG énumérés, les 1 736
-   retrouvés par leur NOM, 0 introuvable, 1 736 inchangés — aucune photo
-   encore nommée**, donc « rien à conclure », et le banc le dit au lieu de
-   rendre vert. Relancer quand le curateur aura travaillé :
+1. **`.fchip`** : décision en attente dans `QUESTIONS_MIKE.md` (les `<a>` en
+   `.btn`, les `<span>` en `.fetiquette`). Ça vit dans `server.py`, donc
+   redémarrage — attendre la fin du tagging ou l'accord de Mike.
+2. **Le trailer Samsung — l'expérience armée n'attend que des NOMS.** Quand
+   le curateur aura nommé, au banc :
    `verifier_trailer_samsung.py --racine b64:XFxOQVMtQnJlbWJsZW5zXGhvbWVcUGhvdG9z
-   --echantillon=0 --comparer=_rapport_sef_avant.json`.
-   **Rappel de forme : le jeton `b64:` doit être un argument SÉPARÉ**
-   (`--racine b64:XXX`), jamais collé par un `=`.
-
-   Détail de l'expérience : `_rapport_sef_avant.json` porte l'état des
-   **1 736 JPEG rapatriés — 746 avec leur SEF, 1 715 sans aucun nom**. Quand
-   le serveur en aura nommé, lancer au banc :
-   `verifier_trailer_samsung.py --racine b64:<le fonds> --echantillon 0
-   --comparer _rapport_sef_avant.json` — le rapprochement se fait par NOM de
-   fichier, donc le rangement par année ne le casse pas. Une seule transition
-   compte : **un nom apparu ET le SEF disparu**. **Ne pas supprimer
-   `_rapport_sef_avant.json`** : une fois ces photos nommées, cet « avant »
-   ne se refabrique plus.
-   En attendant qu'il y ait des noms, le tableau de corrélation
-   (`croiser`, sans `--comparer`) répond déjà — mais **avec
-   `--exclure Takeout`** : les photos rapatriées sont des copies de Google,
-   SEF intact et pas encore nommées, et les compter fabriquerait la
-   corrélation cherchée. Si c'est confirmé, c'est un défaut qui court depuis
-   le début du projet.
-
-4. **Le chantier 18 (confidentialité), partie qui ne dépend pas de 17** : le
-   détecteur greffé sur le tagueur, l'axe `sensible:`, et **d'abord le jeu
-   étiqueté et son banc** — sans banc, le seuil est une opinion. Attention :
-   le verdict ne va PAS dans le XMP (l'étiquette serait elle-même la fuite).
-5. **Le panneau `?` des raccourcis**, et d'abord sa brique : **un JS commun
-   injecté sur toutes les pages** (`_UI_GLOBAL_FILES`). Il n'en existe aucun.
-   Contenu dans `docs/RACCOURCIS.md`.
-6. **La suite du chantier 17** : la notion de PROPRIÉTAIRE, puis
-   l'attribution rétroactive des 3 767 décisions à Mike. Deux questions
-   ouvertes bloquent l'écriture partagée.
-7. **UNIFIER le re-clé** : la réparation est faite (27/08), mais la
-   primitive complète existe désormais **TROIS fois**
+   --echantillon=0 --comparer=_rapport_sef_avant.json` (jeton `b64:` en
+   argument SÉPARÉ, jamais collé par `=`). Une seule transition compte : un
+   nom apparu ET le SEF disparu. Le `--comparer` plein fonds tient dans le
+   plafond (240 s : il ne lit que les 1 736 références) ; c'est `croiser`
+   plein fonds qui ne tient pas (~70 000 lectures, refusé à 600 s).
+3. **Le chantier 18 (confidentialité), partie indépendante de 17** : le jeu
+   étiqueté et son banc D'ABORD — sans banc, le seuil est une opinion. Le
+   verdict ne va PAS dans le XMP (l'étiquette serait la fuite).
+4. **Le panneau `?` des raccourcis** — et d'abord sa brique : un JS commun
+   injecté partout (`_UI_GLOBAL_FILES`, il n'en existe aucun). `server.py`,
+   donc redémarrage. Contenu : `docs/RACCOURCIS.md`.
+5. **La suite du chantier 17** : PROPRIÉTAIRE, puis attribution rétroactive
+   des 3 767 décisions. Deux questions ouvertes bloquent l'écriture partagée.
+6. **UNIFIER le re-clé** : la primitive complète existe TROIS fois
    (`server.rekey_everywhere`, `deplacer_dossiers.recle_une_cle`,
-   `appliquer_plan.rekey_stores`). Trois endroits où la même règle peut
-   diverger — elle l'a déjà fait pendant cinq jours. Une seule doit rester.
-8. **Reste d'audit** : O8–O9, O11, O13–O15 ; **I1** dans `/reglages` ;
-   `animal:luna` en minuscule sur 3 photos à côté de `animal:Luna` sur 355.
-   Puis les quatre pages sans `components.css`. O15 balaie au passage les
-   3 047 vignettes orphelines du déplacement du 26/08.
+   `appliquer_plan.rekey_stores`). Elle a déjà divergé cinq jours. Une seule
+   doit rester.
+7. **Reste d'audit** : O8–O9, O11, O13–O15 ; **I1** dans `/reglages` ;
+   `animal:luna` (3) vs `animal:Luna` (355). Puis les quatre pages sans
+   `components.css`. O15 balaie les 3 047 vignettes orphelines du 26/08.
 
 ## En fin de projet — décidé, mesuré, en attente d'un geste
 
-**La copie hors site attend que le chantier 17 soit fini** (choix de Mike,
-26/08). Le Takeout, lui, ne dépend de rien.
-
-- **Le Takeout Google : OUVERT, CONFRONTÉ, et le rapatriement est OUTILLÉ**
-  (27/08). Ce qui reste est un geste sur l'archive :
-  **`32 - Copier les absentes de Google.bat`**, puis `26 - Ranger par
-  annee.bat`, puis relancer `verifier_photos_google.py` (famille `verifier_`,
-  lançable au banc — le chemin passe par le jeton `b64:`, il porte des
-  espaces). Effacer
-  se fait sur `photos.google.com` — jamais depuis l'app du téléphone, qui
-  efface aussi l'appareil — et le quota ne bouge qu'une fois la CORBEILLE
-  vidée (60 j). **Le compte est à 96 %** : quand il est plein, Gmail cesse de
-  RECEVOIR. Avant d'effacer 75 Go chez un tiers :
-  `verifier_google_pixels.py --octets`, qui hache le flux au lieu d'en
-  comparer la longueur (~32 Go à lire, trois ou quatre tranches de banc).
-- **La copie hors site (12 bis)** : Synology DS224+ → **Infomaniak Swiss
-  Backup**, Hyper Backup/Swift, ~**CHF 6 TTC/mois** pour 1 To, données en
-  Suisse. Fonds mesuré : **291 Go**. Clé de chiffrement imprimée et rangée
-  ailleurs. Et une restauration d'épreuve : une sauvegarde jamais restaurée
-  n'est pas une sauvegarde.
-- **HTTPS : FAIT** (26/08). `tailscale serve --bg --https=443 localhost:8080`
-  → `https://msi-mike.goat-draco.ts.net/`. Zéro ligne de code changée.
+- **Google** : les 3 776 ABSENTES sont copiées sur le NAS et se font taguer.
+  Rien ne s'efface chez Google avant que `verifier_photos_google.py` ne
+  compte ZÉRO absente ; avant d'effacer 75 Go : `verifier_google_pixels.py
+  --octets` (~32 Go à lire, trois-quatre tranches de banc). Effacer sur
+  `photos.google.com`, jamais depuis l'app du téléphone ; le quota (96 %) ne
+  bouge qu'une fois la corbeille vidée (60 j).
+- **La copie hors site (12 bis)** attend la fin du chantier 17 (choix de
+  Mike, 26/08) : DS224+ → Infomaniak Swiss Backup, ~CHF 6/mois pour 1 To,
+  fonds 291 Go, clé imprimée, et une restauration d'épreuve.
+- **HTTPS : FAIT** — `https://msi-mike.goat-draco.ts.net/`.
 
 ## Réflexes
 
 ### Mesurer
 
-**Un nom inventé doit rendre ZÉRO — et le banc doit le demander AUSSI dans
-l'autre sens.** Le contrôle négatif seul laisse passer un moteur qui rend zéro
-pour tout ; le contrôle positif seul laisse passer celui qui rend tout pour
-rien. Les deux, ou rien. Et les valeurs de contrôle se LISENT dans le fonds :
-un banc qui teste un nom en dur rougit le jour où ce nom disparaît, sans
-qu'aucun code n'ait bougé.
+**Un nom inventé doit rendre ZÉRO — et le banc le demande dans les deux
+sens.** Négatif seul : un moteur muet passe ; positif seul : un moteur qui
+crie tout passe. Et les valeurs de contrôle se LISENT dans le fonds.
 
-**Mesurer avec l'instrument du PROJET.** Trois fois le 26/08, une requête
-maison s'est trompée là où l'instrument avait raison. Trois instruments, trois
-questions : les fiches (`/api/names`), les tags (`kw` de l'index), les
-détections (`animals`).
+**Mesurer avec l'instrument du PROJET** : les fiches (`/api/names`), les tags
+(`kw` de l'index), les détections (`animals`).
 
-**Un écart TOUJOURS du même signe n'est pas du bruit.** 173 paires
-« différentes » l'étaient toutes dans le même sens, de −67 à −4 864 405
-octets. J'avais écrit « probablement deux photos différentes » — une
-coïncidence n'a pas de signe. Le contrôle a coûté six lignes et a renversé le
-verdict : c'était un TRAILER, pas une image.
+**Un écart TOUJOURS du même signe n'est pas du bruit** — les 173 « flux
+différents » portaient tous un trailer Samsung.
 
-**Le canal du banc n'admet que `[A-Za-z0-9_.:/=-]`.** Pas de virgule, pas
-d'espace (jeton `b64:`). Une option en liste séparée par des virgules est une
-option qui sera REFUSÉE — la rendre répétable, dès l'écriture.
+**Le canal du banc n'admet que `[A-Za-z0-9_.:/=-]`** (espaces via jeton
+`b64:`, en argument séparé). **Et son plafond est 600 s** (`TIMEOUT_S`, max
+1 800, pas d'option par ordre) : un banc qui lit 70 000 fichiers SMB n'y
+tient pas — échantillonner (`--echantillon`), l'instrument porte Wilson.
 
-**Un docstring qui dit « miroir de » n'est pas une preuve.**
-`appliquer_plan.rekey_stores` l'affirmait, et re-cléait DEUX magasins de
-sujets sur quatre — sans lever d'erreur, parce que la boucle ne regardait même
-pas le retour de `rekey`. Corrigé le 27/08, cinq jours après que le serveur,
-lui, l'ait été. **Quand deux chemins font « la même chose », c'est un test qui
-doit le dire** — et il doit ROUGIR sur l'ancien code, sinon il ne dit rien.
-
-**Et une preuve d'arrêt qui dépend de l'instant n'en est pas une.** La base est
-en WAL : `BEGIN IMMEDIATE` peut réussir pendant que le serveur vit. On lui
-demande AUSSI s'il répond.
+**Une rangée peut être fausse quand chaque cible est conforme.**
+`verifier_cibles` juge chaque bouton, personne ne jugeait leur tenue à
+390 px : « Fermer » hors écran vivait derrière six cibles vertes. Le rendu
+étroit se MESURE (iframe 390 px sur le serveur vivant), il ne se déduit pas.
 
 ### Lire
 
-**Le serveur a un journal : `_journal_serveur.log`** — miroir daté de sa
-console, il porte les tracebacks des threads qui meurent. **Le lire AVANT de
-supposer**, depuis la DERNIÈRE bannière :
+**Le journal du serveur d'abord** (`_journal_serveur.log`), depuis la
+dernière bannière :
 
     L=$(grep -n "===== DEMARRAGE" _journal_serveur.log | tail -1 | cut -d: -f1)
     tail -n +$L _journal_serveur.log | grep -n "THREAD MORT\|EXCEPTION\|Traceback"
 
-**Un commentaire est de la PROSE, quel que soit le langage** — CSS compris.
-Règle de lecture unique : `verifier_controles.sans_le_css`. L'exception est
-une DÉCLARATION (`/* cible: hors-portee -- … */`) : elle se lit AVANT le
-retrait et se ferme sur `*/`.
+**Un commentaire est de la PROSE** — règle de lecture unique :
+`verifier_controles.sans_le_css` ; l'exception est une DÉCLARATION.
 
-**Un banc en lecture seule tourne aussi dans la VM** : les `verifier_` qui ne
-lisent que des fichiers se relancent en une seconde par `device_bash`. Le banc
-Windows reste la PREUVE et le seul chemin vers le serveur : la VM n'atteint
-pas le LAN. **Ce qui ÉCRIT n'est pas lançable au banc.**
+**Un banc en lecture seule tourne aussi dans la VM** ; le banc Windows reste
+la PREUVE et le seul chemin vers le serveur. Ce qui ÉCRIT n'est pas lançable
+au banc.
 
 ### Juger
 
-**Un verdict tiré à pile ou face est pire qu'un aveu d'ignorance.** Deux
-règles CSS de même poids : « la dernière écrite gagne » n'est vrai que **si
-les deux s'appliquent**.
+**Ce qui doit s'accorder, c'est le VERDICT, pas la valeur** (`44px` =
+`var(--touch)`).
 
-**Ce qui doit s'accorder, c'est le VERDICT, pas la valeur.** `44px` et
-`var(--touch)` sont la même hauteur.
+**Ne pas voir une cible ne la rend pas conforme** — tout rapport dit sa
+PORTÉE, et elle se lit (`verifier_contraste` ne juge que deux feuilles).
 
-**Ne pas voir une cible ne la rend pas conforme.** Avant de croire un
-« 0 grief », demander sur COMBIEN — et tout rapport dit sa PORTÉE.
+**Une corrélation n'est pas une cause** — le banc du trailer le dit
+lui-même : l'accusation se prouve par l'avant/après du MÊME fichier.
 
 ### Toucher
 
 **`ui/pages/` et `ui/*.css` sont relus À CHAUD** ; seul `server.py` exige un
-redémarrage. Ça ne dispense pas d'OBSERVER.
+redémarrage — qui interrompt tagging et scan : pendant une passe du serveur,
+on n'y touche pas.
 
-**L'ordre de la cascade a QUATRE étages** : `components.css` (au marqueur,
-AVANT le `<style>` de la page) → la page → `tokens.css` → `base.css` (à
-`</head>`, il gagne les égalités). Une feuille qui ne change pas doit figurer
-**des deux côtés** de `--avant`/`--apres`.
+**L'ordre de la cascade a QUATRE étages** : `components.css` → page →
+`tokens.css` → `base.css`. Une feuille inchangée figure des DEUX côtés de
+`--avant`/`--apres`.
 
-**Changer une BALISE change son style par défaut.** Un `<button>` n'admet que
-du contenu de PHRASE ; sinon `tabindex` + `role` + `keydown` Entrée **et**
-Espace avec `preventDefault` — **les trois**.
+**Changer une BALISE change son style par défaut** ; un `<button>` n'admet
+que du contenu de phrase.
 
 **Jamais deux écrivains sur `photos.db`.** Le serveur est l'écrivain unique.
 
-**Un `_exiftool_tmp` condamne sa photo.** Balayage possible mais **jamais par
-défaut** (`--balayer-fantomes`).
+**Un `_exiftool_tmp` condamne sa photo** — balayage jamais par défaut.
 
-**Un nom accentué passe au banc par le jeton `b64:`** :
+**Un nom accentué passe au banc par le jeton `b64:`.**
 
-    verifier_xmp_personnes.py --nom b64:U3TDqXBoYW5lIFBsb3V2aW4
-
-> **Piège d'horloge** : `device_bash` tourne dans une VM en **UTC** — deux
-> heures de moins que chez Mike. Les epochs du serveur sont la seule heure
-> fiable.
+> **Piège d'horloge** : `device_bash` est en **UTC** (−2 h). Les epochs du
+> serveur sont la seule heure fiable.
 >
-> **Et le dossier monté a un cache** : `tail` peut rendre un contenu vieux de
-> 25 min. Le `mtime` (`ls -l`, `date -r`) dit la vérité.
+> **Le dossier monté a un cache** : `tail` peut rendre du vieux. Le `mtime`
+> (`ls -l`, `date -r`) dit la vérité.

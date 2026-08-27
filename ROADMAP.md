@@ -15,10 +15,12 @@ NÉGATIF est un banc (`verifier_filtre_negatif.py`, 15 contrôles, deux canaux).
 Le point 4 de la liste précédente — le déplacement `Photos Mike` — était déjà
 fait en session 52. L'ordre reprend donc à ce qui reste.
 
-**1. Les boutons de `gallery` — FAIT pour cinq familles sur six (27/08),
-reste `.fchip` et l'ŒIL.** Voir l'état de session 58. Ce qui manque : le banc
-des pages composants sur le serveur VIVANT, la capture, et une décision sur
-`.fchip` (question ouverte dans `QUESTIONS_MIKE.md`).
+**1. Les boutons de `gallery` — FAIT, y compris l'œil TÉLÉPHONE (27/08,
+session 59) ; reste `.fchip`.** Le banc vivant, l'œil bureau (session 58) puis
+l'œil à 390 px (session 59) sont passés — et le passage mobile a trouvé et
+corrigé un vrai défaut : la rangée de la visionneuse débordait, « Fermer »
+était hors écran. Ne reste que la décision `.fchip` (question ouverte dans
+`QUESTIONS_MIKE.md`).
 
 **1 bis. Ce qui restait de l'option 1 tranchée le 26/08 :** Les cinq familles maison (`.tb` 34 px, `.geobtn`
 28 px, `.fchip` 35 px, `.georow button` 34 px, `#ss-stop` 34 px) passent au
@@ -76,6 +78,47 @@ s'efface chez Google tant qu'il en reste une. **C'est le geste le plus urgent
 de la liste**, avant les boutons et avant le chantier 17 : ces fichiers ne
 vivent aujourd'hui qu'à un seul endroit, et c'est chez un tiers dont le quota
 est à 96 %. Deux questions dans `QUESTIONS_MIKE.md` (27/08).
+
+## État (27/08/2026, session 59) — LA VISIONNEUSE DÉBORDAIT SUR TÉLÉPHONE
+
+**Le rendu 390 px a enfin été vu — en contournant le zoom.** Le
+redimensionnement de fenêtre ne changeait pas la capture (session 58) parce
+que le zoom du navigateur (~50 %) maintenait ~1 023 px CSS de viewport quelle
+que soit la fenêtre. Contournement : une **iframe de 390 px** posée sur une
+page du même origine — les media/wrap s'y évaluent à 390, le serveur VIVANT
+sert la page, et on n'a touché ni au zoom de Mike ni à sa fenêtre.
+
+**Le défaut trouvé : `#lb-bar` en `nowrap`, 566 px dans 370.** Sur téléphone,
+« 🗑️ Supprimer » était à moitié coupé et **« Fermer » entièrement HORS
+ÉCRAN, sans aucun défilement pour l'atteindre** (pas d'Échap au doigt). Et le
+libellé dynamique « 📅 Même jour (31 mai) » se pliait en **quatre lignes de
+78 px**. Les cinq familles de la session 58 étaient conformes une à une — le
+défaut était dans la RANGÉE, que personne ne mesurait : `verifier_cibles`
+juge chaque cible, pas leur tenue collective à une largeur donnée.
+
+**Correctif : deux déclarations, zéro restart** (`gallery.html` est relu à
+chaud) : `flex-wrap: wrap` sur `#lb-bar`, `white-space: nowrap` sur ses
+`.btn` — le BOUTON passe à la ligne, jamais son texte. Preuves : cascade
+0 disparue / 0 changée / 2 apparues (les voulues) ; cibles 0 manquement ;
+contraste et contrôles verts ; 35 tests UI OK ; l'œil à 390 px (trois
+rangées, tout à 44 px, Supprimer rouge plein, Fermer revenu) et à 1 200 px
+(une rangée, barre 68 px — rien ne bouge sur bureau). La barre d'outils et
+les chips, eux, se replient proprement à 390 : le coût +19 px tient sur
+mobile, rien d'autre à corriger.
+
+**Le tableau de corrélation trailer/tag (point 3) a rencontré le plafond du
+banc.** `croiser --exclure Takeout` sur le fonds entier lit ~70 000 queues de
+JPEG sur SMB : bien au-delà des 600 s (`TIMEOUT_S` de `banc_agent`, plafond
+1 800 non levable par ordre). Relancé en
+**échantillon** (3 000 tirés des 72 584 hors Takeout, 574 s) : **la
+corrélation N'EST PAS LÀ.** Sur 975 JPEG Samsung jugés, les photos NOMMÉES
+par notre écriture gardent leur SEF à **86,9 %** (Wilson 95 % : 83,4–89,8),
+les non nommées à **83,9 %** (80,5–86,7). Les intervalles se recouvrent et
+le signe est du MAUVAIS côté pour accuser : **rien n'accuse notre écriture
+XMP.** Les 99 paires Google au trailer zéro étaient un sous-ensemble biaisé,
+pas le fonds. La CAUSE reste à prouver dans les deux sens — le juge est
+l'avant/après sur le MÊME fichier, armé (`_rapport_sef_avant.json`), que le
+travail du curateur fera parler.
 
 ## État (27/08/2026, session 58) — LES BOUTONS DE `gallery`, ET UN « SUPPRIMER » JAMAIS MESURÉ
 

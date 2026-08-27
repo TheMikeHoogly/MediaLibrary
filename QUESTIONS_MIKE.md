@@ -42,6 +42,15 @@
   leur pixel est déjà là, les copier ferait 99 doublons, et écraser par la
   version Google détruirait les XMP — donc les noms. La cause d'abord.*
 
+  **Mesuré le 27/08 au soir (banc `croiser`, 3 000 tirés hors Takeout,
+  975 Samsung jugés)** : la corrélation n'est pas là — nommées **86,9 %**
+  avec SEF (Wilson 83,4–89,8), non nommées **83,9 %** (80,5–86,7). Rien
+  n'accuse notre écriture ; les 99 paires étaient un sous-ensemble biaisé.
+  La preuve de CAUSE reste l'avant/après armé (`--comparer`), qui parlera
+  quand des noms seront posés — l'expérience de dix photos que je proposais
+  n'est plus le seul chemin, mais elle reste la plus rapide si tu veux
+  fermer la question aujourd'hui.
+
   **Reste indéterminé** : 95 paires (74 dont le trailer contient lui-même un
   `FF D9`, 21 qui ne sont pas des JPEG des deux côtés) et 21 vraiment
   différentes. Listées nommément dans `_reprise_google.json`. À regarder une
