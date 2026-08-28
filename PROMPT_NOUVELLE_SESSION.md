@@ -44,11 +44,21 @@ restera toujours un trou de 6 h — le réglage ne remplace pas la résilience.
 1. **LA RÉSILIENCE DES FILS (le plus utile).** Le tagueur est increvable sur
    CE verrou, pas sur le prochain mode de panne, et **aucun des vingt fils de
    `main()` ne se relance**. `journal_serveur` POSE le constat depuis toujours
-   (son commentaire le dit mot pour mot) — rien ne le lit. Un registre des
-   morts alimenté par le crochet existant, visible sur `/sante`, puis la
-   relance. **La relance est une décision** (un fil relancé sur un état
-   incohérent peut consommer deux fois une file) : à trancher avec Mike avant
-   d'écrire.
+   (son commentaire décrit mot pour mot la nuit du 27) — rien ne le lit.
+   Trois marches, avec leurs risques, dans `QUESTIONS_MIKE.md` (28/08) :
+   **(a) DIRE** (registre des morts sur `/sante`), **(b) ALERTER** (une ligne
+   au journal tant qu'un fil manque — le journal se lit à distance),
+   **(c) RELANCER**. **(a) et (b) sont sans risque : les faire sans attendre**
+   — ils transforment huit heures en quelques minutes. (c) attend Mike : un
+   fil relancé peut consommer deux fois une file (`task_done()` est dans un
+   `finally` ; mourir avant fausse le compteur).
+
+1 bis. **Le 9 septembre au matin : VÉRIFIER que Windows a DEMANDÉ** au lieu de
+   redémarrer. Patch Tuesday le 8, le redémarrage tombait toujours vers 01:30
+   la nuit suivante. Trois réglages posés le 28/08, **aucun prouvé** :
+   `Get-WinEvent -FilterHashtable @{LogName='System'; Id=1074}` côté Windows,
+   et la bannière du journal côté serveur. Si le serveur a tourné sans
+   interruption, ça tient.
 2. **`.fchip`** : décision en attente dans `QUESTIONS_MIKE.md` (les `<a>` en
    `.btn`, les `<span>` en `.fetiquette`). Vit dans `server.py`.
 3. **Le trailer Samsung — l'expérience armée n'attend que des NOMS.** Le
@@ -115,6 +125,14 @@ par ordre) : un banc qui lit 70 000 fichiers SMB n'y tient pas —
 **Une rangée peut être fausse quand chaque cible est conforme.** Le rendu
 étroit se MESURE — iframe 390 px sur le serveur vivant, parce que le zoom du
 navigateur fausse le redimensionnement de fenêtre.
+
+**Un banc qui imprime doit rester lisible par une console cp1252.** C'est
+celle de l'agent git : un caractère hors table y lève `UnicodeEncodeError` et
+fait ROUGIR un banc qui passe 52/52 — la livraison est refusée pour une raison
+qui n'existe pas. Le 28/08, deux bancs sur ~90 étaient dans ce cas, les deux
+corrigés, zéro restant (balayage AST des `print`). Filets en ASCII, et
+`reconfigure(errors='replace')` là où le banc imprime des données de test qui
+peuvent contenir n'importe quel Unicode.
 
 **Ne JAMAIS lancer `unittest discover` depuis la VM.** Trois tests ouvrent le
 vrai `photos.db` : ils échouent en « disk I/O error » (tant mieux), mais c'est

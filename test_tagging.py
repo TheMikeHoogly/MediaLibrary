@@ -33,7 +33,7 @@ if not imgs:
 report = []
 for f in imgs:
     entry = {"photo": f.name, "taille": server.human_size(f.stat().st_size)}
-    print(f"→ {f.name}")
+    print(f"-> {f.name}")
     t0 = time.time()
     try:
         b64 = server.image_to_b64(f)
@@ -72,12 +72,12 @@ for f in imgs:
         # Mise à jour de l'index pour que le serveur ne re-tague pas
         server.STORE.set(f.name, {"kw_fr": kw_fr, "kw_en": kw_en, "desc": desc,
                                   "in_file": ok, "at": time.time()})
-        print(f"   ✓ {entry['duree_s']}s — FR: {', '.join(kw_fr)}")
+        print(f"   OK {entry['duree_s']}s -- FR: {', '.join(kw_fr)}")
         print(f"     EN: {', '.join(kw_en)}")
         print(f"     «{desc}»  (écrit dans fichier: {ok})\n")
     except Exception as e:
         entry["erreur"] = str(e)
-        print(f"   ✗ {e}\n")
+        print(f"   ECHEC {e}\n")
     report.append(entry)
 
 out = Path(__file__).resolve().parent / "tagging_report.txt"

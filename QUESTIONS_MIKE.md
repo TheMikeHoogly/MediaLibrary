@@ -6,6 +6,38 @@
 > `eval/DECISIONS.md` si elle tranche, dans `ROADMAP.md` si elle priorise.
 > Protocole : `CLAUDE.md`, « Traite autonome ».
 
+- **28/08 — un fil de travail qui meurt : le relancer, ou seulement le DIRE ?**
+  Le tagueur est increvable sur `database is locked` (session 60), mais aucun
+  des **vingt fils** de `main()` ne se relance, et personne ne regarde :
+  `journal_serveur` pose le constat depuis toujours — son commentaire décrit
+  mot pour mot ce qui s'est passé — mais rien ne le lit. C'est ce qui a coûté
+  la nuit du 27 : mort à 23:42, découverte à 07:43 par moi, pas par la
+  machine.
+
+  Trois marches, de plus en plus engageantes :
+
+  **(a) DIRE.** Le crochet existant alimente un registre en mémoire ; `/sante`
+  affiche « tagger_worker mort depuis 3 h 12 ». Aucun risque, et ça suffit à
+  ce que la panne ne dure plus huit heures — *si* quelqu'un regarde `/sante`.
+
+  **(b) ALERTER.** Le même registre, plus une ligne bien visible au journal
+  toutes les N minutes tant qu'un fil manque. Le journal, lui, est lu à
+  distance ; c'est ce qui m'aurait mis dessus en début de session.
+
+  **(c) RELANCER.** Le fil est redémarré automatiquement. C'est ce qui sauve
+  la nuit — et c'est la seule des trois qui porte un risque réel : un fil
+  relancé sur un état incohérent peut **consommer deux fois** une file. Le
+  tagueur tire un nom de `TAG_QUEUE` puis appelle `task_done()` dans un
+  `finally` ; s'il meurt AVANT, l'élément est perdu et le compteur de la file
+  reste faussé. Relancer proprement demande de savoir ce que le fil tenait au
+  moment de mourir.
+
+  *Ma recommandation : (a) et (b) tout de suite — sans risque, et ils
+  transforment huit heures en quelques minutes. Puis (c) fil par fil, en
+  commençant par le tagueur, avec un plafond de relances (trois, sinon on
+  boucle sur une panne dure) et un compte visible sur `/sante` : un fil
+  relancé cinquante fois n'est pas guéri, il est en train de crier.*
+
 - **27/08 — `.fchip` : une seule classe pour deux choses qui ne sont pas de la
   même nature.** Les cinq autres familles de boutons de `gallery` sont passées
   au `.btn` canonique. `.fchip` résiste, parce qu'elle habille à la fois des

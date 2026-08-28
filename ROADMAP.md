@@ -30,13 +30,27 @@ habituel : `verifier_css_cascade --page` (feuille commune EN PREMIER dans
 `--apres`), `verifier_cibles`, `verifier_contraste`, `verifier_controles`,
 tests UI, banc des pages composants sur le serveur VIVANT, l'œil en dernier.
 
-**1 ter. LA RÉSILIENCE DES FILS DE TRAVAIL (neuf, 28/08).** Le tagueur est
-increvable sur `database is locked` (session 60), mais **aucun fil mort ne se
-relance et personne ne regarde** : `journal_serveur` pose le constat, rien ne
-le lit. Une nuit de huit heures a été perdue exactement comme ça. Un registre
-des morts alimenté par le crochet existant, visible sur `/sante`, puis la
-relance des fils de travail — la relance est une décision à trancher (état
-incohérent, double consommation d'une file).
+**1 ter. LA RÉSILIENCE DES FILS DE TRAVAIL (neuf, 28/08) — le plus utile.**
+Le tagueur est increvable sur `database is locked` (session 60), mais **aucun
+des vingt fils de `main()` ne se relance et personne ne regarde** :
+`journal_serveur` pose le constat, rien ne le lit. Une nuit de huit heures a
+été perdue exactement comme ça. Trois marches, détaillées avec leurs risques
+dans `QUESTIONS_MIKE.md` (28/08) : **(a) DIRE** — registre des morts alimenté
+par le crochet existant, visible sur `/sante` ; **(b) ALERTER** — une ligne au
+journal tant qu'un fil manque, parce que le journal se lit à distance ;
+**(c) RELANCER** — la seule qui porte un risque (double consommation d'une
+file : le tagueur appelle `task_done()` dans un `finally`, mourir avant fausse
+le compteur). (a) et (b) sont sans risque et transforment huit heures en
+quelques minutes : à faire d'abord, sans attendre de décision.
+
+**1 quater. Le 9 septembre au matin : VÉRIFIER que Windows a demandé.** Patch
+Tuesday tombe le 8 ; le redémarrage arrivait toujours vers 01:30 la nuit
+suivante. Trois réglages ont été posés le 28/08 (notification ACTIVÉE,
+préversions coupées, `NoAutoRebootWithLoggedOnUsers=1`) et **aucun n'est
+prouvé**. Lire `Get-WinEvent -FilterHashtable @{LogName='System'; Id=1074}` et
+la bannière du journal : si le serveur a tourné sans interruption, les
+réglages tiennent ; sinon la stratégie de groupe n'a pas été honorée et il
+faut regarder « Stratégies de mise à jour configurées ».
 
 **2. Le pense-bête des raccourcis DANS l'interface** (point 6 du plancher).
 Il manque la brique : **un fichier JS commun injecté sur toutes les pages**,
@@ -150,6 +164,15 @@ celui-ci ne s'était jamais exécuté sous l'agent, `store_sqlite.py` n'ayant pa
 'replace')` sur les deux flux (l'affichage se dégrade, jamais le verdict) et
 des filets ASCII. Mon propre `print` de réessai est en ASCII pur pour la même
 raison : ce module est importé par des bancs.
+
+### La classe de défaut est fermée, pas seulement le cas
+
+Le refus a fait chercher combien d'AUTRES bancs imprimaient hors cp1252 :
+**deux en tout** sur ~90 (`test_store_sqlite`, `test_tagging`), tous deux
+corrigés. Zéro restant, vérifié par un balayage AST des appels à `print`.
+Un défaut qui se compte se ferme ; un défaut qu'on corrige au cas par cas
+revient. La règle vaut pour la suite : **un banc qui imprime doit rester
+lisible par une console cp1252** — c'est celle de l'agent git.
 
 ### Ce qui n'est PAS fait — et devrait l'être
 

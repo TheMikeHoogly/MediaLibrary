@@ -554,7 +554,7 @@ def t_performance(tmp):
     sq.close()
 
     print(f"\n  -- Mesure indicative ({N} entrees, index de "
-          f"{taille/1048576:.1f} Mo, disque LOCAL) ──")
+          f"{taille/1048576:.1f} Mo, disque LOCAL) --")
     print(f"     20 set() en JSON   : {t_json*1000:7.0f} ms "
           f"({taille*20/1048576:.0f} Mo réécrits)")
     print(f"     20 set() en SQLite : {t_sql*1000:7.0f} ms "
