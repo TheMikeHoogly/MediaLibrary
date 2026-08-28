@@ -30,6 +30,14 @@ habituel : `verifier_css_cascade --page` (feuille commune EN PREMIER dans
 `--apres`), `verifier_cibles`, `verifier_contraste`, `verifier_controles`,
 tests UI, banc des pages composants sur le serveur VIVANT, l'œil en dernier.
 
+**1 ter. LA RÉSILIENCE DES FILS DE TRAVAIL (neuf, 28/08).** Le tagueur est
+increvable sur `database is locked` (session 60), mais **aucun fil mort ne se
+relance et personne ne regarde** : `journal_serveur` pose le constat, rien ne
+le lit. Une nuit de huit heures a été perdue exactement comme ça. Un registre
+des morts alimenté par le crochet existant, visible sur `/sante`, puis la
+relance des fils de travail — la relance est une décision à trancher (état
+incohérent, double consommation d'une file).
+
 **2. Le pense-bête des raccourcis DANS l'interface** (point 6 du plancher).
 Il manque la brique : **un fichier JS commun injecté sur toutes les pages**,
 comme `tokens.css` et `base.css` (`_UI_GLOBAL_FILES`). Il n'y en a aucun. La
@@ -78,6 +86,96 @@ s'efface chez Google tant qu'il en reste une. **C'est le geste le plus urgent
 de la liste**, avant les boutons et avant le chantier 17 : ces fichiers ne
 vivent aujourd'hui qu'à un seul endroit, et c'est chez un tiers dont le quota
 est à 96 %. Deux questions dans `QUESTIONS_MIKE.md` (27/08).
+
+## État (28/08/2026, session 60) — LE TAGUEUR EST MORT D'AVOIR VOULU NOTER SA MORT
+
+**Windows a redémarré la machine à 01:29 — et ce n'est pas ce qui a coûté la
+nuit.** Le journal dit la vraie séquence, et elle est plus instructive :
+
+    23:42:50   ✗ Erreur tagging <photo>: database is locked — listé sur /sante
+    23:42:50 THREAD MORT : Thread-2 (tagger_worker) : OperationalError: database is locked
+
+`STORE.set` a échoué sur un verrou. Le gestionnaire d'erreur du tagueur a
+alors **réécrit dans la MÊME base encore verrouillée** — et cette seconde
+erreur, levée DANS le `except`, n'était rattrapée par personne. Le fil est
+mort à 23:42, la file s'est remplie, et le serveur est resté parfaitement
+vivant à ne rien faire pendant **huit heures**. Windows n'a interrompu qu'une
+machine qui ne travaillait déjà plus.
+
+**La règle qui en sort : un rattrapage ne doit jamais dépendre de la ressource
+qui vient de tomber.** Ne pas pouvoir noter un échec est regrettable ; mourir
+en essayant de le noter fait perdre tout le reste.
+
+### Les trois greffes
+
+1. **`store_sqlite._ecrire` réessaie** tant que le refus est un VERROU —
+   cinq tentatives, pauses doublantes (0,4 → 3,2 s), soit ~6 s au-dessus des
+   30 s de `busy_timeout`. `_est_verrou` sépare le transitoire du définitif :
+   un « no such table » n'est pas réessayé, il ne guérirait pas.
+2. **`_flush_rapide` ré-arme `_dirty`** quand l'écriture échoue pour de bon.
+   Sans ça le signal partait avec l'échec : plus rien ne disait qu'il restait
+   à écrire, et seule la réconciliation de fin de lot rattrapait — par
+   comparaison d'empreintes, et sans garantie de venir.
+3. **`server._marquer_echec`** remplace les trois `STORE.set` nus des `except`
+   de `tagger_worker`. Il avale un second échec au lieu de tuer son appelant.
+   Et le `ROLLBACK` de `_ecrire_une_fois` ne peut plus masquer la CAUSE —
+   la même faute en miniature.
+
+### La preuve
+
+`test_verrou_sqlite.py`, 8 contrôles. **6 rougissent sur le code d'avant**, et
+le premier rejoue l'incident : sur l'ancien code, `set()` lève
+`database is locked` exactement comme le 27/08 à 23:42. Les deux qui restent
+verts sont les gardes du mécanisme NEUF (l'obstination est bornée ; une erreur
+définitive n'est pas réessayée) — ils ne peuvent pas rougir avant qu'il
+existe, et le dire vaut mieux que de compter huit rouges.
+
+Un piège de méthode traversé au passage : la première version des tests
+rougissait parce que `VERROU_PAUSE_S` n'existait pas encore. **Un rouge causé
+par un NOM manquant ne prouve rien sur le COMPORTEMENT** — il fallait que
+l'ancien code s'exécute vraiment pour qu'on voie en quoi il était faux.
+
+Serveur redémarré 07:41, `code_a_jour: true`, zéro traceback depuis.
+
+### Le garde-fou ne pouvait pas s'exécuter
+
+L'agent git a REFUSÉ la première livraison : `test_store_sqlite.py` levait
+`UnicodeEncodeError`. Ce n'était pas la greffe — le banc imprime des noms de
+test contenant du **japonais** (`chat_küche_日本.jpg`, le SUJET de
+`t_unicode_et_chemins_windows`) et des filets `═`, et la console de l'agent
+est en **cp1252**. Le banc passait 52/52 et faisait quand même échouer la
+livraison. **Un instrument qui ne peut pas s'exécuter ne dit rien** — et
+celui-ci ne s'était jamais exécuté sous l'agent, `store_sqlite.py` n'ayant pas
+été livré depuis que le contrôle existe. Corrigé par `reconfigure(errors=
+'replace')` sur les deux flux (l'affichage se dégrade, jamais le verdict) et
+des filets ASCII. Mon propre `print` de réessai est en ASCII pur pour la même
+raison : ce module est importé par des bancs.
+
+### Ce qui n'est PAS fait — et devrait l'être
+
+**Aucun fil mort ne se relance, et personne ne regarde.** `journal_serveur`
+POSE le constat depuis toujours (son propre commentaire dit : « le cas qui
+n'apparaît nulle part ailleurs : un thread meurt, sa file se remplit, et le
+serveur a l'air parfaitement vivant ») — mais rien ne le lit. Les vingt fils
+de `main()` sont dans ce cas. Le tagueur est désormais increvable sur CE
+verrou ; il ne l'est pas sur le prochain mode de panne. **Prochain pas
+recommandé : un registre des morts alimenté par le crochet existant, visible
+sur `/sante`, et la relance des fils de travail.** La relance est une décision
+(un fil relancé sur un état incohérent peut consommer deux fois) : à trancher
+avant d'écrire.
+
+### Côté Windows — la cause est nommée, le rendez-vous est connu
+
+`Get-WinEvent` : **29.07, 12.08, 28.08, toujours 01:29–01:33**, deux ou trois
+redémarrages enchaînés, `TrustedInstaller` et `MoUsoCoreWorker`. Les heures
+d'activité étaient **07:00 → 01:00** : Windows a respecté la consigne à la
+lettre et pris le seul créneau laissé. Trois réglages posés par Mike —
+notification de redémarrage ACTIVÉE, préversions de fin de mois coupées
+(`IsContinuousInnovationOptedIn`), et la stratégie
+`NoAutoRebootWithLoggedOnUsers=1`. **Épreuve de vérité : nuit du 8 au 9
+septembre** (Patch Tuesday). Le maximum des heures d'activité étant 18 h, il
+restera toujours un trou de 6 h : sur une machine qui tague la nuit, le
+réglage Windows ne remplace pas la résilience du serveur.
 
 ## État (27/08/2026, session 59) — LA VISIONNEUSE DÉBORDAIT SUR TÉLÉPHONE
 
@@ -365,301 +463,28 @@ NOMMÉMENT dans `_google.json` et `_pix_reprise.json`.
 sur le NAS. Rien ne s'efface chez Google avant, et le rapport le dit lui-même
 (code de sortie 1, « NE RIEN EFFACER »).
 
-## État (26/08/2026, session 53) — UN FILTRE QUI MENT NE MENT PLUS
+## Ce qu'il faut garder des sessions 50 → 53 (le récit vit dans git)
 
-**`/files?q=animal:Zzzznexistepas` rendait 1 500 photos ; il en rend zéro, et
-il dit pourquoi.** La cause n'était pas dans le filtre : `_extraire_noms`
-cherche le nom NU et **ne connaît aucun préfixe**, donc le jeton n'était
-réclamé par personne et partait en recherche sémantique — qui classe tout le
-fonds et ne rend jamais vide. Une grille pleine annoncée comme un filtre.
-
-**Et le même chemin rendait `personne:Luna` inutilisable** — ce que
-l'interface dit elle-même d'écrire (« le FILTRE de la planche garde les tags
-nommés : y chercher personne:Luna a du sens », `gallery.html`). Le défaut
-n'était donc pas seulement un mensonge : c'était une capacité annoncée et
-absente.
-
-### Ce qui a été posé
-
-| | |
-|---|---|
-| primitive | `recherche.extraire_jetons` — pure, testée, commune aux 5 axes |
-| axes servis | `personne:`, `animal:`, `lieu:` (neufs), `espece:` (devenu une VUE) |
-| valeurs | multi-mots (`personne:Cédric Baudin`), guillemets, pluriels, accents |
-| refus | valeur inconnue → on nomme la valeur ; AXE inconnu → on nomme l'axe |
-| canaux | `/api/search` **et** la page `/files?q=` : même producteur, même dire |
-| banc | `verifier_filtre_negatif.py` — 15 contrôles, 5 axes, deux sens |
-| tests | +19 sur `recherche`, +28 sur le banc ; 90 et 28 verts |
-
-**Le bon axe est exigé pour le bon nom** : « Luna » est une chatte,
-`personne:Luna` ne rend pas ses photos — il dit qu'aucune PERSONNE ne porte ce
-nom. Et « Luna : la chatte » comme « 18:30 » traversent intacts : le
-deux-points COLLÉ n'est exigé que sur un axe inconnu.
-
-### Le banc a payé son écriture à sa PREMIÈRE exécution
-
-Première version livrée au banc : **8 griefs**. `extraire_especes`, devenu
-générique, annonçait « espèce inconnue : Caline » sur `animal:Caline` **et
-mangeait le jeton** — un extracteur qui juge les axes des autres. Corrigé le
-jour même (`axe_inconnu_refuse`, False par défaut ; seul le dernier extracteur
-refuse), gravé en test. Deuxième passage : **15/15 verts**, `code_a_jour=True`,
-`animal:Caline` 730 photos comme le nom nu, `lieu:Achumani` 198,
-`couleur:rouge` zéro et nommé, la page `/files?q=` vide **et** parlante.
-
-**Ce que le banc contrôle dans l'autre sens compte autant** : une valeur
-RÉELLE doit rendre au moins une photo. Sans ces contrôles-là, un moteur qui
-rendrait zéro pour tout serait vert — le mode de panne des deux bancs que ce
-projet a déjà démasqués. Et les valeurs positives sont lues dans le fonds
-(`/api/names`, `lieux.txt`), jamais en dur.
-
-**Ce qui n'a PAS été fait** : l'œil. La page a été prouvée par ce qu'elle
-SERT (`var FILES` vide, `var SEARCHMETA` portant le refus), pas par une
-capture — Mike était absent, et le banc voit ce que le navigateur afficherait.
-
-## État (26/08/2026, session 53 bis) — le Takeout a de quoi s'ouvrir
-
-**Les `.zip` sont arrivés dans `C:\GOOGLE PHOTOS`** (Mike, 26/08).
-`dezipper_takeout.py` + `31 - Dezipper le Takeout Google.bat` : inventaire
-d'abord, écriture ensuite, et **rien ne s'écrit sur un verdict rouge**.
-
-Trois pannes silencieuses guettent un dézippage de Takeout, et l'instrument
-les regarde AVANT le premier octet :
-
-- **un lot manquant** — Google numérote `-1-of-24` ; un téléchargement
-  interrompu laisse un trou, et l'arbre paraît complet. `verifier_photos_google`
-  déclarerait alors ABSENTES des photos que Google détient : un verdict faux
-  dans le sens le plus cher, celui qui interdit d'effacer 75 Go. Le total
-  ANNONCÉ prime sur le plus grand numéro vu — c'est lui qui dit qu'il manque
-  la FIN de la série ;
-- **la place** — un disque plein en cours de route laisse un fichier tronqué
-  qui porte le bon nom. La place demandée est comparée à la place libre ;
-- **les chemins longs** des albums, au-delà des 260 caractères où
-  `Expand-Archive` s'arrête. On écrit par `\\?\`.
-
-**Reprenable** : ce qui est déjà ouvert à la bonne taille est sauté — relancer
-après une coupure ne recommence pas 75 Go, et sur un dossier déjà ouvert
-l'outil ne fait rien (le « si nécessaire » demandé). Un membre dont le chemin
-sortirait de la cible est refusé, compté et nommé : un `.zip` est une donnée,
-pas une instruction. 32 tests.
-
-**Ce qui n'a pas pu être fait ici** : l'inventaire RÉEL. `C:\GOOGLE PHOTOS`
-n'est pas un dossier connecté à la session et la demande d'accès est restée
-sans réponse. Le compte des lots, la place et les trous seront dits par le
-bat au premier lancement.
-
-## État (26/08/2026, session 52) — LE DÉPLACEMENT EST FAIT, ET VÉRIFIÉ
-
-**`Photos Mike` existe. 26 dossiers, 25 559 photos, 2 271 décisions humaines
-transportées.** Journal :
-`_corbeille_deplacements/deplacement_20260826_221815.jsonl`. Copie de la base
-avant l'opération dans `_avant_deplacement/` — c'est elle qui a permis de
-PROUVER le résultat au lieu de le croire.
-
-### Le contrôle : la base d'avant contre la base d'après
-
-| | avant | après |
-|---|---|---|
-| clés dans l'index | 43 065 | **43 065** |
-| clés sous `Photos Mike` | 0 | **25 559** |
-| clés restées sur un ancien chemin | — | **0** |
-| **décisions humaines** | **3 767** | **3 767** |
-| décisions orphelines | 140 sur 119 clés | **140 sur les MÊMES 119 clés** |
-| compteurs de noms d'animaux | 18 noms | **les 18, au photo près** |
-
-**Aucune décision perdue, aucune orpheline neuve.** Les 119 orphelines
-pré-existaient : ce sont celles dont aucun journal de déplacement ne dit où le
-fichier est parti (le contrôle à blanc de `/reglages` les annonçait déjà).
-`verifier_orphelins --sans-disque` le confirme sur le serveur vivant : 119 hors
-index sur 42 195, les mêmes.
-
-Restent à la racine, et c'est voulu : `Photos Flo` 12 084, `Photos Papa`
-4 843, `_A TRIER` 559.
-
-### Ce que la vérification a corrigé chez moi
-
-Mon compte du 26/08 annonçait **983** décisions concernées. Le script en a
-trouvé **2 271**. Ce n'est pas la base qui avait bougé : **ma requête était
-fausse.** Elle exigeait que chaque décision soit une paire `[clé, index]`, or
-`exclude` et `confirmed` sont des listes de clés SIMPLES — j'ai donc sauté
-toutes les exclusions et toutes les confirmations. Sur la MÊME base du 22/08,
-`recle_decisions` en compte 2 028 et ma requête 983.
-
-**Troisième fois dans la journée qu'une requête maison se trompe là où
-l'instrument du projet a raison** (après « Caline n'existe nulle part » et le
-`total: null` lu comme un zéro). La règle n'est pas « mesurer », c'est
-**mesurer avec l'instrument que le projet s'est donné** — il a déjà payé pour
-connaître les cas limites.
-
-### Ce qui reste ouvert sur ce chantier
-
-- **Les vignettes se refont.** Leur clé de cache contient le chemin : les
-  3 047 vignettes en cache (293 Mo) sont orphelines. Elles se recalculent au
-  premier affichage. À balayer avec O15.
-- **Unifier les deux chemins de re-clé** — la primitive complète existe
-  maintenant DANS `server.rekey_everywhere` ET dans `deplacer_dossiers`. Le
-  troisième appelant reproduira le défaut.
-- **`appliquer_plan.rekey_stores` est toujours cassée** : le rangement par
-  année et le dédoublonnage la portent, et elle re-clé cinq magasins sur sept.
-- **`animal:luna` en minuscule** existe toujours sur 3 photos à côté de
-  `animal:Luna` sur 355. I7 devait fermer ça.
-
-## État (26/08/2026, session 51) — LE DÉPLACEMENT, ET LE MIROIR QUI N'EN EST PAS UN
-
-**Le script du déplacement `Photos Mike` est PRÊT, en aperçu seulement.**
-`deplacer_dossiers.py` (+ `dossiers_a_deplacer.txt`, 26 noms auditables, +
-`test_deplacer_dossiers.py`, 23 tests, **trois mutations posées, trois vues**).
-Il n'a **pas** été exécuté : c'est un geste de Mike, et l'agent des bancs le
-refuse de lui-même — « ce qui écrit reste un geste de Mike ».
-
-### Le défaut qui aurait coûté 983 décisions humaines
-
-`appliquer_plan.rekey_stores` — la primitive du chemin HORS-LIGNE, utilisée
-par le rangement par année et le dédoublonnage — **dit d'elle-même « miroir de
-server.rekey_everywhere » et ne l'est pas.** Elle re-clé **cinq magasins sur
-sept** :
-
-| magasin | serveur | hors-ligne |
-|---|---|---|
-| `tags` · `faces` · `animals` · sémantique | ✔ | ✔ |
-| **décisions humaines dans `people`/`pets`** | ✔ (`recle_decisions`, 22/08) | **✘** |
-| **`gps_places.json`** | ✔ | **✘** |
-
-`people` et `pets` sont keyés par NOM : `.rekey(chemin)` n'y trouve rien,
-renvoie faux, **et ne dit rien**. C'est exactement l'incident du 22/08 — 928
-décisions perdues sur 3 364 — dont le correctif n'a été porté que d'un côté.
-
-**Mesuré sur la copie de la base : 983 décisions humaines** (739 personnes,
-244 animaux) pointent vers les 25 559 photos à déplacer. Le tag aurait
-survécu (règle 2 : il vit dans les `kw` et le XMP) ; c'est la vérité terrain
-qui serait partie.
-
-`deplacer_dossiers.py` transporte les sept, et un test **grave le défaut du
-voisin** pour que personne ne « simplifie » le script en réutilisant
-`rekey_stores`.
-
-### Volumétrie du déplacement
-
-| | |
-|---|---|
-| dossiers à déplacer | **26** |
-| photos concernées | **25 559** |
-| décisions humaines transportées | **983** |
-| restent en place | `Photos Flo` 12 084 · `Photos Papa` 4 843 · `_A TRIER` 559 |
-| total sous la racine | 43 045 (+20 hors racine) |
-
-**Un dossier se déplace en UN `rename`** — le NAS ne recopie pas un octet, les
-25 559 changements sont dans l'index. Ordre garanti par dossier : la source
-existe et la destination n'existe PAS · `rename` · re-clé des sept magasins ·
-journal. `--undo` rejoue à l'envers.
-
-**Le serveur doit être arrêté, et le script le PROUVE** (`BEGIN IMMEDIATE` sur
-`photos.db`) au lieu de le demander : invariant 4, un seul écrivain.
-
-### Reste à faire sur ce chantier
-
-- **Unifier les deux chemins de re-clé.** Aujourd'hui la primitive complète
-  existe deux fois : `server.rekey_everywhere` et `deplacer_dossiers`. Le
-  troisième appelant reproduira le défaut. `recle_decisions` est déjà un
-  module partagé ; il manque son équivalent pour `gps_places`.
-- **Réparer `appliquer_plan.rekey_stores`** — le rangement par année et le
-  dédoublonnage la portent encore.
-- **HTTPS : FAIT par Mike** (26/08). `tailscale serve --bg --https=443
-  localhost:8080` → `https://msi-mike.goat-draco.ts.net/`.
-
-## État (26/08/2026, session 50) — CALINE, ET LE FILTRE QUI N'EN ÉTAIT PAS UN
-
-**Mike : « Caline a disparu ?!? Nous avons des centaines de photos de notre
-chatte. »** Il a raison, et mon verdict de la veille était FAUX.
-
-### Ce que dit la base (`copie.db`, lecture seule)
-
-| | |
-|---|---|
-| photos dans `\\NAS-Bremblens\home\Photos\Caline\` | **215** (2014 → 2021) |
-| détections d'animaux sur ces photos | **172** |
-| dont **non nommées** | **169** (3 écartées, **0 attribuée**) |
-| photos portant un tag `animal:Caline` | **0** |
-| fiches dans `PETS` | 12 — Inti 530, Luna 207, Mutz 163, … **pas de Caline** |
-| groupes d'animaux NON NOMMÉS | **189** |
-
-**Rien n'est perdu. Caline n'a jamais été SAISIE.** Le pipeline la voit — 169
-détections l'attendent —, elle vit dans les groupes `cat:2` (130 apparitions,
-9 photos du dossier Caline dans le seul échantillon de 18) et `cat:3` (54
-apparitions, 11 sur 18). Un nom à poser, deux fois.
-
-Les 9 mots-clés contenant « caline » sont le mot **câline** produit par le
-tagueur sur des photos du dossier `Calinous` — un homonyme, pas la chatte.
-
-### La cause de MON erreur : un filtre qui n'en est pas un
-
-`/files?q=animal:Caline` affiche **« 1500 photo(s) — animal:Caline »**. Le
-contrôle le prouve : `q=animal:Zzzznexistepas` affiche **« 1500 photo(s) —
-animal:Zzzznexistepas »**, et `q=animal:Luna` aussi — alors que Luna en a 207.
-
-`_extraire_noms` cherche le nom NU (« Luna ») dans la requête ; elle ne
-connaît **aucun préfixe** `personne:` / `animal:`. Le jeton entier tombe donc
-dans `reste`, aucun candidat n'est retenu, et la requête part en **recherche
-sémantique** sur tout le fonds, qui rend ses 1500 meilleures. La page l'annonce
-comme un résultat de filtre.
-
-**C'est exactement le défaut corrigé le 21/08 pour `espece:licorne`** — « un
-filtre qu'on ne sait pas satisfaire ne rend RIEN, et la page le dit ; le
-laisser passer rendrait tout le fonds, ce que l'utilisateur lirait comme un
-accord ». La leçon a été appliquée à UN axe et pas aux quatre autres.
-
-**Et le pire est ailleurs : l'interface ÉCRIT ce vocabulaire.** Les pastilles
-de filtre affichent `personne:Florine`. Un utilisateur qui recopie l'étiquette
-que le site lui montre dans la barre de recherche du même site obtient une
-recherche sémantique muette sur 43 000 photos. **Deux autorités, un seul
-vocabulaire, aucune ne connaît l'autre.**
-
-### Mike a nommé les groupes, et la médiathèque s'est réorganisée seule
-
-Une heure après, **mesuré sur le serveur vivant** :
-
-| | avant | après |
-|---|---|---|
-| photos de **Caline** | 0 | **730** — la plus photographiée du fonds |
-| Inti | 530 | 619 |
-| Luna | 207 | 353 |
-| **groupes d'animaux non nommés** | **189** | **99** |
-| apparitions non nommées restantes | ~1 500 | **442** |
-| plus gros groupe non nommé | 439 | **31** |
-
-**C'est la thèse du point 16 enfin CHIFFRÉE** — « la médiathèque s'améliore à
-chaque information humaine ». Deux noms posés à la main ont déclenché
-`curator_loop` (240 s) et `AUTO_ADD` (`sim ≥ 0,40`, marge `≥ 0,10`,
-`CAT_AUTO_LOG` côté animaux, symétrique de celui des personnes) : non
-seulement Caline s'est peuplée, mais **Inti et Luna ont gagné 235 photos à
-elles deux** — la signature neuve a désambiguïsé des détections que rien ne
-départageait. Le mécanisme n'était pas à écrire ; il attendait une seule
-décision humaine.
-
-**Ce que ça dit du reste** : il reste 442 apparitions dans 99 groupes, le plus
-gros à 31. La file « à nommer » des animaux est passée d'un chantier à une
-finition.
-
-### Ce que j'ai fait de faux, et la règle que j'ai enfreinte
-
-J'ai conclu « Caline n'existe nulle part » à partir de `/api/names` (qui ne lit
-que les FICHES) et d'un `/api/search?q=Caline` dont j'ai lu `total: null`
-comme un zéro. **Aucun des deux ne répondait à la question posée**, et j'ai
-rendu un verdict quand même. C'est la règle que ce projet répète à chaque
-session — *un banc qui ne SAIT pas ne rend pas vert* — appliquée aux
-instruments et pas à moi. Le contrôle qui manquait tenait en une requête :
-**un nom inventé doit rendre zéro.**
-
-### À faire, dans cet ordre
-
-1. **Le garde-fou** : un jeton `<axe>:<valeur>` que le filtre ne sait pas
-   satisfaire ne rend RIEN et le DIT — comme `espece:` déjà. Vaut pour
-   `personne:`, `animal:`, `lieu:` et tout axe à venir.
-2. **Le vocabulaire partagé** : la barre de recherche doit comprendre ce que
-   les pastilles écrivent. Sinon retirer le préfixe des étiquettes.
-3. **Un banc de contrôle NÉGATIF** dans la famille `verifier_` : pour chaque
-   axe, une valeur inventée doit rendre 0. C'est le test qui manquait.
-4. Mineur, et c'est I7 qui devait le fermer : **`animal:luna` en minuscule
-   existe sur 3 photos** à côté de `animal:Luna` sur 207.
+- **Un filtre qui ment ne ment plus (53).** Un jeton `<axe>:<valeur>`
+  insatisfaisable rend RIEN et le DIT, sur les cinq axes ; la barre comprend ce
+  que les pastilles écrivent. Contrôle NÉGATIF outillé :
+  `verifier_filtre_negatif.py`, 15 contrôles, deux canaux. **Le banc a payé son
+  écriture à sa première exécution.**
+- **Le Takeout a de quoi s'ouvrir (53 bis).** `dezipper_takeout.py` +
+  `31 - Dezipper le Takeout Google.bat`.
+- **Le déplacement `Photos Mike` est FAIT et VÉRIFIÉ (51–52).** Contrôle par
+  comparaison de la base d'AVANT et d'APRÈS, pas par relecture du code. Le
+  défaut trouvé au passage aurait coûté **983 décisions humaines** :
+  `deplacer_dossiers` re-cléait des magasins keyés par NOM, où
+  `store.rekey(chemin)` ne trouve jamais rien. Même faute retrouvée dans
+  `appliquer_plan` cinq jours plus tard (session 57) — d'où le point 4 :
+  **UNIFIER le re-clé**, la primitive existe TROIS fois.
+- **Caline, et le filtre qui n'en était pas un (50).** Deux noms posés par Mike
+  ont fait tomber les groupes d'animaux de **189 à 99** et les apparitions non
+  nommées à **442** : ce n'est plus un chantier, c'est une finition au fil de
+  l'eau. Et ma propre erreur ce jour-là : une requête maison contre
+  l'instrument du projet — **mesurer avec l'instrument du PROJET**, trois fois
+  vérifié le 26/08.
 
 ## Ce qu'il faut garder des sessions 47 → 49 (le récit vit dans git)
 

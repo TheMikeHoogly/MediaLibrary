@@ -2056,6 +2056,30 @@ def parse_tags(raw):
     return kw_fr, kw_en, desc
 
 
+def _marquer_echec(name, raison):
+    """Note l'échec d'un fichier dans l'index — sans JAMAIS tuer son appelant.
+
+    Le 27/08 à 23:42:50, c'est cette écriture-ci qui a porté le coup fatal.
+    `STORE.set` venait d'échouer sur « database is locked » ; le gestionnaire
+    d'erreur du tagueur a alors réécrit dans la MÊME base, encore verrouillée,
+    et cette seconde erreur — hors de tout `except` — a tué le thread. La file
+    s'est remplie, le serveur avait l'air parfaitement vivant, et huit heures
+    de tagging sont parties.
+
+    La règle qui en sort : **un rattrapage ne doit jamais dépendre de la
+    ressource qui vient de tomber.** Ne pas pouvoir noter l'échec est
+    regrettable ; mourir en essayant de le noter fait perdre tout le reste.
+    Renvoie True si la note est passée, False si l'index était indisponible."""
+    try:
+        STORE.set(name, {"failed": True, "error": str(raison)[:200],
+                         "at": time.time()})
+        return True
+    except Exception as e:
+        print(f"  ⚠ {name}: échec impossible à noter ({e}) — index "
+              f"indisponible, la photo sera revue au prochain scan")
+        return False
+
+
 def tagger_worker():
     fails = {}
     downs = {}
@@ -2137,8 +2161,7 @@ def tagger_worker():
             if n >= 5:
                 # 5 timeouts sur le MÊME fichier : c'est lui le problème
                 print(f"  ✗ {name}: 5 timeouts Ollama — abandonné, listé sur /sante")
-                STORE.set(name, {"failed": True, "error": f"timeout Ollama x{n}",
-                                 "at": time.time()})
+                _marquer_echec(name, f"timeout Ollama x{n}")
                 pending_done(name)
             else:
                 print(f"  ⚠ Ollama injoignable ({e}) — nouvel essai dans 30 s "
@@ -2153,13 +2176,11 @@ def tagger_worker():
                 TAG_QUEUE.put(name)
             else:
                 print(f"  ✗ Abandon du tagging de {name}: {e} — listé sur /sante")
-                STORE.set(name, {"failed": True, "error": str(e)[:200],
-                                 "at": time.time()})
+                _marquer_echec(name, e)
                 pending_done(name)
         except Exception as e:
             print(f"  ✗ Erreur tagging {name}: {e} — listé sur /sante")
-            STORE.set(name, {"failed": True, "error": str(e)[:200],
-                             "at": time.time()})
+            _marquer_echec(name, e)
             pending_done(name)
         finally:
             TAG_QUEUE.task_done()

@@ -553,7 +553,7 @@ def t_performance(tmp):
     t_sql = time.perf_counter() - t0
     sq.close()
 
-    print(f"\n  ── Mesure indicative ({N} entrées, index de "
+    print(f"\n  -- Mesure indicative ({N} entrees, index de "
           f"{taille/1048576:.1f} Mo, disque LOCAL) ──")
     print(f"     20 set() en JSON   : {t_json*1000:7.0f} ms "
           f"({taille*20/1048576:.0f} Mo réécrits)")
@@ -569,6 +569,18 @@ def t_performance(tmp):
 
 # ══════════════════════════════════════════════════════════════════════════
 def main():
+    # La console de l'agent git est en cp1252, et ce banc imprime des noms de
+    # test qui contiennent du japonais -- c'est le SUJET de
+    # `t_unicode_et_chemins_windows`, pas un accident. Sans cette ligne,
+    # UnicodeEncodeError fait ROUGIR un banc qui passe 52/52, et la livraison
+    # est refusee pour une raison qui n'existe pas. Un instrument qui ne peut
+    # pas s'executer ne dit rien. `replace` degrade l'AFFICHAGE, jamais le
+    # verdict : le code de sortie reste celui des tests.
+    for flux in (sys.stdout, sys.stderr):
+        try:
+            flux.reconfigure(errors='replace')
+        except (AttributeError, ValueError):        # flux capture, Python < 3.7
+            pass
     tmp = Path(tempfile.mkdtemp(prefix="test_store_"))
     tests = [t_api_identique, t_equivalence_avec_json, t_mutation_imbriquee,
              t_ecriture_incrementale, t_remplacement_global, t_pop_direct,
@@ -590,19 +602,20 @@ def main():
     finally:
         pass
 
-    print("\n" + "═" * 74)
+    print("\n" + "=" * 74)
     print("  RÉSULTATS")
-    print("═" * 74)
+    print("=" * 74)
     for nom, ok, detail in RESULTATS:
-        print(f"  {'✓' if ok else '✗'} {nom}" + (f"  → {detail}" if not ok else ""))
-    print("═" * 74)
+        print(f"  {'OK ' if ok else 'ECHEC'} {nom}"
+              + (f"  -> {detail}" if not ok else ""))
+    print("=" * 74)
     n_ok = sum(1 for _, ok, _ in RESULTATS if ok)
     print(f"  {n_ok}/{len(RESULTATS)} vérifications passées")
     if ECHECS:
-        print(f"  ✗ {len(ECHECS)} échec(s)")
+        print(f"  ECHEC : {len(ECHECS)} test(s)")
     else:
-        print("  ✓ aucun échec")
-    print("═" * 74)
+        print("  OK : aucun echec")
+    print("=" * 74)
 
     shutil.rmtree(tmp, ignore_errors=True)
     return 1 if ECHECS else 0

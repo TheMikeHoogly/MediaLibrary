@@ -57,6 +57,27 @@ except ImportError:                     # module absent → stockage tout-JSON
 
 SCHEMA_VERSION = 2
 
+# ── Verrou SQLite : ce qui s'attend, et ce qui se signale ────────────────────
+# Cinq tentatives, pauses doublantes 0,4 · 0,8 · 1,6 · 3,2 s — six secondes en
+# plus des trente de `busy_timeout`, soit trente-six secondes d'obstination
+# avant d'admettre l'échec. Assez pour traverser une sauvegarde ou un gros lot
+# d'un autre magasin ; trop court pour masquer une base réellement bloquée.
+VERROU_ESSAIS = 5
+VERROU_PAUSE_S = 0.4
+
+
+def _est_verrou(exc):
+    """Vrai pour les refus TRANSITOIRES de SQLite, faux pour tout le reste.
+
+    La distinction porte tout le mécanisme : réessayer cinq fois un
+    « no such table » ne le guérirait pas, ça ne ferait que retarder le
+    diagnostic de six secondes. On ne réessaie que ce qui a une chance de
+    céder tout seul."""
+    if not isinstance(exc, sqlite3.OperationalError):
+        return False
+    motif = str(exc).lower()
+    return 'locked' in motif or 'busy' in motif
+
 
 def _empreinte(entry):
     """Empreinte stable du contenu d'une entrée (détection de changement)."""
@@ -302,7 +323,34 @@ class SqliteStore:
         self._supprimes.clear()
 
     def _ecrire(self, clés, supprimées):
-        """Écrit les lignes indiquées en une seule transaction."""
+        """Écrit les lignes, en RÉESSAYANT tant que le refus est un verrou.
+
+        `busy_timeout=30000` ne suffit pas : il fait patienter une connexion
+        qui ATTEND le verrou, mais SQLite refuse TOUT DE SUITE quand patienter
+        serait un interblocage — et la base a plusieurs écrivains légitimes
+        (les magasins, la sauvegarde). Le 27/08 à 23:42:50, ce refus est
+        remonté jusqu'au tagueur et l'a tué : la nuit entière de tagging est
+        partie avec lui. Un verrou de trois secondes n'est pas une panne,
+        c'est de l'attente ; la panne, c'est de la propager à un fil qui n'a
+        rien prévu pour ça."""
+        for essai in range(VERROU_ESSAIS):
+            try:
+                return self._ecrire_une_fois(clés, supprimées)
+            except Exception as e:
+                if essai + 1 >= VERROU_ESSAIS or not _est_verrou(e):
+                    raise
+                pause = VERROU_PAUSE_S * (2 ** essai)
+                # ASCII PUR, et ce n'est pas un detail : ce module est
+                # importe par des BANCS, et la console de l'agent git est en
+                # cp1252. Un caractere hors table y leve UnicodeEncodeError et
+                # fait ROUGIR un test qui n'avait rien a se reprocher.
+                print("  base verrouillee (%s) -- nouvel essai dans %.1f s "
+                      "(%d/%d)" % (self.table, pause, essai + 1,
+                                   VERROU_ESSAIS - 1))
+                time.sleep(pause)
+
+    def _ecrire_une_fois(self, clés, supprimées):
+        """Une tentative, en une seule transaction."""
         cx = self.cx
         cx.execute("BEGIN IMMEDIATE")
         try:
@@ -335,7 +383,15 @@ class SqliteStore:
                     'ON CONFLICT(k) DO UPDATE SET v=excluded.v', lignes)
             cx.execute("COMMIT")
         except Exception:
-            cx.execute("ROLLBACK")
+            try:
+                cx.execute("ROLLBACK")
+            except sqlite3.Error:
+                # Un ROLLBACK peut échouer là où la transaction n'a jamais
+                # commencé. Le laisser remonter remplacerait l'erreur d'ORIGINE
+                # par celle du rattrapage — et `_ecrire` ne saurait plus qu'il
+                # s'agissait d'un verrou. C'est exactement la faute qui a tué
+                # le tagueur : un rattrapage qui écrase ce qu'il devait sauver.
+                pass
             raise
         for k in supprimées:
             self._hash.pop(k, None)
@@ -351,7 +407,17 @@ class SqliteStore:
         self._dirty.clear()
         self._supprimes.clear()
         if clés or supprimées:
-            self._ecrire(clés, supprimées)
+            try:
+                self._ecrire(clés, supprimées)
+            except Exception:
+                # L'écriture a échoué : le SIGNAL doit lui survivre. Sans ce
+                # ré-armement, `_dirty` est vide et plus rien ne dit qu'il
+                # reste à écrire ; seule la réconciliation de fin de lot
+                # rattraperait, par comparaison d'empreintes — et rien ne
+                # garantit qu'elle vienne.
+                self._dirty |= clés
+                self._supprimes |= supprimées
+                raise
         return len(clés) + len(supprimées)
 
     def _reconcilier(self):
