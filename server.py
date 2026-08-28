@@ -6531,6 +6531,19 @@ FACE_PROVIDER = ""         # 'GPU' / 'CPU' effectivement utilisé
 _HW_CACHE = {"at": 0.0, "data": None}
 
 
+def _nombre(brut, entier=True):
+    """Nombre lu d'une sortie nvidia-smi, ou None si le champ est [N/A].
+
+    Une sonde ne doit JAMAIS lever : `hw_state` porte l'arbitre GPU et
+    `system_busy`. Un champ absent sur une autre carte rendrait le serveur
+    aveugle a sa propre VRAM."""
+    try:
+        v = float(str(brut).strip())
+    except (TypeError, ValueError):
+        return None
+    return int(v) if entier else round(v, 1)
+
+
 def hw_state(force=False):
     """Sonde le matériel : CPU, RAM (via psutil si présent), GPU/VRAM (via
     nvidia-smi). Résultat mis en cache ~8 s (`force=True` court-circuite le
@@ -6552,8 +6565,18 @@ def hw_state(force=False):
     except Exception:
         pass
     try:
+        # Les champs sont ceux que `mesure_thermique.py` a PROUVES lisibles sur
+        # cette carte (28/08). Un seul champ refuse fait echouer TOUTE la
+        # requete groupee, sans dire lequel : `power.limit` et
+        # `temperature.memory` rendent [N/A] ici, ils sont donc absents. Ne
+        # jamais en ajouter un sans l'avoir mesure d'abord.
         r = subprocess.run(
-            ["nvidia-smi", "--query-gpu=name,memory.total,memory.used,memory.free,utilization.gpu",
+            ["nvidia-smi",
+             "--query-gpu=name,memory.total,memory.used,memory.free,"
+             "utilization.gpu,temperature.gpu,clocks.sm,clocks.max.sm,"
+             "power.draw,clocks_throttle_reasons.active,"
+             "clocks_throttle_reasons.hw_thermal_slowdown,"
+             "clocks_throttle_reasons.sw_thermal_slowdown",
              "--format=csv,noheader,nounits"],
             capture_output=True, text=True, timeout=5)
         line = (r.stdout or "").strip().splitlines()
@@ -6563,6 +6586,25 @@ def hw_state(force=False):
                 d["gpu"] = {"name": p[0], "vram_total_mb": int(float(p[1])),
                             "vram_used_mb": int(float(p[2])), "vram_free_mb": int(float(p[3])),
                             "util": int(float(p[4]))}
+            if len(p) >= 10:
+                # `_nombre` et non `int(...)` : un champ peut rendre [N/A] sur
+                # une autre machine, et une sonde qui LEVE prive le serveur de
+                # tout `hw_state` — donc de son arbitre GPU.
+                d["gpu"].update({
+                    "temp_c": _nombre(p[5]),
+                    "clocks_mhz": _nombre(p[6]),
+                    "clocks_max_mhz": _nombre(p[7]),
+                    "watts": _nombre(p[8], entier=False),
+                    "bridage": p[9] or None})
+            if len(p) >= 12:
+                # Les DEUX drapeaux booleens plutot que le masque de `bridage` :
+                # nvidia-smi les rend en toutes lettres ("Active" / "Not
+                # Active"), la ou le masque demanderait de connaitre par coeur
+                # les constantes NVML. On garde le masque pour la trace, on
+                # JUGE sur ce qui se lit.
+                d["gpu"]["bride_thermique"] = (
+                    p[10].strip().lower() == 'active'
+                    or p[11].strip().lower() == 'active')
     except Exception:
         pass
     _HW_CACHE["data"] = d
@@ -12693,6 +12735,54 @@ def pilotage_loop():
         os._exit(pilotage.CODE_REDEMARRAGE)
 
 
+# ─────────────────────── La temperature, au JOURNAL ─────────────────────
+# Le 28/08 a 23:10:15 la machine s'est coupee net sous charge : Kernel-Power 41,
+# aucun minidump, rien dans le journal. Le seul indice etait INDIRECT, et je l'ai
+# d'abord mal lu : la session qui est morte taguait a 27,2 s de moyenne contre
+# 9,7 a 22,8 s pour toutes les autres du jour, et 14,0 s apres le redemarrage a
+# froid sur le meme travail. Deduire un bridage d'un chronometre, c'est tenir
+# une opinion. La carte, elle, sait dire sa temperature ET NOMMER la cause de
+# son ralentissement : il suffisait de le lui demander.
+#
+# Le journal porte deja les durees de tagging. Y joindre la temperature les
+# corrole PAR CONSTRUCTION -- plus aucun fichier a croiser a la main.
+THERMIQUE_PERIODE_S = 60.0    # un releve par minute
+THERMIQUE_TRACE_S = 600.0     # une ligne toutes les 10 min en regime normal
+THERMIQUE_CHAUD_C = 85        # au-dela : on trace CHAQUE releve
+
+
+def thermique_loop():
+    """Releve la temperature du GPU et l'ecrit au journal.
+
+    Discret quand tout va bien (une ligne toutes les 10 min), bavard des que ca
+    chauffe ou que la carte AVOUE brider. Un journal qui deverse ne se lit pas ;
+    un journal muet ne sert a rien le jour ou la machine tombe."""
+    dernier = 0.0
+    etait_bride = False
+    while True:
+        time.sleep(THERMIQUE_PERIODE_S)
+        g = (hw_state() or {}).get('gpu') or {}
+        t = g.get('temp_c')
+        if t is None:
+            continue                  # pas de sonde : rien a dire, jamais
+        bride = bool(g.get('bride_thermique'))
+        chaud = t >= THERMIQUE_CHAUD_C
+        maintenant = time.time()
+        # On ecrit sur un EVENEMENT (ca chauffe, ou le bridage vient de
+        # basculer) ou sur le rythme lent. Le basculement compte autant que
+        # l'etat : c'est l'instant qu'on cherchera dans le journal.
+        if not (chaud or bride or bride != etait_bride
+                or maintenant - dernier >= THERMIQUE_TRACE_S):
+            continue
+        dernier = maintenant
+        etait_bride = bride
+        marque = "  🌡" if not (chaud or bride) else "  🔥 CHAUD"
+        print("%s GPU %s°C — %s%% — %s/%s MHz — %s W%s"
+              % (marque, t, g.get('util'), g.get('clocks_mhz'),
+                 g.get('clocks_max_mhz'), g.get('watts'),
+                 " — BRIDAGE THERMIQUE" if bride else ""), flush=True)
+
+
 # ─────────────────── Surveillance des fils de travail ───────────────────
 # Le 27/08 à 23:42:50, `tagger_worker` est mort sur un verrou SQLite. Sa file
 # s'est remplie, le serveur est resté d'apparence parfaitement vivante, et la
@@ -12871,6 +12961,7 @@ if __name__ == '__main__':
     fil_surveille(reembed_loop)
     fil_surveille(semantic_loop)
     fil_surveille(maintenance_orchestrator)
+    fil_surveille(thermique_loop)
 
     with QuietServer(('', PORT), Handler) as httpd:
         httpd.allow_reuse_address = True

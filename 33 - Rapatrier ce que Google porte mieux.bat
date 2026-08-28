@@ -29,7 +29,7 @@ echo.
 echo   Rien n'est ecrase : la version du NAS reste ou elle est. Tu
 echo   auras donc les deux, et c'est voulu -- c'est toi qui tranches.
 echo.
-echo   Seuil : 100000 octets. En dessous, un ecart ne prouve rien.
+echo   Le seuil se choisit au lancement.
 echo.
 echo   Journal d'annulation dans _corbeille_copies.
 echo.
@@ -40,14 +40,31 @@ echo.
 set "PY=python"
 if exist ".venv\Scripts\python.exe" set "PY=.venv\Scripts\python.exe"
 
-set "RAPPORT=_rapport_google_apres.json"
+set "RAPPORT=_rapport_google_apres2.json"
 if not exist "%RAPPORT%" goto :sansrapport
+
+echo   Quel seuil ?
+echo     [1] 100 Ko - seulement les gros ecarts (videos tronquees,
+echo         photos reduites). C'est ce qui a servi la 1re fois.
+echo     [2] tout ecart - ferme completement la question : plus AUCUN
+echo         fichier ou Google porte plus que le NAS.
+echo.
+choice /c 12 /n /m "Seuil : [1] 100 Ko / [2] tout ecart : "
+if errorlevel 2 goto :seuiltout
+set "SEUIL=100000"
+goto :seuilpret
+:seuiltout
+set "SEUIL=1"
+:seuilpret
+echo.
+echo   Seuil retenu : %SEUIL% octets.
+echo.
 pause
 
 echo.
 echo   Etape 1 sur 2 : A BLANC
 echo --------------------------------------------------------------
-"%PY%" copier_absentes.py --rapport "%RAPPORT%" --verdict PROBABLE --nas-plus-petit-de 100000 --etiquette "Google porte mieux" --json _copie_google_mieux.json
+"%PY%" copier_absentes.py --rapport "%RAPPORT%" --verdict PROBABLE --nas-plus-petit-de %SEUIL% --etiquette "Google porte mieux" --json _copie_google_mieux.json
 if errorlevel 1 goto :rouge
 
 echo.
@@ -57,7 +74,7 @@ echo.
 choice /c ON /n /m "Copier maintenant ? [O]ui / [N]on : "
 if errorlevel 2 goto :annule
 
-"%PY%" copier_absentes.py --rapport "%RAPPORT%" --verdict PROBABLE --nas-plus-petit-de 100000 --etiquette "Google porte mieux" --copier --json _copie_google_mieux.json
+"%PY%" copier_absentes.py --rapport "%RAPPORT%" --verdict PROBABLE --nas-plus-petit-de %SEUIL% --etiquette "Google porte mieux" --copier --json _copie_google_mieux.json
 if errorlevel 1 goto :echec
 goto :fin
 

@@ -113,6 +113,70 @@ de la liste**, avant les boutons et avant le chantier 17 : ces fichiers ne
 vivent aujourd'hui qu'à un seul endroit, et c'est chez un tiers dont le quota
 est à 96 %. Deux questions dans `QUESTIONS_MIKE.md` (27/08).
 
+## État (29/08/2026, session 63) — LE SERVEUR PREND SA PROPRE TEMPÉRATURE
+
+**La machine s'est coupée net à 23:10:15 sous charge** — `Kernel-Power 41`,
+aucun minidump, rien au journal. Aucune mise à jour n'y est pour rien (pas de
+1074), et le BIOS date de **juillet 2023** : il n'a jamais été flashé, contre
+l'hypothèse de départ.
+
+**Le seul indice était indirect, et je l'ai d'abord MAL LU.** J'ai comparé les
+durées de tagging *à l'intérieur* de la session — plates — et conclu « pas de
+signature thermique ». Le signal était *entre* les sessions :
+
+| session | photos | moyenne | médiane |
+|---|---|---|---|
+| 07:08 · 07:48 · 08:44 | 173 | 14,6 → 18,8 s | 13–18 s |
+| 20:21 · 20:47 | 80 | 22,8 · **9,7 s** | 22 · 9 s |
+| **22:36 — celle qui est morte** | 47 | **27,2 s** | **28 s** |
+| 23:16 — après redémarrage à froid | 69 | **14,0 s** | 12 s |
+
+Deux à trois fois plus lente, puis plus rien, et la vitesse revenue après un
+démarrage à froid **sur le même travail**. **Mauvaise échelle de mesure,
+mauvaise conclusion** — la leçon du jour.
+
+### Le thermomètre est désormais DANS le journal
+
+Sur une idée de Mike, et c'est mieux qu'un CSV externe : le journal porte déjà
+les durées de tagging, **y joindre la température les corrèle par
+construction**.
+
+- **`mesure_thermique.py`** (neuf) interroge `nvidia-smi` **champ par champ**
+  et rend l'inventaire de ce que la carte accepte. Il a payé immédiatement :
+  **`power.limit` et `temperature.memory` rendent `[N/A]`** sur cette
+  RTX 3050, et un seul champ refusé fait échouer TOUTE la requête groupée —
+  sans dire lequel. Les avoir mis à l'aveugle aurait **aveuglé `hw_state` sur
+  sa propre VRAM**, donc cassé l'arbitre GPU.
+- **`hw_state`** gagne `temp_c`, `clocks_mhz`, `clocks_max_mhz`, `watts`,
+  `bridage` et `bride_thermique` — via un lecteur tolérant `_nombre` qui rend
+  `None` au lieu de lever : **une sonde ne doit jamais priver le serveur de
+  `hw_state`**. Le jugement se fait sur les **deux drapeaux booléens**
+  (`hw/sw_thermal_slowdown`, rendus en toutes lettres) et non sur le masque
+  NVML, dont il faudrait connaître les constantes par cœur.
+- **`thermique_loop`** écrit au journal : une ligne de référence au démarrage,
+  puis une toutes les 10 min ; **chaque relevé** au-delà de 85 °C ou dès que la
+  carte avoue brider ; et le **basculement** du bridage dans les deux sens —
+  c'est l'instant qu'on cherchera après coup. Lancée sous `fil_surveille`.
+
+**État mesuré ce soir** : 60–73 °C, horloges 1 620–1 747 / 2 100 MHz, 38 W en
+charge, les trois drapeaux de ralentissement à « Not Active ». **La machine va
+bien en ce moment** — d'où l'intérêt d'enregistrer dans la durée plutôt que
+d'échantillonner une minute.
+
+`test_thermique.py`, 9 contrôles, **9 rouges sur le code d'avant**. Deux ont
+rougi sur MOI d'abord : l'un lisait `power.limit` dans le commentaire qui
+explique son exclusion (**un commentaire est de la PROSE** — le test lit
+maintenant la chaîne de la requête), l'autre attendait une ligne là où le code
+en écrit deux, la première étant la référence de démarrage — le code avait
+raison.
+
+### Ce que le CPU ne dira pas
+
+`psutil.sensors_temperatures()` ne rend rien sous Windows et
+`MSAcpi_ThermalZoneTemperature` n'est presque jamais implémentée sur un
+portable. **La température CPU demande un logiciel tiers** (HWiNFO64). Le GPU
+suffit ici : c'est lui qui sature.
+
 ## État (28/08/2026, session 62) — LE SECOND CAS GOOGLE EST OUTILLÉ, ET LE DOSSIER EST RANGÉ
 
 **`copier_absentes.py` sait désormais rapatrier le SECOND cas.** Jusqu'ici il
@@ -465,60 +529,16 @@ Au passage, mon premier jeu d'essai écrivait l'`avatar` en chaîne alors que
 c'est une PAIRE `[chemin, index]` : **c'était le test qui était faux, pas
 l'instrument.**
 
-## État (27/08/2026, session 56) — LE RAPATRIEMENT EST LANCÉ, ET LE SOUPÇON A SON BANC
+## Ce qu'il faut garder des sessions 54 → 56 (le récit vit dans git)
 
-**Mike a lancé `32 - Copier les absentes de Google.bat`.** Le contrôle à blanc
-est passé au vert avant le premier octet : cible
-`\\NAS-Bremblens\home\Photos\_A TRIER\Takeout Google`, **3 776 fichiers,
-12,61 Go**, place suffisante, aucun homonyme, aucune collision — une année
-pour chacune, aucune en `_SANS_DATE`.
-
-**Et le soupçon qui compte a maintenant un instrument.**
-`verifier_trailer_samsung.py` (neuf, famille `verifier_`, lecture seule) lit
-dans CHAQUE fichier deux faits, sans base ni serveur :
-
-  A. porte-t-il un trailer Samsung SEF après le `EOI` (marque `SEFT`) ?
-  B. porte-t-il un nom écrit par nous (`personne:` / `animal:`) ?
-
-Croisés sur les seules photos dont l'EXIF dit SAMSUNG, ils font un tableau à
-quatre cases, avec un intervalle de Wilson par ligne. Si les nommées n'ont
-jamais de SEF là où les autres en ont, la corrélation est établie.
-
-**L'AVANT est photographié — et il n'est pas reproductible.** Le rapatriement
-a déposé sur le NAS **1 736 JPEG dont 746 portent encore leur trailer SEF et
-1 715 ne portent aucun nom** : un état que le fonds n'offrait plus nulle part.
-`--photographier` l'a gravé dans **`_rapport_sef_avant.json`** (428 Ko,
-non versionné, **à ne pas supprimer**). Le jour où la photothèque en nommera
-une, `--comparer` rendra l'avant/après du MÊME fichier — la CAUSE, pas la
-corrélation. Une fois ces photos nommées, cet « avant » ne se refabrique plus.
-
-Le rapprochement se fait par NOM DE FICHIER, pas par chemin : `26 - Ranger par
-annee.bat` les aura déplacées entre les deux relevés, et un instrument qui les
-chercherait à leur ancien chemin conclurait « disparues ».
-
-**Trois précautions, et elles font l'instrument** :
-
-- **Ce qui vient d'être importé doit être EXCLU.** Les 3 776 photos rapatriées
-  sont des copies de Google : SEF intact, pas encore nommées. Les compter
-  gonflerait la case « non nommée, avec SEF » et **fabriquerait la corrélation
-  qu'on cherche**. `--exclure=Takeout`, et le rapport dit ce qu'il a exclu.
-- **Un trailer non vide n'est pas un SEF** : on demande la MARQUE, pas la
-  taille. Une vignette oubliée n'est pas un bloc Samsung.
-- **Une corrélation n'est pas une cause, et le rapport l'écrit même quand il
-  est vert.** La preuve est l'avant/après ci-dessus — et elle n'a plus besoin
-  d'un geste exprès de Mike : le serveur va nommer ces photos tout seul.
-
-**Et deux rouges observés au banc, gravés en test** : le jeton `b64:` **ne se
-décode que sur un argument SÉPARÉ** (`--racine b64:XXX`, jamais
-`--racine=b64:XXX` — `dejeton` regarde le DÉBUT de l'argument), et une
-photographie de **zéro fichier sortait VERTE** sur un JSON de deux octets.
-Les deux se seraient lus comme un succès.
-
-**Défaut corrigé dans le bat 32** : son texte de fin disait « 1. ranger par
-année, 2. laisser le serveur scanner ». C'est l'INVERSE — le rangement par
-année travaille depuis l'index, et le plan ne voit pas ce qui n'a pas encore
-été scanné. Constaté en réel : le plan proposait 559 fichiers (l'ancien
-contenu de `_A TRIER`) et zéro des 3 776.
+- **Le rapatriement Google est OUTILLÉ** (56) : `copier_absentes.py` +
+  `32 - Copier les absentes de Google.bat`. Rien n'est jamais écrasé, la cible
+  doit être sous `_A TRIER`, chaque copie est RELUE, journal d'annulation dans
+  `_corbeille_copies/`.
+- **Le soupçon sur le trailer Samsung a eu son banc** (56) —
+  `verifier_trailer_samsung.py`, qui refuse de conclure quand rien n'a été
+  nommé plutôt que de rendre vert. Verdict tombé le 27/08 : **rien n'accuse
+  notre écriture XMP**.
 
 ## État (27/08/2026, session 54) — 3 776 PHOTOS N'EXISTENT QUE CHEZ GOOGLE
 
