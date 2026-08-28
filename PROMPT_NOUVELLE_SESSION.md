@@ -26,6 +26,11 @@ rendent (les `_backfill`, `reconcile_named_tags`) et ont le DROIT de finir.
 deviennent `.fetiquette`. Instruments et banc vivant verts. **L'œil manque** —
 Chrome n'était pas connecté après le redémarrage du PC.
 
+**Le dossier est rangé** : 43 Mo de corbeilles et journaux d'annulation
+d'avant le 25/08 attendent dans `_to_delete/` (Mike supprime ce dossier).
+Gardés exprès : `_corbeille_copies`, `_corbeille_deplacements` et les
+`undo_annee` du 27/08 — le filet de l'opération Google en cours.
+
 **Google : ABSENT = 0.** 13 905 médias, 4 293 CERTAIN (55,6 Go), 9 612 « taille
 différente ». Le NAS est plus gros 9 315 fois d'un écart médian de 4 101 octets
 (nos XMP, bénin) mais **plus PETIT 297 fois, dont 89 de plus d'un Mo**. Les
@@ -39,12 +44,14 @@ heures d'activité s'arrêtaient à 01:00). Trois réglages posés le 28/08,
 
 ## Prochain pas
 
-1. **Rapatrier les ~106 fichiers que Google porte mieux que le NAS** (10
-   vidéos, ~96 photos ; liste dans `_rapport_google_apres.json`, verdict
-   PROBABLE avec le NAS plus petit). Même outil que pour les absentes. Puis
-   relancer `verifier_photos_google.py` : c'est ce qui rend l'effacement
-   GLOBAL chez Google sûr — et donc court, parce que sélectionner 4 293
-   fichiers à la main dans l'interface web est irréaliste.
+1. **UN GESTE DE MIKE ATTEND :
+   `33 - Rapatrier ce que Google porte mieux.bat`** — 100 fichiers, 1,26 Go
+   (91 photos, 9 vidéos) que Google porte mieux que le NAS. Puis
+   `26 - Ranger par annee.bat`, puis relancer `verifier_photos_google.py`.
+   **Quand il ne compte plus de « NAS plus petit », l'effacement GLOBAL chez
+   Google devient sûr** — et c'est le seul chemin praticable, sélectionner
+   4 293 fichiers à la main dans l'interface web ne l'étant pas. Le geste
+   d'effacement chez Google reste le sien.
 
 2. **L'ŒIL sur `.fchip`** : la conversion est faite et prouvée aux
    instruments, mais personne ne l'a REGARDÉE — Chrome n'était pas connecté.

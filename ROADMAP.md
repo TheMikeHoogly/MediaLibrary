@@ -44,9 +44,16 @@ distance, contrairement à `/sante`. **Risque nommé** : `task_done()` est dans
 un `finally`, un fil tué avant laisse un élément perdu et un compteur faussé —
 la relance repart de la FILE, jamais de l'élément que le fil tenait.
 
-**1 quinquies. Rapatrier les ~106 fichiers que Google porte mieux que le
-NAS** (10 vidéos, ~96 photos), puis relancer `verifier_photos_google.py` :
-c'est ce qui rend l'effacement GLOBAL chez Google sûr, et donc court.
+**1 quinquies. OUTILLÉ (28/08) — reste UN geste de Mike :
+`33 - Rapatrier ce que Google porte mieux.bat`.** Il copie les **100 fichiers
+(1,26 Go — 91 photos, 9 vidéos)** où Google porte plus que le NAS d'au moins
+100 Ko, sous `_A TRIER\Google porte mieux\<année>` — un dossier À PART, pour
+qu'ils se lisent comme un arbitrage en attente et non comme du fonds. Rien
+n'est écrasé : la version du NAS reste, Mike tranche. Puis `26 - Ranger par
+annee.bat`, puis relancer `verifier_photos_google.py` : **quand il ne compte
+plus de « NAS plus petit », l'effacement GLOBAL chez Google devient sûr** — et
+c'est ce qui le rend praticable, sélectionner 4 293 fichiers à la main dans
+l'interface web ne l'étant pas.
 
 **1 quater. Le 9 septembre au matin : VÉRIFIER que Windows a demandé.** Patch
 Tuesday tombe le 8 ; le redémarrage arrivait toujours vers 01:30 la nuit
@@ -105,6 +112,35 @@ s'efface chez Google tant qu'il en reste une. **C'est le geste le plus urgent
 de la liste**, avant les boutons et avant le chantier 17 : ces fichiers ne
 vivent aujourd'hui qu'à un seul endroit, et c'est chez un tiers dont le quota
 est à 96 %. Deux questions dans `QUESTIONS_MIKE.md` (27/08).
+
+## État (28/08/2026, session 62) — LE SECOND CAS GOOGLE EST OUTILLÉ, ET LE DOSSIER EST RANGÉ
+
+**`copier_absentes.py` sait désormais rapatrier le SECOND cas.** Jusqu'ici il
+ne connaissait que les ABSENTES. Deux options l'ouvrent — `--verdict` (répétable)
+et `--nas-plus-petit-de OCTETS` — sans rien changer par défaut. Sur le rapport
+du 28/08 : **100 fichiers, 1,26 Go, 91 photos et 9 vidéos**. Le `.bat 33` les
+dépose dans un dossier À PART.
+
+**Un test a trouvé un défaut que la relecture n'avait pas vu** : le seuil de
+taille s'appliquait AUSSI aux ABSENTES — or une absente n'a pas de contrepartie
+sur le NAS, donc « plus petite d'un mégaoctet » l'écartait toujours. Cumuler
+les deux verdicts aurait fait disparaître le rapatriement des absentes **en
+silence**. Six contrôles neufs.
+
+**Le dossier est rangé.** Huit corbeilles et 53 journaux d'annulation
+antérieurs au 25/08 (**43 Mo**) sont dans `_to_delete/`, en deux sous-dossiers
+nommés. **Gardés délibérément** : `_corbeille_copies` (le rapatriement Google
+du 27/08, dont on se sert encore), `_corbeille_deplacements` (26/08) et les
+deux `undo_annee` du 27/08. Vider le filet de sécurité de l'opération en cours
+aurait été le seul vrai risque de ce rangement.
+
+**Les docs sont taillées** : `QUESTIONS_MIKE.md` passe de 15 000 à 3 500
+octets — dix-neuf entrées réglées retirées, trois vraies questions restent.
+
+**Ce qui n'a PAS pu être fait** : l'œil sur `.fchip`. L'extension Chrome n'est
+pas connectée depuis le redémarrage du PC, et deux tentatives ont échoué. Les
+instruments et le banc sur le serveur vivant sont verts ; **le regard manque**,
+et un banc vert n'est pas un regard.
 
 ## État (28/08/2026, session 61) — LES VINGT FILS ONT UN FILET, ET GOOGLE A SON COMPTE
 

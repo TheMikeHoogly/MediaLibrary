@@ -206,6 +206,65 @@ class LesGardeFous(unittest.TestCase):
         self.assertFalse(ok)
 
 
+class LeSecondCasGoogleEnPorteePlus(unittest.TestCase):
+    """Le NAS porte le NOM, mais un fichier plus PETIT (28/08).
+
+    Sur 9 612 << tailles differentes >>, 9 315 ont le NAS plus GROS d'un ecart
+    median de 4 101 octets : c'est un bloc XMP, nos propres tags, et c'est
+    benin. Mais 297 fois le NAS est plus PETIT, dont 89 de plus d'un Mo -- dix
+    videos a -73, -40, -22 Mo. Effacer chez Google en croyant que le NAS a la
+    photo perdrait la bonne version. Ces tests tiennent le TRI, parce que
+    c'est lui qui decide ce qui vit et ce qui meurt.
+    """
+
+    def rapport(self, entrees):
+        d = Path(tempfile.mkdtemp(prefix='test_ecart_'))
+        self.addCleanup(lambda: None)
+        p = d / 'r.json'
+        p.write_text(json.dumps({'par_verdict': entrees}), encoding='utf-8')
+        return str(p)
+
+    @staticmethod
+    def media(nom, google, nas, verdict_detail=True):
+        return {'nom': nom, 'chemin_google': '/g/' + nom, 'octets': google,
+                'detail': ('taille %d chez Google, %d sur le NAS'
+                           % (google, nas)) if verdict_detail else 'autre chose'}
+
+    def test_par_defaut_seules_les_ABSENTES_sortent(self):
+        """Le comportement d'avant ne bouge pas d'un pouce."""
+        r = self.rapport({'ABSENT': [self.media('a.jpg', 10, 0)],
+                          'PROBABLE': [self.media('b.jpg', 900, 100)]})
+        self.assertEqual([m['nom'] for m in C.absentes(r)], ['a.jpg'])
+
+    def test_le_NAS_plus_petit_est_retenu(self):
+        r = self.rapport({'PROBABLE': [self.media('v.mp4', 204468711, 131027884)]})
+        m = C.absentes(r, ('PROBABLE',), 100000)
+        self.assertEqual([x['nom'] for x in m], ['v.mp4'])
+
+    def test_le_NAS_plus_GROS_est_ecarte(self):
+        """C'est le cas BENIN : nos XMP. Le rapatrier ferait un doublon pour
+        rien, et rien n'est en danger si Google efface sa version."""
+        r = self.rapport({'PROBABLE': [self.media('p.jpg', 2614943, 2619031)]})
+        self.assertEqual(C.absentes(r, ('PROBABLE',), 100000), [])
+
+    def test_un_ecart_sous_le_seuil_est_ecarte(self):
+        """Quelques kilo-octets ne prouvent rien ; un megaoctet, si."""
+        r = self.rapport({'PROBABLE': [self.media('p.jpg', 1000000, 999000)]})
+        self.assertEqual(C.absentes(r, ('PROBABLE',), 100000), [])
+        self.assertEqual(len(C.absentes(r, ('PROBABLE',), 500)), 1)
+
+    def test_un_detail_illisible_est_ECARTE_jamais_devine(self):
+        r = self.rapport({'PROBABLE': [self.media('p.jpg', 9, 1,
+                                                  verdict_detail=False)]})
+        self.assertEqual(C.absentes(r, ('PROBABLE',), 100), [])
+
+    def test_les_deux_verdicts_se_cumulent(self):
+        r = self.rapport({'ABSENT': [self.media('a.jpg', 10, 0)],
+                          'PROBABLE': [self.media('v.mp4', 900000, 100)]})
+        m = C.absentes(r, ('ABSENT', 'PROBABLE'), 100000)
+        self.assertEqual(sorted(x['nom'] for x in m), ['a.jpg', 'v.mp4'])
+
+
 class LaLigneDeCommande(unittest.TestCase):
 
     def test_sans_copier_le_disque_reste_INTACT(self):

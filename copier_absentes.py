@@ -119,11 +119,50 @@ def sous_a_trier(cible):
                for p in Path(cible).parts)
 
 
-def absentes(rapport):
-    """Les médias ABSENT d'un rapport `verifier_photos_google --json`."""
+MOTIF_TAILLES = re.compile(r'taille (\d+) chez Google, (\d+) sur le NAS')
+
+
+def _ecart(media):
+    """(octets chez Google, octets sur le NAS) lus dans le `detail`, ou None.
+
+    Le rapport ÉCRIT les deux tailles en clair ; on les relit plutôt que de
+    re-parcourir le NAS. Un `detail` d'une autre forme rend None et le média
+    est écarté — jamais deviné."""
+    m = MOTIF_TAILLES.search(str(media.get('detail') or ''))
+    return (int(m.group(1)), int(m.group(2))) if m else None
+
+
+def absentes(rapport, verdicts=('ABSENT',), nas_plus_petit_de=0):
+    """Les médias à rapatrier, lus dans `verifier_photos_google --json`.
+
+    Par défaut : les ABSENT — ce que le NAS ne porte pas du tout.
+
+    `verdicts=('PROBABLE',)` + `nas_plus_petit_de=N` ouvre le second cas, celui
+    du 28/08 : **le NAS porte bien le nom, mais un fichier PLUS PETIT**. Sur
+    9 612 « tailles différentes », 9 315 ont le NAS plus GROS d'un écart médian
+    de 4 101 octets — c'est un bloc XMP, nos propres tags, et c'est bénin. Mais
+    297 fois le NAS est plus PETIT, dont 89 de plus d'un mégaoctet : dix vidéos
+    à −73, −40, −22 Mo, et des photos comme `Luzarches 2016 (33).jpg`, 8,5 Mo
+    chez Google contre 0,6 sur le NAS. Effacer chez Google en croyant que le
+    NAS a la photo perdrait la bonne version. Le SEUIL existe parce que
+    quelques kilo-octets d'écart ne prouvent rien ; un mégaoctet, si."""
     d = json.loads(Path(rapport).read_text(encoding='utf-8'))
-    return [x for x in (d.get('par_verdict', {}).get('ABSENT') or [])
-            if x.get('chemin_google')]
+    out = []
+    for verdict in verdicts:
+        for x in (d.get('par_verdict', {}).get(verdict) or []):
+            if not x.get('chemin_google'):
+                continue
+            # Le seuil ne s'applique QU'A ce qui a une contrepartie sur le
+            # NAS. Une ABSENTE n'en a pas : lui demander d'etre << plus petite
+            # d'un megaoctet >> l'ecarterait toujours, et le rapatriement des
+            # absentes disparaitrait en silence des qu'on cumule les deux
+            # verdicts. Trouve par un test, pas a la relecture.
+            if nas_plus_petit_de and verdict != 'ABSENT':
+                tailles = _ecart(x)
+                if tailles is None or tailles[0] - tailles[1] < nas_plus_petit_de:
+                    continue
+            out.append(x)
+    return out
 
 
 def nom_libre(dossier, nom, octets):
@@ -293,6 +332,13 @@ def main(argv=None):
                     help='ou ecrire le journal d annulation '
                          '(defaut : _corbeille_copies/ du projet)')
     ap.add_argument('--json', dest='sortie_json', default=None)
+    ap.add_argument('--verdict', action='append', default=None,
+                    choices=('ABSENT', 'PROBABLE'),
+                    help='repetable ; defaut ABSENT')
+    ap.add_argument('--nas-plus-petit-de', dest='nas_plus_petit_de', type=int,
+                    default=0, metavar='OCTETS',
+                    help='ne garder que ceux ou le NAS est plus PETIT d au '
+                         'moins tant d octets (0 = pas de filtre)')
     a = ap.parse_args(argv)
 
     if not Path(a.rapport).is_file():
@@ -304,8 +350,12 @@ def main(argv=None):
         print("aucune racine de fonds lisible (dossiers_a_taguer.txt).")
         return 2
 
-    medias = absentes(a.rapport)
-    print("  %d media(s) ABSENT(s) du NAS dans le rapport." % len(medias))
+    verdicts = tuple(a.verdict or ('ABSENT',))
+    medias = absentes(a.rapport, verdicts, a.nas_plus_petit_de)
+    print("  %d media(s) a rapatrier (%s%s)." % (
+        len(medias), '+'.join(verdicts),
+        (", NAS plus petit d au moins %d octets" % a.nas_plus_petit_de)
+        if a.nas_plus_petit_de else ""))
     travaux = plan(medias, cible, a.etiquette)
     octets = sum(m.get('octets') or 0 for m, t in zip(medias, travaux)
                  if t[2] != 'deja')
