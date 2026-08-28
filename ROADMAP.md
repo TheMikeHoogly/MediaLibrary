@@ -34,14 +34,15 @@ tests UI, banc des pages composants sur le serveur VIVANT, l'œil en dernier.
 Le tagueur est increvable sur `database is locked` (session 60), mais **aucun
 des vingt fils de `main()` ne se relance et personne ne regarde** :
 `journal_serveur` pose le constat, rien ne le lit. Une nuit de huit heures a
-été perdue exactement comme ça. Trois marches, détaillées avec leurs risques
-dans `QUESTIONS_MIKE.md` (28/08) : **(a) DIRE** — registre des morts alimenté
-par le crochet existant, visible sur `/sante` ; **(b) ALERTER** — une ligne au
-journal tant qu'un fil manque, parce que le journal se lit à distance ;
-**(c) RELANCER** — la seule qui porte un risque (double consommation d'une
-file : le tagueur appelle `task_done()` dans un `finally`, mourir avant fausse
-le compteur). (a) et (b) sont sans risque et transforment huit heures en
-quelques minutes : à faire d'abord, sans attendre de décision.
+été perdue exactement comme ça. **TRANCHÉ par Mike le 28/08 : le fil mort se
+RELANCE, et cinq morts consécutives ALERTENT** (`docs/DECISIONS_OUTILLAGE.md`,
+Pilotage du serveur). À écrire : le registre des morts alimenté par le crochet
+existant, visible sur `/sante` ; la relance avec attente doublante ; le compte
+« consécutives » remis à zéro par une reprise qui tient (cinq minutes) ;
+l'alerte permanente sur `/sante` et répétée au journal — qui se lit à
+distance, contrairement à `/sante`. **Risque nommé** : `task_done()` est dans
+un `finally`, un fil tué avant laisse un élément perdu et un compteur faussé —
+la relance repart de la FILE, jamais de l'élément que le fil tenait.
 
 **1 quater. Le 9 septembre au matin : VÉRIFIER que Windows a demandé.** Patch
 Tuesday tombe le 8 ; le redémarrage arrivait toujours vers 01:30 la nuit

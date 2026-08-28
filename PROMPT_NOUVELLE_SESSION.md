@@ -45,13 +45,13 @@ restera toujours un trou de 6 h — le réglage ne remplace pas la résilience.
    CE verrou, pas sur le prochain mode de panne, et **aucun des vingt fils de
    `main()` ne se relance**. `journal_serveur` POSE le constat depuis toujours
    (son commentaire décrit mot pour mot la nuit du 27) — rien ne le lit.
-   Trois marches, avec leurs risques, dans `QUESTIONS_MIKE.md` (28/08) :
-   **(a) DIRE** (registre des morts sur `/sante`), **(b) ALERTER** (une ligne
-   au journal tant qu'un fil manque — le journal se lit à distance),
-   **(c) RELANCER**. **(a) et (b) sont sans risque : les faire sans attendre**
-   — ils transforment huit heures en quelques minutes. (c) attend Mike : un
-   fil relancé peut consommer deux fois une file (`task_done()` est dans un
-   `finally` ; mourir avant fausse le compteur).
+   **TRANCHÉ (28/08, Mike) : le fil mort se RELANCE, et cinq morts
+   consécutives ALERTENT** (`docs/DECISIONS_OUTILLAGE.md`). À écrire :
+   registre des morts sur `/sante`, relance à attente doublante, compteur
+   remis à zéro par une reprise qui tient 5 min, alerte permanente sur
+   `/sante` ET répétée au journal (lui se lit à distance). **La relance
+   repart de la FILE, jamais de l'élément que le fil tenait** :
+   `task_done()` est dans un `finally`, mourir avant fausse le compteur.
 
 1 bis. **Le 9 septembre au matin : VÉRIFIER que Windows a DEMANDÉ** au lieu de
    redémarrer. Patch Tuesday le 8, le redémarrage tombait toujours vers 01:30
