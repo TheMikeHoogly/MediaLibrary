@@ -9,160 +9,176 @@ FUSIONNÉ — ce document, non. Puis `ROADMAP.md`, `eval/DECISIONS.md`,
 `eval/METHODE.md` — et `docs/DECISIONS_OUTILLAGE.md` si le sujet touche aux
 canaux, à la livraison ou au MCP. Débrief en 2–3 lignes, puis on attaque.
 
-## Où on en est (28/08/2026, fin de session 61)
+## Où on en est (29/08/2026, fin de session 63)
 
-**Le serveur TOURNE** (redémarré 08:44, `code_a_jour`, zéro fil mort depuis).
+**Le PC de Mike a été redémarré à la fin de la session.** Premier geste :
+vérifier que les trois fenêtres du bat 0 tournent (`_agent_*_vu.txt` de moins
+de 30 s) et que le serveur répond.
 
-**Les vingt fils de `main()` ont un filet.** Règle de Mike : le fil mort SE
-RELANCE, cinq morts consécutives ALERTENT. `fil_surveille` tient le registre
-`FILS`, relance avec une attente qui double (1 → 300 s), remet le compteur à
-zéro dès qu'une reprise tient 5 min, et **`/sante` affiche les fils AVANT les
-fichiers** — le manque exact du 27/08. Qui boucle et qui rend a été MESURÉ
-(balayage AST des `while True:`) : quinze bouclent et se relancent, cinq
-rendent (les `_backfill`, `reconcile_named_tags`) et ont le DROIT de finir.
-`test_fils_surveilles.py` : 10 contrôles, 10 rouges sur le code d'avant.
+### La journée en quatre morceaux, tous livrés et fusionnés
 
-**`.fchip` est mort, et l'œil est posé** : les `<a>` prennent `.btn btn--nav`
-(44 px exactement, vus sur le serveur vivant), les `<span>` deviennent
-`.fetiquette` (17 dans la bande « même jour » : sans bordure, sans fond, sans
-curseur — elles ne ressemblent plus à des boutons). Zéro `.fchip` dans le DOM
-rendu.
+1. **Le tagueur ne meurt plus d'avoir voulu noter sa mort.** Le 27/08 à
+   23:42:50, `STORE.set` échoue sur `database is locked`, le gestionnaire
+   d'erreur réécrit dans la MÊME base verrouillée, et cette seconde erreur tue
+   le fil. Huit heures perdues. `store_sqlite._ecrire` réessaie (5 essais,
+   0,4 → 3,2 s), `_flush_rapide` ré-arme `_dirty`, et `server._marquer_echec`
+   avale un second échec. **Règle : un rattrapage ne dépend jamais de la
+   ressource qui vient de tomber.**
+2. **Les vingt fils de `main()` ont un filet** (décision de Mike) : le fil mort
+   SE RELANCE, cinq morts consécutives ALERTENT. `fil_surveille` + registre
+   `FILS` + `/sante` qui affiche les fils AVANT les fichiers. Qui boucle et
+   qui rend a été MESURÉ (balayage AST des `while True:`).
+3. **`.fchip` est mort** : les `<a>` prennent `.btn btn--nav` (44 px, vus sur
+   le serveur vivant), les `<span>` deviennent `.fetiquette` (sans bordure ni
+   curseur). Zéro `.fchip` dans le DOM rendu.
+4. **Le serveur prend sa température** (idée de Mike). `hw_state` porte
+   `temp_c`, horloges, watts et deux drapeaux de bridage thermique ;
+   `thermique_loop` les écrit au journal, à côté des durées de tagging.
 
-**Le dossier est rangé** : 43 Mo de corbeilles et journaux d'annulation
-d'avant le 25/08 attendent dans `_to_delete/` (Mike supprime ce dossier).
-Gardés exprès : `_corbeille_copies`, `_corbeille_deplacements` et les
-`undo_annee` du 27/08 — le filet de l'opération Google en cours.
+### Google — il ne manque QU'UNE vérification
 
-**Google : ABSENT = 0.** 13 905 médias, 4 293 CERTAIN (55,6 Go), 9 612 « taille
-différente ». Le NAS est plus gros 9 315 fois d'un écart médian de 4 101 octets
-(nos XMP, bénin) mais **plus PETIT 297 fois, dont 89 de plus d'un Mo**. Les
-vidéos : 3 114, dont **3 104 identiques au bit près** ; les 10 autres sont plus
-petites côté NAS (−73 Mo, −40 Mo…). **Ces ~106 fichiers ne s'effacent pas chez
-Google avant d'être rapatriés** ; le reste peut partir.
+**ABSENT = 0** : le NAS porte tout ce que Google détient. Les **297 fichiers
+que Google portait mieux ont été rapatriés** (100 le premier soir, seuil
+100 Ko ; puis 197 au seuil 1 octet) sous `_A TRIER\Google porte mieux\<année>`,
+0 grief. Au dernier relevé complet (21:01) il ne restait que ces 197, tous
+sous 100 Ko de déficit ; ils sont maintenant sur le NAS.
 
-**Windows** : la cause des redémarrages est nommée (toujours 01:29–01:33, les
-heures d'activité s'arrêtaient à 01:00). Trois réglages posés le 28/08,
-**aucun prouvé** — épreuve la nuit du 8 au 9 septembre.
+**MAIS la vérification finale n'a jamais rendu** : la machine s'est coupée une
+minute après son lancement. **Premier geste utile de la session** :
+
+    verifier_photos_google.py --takeout b64:QzpcR09PR0xFIFBIT1RPU1xleHRyYWl0 --json=_rapport_google_final.json
+
+Si elle ne compte plus AUCUN « NAS plus petit », **Mike peut effacer chez
+Google** — son geste, sur `photos.google.com`, jamais depuis l'app du
+téléphone ; le quota ne bouge qu'après vidage de la corbeille (60 j).
+
+**Le bon critère n'est PAS « tout en CERTAIN »** : notre propre tagging
+grossit les fichiers (un bloc XMP, ~4 Ko) et fait donc RECULER le compte de
+CERTAIN en permanence. Le critère qui se tient, c'est **« le NAS n'est jamais
+plus petit »**.
+
+### La machine s'est coupée, et la cause n'est pas tranchée
+
+Le 28/08 à 23:10:15, coupure franche sous charge : `Kernel-Power 41`, **aucun
+minidump**, aucun `1074`, `_journal_serveur_crash.log` vide. Ce n'est ni un
+écran bleu, ni une mise à jour, ni un plantage de la photothèque. Le BIOS
+date de **juillet 2023** — jamais flashé, l'hypothèse MSI tombe.
+
+Le seul indice est le **rythme de tagging** : la session qui est morte taguait
+à **27,2 s de moyenne** contre 9,7 à 22,8 s pour les autres du jour, et 14,0 s
+après un redémarrage à froid sur le même travail. Reste ouvert : thermique,
+alimentation, ou poussière/pâte thermique sur un portable de trois ans.
+**Le thermomètre est maintenant dans le journal** pour trancher la prochaine
+fois.
+
+Windows, séparément : **Secure Boot désactivé** par Mike pour pouvoir démarrer
+le 28 au matin, et **le « Windows UEFI CA 2023 » est absent du DB**. C'est de
+la sécurité, pas de la stabilité — et le correctif manuel est en deux phases
+dont la seconde est IRRÉVERSIBLE : ne pas y toucher sans lire la page
+Microsoft à jour.
 
 ## Prochain pas
 
-1. **UN GESTE DE MIKE ATTEND :
-   `33 - Rapatrier ce que Google porte mieux.bat`** — 100 fichiers, 1,26 Go
-   (91 photos, 9 vidéos) que Google porte mieux que le NAS. Puis
-   `26 - Ranger par annee.bat`, puis relancer `verifier_photos_google.py`.
-   **Quand il ne compte plus de « NAS plus petit », l'effacement GLOBAL chez
-   Google devient sûr** — et c'est le seul chemin praticable, sélectionner
-   4 293 fichiers à la main dans l'interface web ne l'étant pas. Le geste
-   d'effacement chez Google reste le sien.
-
-3. **Le trailer Samsung — l'expérience armée n'attend que des NOMS.** Le
-   tableau de corrélation a parlé le 27/08 : **rien n'accuse notre écriture**
-   (nommées 86,9 % avec SEF, non nommées 83,9 %, Wilson qui se recouvrent).
-   La preuve de CAUSE reste l'avant/après du MÊME fichier :
-   `verifier_trailer_samsung.py --racine b64:XFxOQVMtQnJlbWJsZW5zXGhvbWVcUGhvdG9z
-   --echantillon=0 --comparer=_rapport_sef_avant.json` (jeton `b64:` en
-   argument SÉPARÉ). **Ne pas supprimer `_rapport_sef_avant.json`** : il n'est
-   pas dans git, le disque en porte la seule copie.
-4. **Le chantier 18 (confidentialité), partie indépendante de 17** : le jeu
-   étiqueté et son banc D'ABORD — sans banc, le seuil est une opinion. Le
-   verdict ne va PAS dans le XMP (l'étiquette serait la fuite).
-5. **Le panneau `?` des raccourcis** — et d'abord sa brique : un JS commun
+1. **La vérification Google** (ci-dessus). Trois minutes, lecture disque, pas
+   de GPU. C'est le feu vert pour libérer ~56 Go chez un tiers dont le quota
+   est à 96 %.
+2. **Ranger les 297 rapatriés.** Ils n'entrent dans le plan qu'une fois
+   TAGUÉS — le plan vient de l'index EN MÉMOIRE, pas du disque. Donc :
+   attendre que `queues.tag` retombe, régénérer le plan (`POST
+   /api/maint/plan-annee`), puis `26 - Ranger par annee.bat`. **Le plan périme
+   vite** : le 28/08, bat 26 a rendu `skip: 559` en relisant un plan du 12/08.
+3. **Supprimer `_to_delete/`** (43 Mo de corbeilles et journaux d'annulation
+   d'avant le 25/08). Geste de Mike ; les journaux de cette semaine ont été
+   gardés exprès.
+4. **Le 9 septembre au matin** : vérifier que Windows a DEMANDÉ au lieu de
+   redémarrer (Patch Tuesday le 8, redémarrage vers 01:30 la nuit suivante).
+   `Get-WinEvent -FilterHashtable @{LogName='System'; Id=1074}`.
+5. **Le chantier 18 (confidentialité)** : le jeu étiqueté et son banc D'ABORD.
+   Illustration involontaire du 28/08 : une photo taguée « facture, chèque,
+   paiement, virement, caisse, transaction ». Le verdict ne va PAS dans le XMP.
+6. **Le panneau `?` des raccourcis** — et d'abord sa brique : un JS commun
    injecté partout (`_UI_GLOBAL_FILES`, il n'en existe aucun). `server.py`.
-6. **La suite du chantier 17** : PROPRIÉTAIRE, puis attribution rétroactive
-   des 3 767 décisions. Deux questions ouvertes bloquent l'écriture partagée.
-7. **UNIFIER le re-clé** : la primitive complète existe TROIS fois
+7. **La suite du chantier 17** : PROPRIÉTAIRE, puis attribution rétroactive
+   des 3 767 décisions. **Les deux questions bloquantes sont TRANCHÉES**
+   (28/08, `eval/DECISIONS.md`) : le désaccord se conserve et se dit, un nom
+   devient commun dès qu'il touche un deuxième propriétaire.
+8. **UNIFIER le re-clé** : la primitive existe TROIS fois
    (`server.rekey_everywhere`, `deplacer_dossiers.recle_une_cle`,
    `appliquer_plan.rekey_stores`). Elle a déjà divergé cinq jours.
-8. **Reste d'audit** : O8–O9, O11, O13–O15 ; **I1** dans `/reglages` ;
-   `animal:luna` (3) vs `animal:Luna` (355). Puis les quatre pages sans
-   `components.css`. O15 balaie les 3 047 vignettes orphelines du 26/08.
+9. **Reste d'audit** : O8–O9, O11, O13–O15 ; **I1** dans `/reglages` ;
+   `animal:luna` (3) vs `animal:Luna` (355). Puis les **quatre pages sans
+   `components.css`** (`browse`, `faces`, `map`, `reglages`) — seul chantier
+   UI qui ne demande AUCUN redémarrage (`ui/pages/` est relu à chaud).
+   **Attention** : `/map` sert de page TÉMOIN à `verifier_pages_composants` ;
+   la convertir ferait perdre son contrôle négatif à l'instrument. Lui trouver
+   un remplaçant d'abord, ou la garder témoin.
 
-## En fin de projet — décidé, mesuré, en attente d'un geste
+## En fin de projet
 
-- **Google** : les 3 776 ABSENTES sont sur le NAS et se font taguer. Rien ne
-  s'efface avant que `verifier_photos_google.py` ne compte ZÉRO absente ;
-  avant d'effacer 75 Go : `verifier_google_pixels.py --octets` (~32 Go à lire,
-  trois-quatre tranches de banc). Effacer sur `photos.google.com`, jamais
-  depuis l'app du téléphone ; le quota (96 %) ne bouge qu'après vidage de la
-  corbeille (60 j).
-- **La copie hors site (12 bis)** attend la fin du chantier 17 (choix de Mike,
-  26/08) : DS224+ → Infomaniak Swiss Backup, ~CHF 6/mois pour 1 To, fonds
-  291 Go, clé imprimée, et une restauration d'épreuve.
+- **La copie hors site (12 bis)** attend la fin du chantier 17 : DS224+ →
+  Infomaniak Swiss Backup, ~CHF 6/mois pour 1 To, fonds 291 Go, clé imprimée,
+  et une restauration d'épreuve. **La ligne internet ne change pas
+  maintenant** (choix de Mike, 28/08).
 - **HTTPS : FAIT** — `https://msi-mike.goat-draco.ts.net/`.
 
 ## Réflexes
 
 ### Mesurer
 
-**Un rouge causé par un NOM manquant ne prouve rien.** La première version des
-tests du verrou rougissait sur l'ancien code parce que la constante n'existait
-pas encore. Il faut que l'ancien code s'EXÉCUTE pour qu'on voie en quoi il
-était faux — `hasattr`, pas un accès direct.
+**La bonne ÉCHELLE, sinon la bonne conclusion sur les mauvaises données.**
+J'ai comparé les durées de tagging à l'intérieur d'une session — plates — et
+conclu « pas de bridage ». Le signal était ENTRE les sessions : 27,2 s contre
+9,7–22,8 s. Avant de conclure « pas de dérive », demander : dérive par rapport
+à QUOI.
 
-**Et tous les tests ne peuvent pas rougir.** Un garde du mécanisme NEUF
-(l'obstination est bornée) ne peut pas rougir avant qu'il existe. Le dire vaut
-mieux que d'annoncer un compte flatteur.
+**Interroger un outil externe CHAMP PAR CHAMP avant de le grouper.**
+`power.limit` et `temperature.memory` rendent `[N/A]` sur cette carte, et un
+seul champ refusé fait échouer TOUTE la requête `nvidia-smi` — sans dire
+lequel. Les demander à l'aveugle aurait aveuglé `hw_state` sur sa propre VRAM.
 
-**Un nom inventé doit rendre ZÉRO — et le banc le demande dans les deux
-sens.** Les valeurs de contrôle se LISENT dans le fonds.
+**Un rouge causé par un NOM manquant ne prouve rien** sur le comportement.
+Il faut que l'ancien code s'EXÉCUTE (`hasattr`, pas un accès direct). Et tous
+les tests ne peuvent pas rougir : un garde d'un mécanisme NEUF ne le peut pas.
 
-**Mesurer avec l'instrument du PROJET** : les fiches (`/api/names`), les tags
-(`kw` de l'index), les détections (`animals`).
+**Un banc qui imprime doit rester lisible par une console cp1252** — c'est
+celle de l'agent git. Deux bancs sur ~90 étaient fautifs le 28/08, corrigés,
+zéro restant (balayage AST des `print`).
 
-**Un écart TOUJOURS du même signe n'est pas du bruit.**
+**Ne JAMAIS lancer `unittest discover` depuis la VM** : trois tests ouvrent le
+vrai `photos.db`.
 
 **Le canal du banc n'admet que `[A-Za-z0-9_.:/=-]`** (espaces via jeton `b64:`,
-en argument séparé). **Plafond 600 s** (`TIMEOUT_S`, max 1 800, pas d'option
-par ordre) : un banc qui lit 70 000 fichiers SMB n'y tient pas —
-échantillonner, l'instrument porte Wilson.
-
-**Une rangée peut être fausse quand chaque cible est conforme.** Le rendu
-étroit se MESURE — iframe 390 px sur le serveur vivant, parce que le zoom du
-navigateur fausse le redimensionnement de fenêtre.
-
-**Un banc qui imprime doit rester lisible par une console cp1252.** C'est
-celle de l'agent git : un caractère hors table y lève `UnicodeEncodeError` et
-fait ROUGIR un banc qui passe 52/52 — la livraison est refusée pour une raison
-qui n'existe pas. Le 28/08, deux bancs sur ~90 étaient dans ce cas, les deux
-corrigés, zéro restant (balayage AST des `print`). Filets en ASCII, et
-`reconfigure(errors='replace')` là où le banc imprime des données de test qui
-peuvent contenir n'importe quel Unicode.
-
-**Ne JAMAIS lancer `unittest discover` depuis la VM.** Trois tests ouvrent le
-vrai `photos.db` : ils échouent en « disk I/O error » (tant mieux), mais c'est
-la règle « jamais deux écrivains » qu'on frôle. Le banc Windows est la preuve.
+en argument SÉPARÉ) et son plafond est **600 s** — échantillonner au-delà.
 
 ### Lire
 
-**Le journal du serveur d'abord** (`_journal_serveur.log`), depuis la dernière
-bannière :
+**Le journal du serveur d'abord**, depuis la dernière bannière :
 
     L=$(grep -n "===== DEMARRAGE" _journal_serveur.log | tail -1 | cut -d: -f1)
-    tail -n +$L _journal_serveur.log | grep -n "THREAD MORT\|EXCEPTION\|Traceback"
+    tail -n +$L _journal_serveur.log | grep -n "FIL MORT\|THREAD MORT\|Traceback"
 
-C'est là qu'on a trouvé que la nuit du 27 était perdue AVANT le redémarrage.
+**Savoir d'où vient un chiffre.** `verifier_photos_google` lit le **DISQUE**
+(il ne touche jamais `STORE`) : il n'attend pas le tagging. `generer_plan_annee`
+lit l'**index en mémoire** : un fichier n'y entre qu'une fois TAGUÉ. J'ai fait
+attendre Mike des heures pour rien en confondant les deux.
 
-**Un commentaire est de la PROSE** — `verifier_controles.sans_le_css` ;
-l'exception est une DÉCLARATION.
-
-**Un banc en lecture seule tourne aussi dans la VM** ; le banc Windows reste la
-PREUVE et le seul chemin vers le serveur. Ce qui ÉCRIT n'est pas lançable au
-banc.
+**Un plan appliqué n'est pas un plan calculé.** `appliquer_plan_annee` relit
+`docs/plan_rangement_annee.json` ; s'il date, il rend `skip: N` et ne range
+rien.
 
 ### Juger
 
 **Un rattrapage ne doit jamais dépendre de la ressource qui vient de tomber.**
-C'est ce qui a tué le tagueur. Ne pas pouvoir noter un échec est regrettable ;
-mourir en essayant de le noter fait perdre tout le reste. Vaut aussi pour un
-`ROLLBACK` qui masque la cause.
+Ne pas pouvoir noter un échec est regrettable ; mourir en essayant fait perdre
+tout le reste. Vaut aussi pour un `ROLLBACK` qui masque sa cause.
 
-**Une corrélation n'est pas une cause** — le banc du trailer le dit lui-même.
+**Une corrélation n'est pas une cause.** Le banc du trailer le dit lui-même.
 
-**Ce qui doit s'accorder, c'est le VERDICT, pas la valeur** (`44px` =
-`var(--touch)`).
+**Ne pas voir une cible ne la rend pas conforme** — tout rapport dit sa PORTÉE.
 
-**Ne pas voir une cible ne la rend pas conforme** — tout rapport dit sa PORTÉE,
-et elle se lit.
+**Un banc vert n'est pas un regard.** Les instruments savaient dire que les
+règles étaient là ; ils ne pouvaient pas dire que l'étiquette avait cessé de
+faire semblant d'être un bouton.
 
 ### Toucher
 
@@ -170,19 +186,16 @@ et elle se lit.
 redémarrage — qui interrompt tagging et scan.
 
 **L'ordre de la cascade a QUATRE étages** : `components.css` → page →
-`tokens.css` → `base.css`. Une feuille inchangée figure des DEUX côtés de
-`--avant`/`--apres`.
+`tokens.css` → `base.css`.
 
-**Changer une BALISE change son style par défaut.**
-
-**Jamais deux écrivains sur `photos.db`.** Le serveur est l'écrivain unique.
+**Jamais deux écrivains sur `photos.db`.** Le serveur est l'écrivain unique ;
+`26 - Ranger par annee.bat` exige qu'il soit ARRÊTÉ, et le PROUVE deux fois.
 
 **Un `_exiftool_tmp` condamne sa photo** — balayage jamais par défaut.
 
-**Un nom accentué passe au banc par le jeton `b64:`.**
-
-> **Piège d'horloge** : `device_bash` est en **UTC** (−2 h). Les epochs du
-> serveur sont la seule heure fiable.
+> **Piège d'horloge** : `device_bash` est en **UTC** (−2 h chez Mike).
 >
-> **Le dossier monté a un cache** : `tail` peut rendre du vieux. Le `mtime`
-> (`ls -l`, `date -r`) dit la vérité.
+> **Le dossier monté a un cache** : le `mtime` dit la vérité, `tail` peut
+> mentir. Mais un gel SIMULTANÉ de plusieurs fichiers au même instant est
+> aussi ce que produit une vraie fermeture — demander à Mike plutôt que de
+> conclure.

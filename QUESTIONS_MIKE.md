@@ -14,36 +14,25 @@
 
 ## En attente
 
-- **28/08 — Google Photos : 55,6 Go peuvent partir, ~106 fichiers ne le
-  peuvent PAS, et il faut choisir dans quel ordre.** La vérification d'après
-  rapatriement est nette : **ABSENT = 0** — tout ce que Google détient existe
-  sur le NAS. Sur 13 905 médias : **4 293 CERTAIN** (même nom, même taille au
-  bit près, 55,6 Go) et 9 612 « même nom, taille différente ».
+- **29/08 — Google : il ne manque QU'UNE vérification avant d'effacer.** Les
+  **297 fichiers que Google portait mieux que le NAS sont rapatriés** (100 au
+  seuil de 100 Ko, puis 197 au seuil de 1 octet), 0 grief, sous
+  `_A TRIER\Google porte mieux\<année>`. Au dernier relevé complet il ne
+  restait plus aucun déficit supérieur à 100 Ko — les neuf vidéos à −73, −40,
+  −22 Mo ont disparu du problème.
 
-  **Ces 9 612 se lisent en deux paquets, et un seul pose problème.** Le NAS
-  est plus GROS dans 9 315 cas, d'un écart médian de **4 101 octets** — c'est
-  la taille d'un bloc XMP, donc nos propres tags écrits dans le fichier :
-  bénin, le NAS porte la photo de Google PLUS nos noms. Mais dans **297 cas
-  le NAS est plus PETIT**, dont **89 de plus d'un mégaoctet**. Ceux-là ne
-  s'expliquent pas par des métadonnées.
+  **La vérification finale n'a jamais rendu** : la machine s'est coupée une
+  minute après son lancement. *Ma recommandation : la relancer d'abord —
+  `verifier_photos_google.py --takeout b64:QzpcR09PR0xFIFBIT1RPU1xleHRyYWl0`.
+  Si elle ne compte plus aucun « NAS plus petit », l'effacement GLOBAL chez
+  Google devient sûr, et c'est le seul chemin praticable : sélectionner 4 300
+  fichiers à la main dans l'interface web ne l'est pas.* Le geste d'effacement
+  reste le tien — je ne supprime rien chez un tiers.
 
-  **Les vidéos, précisément** (ta question) : **3 114 vidéos, dont 3 104
-  CERTAIN** — identiques au bit près sur le NAS. Les **10 autres sont plus
-  petites côté NAS**, et lourdement : −73 Mo, −40 Mo, −22 Mo… Exemples :
-  `20250510_213701.mp4` (204 Mo chez Google, 131 sur le NAS),
-  `20250814_222300.mp4` (150 → 110 Mo). Une seule est plus grosse sur le NAS
-  (`20260724_201256.mp4`, 8 → 39 Mo). Et côté photos, des cas comme
-  `Luzarches 2016 (33).jpg` : **8,5 Mo chez Google, 0,6 Mo sur le NAS**.
-
-  *Ma recommandation, dans cet ordre : (1) libérer les 55,6 Go CERTAINS —
-  ça ramène le compte de 96 % à ~41 Go et règle le problème Gmail ; (2) NE
-  PAS toucher aux ~106 fichiers où Google porte plus que le NAS, et les
-  rapatrier d'abord — c'est le même outil que pour les absentes ; (3)
-  relancer la vérification, et alors seulement effacer le reste.* Le geste
-  d'effacement chez Google reste le tien : je ne supprime rien chez un tiers.
-  Note pratique : sélectionner 4 293 fichiers à la main dans l'interface web
-  est irréaliste — **rapatrier les ~106 d'abord rend l'effacement GLOBAL sûr**,
-  et c'est probablement le chemin le plus court.
+  **Un piège de critère, qui vaut d'être retenu** : ne pas attendre que « tout
+  soit CERTAIN ». Notre propre tagging ajoute un bloc XMP (~4 Ko) à chaque
+  photo et fait donc RECULER ce compte en permanence. Le critère qui se tient
+  est **« le NAS n'est jamais plus petit »**.
 
 - **27/08 — Google : 116 paires restent indéterminées.** 95 (74 dont le
   trailer contient lui-même un `FF D9`, 21 qui ne sont pas des JPEG des deux
