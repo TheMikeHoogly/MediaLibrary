@@ -26,6 +26,7 @@ import subprocess
 import sys
 import threading
 import time
+import traceback
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -10328,28 +10329,28 @@ class Handler(BaseHTTPRequestHandler):
         if dirparam:
             if sub:
                 parent = f"{idx}/{sub.rsplit('/', 1)[0]}" if '/' in sub else str(idx)
-                fparts.append('<a class="fchip up" href="/files?dir='
+                fparts.append('<a class="btn btn--nav" href="/files?dir='
                               + urllib.parse.quote(parent, safe='/')
                               + '">&#11014;&#65039; Parent</a>')
             else:
-                fparts.append('<a class="fchip up" href="/browse">&#11014;&#65039; Dossiers</a>')
+                fparts.append('<a class="btn btn--nav" href="/browse">&#11014;&#65039; Dossiers</a>')
         for e in subdirs:
             sv = f"{idx}/{(sub + '/' if sub else '') + e.name}"
-            fparts.append('<a class="fchip" href="/files?dir='
+            fparts.append('<a class="btn btn--nav" href="/files?dir='
                           + urllib.parse.quote(sv, safe='/')
                           + f'">&#128193; {html.escape(e.name)}</a>')
         cur = f"{idx}/{sub}" if sub else str(idx)
         if rec:
-            fparts.append('<a class="fchip up" href="/files?dir='
+            fparts.append('<a class="btn btn--nav" href="/files?dir='
                           + urllib.parse.quote(cur, safe='/')
                           + '">&#128257; Ce dossier seul</a>')
         elif subdirs:
-            fparts.append('<a class="fchip up" href="/files?dir='
+            fparts.append('<a class="btn btn--nav" href="/files?dir='
                           + urllib.parse.quote(cur, safe='/')
                           + '&amp;rec=1">&#128257; Inclure les sous-dossiers</a>')
         if fparts:
             lv = f'/browse/{idx}/' + urllib.parse.quote(sub) if sub else f'/browse/{idx}'
-            fparts.append(f'<a class="fchip up" href="{lv}">&#128196; Liste</a>')
+            fparts.append(f'<a class="btn btn--nav" href="{lv}">&#128196; Liste</a>')
         folders_html = ('<div class="folders">' + ''.join(fparts) + '</div>') if fparts else ''
         if search_mode:
             folders_html = ''   # une page de resultats n'a pas de sous-dossiers
@@ -10358,7 +10359,7 @@ class Handler(BaseHTTPRequestHandler):
             # de référence arrive de toute façon en tête d'aucun résultat
             # (elle est écartée) et son dossier reste à un clic.
             folders_html = ('<div class="folders">'
-                            '<span class="fchip">&#128269; Semblables à '
+                            '<span class="fetiquette">&#128269; Semblables à '
                             + html.escape(Path(simparam).name) + '</span>'
                             '</div>')
         jour_items, jour_libelle = [], ''
@@ -10369,7 +10370,7 @@ class Handler(BaseHTTPRequestHandler):
                 # 29 % de la photothèque n'a pas de date au jour près ; une
                 # page muette laisserait croire à une panne.
                 folders_html = (
-                    '<div class="folders"><span class="fchip">'
+                    '<div class="folders"><span class="fetiquette">'
                     'Cette photo n\'a pas de date de prise de vue au jour '
                     'près : seule son année est connue, on ne peut donc pas '
                     'la rapprocher d\'un même jour.</span></div>')
@@ -10512,7 +10513,7 @@ class Handler(BaseHTTPRequestHandler):
                         # Pas encore de vecteur : photo fraîchement déposée ou
                         # écartée. État vide RÉDIGÉ (plancher photo-ui n° 7).
                         folders_html = ('<div class="folders">'
-                                        '<span class="fchip">Cette photo n\'a '
+                                        '<span class="fetiquette">Cette photo n\'a '
                                         'pas encore été analysée : son vecteur '
                                         'sera calculé en tâche de fond, '
                                         'réessayer dans quelques minutes.'
@@ -10583,7 +10584,7 @@ class Handler(BaseHTTPRequestHandler):
             # Bandeau bâti sur ce qui est RÉELLEMENT rendu (après le plafond et
             # après les clés sans URL servable) : un compteur qui annonce plus
             # que ce qu'on voit est un compteur qui ment.
-            chips = ('<span class="fchip">&#128197; ' + html.escape(jour_libelle)
+            chips = ('<span class="fetiquette">&#128197; ' + html.escape(jour_libelle)
                      + '</span>')
             comptes = {}
             for _e in file_data:
@@ -10591,10 +10592,10 @@ class Handler(BaseHTTPRequestHandler):
             # Une puce par année : c'est le récit de la page (« ce jour-là,
             # en 2008, en 2011, en 2019 »), et un ancrage pour l'œil.
             for an in sorted(comptes):
-                chips += ('<span class="fchip jour-an">' + str(an)
+                chips += ('<span class="fetiquette jour-an">' + str(an)
                           + ' <b>' + str(comptes[an]) + '</b></span>')
             if not comptes:
-                chips += ('<span class="fchip">Aucune autre photo ce '
+                chips += ('<span class="fetiquette">Aucune autre photo ce '
                           'jour-là dans la photothèque.</span>')
             folders_html = '<div class="folders">' + chips + '</div>'
 
@@ -12333,6 +12334,30 @@ class Handler(BaseHTTPRequestHandler):
             else:
                 href = '/uploads/' + urllib.parse.quote(name)
                 rows.append(f'<a class="row" href="{href}" target="_blank">{inner}</a>')
+        # Les FILS d'abord : un fichier illisible est un incident, un fil mort
+        # est une panne qui arrête le travail sans que rien d'autre le dise.
+        # C'est le manque exact du 27/08 — la mort était dans le journal, elle
+        # n'était sur aucune page.
+        fils = []
+        for nom, e in sorted(fils_etat().items()):
+            if e.get('fini') and not e.get('erreur'):
+                continue                     # une tâche à un coup qui a fini
+            if e.get('vivant') and not e.get('morts'):
+                continue                     # au travail, jamais tombé
+            depuis = time.time() - float(e.get('depuis') or time.time())
+            etat = ('ALERTE' if e.get('alerte')
+                    else ('mort' if not e.get('vivant') else 'reparti'))
+            fils.append(
+                f'<span class="row"><span class="ic">&#9888;&#65039; {etat}</span>'
+                f'<span class="nm">{html.escape(nom)}<br>'
+                f'<small style="color:#777">'
+                f'{e.get("morts", 0)} mort(s), {e.get("consecutives", 0)} '
+                f'd\'affilee &#183; depuis {depuis / 60:.0f} min &#183; '
+                f'{html.escape(str(e.get("erreur") or ""))[:150]}'
+                f'</small></span></span>')
+        if fils:
+            rows = fils + rows
+
         if rows:
             body = '\n'.join(rows)
             body += ('<p class="empty">Ces fichiers sont candidats à la suppression '
@@ -12340,10 +12365,13 @@ class Handler(BaseHTTPRequestHandler):
                      '« EXIF endommagé » = la photo s\'affiche mais ses métadonnées '
                      'sont corrompues (les tags restent dans la galerie).</p>')
         else:
-            body = '<p class="empty">Aucun fichier à problème détecté &#127881;</p>'
+            body = ('<p class="empty">Aucun fichier à problème détecté, '
+                    'et les fils de travail tournent &#127881;</p>')
         page = (ui_page('browse')
                 .replace('__EXTRA__', '')
-                .replace('__CRUMBS__', f'Santé — {len(problems)} fichier(s) à problème')
+                .replace('__CRUMBS__',
+                         f'Santé — {len(problems)} fichier(s) à problème, '
+                         f'{len(fils)} fil(s) à signaler')
                 .replace('__CTX__', 'null')
                 .replace('__ROWS__', body))
         self._send_html(page)
@@ -12665,6 +12693,128 @@ def pilotage_loop():
         os._exit(pilotage.CODE_REDEMARRAGE)
 
 
+# ─────────────────── Surveillance des fils de travail ───────────────────
+# Le 27/08 à 23:42:50, `tagger_worker` est mort sur un verrou SQLite. Sa file
+# s'est remplie, le serveur est resté d'apparence parfaitement vivante, et la
+# panne a été découverte à 07:43 par un humain — HUIT HEURES. `journal_serveur`
+# posait le constat depuis le 23/08 ; personne ne le lisait.
+#
+# Règle de Mike (28/08) : un fil de travail mort SE RELANCE, et cinq morts
+# consécutives ALERTENT. « Consécutives » se compte sur les morts SANS reprise
+# qui tient entre elles — un fil qui a travaillé cinq minutes remet le compteur
+# à zéro, sinon une mort par jour finirait par ressembler à une boucle. Passé
+# cinq, on continue de relancer — renoncer ramènerait exactement la panne qu'on
+# répare — mais l'alerte est permanente sur `/sante` et répétée au journal, qui
+# se lit à distance.
+FILS = {}
+FILS_LOCK = threading.Lock()
+FIL_REPRISE_S = 300.0      # une reprise qui tient 5 min remet le compteur à zéro
+FIL_ALERTE = 5             # cinq morts d'affilée : une panne dure, pas un incident
+FIL_PAUSE_S = 1.0          # attente avant la 1re relance, doublée ensuite
+FIL_PAUSE_MAX_S = 300.0    # plafond : on n'abandonne pas, on espace
+FIL_RAPPEL_S = 600.0       # une alerte se répète, sans inonder le journal
+
+
+def fils_etat():
+    """Instantané du registre — pour `/sante` et pour les bancs."""
+    with FILS_LOCK:
+        return {nom: dict(e) for nom, e in FILS.items()}
+
+
+def _fil_note(nom, **champs):
+    with FILS_LOCK:
+        e = FILS.setdefault(nom, {'morts': 0, 'consecutives': 0, 'alerte': False,
+                                  'vivant': True, 'fini': False,
+                                  'depuis': time.time(), 'erreur': None,
+                                  'boucle': True})
+        e.update(champs)
+        return dict(e)
+
+
+def _fil_tourne(cible, nom, boucle, args, dormir, continuer):
+    """La vie d'un fil surveillé : il travaille, il meurt, il repart.
+
+    `continuer` est le seul paramètre qui n'existe que pour la MESURE — un banc
+    ne peut pas observer une boucle infinie. Il vaut None en production, et la
+    boucle est alors vraiment sans fin."""
+    attente = FIL_PAUSE_S
+    dernier_cri = 0.0
+    tour = 0
+    while continuer is None or continuer(tour):
+        tour += 1
+        _fil_note(nom, vivant=True, depuis=time.time())
+        debut = time.time()
+        propre, erreur = False, None
+        try:
+            cible(*args)
+            propre = True
+        except Exception as e:                                # noqa: BLE001
+            erreur = f"{type(e).__name__}: {e}"
+            # La trace s'imprime ICI. En rattrapant l'exception on prive
+            # `threading.excepthook` de son passage : sans cette ligne, on
+            # échangerait huit heures d'arrêt contre la PERTE du diagnostic
+            # qui a permis de comprendre la panne. Le journal garde les deux.
+            traceback.print_exc()
+        duree = time.time() - debut
+
+        if propre and not boucle:
+            _fil_note(nom, vivant=False, fini=True, erreur=None)
+            return                  # une tâche à un coup a le DROIT de finir
+
+        if erreur is None:
+            erreur = "rendu sans erreur (un fil de travail ne doit pas rendre)"
+        tenu = duree >= FIL_REPRISE_S
+        with FILS_LOCK:
+            e = FILS.setdefault(nom, {'morts': 0, 'consecutives': 0})
+            e['morts'] = e.get('morts', 0) + 1
+            e['consecutives'] = 1 if tenu else e.get('consecutives', 0) + 1
+            e['vivant'] = False
+            e['erreur'] = erreur
+            e['alerte'] = e['consecutives'] >= FIL_ALERTE
+            consecutives, alerte = e['consecutives'], e['alerte']
+        print(f"  FIL MORT : {nom} : {erreur} — apres {duree:.0f}s, "
+              f"{consecutives} d affilee", flush=True)
+
+        if not boucle:
+            # Une tâche à un coup qui échoue se DIT, elle ne se rejoue pas :
+            # un backfill relancé en boucle referait son travail sans le savoir.
+            _fil_note(nom, fini=True)
+            return
+
+        maintenant = time.time()
+        if alerte and maintenant - dernier_cri >= FIL_RAPPEL_S:
+            dernier_cri = maintenant
+            print(f"  ALERTE : {nom} est mort {consecutives} fois d affilee — "
+                  f"derniere cause : {erreur}. Voir /sante.", flush=True)
+        if tenu:
+            attente = FIL_PAUSE_S
+        (dormir or time.sleep)(attente)
+        attente = min(attente * 2, FIL_PAUSE_MAX_S)
+
+
+def fil_surveille(cible, nom=None, boucle=True, args=(), dormir=None,
+                  continuer=None, demarrer=True):
+    """Lance `cible` dans un fil SURVEILLÉ, qui se relance s'il doit boucler.
+
+    `boucle=True` : le fil ne doit jamais rendre — une exception COMME un
+    retour sont des morts, et il repart. **Il repart de la FILE, jamais de
+    l'élément qu'il tenait** : `task_done()` vit dans un `finally`, un fil tué
+    avant laisse déjà un compteur faussé, et rejouer l'élément le fausserait
+    une seconde fois.
+
+    `boucle=False` : une tâche à un coup. Elle a le droit de FINIR ; si elle
+    échoue, sa mort est enregistrée et VISIBLE, mais elle n'est pas rejouée."""
+    nom = nom or getattr(cible, '__name__', 'fil')
+    _fil_note(nom, vivant=True, fini=False, depuis=time.time(), boucle=boucle,
+              morts=0, consecutives=0, alerte=False, erreur=None)
+    t = threading.Thread(target=_fil_tourne, name=nom, daemon=True,
+                         args=(cible, nom, boucle, tuple(args), dormir,
+                               continuer))
+    if demarrer:
+        t.start()
+    return t
+
+
 class QuietServer(ThreadingHTTPServer):
     """N'affiche pas de traceback quand un téléphone ferme sa connexion."""
 
@@ -12691,33 +12841,36 @@ if __name__ == '__main__':
     try:
         import pilotage
         pilotage.ecrire(SCRIPT_DIR / pilotage.FICHIER, 'marche')
-        threading.Thread(target=pilotage_loop, daemon=True).start()
+        fil_surveille(pilotage_loop)
     except Exception as e:                                    # noqa: BLE001
         print(f"  ⚠ Pilotage par fichier indisponible ({e}) — "
               f"redemarrage uniquement par les bats.")
 
-    threading.Thread(target=tagger_worker, daemon=True).start()
-    threading.Thread(target=maintenance_loop, daemon=True).start()
-    threading.Thread(target=_backfill, args=('gps', backfill_gps),
-                     daemon=True).start()
-    threading.Thread(target=_backfill, args=('dates', backfill_dates),
-                     daemon=True).start()
-    threading.Thread(target=reconcile_named_tags, daemon=True).start()
-    threading.Thread(target=_backfill, args=('noms', reimport_name_tags),
-                     daemon=True).start()
-    threading.Thread(target=face_worker, daemon=True).start()
-    threading.Thread(target=face_scan_loop, daemon=True).start()
-    threading.Thread(target=animal_worker, daemon=True).start()
-    threading.Thread(target=animal_scan_loop, daemon=True).start()
-    threading.Thread(target=pet_embed_loop, daemon=True).start()
-    threading.Thread(target=rederive_pet_refs, daemon=True).start()
-    threading.Thread(target=cat_curator_loop, daemon=True).start()
+    # Qui BOUCLE et qui REND a été MESURÉ, pas supposé : un `while True:` dans
+    # l'AST de chaque fonction. Se tromper de colonne ici relancerait sans fin
+    # une tâche qui avait simplement fini son travail.
+    fil_surveille(tagger_worker)
+    fil_surveille(maintenance_loop)
+    fil_surveille(_backfill, nom='backfill:gps', boucle=False,
+                  args=('gps', backfill_gps))
+    fil_surveille(_backfill, nom='backfill:dates', boucle=False,
+                  args=('dates', backfill_dates))
+    fil_surveille(reconcile_named_tags, boucle=False)
+    fil_surveille(_backfill, nom='backfill:noms', boucle=False,
+                  args=('noms', reimport_name_tags))
+    fil_surveille(face_worker)
+    fil_surveille(face_scan_loop)
+    fil_surveille(animal_worker)
+    fil_surveille(animal_scan_loop)
+    fil_surveille(pet_embed_loop)
+    fil_surveille(rederive_pet_refs)
+    fil_surveille(cat_curator_loop)
     _file_personnes_reprise()   # AVANT l'ecrivain : la file d'abord
-    threading.Thread(target=person_writer, daemon=True).start()
-    threading.Thread(target=curator_loop, daemon=True).start()
-    threading.Thread(target=reembed_loop, daemon=True).start()
-    threading.Thread(target=semantic_loop, daemon=True).start()
-    threading.Thread(target=maintenance_orchestrator, daemon=True).start()
+    fil_surveille(person_writer)
+    fil_surveille(curator_loop)
+    fil_surveille(reembed_loop)
+    fil_surveille(semantic_loop)
+    fil_surveille(maintenance_orchestrator)
 
     with QuietServer(('', PORT), Handler) as httpd:
         httpd.allow_reuse_address = True

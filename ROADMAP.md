@@ -44,6 +44,10 @@ distance, contrairement à `/sante`. **Risque nommé** : `task_done()` est dans
 un `finally`, un fil tué avant laisse un élément perdu et un compteur faussé —
 la relance repart de la FILE, jamais de l'élément que le fil tenait.
 
+**1 quinquies. Rapatrier les ~106 fichiers que Google porte mieux que le
+NAS** (10 vidéos, ~96 photos), puis relancer `verifier_photos_google.py` :
+c'est ce qui rend l'effacement GLOBAL chez Google sûr, et donc court.
+
 **1 quater. Le 9 septembre au matin : VÉRIFIER que Windows a demandé.** Patch
 Tuesday tombe le 8 ; le redémarrage arrivait toujours vers 01:30 la nuit
 suivante. Trois réglages ont été posés le 28/08 (notification ACTIVÉE,
@@ -101,6 +105,58 @@ s'efface chez Google tant qu'il en reste une. **C'est le geste le plus urgent
 de la liste**, avant les boutons et avant le chantier 17 : ces fichiers ne
 vivent aujourd'hui qu'à un seul endroit, et c'est chez un tiers dont le quota
 est à 96 %. Deux questions dans `QUESTIONS_MIKE.md` (27/08).
+
+## État (28/08/2026, session 61) — LES VINGT FILS ONT UN FILET, ET GOOGLE A SON COMPTE
+
+**Le superviseur de fils est écrit, et les vingt fils y passent.** Règle de
+Mike : le fil mort SE RELANCE, cinq morts consécutives ALERTENT. `fil_surveille`
+enregistre chaque fil dans `FILS`, relance avec une attente qui double (1 → 300 s),
+remet le compteur à zéro dès qu'une reprise tient 5 min, et **`/sante` affiche
+désormais les fils avant les fichiers** — c'était le manque exact du 27/08 : la
+mort était dans le journal, elle n'était sur aucune page.
+
+**Qui BOUCLE et qui REND a été MESURÉ, pas supposé** : un balayage AST des
+`while True:` a classé les vingt fonctions. Quinze bouclent (elles se
+relancent), cinq rendent — les trois `_backfill`, `reconcile_named_tags` — et
+celles-là ont le DROIT de finir : les relancer leur ferait refaire leur travail
+sans le savoir. C'est le mode de panne que ce mécanisme pouvait CRÉER.
+
+**Un piège évité, et il valait la peine** : en rattrapant l'exception, le
+superviseur prive `threading.excepthook` de son passage. Sans réimprimer la
+trace, on échangerait huit heures d'arrêt contre la PERTE du diagnostic qui a
+permis de comprendre la panne. Un test tient cette ligne.
+
+`test_fils_surveilles.py`, 10 contrôles, **10 rouges sur le code d'avant** —
+dont un seul l'est pour une raison de FOND (le garde de source qui interdit un
+`threading.Thread` nu sur un fil de travail) ; les neuf autres le sont parce
+que le mécanisme n'existait pas, ce qui est le seul rouge possible pour du
+neuf. Le dire vaut mieux qu'un compte flatteur.
+
+**`.fchip` est mort, et deux noms l'ont remplacé** (décision de Mike) : les
+`<a>` de navigation prennent `.btn btn--nav` (cible 44 px, un seul
+vocabulaire), les `<span>` d'information deviennent `.fetiquette` — sans
+bordure ni curseur, pour qu'on ne puisse plus les confondre en les LISANT.
+Instruments verts, banc des pages composants vert sur le serveur vivant.
+**L'œil manque** : l'extension Chrome n'était pas connectée après le
+redémarrage du PC. À poser au prochain passage.
+
+### Google : ABSENT = 0, et un écart qui se lit en deux paquets
+
+Vérification d'après rapatriement (244 s) : sur **13 905 médias**,
+**4 293 CERTAIN** (55,6 Go), **9 612 « taille différente »**, **0 ABSENT**.
+
+Les 9 612 se séparent nettement. Le NAS est plus GROS dans 9 315 cas, écart
+médian **4 101 octets** — la taille d'un bloc XMP : ce sont nos propres tags,
+le NAS porte la photo de Google PLUS nos noms. Mais **297 fois le NAS est plus
+PETIT, dont 89 de plus d'un mégaoctet**, et ça ne s'explique pas par des
+métadonnées.
+
+**Les vidéos** : 3 114, dont **3 104 identiques au bit près**. Les 10 autres
+sont plus petites côté NAS, lourdement (−73 Mo, −40 Mo, −22 Mo). Côté photos,
+`Luzarches 2016 (33).jpg` fait 8,5 Mo chez Google et 0,6 Mo sur le NAS.
+**Ces ~106 fichiers-là ne doivent pas être effacés chez Google avant d'être
+rapatriés.** Le reste peut partir. Détail et recommandation :
+`QUESTIONS_MIKE.md`.
 
 ## État (28/08/2026, session 60) — LE TAGUEUR EST MORT D'AVOIR VOULU NOTER SA MORT
 

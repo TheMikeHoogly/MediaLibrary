@@ -100,9 +100,17 @@ body { min-height: 100vh; }
 /* -- barre de dossiers -- */
 .folders { display: flex; flex-wrap: wrap; gap: var(--e-2); padding: var(--e-3) var(--e-4);
            background: var(--salle-2); border-bottom: var(--trait); }
-.fchip { padding: var(--e-2) var(--e-3); border-radius: var(--r-md); background: var(--salle-3); color: var(--texte);
-         text-decoration: none; font-size: var(--t-sm); border: var(--trait); }
-.fchip.up { background: var(--salle-3); border-color: var(--graphite); color: var(--graphite); }
+/* `.fchip` habillait DEUX natures sous un seul nom : des <a> qui NAVIGUENT et
+   des <span> qui INFORMENT. Les convertir en bloc au `.btn` canonique aurait
+   fait des etiquettes qui ressemblent a des boutons -- et le plancher n. 5 dit
+   l'inverse : <button> pour agir, <a> pour naviguer, et rien qui fasse
+   semblant. Trancher par Mike le 28/08 : deux noms, deux natures.
+   Les <a> prennent `.btn` (cible 44 px, un seul vocabulaire) ; ce qui reste
+   ici est l'ETIQUETTE, sans bordure ni curseur, pour qu'on ne puisse plus la
+   confondre en la LISANT. */
+.btn--nav { text-decoration: none; display: inline-flex; align-items: center; }
+.fetiquette { padding: var(--e-2) var(--e-3); color: var(--graphite);
+              font-size: var(--t-sm); }
 
 /* ── grid ── */
 /* Etape B : planche contact. Densite par auto-fill + clamp (jamais un nombre
@@ -179,8 +187,8 @@ body { min-height: 100vh; }
 #lb-jour[hidden] { display: none; }
 /* Millesime d'une annee dans le bandeau « meme jour » : une MESURE, donc
    --f-donnees (plancher photo-ui : les nombres s'alignent et se comparent). */
-.fchip.jour-an { font-family: var(--f-donnees); color: var(--graphite); }
-.fchip.jour-an b { color: var(--texte); font-weight: 600; }
+.fetiquette.jour-an { font-family: var(--f-donnees); color: var(--graphite); }
+.fetiquette.jour-an b { color: var(--texte); font-weight: 600; }
 /* Plancher d'accessibilite n. 1 : focus visible. La page n'avait AUCUNE regle
    :focus-visible -- ecart releve en ajoutant « Meme jour », corrige ici pour
    toute la galerie plutot que pour le seul bouton neuf. */

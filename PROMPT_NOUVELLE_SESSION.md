@@ -9,58 +9,50 @@ FUSIONNÉ — ce document, non. Puis `ROADMAP.md`, `eval/DECISIONS.md`,
 `eval/METHODE.md` — et `docs/DECISIONS_OUTILLAGE.md` si le sujet touche aux
 canaux, à la livraison ou au MCP. Débrief en 2–3 lignes, puis on attaque.
 
-## Où on en est (28/08/2026, fin de session 60)
+## Où on en est (28/08/2026, fin de session 61)
 
-**Le serveur TOURNE** (redémarré 07:41, `code_a_jour: true`, zéro traceback).
+**Le serveur TOURNE** (redémarré 08:44, `code_a_jour`, zéro fil mort depuis).
 
-**Le tagueur était mort d'avoir voulu noter sa mort.** Le 27/08 à 23:42:50,
-`STORE.set` échoue sur `database is locked` ; le gestionnaire d'erreur du
-tagueur **réécrit dans la MÊME base encore verrouillée** ; cette seconde
-erreur, levée DANS le `except`, n'est rattrapée par personne. Fil mort à
-23:42, file qui se remplit, serveur parfaitement vivant à ne rien faire
-pendant **huit heures**. Le redémarrage Windows de 01:29 n'a interrompu
-qu'une machine qui ne travaillait déjà plus.
+**Les vingt fils de `main()` ont un filet.** Règle de Mike : le fil mort SE
+RELANCE, cinq morts consécutives ALERTENT. `fil_surveille` tient le registre
+`FILS`, relance avec une attente qui double (1 → 300 s), remet le compteur à
+zéro dès qu'une reprise tient 5 min, et **`/sante` affiche les fils AVANT les
+fichiers** — le manque exact du 27/08. Qui boucle et qui rend a été MESURÉ
+(balayage AST des `while True:`) : quinze bouclent et se relancent, cinq
+rendent (les `_backfill`, `reconcile_named_tags`) et ont le DROIT de finir.
+`test_fils_surveilles.py` : 10 contrôles, 10 rouges sur le code d'avant.
 
-Trois greffes, livrées : `store_sqlite._ecrire` **réessaie** sur verrou
-(5 essais, 0,4 → 3,2 s, au-dessus des 30 s de `busy_timeout` ; `_est_verrou`
-ne réessaie PAS un « no such table ») ; `_flush_rapide` **ré-arme `_dirty`**
-quand l'écriture échoue, pour que le signal survive à l'échec ;
-`server._marquer_echec` remplace les trois `STORE.set` nus des `except` du
-tagueur et avale un second échec au lieu de tuer son appelant.
+**`.fchip` est mort** : les `<a>` prennent `.btn btn--nav`, les `<span>`
+deviennent `.fetiquette`. Instruments et banc vivant verts. **L'œil manque** —
+Chrome n'était pas connecté après le redémarrage du PC.
 
-**Preuve : `test_verrou_sqlite.py`, 8 contrôles, 6 ROUGES sur le code
-d'avant** — le premier rejoue l'incident à l'identique. Les deux verts sont
-les gardes du mécanisme neuf : ils ne peuvent pas rougir avant qu'il existe.
+**Google : ABSENT = 0.** 13 905 médias, 4 293 CERTAIN (55,6 Go), 9 612 « taille
+différente ». Le NAS est plus gros 9 315 fois d'un écart médian de 4 101 octets
+(nos XMP, bénin) mais **plus PETIT 297 fois, dont 89 de plus d'un Mo**. Les
+vidéos : 3 114, dont **3 104 identiques au bit près** ; les 10 autres sont plus
+petites côté NAS (−73 Mo, −40 Mo…). **Ces ~106 fichiers ne s'effacent pas chez
+Google avant d'être rapatriés** ; le reste peut partir.
 
-**Windows : la cause est nommée.** 29.07, 12.08, 28.08 — toujours 01:29–01:33.
-Les heures d'activité étaient 07:00 → 01:00 : Windows a pris le seul créneau
-laissé. Mike a posé la notification de redémarrage, coupé les préversions de
-fin de mois, et la stratégie `NoAutoRebootWithLoggedOnUsers=1`. **Épreuve :
-nuit du 8 au 9 septembre.** Le maximum des heures d'activité étant 18 h, il
-restera toujours un trou de 6 h — le réglage ne remplace pas la résilience.
+**Windows** : la cause des redémarrages est nommée (toujours 01:29–01:33, les
+heures d'activité s'arrêtaient à 01:00). Trois réglages posés le 28/08,
+**aucun prouvé** — épreuve la nuit du 8 au 9 septembre.
 
 ## Prochain pas
 
-1. **LA RÉSILIENCE DES FILS (le plus utile).** Le tagueur est increvable sur
-   CE verrou, pas sur le prochain mode de panne, et **aucun des vingt fils de
-   `main()` ne se relance**. `journal_serveur` POSE le constat depuis toujours
-   (son commentaire décrit mot pour mot la nuit du 27) — rien ne le lit.
-   **TRANCHÉ (28/08, Mike) : le fil mort se RELANCE, et cinq morts
-   consécutives ALERTENT** (`docs/DECISIONS_OUTILLAGE.md`). À écrire :
-   registre des morts sur `/sante`, relance à attente doublante, compteur
-   remis à zéro par une reprise qui tient 5 min, alerte permanente sur
-   `/sante` ET répétée au journal (lui se lit à distance). **La relance
-   repart de la FILE, jamais de l'élément que le fil tenait** :
-   `task_done()` est dans un `finally`, mourir avant fausse le compteur.
+1. **Rapatrier les ~106 fichiers que Google porte mieux que le NAS** (10
+   vidéos, ~96 photos ; liste dans `_rapport_google_apres.json`, verdict
+   PROBABLE avec le NAS plus petit). Même outil que pour les absentes. Puis
+   relancer `verifier_photos_google.py` : c'est ce qui rend l'effacement
+   GLOBAL chez Google sûr — et donc court, parce que sélectionner 4 293
+   fichiers à la main dans l'interface web est irréaliste.
 
-1 bis. **Le 9 septembre au matin : VÉRIFIER que Windows a DEMANDÉ** au lieu de
-   redémarrer. Patch Tuesday le 8, le redémarrage tombait toujours vers 01:30
-   la nuit suivante. Trois réglages posés le 28/08, **aucun prouvé** :
-   `Get-WinEvent -FilterHashtable @{LogName='System'; Id=1074}` côté Windows,
-   et la bannière du journal côté serveur. Si le serveur a tourné sans
-   interruption, ça tient.
-2. **`.fchip`** : décision en attente dans `QUESTIONS_MIKE.md` (les `<a>` en
-   `.btn`, les `<span>` en `.fetiquette`). Vit dans `server.py`.
+2. **L'ŒIL sur `.fchip`** : la conversion est faite et prouvée aux
+   instruments, mais personne ne l'a REGARDÉE — Chrome n'était pas connecté.
+   Barre de dossiers de `/files`, bandeau « Semblables à », bandeau « même
+   jour » : les `<a>` doivent être des boutons de 44 px, les `<span>` des
+   étiquettes sans bordure. Mesure mobile par iframe 390 px (le zoom du
+   navigateur fausse le redimensionnement de fenêtre).
+
 3. **Le trailer Samsung — l'expérience armée n'attend que des NOMS.** Le
    tableau de corrélation a parlé le 27/08 : **rien n'accuse notre écriture**
    (nommées 86,9 % avec SEF, non nommées 83,9 %, Wilson qui se recouvrent).
