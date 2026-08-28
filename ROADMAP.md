@@ -44,16 +44,26 @@ distance, contrairement à `/sante`. **Risque nommé** : `task_done()` est dans
 un `finally`, un fil tué avant laisse un élément perdu et un compteur faussé —
 la relance repart de la FILE, jamais de l'élément que le fil tenait.
 
-**1 quinquies. OUTILLÉ (28/08) — reste UN geste de Mike :
-`33 - Rapatrier ce que Google porte mieux.bat`.** Il copie les **100 fichiers
-(1,26 Go — 91 photos, 9 vidéos)** où Google porte plus que le NAS d'au moins
-100 Ko, sous `_A TRIER\Google porte mieux\<année>` — un dossier À PART, pour
-qu'ils se lisent comme un arbitrage en attente et non comme du fonds. Rien
-n'est écrasé : la version du NAS reste, Mike tranche. Puis `26 - Ranger par
-annee.bat`, puis relancer `verifier_photos_google.py` : **quand il ne compte
-plus de « NAS plus petit », l'effacement GLOBAL chez Google devient sûr** — et
-c'est ce qui le rend praticable, sélectionner 4 293 fichiers à la main dans
-l'interface web ne l'étant pas.
+**1 quinquies. Google — VÉRIFIÉ (29/08, session 64) : le feu vert est le
+geste de Mike.** Les 297 « Google porte mieux » sont rapatriés ; la
+vérification finale a tourné : ABSENT 0, et les **199 « NAS plus petit »
+sont nos propres copies** — 14 Motion Photos passées par `repair_file`
+(trailer jeté, `_original` intact à côté, 14/14) et 185 à −2…−57 Ko de
+padding, zéro tag perdu (`diagnostic_trailer_google.py`). Question posée
+dans `QUESTIONS_MIKE.md`. **À faire, code** : `repair_file` doit préserver le
+trailer Samsung (vidéo embarquée + ICC) — banc sur une copie d'un Motion
+Photo du Takeout AVANT, l'écriture après.
+
+**1 sexies. DÉFAUT (29/08) : le plan par année range à la RACINE.**
+`rangement_annee.cible()` vise `Photos\<année>` ; le fonds vit sous
+`Photos Mike` depuis le 26/08. Bat 26 a posé **1 217 photos (3,7 Go)** dans
+17 dossiers racine les 27 et 28/08 — quatre journaux `docs/undo_annee_*`
+les couvrent à l'unité. Chemin : corriger `cible()` (constante + test) →
+serveur arrêté, `--undo` ×4 → plan → bat 26 → `.bat` en `rd` non récursif
+sur les 17 dossiers. Mesurer avant l'undo les décisions humaines accrochées à
+ces clés (re-clé hors-ligne : 5 magasins sur 7). Choix de Mike en attente ;
+`_Uploads` → boîte de réception par propriétaire proposé dans le même
+mouvement (chantier 17).
 
 **1 quater. Le 9 septembre au matin : VÉRIFIER que Windows a demandé.** Patch
 Tuesday tombe le 8 ; le redémarrage arrivait toujours vers 01:30 la nuit
@@ -777,110 +787,16 @@ différence ne se verrait pas ; c'est le réseau qui la fait.
 
 ## État (24/08/2026, session 45)
 
-**LE CHANTIER DES XMP EST CLOS, à zéro.** `verifier_xmp_toutes_personnes.py`,
-machine calme, mêmes paramètres que la mesure de référence : **1 614 couples
-nom–photo lus, 0 en écart, 0 nom en écart — taux 0,0 % (Wilson 0,0 – 0,2 %)**,
-contre **255 sur 1 364 (18,7 %, Wilson 16,7 – 20,9 %)** le 23/08 et 0,2 % ce
-matin. Les intervalles ne se touchent à aucun moment. Les 21 fantômes effacés, les 13 échecs repris
-(3 réécrits, le reste déjà conforme), `Val` rattrapé. Le fonds ne porte plus un
-seul nom que l'index connaît et que le fichier ignore.
+Condensé le 29/08 — le récit vit dans git (commits du 24/08, session 45).
 
-**Et il n'y a plus un seul fantôme sur le fonds.** `inventaire_fantomes.py`
-(nouveau, famille `inventaire_`, lecture seule, lançable au banc) balaie les
-deux racines du serveur en 3 min 30 : **0 trouvé**. Il sépare les deux cas —
-fantôme dont l'original est intact **à côté** (effaçable sans risque) et
-fantôme **sans original** (ExifTool peut être mort entre le remplacement et le
-renommage : c'est alors la seule copie qui reste, et l'effacer en lot serait
-une perte). **17 vérifications, dont celle qui interdit tout `unlink` dans le
-module.**
-
-**`/api/search` rend enfin `total` et `tronque`** — observé en réel :
-`total 5898, rendus 1500, tronque 4398`. Ils étaient CALCULÉS puis jetés ;
-seule la page `/files?q=` les recevait. Quand le moteur ne SAIT pas — la
-branche sémantique classe tout le fonds par cosinus — la route rend `null` et
-non `len(results)` : rendre le nombre de résultats ferait passer une page pour
-un fonds entier, c'est-à-dire réinventer le plafond muet à l'autre bout.
-**8 vérifications neuves, 5 rouges sur l'ancien code**, et
-`mesure_recherche_nommee` VÉRIFIE désormais le plafond au lieu de le
-commenter : une requête nommée est déterministe, un `total` absent est une
-régression que le rapport nomme.
-
-**La mesure calme renverse le verdict d'O7, et le chantier `/api/names` est
-FAIT.** Coût fixe du filtre nommé : **139, 141, 146 ms** sur trois passes
-calmes (contre 191–208 sous charge) — **mineur**, sous le seuil de 200, à
-classer avec son chiffre. C'était bien `/api/names` le sujet : **292 ms**, payés
-au chargement de CHAQUE page. La liste des noms ne coûtait rien ; c'est le
-COMPTAGE qui balayait les 43 000 fiches et lisait chaque mot-clé, à chaque
-appel. Il est mis en cache 60 s — **le compte seulement, jamais la liste** :
-un nom créé à l'instant doit paraître tout de suite, sinon on le recrée en
-« Nouveau » (c'est le défaut I7). Observé : **281 ms au premier appel, 0,6 ms
-ensuite**, avec 364 noms et les mêmes comptes qu'avant (Florine 5 907) —
-le cache ne change pas un chiffre.
-
-**Et le banc a crié avant qu'on se réjouisse.** « Un score parfait est une
-ALARME » : sur 0,3 ms il a répondu *suspect*, ce qui était juste pour un banc
-qui ne connaissait qu'un prix. `/api/names` en a deux depuis le cache — celui
-du premier appel après expiration, et celui que paie une page. Le banc les
-mesure et les dit séparément ; les fondre dans une médiane ferait deux
-mensonges à la fois. **7 vérifications neuves, 7 rouges sur l'ancien code.**
 
 ## État (24/08/2026, session 44)
 
-**La réparation du fonds est FINIE.** Relancée à 22:38, terminée à 03:07 :
-**18 828 photos balayées, 3 128 réécrites** (181 la nuit d'avant + 2 947),
-**13 échecs**, aucun nom sauté. **Et le chiffre est tombé** :
-`verifier_xmp_toutes_personnes.py`, machine calme, mêmes paramètres que la
-mesure de référence — **0,2 % d'écart** (Wilson 0,1–0,5 %, 5 écarts sur
-2 247 couples lus, 352 noms), contre **18,7 %** (Wilson 16,7–20,9 %) le 23/08.
-Les intervalles ne se touchent pas. Ordre de grandeur restant : **19 couples**,
-contre ~5 800 photos.
+Condensé le 29/08 — le récit vit dans git. À retenir : la réparation du fonds
+est FINIE (18 828 balayées, 3 128 réécrites, 0,2 % d'écart contre 18,7 %) ;
+un nom qui n'a pas atterri ne se note pas atterri ; un `_exiftool_tmp`
+fantôme bloque sa photo pour toujours — fuite chronique, comptée et dite.
 
-**Et le résidu est EXACTEMENT les échecs.** Les 5 noms encore en écart —
-Jessica Giallara, Pami, Sabrina Camiolo, Petit, Ismet — sont tous portés par
-les 13 photos dont l'écriture a raté. Rien d'autre ne manque : la fuite est
-bouchée, l'arriéré est épongé, et ce qui reste a une cause nommée dans un
-fichier. Contrôlé nom par nom : **Val 1 091/1 094** (3 manquent, un vrai
-rattrapage), **Yann Mamin 13/13** (les deux noms sautés par la passe de 21:38 ;
-un seul avait besoin d'être repris).
-
-**Et le fichier de reprise MENTAIT sur les échecs.** Toute photo VUE y était
-notée faite, l'échec compris : les 13 photos qui ont raté leur écriture
-étaient marquées « faites » et **aucune relance ne les aurait jamais
-reprises**. Règle 2 côté reprise : un nom qui n'a pas atterri ne se note pas
-atterri. Corrigé — la reprise ne note que ce qui a réussi ; l'échec repasse à
-la relance, et lui seul.
-
-**Un échec a maintenant une CAUSE, pas seulement un compte.** La console
-disait `en echec : 3`, ce qui ne se répare pas. Les journaux, relus à la main,
-disaient tout autre chose : **11 des 13 sont un `_exiftool_tmp` fantôme**
-laissé par un ExifTool tué en route, qui **bloque définitivement** la
-réécriture de sa photo tant qu'il est là ; les 2 autres sont des JPEG tronqués
-(famille des illisibles). Les causes sont désormais comptées et dites, avec le
-geste quand il est connu.
-
-**Et les `_exiftool_tmp` ne sont pas un accident, c'est une FUITE
-CHRONIQUE.** La liste demandée à Mike en rend **21**, pas 11 — datés du
-**06/07 au 24/08**, dont un fabriqué par la réparation de la nuit même, et deux
-de 0 octet. Onze bloquaient des photos qu'on savait à réparer ; **les dix
-autres bloquaient en silence**, sans figurer dans aucun journal, donc hors de
-portée de `--reprendre-echecs`. Le mécanisme : ExifTool recopie la photo dans
-`<photo>_exiftool_tmp` avant d'écrire, et **refuse d'écrire tant que ce
-temporaire existe**, sans option pour l'écraser — une écriture tuée en route
-condamne donc sa photo, définitivement et sans bruit. `--balayer-fantomes`
-(jamais par défaut : effacer sur le fonds reste voulu) l'efface et réessaie
-UNE fois. **5 vérifications neuves, 5 rouges sur l'ancien code, 92/92 vertes.**
-
-**`--reprendre-echecs`** refait ce que les journaux disent en échec, par
-PHOTO, sans rebalayer 18 828 photos pour en retrouver 13 — et sans croire le
-journal : les tags sont relus avant d'écrire, comme partout ici.
-**Et « jamais deux écrivains » vaut enfin aussi contre soi-même.** Le fichier
-tenait cet invariant contre le SERVEUR uniquement : deux passes lancées à la
-main, ou une passe et un rattrapage `--nom`, s'ignoraient. Un verrou
-d'écriture les fait se voir — preuve par FRAÎCHEUR et non par PID (une fenêtre
-fermée laisse un fichier, pas un écrivain ; un verrou de plus de 10 min sans
-signe de vie se reprend tout seul), rafraîchi à chaque tranche, rendu dans un
-`finally`, et jamais posé par une passe à blanc.
-**11 vérifications neuves, 14 rouges sur l'ancien code, 79/79 vertes.**
 
 ## Ce qu'il faut garder des sessions 36 → 43 (le récit vit dans git)
 
