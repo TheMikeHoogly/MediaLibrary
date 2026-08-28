@@ -137,10 +137,19 @@ aurait été le seul vrai risque de ce rangement.
 **Les docs sont taillées** : `QUESTIONS_MIKE.md` passe de 15 000 à 3 500
 octets — dix-neuf entrées réglées retirées, trois vraies questions restent.
 
-**Ce qui n'a PAS pu être fait** : l'œil sur `.fchip`. L'extension Chrome n'est
-pas connectée depuis le redémarrage du PC, et deux tentatives ont échoué. Les
-instruments et le banc sur le serveur vivant sont verts ; **le regard manque**,
-et un banc vert n'est pas un regard.
+**L'ŒIL EST POSÉ** (28/08, après relance de Chrome). Sur le serveur vivant :
+- la barre de dossiers de `/files?dir=` — « ⬆️ Dossiers », « 📄 Liste » —
+  rend deux `<a>` de **44 px exactement**, même forme que la barre d'outils
+  au-dessus, sans soulignement. Un seul vocabulaire ;
+- la bande « même jour » rend **17 `.fetiquette`** : des `<span>`, `border:
+  none`, fond transparent, `cursor: auto`, et les millésimes en `ui-monospace`
+  avec leur compte en gras. Elles ne ressemblent plus à des boutons, et c'était
+  tout l'enjeu ;
+- **zéro `.fchip` dans le DOM rendu**, sur les deux pages.
+
+Ce que l'œil ajoute au banc : les instruments disaient que les règles étaient
+là ; ils ne pouvaient pas dire que l'étiquette avait cessé de ressembler à un
+bouton. C'est un jugement de forme, et il se pose avec les yeux.
 
 ## État (28/08/2026, session 61) — LES VINGT FILS ONT UN FILET, ET GOOGLE A SON COMPTE
 

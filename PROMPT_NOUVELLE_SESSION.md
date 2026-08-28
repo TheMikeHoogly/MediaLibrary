@@ -22,9 +22,11 @@ fichiers** — le manque exact du 27/08. Qui boucle et qui rend a été MESURÉ
 rendent (les `_backfill`, `reconcile_named_tags`) et ont le DROIT de finir.
 `test_fils_surveilles.py` : 10 contrôles, 10 rouges sur le code d'avant.
 
-**`.fchip` est mort** : les `<a>` prennent `.btn btn--nav`, les `<span>`
-deviennent `.fetiquette`. Instruments et banc vivant verts. **L'œil manque** —
-Chrome n'était pas connecté après le redémarrage du PC.
+**`.fchip` est mort, et l'œil est posé** : les `<a>` prennent `.btn btn--nav`
+(44 px exactement, vus sur le serveur vivant), les `<span>` deviennent
+`.fetiquette` (17 dans la bande « même jour » : sans bordure, sans fond, sans
+curseur — elles ne ressemblent plus à des boutons). Zéro `.fchip` dans le DOM
+rendu.
 
 **Le dossier est rangé** : 43 Mo de corbeilles et journaux d'annulation
 d'avant le 25/08 attendent dans `_to_delete/` (Mike supprime ce dossier).
@@ -52,13 +54,6 @@ heures d'activité s'arrêtaient à 01:00). Trois réglages posés le 28/08,
    Google devient sûr** — et c'est le seul chemin praticable, sélectionner
    4 293 fichiers à la main dans l'interface web ne l'étant pas. Le geste
    d'effacement chez Google reste le sien.
-
-2. **L'ŒIL sur `.fchip`** : la conversion est faite et prouvée aux
-   instruments, mais personne ne l'a REGARDÉE — Chrome n'était pas connecté.
-   Barre de dossiers de `/files`, bandeau « Semblables à », bandeau « même
-   jour » : les `<a>` doivent être des boutons de 44 px, les `<span>` des
-   étiquettes sans bordure. Mesure mobile par iframe 390 px (le zoom du
-   navigateur fausse le redimensionnement de fenêtre).
 
 3. **Le trailer Samsung — l'expérience armée n'attend que des NOMS.** Le
    tableau de corrélation a parlé le 27/08 : **rien n'accuse notre écriture**
