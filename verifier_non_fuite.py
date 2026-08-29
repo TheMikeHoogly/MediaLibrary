@@ -18,7 +18,9 @@ de A, deja indexee) : A la voit ; B ne la voit pas, et RIEN ne la trahit :
   5. /api/people/photos     -> la cle absente chez B pour ces noms
   6. /api/search?q=<nom>    -> la cle absente chez B (si un nom est porte)
   7. sans cookie            -> 401 sur l'API, 302 sur une page (la porte)
-Un « ne SAIT pas » (pas de nom sur la photo) est dit, pas rendu vert.
+Un « ne SAIT pas » (pas de nom sur la photo) est dit, pas rendu vert ; et si A
+ne voit pas la cle (pas indexee, chemin faux), le banc S'ARRETE (code 2) : un
+banc sans matiere ne rend ni vert ni rouge.
 """
 import argparse
 import base64
@@ -103,35 +105,52 @@ def main(argv=None):
         print('connexion de B (%s) refusee : le banc ne peut rien prouver' % a.b); return 2
     print('A = %s, B = %s, cle = %s' % (a.a, a.b, asc(cle)))
 
-    # 1. la vignette
+    # PRECONDITION : A doit VOIR la photo. Sinon le banc ne prouve rien — une
+    # cle absente de l'index (pas encore scannee, faute de frappe) rendrait
+    # « B ne voit rien » vert pour de mauvaises raisons. Ce n'est pas une
+    # fuite, c'est un banc sans matiere : on le DIT, et on s'arrete.
+    _, fa = A.json('/api/faits?key=' + urllib.parse.quote(cle))
+    if cle not in (fa or {}).get('faits', {}):
+        print('PRECONDITION NON TENUE : A (%s) ne voit pas cette cle.' % a.a)
+        print('  Soit elle n est pas (encore) indexee (scan ~5 min, ligne « +1 » au journal),')
+        print('  soit le chemin est faux. Le banc ne peut rien prouver : rien n est vert, rien n est rouge.')
+        return 2
     ca, _, _ = A.req('/api/thumb?key=' + urllib.parse.quote(cle))
+    if ca != 200:
+        print('PRECONDITION NON TENUE : /api/thumb pour A -> %d (attendu 200). Le banc s arrete.' % ca)
+        return 2
+    notes.append('ok   A voit la photo (faits + vignette) : le banc a sa matiere')
+
+    # 1. la vignette
     cb, _, _ = B.req('/api/thumb?key=' + urllib.parse.quote(cle))
-    ok(ca == 200, '/api/thumb pour A -> %d' % ca)
     ok(cb == 404, '/api/thumb pour B -> %d (attendu 404, jamais 403)' % cb)
 
     # 2. les faits
-    _, fa = A.json('/api/faits?key=' + urllib.parse.quote(cle))
     _, fb = B.json('/api/faits?key=' + urllib.parse.quote(cle))
     fait_a = (fa or {}).get('faits', {}).get(cle)
-    ok(cle in (fa or {}).get('faits', {}), '/api/faits : A connait la photo')
     ok(cle in ((fb or {}).get('inconnues') or []), '/api/faits : pour B, la cle est « inconnue »')
     noms = list((fait_a or {}).get('noms') or [])
     if not noms:
         print('  (la photo ne porte aucun nom : les controles 4-6 ne peuvent pas etre faits sur elle)')
 
-    # 3. le fichier lui-meme (l'URL /media/ vient de la reponse de A)
-    _, pa = A.json('/api/people/photos?name=' + urllib.parse.quote(noms[0]) + '&limit=50000&light=1') if noms else (0, None)
+    # 3. le fichier lui-meme : /media/<i>/<chemin relatif a la racine>. La
+    # racine est le prefixe du chemin jusqu'a `Photos` ; l'index i se cherche
+    # (A doit obtenir 200 pour l'un d'eux), puis B doit avoir 404 sur le MEME.
     url = None
-    for ph in ((pa or {}).get('photos') or []):
-        if ph.get('key') == cle:
-            url = ph.get('url'); break
+    kp = cle.replace('\\', '/')
+    if '/Photos/' in kp:
+        rel = urllib.parse.quote(kp.split('/Photos/', 1)[1])
+        for i in range(6):
+            cand = '/media/%d/%s' % (i, rel)
+            ca, _, _ = A.req(cand)
+            if ca == 200:
+                url = cand; break
     if url:
-        ca, _, _ = A.req(url)
         cb, _, _ = B.req(url)
-        ok(ca == 200, '%s pour A -> %d' % (asc(url), ca))
+        notes.append('ok   %s pour A -> 200' % asc(url))
         ok(cb == 404, '%s pour B -> %d (attendu 404)' % (asc(url), cb))
     else:
-        print('  (pas d URL /media pour cette cle dans la fiche de A : controle 3 non fait)')
+        print('  (aucune URL /media/<i>/... ne rend 200 pour A : controle 3 non fait)')
 
     # 4-5. les compteurs et les fiches
     if noms:

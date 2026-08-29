@@ -55,10 +55,15 @@ choix de Mike)** : `comptes.py` (15 tests), `creer_compte.py`, `/connexion`,
 `/api/connexion|deconnexion|moi|comptes*`, section Réglages, porte sur chaque
 requête (`_ouvrir`), `comptes.json` hors git. Observé sans compte : porte
 ouverte, rien ne change. **Le banc de non-fuite existe** : `verifier_non_fuite.py`
-(vrai serveur, deux comptes, une clé PRIVE ; 7 contrôles). **Il attend le geste
-de Mike** : `python creer_compte.py Mike` → `Flo` → une photo dans
-`Photos Mike\PRIVE` (scan ≈ 5 min, `📒 +1`) → le banc, lancé PAR MIKE (les
-mots de passe ne passent pas par le canal). Un rouge = niveau A.
+(vrai serveur, deux comptes, une clé PRIVE ; 7 contrôles). **OBSERVÉ EN RÉEL (15:09–15:20)** : comptes Mike et Flo créés par
+`creer_compte.py`, porte fermée, connexions au journal (`🔐 connexion`),
+`Photos Mike\PRIVE\1 Bolivia.jpg` indexée (`📒 +1`), et le banc rend
+**5 verts, 0 fuite** (porte 401/302, A voit, B : thumb 404, faits « inconnue »).
+Le banc a eu un défaut vu en réel : lancé sur une clé inexistante il disait
+FUITE au lieu de « précondition non tenue » — corrigé (code 2, s'arrête) ; et
+le contrôle `/media` ne dépendait plus d'une fiche (URL construite). **Reste
+à observer** : les contrôles 4–6 (COMPTEUR A = B + 1, fiche, recherche) —
+ils exigent un nom sur la photo PRIVE ; c'est le point 17b lui-même.
 
 **`N:\\Photos`** : règle permanente dans `CLAUDE.md` (« Tester en réel »).
 
