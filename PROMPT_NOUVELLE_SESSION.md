@@ -9,84 +9,64 @@ FUSIONNÉ — ce document, non. Puis `ROADMAP.md`, `eval/DECISIONS.md`,
 `eval/METHODE.md` — et `docs/DECISIONS_OUTILLAGE.md` si le sujet touche aux
 canaux, à la livraison ou au MCP. Débrief en 2–3 lignes, puis on attaque.
 
-## Où on en est (29/08/2026, session 64, ~02:00 — SI LE PC A PLANTÉ, LIS CECI)
+## Où on en est (29/08/2026, session 65, matin)
 
-**Tout le code ci-dessous est VÉRIFIÉ vert cette nuit** (les trois bancs de test lancés nommément, jamais `discover` : `ecriture_meta`, `rangement_annee`, `appliquer_plan_annee` — tous VERTS ; la voie C de réparation confirmée par `verifier_reparation_exif.py` sur une copie). Une partie a été écrite par un tour qui a planté avant de le dire ; Mike a relancé. **Une seule session** — le « deuxième écrivain était moi.** Ne pas re-faire ce travail : le vérifier sur le disque, il y est.
+**Tout ce qui précède est GRAVÉ** : `main` = `9ef9134` (réparation EXIF voie C,
+`ecriture_meta.py`, rangement par année + garde-fou racine, bats 34/35/36,
+outils de dédoublonnage `_A TRIER`). Vérifié dans `.git/logs/refs/heads/main`.
 
-**RIEN de cette session n'est encore dans git après `a6ff878`** (les agents
-étaient fermés). Sur le disque, non gravés : `server.py` (réparation EXIF
-corrigée), `ecriture_meta.py` + test, `rangement_annee.py` +
-`appliquer_plan_annee.py` + tests (cible `Photos Mike`, 7 magasins), les
-bats `34` et `35`, `verifier_reparation_exif.py`, `eval/DECISIONS.md`,
-`QUESTIONS_MIKE.md`, `ROADMAP.md`, ce fichier. **Premier geste après le
-redémarrage du serveur : `livrer`** (règle 5 : `server.py` doit tourner).
+**Le NAS ce matin** (`N:\Photos` connecté) : la RACINE est PROPRE — plus aucun
+dossier `<annee>` à la racine, le nettoyage manuel de Mike est fini. Les
+**559 Samsung 2021** sont toujours dans `_A TRIER\211108-210801 Samsung Mike\`.
+Mike fait tourner **bat 36** (dédoublonnage `_A TRIER`, serveur allumé), puis
+**bat 34**.
 
-### Le rangement des 1 217 photos — DÉCISION DE MIKE : nettoyage manuel
+### Fait en session 65, NON gravé, NON observé (serveur intouché : bat 36 tourne)
 
-**Ce qui s'est passé (29/08 matin).** Le rangement a rebondi : `_run_plan_annee`
-n'est appelé QUE par le bouton Réglages, jamais au démarrage ; le plan datait du
-28/08 18:57 (cibles RACINE) ; bat 26 l'a relu et re-rangé à la racine ; bat 34 a
-refusé les 17 dossiers (pleins). **Rien perdu.**
+Le deuxième étage du garde-fou anti-plan-périmé :
 
-**Décision de Mike (29/08) : il NETTOIE la racine À LA MAIN, serveur ALLUMÉ.**
-Beaucoup des fichiers racine viennent de l'album des 40 ans de Florine, déjà
-dans le fonds — donc des doublons à effacer, pas à ranger. C'est SÛR : le scan
-(5 min) via `forget_everywhere` purge tags + détections + vecteurs, **aucun nom
-humain perdu** (fiches keyées par nom). Le dance undo→bat26 pour les 658 Takeout
-est donc ABANDONNÉ. **État à vérifier en début de session** : `device_list_dir`
-sur `N:\Photos\<annee>` (racine) — combien reste-t-il ? Un keeper (non-doublon)
-laissé à la racine se remet dans `Photos Mike\<annee>` en le DÉPLAÇANT à la main
-(le scan re-clé sans re-taguer, `_sync_dir` étape 1, décisions préservées) — ou
-me le signaler et je le range.
+- `server.py` : `fil_surveille(_run_plan_annee, nom='plan:annee', boucle=False)`
+  au démarrage, entre les backfills et `face_worker` — le plan se recalcule à
+  CHAQUE démarrage (ligne `🗂 plan rangement annee : N a ranger…` au journal).
+- `appliquer_plan_annee.py` : `dernier_demarrage()` lit la dernière bannière
+  `DEMARRAGE` de `_journal_serveur.log`, `plan_perime()` refuse (REFUS, code 1,
+  `--forcer` passe outre) un plan dont le mtime est antérieur. Sans journal :
+  laisse passer. `test_appliquer_plan_annee.py` **7)** — tout vert.
+- `ROADMAP.md` 1 sexies mis à jour.
 
-**Dédoublonner `_A TRIER` (déjà rangé) — OUTILS PRÊTS (29/08).** Les collisions du bat 26 sont des JUMEAUX déjà dans le fonds, différant de quelques octets de tags (donc `recensement_doublons` sha256 les rate). `verifier_doublons_atrier.py` (lecture seule) les confirme par `exiftool -ImageDataHash` (validé 30/30 sur Samsung 2021) ; `deplacer_doublons_atrier.py` les met en `.corbeille-rangement` (serveur ALLUMÉ, ne touche pas la base, réversible `--undo`, auto-purge bat 24) ; garde « aucun nom perdu » via `--db`. **Bat 36** enchaîne détection → aperçu → retrait. Le plein dépasse 600 s → via le bat, pas le banc.
+Et le **chantier 17, étape 2** (Mike a suivi mes deux recommandations, gravées
+dans `eval/DECISIONS.md`) : `auteurs.py` + `test_auteurs.py` (22 verts),
+`recle_decisions` transporte `auteurs` (+3 tests), `server.py` : thread-local
+`utilisateur_courant()`, `_auteurs.garnir(PEOPLE_STORE/PETS_STORE)`,
+`migrer_auteurs()` lancé par `fil_surveille` au démarrage (attendu au journal :
+`✍ auteurs : N décision(s) attribuée(s) à Mike sur M fiche(s)`, N ≈ 3 700,
+puis plus rien aux démarrages suivants). `.gitignore` : `docs/migration_auteurs.json`.
 
-**Reste à ranger par le plan : les 559 photos 2021 dans
-`_A TRIER\211108-210801 Samsung Mike\`** (correctement annulées, toujours là).
-Elles, elles passent par le plan : serveur allumé → **bouton Réglages « Plan de
-rangement par année »** → VÉRIFIER que `docs/plan_rangement_annee.json` vise
-`Photos Mike` (`device_list_dir` ne monte pas le NAS ; lire le JSON qui, lui,
-est dans le projet) → serveur arrêté → **bat 26** (le garde-fou laisse passer un
-plan sain, refuse un plan-racine) → démarrer → bat 34 si des dossiers année sont
-vides.
+**Conséquence immédiate** : le plan de 09:53 est antérieur au démarrage de
+10:51:59 → bat 26 le REFUSE tant que le serveur n'a pas redémarré sur le
+nouveau code (et c'est juste : bat 36 déplace des fichiers depuis).
 
-**Garde-fou posé et testé** (`appliquer_plan_annee.plan_vise_la_racine` ;
-`test_appliquer_plan_annee.py` 6) VERT) : bat 26 refuse un plan qui range à la
-racine et dit de le régénérer. Agit sans redémarrage (bat 26 lit ce script).
+## Prochain pas
 
-**À CODER ensuite** : `_run_plan_annee()` au démarrage du serveur, pour qu'un
-plan périmé ne puisse plus être appliqué faute d'avoir été régénéré.
-
-### Tranché par Mike cette nuit
-
-- **Google** : il efface (`photos.google.com` sur PC, sauvegarde du téléphone
-  COUPÉE avant, corbeille à vider ensuite ; le Takeout dézippé reste la 2e
-  copie des Motion Photos complets). La vérification a rendu : ABSENT 0, les
-  199 « NAS plus petit » sont nos copies (14 Motion Photos amputées par
-  `repair_file`, `_original` intact ; 185 de padding, zéro tag perdu).
-- **`_Uploads`** → boîte de réception par propriétaire,
-  `Photos <Nom>\_A TRIER\` (`eval/DECISIONS.md`). À coder dans le chantier 17.
-- **`repair_file`** ne détruit plus : `write_metadata` réécrit XMP + IPTC
-  sans toucher l'EXIF quand ExifTool ne sait pas le relire
-  (`verifier_reparation_exif.py`, voie C ; `ecriture_meta.py`, 14 verts).
-
-## Prochain pas (après le nettoyage racine + rangement Samsung + `livrer`)
-
-0. **Demander à Mike de reconnecter `N:\Photos`** (voir l'encadré ROADMAP),
-   puis `device_list_dir` sur les dossiers racine `N:\Photos\<annee>` pour voir
-   où en est son nettoyage manuel.
-1. **Supprimer `_to_delete/`** (43 Mo). Geste de Mike.
-2. **Le 9 septembre au matin** : Windows a-t-il DEMANDÉ ? `Get-WinEvent
+1. **Au signal de Mike** (bat 36 et 34 finis) : `redemarrer` → journal :
+   bannière neuve + ligne `🗂 plan rangement annee` + ligne `✍ auteurs` (et
+   zéro `FIL MORT`) ; lire
+   `docs/plan_rangement_annee.json` (vise `Photos Mike\2021`, ~559 moves) ;
+   `code_a_jour` vrai. Puis `SESSION_COMMIT.txt` + `livrer`, vérifier
+   `.git/logs/refs/heads/main`.
+2. Mike : `arret` → **bat 26** (le plan passe les deux gardes) → `marche` →
+   vérifier `_A TRIER\211108-210801 Samsung Mike\` vide, `Photos Mike\2021`
+   +559, et 27 décisions-témoins intactes.
+3. **Chantier 17** : PROPRIÉTAIRE, avec `_Uploads` → boîte de réception
+   `Photos <Nom>\_A TRIER\` (tranché, `eval/DECISIONS.md`) ; puis attribution
+   rétroactive des 3 767 décisions.
+4. **Supprimer `_to_delete/`** (43 Mo). Geste de Mike.
+5. **Le 9 septembre au matin** : Windows a-t-il DEMANDÉ ? `Get-WinEvent
    -FilterHashtable @{LogName='System'; Id=1074}`.
-3. **Chantier 17** : PROPRIÉTAIRE, avec `_Uploads` → boîte de réception ;
-   puis attribution rétroactive des 3 767 décisions.
-4. **Chantier 18 (confidentialité)** : le jeu étiqueté et son banc d'abord.
-5. **Le panneau `?` des raccourcis** — brique : un JS commun injecté partout.
-6. **UNIFIER le re-clé** (trois primitives) — l'annulation de cette nuit en
-   est le premier client réel.
-7. **Reste d'audit** : O8–O9, O11, O13–O15 ; I1 ; `animal:luna` (3) vs
-   `animal:Luna` (355) ; quatre pages sans `components.css` (`/map` est
-   témoin de `verifier_pages_composants`).
+6. **Chantier 18 (confidentialité)** : le jeu étiqueté et son banc d'abord.
+7. Le panneau `?` des raccourcis · UNIFIER le re-clé (trois primitives) ·
+   reste d'audit (O8–O9, O11, O13–O15 ; I1 ; `animal:luna` vs `animal:Luna` ;
+   quatre pages sans `components.css`).
 
 ## En fin de projet
 

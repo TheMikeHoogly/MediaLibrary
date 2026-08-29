@@ -75,10 +75,13 @@ corrigé et gravé, mais le plan `docs/plan_rangement_annee.json` datait du 28/0
 18:57 (cibles RACINE) ; bat 26 l'a relu et re-rangé à la racine ; bat 34 a
 refusé les 17 dossiers (pleins) — rien perdu. **Garde-fou posé + testé**
 (`appliquer_plan_annee.plan_vise_la_racine`) : bat 26 refuse un plan qui vise
-la racine. Reprise : bat 35 → serveur+livrer → **bouton Réglages** (le geste
-manquant) → vérifier que le plan vise `Photos Mike` → bat 26 → bat 34. **À
-coder** : `_run_plan_annee()` au démarrage, pour qu'un plan périmé ne puisse
-plus être appliqué. `_Uploads` → boîte de réception par propriétaire : TRANCHÉ
+la racine. **Deuxième étage posé (29/08, session 65, CODÉ, à observer au
+redémarrage)** : `_run_plan_annee()` tourne à chaque démarrage (`fil_surveille`,
+un coup) et `appliquer_plan_annee.plan_perime` refuse un plan plus vieux que la
+dernière bannière `DEMARRAGE` du journal (test 7 vert). Un plan applicable est
+donc toujours un plan calculé sur l'index qu'on vient d'arrêter. Reprise :
+redémarrer (le plan sort au démarrage : ligne `🗂 plan rangement annee` au
+journal) → vérifier qu'il vise `Photos Mike` → arrêt → bat 26 → bat 34. `_Uploads` → boîte de réception par propriétaire : TRANCHÉ
 (`eval/DECISIONS.md`).
 
 **1 quater. Le 9 septembre au matin : VÉRIFIER que Windows a demandé.** Patch
@@ -1311,8 +1314,18 @@ qui en découle : éditer → redémarrer → **observer** → livrer.
     suggestion.
 
     **Ordre de travail proposé** :
-    1. le déplacement `Photos Mike` (avant tout code) ;
-    2. la notion de propriétaire + l'attribution rétroactive à Mike ;
+    1. le déplacement `Photos Mike` (avant tout code) — FAIT (session 52) ;
+    2. la notion de propriétaire + l'attribution rétroactive à Mike —
+       **CODÉ le 29/08 (session 65), à observer au redémarrage** : `auteurs.py`
+       (règle pure : `proprietaire_de`, `reconcilier`, `arbitre`, `recler`,
+       `garnir` ; 22 tests) branché au goulot `PEOPLE_STORE.set`/`PETS_STORE.set`
+       — les trente écritures de décisions sont couvertes sans être touchées ;
+       `utilisateur_courant()` (thread-local, admin tant que l'étape 4 n'existe
+       pas) ; `migrer_auteurs()` au démarrage (idempotent, journal
+       `docs/migration_auteurs.json`) ; le re-clé transporte `auteurs` par
+       `recle_decisions` (serveur ET applicateur hors-ligne, 3 tests). Reste de
+       l'étape : rendre `#contesté` VISIBLE dans la fiche (`/people`), et un
+       conflit de `faces` ENTRE fiches n'a pas de règle (hors `exclude`↔`confirmed`) ;
     3. la VUE par utilisateur et son banc de non-fuite ;
     4. les comptes et l'authentification ;
     5. l'écriture restreinte (effacement, nommage, renommage) ;

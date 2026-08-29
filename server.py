@@ -604,6 +604,66 @@ PET_EMBED_STATE = {"done": 0}
 
 # Phase 2 : personnes nommées + file d'écriture des tags personne:Nom
 PEOPLE_STORE = make_store(PEOPLE_FILE)
+
+# ─── L'AUTEUR des décisions humaines (chantier 17, étape 2 — 29/08/2026) ─────
+# Règle pure dans `auteurs.py` (choix de Mike, eval/DECISIONS.md). Branchée au
+# GOULOT : chaque `set()` sur une fiche personne/animal réconcilie `auteurs`
+# avec les listes `faces`/`exclude`/`confirmed` — toute décision neuve reçoit
+# l'utilisateur courant, une décision annulée perd son auteur, deux jugements
+# contradictoires passent par l'arbitre (propriétaire de la photo, puis admin ;
+# le perdant reste en `#contesté`). Les trente écritures du serveur sont donc
+# couvertes sans être touchées. Tant que l'authentification (étape 4) n'existe
+# pas, l'utilisateur courant est l'admin — Mike, seul écrivain aujourd'hui.
+import auteurs as _auteurs
+
+_UTILISATEUR = threading.local()
+
+
+def utilisateur_courant():
+    """Qui écrit en ce moment : posé par le routeur HTTP (étape 4), l'admin
+    sinon. Ne rend jamais None : une décision sans auteur est une décision
+    perdue pour la règle « les noms de QUI »."""
+    return getattr(_UTILISATEUR, 'nom', None) or _auteurs.ADMIN
+
+
+_auteurs.garnir(PEOPLE_STORE, utilisateur_courant)
+_auteurs.garnir(PETS_STORE, utilisateur_courant)
+
+
+def migrer_auteurs():
+    """Attribution RÉTROACTIVE à l'admin de toute décision sans auteur (une
+    passe au démarrage, idempotente : rejouée, elle ne trouve rien). Rien n'est
+    perdu ni changé dans les listes ; l'annulation est `pe.pop('auteurs')` sur
+    les fiches listées dans le journal `docs/migration_auteurs.json`."""
+    fiches, n = [], 0
+    for magasin, st in (('people', PEOPLE_STORE), ('pets', PETS_STORE)):
+        for pk, pe in list(st.data.items()):
+            if not isinstance(pe, dict):
+                continue
+            champs = _auteurs.reconcilier(pe, _auteurs.ADMIN)
+            if not champs:
+                continue
+            n += len(champs.get('auteurs') or {}) - len(pe.get('auteurs') or {})
+            fiches.append(f"{magasin}:{pk}")
+            for champ, valeur in champs.items():
+                pe[champ] = valeur
+            st.set(pk, pe, save=False)
+        if fiches:
+            st.save()
+    if fiches:
+        try:
+            (SCRIPT_DIR / 'docs').mkdir(exist_ok=True)
+            (SCRIPT_DIR / 'docs' / 'migration_auteurs.json').write_text(json.dumps(
+                {'quand': time.strftime('%Y-%m-%d %H:%M:%S'), 'auteur': _auteurs.ADMIN,
+                 'decisions': n, 'fiches': fiches}, ensure_ascii=False, indent=1),
+                encoding='utf-8')
+        except OSError as e:
+            print(f"  ⚠ journal migration auteurs : {e}")
+        print(f"  ✍ auteurs : {n} décision(s) attribuée(s) à {_auteurs.ADMIN} "
+              f"sur {len(fiches)} fiche(s)")
+    return n
+
+
 PERSON_QUEUE = queue.Queue()          # (chemin, tag, op, clé, n°) à écrire
 # La file d'écriture XMP SURVIT à un arrêt. Elle n'existait qu'en mémoire : la
 # fusion Flo → Florine du 23/08 y a laissé 11 814 écritures pour ~11 h de
@@ -12964,6 +13024,15 @@ if __name__ == '__main__':
     fil_surveille(reconcile_named_tags, boucle=False)
     fil_surveille(_backfill, nom='backfill:noms', boucle=False,
                   args=('noms', reimport_name_tags))
+    # Le plan de rangement par année se RECALCULE à chaque démarrage. Le 29/08,
+    # bat 26 a relu un plan de la veille (cibles RACINE) parce que seul le
+    # bouton Réglages le régénérait ; et appliquer_plan_annee REFUSE désormais
+    # un plan plus vieux que la bannière DEMARRAGE — ce recalcul est ce qui le
+    # rend applicable. Lecture seule de l'index, pas de NAS. Un coup, pas une boucle.
+    fil_surveille(_run_plan_annee, nom='plan:annee', boucle=False)
+    # Chantier 17 : les décisions existantes appartiennent à Mike (une passe,
+    # idempotente, journalisée dans docs/migration_auteurs.json).
+    fil_surveille(migrer_auteurs, nom='migration:auteurs', boucle=False)
     fil_surveille(face_worker)
     fil_surveille(face_scan_loop)
     fil_surveille(animal_worker)

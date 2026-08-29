@@ -22,6 +22,7 @@ import os
 import shutil
 import sys
 import tempfile
+import time
 from pathlib import Path
 
 import appliquer_plan_annee as A
@@ -155,6 +156,25 @@ def main():
     check(A.plan_vise_la_racine(sain) is None, "plan sain : accepte")
     bad = A.plan_vise_la_racine(perime)
     check(bad and bad.endswith('2022\\z.jpg'), "plan perime : refuse, pointe le fautif")
+
+    print("7) GARDE anti-plan-perime : refus d'un plan plus vieux que le dernier demarrage")
+    tmp = Path(tempfile.mkdtemp(prefix='plan_annee_journal_'))
+    try:
+        j = tmp / 'journal.log'
+        j.write_text("bruit\n===== DEMARRAGE 2026-08-29 08:48:05 pid 1 =====\n"
+                     "  ligne\n===== DEMARRAGE 2026-08-29 10:51:59 pid 2 =====\n"
+                     "  encore\n", encoding='utf-8')
+        d = A.dernier_demarrage(j)
+        check(d is not None and time.localtime(d)[:6] == (2026, 8, 29, 10, 51, 59),
+              "derniere banniere lue (pas la premiere)")
+        check(A.plan_perime(d - 1, d), "plan d'avant le demarrage : perime")
+        check(not A.plan_perime(d + 1, d), "plan d'apres le demarrage : accepte")
+        check(A.dernier_demarrage(tmp / 'absent.log') is None, "journal absent -> None")
+        check(not A.plan_perime(0, None), "sans journal : on laisse passer")
+        (tmp / 'vide.log').write_text("rien\n", encoding='utf-8')
+        check(A.dernier_demarrage(tmp / 'vide.log') is None, "journal sans banniere -> None")
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
 
     print()
     if FAIL:

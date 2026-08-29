@@ -118,6 +118,14 @@ def recler_fiche(fiche, old, new):
     if av and av[0] == old:
         champs['avatar'] = [new, av[1]]
 
+    # L'AUTEUR de chaque décision (chantier 17, `auteurs.py`) suit sa
+    # décision : mêmes clés, même re-clé, même fusion sans doublon. Ne compte
+    # pas comme une décision (il l'accompagne).
+    import auteurs as _au
+    recles = _au.recler(fiche.get('auteurs'), old, new)
+    if recles is not None:
+        champs['auteurs'] = recles
+
     return champs, n
 
 

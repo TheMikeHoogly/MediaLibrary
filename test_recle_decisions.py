@@ -21,6 +21,29 @@ B = r"\\NAS\Photos\2024\20240101_120000.jpg"
 C = r"\\NAS\Photos\2024\autre.jpg"
 
 
+class AuteursTest(unittest.TestCase):
+    # Chantier 17 : l'auteur d'une decision suit sa decision au re-cle.
+    def test_auteurs_suivent(self):
+        f = {'name': 'Flo', 'faces': [[A, 3]], 'exclude': [A],
+             'auteurs': {f'faces:{A}:3': 'Mike', f'exclude:{A}': 'Flo',
+                         f'confirmed:{A}#contest\u00e9': 'Papa', f'exclude:{C}': 'Flo'}}
+        champs, n = recler_fiche(f, A, B)
+        self.assertEqual(n, 2)
+        self.assertEqual(champs['auteurs'],
+                         {f'faces:{B}:3': 'Mike', f'exclude:{B}': 'Flo',
+                          f'confirmed:{B}#contest\u00e9': 'Papa', f'exclude:{C}': 'Flo'})
+
+    def test_sans_auteurs_rien_de_plus(self):
+        f = {'name': 'Flo', 'faces': [[A, 3]]}
+        champs, _n = recler_fiche(f, A, B)
+        self.assertNotIn('auteurs', champs)
+
+    def test_auteurs_sans_la_cle_intacts(self):
+        f = {'name': 'Flo', 'exclude': [C], 'auteurs': {f'exclude:{C}': 'Flo'}}
+        champs, _n = recler_fiche(f, A, B)
+        self.assertEqual(champs, {})
+
+
 class RattachementsTest(unittest.TestCase):
     def test_recle_en_gardant_l_index(self):
         f = {'name': 'Flo', 'faces': [[A, 3], [C, 0]]}

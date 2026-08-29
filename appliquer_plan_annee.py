@@ -43,6 +43,7 @@ Options : --plan <chemin>, --db <chemin>.
 
 import argparse
 import json
+import re
 import shutil
 import sys
 import time
@@ -58,6 +59,10 @@ RACINE = Path(__file__).resolve().parent
 # `rekey_stores` ni le serveur hors-ligne ne le transportaient ; une photo
 # rangee perdait son « Bremblens » et le redemandait au geocodeur.
 GPS = RACINE / 'gps_places.json'
+# Le journal du serveur : sa derniere banniere DEMARRAGE date l'index que le
+# plan doit refleter (journal_serveur.BANNIERE).
+JOURNAL = RACINE / '_journal_serveur.log'
+BANNIERE_RE = re.compile(r'^===== DEMARRAGE (\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})')
 
 
 def charger_gps(chemin=None):
@@ -280,6 +285,33 @@ def plan_vise_la_racine(moves):
     return None
 
 
+def dernier_demarrage(journal=JOURNAL):
+    """Instant (epoch, heure locale) de la DERNIERE banniere DEMARRAGE du
+    journal du serveur, ou None si le journal manque ou n'en porte aucune."""
+    quand = None
+    try:
+        with open(journal, 'r', encoding='utf-8', errors='replace') as f:
+            for ligne in f:
+                m = BANNIERE_RE.match(ligne)
+                if m:
+                    quand = m.group(1)
+    except OSError:
+        return None
+    if not quand:
+        return None
+    return time.mktime(time.strptime(quand, '%Y-%m-%d %H:%M:%S'))
+
+
+def plan_perime(plan_mtime, demarrage):
+    """True si le plan a ete CALCULE AVANT le dernier demarrage du serveur :
+    il decrit un index d'avant, pas celui qu'on vient d'arreter. Second etage
+    du garde-fou du 29/08 : le serveur regenere le plan a chaque demarrage
+    (server._run_plan_annee), et si ce recalcul a echoue, on le voit ICI au
+    lieu de ranger sur un plan de la veille. Sans journal (None) : on ne sait
+    pas, on laisse passer."""
+    return demarrage is not None and plan_mtime < demarrage
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--appliquer', action='store_true', help='executer (sinon dry-run)')
@@ -319,6 +351,14 @@ def main():
         print("  Regenere-le (Reglages -> \"Plan de rangement par annee\", ou")
         print("  POST /api/maint/plan-annee) AVANT de ranger. --forcer passe")
         print("  outre, a tes risques.")
+        return 1
+    if plan_perime(Path(args.plan).stat().st_mtime, dernier_demarrage()) \
+            and not args.forcer:
+        print("  REFUS : ce plan est PLUS VIEUX que le dernier demarrage du")
+        print("  serveur (banniere DEMARRAGE de _journal_serveur.log) : il")
+        print("  decrit un index d'avant. Le serveur le regenere au demarrage ;")
+        print("  s'il ne l'a pas fait, lis son journal, puis Reglages ->")
+        print("  \"Plan de rangement par annee\". --forcer passe outre.")
         return 1
     conflits = len(plan.get('conflits', []))
     print(f"{'DRY-RUN' if dry else 'APPLICATION'} : {len(moves)} deplacement(s)"
