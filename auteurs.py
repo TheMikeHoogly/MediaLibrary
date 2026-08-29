@@ -170,6 +170,49 @@ def reconcilier(fiche, auteur):
     return champs
 
 
+def contestations(fiche):
+    """Les jugements PERDUS que porte la fiche, pour les MONTRER (chantier 17,
+    étape 2 : « #contesté visible dans la fiche »). Liste triée de dicts :
+
+        {'champ': 'exclude'|'confirmed'|'faces', 'chemin', 'idx',
+         'auteur': qui a perdu, 'gagnant': qui l'emporte (ou None si la
+         décision gagnante a depuis été annulée), 'gagnant_champ',
+         'motif': 'propriétaire' | 'admin' | 'antériorité' | None}
+
+    Le motif est recalculé depuis le chemin, pas mémorisé : c'est `arbitre`
+    qui l'a produit, on le lui redemande. Un jugement contesté sans gagnant
+    reste listé — c'est précisément ce qu'on ne veut pas perdre en silence."""
+    out = []
+    if not isinstance(fiche, dict):
+        return out
+    A = fiche.get('auteurs') or {}
+    if not isinstance(A, dict):
+        return out
+    for k, perdant in A.items():
+        if not k.endswith(CONTESTE):
+            continue
+        champ, chemin, idx, _c = lire_ident(k)
+        gagnant, gagnant_champ = None, None
+        contraire = CONTRAIRE.get(champ)
+        if contraire:
+            gagnant = A.get(ident(contraire, chemin))
+            gagnant_champ = contraire if gagnant else None
+        motif = None
+        if gagnant:
+            prop = proprietaire_de(chemin)
+            if gagnant == prop:
+                motif = 'propriétaire'
+            elif gagnant == ADMIN:
+                motif = 'admin'
+            else:
+                motif = 'antériorité'
+        out.append({'champ': champ, 'chemin': chemin, 'idx': idx,
+                    'auteur': perdant, 'gagnant': gagnant,
+                    'gagnant_champ': gagnant_champ, 'motif': motif})
+    out.sort(key=lambda c: (c['chemin'], c['champ']))
+    return out
+
+
 def recler(auteurs, old, new):
     """Le dictionnaire `auteurs` avec `old` remplacé par `new` dans ses clés,
     ou None si rien ne change. Une cible déjà présente n'est pas écrasée."""

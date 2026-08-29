@@ -7682,8 +7682,11 @@ def pets_list():
                         break
             if crop:
                 break
+        # `contestes` : les jugements perdus que la fiche garde en mémoire —
+        # comptés ici pour que la carte le DISE (chantier 17, étape 2).
         out.append({"name": nm, "photos": tagcount.get(nm.strip().lower(), 0),
-                    "crop": crop})
+                    "crop": crop,
+                    "contestes": len(_auteurs.contestations(pe))})
     out.sort(key=lambda x: -x["photos"])
     return out
 
@@ -9182,6 +9185,28 @@ def person_photos(name, limit=2000, order='worst', light=False):
     return PEOPLE.photos(name, limit, order, light)
 
 
+def sujet_contestes(store, name):
+    """Les jugements CONTESTÉS d'une fiche, prêts à MONTRER (chantier 17,
+    étape 2). La règle est `auteurs.contestations` (pure) ; ici on n'ajoute
+    que ce que la page ne peut pas calculer : la vignette et le lien. Une
+    fiche sans `auteurs` ou inconnue rend [] — une liste vide, pas une erreur :
+    « rien de contesté » est un état normal, pas une absence de donnée."""
+    pe = store.data.get((name or '').strip().lower())
+    if not isinstance(pe, dict):
+        return []
+    roots = media_roots()
+    out = []
+    for c in _auteurs.contestations(pe):
+        k = c['chemin']
+        i = c['idx'] if c['idx'] is not None else 0
+        c['name'] = Path(k).name
+        c['url'] = _url_for_key(k, roots)
+        c['crop_url'] = _crop_url(k, i) if FACE_STORE.data.get(k) else None
+        c['proprietaire'] = _auteurs.proprietaire_de(k)
+        out.append(c)
+    return out
+
+
 def person_slideshow_list(name, limit=8000):
     """Liste LÉGÈRE des photos d'une personne pour le diaporama : uniquement les
     champs utiles à l'affichage (url, nom, tags, date, dossier). Contrairement à
@@ -10093,6 +10118,13 @@ class Handler(BaseHTTPRequestHandler):
 
         elif path == '/api/people/photos':
             self._serve_person_photos()
+
+        elif path == '/api/people/contestes':
+            q = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
+            body = json.dumps(
+                {"contestes": sujet_contestes(PEOPLE_STORE, (q.get('name') or [''])[0])},
+                ensure_ascii=False).encode()
+            self._send(200, body, 'application/json')
 
         elif path == '/api/people/slideshow':
             self._serve_person_slideshow()

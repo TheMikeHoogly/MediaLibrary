@@ -1324,9 +1324,16 @@ qui en découle : éditer → redémarrer → **observer** → livrer.
        `utilisateur_courant()` (thread-local, admin tant que l'étape 4 n'existe
        pas) ; `migrer_auteurs()` au démarrage (idempotent, journal
        `docs/migration_auteurs.json`) ; le re-clé transporte `auteurs` par
-       `recle_decisions` (serveur ET applicateur hors-ligne, 3 tests). Reste de
-       l'étape : rendre `#contesté` VISIBLE dans la fiche (`/people`), et un
-       conflit de `faces` ENTRE fiches n'a pas de règle (hors `exclude`↔`confirmed`) ;
+       `recle_decisions` (serveur ET applicateur hors-ligne, 3 tests).
+       **`#contesté` VISIBLE (session 66)** : `auteurs.contestations` (règle
+       pure, 5 tests : qui a perdu, qui l'emporte, le MOTIF recalculé —
+       propriétaire / admin / antériorité — et un gagnant annulé reste listé),
+       `/api/people/contestes?name=`, compte `contestes` dans `/api/people/list`,
+       badge « ⚖ N contesté(s) » sur la carte et bouton dans la fiche qui liste
+       vignette + « Flo a retiré · **Mike** a confirmé et l'emporte (propriétaire
+       de la photo) ». Observé à vide (aucun contesté tant qu'il n'y a que Mike
+       — le premier vrai s'observera à l'étape 4). Reste : un conflit de
+       `faces` ENTRE fiches n'a pas de règle (hors `exclude`↔`confirmed`) ;
     3. la VUE par utilisateur et son banc de non-fuite ;
     4. les comptes et l'authentification ;
     5. l'écriture restreinte (effacement, nommage, renommage) ;

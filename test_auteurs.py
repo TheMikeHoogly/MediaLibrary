@@ -141,6 +141,56 @@ class Recler(unittest.TestCase):
         self.assertEqual(A.recler(a, 'a', 'b'), {A.ident('exclude', 'b'): 'Mike'})
 
 
+class Contestations(unittest.TestCase):
+    def test_vide_sans_conteste(self):
+        self.assertEqual(A.contestations({'auteurs': {'exclude:' + P_FLO: 'Flo'}}), [])
+        self.assertEqual(A.contestations({}), [])
+        self.assertEqual(A.contestations('bruit'), [])
+        self.assertEqual(A.contestations({'auteurs': 'bruit'}), [])
+
+    def test_proprietaire_l_emporte_et_le_motif_le_dit(self):
+        # Sur une photo de Flo : Mike avait exclu, Flo confirme -> Mike conteste.
+        f = {'confirmed': [P_FLO],
+             'auteurs': {'confirmed:' + P_FLO: 'Flo',
+                         'exclude:' + P_FLO + A.CONTESTE: 'Mike'}}
+        c = A.contestations(f)
+        self.assertEqual(len(c), 1)
+        self.assertEqual(c[0]['champ'], 'exclude')
+        self.assertEqual(c[0]['chemin'], P_FLO)
+        self.assertEqual((c[0]['auteur'], c[0]['gagnant'], c[0]['gagnant_champ'], c[0]['motif']),
+                         ('Mike', 'Flo', 'confirmed', 'propri\u00e9taire'))
+
+    def test_admin_hors_dossier_et_anteriorite(self):
+        f = {'auteurs': {'exclude:' + P_RACINE: 'Mike',
+                         'confirmed:' + P_RACINE + A.CONTESTE: 'Flo',
+                         'confirmed:' + P_MIKE: 'Papa',
+                         'exclude:' + P_MIKE + A.CONTESTE: 'Flo'}}
+        c = {x['chemin']: x for x in A.contestations(f)}
+        self.assertEqual(c[P_RACINE]['motif'], 'admin')
+        self.assertEqual(c[P_RACINE]['gagnant'], 'Mike')
+        # Photos Mike, mais ni Papa ni Flo n'est Mike ni admin : le premier posé reste.
+        self.assertEqual(c[P_MIKE]['motif'], 'ant\u00e9riorit\u00e9')
+
+    def test_gagnant_annule_reste_liste(self):
+        # La decision gagnante a ete annulee depuis : le conteste ne disparait pas.
+        f = {'auteurs': {'exclude:' + P_FLO + A.CONTESTE: 'Mike'}}
+        c = A.contestations(f)
+        self.assertEqual(len(c), 1)
+        self.assertIsNone(c[0]['gagnant'])
+        self.assertIsNone(c[0]['motif'])
+
+    def test_c_est_ce_que_reconcilier_produit(self):
+        # Bout a bout : le conflit tranche par `reconcilier` est lisible ici.
+        f = {'exclude': [P_FLO], 'auteurs': {'exclude:' + P_FLO: 'Mike'}}
+        f['confirmed'] = [P_FLO]
+        for k, v in A.reconcilier(f, 'Flo').items():
+            f[k] = v
+        c = A.contestations(f)
+        self.assertEqual([(x['auteur'], x['gagnant'], x['motif']) for x in c],
+                         [('Mike', 'Flo', 'propri\u00e9taire')])
+        self.assertEqual(f['exclude'], [])
+
+
 class Garnir(unittest.TestCase):
     class Magasin:
         def __init__(self):

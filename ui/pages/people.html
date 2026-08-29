@@ -228,7 +228,8 @@ function carteP(p){
   var d=document.createElement('div'); d.className='pcard';
   d.innerHTML=(p.crop?'<img loading="lazy" src="'+esc(p.crop)+'">':'<div style="height:90px"></div>')+
     '<div class="nm">'+esc(p.name)+'</div>'+
-    '<div class="ct">'+p.photos+' photo'+(p.photos>1?'s':'')+'</div>'+
+    '<div class="ct">'+p.photos+' photo'+(p.photos>1?'s':'')+
+    (p.contestes?' · <span title="Jugements contestés gardés dans la fiche">⚖ '+p.contestes+' contesté'+(p.contestes>1?'s':'')+'</span>':'')+'</div>'+
     '<button class="btn">Gérer</button>';
   // controle: redondant -- la carte entiere est cliquable a la souris, mais
   // elle CONTIENT deja son controle : le bouton « Gerer » recoit le focus,
@@ -276,6 +277,7 @@ function openPerson(p){
     '<button class="btn" id="a-corr">Corriger (retirer des photos)</button>'+
     '<button class="btn" id="a-clean">🧹 Nettoyer (référence)</button>'+
     '<button class="btn" id="a-ren">Renommer</button>'+
+    (p.contestes?'<button class="btn" id="a-cont" title="Les jugements perdus que la fiche garde en mémoire">⚖ '+p.contestes+' contesté'+(p.contestes>1?'s':'')+'</button>':'')+
     '<button class="btn btn--destructif" id="a-del">Supprimer</button>'+
     '<button class="btn" id="a-close" style="margin-left:auto">Fermer</button>'+
     '</div><div id="a-box"></div></div>';
@@ -287,6 +289,7 @@ function openPerson(p){
   document.getElementById('a-corr').onclick=function(){correctPhotos(p.name,box);};
   document.getElementById('a-clean').onclick=function(){cleanPerson(p.name,box);};
   document.getElementById('a-close').onclick=function(){panel.innerHTML='';};
+  if(p.contestes){ document.getElementById('a-cont').onclick=function(){contestes(p.name,box);}; }
   document.getElementById('a-ren').onclick=function(){
     var nn=prompt('Nouveau nom pour « '+p.name+' » :',p.name); if(!nn||!nn.trim())return;
     post('/api/people/rename',{old:p.name,new:nn.trim()}).then(function(r){
@@ -298,6 +301,31 @@ function openPerson(p){
     post('/api/people/delete',{name:p.name}).then(function(r){ panel.innerHTML=''; loadPeople(); });
   };
   panel.scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+// Les jugements CONTESTES d'une fiche (chantier 17, etape 2) : deux personnes
+// se sont contredites sur la meme photo, la regle a tranche (proprietaire,
+// sinon admin, sinon le premier pose), et le jugement perdant est GARDE — ici
+// on le montre. Lecture seule : la fiche dit le desaccord, elle ne l'efface pas.
+function contestes(name,box){
+  box.innerHTML='<div class="msg">Chargement des jugements contestés&hellip;</div>';
+  fetch('/api/people/contestes?name='+encodeURIComponent(name)).then(function(r){return r.json();}).then(function(d){
+    var L=d.contestes||[];
+    if(!L.length){ box.innerHTML='<div class="msg">Aucun jugement contesté sur cette fiche.</div>'; return; }
+    var verbe={exclude:'a retiré',confirmed:'a confirmé',faces:'a rattaché'};
+    var motif={'propriétaire':'propriétaire de la photo','admin':'admin, hors dossier propriétaire','antériorité':'jugement posé en premier'};
+    var h='<div class="msg">'+L.length+' jugement'+(L.length>1?'s':'')+' contesté'+(L.length>1?'s':'')+' — rien n\'est effacé : la fiche garde le désaccord.</div><div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(260px,1fr))">';
+    L.forEach(function(c){
+      var qui=(verbe[c.champ]||c.champ);
+      var txt=esc(c.auteur)+' '+qui;
+      if(c.gagnant){ txt+=' · <b>'+esc(c.gagnant)+'</b> '+(verbe[c.gagnant_champ]||c.gagnant_champ)+' et l\'emporte ('+esc(motif[c.motif]||c.motif||'')+')'; }
+      else { txt+=' · la décision contraire a été annulée depuis'; }
+      h+='<div style="display:flex;gap:var(--e-2);align-items:flex-start"><a href="'+esc(c.url||'#')+'" target="_blank" rel="noopener" style="flex:0 0 90px">'+
+         '<img loading="lazy" src="'+esc(c.crop_url||c.url||'')+'" alt="" style="width:90px;aspect-ratio:1;object-fit:cover;border-radius:var(--r-md)"></a>'+
+         '<div style="font-size:var(--t-sm);line-height:1.35"><b>'+esc(c.name)+'</b><br>'+txt+'</div></div>';
+    });
+    box.innerHTML=h+'</div>';
+  });
 }
 
 // Carte photo cochable (label + case + vignette + score). Construite en noeuds

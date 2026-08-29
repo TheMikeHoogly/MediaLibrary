@@ -32,6 +32,14 @@ partir à 13:53 (`index 43708 → 43699 (+0 / −9)`), et le bouton « Plan de
 rangement par année » a rendu **0 à ranger** à 14:11:55 — le correctif de
 13:17 (le bouton dit quand il a fini) est donc aussi observé. Reste **bat 34**.
 
+**Chantier 17, étape 2 — `#contesté` VISIBLE (14:16)** : `auteurs.contestations`
+(pure, 5 tests, 27 verts), route `/api/people/contestes`, `contestes` compté
+dans `/api/people/list`, badge sur la carte + bouton « ⚖ N contesté(s) » dans
+la fiche `/people` (vignette, qui a perdu, qui l'emporte et pourquoi).
+Serveur redémarré 14:16:05 sur ce code, zéro fil mort, plan 0. Observé à
+vide : `{"contestes": []}` et la page rend — un vrai contesté n'existera qu'avec
+un deuxième utilisateur (étape 4).
+
 **`N:\\Photos`** : règle permanente dans `CLAUDE.md` (« Tester en réel »).
 
 **Carnet `QUESTIONS_MIKE.md`** : vide.
@@ -40,9 +48,10 @@ rangement par année » a rendu **0 à ranger** à 14:11:55 — le correctif de
 
 1. **Bat 34** (dossiers année vides à la racine), puis `_to_delete/` (43 Mo) —
    gestes de Mike.
-2. **Chantier 17, reste de l'étape 2** : `#contesté` VISIBLE dans la fiche
-   `/people` ; puis **étape 3** : la VUE par utilisateur (`PRIVE`) et son banc
-   de non-fuite. `proprietaire_de` (`auteurs.py`) est la brique.
+2. **Chantier 17, étape 3** : la VUE par utilisateur (`PRIVE`) et son banc
+   de non-fuite — le plancher du chantier (« un compteur qui fuit est un
+   défaut de niveau A »). `proprietaire_de` (`auteurs.py`) est la brique.
+   Reste de l'étape 2 : un conflit de `faces` ENTRE fiches n'a pas de règle.
 3. **`ROADMAP.md` pèse 1 545 lignes** dont ~740 de chronique de sessions
    closes et ~325 de points CLOS racontés : contraire à son rôle (« carte des
    priorités, rien d'autre »). À réduire vers ~200 lignes — le détail vit
