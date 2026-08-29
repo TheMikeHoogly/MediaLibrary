@@ -9,7 +9,17 @@ FUSIONNÉ — ce document, non. Puis `ROADMAP.md`, `eval/DECISIONS.md`,
 `eval/METHODE.md` — et `docs/DECISIONS_OUTILLAGE.md` si le sujet touche aux
 canaux, à la livraison ou au MCP. Débrief en 2–3 lignes, puis on attaque.
 
-## Où on en est (29/08/2026, session 66, soir)
+## Où on en est (30/08/2026, session 66, NUIT — traite autonome, Mike dort)
+
+**À LIRE D'ABORD.** La nuit a livré par **`commit`** (branches + push, `main`
+INTACTE — CLAUDE.md « Traite autonome ») : `feat/les-videos-dans-la-galerie`
+(+ les deux bancs de mesure). **Mike fusionne après son regard** (`27 - Git.bat`
+ou `livrer`), ou jette la branche. Le serveur TOURNE sur ce code depuis
+23:54 (index 47 789 dont 4 086 vidéos). Le banc des doublons a peut-être
+tourné toute la nuit : lire `docs/doublons_image.json` (`termine` ?) et
+`_banc_sortie.txt`. Le banc FR/EN n'a pas encore tourné.
+
+### Le soir (avant la nuit)
 
 **Git** : tout fusionné jusqu'à `feat/l-ecriture-restreinte` (`708099d`,
 21:54) ; puis `feat/la-corbeille-a-6-mois` (`eafd363`) et
@@ -119,8 +129,29 @@ RELIQUATS gardés), vidéos phase 0 (`inventaire_videos.py`, bat 39, ffmpeg
 
 **Carnet `QUESTIONS_MIKE.md`** : vide.
 
+### La nuit (traite autonome)
+
+1. **Vidéos phase 1 — POSÉE ET OBSERVÉE** (ROADMAP 1 octies) : scan `MEDIA_EXT`
+   → `indexer_videos` (date nom → ExifTool `-fast` → jamais mtime ; durée),
+   jamais taguée, sémantique saute `video` ; vignette ffmpeg (`_serve_thumb_video`),
+   badge « ▶ m:ss », `<video controls>` dans la visionneuse (`showLb`/`closeLb`).
+   Observé : +4 086 / −0, zéro fil mort, thumb 200, faits datés, `<video>`
+   posé avec src. **NON observé : la lecture** (onglet Chrome caché → Chrome
+   diffère le chargement ; `document.visibilityState = hidden`). Piège vu :
+   la première passe du scan a duré 20 min (énumération pendant que le banc
+   hachait le NAS) puis 8 min d'ExifTool sur 4 086 vidéos — une fois.
+2. **Doublons — banc écrit, en cours** (`mesure_doublons_image.py`, ROADMAP
+   1 decies) : reprenable, `--budget-s 420` (à 560 une passe a été TUÉE à
+   600 s par le canal, cache de la passe perdu). Après 1 400 clés :
+   IDENTIQUE partout sauf 1. Relancer jusqu'à `termine: true`.
+3. **Recherche IA — banc écrit, pas tourné** (`mesure_requete_fr_en.py`).
+4. Les deux bancs sont sur la branche vidéo (un seul `commit`).
+
 ## Prochain pas
 
+0. **Regarder la branche `feat/les-videos-dans-la-galerie`** (le serveur
+   tourne dessus) : cliquer une vidéo dans la galerie, la LIRE ; puis fusionner
+   ou jeter. Lire le rapport des doublons ; lancer le banc FR/EN.
 1. Au choix de Mike : **doublons** (1 decies :
    d'abord `mesure_doublons_image.py`, lecture seule, par l'agent banc) ;
    **vidéos phase 1** (1 octies : scan → vignette ffmpeg → galerie) ;

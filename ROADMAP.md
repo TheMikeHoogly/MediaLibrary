@@ -112,9 +112,18 @@ valeur d'abord :
   73,7 Go, 3 066 datées par le nom, 7 par ExifTool, **0 sans date**, 0 conflit,
   → `Photos Mike\2016…2026` (2024 : 1 509). Question à Mike : les 5 vidéos de
   `180328 Samsung Floflo` vont chez Mike par la règle 17c (`QUESTIONS_MIKE.md`).
-- **Phase 1 — les vidéos dans la GALERIE, comme les photos (demandé par Mike
-  le 29/08 : « revoir l'affichage afin de les traiter comme les photos »)**.
-  Ce que ça touche, dans l'ordre : (a) le SCAN les indexe (`VIDEO_EXT` à côté
+- **Phase 1 — les vidéos dans la GALERIE : POSÉE, traite du 29→30/08
+  (branche `feat/les-videos-dans-la-galerie`, à FUSIONNER par Mike après
+  son regard)**. Observé : le scan a indexé **4 086 vidéos** (index 43 703 →
+  47 789, +4 086 / −0, 8 min d'ExifTool `-fast` une fois), zéro fil mort,
+  `/api/faits` date « 5 mars 2016 (exif) », `/api/thumb` rend l'image-clé
+  ffmpeg (200, 22 Ko), badge « ▶ 0:11 » sur 11 vignettes du 5 mars, la
+  visionneuse ouvre un `<video controls>` sur l'original (206 en flux, 5 Mo/s
+  mesuré). **Non observé** : la LECTURE elle-même — Chrome diffère le
+  chargement d'une vidéo dans un onglet caché, et l'onglet de Claude l'est ;
+  à regarder par Mike, un clic. `VIDEOS_DANS_L_INDEX = False` rend le scan
+  d'hier. Le diaporama montre l'image-clé, pas la vidéo (accepté en phase 1).
+  Ce que ça touche, dans l'ordre (ce qui est fait est marqué ✓) : (a) le SCAN les indexe (`VIDEO_EXT` à côté
   d'`IMAGE_EXT` dans `scan_uploads`/`_sync_dir` ; entrée `{video: true,
   duree, taken}` — date par le nom / ExifTool `-fast`, jamais le mtime, comme
   `inventaire_videos`) ; (b) la VIGNETTE : une image-clé `ffmpeg -ss <milieu>
@@ -139,7 +148,10 @@ valeur d'abord :
   correctif `cible()` (rangement par propriétaire) déjà posé.
 
 **1 nonies. L'INTELLIGENCE de la recherche IA (demandé par Mike le 29/08 au
-soir).** Deux défauts vus et corrigés le soir même, sur ses captures : (a) sur
+soir).** Banc écrit dans la nuit : `mesure_requete_fr_en.py --base copie.db`
+(rappel@200 / @1500 de la requête FR, EN, FR+EN, « une photo de … » ; vérité
+= paires de tags fr/en du tagueur, 40 paires, encodeur CPU) — **à faire
+tourner** (le canal du banc était pris par les doublons). Deux défauts vus et corrigés le soir même, sur ses captures : (a) sur
 une grille qui est un RÉSULTAT (`?jour=`, `?sim=`), la recherche IA
 intersectait la grille avec les 200 plus proches du FONDS — « ours en
 peluche » sur un 11 avril rendait **0** ; règle du 21/08 étendue (Entrée
@@ -155,7 +167,15 @@ sur « nounours ») ; les synonymes des tags FR/EN déjà là ; et un mode
 « filtrer dans cette grille » HONNÊTE (classer la grille entière, pas le
 top-200 du fonds) pour qui veut vraiment chercher dans une journée.
 
-**1 decies. Les DOUBLONS (demandé par Mike le 29/08 au soir).** Le
+**1 decies. Les DOUBLONS (demandé par Mike le 29/08 au soir).** **Banc
+écrit et EN COURS dans la nuit** : `mesure_doublons_image.py --base copie.db`
+(ExifTool `ImageDataHash`, argfile UTF-8 — 36 « inconnus » sur 80 au premier
+essai, tous accentués ; reprenable, cache dans `docs/doublons_image.json`,
+~1,2 fichier/s sur le NAS donc ~6 passes de 7 min). Premiers chiffres (2 990
+groupes candidats, 6 187 clés) : après 1 400 clés, **IDENTIQUE partout sauf
+1** (une paire Flo `2011 Tessin`/`Love` réellement différente), 776 groupes
+Flo + Mike. Le rapport final dit par groupe la CANONIQUE et ce qu'il faut
+recopier avant retrait. Le
 dédoublonnage n'a vu que les copies IDENTIQUES AU BIT (`recensement_doublons`
 : 0 groupe restant le 23/08). Or **mesuré sur une copie de l'index (29/08)** :
 **3 818** groupes de photos prises la MÊME SECONDE (8 582 clés), dont
@@ -421,72 +441,11 @@ pas le fonds. La CAUSE reste à prouver dans les deux sens — le juge est
 l'avant/après sur le MÊME fichier, armé (`_rapport_sef_avant.json`), que le
 travail du curateur fera parler.
 
-## État (27/08/2026, session 58) — LES BOUTONS DE `gallery`, ET UN « SUPPRIMER » JAMAIS MESURÉ
+## État (27/08/2026, session 58) — les boutons de `gallery` : CLOS
 
-**Six familles de boutons maison passent au `.btn` canonique.** Cinq étaient
-prévues (`.tb`, `.geobtn`, `.georow button`, `#ss-stop`, `.fchip`) ; la
-sixième, la barre de la visionneuse, ne l'était pas — et c'est elle qui
-portait la trouvaille.
-
-### Ce que la cascade dit du changement
-
-`verifier_css_cascade --page` : **69 déclarations disparues, 0 apparue,
-0 valeur changée.** Rien n'a été ajouté ni redéfini : la taille, la forme, la
-police et les états survol/pressé viennent maintenant de `components.css`, qui
-figurait déjà des deux côtés. Ce qui reste dans la page ne PEINT que l'état.
-
-### Ce que ça change pour le pouce
-
-| `gallery`, 31 cibles | avant | après |
-|---|---|---|
-| plancher 44 px **prouvé** | 9 | **22** |
-| hauteur **non déclarée** | 16 | **3** |
-| sous 44 px prouvé | 0 | 0 |
-
-**Le gain n'est pas « des boutons trop petits réparés »** — aucun n'était
-prouvé trop petit. C'est « je ne sais pas » qui devient « prouvé » : seize
-cibles dont aucune règle ne déclarait la hauteur, contre trois. Ne pas voir
-une cible ne la rendait pas conforme, ça retirait le dénominateur.
-
-### Le « Supprimer » de la visionneuse était en CONTOUR
-
-`#lb-del` — le bouton qui **supprime une photo** — posait `--encre` en TEXTE
-sur un fond hérité. C'est exactement la forme que le système a mesurée à
-**3,03:1** et remplacée par du plein (`.btn--destructif`, 5,34:1). Elle avait
-survécu là **parce que `verifier_contraste` ne lit que `tokens.css` et
-`components.css`** : une couleur écrite dans le `<style>` d'une page n'était
-jugée par personne. L'instrument le DIT dans sa portée — encore fallait-il
-lire sa portée. Le convertir le fait entrer dans le périmètre mesuré.
-
-Deux autres divergences tombent au passage : `#lb-sim`/`#lb-jour` posaient un
-survol `--salle-2` par un sélecteur d'ID, qui gagnait sur la marche commune —
-deux profondeurs de survol pour un même registre de bouton.
-
-### Ce qui n'est PAS fait
-
-- **`.fchip` reste**, et pour une raison qui mérite une décision : la classe
-  habille à la fois des `<a>` de navigation ET des `<span>` d'information
-  (« Cette photo n'a pas encore été analysée », le libellé de jour). Les
-  convertir en bloc ferait des étiquettes qui ressemblent à des boutons.
-  Question ouverte dans `QUESTIONS_MIKE.md`. Elle vit dans `server.py`, donc
-  elle demandera un redémarrage.
-### L'ŒIL, fait (27/08, serveur relancé)
-
-`verifier_pages_composants` sur le serveur VIVANT : les 7 pages converties
-reçoivent la feuille commune et gardent le dernier mot, la page témoin
-(`/map`) est intacte. Puis regardé, pour de vrai :
-
-- la barre d'outils (`IA`, `Date ↑`, `Nom A-Z`, `▶ Demo`, `▶ Aléatoire`,
-  `▶ Association`) et la puce `Géo` — même hauteur, même forme, l'actif en
-  `--fixateur`. Un seul vocabulaire ;
-- la visionneuse : `←`, `→`, `🔍 Semblables`, `📅 Même jour`, `Fermer`
-  alignés, et **`🗑️ Supprimer` en rouge PLEIN**. Le contour à 3,03:1 a
-  disparu de l'écran, pas seulement du CSS.
-
-**Ce qui n'a PAS été regardé** : le rendu en largeur de téléphone. Le
-redimensionnement de la fenêtre n'a pas changé la capture, et je n'ai pas
-insisté — le coût accepté de **+19 px** de hauteur de barres reste donc
-vérifié sur bureau seulement. À faire au premier passage sur mobile.
+Les cinq familles maison sont passées au `.btn` canonique, le « Supprimer »
+de la visionneuse a été mesuré, et l'œil bureau puis téléphone (session 59)
+ont validé — verdicts dans `eval/DECISIONS.md` (Interface), récit dans git.
 
 ## État (27/08/2026, session 57) — LE RANGEMENT PAR ANNÉE DÉCROCHAIT ENCORE LES DÉCISIONS
 

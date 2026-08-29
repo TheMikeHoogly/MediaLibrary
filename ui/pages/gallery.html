@@ -152,6 +152,12 @@ body { min-height: 100vh; }
        z-index: 100; flex-direction: column; }
 #lb.open { display: flex; }
 #lb-img { flex: 1; object-fit: contain; width: 100%; min-height: 0; }
+/* Phase 1 des videos : la visionneuse tient un <video> a la place de l'image ;
+   les deux occupent la meme boite, un seul est visible a la fois. */
+#lb-video { flex: 1; object-fit: contain; width: 100%; min-height: 0; background: var(--salle); }
+.cell .vid { position: absolute; top: 4px; left: 4px; font-family: var(--f-donnees);
+  font-size: var(--t-xs); color: var(--texte); background: rgba(12,11,10,.72);
+  padding: 2px 6px; border-radius: var(--r-sm); pointer-events: none; }
 #lb-meta { background: var(--salle-2); padding: var(--e-3) var(--e-4) 0; }
 #lb-tags { font-size: var(--t-md); color: var(--texte); line-height: 1.4; }
 #lb-tags.none { color: var(--graphite); font-style: italic; }
@@ -339,6 +345,7 @@ __FOLDERS__
 <!-- lightbox -->
 <div id="lb">
   <img id="lb-img" src="" alt="">
+  <video id="lb-video" controls playsinline preload="metadata" hidden></video>
   <div id="lb-meta">
     <div id="lb-faits"></div>
     <div id="lb-tags"></div>
@@ -924,6 +931,7 @@ __FOLDERS__
                      // `annee` n'est envoye qu'en mode « meme jour » : c'est la
                      // que le millesime porte le recit (2008, 2011, 2019).
                      + (f.annee ? '<span class="an">' + f.annee + '</span>' : '')
+                     + (f.video ? '<span class="vid" aria-label="vid\u00e9o">\u25B6 ' + dureeTxt(f.duree) + '</span>' : '')
                      + '</div>'
                      // Rien a dire -> pas de ligne : une ligne vide sous
                      // chaque vignette couterait 43 064 fois la hauteur d'un
@@ -990,9 +998,24 @@ __FOLDERS__
     document.getElementById('lb').classList.add('open');
     showLb();
   }
+  // Duree « m:ss » d'une video (phase 1) ; vide si inconnue.
+  function dureeTxt(d) {
+    if (!d) return '';
+    d = Math.round(d); var m = Math.floor(d / 60), s = d % 60;
+    return m + ':' + (s < 10 ? '0' : '') + s;
+  }
   function showLb() {
     var f = visible[lbIdx];
-    document.getElementById('lb-img').src = f.url;
+    var img = document.getElementById('lb-img'), vid = document.getElementById('lb-video');
+    if (f.video) {
+      // Une video se LIT : <video controls>, l'original en flux (Range gere
+      // par le serveur). L'image reste vide pour ne pas charger deux fois.
+      img.hidden = true; img.src = '';
+      vid.hidden = false; vid.src = f.url;
+    } else {
+      vid.pause(); vid.removeAttribute('src'); vid.load(); vid.hidden = true;
+      img.hidden = false; img.src = f.url;
+    }
     document.getElementById('lb-name').textContent = f.name + '  (' + f.size + ')';
     // Les faits AVANT les tags : les premiers portent leur source, les
     // seconds sortent d'un modele. L'ordre de lecture dit lequel engage le
@@ -1040,7 +1063,11 @@ __FOLDERS__
     lbIdx = (lbIdx + d + visible.length) % visible.length;
     showLb();
   }
-  function closeLb() { document.getElementById('lb').classList.remove('open'); }
+  function closeLb() {
+    document.getElementById('lb').classList.remove('open');
+    var vid = document.getElementById('lb-video');   // une video fermee se tait
+    vid.pause(); vid.removeAttribute('src'); vid.load(); vid.hidden = true;
+  }
 
   // controle: redondant -- fermer en cliquant a cote de la photo. Le meme
   // geste a deja son bouton (#lb-close) et sa touche (Echap) ; le fond

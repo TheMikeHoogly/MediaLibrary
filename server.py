@@ -293,6 +293,17 @@ PET_MIN_CLUSTER = 2             # taille min d'un groupe affiché (peu de photos
 PET_EMBED_BATCH = 8             # découpes embarquées par lot (backfill)
 
 IMAGE_EXT = {'.jpg', '.jpeg', '.png', '.gif', '.webp', '.heic', '.heif', '.bmp', '.tiff', '.tif'}
+# ─── Les VIDÉOS dans la galerie (chantier 1 octies, phase 1 — 30/08/2026,
+# demandé par Mike : « les traiter comme les photos »). Le SCAN les indexe
+# (entrée `{video: True, duree, taken}` écrite directement, JAMAIS mise en file
+# du tagueur), la VIGNETTE est une image-clé ffmpeg, la visionneuse ouvre un
+# `<video>`. Tout pipeline d'IA reste fermé aux vidéos : chacun filtre déjà
+# sur IMAGE_EXT, et le sémantique saute `video` — c'est la phase 2 qui les
+# ouvrira. `VIDEOS_DANS_L_INDEX = False` rend le scan d'hier, sans rien casser
+# (les entrées déjà écrites restent, inertes).
+VIDEO_EXT = {'.mp4', '.mov', '.avi', '.mkv', '.m4v', '.3gp', '.mts', '.wmv'}
+VIDEOS_DANS_L_INDEX = True
+MEDIA_EXT = IMAGE_EXT | (VIDEO_EXT if VIDEOS_DANS_L_INDEX else set())
 
 # Version du pipeline de TAGGING (audit D), sur le modèle d'ANIMAL_PIPELINE_VERSION :
 # modèle Ollama | variante de prompt | version de fusion (Knowledge Builder).
@@ -3016,6 +3027,76 @@ def _stat_of(p):
         return None, None
 
 
+def _meta_videos(chemins):
+    """{chemin normalisé: (taken|None, duree_s|None)} par UN ExifTool (-fast :
+    le `moov` en fin de MP4 n'est pas lu par -fast2, mesuré 0/7 le 29/08).
+    La date vient du NOM d'abord (`AAAAMMJJ_HHMMSS`, `VID-…-WA`), comme
+    `inventaire_videos` ; jamais du mtime."""
+    from inventaire_videos import TAGS, date_du_nom, date_exif
+    out = {}
+    reste = []
+    for p in chemins:
+        t = date_du_nom(Path(p).name)
+        out[_pkey(p)] = [t, None]
+        reste.append(p)
+    if not reste or not EXIFTOOL:
+        return {k: tuple(v) for k, v in out.items()}
+    for i in range(0, len(reste), 150):
+        part = reste[i:i + 150]
+        try:
+            r = _run_exiftool(['-j', '-fast', '-charset', 'filename=utf8', '-charset', 'utf8',
+                               '-Duration#'] + ['-' + t for t in TAGS] + [str(p) for p in part],
+                              timeout=600)
+            data = json.loads(r.stdout or '[]')
+        except Exception as e:
+            print(f"  ⚠ ExifTool sur {len(part)} vidéo(s) : {e}")
+            data = []
+        for e in data:
+            src = e.get('SourceFile')
+            if not src:
+                continue
+            k = _pkey(src)
+            if k not in out:
+                continue
+            if out[k][0] is None:
+                for t in TAGS:
+                    ts = date_exif(e.get(t.split(':')[-1]))
+                    if ts:
+                        out[k][0] = ts
+                        break
+            d = e.get('Duration')
+            try:
+                out[k][1] = round(float(d), 1) if d is not None else None
+            except (TypeError, ValueError):
+                pass
+    return {k: tuple(v) for k, v in out.items()}
+
+
+def indexer_videos(cles, label=''):
+    """Écrit l'entrée d'index d'une vidéo (phase 1) : `video`, `duree`, `taken`,
+    taille, mtime — mots-clés VIDES, `in_file` faux. Elle n'est JAMAIS mise
+    en file du tagueur ni d'un pipeline : chacun filtre sur IMAGE_EXT, et le
+    sémantique saute `video`. Rend le nombre d'entrées écrites."""
+    if not VIDEOS_DANS_L_INDEX or not cles:
+        return 0
+    metas = _meta_videos(list(cles.values()))
+    n = 0
+    for k, p in cles.items():
+        size, mtime = _stat_of(p)
+        taken, duree = metas.get(_pkey(p), (None, None))
+        e = {"video": True, "kw_fr": [], "kw_en": [], "desc": "", "in_file": False,
+             "at": time.time(), "size": size, "mtime": mtime}
+        if duree is not None:
+            e["duree"] = duree
+        if taken:
+            e["taken"] = float(taken)
+        STORE.set(k, e, save=False)
+        n += 1
+    if n:
+        STORE.save()
+    return n
+
+
 def _sync_dir(label, cur, own_keys, first=False, deep=False):
     """Synchronise l'index avec l'état réel d'une racine.
     cur : clé d'index → Path des fichiers réellement présents.
@@ -3068,6 +3149,17 @@ def _sync_dir(label, cur, own_keys, first=False, deep=False):
 
     # 2) nouveaux fichiers : import des tags in-file, sinon file d'attente IA
     if unknown:
+        # Les vidéos d'abord (phase 1) : leur entrée s'écrit ici, elles ne
+        # passent ni par la lecture des métadonnées photo ni par le tagueur.
+        videos = [k for k in unknown if cur[k].suffix.lower() in VIDEO_EXT]
+        if videos:
+            if first and len(videos) > 200:
+                print(f"  🎬 {label} : {len(videos)} vidéo(s) à indexer (date par le nom, "
+                      f"sinon ExifTool par lots de 150, patience)…")
+            n_vid = indexer_videos({k: cur[k] for k in videos}, label)
+            unknown = [k for k in unknown if k not in set(videos)]
+            if n_vid:
+                print(f"  🎬 {label} : {n_vid} vidéo(s) indexée(s) ; aucun tagging")
         if first and len(unknown) > 200:
             print(f"  🔍 Lecture des métadonnées existantes de {len(unknown)} "
                   f"fichier(s) (par lots de 40, patience)…")
@@ -3108,6 +3200,9 @@ def _sync_dir(label, cur, own_keys, first=False, deep=False):
                 continue
             _sz, mtime = _stat_of(p)
             if mtime is not None and abs(mtime - old_m) > 2:
+                if e.get('video') or p.suffix.lower() in VIDEO_EXT:
+                    indexer_videos({k: p}, label)     # jamais le tagueur
+                    continue
                 changed.append(k)
         if changed:
             # Motif déclaré : ces retraits sont TEMPORAIRES (l'entrée revient
@@ -3145,7 +3240,7 @@ def scan_uploads(first=False, deep=False):
     #    apres une nuit de serveur. La recursion le corrige. ──
     try:
         imgs = [f for f in UPLOAD_DIR.rglob('*')
-                if f.is_file() and f.suffix.lower() in IMAGE_EXT
+                if f.is_file() and f.suffix.lower() in MEDIA_EXT
                 and not _is_hidden_path(f.relative_to(UPLOAD_DIR))]
     except OSError as e:
         print(f"  ⚠ Scan impossible: {e}")
@@ -3176,7 +3271,7 @@ def scan_uploads(first=False, deep=False):
                   f"sur le NAS…")
         try:
             files = [p for p in d.rglob('*')
-                     if p.is_file() and p.suffix.lower() in IMAGE_EXT
+                     if p.is_file() and p.suffix.lower() in MEDIA_EXT
                      and not _is_hidden_path(p.relative_to(d))
                      and not _pkey(p).startswith(up_pref)]
         except OSError as e:
@@ -5013,7 +5108,7 @@ def _semantique_un_lot(sem, vs):
     # 30 682 ici). Les réessayer était la cause du blocage à 1 447 photos.
     reste = [k for k, e in list(STORE.data.items())
              if k not in deja and k not in SEMANTIC_SKIP
-             and not (isinstance(e, dict) and e.get('failed'))]
+             and not (isinstance(e, dict) and (e.get('failed') or e.get('video')))]
     SEMANTIC_STATE["pending"] = len(reste)
     SEMANTIC_STATE["ecartees"] = len(SEMANTIC_SKIP)
     if not reste:
@@ -10732,11 +10827,11 @@ class Handler(BaseHTTPRequestHandler):
         try:
             if rec:
                 files = [f for f in folder.rglob('*')
-                         if f.is_file() and f.suffix.lower() in IMAGE_EXT
+                         if f.is_file() and f.suffix.lower() in MEDIA_EXT
                          and not _is_hidden_path(f.relative_to(folder))]
             else:
                 files = [f for f in folder.iterdir()
-                         if f.is_file() and f.suffix.lower() in IMAGE_EXT
+                         if f.is_file() and f.suffix.lower() in MEDIA_EXT
                          and not f.name.startswith(('.', '@', '#'))]
             subdirs = sorted([e for e in folder.iterdir() if e.is_dir()
                               and not e.name.startswith(('.', '@', '#'))],
@@ -11045,8 +11140,16 @@ class Handler(BaseHTTPRequestHandler):
         # 300 ko de JSON pour ne rien dire.
         for _fd in file_data:
             _k = _fd.get('key') or _fd.get('name') or ''
-            if _sans_date_sure(_k, STORE.data.get(_k)):
+            _e = STORE.data.get(_k)
+            if _sans_date_sure(_k, _e):
                 _fd['sd'] = 1
+            # Phase 1 des vidéos : la planche sait qu'elle tient une vidéo
+            # (badge « ▶ durée », `<video>` dans la visionneuse).
+            if (isinstance(_e, dict) and _e.get('video')) or \
+                    Path(_k).suffix.lower() in VIDEO_EXT:
+                _fd['video'] = 1
+                if isinstance(_e, dict) and _e.get('duree'):
+                    _fd['duree'] = _e['duree']
 
         # Sur une grille qui est un RÉSULTAT (?q=, ?sim=, ?jour=), les puces
         # de filtre comptent les tags DU RÉSULTAT — pas ceux du dossier
@@ -11830,6 +11933,9 @@ class Handler(BaseHTTPRequestHandler):
             _fallback()
             return
         path = _resolve_key(key)
+        if path.suffix.lower() in VIDEO_EXT:
+            self._serve_thumb_video(key, path, s)
+            return
         if path.suffix.lower() not in IMAGE_EXT:
             _fallback()
             return
@@ -11871,6 +11977,62 @@ class Handler(BaseHTTPRequestHandler):
                 # lui-même reste peut-être affichable par le navigateur.
                 _fallback()
                 return
+        self.send_response(200)
+        self.send_header('Content-Type', 'image/jpeg')
+        self.send_header('Content-Length', str(len(data)))
+        self.send_header('Cache-Control', 'max-age=86400')
+        self.end_headers()
+        self.wfile.write(data)
+
+    def _serve_thumb_video(self, key, path, s):
+        """L'image-clé d'une vidéo (phase 1) : une trame à ~10 % de la durée
+        (1 s au plus tôt) par ffmpeg, mise en cache comme une vignette de
+        photo. Sans ffmpeg, ou sur échec : 404 — la planche montre son
+        badge « ▶ » sur fond vide, jamais un original de 500 Mo."""
+        import hashlib
+        import shutil as _sh
+        e = STORE.get(key)
+        mt = e.get('mtime') if isinstance(e, dict) else None
+        ck = hashlib.md5(f"{key}|{s}|{mt}|video".encode('utf-8', 'replace')).hexdigest()
+        cache_file = PHOTO_THUMB_DIR / (ck + ".jpg")
+        data = None
+        try:
+            if cache_file.is_file():
+                data = cache_file.read_bytes()
+        except OSError:
+            data = None
+        if data is None:
+            ff = _sh.which('ffmpeg')
+            if not ff or not path.is_file():
+                self._send(404, b'Not found', 'text/plain')
+                return
+            duree = e.get('duree') if isinstance(e, dict) else None
+            pos = max(1.0, min(float(duree or 0) * 0.1, 30.0)) if duree else 1.0
+            try:
+                note_heavy_activity()
+                r = subprocess.run(
+                    [ff, '-hide_banner', '-loglevel', 'error', '-ss', f'{pos:.1f}',
+                     '-i', str(path), '-frames:v', '1', '-vf', f'scale={int(s)}:-2',
+                     '-q:v', '4', '-f', 'image2', '-'],
+                    capture_output=True, timeout=60)
+                data = r.stdout if r.returncode == 0 and r.stdout else None
+                if data is None and pos > 1.0:       # vidéo plus courte qu'annoncé
+                    r = subprocess.run(
+                        [ff, '-hide_banner', '-loglevel', 'error', '-i', str(path),
+                         '-frames:v', '1', '-vf', f'scale={int(s)}:-2', '-q:v', '4',
+                         '-f', 'image2', '-'], capture_output=True, timeout=60)
+                    data = r.stdout if r.returncode == 0 and r.stdout else None
+            except Exception as ex:
+                print(f"  ⚠ image-clé ffmpeg : {ex}")
+                data = None
+            if not data:
+                self._send(404, b'Not found', 'text/plain')
+                return
+            try:
+                PHOTO_THUMB_DIR.mkdir(parents=True, exist_ok=True)
+                cache_file.write_bytes(data)
+            except OSError:
+                pass
         self.send_response(200)
         self.send_header('Content-Type', 'image/jpeg')
         self.send_header('Content-Length', str(len(data)))
