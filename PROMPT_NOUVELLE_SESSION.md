@@ -9,62 +9,47 @@ FUSIONNÉ — ce document, non. Puis `ROADMAP.md`, `eval/DECISIONS.md`,
 `eval/METHODE.md` — et `docs/DECISIONS_OUTILLAGE.md` si le sujet touche aux
 canaux, à la livraison ou au MCP. Débrief en 2–3 lignes, puis on attaque.
 
-## Où on en est (29/08/2026, session 65, matin)
+## Où on en est (29/08/2026, session 65, midi)
 
-**Tout ce qui précède est GRAVÉ** : `main` = `9ef9134` (réparation EXIF voie C,
-`ecriture_meta.py`, rangement par année + garde-fou racine, bats 34/35/36,
-outils de dédoublonnage `_A TRIER`). Vérifié dans `.git/logs/refs/heads/main`.
+**Tout est GRAVÉ** : `main` = `680c72b` puis la livraison des docs qui suit
+(vérifier `.git/logs/refs/heads/main`). Deux livraisons de code ce matin :
+`9ef9134` (réparation EXIF voie C, rangement par année, bats 34/35/36, outils
+doublons) puis `680c72b` (plan recalculé au démarrage + garde anti-plan-périmé,
+chantier 17 étape 2 : `auteurs.py`).
 
-**Le NAS ce matin** (`N:\Photos` connecté) : la RACINE est PROPRE — plus aucun
-dossier `<annee>` à la racine, le nettoyage manuel de Mike est fini. Les
-**559 Samsung 2021** sont toujours dans `_A TRIER\211108-210801 Samsung Mike\`.
-Mike fait tourner **bat 36** (dédoublonnage `_A TRIER`, serveur allumé), puis
-**bat 34**.
+**Observé au redémarrage de 12:49 (serveur sur le code livré)** : `🗂 plan
+rangement annee : 38 a ranger` et `✍ auteurs : 3767 décision(s) attribuée(s) à
+Mike sur 166 fiche(s)` — le chiffre exact attendu — zéro `FIL MORT`.
 
-### Fait en session 65, NON gravé, NON observé (serveur intouché : bat 36 tourne)
+**Le NAS** : racine PROPRE (nettoyage manuel de Mike fini). **Bat 36 a
+terminé** : 809 jumeaux confirmés (dont les **559 Samsung 2021** — tous des
+jumeaux de `Photos Mike\2021`, 3,4 Go) sont en `.corbeille-rangement`
+(auto-purge bat 24, `--undo` possible). Bat 26 a tourné à 10:09 (1 164 Takeout
+→ `Photos Mike\<année>`, plan sain). L'index est passé de 44 517 à 43 708
+(= −809, cohérent). **Reste à ranger : 38** (tous `Google porte mieux`) —
+bat 26 au prochain arrêt ; **bat 34 pas encore lancé** (dossiers année vides).
 
-Le deuxième étage du garde-fou anti-plan-périmé :
-
-- `server.py` : `fil_surveille(_run_plan_annee, nom='plan:annee', boucle=False)`
-  au démarrage, entre les backfills et `face_worker` — le plan se recalcule à
-  CHAQUE démarrage (ligne `🗂 plan rangement annee : N a ranger…` au journal).
-- `appliquer_plan_annee.py` : `dernier_demarrage()` lit la dernière bannière
-  `DEMARRAGE` de `_journal_serveur.log`, `plan_perime()` refuse (REFUS, code 1,
-  `--forcer` passe outre) un plan dont le mtime est antérieur. Sans journal :
-  laisse passer. `test_appliquer_plan_annee.py` **7)** — tout vert.
-- `ROADMAP.md` 1 sexies mis à jour.
-
-Et le **chantier 17, étape 2** (Mike a suivi mes deux recommandations, gravées
-dans `eval/DECISIONS.md`) : `auteurs.py` + `test_auteurs.py` (22 verts),
-`recle_decisions` transporte `auteurs` (+3 tests), `server.py` : thread-local
-`utilisateur_courant()`, `_auteurs.garnir(PEOPLE_STORE/PETS_STORE)`,
-`migrer_auteurs()` lancé par `fil_surveille` au démarrage (attendu au journal :
-`✍ auteurs : N décision(s) attribuée(s) à Mike sur M fiche(s)`, N ≈ 3 700,
-puis plus rien aux démarrages suivants). `.gitignore` : `docs/migration_auteurs.json`.
-
-**Conséquence immédiate** : le plan de 09:53 est antérieur au démarrage de
-10:51:59 → bat 26 le REFUSE tant que le serveur n'a pas redémarré sur le
-nouveau code (et c'est juste : bat 36 déplace des fichiers depuis).
+**Carnet `QUESTIONS_MIKE.md` VIDE** : les deux entrées Google tranchées
+(closes sans action ; trailer SEF sans objet) — `eval/DECISIONS.md`. Et une
+contradiction entre deux décisions de Mike (28/08 « le dernier gagne » vs
+29/08 « le propriétaire l'emporte ») a été vue et tranchée : le propriétaire ;
+la ligne du 28/08 est marquée REMPLACÉE.
 
 ## Prochain pas
 
-1. **Au signal de Mike** (bat 36 et 34 finis) : `redemarrer` → journal :
-   bannière neuve + ligne `🗂 plan rangement annee` + ligne `✍ auteurs` (et
-   zéro `FIL MORT`) ; lire
-   `docs/plan_rangement_annee.json` (vise `Photos Mike\2021`, ~559 moves) ;
-   `code_a_jour` vrai. Puis `SESSION_COMMIT.txt` + `livrer`, vérifier
-   `.git/logs/refs/heads/main`.
-2. Mike : `arret` → **bat 26** (le plan passe les deux gardes) → `marche` →
-   vérifier `_A TRIER\211108-210801 Samsung Mike\` vide, `Photos Mike\2021`
-   +559, et 27 décisions-témoins intactes.
-3. **Chantier 17** : PROPRIÉTAIRE, avec `_Uploads` → boîte de réception
-   `Photos <Nom>\_A TRIER\` (tranché, `eval/DECISIONS.md`) ; puis attribution
-   rétroactive des 3 767 décisions.
-4. **Supprimer `_to_delete/`** (43 Mo). Geste de Mike.
-5. **Le 9 septembre au matin** : Windows a-t-il DEMANDÉ ? `Get-WinEvent
+1. Mike : `arret` → **bat 26** (38 moves ; le plan de 12:49:51 passe les deux
+   gardes tant qu'on ne redémarre pas avant) → `marche` → **bat 34**.
+2. **Chantier 17, reste de l'étape 2** : `#contesté` VISIBLE dans la fiche
+   `/people` ; puis **étape 3** : la VUE par utilisateur (`PRIVE`) et son banc
+   de non-fuite — le plancher du chantier (« un compteur qui fuit est un
+   défaut de niveau A »). `proprietaire_de` (`auteurs.py`) est la brique.
+3. **Supprimer `_to_delete/`** (43 Mo). Geste de Mike.
+4. **Le 9 septembre au matin** : Windows a-t-il DEMANDÉ ? `Get-WinEvent
    -FilterHashtable @{LogName='System'; Id=1074}`.
-6. **Chantier 18 (confidentialité)** : le jeu étiqueté et son banc d'abord.
-7. Le panneau `?` des raccourcis · UNIFIER le re-clé (trois primitives) ·
+5. **Règle Motion Photo (1 septies)** : le strip `-trailer:all=` sur le fonds,
+   en deux temps réversibles. À planifier avec Mike (le Takeout n'est pas
+   touché).
+6. **Chantier 18 (confidentialité)** · panneau `?` · UNIFIER le re-clé ·
    reste d'audit (O8–O9, O11, O13–O15 ; I1 ; `animal:luna` vs `animal:Luna` ;
    quatre pages sans `components.css`).
 
@@ -128,6 +113,13 @@ attendre Mike des heures pour rien en confondant les deux.
 rien.
 
 ### Juger
+
+**Avant de RECOMMANDER une règle, relire `eval/DECISIONS.md` en entier sur le
+sujet.** Le 29/08 j'ai proposé « le propriétaire l'emporte » sans voir que Mike
+avait tranché « le dernier gagne » la veille : deux décisions contradictoires
+gravées sous son nom, à démêler après coup. Le carnet des décisions n'est pas
+un journal — c'est la contrainte.
+
 
 **Un rattrapage ne doit jamais dépendre de la ressource qui vient de tomber.**
 Ne pas pouvoir noter un échec est regrettable ; mourir en essayant fait perdre
