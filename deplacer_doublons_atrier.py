@@ -18,6 +18,14 @@ IGNOREES ici (un nom absent de la canonique — a fusionner d'abord). Sortie ASC
     deplacer_doublons_atrier.py                 # DRY-RUN
     deplacer_doublons_atrier.py --appliquer
     deplacer_doublons_atrier.py --undo          # remet la derniere fournee
+    deplacer_doublons_atrier.py --homonymes-differents [--appliquer]
+
+`--homonymes-differents` retire AUSSI les copies `_A TRIER` dont l'homonyme du
+fonds n'a PAS la meme image (re-encodage Google, `homonymes_differents` du
+rapport). Ce n'est pas un doublon au sens du hachage : c'est une DECISION
+HUMAINE (Mike, 29/08 : la version du NAS reste, ses XMP et son GPS avec), d'ou
+l'option explicite, jamais par defaut. La regle des noms tient : une copie qui
+porte un nom absent de l'homonyme est sautee (`noms_manquants`).
 """
 import argparse
 import hashlib
@@ -59,6 +67,8 @@ def main(argv=None):
     ap = argparse.ArgumentParser()
     ap.add_argument('--appliquer', action='store_true')
     ap.add_argument('--undo', action='store_true')
+    ap.add_argument('--homonymes-differents', action='store_true',
+                    help='retire aussi les homonymes a image differente (decision humaine)')
     a = ap.parse_args(argv)
 
     if a.undo:
@@ -68,9 +78,22 @@ def main(argv=None):
         rap = json.loads(RAPPORT.read_text(encoding='utf-8'))
     except OSError:
         print('Rapport absent : lance d abord verifier_doublons_atrier.py'); return 1
-    confirmes = rap.get('confirmes', [])
+    confirmes = list(rap.get('confirmes', []))
     print('%s : %d doublon(s) confirme(s) a retirer (%s revue ignoree(s))'
           % ('APPLICATION' if a.appliquer else 'DRY-RUN', len(confirmes), len(rap.get('revue', []))))
+    if a.homonymes_differents:
+        hd = rap.get('homonymes_differents')
+        if hd is None:
+            print('Le rapport ne connait pas les homonymes differents : relance verifier_doublons_atrier.py')
+            return 1
+        gardes = [e for e in hd if e.get('noms_manquants')]
+        for e in gardes:
+            print('  [skip] homonyme different GARDE, il porte un nom absent du fonds : %s (%s)'
+                  % (asc(e['dup']), asc(', '.join(e['noms_manquants']))))
+        pris = [{'dup': e['dup'], 'canonique': e['homonyme'], 'motif': 'homonyme a image differente'}
+                for e in hd if not e.get('noms_manquants')]
+        print('+ %d homonyme(s) a image differente (decision humaine, --homonymes-differents)' % len(pris))
+        confirmes += pris
     if not confirmes:
         return 0
 
@@ -103,6 +126,7 @@ def main(argv=None):
                 mani.write_text(json.dumps({
                     'origine': src, 'canonique': canon, 'sha256': sha_canon[canon],
                     'groupe': groupe, 'date_application': now,
+                    'motif': e.get('motif', 'meme image'),
                 }, ensure_ascii=False, indent=1), encoding='utf-8')
             tag = hashlib.sha1(str(p_src).encode('utf-8')).hexdigest()[:4]
             dst = bucket / ('%s_%s' % (tag, p_src.name))

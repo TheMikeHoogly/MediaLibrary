@@ -158,6 +158,13 @@ dernière bannière. Plantage dur d'une lib native : `_journal_serveur_crash.log
 **Le lire AVANT de supposer** — c'est là que se trouve la cause, pas dans une
 hypothèse.
 
+**Le NAS, `N:\\Photos`, se CONNECTE à chaque session** (picker « Add folder »
+de l'app, non persistant ; UNC et lecteur mappé ingrantables) : demander à Mike
+au « Go ». Connecté, il se lit avec `device_list_dir`, se prélève avec
+`device_stage_files`, s'écrit avec `device_commit_files` — mais il n'est PAS
+monté dans `device_bash` (réseau) : un script sur tout le fonds passe par
+l'agent banc (Windows, UNC). Sans lui, aucun regard direct sur les photos.
+
 Clics/captures : onglet au premier plan ; l'état passe par `fetch('/api/…')`
 GET (marche onglet caché) ; GPU : `GET /api/search/status`. Sandbox → disque :
 `SendUserFile` puis `device_commit_files`.

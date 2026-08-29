@@ -6,13 +6,8 @@ dans **git** ; les rejets dans `eval/DECISIONS.md` (photothèque) et
 `eval/METHODE.md` ; l'éphémère dans `PROMPT_NOUVELLE_SESSION.md`. Audits :
 `docs/AUDIT_INTERNE_2026-08.md`, `docs/AUDIT_EXTERNE_2026.md`, `docs/RANGEMENT_2026.md`.
 
-> **AU DÉMARRAGE DE CHAQUE SESSION DE TRAVAIL — demander à Mike de connecter
-> `N:\Photos`** (le NAS). Ce n'est pas persistant : le dossier se rattache
-> par session, via le picker « Add folder » de l'app (l'UNC et un lecteur
-> mappé sont ingrantables). Une fois connecté, il se lit avec
-> `device_list_dir` / se prélève avec `device_stage_files` / s'écrit avec
-> `device_commit_files` — mais PAS monté dans `device_bash` (réseau).
-> Sans lui, l'accès au NAS repasse par l'agent banc (Windows, UNC).
+> **`N:\\Photos` se connecte à chaque session** — règle dans `CLAUDE.md`
+> (« Tester en réel »), depuis le 29/08.
 
 ## Priorité (26/08/2026, refixée session 53) — le garde-fou est POSÉ
 
@@ -83,6 +78,12 @@ donc toujours un plan calculé sur l'index qu'on vient d'arrêter. Reprise :
 redémarrer (le plan sort au démarrage : ligne `🗂 plan rangement annee` au
 journal) → vérifier qu'il vise `Photos Mike` → arrêt → bat 26 → bat 34. `_Uploads` → boîte de réception par propriétaire : TRANCHÉ
 (`eval/DECISIONS.md`).
+**Session 66 (29/08, 13:22)** : bat 26 a tourné, **29 rangés** sur 38 ; les
+**9 restants** sont des ré-encodages Google (9 des 21 `IMAGE_DIFFERENTE`)
+dont le fonds a déjà l'homonyme — même noms, et le NAS a le GPS que Google a
+retiré. Décision Mike : quarantaine des 9 → **bat 37** (`deplacer_doublons_atrier
+--homonymes-differents`, opt-in, règle des noms tenue). **FAIT et OBSERVÉ**
+(13:49 → index −9 à 13:53 → plan **0 à ranger** à 14:11). Reste bat 34.
 
 **1 quater. Le 9 septembre au matin : VÉRIFIER que Windows a demandé.** Patch
 Tuesday tombe le 8 ; le redémarrage arrivait toujours vers 01:30 la nuit

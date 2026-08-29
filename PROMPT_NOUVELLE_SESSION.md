@@ -9,58 +9,51 @@ FUSIONNÉ — ce document, non. Puis `ROADMAP.md`, `eval/DECISIONS.md`,
 `eval/METHODE.md` — et `docs/DECISIONS_OUTILLAGE.md` si le sujet touche aux
 canaux, à la livraison ou au MCP. Débrief en 2–3 lignes, puis on attaque.
 
-## Où on en est (29/08/2026, session 65, midi)
+## Où on en est (29/08/2026, session 66, après-midi)
 
-**Tout est GRAVÉ** : `main` = `680c72b` puis la livraison des docs qui suit
-(vérifier `.git/logs/refs/heads/main`). Deux livraisons de code ce matin :
-`9ef9134` (réparation EXIF voie C, rangement par année, bats 34/35/36, outils
-doublons) puis `680c72b` (plan recalculé au démarrage + garde anti-plan-périmé,
-chantier 17 étape 2 : `auteurs.py`).
+**Git** : tout fusionné jusqu'à `fix/le-plan-dit-quand-il-a-fini` (13:19) ;
+la session 66 livre `feat/les-9-homonymes-google-en-quarantaine` — vérifier
+`.git/logs/refs/heads/main`.
 
-**Observé au redémarrage de 12:49 (serveur sur le code livré)** : `🗂 plan
-rangement annee : 38 a ranger` et `✍ auteurs : 3767 décision(s) attribuée(s) à
-Mike sur 166 fiche(s)` — le chiffre exact attendu — zéro `FIL MORT`.
+**Serveur** : redémarré par Mike à 13:24 sur le code livré, zéro fil mort.
 
-**Le NAS** : racine PROPRE (nettoyage manuel de Mike fini). **Bat 36 a
-terminé** : 809 jumeaux confirmés (dont les **559 Samsung 2021** — tous des
-jumeaux de `Photos Mike\2021`, 3,4 Go) sont en `.corbeille-rangement`
-(auto-purge bat 24, `--undo` possible). Bat 26 a tourné à 10:09 (1 164 Takeout
-→ `Photos Mike\<année>`, plan sain). L'index est passé de 44 517 à 43 708
-(= −809, cohérent). **Reste à ranger : 38** (tous `Google porte mieux`) —
-bat 26 au prochain arrêt ; **bat 34 pas encore lancé** (dossiers année vides).
+**Le rangement `_A TRIER`** : bat 26 a tourné à 13:22 (**29 rangés**, undo
+`docs/undo_annee_20260829_1322*.json`). Les **9 restants** du plan sont des
+ré-encodages Google (9 des 21 `IMAGE_DIFFERENTE` de `_reprise_google.json`)
+dont `Photos Mike\<année>` a déjà l'homonyme : bat 26 les saute (collision),
+à vie. Mesuré : mêmes noms des deux côtés, et le NAS porte le GPS que Google
+a retiré. **Décision Mike : quarantaine des 9, le NAS reste** — outillé :
+`verifier_doublons_atrier.py` écrit `homonymes_differents` (avec la règle des
+noms), `deplacer_doublons_atrier.py --homonymes-differents` (opt-in, testé en
+bac à sable : aperçu, application, undo, garde sur nom manquant), **bat 37**.
+Rapport régénéré par le banc sur le vrai NAS (13:36, 9 entrées, aucun nom
+manquant). **OBSERVÉ** : bat 37 à 13:49 (9/9, 0 skip), le serveur les a vus
+partir à 13:53 (`index 43708 → 43699 (+0 / −9)`), et le bouton « Plan de
+rangement par année » a rendu **0 à ranger** à 14:11:55 — le correctif de
+13:17 (le bouton dit quand il a fini) est donc aussi observé. Reste **bat 34**.
 
-**Carnet `QUESTIONS_MIKE.md` VIDE** : les deux entrées Google tranchées
-(closes sans action ; trailer SEF sans objet) — `eval/DECISIONS.md`. Et une
-contradiction entre deux décisions de Mike (28/08 « le dernier gagne » vs
-29/08 « le propriétaire l'emporte ») a été vue et tranchée : le propriétaire ;
-la ligne du 28/08 est marquée REMPLACÉE.
+**`N:\\Photos`** : règle permanente dans `CLAUDE.md` (« Tester en réel »).
 
-**Dernier geste (13:17)** : le bouton Réglages « Plan de rangement par année »
-disait « en cours… » pour toujours (le POST rend tout de suite, rien ne
-disait « fini »). Corrigé : `/api/maint/status` expose `plan_annee.genere_le`
-(mtime du plan) et la page attend que le plan soit RÉÉCRIT pour afficher
-« généré : N à ranger… ». Serveur redémarré à 13:17:27 sur ce code (plan
-38, migration auteurs silencieuse = idempotente, zéro fil mort). **À
-observer par Mike** : cliquer le bouton, le message doit finir en quelques
-secondes. Livré (voir `.git/logs/refs/heads/main`).
+**Carnet `QUESTIONS_MIKE.md`** : vide.
 
 ## Prochain pas
 
-1. Mike : `arret` → **bat 26** (38 moves ; le plan de 13:17:34 passe les deux
-   gardes tant qu'on ne redémarre pas avant) → `marche` → **bat 34**.
+1. **Bat 34** (dossiers année vides à la racine), puis `_to_delete/` (43 Mo) —
+   gestes de Mike.
 2. **Chantier 17, reste de l'étape 2** : `#contesté` VISIBLE dans la fiche
    `/people` ; puis **étape 3** : la VUE par utilisateur (`PRIVE`) et son banc
-   de non-fuite — le plancher du chantier (« un compteur qui fuit est un
-   défaut de niveau A »). `proprietaire_de` (`auteurs.py`) est la brique.
-3. **Supprimer `_to_delete/`** (43 Mo). Geste de Mike.
+   de non-fuite. `proprietaire_de` (`auteurs.py`) est la brique.
+3. **`ROADMAP.md` pèse 1 545 lignes** dont ~740 de chronique de sessions
+   closes et ~325 de points CLOS racontés : contraire à son rôle (« carte des
+   priorités, rien d'autre »). À réduire vers ~200 lignes — le détail vit
+   dans git. Contradictions internes vues : point 1 dit « reste `.fchip` »
+   (mort depuis), 1 ter « à écrire » (fait session 61), « 3 767 » vs
+   « 3 364 » décisions. À faire AVEC Mike (c'est sa carte).
 4. **Le 9 septembre au matin** : Windows a-t-il DEMANDÉ ? `Get-WinEvent
    -FilterHashtable @{LogName='System'; Id=1074}`.
-5. **Règle Motion Photo (1 septies)** : le strip `-trailer:all=` sur le fonds,
-   en deux temps réversibles. À planifier avec Mike (le Takeout n'est pas
-   touché).
-6. **Chantier 18 (confidentialité)** · panneau `?` · UNIFIER le re-clé ·
-   reste d'audit (O8–O9, O11, O13–O15 ; I1 ; `animal:luna` vs `animal:Luna` ;
-   quatre pages sans `components.css`).
+5. **Règle Motion Photo (1 septies)** : strip `-trailer:all=` en deux temps
+   réversibles, à planifier avec Mike.
+6. **Chantier 18** · panneau `?` · UNIFIER le re-clé · reste d'audit.
 
 ## En fin de projet
 

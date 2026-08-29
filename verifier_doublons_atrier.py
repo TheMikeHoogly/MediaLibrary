@@ -183,13 +183,20 @@ def main(argv=None):
     H = image_hashes(exe, a_tester + list(set(jumeaux)), log)
     noms = load_names(Path(deb64(a.db))) if a.db else {}
 
-    confirmes, revue, image_differente = [], [], []
+    confirmes, revue, image_differente, homonymes_differents = [], [], [], []
     for p in a_tester:
         ph = H.get(hkey(p))
         cand = fonds_par_nom[os.path.basename(p).lower()]
         canon = next((c for c in cand if ph and H.get(hkey(c)) == ph), None)
         if not canon:
+            # Homonyme sans image identique (re-encodage Google, par exemple) :
+            # ce n'est PAS un doublon, mais on NOTE l'homonyme et les noms que
+            # la copie porterait en plus, pour que `deplacer_doublons_atrier
+            # --homonymes-differents` (decision humaine explicite) sache quoi
+            # retirer sans jamais perdre un nom.
+            manque = sorted(noms.get(hkey(p), set()) - noms.get(hkey(cand[0]), set())) if noms else []
             image_differente.append(p)
+            homonymes_differents.append({'dup': p, 'homonyme': cand[0], 'noms_manquants': manque})
             continue
         # regle des noms : le doublon ne doit pas porter un nom absent de la canonique
         if noms:
@@ -223,6 +230,7 @@ def main(argv=None):
         'confirmes': [{'dup': p, 'canonique': c} for p, c in confirmes],
         'revue': [{'dup': p, 'canonique': c, 'noms_manquants': m} for p, c, m in revue],
         'image_differente': image_differente,
+        'homonymes_differents': homonymes_differents,
         'sans_homonyme': sans_homonyme,
         'octets_liberables': octets,
     }
