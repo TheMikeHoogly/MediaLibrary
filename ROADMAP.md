@@ -102,10 +102,16 @@ les `.mp4` vivent dans `_A TRIER` mais ne sont NI indexées (le scan filtre
 `IMAGE_EXT`), NI taguées, NI rangées, NI cherchables. `recensement_doublons.py`
 les compte déjà (il inclut `VIDEO_EXT`), mais c'est tout. Plan par phases, la
 valeur d'abord :
-- **Phase 0 — RANGEMENT par année** (le plus utile, le moins cher) : indexer
-  les `VIDEO_EXT`, dater par `exiftool` (QuickTime `CreateDate`), et les inclure
-  dans `generer_plan_annee` → elles filent dans `Photos <Nom>\<année>` comme
-  les photos. Un rename, pas de GPU.
+- **Phase 0 — RANGEMENT par année : OUTILLÉ (session 66), à appliquer par
+  Mike (bat 39)**. Sans passer par l'index : `inventaire_videos.py` (lecture
+  seule, 21 s sur le NAS) date par le NOM (`AAAAMMJJ_HHMMSS`, `VID-…-WA`),
+  sinon ExifTool `-fast` (QuickTime), sinon le dossier année du Takeout —
+  jamais le mtime — et écrit `docs/plan_rangement_videos.json` avec la règle
+  des photos (`rangement_annee.construire_plan`) ; `appliquer_plan_annee.py
+  --plan …` le range (mêmes gardes, même undo). **Mesuré** : 3 073 vidéos,
+  73,7 Go, 3 066 datées par le nom, 7 par ExifTool, **0 sans date**, 0 conflit,
+  → `Photos Mike\2016…2026` (2024 : 1 509). Question à Mike : les 5 vidéos de
+  `180328 Samsung Floflo` vont chez Mike par la règle 17c (`QUESTIONS_MIKE.md`).
 - **Phase 1 — vignette/poster** : une image-clé par `ffmpeg` (milieu), affichée
   dans la galerie avec un badge lecture ; lecture dans la visionneuse.
 - **Phase 2 — tagging IA** : passer le pipeline vision existant sur 1..N

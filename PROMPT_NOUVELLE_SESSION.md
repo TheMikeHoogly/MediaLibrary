@@ -65,13 +65,25 @@ le contrôle `/media` ne dépendait plus d'une fiche (URL construite). **Reste
 à observer** : les contrôles 4–6 (COMPTEUR A = B + 1, fiche, recherche) —
 ils exigent un nom sur la photo PRIVE ; c'est le point 17b lui-même.
 
+**Traite autonome (Mike parti ~15:25)** : (1) **dossiers vides de `_A TRIER`** :
+`inventaire_dossiers_vides.py` + `effacer_dossiers_vides.py` + **bat 38** —
+mesuré sur le NAS : **0 dossier vide** (19 dossiers, tous portent des vidéos ;
+125 `*.jpg_original` comptés RELIQUATS, gardés). (2) **Vidéos, phase 0** :
+`inventaire_videos.py` (date par le nom / ExifTool `-fast` / dossier année,
+jamais le mtime ; 8 tests) + **bat 39** (`appliquer_plan_annee --plan
+docs/plan_rangement_videos.json`, mêmes gardes, serveur arrêté). Mesuré :
+**3 073 vidéos, 73,7 Go, 0 sans date, 0 conflit** → `Photos Mike\<année>`.
+Piège vu : ExifTool `-fast2` ne lit pas le `moov` en fin de MP4 (0/7 datées),
+`-fast` oui (7/7). Deux questions dans `QUESTIONS_MIKE.md` (Floflo, `_original`).
+
 **`N:\\Photos`** : règle permanente dans `CLAUDE.md` (« Tester en réel »).
 
 **Carnet `QUESTIONS_MIKE.md`** : vide.
 
 ## Prochain pas
 
-1. `_to_delete/` (43 Mo) — geste de Mike. (Bat 34 : FAIT, racine vérifiée
+1. **Bat 39** (vidéos, serveur arrêté : `arret` → bat 39 → `marche`), puis
+   `_to_delete/` (43 Mo) — gestes de Mike. Bat 38 n'a rien à effacer aujourd'hui. (Bat 34 : FAIT, racine vérifiée
    à 14:20 : `_A TRIER`, `_Uploads`, `Photos Flo/Mike/Papa`, rien d'autre.)
 2. **Chantier 17 : OBSERVER l'étape 4 en réel** (comptes de Mike et Flo,
    photo PRIVE, `verifier_non_fuite.py` vert — lire son rapport, chaque
