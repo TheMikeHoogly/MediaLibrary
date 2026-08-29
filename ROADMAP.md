@@ -169,14 +169,8 @@ finition, à faire au fil de l'eau.
 **En fin de projet, dans cet ordre** : le chantier 17, PUIS la copie hors site
 — choix de Mike du 26/08.
 
-**Le Takeout Google a RENDU son chiffre le 27/08, et il change l'ordre du
-jour** : **3 776 photos (12,6 Go) n'existent QUE chez Google**, dont
-**2 017 vidéos**, concentrées sur 2024–2026. Ce n'est pas un écart
-d'inventaire, c'est un fonds qui n'est jamais arrivé sur le NAS — et rien ne
-s'efface chez Google tant qu'il en reste une. **C'est le geste le plus urgent
-de la liste**, avant les boutons et avant le chantier 17 : ces fichiers ne
-vivent aujourd'hui qu'à un seul endroit, et c'est chez un tiers dont le quota
-est à 96 %. Deux questions dans `QUESTIONS_MIKE.md` (27/08).
+**Le Takeout Google : CLOS** (27→29/08) — les 3 776 absentes sont rapatriées,
+ABSENT = 0, les paires indéterminées tranchées (`eval/DECISIONS.md`).
 
 ## État (29/08/2026, session 63) — LE SERVEUR PREND SA PROPRE TEMPÉRATURE
 
@@ -1334,7 +1328,19 @@ qui en découle : éditer → redémarrer → **observer** → livrer.
        de la photo) ». Observé à vide (aucun contesté tant qu'il n'y a que Mike
        — le premier vrai s'observera à l'étape 4). Reste : un conflit de
        `faces` ENTRE fiches n'a pas de règle (hors `exclude`↔`confirmed`) ;
-    3. la VUE par utilisateur et son banc de non-fuite ;
+    3. la VUE par utilisateur — **MÉCANISME POSÉ (session 66)** : `visibilite.py`
+       (règle pure : `visible(chemin, utilisateur)` — tout est partagé sauf le
+       `PRIVE` d'un autre, le `PRIVE` sans propriétaire est à l'admin, un fil
+       de fond voit tout ; `VueFiltree` / `VueFiches` en lecture seule ;
+       `brancher(store, utilisateur)` pose la vue sur `.data`, `get`, `has` ;
+       14 tests dont le vrai `SqliteStore`), branchée aux CINQ magasins dans
+       `server.py` via `utilisateur_vu()` (None tant que le routeur ne pose pas
+       de compte — étape 4 — donc DORMANT, observé : mêmes compteurs), plus le
+       garde `chemin_visible` sur `/media`, `/uploads`, `/api/thumb` (404,
+       jamais 403). **Reste** : le banc de non-fuite SUR LES ROUTES (vignette,
+       fichier, recherche, chips, carte) — il exige de dire QUI regarde, donc
+       l'étape 4 ; et l'écriture sous vue (`STORE.data[k] = …` en direct
+       tomberait sur la lecture seule : passer par `store.set`) — étape 5 ;
     4. les comptes et l'authentification ;
     5. l'écriture restreinte (effacement, nommage, renommage) ;
     6. la corbeille à 6 mois ;

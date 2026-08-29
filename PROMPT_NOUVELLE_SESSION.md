@@ -40,18 +40,31 @@ Serveur redémarré 14:16:05 sur ce code, zéro fil mort, plan 0. Observé à
 vide : `{"contestes": []}` et la page rend — un vrai contesté n'existera qu'avec
 un deuxième utilisateur (étape 4).
 
+**Chantier 17, étape 3 — la VUE par utilisateur, MÉCANISME POSÉ (14:29)** :
+`visibilite.py` (règle + vues + `brancher`, 14 tests dont le vrai
+`SqliteStore`), branché aux cinq magasins par `utilisateur_vu()` (None sans
+compte → dormant), garde `chemin_visible` sur `/media`, `/uploads`,
+`/api/thumb`. Observé : serveur 14:29:28, zéro fil mort, `/api/people/list`
+identique (Florine 6084, Mike 5619) avec `contestes: 0` partout. **Piège vu
+et corrigé** : mon `replace` de `people_list` avait touché `pets_list`
+(même forme de code) — `/api/people/list` ne portait PAS `contestes` après
+la livraison `fe75093` ; vu en regardant la vraie réponse, pas au banc.
+
 **`N:\\Photos`** : règle permanente dans `CLAUDE.md` (« Tester en réel »).
 
 **Carnet `QUESTIONS_MIKE.md`** : vide.
 
 ## Prochain pas
 
-1. **Bat 34** (dossiers année vides à la racine), puis `_to_delete/` (43 Mo) —
-   gestes de Mike.
-2. **Chantier 17, étape 3** : la VUE par utilisateur (`PRIVE`) et son banc
-   de non-fuite — le plancher du chantier (« un compteur qui fuit est un
-   défaut de niveau A »). `proprietaire_de` (`auteurs.py`) est la brique.
-   Reste de l'étape 2 : un conflit de `faces` ENTRE fiches n'a pas de règle.
+1. `_to_delete/` (43 Mo) — geste de Mike. (Bat 34 : FAIT, racine vérifiée
+   à 14:20 : `_A TRIER`, `_Uploads`, `Photos Flo/Mike/Papa`, rien d'autre.)
+2. **Chantier 17, étape 4 : les comptes** — qui regarde (`_UTILISATEUR.nom`
+   posé par le routeur), ce qui ARME la vue de l'étape 3 ; et avec elle le
+   **banc de non-fuite sur les routes** (vignette, fichier, recherche, chips,
+   carte, `/api/names`) : deux comptes, une photo dans `Photos Mike\PRIVE`,
+   B ne voit RIEN. Avant l'authentification elle-même, une question à Mike :
+   comment on se connecte (mot de passe par compte ? lien Tailscale par
+   personne ?). Reste de l'étape 2 : conflit de `faces` ENTRE fiches.
 3. **`ROADMAP.md` pèse 1 545 lignes** dont ~740 de chronique de sessions
    closes et ~325 de points CLOS racontés : contraire à son rôle (« carte des
    priorités, rien d'autre »). À réduire vers ~200 lignes — le détail vit
@@ -139,6 +152,11 @@ tout le reste. Vaut aussi pour un `ROLLBACK` qui masque sa cause.
 **Une corrélation n'est pas une cause.** Le banc du trailer le dit lui-même.
 
 **Ne pas voir une cible ne la rend pas conforme** — tout rapport dit sa PORTÉE.
+
+**Un `replace` sur un motif présent DEUX fois touche le mauvais — `assert
+count == 1` avant.** Le 29/08, l'édition visée sur `people_list` a atterri
+dans `pets_list` (même forme) ; le serveur a tourné, les tests étaient verts,
+et `/api/people/list` ne portait pas le champ. Vu en lisant la VRAIE réponse.
 
 **Un banc vert n'est pas un regard.** Les instruments savaient dire que les
 règles étaient là ; ils ne pouvaient pas dire que l'étiquette avait cessé de

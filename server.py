@@ -629,6 +629,44 @@ def utilisateur_courant():
 _auteurs.garnir(PEOPLE_STORE, utilisateur_courant)
 _auteurs.garnir(PETS_STORE, utilisateur_courant)
 
+# ─── La VUE par utilisateur (chantier 17, étape 3 — 29/08/2026) ──────────────
+# Règle pure dans `visibilite.py` (17a : le partage se fait par dossier, sauf
+# `PRIVE` ; 17b : le privé ne se trahit pas, y compris par un compteur).
+# Branchée à la LECTURE des magasins : `STORE.data`, `FACE_STORE.data`,
+# `ANIMAL_STORE.data` cachent les clés que l'utilisateur courant n'a pas le
+# droit de voir ; `PEOPLE_STORE.data` / `PETS_STORE.data` rendent des fiches
+# sans leurs citations invisibles (faces, exclude, confirmed, avatar). Tout ce
+# qui agrège (fiches, /api/names, chips, /sujets, la carte) hérite du filtre
+# sans être touché. Les fils de fond n'ont pas d'utilisateur : ils voient
+# tout, comme avant. Tant que le routeur ne pose pas `_UTILISATEUR.nom`
+# (étape 4), `utilisateur_vu()` rend None et RIEN ne change — le mécanisme
+# est en place, dormant, et son banc (`test_visibilite.py`) le prouve à vide.
+# ATTENTION pour l'étape 4 : une route qui ÉCRIT `STORE.data[k] = …` en
+# direct sous un utilisateur courant tomberait sur la vue (lecture seule) —
+# les écritures doivent passer par `store.set()` (SqliteStore écrit `_d`).
+import visibilite as _visibilite
+
+
+def utilisateur_vu():
+    """Qui REGARDE : None tant que personne n'est connecté (fil de fond, ou
+    requête sans compte — étape 4). Contrairement à `utilisateur_courant()`,
+    ne retombe PAS sur l'admin : un fil de fond qui se prendrait pour l'admin
+    verrait la vue au lieu du dictionnaire, et ne pourrait plus écrire."""
+    return getattr(_UTILISATEUR, 'nom', None)
+
+
+def chemin_visible(chemin):
+    """Le garde des routes qui servent des OCTETS par chemin (fichier,
+    vignette) : la vue des magasins ne les couvre pas. Refus = 404, jamais
+    403 — dire « interdit » dirait « ça existe »."""
+    return _visibilite.visible(str(chemin), utilisateur_vu())
+
+
+for _st in (STORE, FACE_STORE, ANIMAL_STORE):
+    _visibilite.brancher(_st, utilisateur_vu)
+for _st in (PEOPLE_STORE, PETS_STORE):
+    _visibilite.brancher(_st, utilisateur_vu, par_nom=True)
+
 
 def migrer_auteurs():
     """Attribution RÉTROACTIVE à l'admin de toute décision sans auteur (une
@@ -9100,8 +9138,11 @@ def people_list():
                     if isinstance(fe, dict) and fe.get('faces'):
                         crop = _crop_url(k, 0)
                         break
+        # `contestes` : les jugements perdus que la fiche garde en mémoire —
+        # comptés ici pour que la carte le DISE (chantier 17, étape 2).
         out.append({"name": nm, "photos": tagcount.get(nm.strip().lower(), 0),
-                    "crop": crop})
+                    "crop": crop,
+                    "contestes": len(_auteurs.contestations(pe))})
     out.sort(key=lambda x: -x["photos"])
     return out
 
@@ -11524,7 +11565,7 @@ class Handler(BaseHTTPRequestHandler):
         # Sans ce garde, une clé absolue arbitraire ferait vignetter
         # n'importe quelle image du disque via _resolve_key.
         url = _url_for_key(key)
-        if url is None:
+        if url is None or not chemin_visible(key):   # 17b : même 404 que « absent »
             self._send(404, b'Not found', 'text/plain')
             return
 
@@ -12710,12 +12751,18 @@ class Handler(BaseHTTPRequestHandler):
         if (filepath != base and base not in filepath.parents) or not filepath.is_file():
             self._send(404, b'Not found', 'text/plain')
             return
+        if not chemin_visible(filepath):       # 17b : le PRIVE d'un autre, 404
+            self._send(404, b'Not found', 'text/plain')
+            return
         self._send_file(filepath)
 
     def _serve_file(self, url_path):
         rel = urllib.parse.unquote(url_path[len('/uploads/'):])
         filepath = self._resolve_safe(rel)
         if filepath is None or not filepath.is_file():
+            self._send(404, b'Not found', 'text/plain')
+            return
+        if not chemin_visible(filepath):       # 17b
             self._send(404, b'Not found', 'text/plain')
             return
         self._send_file(filepath)

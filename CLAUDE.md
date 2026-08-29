@@ -165,6 +165,11 @@ au « Go ». Connecté, il se lit avec `device_list_dir`, se prélève avec
 monté dans `device_bash` (réseau) : un script sur tout le fonds passe par
 l'agent banc (Windows, UNC). Sans lui, aucun regard direct sur les photos.
 
+**Le serveur se regarde avec Claude in Chrome, jamais avec le navigateur intégré**
+de l'app : celui-ci traite `192.168.0.13:8080` comme un site « à risque » et
+demande une autorisation à Mike À CHAQUE action (29/08). Chrome : une
+permission de site, une fois.
+
 Clics/captures : onglet au premier plan ; l'état passe par `fetch('/api/…')`
 GET (marche onglet caché) ; GPU : `GET /api/search/status`. Sandbox → disque :
 `SendUserFile` puis `device_commit_files`.
