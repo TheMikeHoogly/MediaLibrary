@@ -14,18 +14,7 @@
 
 ## En attente
 
-### 1. Où vit la corbeille des effacements ? (29/08 soir, étape 6)
-Aujourd'hui `C:\Prog\Claude\MediaLibrary\.corbeille-rangement` — sur le PC,
-alors que « effacer, c'est effacer du NAS » et que la corbeille du
-dédoublonnage est `\\NAS-Bremblens\home\Photos\.corbeille-rangement` (même
-nom, autre disque). Six mois d'effacements sur le disque du PC, c'est du
-poids qui n'est pas sauvegardé par le snapshot NAS. **Recommandation** :
-la déplacer sur le NAS, dans un dossier à part (`\\NAS…\Photos\_CORBEILLE`)
-que le scan ignore (`_is_hidden_path`) — un `FILES_TRASH_DIR` à changer et une
-migration des paniers existants (0 aujourd'hui). En attendant : rien ne
-change, la corbeille est vide.
-
-### 2. Les 831 doublons Flo/Mike : quelle copie est la CANONIQUE ? (29/08 soir)
+### 1. Les 831 doublons Flo/Mike : quelle copie est la CANONIQUE ? (29/08 soir)
 `Photos Flo\2016 Indonésie` ↔ `Photos Mike\2016\07 Voyage en Indonésie`
 (506), Calinous (260). Retirer la copie de l'un, c'est décider que la photo
 est à l'autre (17c : le dossier dit le propriétaire). **Recommandation** : ne

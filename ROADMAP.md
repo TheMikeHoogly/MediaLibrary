@@ -1300,11 +1300,11 @@ qui en découle : éditer → redémarrer → **observer** → livrer.
        `/api/corbeille` (admin), `/api/corbeille/restaurer|purger`, section
        « Corbeille » de Réglages. **La purge vit dans le serveur, pas dans un
        bat** : le journal n'a qu'un écrivain. Observé : effacer `Mike-test.jpg`
-       → une entrée (Mike, +180 j, 2,9 Mo) → restaurée, vignette 200. **Reste** :
-       la corbeille des effacements est sur le PC (`C:\…\.corbeille-rangement`),
-       homonyme de celle du dédoublonnage qui est sur le NAS — question à Mike ;
-       et personne ne purge automatiquement : un bouton, ou le cycle de
-       maintenance (autonomie) ;
+       → une entrée (Mike, +180 j, 2,9 Mo) → restaurée, vignette 200. **Déplacée sur le NAS** (choix de
+       Mike, 29/08 soir) : `\\NAS…\Photos\.corbeille-effacements` — cachée
+       au scan par le point, sauvegardée par le snapshot, nom distinct de
+       `.corbeille-rangement` (dédoublonnage). **Reste** : personne ne purge
+       automatiquement — un bouton, ou le cycle de maintenance (autonomie) ;
     7. l'onboarding rédigé.
 
 18. **Le garde-fou de la confidentialité — DEMANDÉ par Mike le 27/08.**

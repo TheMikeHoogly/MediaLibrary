@@ -12,8 +12,8 @@ canaux, à la livraison ou au MCP. Débrief en 2–3 lignes, puis on attaque.
 ## Où on en est (29/08/2026, session 66, soir)
 
 **Git** : tout fusionné jusqu'à `feat/l-ecriture-restreinte` (`708099d`,
-21:54) ; le soir livre ensuite `feat/la-corbeille-a-6-mois` (étape 6 + deux
-correctifs de la galerie) — vérifier `.git/logs/refs/heads/main`.
+21:54) ; puis `feat/la-corbeille-a-6-mois` (`eafd363`) et
+`fix/la-corbeille-des-effacements-est-sur-le-nas` — vérifier `.git/logs/refs/heads/main`.
 
 **Serveur** : redémarré à 22:16:56 sur le code de l'étape 6, `code_a_jour`
 vrai, zéro fil mort, porte fermée (2 comptes). Index 43 702.
@@ -23,8 +23,10 @@ journal `par` + `expire` (+180 j), `FileOps.corbeille()/restaurer(ts)/purger()`
 (12 tests), `/api/corbeille` (admin) + `restaurer|purger`, section Réglages.
 Observé : effacer `Photos Mike\PRIVE\Mike-test.jpg` → entrée (Mike, +180 j,
 2,9 Mo) → restaurée, journal vide, vignette 200 ; purge à blanc : rien.
-**Deux questions dans `QUESTIONS_MIKE.md`** (la corbeille est sur le PC ;
-la copie canonique entre Flo et Mike).
+**Corbeille déplacée sur le NAS** (choix de Mike, 22:38) :
+`\\NAS…\Photos\.corbeille-effacements`, observé : effacer → panier sur le NAS
+(Mike, 2,9 Mo) → restauré, vignette 200. **Une question dans
+`QUESTIONS_MIKE.md`** (la copie canonique entre Flo et Mike).
 
 **Trois demandes de Mike le soir, toutes en ROADMAP** : recherche IA
 (**1 nonies** — deux défauts corrigés et observés : « ours en peluche » sur
@@ -119,8 +121,7 @@ RELIQUATS gardés), vidéos phase 0 (`inventaire_videos.py`, bat 39, ffmpeg
 
 ## Prochain pas
 
-1. **Les deux questions de `QUESTIONS_MIKE.md`** (corbeille sur le NAS ;
-   doublons Flo/Mike). Puis, au choix de Mike : **doublons** (1 decies :
+1. **La question de `QUESTIONS_MIKE.md`** (doublons Flo/Mike). Puis, au choix de Mike : **doublons** (1 decies :
    d'abord `mesure_doublons_image.py`, lecture seule, par l'agent banc) ;
    **vidéos phase 1** (1 octies : scan → vignette ffmpeg → galerie) ;
    **recherche IA** (1 nonies : banc en aveugle FR→EN avant de coder).

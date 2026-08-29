@@ -4330,7 +4330,22 @@ def purge_detections_hors_index(dry_run=False):
 import fichiers
 FILE_OPS = None
 FILE_OPS_LOCK = threading.Lock()
-FILES_TRASH_DIR = SCRIPT_DIR / ".corbeille-rangement"
+
+
+def _corbeille_effacements():
+    """Où vont les effacements (chantier 17, étape 6 ; choix de Mike, 29/08 :
+    « effacer, c'est effacer du NAS ») : `.corbeille-effacements` à la racine
+    du premier dossier tagué — le NAS, sauvegardé par son snapshot, et le
+    nom ne se confond pas avec `.corbeille-rangement` du dédoublonnage. Le
+    point la cache au scan (`_is_hidden_path`) : au démarrage ses clés sont
+    oubliées, comme avant, et `restaurer` les rend au scan. Repli sur le
+    dossier du script si aucun dossier tagué n'est déclaré."""
+    for d in _load_dirs_file(TAG_DIRS_FILE):
+        return Path(d) / ".corbeille-effacements"
+    return SCRIPT_DIR / ".corbeille-effacements"
+
+
+FILES_TRASH_DIR = _corbeille_effacements()
 
 
 def file_ops():
