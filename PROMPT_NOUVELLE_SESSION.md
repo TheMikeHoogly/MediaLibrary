@@ -50,6 +50,16 @@ et corrigé** : mon `replace` de `people_list` avait touché `pets_list`
 (même forme de code) — `/api/people/list` ne portait PAS `contestes` après
 la livraison `fe75093` ; vu en regardant la vraie réponse, pas au banc.
 
+**Chantier 17, étape 4 — les COMPTES, POSÉS (14:53, mot de passe par compte,
+choix de Mike)** : `comptes.py` (15 tests), `creer_compte.py`, `/connexion`,
+`/api/connexion|deconnexion|moi|comptes*`, section Réglages, porte sur chaque
+requête (`_ouvrir`), `comptes.json` hors git. Observé sans compte : porte
+ouverte, rien ne change. **Le banc de non-fuite existe** : `verifier_non_fuite.py`
+(vrai serveur, deux comptes, une clé PRIVE ; 7 contrôles). **Il attend le geste
+de Mike** : `python creer_compte.py Mike` → `Flo` → une photo dans
+`Photos Mike\PRIVE` (scan ≈ 5 min, `📒 +1`) → le banc, lancé PAR MIKE (les
+mots de passe ne passent pas par le canal). Un rouge = niveau A.
+
 **`N:\\Photos`** : règle permanente dans `CLAUDE.md` (« Tester en réel »).
 
 **Carnet `QUESTIONS_MIKE.md`** : vide.
@@ -58,13 +68,13 @@ la livraison `fe75093` ; vu en regardant la vraie réponse, pas au banc.
 
 1. `_to_delete/` (43 Mo) — geste de Mike. (Bat 34 : FAIT, racine vérifiée
    à 14:20 : `_A TRIER`, `_Uploads`, `Photos Flo/Mike/Papa`, rien d'autre.)
-2. **Chantier 17, étape 4 : les comptes** — qui regarde (`_UTILISATEUR.nom`
-   posé par le routeur), ce qui ARME la vue de l'étape 3 ; et avec elle le
-   **banc de non-fuite sur les routes** (vignette, fichier, recherche, chips,
-   carte, `/api/names`) : deux comptes, une photo dans `Photos Mike\PRIVE`,
-   B ne voit RIEN. Avant l'authentification elle-même, une question à Mike :
-   comment on se connecte (mot de passe par compte ? lien Tailscale par
-   personne ?). Reste de l'étape 2 : conflit de `faces` ENTRE fiches.
+2. **Chantier 17 : OBSERVER l'étape 4 en réel** (comptes de Mike et Flo,
+   photo PRIVE, `verifier_non_fuite.py` vert — lire son rapport, chaque
+   rouge est un défaut de niveau A à corriger AVANT toute suite). Puis
+   **étape 5, l'écriture restreinte** : chacun n'écrit que sur ses photos ;
+   attention, sous un utilisateur courant `STORE.data[k] = …` en direct
+   tombe sur la vue (lecture seule) — passer par `store.set`. Reste de
+   l'étape 2 : conflit de `faces` ENTRE fiches.
 3. **`ROADMAP.md` pèse 1 545 lignes** dont ~740 de chronique de sessions
    closes et ~325 de points CLOS racontés : contraire à son rôle (« carte des
    priorités, rien d'autre »). À réduire vers ~200 lignes — le détail vit

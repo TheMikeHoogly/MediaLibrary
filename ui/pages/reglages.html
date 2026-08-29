@@ -160,6 +160,24 @@ td.n, th.n { text-align: right; font-family: var(--f-donnees); }
   <h2>Dedoublonnage &amp; rangement</h2>
   <div id="dedup"></div>
 
+  <h2>Comptes</h2>
+  <div class="mut" id="cpt-etat">Chargement&hellip;</div>
+  <div id="cpt-liste" style="margin:var(--e-2) 0"></div>
+  <div id="cpt-admin" hidden>
+    <div class="subh">Nouveau compte</div>
+    <div class="mut">Le pr&eacute;nom est celui du dossier <code>Photos &lt;Pr&eacute;nom&gt;</code> : c'est lui qui donne acc&egrave;s &agrave; son <code>PRIVE</code>. Huit caract&egrave;res au moins.</div>
+    <div class="stepren" style="margin-top:var(--e-2)"><li>
+      <input id="cpt-nom" placeholder="Pr&eacute;nom" autocomplete="off" style="min-height:var(--touch);padding:0 var(--e-2);font:inherit;color:var(--texte);background:var(--salle-2);border:var(--trait);border-radius:var(--r-md)">
+      <input id="cpt-mdp" type="password" placeholder="Mot de passe" autocomplete="new-password" style="min-height:var(--touch);padding:0 var(--e-2);font:inherit;color:var(--texte);background:var(--salle-2);border:var(--trait);border-radius:var(--r-md)">
+      <button class="btn btn--principal" id="cpt-creer">Cr&eacute;er</button>
+    </li></div>
+  </div>
+  <div class="stepren" style="margin-top:var(--e-2)"><li>
+    <button class="btn" id="cpt-mdp-moi" hidden>Changer mon mot de passe</button>
+    <button class="btn" id="cpt-sortir" hidden>Se d&eacute;connecter</button>
+  </li></div>
+  <div class="renmsg" id="cpt-msg" hidden></div>
+
   <h2>Reglages (lecture seule)</h2>
   <div id="config"></div>
 </div>
@@ -412,6 +430,48 @@ document.getElementById('reclecheck').onclick=function(){ act('/api/maint/recle-
 document.getElementById('recleapply').onclick=function(){ act('/api/maint/recle-apply', 'Remettre les decisions humaines orphelines sur la photo actuelle ? Aucun fichier touche, entierement reversible.', 'recle-msg'); };
 document.getElementById('recleundo').onclick=function(){ act('/api/maint/recle-undo', 'Annuler le dernier re-cle des decisions ?', 'recle-msg'); };
 load(); setInterval(load, 6000);
+
+// ─── Comptes (chantier 17, etape 4) ─────────────────────────────────────
+// Sans compte : la porte est ouverte, et Mike peut creer le premier ICI (ou
+// par creer_compte.py). Avec : la liste et la creation sont a l'admin, le
+// mot de passe a chacun. La page ne dit jamais un mot de passe, ni un hache.
+(function(){
+  var etat=document.getElementById('cpt-etat'), liste=document.getElementById('cpt-liste'),
+      adm=document.getElementById('cpt-admin'), msg=document.getElementById('cpt-msg');
+  function dire(t, err){ msg.hidden=false; msg.textContent=t; msg.style.borderLeft=err?'3px solid var(--encre)':''; }
+  function charger(){
+    j('/api/moi').then(function(m){
+      document.getElementById('cpt-sortir').hidden=!m.nom;
+      document.getElementById('cpt-mdp-moi').hidden=!m.nom;
+      if(!m.porte){ etat.textContent='Aucun compte : la porte est OUVERTE (tout le monde voit tout, comme avant). Creer le premier compte la ferme — commence par le tien.'; }
+      else { etat.textContent='Porte fermee : connexion requise. Tu es '+(m.nom||'?')+(m.admin?' (admin)':'')+'.'; }
+      if(!m.porte || m.admin){
+        adm.hidden=false;
+        j('/api/comptes').then(function(d){
+          if(d.error){ liste.textContent=''; return; }
+          liste.innerHTML=(d.comptes||[]).map(function(c){
+            return '<span class="badge">'+c.nom.replace(/[&<>]/g,function(x){return {'&':'&amp;','<':'&lt;','>':'&gt;'}[x];})+(c.admin?' · admin':'')+'</span> ';
+          }).join('')||'<span class="mut">(aucun)</span>';
+        });
+      } else { adm.hidden=true; liste.textContent=''; }
+    }).catch(function(){ etat.textContent='?'; });
+  }
+  document.getElementById('cpt-creer').onclick=function(){
+    var nom=document.getElementById('cpt-nom').value.trim(), mdp=document.getElementById('cpt-mdp').value;
+    if(!nom||!mdp){ dire('Prenom et mot de passe.', true); return; }
+    j('/api/comptes',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({nom:nom,mdp:mdp})})
+    .then(function(r){ if(r.ok){ dire('Compte cree : '+nom+'.'); document.getElementById('cpt-mdp').value=''; charger(); } else dire(r.error||'refus', true); });
+  };
+  document.getElementById('cpt-mdp-moi').onclick=function(){
+    var m=prompt('Nouveau mot de passe (8 caracteres au moins) :'); if(!m) return;
+    j('/api/comptes/mdp',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({mdp:m})})
+    .then(function(r){ dire(r.ok?'Mot de passe change.':(r.error||'refus'), !r.ok); });
+  };
+  document.getElementById('cpt-sortir').onclick=function(){
+    j('/api/deconnexion',{method:'POST'}).then(function(){ location.href='/connexion'; });
+  };
+  charger();
+})();
 </script>
 </body>
 </html>

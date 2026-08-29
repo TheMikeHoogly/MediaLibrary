@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Connexion</title>
+<!--UI:components-->
+<style>
+/* Page de connexion (chantier 17, etape 4). Une seule chose a faire : dire
+   qui on est. Pas de nav (rien a naviguer avant d'etre connecte), pas de
+   liste de comptes (dire qui existe serait deja une fuite). */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: var(--e-4); }
+.boite { width: 100%; max-width: 360px; background: var(--salle-3); border: var(--trait);
+         border-radius: var(--r-lg, 12px); padding: var(--e-4); }
+h1 { font: 600 var(--t-lg)/1.2 var(--f-affichage); margin-bottom: var(--e-1); }
+.sous { color: var(--graphite); font-size: var(--t-sm); margin-bottom: var(--e-3); }
+label { display: block; font-size: var(--t-sm); color: var(--graphite); margin: var(--e-2) 0 var(--e-1); }
+input { width: 100%; min-height: var(--touch, 44px); padding: 0 var(--e-2); font: inherit;
+        color: var(--texte); background: var(--salle-2); border: var(--trait); border-radius: var(--r-md); }
+input:focus { outline: 2px solid var(--fixateur); outline-offset: 1px; }
+.acts { margin-top: var(--e-3); display: flex; gap: var(--e-2); align-items: center; }
+.msg { margin-top: var(--e-2); min-height: 1.4em; font-size: var(--t-sm); color: var(--graphite); }
+.msg.err { color: var(--encre); }
+</style>
+</head>
+<body>
+<form class="boite" id="f" autocomplete="on">
+  <h1>Photos</h1>
+  <div class="sous">Connecte-toi pour voir la m&eacute;diath&egrave;que.</div>
+  <label for="nom">Pr&eacute;nom (celui de ton dossier)</label>
+  <input id="nom" name="username" autocomplete="username" autocapitalize="words" required>
+  <label for="mdp">Mot de passe</label>
+  <input id="mdp" name="password" type="password" autocomplete="current-password" required>
+  <div class="acts"><button class="btn btn--principal" type="submit" id="go">Entrer</button></div>
+  <div class="msg" id="msg" role="status" aria-live="polite"></div>
+</form>
+<script>
+(function(){
+  var f=document.getElementById('f'), msg=document.getElementById('msg'), go=document.getElementById('go');
+  var suite=new URLSearchParams(location.search).get('suite')||'/';
+  if(!/^\/[^\/]/.test(suite)) suite='/';        // jamais vers un autre site
+  f.addEventListener('submit', function(e){
+    e.preventDefault(); go.disabled=true; msg.className='msg'; msg.textContent='Vérification…';
+    fetch('/api/connexion',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({nom:document.getElementById('nom').value, mdp:document.getElementById('mdp').value})})
+    .then(function(r){return r.json().then(function(d){return {ok:r.ok,d:d};});})
+    .then(function(x){
+      if(x.ok && x.d.ok){ location.replace(suite); return; }
+      msg.className='msg err';
+      msg.textContent = x.d.attente ? ('Trop d\'essais — réessaie dans '+x.d.attente+' s.') : 'Prénom ou mot de passe incorrect.';
+      go.disabled=false;
+    }).catch(function(){ msg.className='msg err'; msg.textContent='Le serveur ne répond pas.'; go.disabled=false; });
+  });
+})();
+</script>
+</body>
+</html>

@@ -33,19 +33,8 @@ habituel : `verifier_css_cascade --page` (feuille commune EN PREMIER dans
 `--apres`), `verifier_cibles`, `verifier_contraste`, `verifier_controles`,
 tests UI, banc des pages composants sur le serveur VIVANT, l'œil en dernier.
 
-**1 ter. LA RÉSILIENCE DES FILS DE TRAVAIL (neuf, 28/08) — le plus utile.**
-Le tagueur est increvable sur `database is locked` (session 60), mais **aucun
-des vingt fils de `main()` ne se relance et personne ne regarde** :
-`journal_serveur` pose le constat, rien ne le lit. Une nuit de huit heures a
-été perdue exactement comme ça. **TRANCHÉ par Mike le 28/08 : le fil mort se
-RELANCE, et cinq morts consécutives ALERTENT** (`docs/DECISIONS_OUTILLAGE.md`,
-Pilotage du serveur). À écrire : le registre des morts alimenté par le crochet
-existant, visible sur `/sante` ; la relance avec attente doublante ; le compte
-« consécutives » remis à zéro par une reprise qui tient (cinq minutes) ;
-l'alerte permanente sur `/sante` et répétée au journal — qui se lit à
-distance, contrairement à `/sante`. **Risque nommé** : `task_done()` est dans
-un `finally`, un fil tué avant laisse un élément perdu et un compteur faussé —
-la relance repart de la FILE, jamais de l'élément que le fil tenait.
+**1 ter. La résilience des fils de travail : FAIT (session 61)** — superviseur,
+relance à attente doublante, cinq morts consécutives alertent (`/sante` + journal).
 
 **1 quinquies. Google — VÉRIFIÉ (29/08, session 64) : Mike EFFACE chez
 Google, le correctif de réparation est MESURÉ.** Les 297 « Google porte
@@ -328,102 +317,10 @@ rapatriés.** Le reste peut partir. Détail et recommandation :
 
 ## État (28/08/2026, session 60) — LE TAGUEUR EST MORT D'AVOIR VOULU NOTER SA MORT
 
-**Windows a redémarré la machine à 01:29 — et ce n'est pas ce qui a coûté la
-nuit.** Le journal dit la vraie séquence, et elle est plus instructive :
-
-    23:42:50   ✗ Erreur tagging <photo>: database is locked — listé sur /sante
-    23:42:50 THREAD MORT : Thread-2 (tagger_worker) : OperationalError: database is locked
-
-`STORE.set` a échoué sur un verrou. Le gestionnaire d'erreur du tagueur a
-alors **réécrit dans la MÊME base encore verrouillée** — et cette seconde
-erreur, levée DANS le `except`, n'était rattrapée par personne. Le fil est
-mort à 23:42, la file s'est remplie, et le serveur est resté parfaitement
-vivant à ne rien faire pendant **huit heures**. Windows n'a interrompu qu'une
-machine qui ne travaillait déjà plus.
-
-**La règle qui en sort : un rattrapage ne doit jamais dépendre de la ressource
-qui vient de tomber.** Ne pas pouvoir noter un échec est regrettable ; mourir
-en essayant de le noter fait perdre tout le reste.
-
-### Les trois greffes
-
-1. **`store_sqlite._ecrire` réessaie** tant que le refus est un VERROU —
-   cinq tentatives, pauses doublantes (0,4 → 3,2 s), soit ~6 s au-dessus des
-   30 s de `busy_timeout`. `_est_verrou` sépare le transitoire du définitif :
-   un « no such table » n'est pas réessayé, il ne guérirait pas.
-2. **`_flush_rapide` ré-arme `_dirty`** quand l'écriture échoue pour de bon.
-   Sans ça le signal partait avec l'échec : plus rien ne disait qu'il restait
-   à écrire, et seule la réconciliation de fin de lot rattrapait — par
-   comparaison d'empreintes, et sans garantie de venir.
-3. **`server._marquer_echec`** remplace les trois `STORE.set` nus des `except`
-   de `tagger_worker`. Il avale un second échec au lieu de tuer son appelant.
-   Et le `ROLLBACK` de `_ecrire_une_fois` ne peut plus masquer la CAUSE —
-   la même faute en miniature.
-
-### La preuve
-
-`test_verrou_sqlite.py`, 8 contrôles. **6 rougissent sur le code d'avant**, et
-le premier rejoue l'incident : sur l'ancien code, `set()` lève
-`database is locked` exactement comme le 27/08 à 23:42. Les deux qui restent
-verts sont les gardes du mécanisme NEUF (l'obstination est bornée ; une erreur
-définitive n'est pas réessayée) — ils ne peuvent pas rougir avant qu'il
-existe, et le dire vaut mieux que de compter huit rouges.
-
-Un piège de méthode traversé au passage : la première version des tests
-rougissait parce que `VERROU_PAUSE_S` n'existait pas encore. **Un rouge causé
-par un NOM manquant ne prouve rien sur le COMPORTEMENT** — il fallait que
-l'ancien code s'exécute vraiment pour qu'on voie en quoi il était faux.
-
-Serveur redémarré 07:41, `code_a_jour: true`, zéro traceback depuis.
-
-### Le garde-fou ne pouvait pas s'exécuter
-
-L'agent git a REFUSÉ la première livraison : `test_store_sqlite.py` levait
-`UnicodeEncodeError`. Ce n'était pas la greffe — le banc imprime des noms de
-test contenant du **japonais** (`chat_küche_日本.jpg`, le SUJET de
-`t_unicode_et_chemins_windows`) et des filets `═`, et la console de l'agent
-est en **cp1252**. Le banc passait 52/52 et faisait quand même échouer la
-livraison. **Un instrument qui ne peut pas s'exécuter ne dit rien** — et
-celui-ci ne s'était jamais exécuté sous l'agent, `store_sqlite.py` n'ayant pas
-été livré depuis que le contrôle existe. Corrigé par `reconfigure(errors=
-'replace')` sur les deux flux (l'affichage se dégrade, jamais le verdict) et
-des filets ASCII. Mon propre `print` de réessai est en ASCII pur pour la même
-raison : ce module est importé par des bancs.
-
-### La classe de défaut est fermée, pas seulement le cas
-
-Le refus a fait chercher combien d'AUTRES bancs imprimaient hors cp1252 :
-**deux en tout** sur ~90 (`test_store_sqlite`, `test_tagging`), tous deux
-corrigés. Zéro restant, vérifié par un balayage AST des appels à `print`.
-Un défaut qui se compte se ferme ; un défaut qu'on corrige au cas par cas
-revient. La règle vaut pour la suite : **un banc qui imprime doit rester
-lisible par une console cp1252** — c'est celle de l'agent git.
-
-### Ce qui n'est PAS fait — et devrait l'être
-
-**Aucun fil mort ne se relance, et personne ne regarde.** `journal_serveur`
-POSE le constat depuis toujours (son propre commentaire dit : « le cas qui
-n'apparaît nulle part ailleurs : un thread meurt, sa file se remplit, et le
-serveur a l'air parfaitement vivant ») — mais rien ne le lit. Les vingt fils
-de `main()` sont dans ce cas. Le tagueur est désormais increvable sur CE
-verrou ; il ne l'est pas sur le prochain mode de panne. **Prochain pas
-recommandé : un registre des morts alimenté par le crochet existant, visible
-sur `/sante`, et la relance des fils de travail.** La relance est une décision
-(un fil relancé sur un état incohérent peut consommer deux fois) : à trancher
-avant d'écrire.
-
-### Côté Windows — la cause est nommée, le rendez-vous est connu
-
-`Get-WinEvent` : **29.07, 12.08, 28.08, toujours 01:29–01:33**, deux ou trois
-redémarrages enchaînés, `TrustedInstaller` et `MoUsoCoreWorker`. Les heures
-d'activité étaient **07:00 → 01:00** : Windows a respecté la consigne à la
-lettre et pris le seul créneau laissé. Trois réglages posés par Mike —
-notification de redémarrage ACTIVÉE, préversions de fin de mois coupées
-(`IsContinuousInnovationOptedIn`), et la stratégie
-`NoAutoRebootWithLoggedOnUsers=1`. **Épreuve de vérité : nuit du 8 au 9
-septembre** (Patch Tuesday). Le maximum des heures d'activité étant 18 h, il
-restera toujours un trou de 6 h : sur une machine qui tague la nuit, le
-réglage Windows ne remplace pas la résilience du serveur.
+Condensé (le récit vit dans git, `docs/DECISIONS_OUTILLAGE.md` et `eval/DECISIONS.md`) :
+le tagueur mourait sur `database is locked` en essayant de JOURNALISER son échec —
+un rattrapage ne dépend jamais de la ressource qui vient de tomber. Corrigé, observé ;
+le superviseur de fils (session 61) en est la suite.
 
 ## État (27/08/2026, session 59) — LA VISIONNEUSE DÉBORDAIT SUR TÉLÉPHONE
 
@@ -1341,7 +1238,21 @@ qui en découle : éditer → redémarrer → **observer** → livrer.
        fichier, recherche, chips, carte) — il exige de dire QUI regarde, donc
        l'étape 4 ; et l'écriture sous vue (`STORE.data[k] = …` en direct
        tomberait sur la lecture seule : passer par `store.set`) — étape 5 ;
-    4. les comptes et l'authentification ;
+    4. les comptes — **POSÉS (session 66, choix de Mike : un mot de passe par
+       compte)** : `comptes.py` (PBKDF2 300 000 tours + sel, jeton signé HMAC
+       30 j, frein 5 échecs/5 min, porte `ouvert`/`ok`/`connexion`/`refus`,
+       relecture du fichier à chaud ; 15 tests), `comptes.json` HORS git,
+       `creer_compte.py` (amorçage sur le PC), page `/connexion`, routes
+       `/api/connexion`, `/api/deconnexion`, `/api/moi`, `/api/comptes*`
+       (admin ; chacun son mot de passe), section « Comptes » de Réglages.
+       Le routeur ouvre CHAQUE requête (`_ouvrir`) : cookie → `_UTILISATEUR.nom`
+       → la vue de l'étape 3 s'arme et les décisions portent leur auteur.
+       **Sans compte, rien ne change** (observé : `🔓 comptes : aucun`,
+       `/api/moi` → `porte: false`, Réglages rend la section). **À faire par
+       Mike** : `creer_compte.py Mike` (ferme la porte), puis un compte `Flo`,
+       une photo dans `Photos Mike\PRIVE`, et **`verifier_non_fuite.py`**
+       (7 contrôles : thumb, faits, /media, compteur, fiche, recherche, porte)
+       — le plancher du chantier, enfin prouvable ;
     5. l'écriture restreinte (effacement, nommage, renommage) ;
     6. la corbeille à 6 mois ;
     7. l'onboarding rédigé.

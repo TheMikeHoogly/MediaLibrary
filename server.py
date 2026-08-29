@@ -667,6 +667,20 @@ for _st in (STORE, FACE_STORE, ANIMAL_STORE):
 for _st in (PEOPLE_STORE, PETS_STORE):
     _visibilite.brancher(_st, utilisateur_vu, par_nom=True)
 
+# ─── Les COMPTES (chantier 17, étape 4 — 29/08/2026, choix de Mike : un mot de
+# passe par compte). Règle dans `comptes.py` ; fichier `comptes.json` HORS git.
+# Le routeur ouvre chaque requête par `_ouvrir()` : il lit le cookie, pose
+# `_UTILISATEUR.nom` (ce qui ARME la vue de l'étape 3 et signe les décisions
+# de l'étape 2), et ferme la porte aux sans-compte — SEULEMENT si un compte
+# existe. Sans compte, le serveur est exactement celui d'hier.
+import comptes as _comptes
+
+COMPTES = _comptes.Comptes(SCRIPT_DIR / 'comptes.json')
+if COMPTES.actifs():
+    print(f"  🔐 comptes : {len(COMPTES.noms())} — la porte est FERMÉE (connexion requise)")
+else:
+    print("  🔓 comptes : aucun — la porte est ouverte (creer_compte.py pour la fermer)")
+
 
 def migrer_auteurs():
     """Attribution RÉTROACTIVE à l'admin de toute décision sans auteur (une
@@ -10073,11 +10087,118 @@ class Handler(BaseHTTPRequestHandler):
     def log_message(self, fmt, *args):
         print(f"  {self.client_address[0]}  {fmt % args}")
 
+    # ─── La porte (chantier 17, étape 4) ───────────────────────────────
+    def _ouvrir(self):
+        """Lit le cookie, pose l'utilisateur courant, applique la porte.
+        Rend True si la requête peut continuer ; sinon la réponse est déjà
+        partie (302 vers /connexion pour une page, 401 pour une API)."""
+        path = urllib.parse.urlparse(self.path).path
+        COMPTES.recharger_si_change()
+        nom = None
+        if COMPTES.actifs():
+            nom = COMPTES.lire_jeton(_comptes.cookie_session(self.headers.get('Cookie')))
+        _UTILISATEUR.nom = nom
+        verdict = COMPTES.porte(path, nom)
+        if verdict in ('ouvert', 'ok'):
+            return True
+        if verdict == 'refus':
+            self._send(401, json.dumps({"error": "connexion requise"}).encode(), 'application/json')
+            return False
+        suite = urllib.parse.quote(self.path if self.path.startswith('/') else '/')
+        self.send_response(302)
+        self.send_header('Location', '/connexion?suite=' + suite)
+        self.end_headers()
+        return False
+
     def do_GET(self):
+        try:
+            if self._ouvrir():
+                self._do_get()
+        finally:
+            _UTILISATEUR.nom = None     # le fil sert la requête suivante : jamais d'héritage
+
+    def _serve_connexion_post(self):
+        d = self._read_json_body()
+        nom = COMPTES.verifier(d.get('nom'), d.get('mdp'))
+        if not nom:
+            attente = COMPTES.freine((d.get('nom') or '').strip())
+            self._send(200, json.dumps({"ok": False, "attente": attente}).encode(), 'application/json')
+            return
+        jeton = COMPTES.jeton(nom)
+        body = json.dumps({"ok": True, "nom": nom, "admin": COMPTES.est_admin(nom)}).encode()
+        self.send_response(200)
+        self.send_header('Content-Type', 'application/json')
+        self.send_header('Content-Length', str(len(body)))
+        # Pas de `Secure` : le LAN est en http, Tailscale termine le TLS.
+        self.send_header('Set-Cookie', f"{_comptes.COOKIE}={jeton}; Path=/; HttpOnly; SameSite=Lax; "
+                                       f"Max-Age={_comptes.DUREE_SESSION}")
+        self.end_headers()
+        self.wfile.write(body)
+        print(f"  🔐 connexion : {nom}")
+
+    def _serve_deconnexion(self):
+        body = b'{"ok": true}'
+        self.send_response(200)
+        self.send_header('Content-Type', 'application/json')
+        self.send_header('Content-Length', str(len(body)))
+        self.send_header('Set-Cookie', f"{_comptes.COOKIE}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0")
+        self.end_headers()
+        self.wfile.write(body)
+
+    def _serve_moi(self):
+        nom = utilisateur_vu()
+        self._send(200, json.dumps({"nom": nom, "admin": bool(nom and COMPTES.est_admin(nom)),
+                                    "porte": COMPTES.actifs()}).encode(), 'application/json')
+
+    def _serve_comptes(self):
+        """Gestion des comptes, ADMIN seulement. Sans compte (porte ouverte),
+        c'est Mike seul devant son serveur : il peut créer le premier ici aussi."""
+        nom = utilisateur_vu()
+        path = urllib.parse.urlparse(self.path).path
+        d = self._read_json_body() if self.command == 'POST' else {}
+        cible = (d.get('nom') or nom or '').strip()
+        # Chacun peut changer SON mot de passe ; tout le reste est à l'admin.
+        soi = (path == '/api/comptes/mdp' and nom and cible == nom)
+        if COMPTES.actifs() and not soi and not (nom and COMPTES.est_admin(nom)):
+            self._send(403, json.dumps({"error": "admin seulement"}).encode(), 'application/json')
+            return
+        if self.command == 'GET':
+            self._send(200, json.dumps({"comptes": [
+                {"nom": n, "admin": COMPTES.est_admin(n)} for n in COMPTES.noms()],
+                "moi": nom}, ensure_ascii=False).encode(), 'application/json')
+            return
+        try:
+            if path == '/api/comptes':
+                c = COMPTES.creer(d.get('nom'), d.get('mdp'), admin=bool(d.get('admin')))
+                print(f"  🔐 compte créé par {nom or 'la porte ouverte'} : {c}")
+            elif path == '/api/comptes/mdp':
+                COMPTES.changer_mdp(cible, d.get('mdp'))
+            elif path == '/api/comptes/supprimer':
+                COMPTES.supprimer((d.get('nom') or '').strip())
+                print(f"  🔐 compte supprimé par {nom} : {d.get('nom')}")
+            else:
+                self._send(404, b'Not found', 'text/plain'); return
+        except ValueError as e:
+            self._send(200, json.dumps({"ok": False, "error": str(e)}, ensure_ascii=False).encode(),
+                       'application/json')
+            return
+        self._send(200, json.dumps({"ok": True, "comptes": COMPTES.noms()}, ensure_ascii=False).encode(),
+                   'application/json')
+
+    def _do_get(self):
         path = urllib.parse.urlparse(self.path).path
 
         if path == '/' or path == '':
             self._send_html(ui_page('upload'))
+
+        elif path == '/connexion':
+            self._send_html(ui_page('connexion'))
+
+        elif path == '/api/moi':
+            self._serve_moi()
+
+        elif path == '/api/comptes':
+            self._serve_comptes()
 
         elif path == '/files':
             self._serve_gallery()
@@ -10226,11 +10347,14 @@ class Handler(BaseHTTPRequestHandler):
         note_heavy_activity()
         print(f"  POST {self.path}")
         try:
-            self._do_post()
+            if self._ouvrir():
+                self._do_post()
         except Exception as e:
             import traceback
             traceback.print_exc()
             self._send(500, str(e).encode(), 'text/plain')
+        finally:
+            _UTILISATEUR.nom = None
 
     def _read_json_body(self):
         n = int(self.headers.get('Content-Length', 0))
@@ -10283,6 +10407,15 @@ class Handler(BaseHTTPRequestHandler):
 
     def _do_post(self):
         path = urllib.parse.urlparse(self.path).path
+        if path == '/api/connexion':
+            self._serve_connexion_post()
+            return
+        if path == '/api/deconnexion':
+            self._serve_deconnexion()
+            return
+        if path in ('/api/comptes', '/api/comptes/mdp', '/api/comptes/supprimer'):
+            self._serve_comptes()
+            return
         if path == '/api/assign':
             self._do_assign()
             return
