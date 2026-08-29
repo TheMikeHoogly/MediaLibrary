@@ -171,9 +171,9 @@ l'index porte déjà `taken` et `size`, les candidats se lisent en mémoire ;
 seul le hachage d'image des ~2 900 groupes lit le NAS (banc, lecture seule).
 Plan : (1) `mesure_doublons_image.py` — candidats par `taken`+nom, hachage
 d'image, rapport (identiques / différentes / lesquelles portent des noms ou
-un GPS que l'autre n'a pas) ; (2) règle de la copie CANONIQUE à trancher par
-Mike — entre deux propriétaires (17c) et entre deux dossiers d'un même
-propriétaire ; (3) quarantaine réversible par le plan existant, en
+un GPS que l'autre n'a pas) ; (2) la copie CANONIQUE : **entre propriétaires, celle de `Photos Mike`
+par défaut (tranché le 29/08 soir)** ; entre deux dossiers d'un même
+propriétaire, à trancher sur les chiffres du banc ; (3) quarantaine réversible par le plan existant, en
 FUSIONNANT les décisions et tags des deux copies (règle 2 : rien ne se perd).
 
 **2. Le pense-bête des raccourcis DANS l'interface** (point 6 du plancher).

@@ -14,12 +14,4 @@
 
 ## En attente
 
-### 1. Les 831 doublons Flo/Mike : quelle copie est la CANONIQUE ? (29/08 soir)
-`Photos Flo\2016 Indonésie` ↔ `Photos Mike\2016\07 Voyage en Indonésie`
-(506), Calinous (260). Retirer la copie de l'un, c'est décider que la photo
-est à l'autre (17c : le dossier dit le propriétaire). **Recommandation** : ne
-rien retirer ENTRE propriétaires sans ton mot — mesurer d'abord (banc
-d'image, lecture seule), et proposer une règle sur les chiffres : garder les
-deux si chacun en est l'auteur de fait, ou une seule avec les décisions
-FUSIONNÉES. Chez un même propriétaire (1 980 groupes chez Mike), la copie
-rangée par année l'emporte sur celle d'un dossier thématique — à confirmer.
+*(vide — 29/08 soir : la copie canonique entre propriétaires est celle de `Photos Mike` par défaut, verdict dans `eval/DECISIONS.md`)*

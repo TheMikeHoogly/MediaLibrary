@@ -25,8 +25,8 @@ Observé : effacer `Photos Mike\PRIVE\Mike-test.jpg` → entrée (Mike, +180 j,
 2,9 Mo) → restaurée, journal vide, vignette 200 ; purge à blanc : rien.
 **Corbeille déplacée sur le NAS** (choix de Mike, 22:38) :
 `\\NAS…\Photos\.corbeille-effacements`, observé : effacer → panier sur le NAS
-(Mike, 2,9 Mo) → restauré, vignette 200. **Une question dans
-`QUESTIONS_MIKE.md`** (la copie canonique entre Flo et Mike).
+(Mike, 2,9 Mo) → restauré, vignette 200. **Carnet vide** : la copie canonique entre propriétaires est celle de
+`Photos Mike` par défaut (tranché 29/08 soir).
 
 **Trois demandes de Mike le soir, toutes en ROADMAP** : recherche IA
 (**1 nonies** — deux défauts corrigés et observés : « ours en peluche » sur
@@ -121,7 +121,7 @@ RELIQUATS gardés), vidéos phase 0 (`inventaire_videos.py`, bat 39, ffmpeg
 
 ## Prochain pas
 
-1. **La question de `QUESTIONS_MIKE.md`** (doublons Flo/Mike). Puis, au choix de Mike : **doublons** (1 decies :
+1. Au choix de Mike : **doublons** (1 decies :
    d'abord `mesure_doublons_image.py`, lecture seule, par l'agent banc) ;
    **vidéos phase 1** (1 octies : scan → vignette ffmpeg → galerie) ;
    **recherche IA** (1 nonies : banc en aveugle FR→EN avant de coder).
