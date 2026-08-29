@@ -30,6 +30,11 @@ import shutil
 import time
 from pathlib import Path
 
+# Chantier 17, etape 6 (17d, choix de Mike) : « effacer, c'est effacer du NAS
+# — via une corbeille de 6 MOIS ». Un panier de `.corbeille-rangement/` porte
+# dans le journal QUI l'a rempli et QUAND il expire ; il ne se purge qu'apres.
+RETENTION_JOURS = 180
+
 
 class FileOpError(Exception):
     """Erreur d'operation previsible (message montrable a l'utilisateur)."""
@@ -122,6 +127,8 @@ class FileOps:
       garde(abs)   -> None | (code, message)   (etape 5 : l'utilisateur courant
                       peut-il toucher ce chemin ? None = permis ; facultatif,
                       sans garde tout est permis, comme avant)
+      auteur()     -> str | None   (etape 6 : QUI fait le geste, ecrit dans le
+                      journal ; facultatif)
 
     Le garde est UN goulot : chaque geste le consulte sur le chemin absolu
     qu'il va toucher (source, et destination pour deplacer/creer) AVANT de
@@ -130,7 +137,7 @@ class FileOps:
     """
 
     def __init__(self, roots_fn, resolve_key, store_keys, rekey,
-                 journal_path, trash_dir, garde=None):
+                 journal_path, trash_dir, garde=None, auteur=None):
         self.roots_fn = roots_fn
         self.resolve_key = resolve_key
         self.store_keys = store_keys
@@ -138,6 +145,12 @@ class FileOps:
         self.journal_path = Path(journal_path)
         self.trash_dir = Path(trash_dir)
         self.garde = garde
+        self.auteur = auteur
+
+    def _signe(self, rec):
+        """Le journal dit QUI (etape 6) ; None quand personne n'est connecte."""
+        rec['par'] = self.auteur() if self.auteur else None
+        return rec
 
     def _permis(self, *chemins):
         """Leve FileOpRefus si l'utilisateur courant n'a pas la main sur l'un
@@ -160,6 +173,9 @@ class FileOps:
     def _append(self, rec):
         j = self._load_journal()
         j.append(rec)
+        self._ecrire_journal(j)
+
+    def _ecrire_journal(self, j):
         tmp = self.journal_path.with_suffix('.tmp')
         tmp.write_text(json.dumps(j, ensure_ascii=False, indent=1),
                        encoding='utf-8')
@@ -170,10 +186,7 @@ class FileOps:
         if not j:
             return None
         rec = j.pop()
-        tmp = self.journal_path.with_suffix('.tmp')
-        tmp.write_text(json.dumps(j, ensure_ascii=False, indent=1),
-                       encoding='utf-8')
-        tmp.replace(self.journal_path)
+        self._ecrire_journal(j)
         return rec
 
     # ----- re-cle d'un fichier ou d'un arbre -----
@@ -234,7 +247,7 @@ class FileOps:
         pairs = self._rekey_tree(affected, src, dst, root, upload_dir)
         rec = {'op': 'rename', 'src': str(src), 'dst': str(dst),
                'idx': int(idx), 'keys': pairs, 'ts': time.time()}
-        self._append(rec)
+        self._append(self._signe(rec))
         return {'op': 'rename', 'changed': True, 'dst_name': dst.name,
                 'rekeyed': len(pairs)}
 
@@ -262,7 +275,7 @@ class FileOps:
         rec = {'op': 'move', 'src': str(src), 'dst': str(dst),
                'idx': int(idx), 'dst_idx': int(dst_idx), 'keys': pairs,
                'ts': time.time()}
-        self._append(rec)
+        self._append(self._signe(rec))
         return {'op': 'move', 'changed': True, 'rekeyed': len(pairs)}
 
     def mkdir(self, idx, rel, name):
@@ -276,7 +289,7 @@ class FileOps:
             raise FileOpError('Ce dossier existe deja.')
         new.mkdir(parents=False)
         # Pas de re-cle : un dossier vide n'a aucune entree d'index.
-        self._append({'op': 'mkdir', 'dir': str(new), 'ts': time.time()})
+        self._append(self._signe({'op': 'mkdir', 'dir': str(new), 'ts': time.time()}))
         return {'op': 'mkdir', 'name': new.name}
 
     def delete(self, idx, rel, upload_dir):
@@ -297,11 +310,13 @@ class FileOps:
         shutil.move(str(src), str(dst))
         # re-cle vers la corbeille (dst_root = corbeille : cle = chemin absolu)
         pairs = self._rekey_tree(affected, src, dst, self.trash_dir, upload_dir)
+        now = time.time()
         rec = {'op': 'delete', 'src': str(src), 'dst': str(dst),
-               'idx': int(idx), 'keys': pairs, 'ts': time.time()}
-        self._append(rec)
+               'idx': int(idx), 'keys': pairs, 'ts': now,
+               'expire': now + RETENTION_JOURS * 86400}
+        self._append(self._signe(rec))
         return {'op': 'delete', 'name': src.name, 'rekeyed': len(pairs),
-                'trash': str(dst)}
+                'trash': str(dst), 'expire': rec['expire']}
 
     def undo(self, upload_dir):
         """Annule la derniere operation (deplace en sens inverse + re-cle).
@@ -318,6 +333,9 @@ class FileOps:
         else:
             self._permis(rec['src'], rec['dst'])
         rec = self._pop()
+        return self._inverser(rec)
+
+    def _inverser(self, rec):
         op = rec.get('op')
         if op == 'mkdir':
             d = Path(rec['dir'])
@@ -342,3 +360,88 @@ class FileOps:
                 except Exception as e:
                     raise FileOpError(f"Re-cle d'annulation echouee : {e}")
         return {'undone': op, 'name': src.name, 'rekeyed': len(rec.get('keys', []))}
+
+    # ----- la corbeille datee (etape 6) -----
+    def corbeille(self, maintenant=None):
+        """Ce que la corbeille porte encore, du plus urgent au plus recent :
+        [{ts, par, expire, name, src, existe, octets}]. Un panier absent du
+        disque (deja purge a la main, deplace) est dit `existe: false`."""
+        now = time.time() if maintenant is None else maintenant
+        out = []
+        for rec in self._load_journal():
+            if rec.get('op') != 'delete':
+                continue
+            dst = Path(rec['dst'])
+            octets = 0
+            existe = dst.exists()
+            if existe:
+                try:
+                    octets = (sum(f.stat().st_size for f in dst.rglob('*') if f.is_file())
+                              if dst.is_dir() else dst.stat().st_size)
+                except OSError:
+                    pass
+            expire = rec.get('expire') or (rec.get('ts', now) + RETENTION_JOURS * 86400)
+            out.append({'ts': rec.get('ts'), 'par': rec.get('par'),
+                        'expire': expire, 'expiree': expire <= now,
+                        'name': dst.name, 'src': rec['src'], 'dst': str(dst),
+                        'existe': existe, 'octets': octets})
+        out.sort(key=lambda r: r['expire'])
+        return out
+
+    def restaurer(self, ts, upload_dir=None):
+        """Remet UN effacement precis (identifie par son `ts`), pas seulement le
+        dernier geste : c'est ce que la corbeille de l'admin appelle. Meme
+        garde, meme inversion que `undo`."""
+        j = self._load_journal()
+        for i, rec in enumerate(j):
+            if rec.get('op') == 'delete' and abs(float(rec.get('ts', 0)) - float(ts)) < 1e-6:
+                self._permis(rec['src'])
+                res = self._inverser(rec)
+                del j[i]
+                self._ecrire_journal(j)
+                return res
+        raise FileOpError('Cet effacement n est plus dans le journal.')
+
+    def purger(self, appliquer=False, maintenant=None):
+        """Supprime DEFINITIVEMENT les paniers dont l'expiration est passee —
+        le seul `rm` de ce module, et seulement sur un panier que le journal
+        connait (jamais a l'aveugle). A blanc par defaut. Un panier deja
+        absent du disque sort du journal sans rien effacer."""
+        now = time.time() if maintenant is None else maintenant
+        j = self._load_journal()
+        garde, purges, octets = [], [], 0
+        for rec in j:
+            if rec.get('op') == 'delete':
+                expire = rec.get('expire') or (rec.get('ts', now) + RETENTION_JOURS * 86400)
+                if expire <= now:
+                    dst = Path(rec['dst'])
+                    if str(self.trash_dir.resolve()) not in str(dst.resolve()):
+                        garde.append(rec)          # hors corbeille : on ne touche pas
+                        continue
+                    taille = 0
+                    if dst.exists():
+                        try:
+                            taille = (sum(f.stat().st_size for f in dst.rglob('*') if f.is_file())
+                                      if dst.is_dir() else dst.stat().st_size)
+                        except OSError:
+                            pass
+                    if appliquer and dst.exists():
+                        if dst.is_dir():
+                            shutil.rmtree(str(dst))
+                        else:
+                            dst.unlink()
+                        bucket = dst.parent
+                        try:
+                            if bucket != self.trash_dir and bucket.is_dir() and not any(bucket.iterdir()):
+                                bucket.rmdir()
+                        except OSError:
+                            pass
+                    purges.append({'name': dst.name, 'par': rec.get('par'),
+                                   'src': rec['src'], 'octets': taille})
+                    octets += taille
+                    continue
+            garde.append(rec)
+        if appliquer and purges:
+            self._ecrire_journal(garde)
+        return {'appliquer': bool(appliquer), 'purges': purges, 'octets': octets,
+                'restent': sum(1 for r in garde if r.get('op') == 'delete')}

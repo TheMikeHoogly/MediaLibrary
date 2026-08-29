@@ -11,12 +11,29 @@ canaux, à la livraison ou au MCP. Débrief en 2–3 lignes, puis on attaque.
 
 ## Où on en est (29/08/2026, session 66, soir)
 
-**Git** : tout fusionné jusqu'à `chore/ffmpeg-est-la` (`b38ce6c`, 15:33) ;
-le soir livre `feat/l-ecriture-restreinte` (étape 5) — vérifier
-`.git/logs/refs/heads/main`.
+**Git** : tout fusionné jusqu'à `feat/l-ecriture-restreinte` (`708099d`,
+21:54) ; le soir livre ensuite `feat/la-corbeille-a-6-mois` (étape 6 + deux
+correctifs de la galerie) — vérifier `.git/logs/refs/heads/main`.
 
-**Serveur** : redémarré à 21:35:22 sur le code de l'étape 5, zéro fil mort,
-porte fermée (2 comptes). Index 43 702.
+**Serveur** : redémarré à 22:16:56 sur le code de l'étape 6, `code_a_jour`
+vrai, zéro fil mort, porte fermée (2 comptes). Index 43 702.
+
+**Chantier 17, étape 6 — la CORBEILLE À 6 MOIS, POSÉE ET OBSERVÉE (22:19)** :
+journal `par` + `expire` (+180 j), `FileOps.corbeille()/restaurer(ts)/purger()`
+(12 tests), `/api/corbeille` (admin) + `restaurer|purger`, section Réglages.
+Observé : effacer `Photos Mike\PRIVE\Mike-test.jpg` → entrée (Mike, +180 j,
+2,9 Mo) → restaurée, journal vide, vignette 200 ; purge à blanc : rien.
+**Deux questions dans `QUESTIONS_MIKE.md`** (la corbeille est sur le PC ;
+la copie canonique entre Flo et Mike).
+
+**Trois demandes de Mike le soir, toutes en ROADMAP** : recherche IA
+(**1 nonies** — deux défauts corrigés et observés : « ours en peluche » sur
+une page `?jour=` rendait 0 → 1 500 ; les puces « 60 tags » comptaient
+`_Uploads` sur toute grille-résultat → comptent le résultat) ; doublons
+(**1 decies** — mesuré sur copie de l'index : 2 921 groupes même seconde +
+même nom dont 27 seulement au même octet : les copies taguées séparément ;
+**pas de rescan**, banc d'image sur les candidats) ; vidéos dans la galerie
+(**1 octies phase 1**, détaillée a→d).
 
 **Bat 39 : FAIT par Mike (21:17, deux passes, 20 + 3 053 = 3 073 vidéos →
 `Photos Mike\<année>`, undo `docs/undo_annee_20260829_2117*.json` et
@@ -102,15 +119,15 @@ RELIQUATS gardés), vidéos phase 0 (`inventaire_videos.py`, bat 39, ffmpeg
 
 ## Prochain pas
 
-1. **Chantier 17 : OBSERVER l'étape 5** — `verifier_non_fuite.py` lancé par
-   Mike (mots de passe), lire son rapport : chaque rouge est un défaut de
-   niveau A à corriger AVANT toute suite ; les contrôles 4–6 exigent un nom
-   sur la photo PRIVE. Puis **étape 6, la corbeille à 6 mois** (17d : purge
-   datée, et un endroit où l'admin voit ce qui va expirer) ; et l'envoi
-   (`/upload`) sous un compte devrait atterrir CHEZ l'envoyeur (`Photos
-   <Nom>\_A TRIER`), pas dans `_Uploads` de la racine — à trancher avec Mike
-   (touche l'onboarding, étape 7). Reste de l'étape 2 : conflit de `faces`
-   ENTRE fiches. `_to_delete/` (43 Mo) : geste de Mike.
+1. **Les deux questions de `QUESTIONS_MIKE.md`** (corbeille sur le NAS ;
+   doublons Flo/Mike). Puis, au choix de Mike : **doublons** (1 decies :
+   d'abord `mesure_doublons_image.py`, lecture seule, par l'agent banc) ;
+   **vidéos phase 1** (1 octies : scan → vignette ffmpeg → galerie) ;
+   **recherche IA** (1 nonies : banc en aveugle FR→EN avant de coder).
+   Chantier 17, reste : étape 7 (onboarding ; `/upload` sous un compte devrait
+   atterrir chez l'envoyeur, pas dans `_Uploads`), conflit de `faces` ENTRE
+   fiches, contrôle 403 « photo partagée » du banc (`--cle-partagee`).
+   `_to_delete/` (43 Mo) : geste de Mike.
 3. **`ROADMAP.md` pèse 1 545 lignes** dont ~740 de chronique de sessions
    closes et ~325 de points CLOS racontés : contraire à son rôle (« carte des
    priorités, rien d'autre »). À réduire vers ~200 lignes — le détail vit

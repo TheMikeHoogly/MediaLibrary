@@ -4345,7 +4345,8 @@ def file_ops():
             rekey=rekey_everywhere,
             journal_path=SCRIPT_DIR / "fichiers_undo.json",
             trash_dir=FILES_TRASH_DIR,
-            garde=refus_ecriture)          # étape 5 : chacun n'efface que ses photos
+            garde=refus_ecriture,          # étape 5 : chacun n'efface que ses photos
+            auteur=utilisateur_vu)         # étape 6 : le journal dit QUI a effacé
     return FILE_OPS
 
 
@@ -10223,6 +10224,9 @@ class Handler(BaseHTTPRequestHandler):
         elif path == '/api/comptes':
             self._serve_comptes()
 
+        elif path == '/api/corbeille':
+            self._serve_corbeille()
+
         elif path == '/files':
             self._serve_gallery()
 
@@ -10388,6 +10392,51 @@ class Handler(BaseHTTPRequestHandler):
         except Exception:
             return {}
 
+    # ─── La corbeille à 6 mois (chantier 17, étape 6 — 17d) ────────────
+    def _serve_corbeille(self):
+        """Ce que la corbeille porte (qui, quoi, quand ça expire) — l'endroit
+        où l'admin voit ce qui va expirer. Admin seul : la liste cite des
+        photos de tous."""
+        if not self._exige_admin('La corbeille'):
+            return
+        with FILE_OPS_LOCK:
+            entrees = file_ops().corbeille()
+        self._send(200, json.dumps({"ok": True, "retention_jours": fichiers.RETENTION_JOURS,
+                                    "entrees": entrees,
+                                    "expirees": sum(1 for e in entrees if e['expiree']),
+                                    "octets": sum(e['octets'] for e in entrees)},
+                                   ensure_ascii=False).encode(), 'application/json')
+
+    def _do_corbeille_post(self, path):
+        """`restaurer` {ts} : remet UN effacement précis — le garde de l'étape 5
+        s'applique (le propriétaire ou l'admin). `purger` {appliquer} : à blanc
+        sans `appliquer: true` ; supprime DÉFINITIVEMENT ce qui a passé les
+        180 jours — le seul rm du serveur, admin seul, sous le verrou."""
+        d = self._read_json_body()
+        try:
+            with FILE_OPS_LOCK:
+                if path == '/api/corbeille/restaurer':
+                    res = file_ops().restaurer(d.get('ts'), UPLOAD_DIR)
+                    print(f"  ♻ {utilisateur_vu()} restaure {res.get('name')} depuis la corbeille")
+                elif path == '/api/corbeille/purger':
+                    if not self._exige_admin('La purge de la corbeille'):
+                        return
+                    res = file_ops().purger(appliquer=bool(d.get('appliquer')))
+                    if res['appliquer']:
+                        print(f"  🗑 {utilisateur_vu()} purge la corbeille : {len(res['purges'])} panier(s), {res['octets']} o")
+                else:
+                    self._send(404, b'Not found', 'text/plain')
+                    return
+            self._send(200, json.dumps({"ok": True, **res}, ensure_ascii=False).encode(),
+                       'application/json')
+        except fichiers.FileOpRefus as e:
+            print(f"  ⛔ {utilisateur_vu()} : {path} refusé ({e.code}) — {e}")
+            self._send(e.code, json.dumps({"ok": False, "error": str(e)},
+                       ensure_ascii=False).encode(), 'application/json')
+        except fichiers.FileOpError as e:
+            self._send(200, json.dumps({"ok": False, "error": str(e)},
+                       ensure_ascii=False).encode(), 'application/json')
+
     def _do_files_post(self, path):
         """Operations de fichiers (vue Dossiers) : renommer / deplacer / creer
         un dossier / supprimer (quarantaine reversible) / annuler. La logique
@@ -10458,6 +10507,9 @@ class Handler(BaseHTTPRequestHandler):
             return
         if path.startswith('/api/files/'):
             self._do_files_post(path)
+            return
+        if path.startswith('/api/corbeille/'):
+            self._do_corbeille_post(path)
             return
         if path.startswith('/api/maint/'):
             self._do_maint_post(path)
@@ -10981,6 +11033,23 @@ class Handler(BaseHTTPRequestHandler):
             if _sans_date_sure(_k, STORE.data.get(_k)):
                 _fd['sd'] = 1
 
+        # Sur une grille qui est un RÉSULTAT (?q=, ?sim=, ?jour=), les puces
+        # de filtre comptent les tags DU RÉSULTAT — pas ceux du dossier
+        # Uploads, que `folder` désigne par défaut. Vu le 29/08 : les mêmes
+        # « 60 tags » (personne:Florine 8, extérieur 7…) sur « Indonésie »
+        # 1 002 photos et sur une requête à 0 photo. Une puce qui ne compte
+        # pas ce qu'on regarde est un filtre qui ment.
+        grille_resultat = bool(search_mode or sim_mode or jour_mode)
+        if grille_resultat:
+            tag_counts = {}
+            for _fd in file_data:
+                _e = STORE.data.get(_fd.get('key') or _fd.get('name') or '') or {}
+                if _e.get('failed'):
+                    continue
+                for t in set((_e.get('kw_fr') or []) + (_e.get('kw_en') or [])):
+                    tag_counts[t] = tag_counts.get(t, 0) + 1
+            top_tags = sorted(tag_counts.items(), key=lambda kv: (-kv[1], kv[0]))[:60]
+
         page = (ui_page('gallery')
                 .replace('__FOLDERS__', folders_html)
                 .replace('__MOTIFS__', json.dumps(
@@ -10991,6 +11060,7 @@ class Handler(BaseHTTPRequestHandler):
                 .replace('__HASSUBS__', '1' if subdirs else '0')
                 .replace('__DIRQ__', json.dumps(dirparam))
                 .replace('__SEARCHQ__', json.dumps(qparam if search_mode else ''))
+                .replace('__GRILLE_RESULTAT__', '1' if grille_resultat else '0')
                 .replace('__SEARCHMETA__', json.dumps(
                     detail_q if search_mode else {}, ensure_ascii=False))
                 .replace('__MOIS_JOUR__', json.dumps(

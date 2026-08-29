@@ -378,6 +378,11 @@ __FOLDERS__
   var HASSUBS = __HASSUBS__;
   var DIRQ = __DIRQ__;
   var SEARCHQ = __SEARCHQ__;   // requete si /files?q= (page de resultats globale), sinon ''
+  // La grille est-elle un RESULTAT (?q=, ?sim=, ?jour=) plutot que le fonds ?
+  // Alors une recherche IA « dedans » n'intersecterait que ce sous-ensemble
+  // avec les 200 plus proches du FONDS : « ours en peluche » sur la page d'un
+  // 11 avril rendait 0 (29/08). Meme regle que SEARCHQ : Entree relance.
+  var GRILLE_RESULTAT = __GRILLE_RESULTAT__ === 1;
   var SEARCHMETA = __SEARCHMETA__;  // ce que le serveur a compris de SEARCHQ ({} sinon)
   var MOTIFS = __MOTIFS__;
   var sorted = FILES.slice();
@@ -402,14 +407,14 @@ __FOLDERS__
     // a 354 (observe le 21/08). On attend une intention explicite. Hors mode
     // IA, la barre FILTRE des mots-cles dans la planche : la, filtrer dans ce
     // qui est charge est exactement ce qu'on demande.
-    if (modeIA && SEARCHQ) { majIndiceRelance(); return; }
+    if (modeIA && (SEARCHQ || GRILLE_RESULTAT)) { majIndiceRelance(); return; }
     qTimer = setTimeout(modeIA ? rechercheIA : applyFilter, modeIA ? 450 : 250);
   });
   qInput.addEventListener('keydown', function(e) {
     if (e.key !== 'Enter') return;
     e.preventDefault();
     if (qTimer) clearTimeout(qTimer);
-    if (modeIA && SEARCHQ) { relancerCoteServeur(qInput.value); return; }
+    if (modeIA && (SEARCHQ || GRILLE_RESULTAT)) { relancerCoteServeur(qInput.value); return; }
     if (modeIA) rechercheIA(); else applyFilter();
   });
 
@@ -424,7 +429,8 @@ __FOLDERS__
   function majIndiceRelance() {
     var el = document.getElementById('relance');
     if (!el) return;
-    var differe = modeIA && SEARCHQ && qInput.value.trim() !== SEARCHQ;
+    var differe = modeIA && (SEARCHQ || GRILLE_RESULTAT) && qInput.value.trim() !== SEARCHQ
+                  && qInput.value.trim() !== '';
     el.style.display = differe ? '' : 'none';
   }
 
@@ -516,7 +522,7 @@ __FOLDERS__
     // « 3 photos » la ou le fonds en a 349 — un compte qui ment, la forme
     // d'erreur la plus chere du projet. Une puce cliquee est une intention
     // EXPLICITE : on relance la requete cote serveur.
-    if (SEARCHQ) { relancerCoteServeur(apres); return; }
+    if (SEARCHQ || GRILLE_RESULTAT) { relancerCoteServeur(apres); return; }
     if (apres) rechercheIA(); else { iaResultats = null; majEspeceChips([]);
                                      oublierPertinence(); }
   }

@@ -178,6 +178,16 @@ td.n, th.n { text-align: right; font-family: var(--f-donnees); }
   </li></div>
   <div class="renmsg" id="cpt-msg" hidden></div>
 
+  <h2>Corbeille</h2>
+  <div class="mut" id="corb-etat">Chargement&hellip;</div>
+  <div id="corb-liste" style="margin:var(--e-2) 0"></div>
+  <div class="stepren"><li>
+    <button class="btn" id="corb-apercu">Voir ce qui a expir&eacute; (&agrave; blanc)</button>
+    <button class="btn" id="corb-purger" hidden>Purger ce qui a expir&eacute;</button>
+    <span class="mut">Effacer, c'est effacer du NAS &mdash; apr&egrave;s <b id="corb-jours">180</b> jours de corbeille. Avant, &laquo; Restaurer &raquo; remet la photo l&agrave; o&ugrave; elle &eacute;tait, avec ses noms.</span>
+  </li></div>
+  <div class="renmsg" id="corb-msg" hidden></div>
+
   <h2>Reglages (lecture seule)</h2>
   <div id="config"></div>
 </div>
@@ -469,6 +479,48 @@ load(); setInterval(load, 6000);
   };
   document.getElementById('cpt-sortir').onclick=function(){
     j('/api/deconnexion',{method:'POST'}).then(function(){ location.href='/connexion'; });
+  };
+  charger();
+})();
+
+// ─── Corbeille a 6 mois (chantier 17, etape 6) ──────────────────────────
+// La liste est a l'admin (elle cite des photos de tous) ; « Restaurer » remet
+// UN effacement precis ; la purge est le seul geste definitif, a blanc d'abord.
+(function(){
+  var etat=document.getElementById('corb-etat'), liste=document.getElementById('corb-liste'),
+      msg=document.getElementById('corb-msg'), bPurge=document.getElementById('corb-purger');
+  function dire(t, err){ msg.hidden=false; msg.textContent=t; msg.style.borderLeft=err?'3px solid var(--encre)':''; }
+  function jours(exp){ var d=(exp*1000-Date.now())/86400000; return d<0 ? 'expir\u00e9e' : ('expire dans '+Math.ceil(d)+' j'); }
+  function charger(){
+    j('/api/corbeille').then(function(d){
+      if(!d.ok){ etat.textContent = d.error || 'La corbeille est \u00e0 l\u2019admin.'; liste.textContent=''; return; }
+      document.getElementById('corb-jours').textContent = d.retention_jours;
+      var n=(d.entrees||[]).length;
+      etat.textContent = n ? (n+' effacement'+(n>1?'s':'')+' en corbeille, '+human(d.octets)+(d.expirees?(' \u2014 '+d.expirees+' expir\u00e9'+(d.expirees>1?'s':'')+', \u00e0 purger'):'')) : 'La corbeille est vide : rien n\u2019attend.';
+      bPurge.hidden = !d.expirees;
+      liste.innerHTML = n ? ('<table><thead><tr><th>Photo</th><th>Par</th><th>Effac\u00e9e le</th><th>\u00c9ch\u00e9ance</th><th class="n"></th></tr></thead><tbody>'
+        + d.entrees.map(function(e){
+            return '<tr><td title="'+esc(e.src)+'">'+esc(e.name)+(e.existe?'':' <span class="mut">(absente du disque)</span>')+'</td><td>'+esc(e.par||'\u2014')+'</td><td>'+esc(tstamp(e.ts))+'</td><td>'+jours(e.expire)+'</td>'
+              +'<td class="n">'+(e.existe?'<button class="btn" data-ts="'+e.ts+'">Restaurer</button>':'')+'</td></tr>';
+          }).join('') + '</tbody></table>') : '';
+      [].forEach.call(liste.querySelectorAll('button[data-ts]'), function(b){
+        b.onclick=function(){
+          b.disabled=true;
+          j('/api/corbeille/restaurer',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ts:parseFloat(b.dataset.ts)})})
+          .then(function(r){ dire(r.ok?('Restaur\u00e9e : '+r.name+'.'):(r.error||'refus'), !r.ok); charger(); });
+        };
+      });
+    }).catch(function(){ etat.textContent='Le serveur n a pas r\u00e9pondu.'; });
+  }
+  document.getElementById('corb-apercu').onclick=function(){
+    j('/api/corbeille/purger',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'})
+    .then(function(r){ if(!r.ok){ dire(r.error||'refus', true); return; }
+      dire(r.purges.length ? (r.purges.length+' panier(s) expir\u00e9(s), '+human(r.octets)+' \u2014 rien n\u2019a \u00e9t\u00e9 supprim\u00e9 : '+r.purges.map(function(x){return x.name;}).join(', ')) : 'Rien n\u2019a expir\u00e9 : rien \u00e0 purger.'); });
+  };
+  bPurge.onclick=function(){
+    if(!confirm('Supprimer DEFINITIVEMENT du NAS ce qui a passe les 180 jours ? Ce geste ne s annule pas.')) return;
+    j('/api/corbeille/purger',{method:'POST',headers:{'Content-Type':'application/json'},body:'{"appliquer":true}'})
+    .then(function(r){ dire(r.ok?(r.purges.length+' panier(s) supprim\u00e9(s), '+human(r.octets)+' rendus.'):(r.error||'refus'), !r.ok); charger(); });
   };
   charger();
 })();

@@ -206,6 +206,63 @@ def main():
         check(r["changed"], "garde : l'admin ecrit partout")
         check((ops.garde is None), "sans garde : tout est permis, comme avant")
 
+        # --- etape 6 : la corbeille datee (qui, quand ca expire, restaurer, purger) ---
+        import time as _t
+        from fichiers import RETENTION_JOURS
+        qui["nom"] = "Flo"
+        opsc = FileOps(roots_fn=lambda: roots, resolve_key=ops.resolve_key,
+                       store_keys=ops.store_keys, rekey=ops.rekey,
+                       journal_path=base / "undo6.json", trash_dir=base / ".corbeille-rangement",
+                       garde=garde, auteur=lambda: qui["nom"])
+        for n in ("c1.jpg", "c2.jpg"):
+            (nas / "Photos Flo" / n).write_bytes(b"cc")
+            store[str(nas / "Photos Flo" / n)] = {"tags": ["personne:Flo"]}
+        noms3 = names(store)
+        r1 = opsc.delete(1, "Photos Flo/c1.jpg", up)
+        _t.sleep(0.01)
+        r2 = opsc.delete(1, "Photos Flo/c2.jpg", up)
+        j = opsc._load_journal()
+        check(all(rec.get("par") == "Flo" for rec in j), "corbeille : le journal dit QUI (Flo)")
+        check(abs(r1["expire"] - (j[0]["ts"] + RETENTION_JOURS * 86400)) < 1,
+              "corbeille : expire = effacement + 180 jours")
+        c = opsc.corbeille()
+        check([e["name"] for e in c] == ["c1.jpg", "c2.jpg"] and all(e["existe"] for e in c)
+              and c[0]["octets"] == 2 and not c[0]["expiree"],
+              "corbeille : liste qui/quoi/quand, du plus urgent au plus recent")
+        # restaurer UN effacement precis (le premier, pas le dernier)
+        qui["nom"] = "Papa"
+        try:
+            opsc.restaurer(j[0]["ts"], up)
+            check(False, "corbeille : Papa ne restaure pas chez Flo")
+        except FileOpRefus:
+            check(True, "corbeille : restaurer passe par le garde")
+        qui["nom"] = "Flo"
+        r = opsc.restaurer(j[0]["ts"], up)
+        check(r["undone"] == "delete" and (nas / "Photos Flo" / "c1.jpg").exists()
+              and str(nas / "Photos Flo" / "c1.jpg") in store,
+              "corbeille : c1 restaure (fichier + cle), pas le dernier geste")
+        check(len(opsc.corbeille()) == 1 and opsc.corbeille()[0]["name"] == "c2.jpg",
+              "corbeille : le journal ne garde que c2")
+        # purger : a blanc, rien ne bouge ; rien avant l'expiration ; applique, le panier part
+        p0 = opsc.purger(appliquer=False, maintenant=_t.time())
+        check(p0["purges"] == [] and p0["restent"] == 1, "purge : rien n a expire, rien a purger")
+        futur = _t.time() + (RETENTION_JOURS + 1) * 86400
+        p1 = opsc.purger(appliquer=False, maintenant=futur)
+        dst2 = Path(opsc.corbeille()[0]["dst"])
+        check(len(p1["purges"]) == 1 and dst2.exists() and len(opsc.corbeille()) == 1,
+              "purge a blanc : c2 est liste, rien n est supprime, le journal est intact")
+        p2 = opsc.purger(appliquer=True, maintenant=futur)
+        check(len(p2["purges"]) == 1 and p2["octets"] == 2 and not dst2.exists()
+              and not dst2.parent.exists() and opsc.corbeille() == [],
+              "purge appliquee : panier supprime, journal vide")
+        # jamais hors de la corbeille : un `dst` trafique n est pas touche
+        piege = nas / "Photos Flo" / "c1.jpg"
+        opsc._append({"op": "delete", "src": str(piege), "dst": str(piege), "ts": 1.0, "expire": 2.0})
+        p3 = opsc.purger(appliquer=True, maintenant=futur)
+        check(p3["purges"] == [] and piege.exists(), "purge : un dst hors corbeille n est JAMAIS supprime")
+        check(names(store) == noms3, "corbeille : aucun nom humain perdu")
+        qui["nom"] = "Mike"
+
         print()
         if FAIL:
             print(f"ECHEC : {len(FAIL)} assertion(s) — {FAIL}")

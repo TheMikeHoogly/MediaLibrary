@@ -112,8 +112,21 @@ valeur d'abord :
   73,7 Go, 3 066 datées par le nom, 7 par ExifTool, **0 sans date**, 0 conflit,
   → `Photos Mike\2016…2026` (2024 : 1 509). Question à Mike : les 5 vidéos de
   `180328 Samsung Floflo` vont chez Mike par la règle 17c (`QUESTIONS_MIKE.md`).
-- **Phase 1 — vignette/poster** : une image-clé par `ffmpeg` (milieu), affichée
-  dans la galerie avec un badge lecture ; lecture dans la visionneuse.
+- **Phase 1 — les vidéos dans la GALERIE, comme les photos (demandé par Mike
+  le 29/08 : « revoir l'affichage afin de les traiter comme les photos »)**.
+  Ce que ça touche, dans l'ordre : (a) le SCAN les indexe (`VIDEO_EXT` à côté
+  d'`IMAGE_EXT` dans `scan_uploads`/`_sync_dir` ; entrée `{video: true,
+  duree, taken}` — date par le nom / ExifTool `-fast`, jamais le mtime, comme
+  `inventaire_videos`) ; (b) la VIGNETTE : une image-clé `ffmpeg -ss <milieu>
+  -frames:v 1` dans `photo_thumbs/` sous la même clé que les photos, calculée
+  par le fil des vignettes (coût CPU à mesurer sur 3 073 vidéos, 73,7 Go —
+  échantillonner) ; (c) la GALERIE : badge « ▶ durée » sur la vignette, la
+  visionneuse ouvre un `<video controls>` (le seek marche déjà : `_send_file`
+  gère Range) ; (d) le TAGGING : pas dans cette phase — la vidéo est visible
+  et lisible sans lui (phase 2). Gardes : ne jamais envoyer une vidéo au
+  tagueur ni aux visages tant que la phase 2 n'existe pas (`in_file`,
+  `write_metadata` refusent les `VIDEO_EXT`) ; 3 073 clés de plus dans un
+  index de 43 702.
 - **Phase 2 — tagging IA** : passer le pipeline vision existant sur 1..N
   images-clés, agréger, ÉCRIRE les mots-clés dans le conteneur MP4 (`exiftool`
   QuickTime/XMP) — analogue à `write_metadata`.
@@ -124,6 +137,44 @@ valeur d'abord :
   `ffmpeg` : **PRÉSENT** (7.1.1 sur le PATH, `verifier_outils_video.py`,
   29/08) — la phase 1 peut commencer sans installation. **Dépendance** : Phase 0 profite du
   correctif `cible()` (rangement par propriétaire) déjà posé.
+
+**1 nonies. L'INTELLIGENCE de la recherche IA (demandé par Mike le 29/08 au
+soir).** Deux défauts vus et corrigés le soir même, sur ses captures : (a) sur
+une grille qui est un RÉSULTAT (`?jour=`, `?sim=`), la recherche IA
+intersectait la grille avec les 200 plus proches du FONDS — « ours en
+peluche » sur un 11 avril rendait **0** ; règle du 21/08 étendue (Entrée
+relance côté serveur, observé : **1 500**, teddy bear 288) ; (b) les puces
+« Filtres (60 tags) » de TOUTE grille-résultat comptaient les tags du dossier
+`_Uploads`, pas ceux du résultat (mêmes 60 puces sur « Indonésie » 1 002
+photos et sur une requête à 0) — corrigé, observé. **Ce qui reste, à
+mesurer avant de coder** (banc en aveugle, `eval/METHODE.md`) : la requête en
+FRANÇAIS face à un SigLIP qui lit surtout l'anglais (« ours en peluche » →
+« teddy bear » : traduire ou élargir la requête, mesurer le rappel avant/
+après) ; le NOM DE DOSSIER comme indice (`06 EVG Nounours` devrait sortir
+sur « nounours ») ; les synonymes des tags FR/EN déjà là ; et un mode
+« filtrer dans cette grille » HONNÊTE (classer la grille entière, pas le
+top-200 du fonds) pour qui veut vraiment chercher dans une journée.
+
+**1 decies. Les DOUBLONS (demandé par Mike le 29/08 au soir).** Le
+dédoublonnage n'a vu que les copies IDENTIQUES AU BIT (`recensement_doublons`
+: 0 groupe restant le 23/08). Or **mesuré sur une copie de l'index (29/08)** :
+**3 818** groupes de photos prises la MÊME SECONDE (8 582 clés), dont
+**2 921 portent le même nom de fichier** ; parmi elles **27** seulement ont la
+même taille, **2 630** diffèrent de moins de 20 Ko — ce sont les copies
+taguées SÉPARÉMENT, dont le XMP a divergé (`Voyage Indonésie (1).jpg` :
+4 406 996 vs 4 407 261 octets, même `taken`). Le hachage de fichier est
+aveugle à ça ; le hachage d'IMAGE (`verifier_doublons_atrier`, IMAGE_DIFFERENTE)
+ne l'est pas. **Répartition** : 1 980 groupes chez Mike seul, **831
+Flo/Mike** (`Photos Flo\2016 Indonésie` ↔ `Photos Mike\2016\07 Voyage en
+Indonésie` : 506 ; Calinous : 260), 102 chez Flo. **Pas de rescan complet** :
+l'index porte déjà `taken` et `size`, les candidats se lisent en mémoire ;
+seul le hachage d'image des ~2 900 groupes lit le NAS (banc, lecture seule).
+Plan : (1) `mesure_doublons_image.py` — candidats par `taken`+nom, hachage
+d'image, rapport (identiques / différentes / lesquelles portent des noms ou
+un GPS que l'autre n'a pas) ; (2) règle de la copie CANONIQUE à trancher par
+Mike — entre deux propriétaires (17c) et entre deux dossiers d'un même
+propriétaire ; (3) quarantaine réversible par le plan existant, en
+FUSIONNANT les décisions et tags des deux copies (règle 2 : rien ne se perd).
 
 **2. Le pense-bête des raccourcis DANS l'interface** (point 6 du plancher).
 Il manque la brique : **un fichier JS commun injecté sur toutes les pages**,
@@ -651,31 +702,12 @@ sur le NAS. Rien ne s'efface chez Google avant, et le rapport le dit lui-même
   étaient en `display:none` derrière des `<label for>`.
 - **Le chantier XMP est clos** : 0 écart sur 1 614 couples (Wilson 0,0–0,2 %).
 
-## État (25/08/2026, session 46) — libérer Google sans rien perdre
+## État (25/08/2026, session 46) — libérer Google sans rien perdre : CLOS
 
-**`verifier_photos_google.py`** (neuf, famille `verifier_`, lecture seule,
-19 vérifications) répond à la seule question qui autorise à effacer 75 Go chez
-un tiers : **pour chaque photo que Google détient, le NAS la porte-t-il ?**
-
-**Pourquoi un export Takeout et pas l'API.** Depuis le **31 mars 2025** l'API
-Google Photos ne laisse plus une application tierce voir que ce qu'elle a
-elle-même envoyé — rclone le dit noir sur blanc. Aucun outil ne peut énumérer
-la photothèque à distance. Takeout, lui, dépose à côté de chaque média un
-`.json` portant son **nom d'origine** et sa **date de prise de vue** : deux
-choses que le nom exporté peut avoir perdues (Takeout tronque les noms longs
-et suffixe les collisions). Se fier au nom du fichier ferait déclarer ABSENTES
-des photos que le NAS porte — c'est le premier test du banc.
-
-**Quatre verdicts, un seul autorise.** CERTAIN (même nom, même taille) ·
-PROBABLE (taille différente : Google a ré-encodé en mode économiseur) ·
-AMBIGU · **ABSENT — et un seul ABSENT interdit tout**. Le rapport écrit
-alors NE RIEN EFFACER, et le code de sortie vaut 1 : un banc qui rendrait 0
-sur un fonds incomplet serait un feu vert.
-
-**Ce qu'il ne voit pas, et qui compte** : une photo arrivée chez Google par un
-autre chemin — album partagé, WhatsApp, le téléphone de quelqu'un d'autre —
-n'a aucune raison d'être sur le NAS. Elle sort ABSENTE, et c'est un ordre de
-COPIE, pas un écart à écarter.
+Le banc `verifier_photos_google.py` (quatre verdicts, un seul ABSENT interdit
+tout) a fait son office : les 3 776 absentes sont rapatriées, ABSENT = 0, les
+paires indéterminées sont tranchées (`eval/DECISIONS.md`, 29/08). Le récit
+du banc vit dans git et dans `docs/`.
 
 ## État (25/08/2026, session 45 quater) — la copie hors site est SPÉCIFIÉE
 
@@ -1182,23 +1214,11 @@ qui en découle : éditer → redémarrer → **observer** → livrer.
     **(e) Les 3 364 décisions humaines existantes sont attribuées à Mike.**
     Rétroactivement, en une migration. Les nouvelles portent leur auteur.
 
-    **(f) HTTPS : par TAILSCALE, et c'est presque gratuit.** L'accès passe
-    déjà par Tailscale, qui chiffre le transport. Pour avoir en plus un vrai
-    certificat — donc plus d'avertissement de navigateur, et des mots de passe
-    qui ne circulent jamais en clair même sur le LAN :
-    activer MagicDNS + « Enable HTTPS » dans la console Tailscale, puis, sur
-    le PC qui héberge le serveur :
-    `tailscale serve --bg --https=443 localhost:8080`.
-    Tailscale termine le TLS, **le serveur Python n'a pas une ligne à
-    changer**, le certificat Let's Encrypt est obtenu et renouvelé tout seul
-    (DNS-01), et `--bg` le fait survivre au redémarrage. Ni port forwarding,
-    ni nom de domaine public. L'adresse devient
-    `https://<machine>.<tailnet>.ts.net`. **Caveat à dire à Mike** : le nom de
-    la machine est publié dans les journaux publics de Certificate
-    Transparency — choisir un nom qui ne dit rien de la famille.
-    *Alternative si un jour il faut l'accès LAN SANS Tailscale* : le reverse
-    proxy de DSM 7 + certificat Let's Encrypt par défi DNS, côté NAS. À ne
-    faire que si le besoin apparaît.
+    **(f) HTTPS : FAIT par Tailscale** (`tailscale serve --bg --https=443
+    localhost:8080`, certificat Let's Encrypt renouvelé seul, le serveur
+    Python n'a pas changé d'une ligne) — `https://msi-mike.goat-draco.ts.net/`.
+    Le récit du choix (MagicDNS, Certificate Transparency, l'alternative
+    reverse proxy DSM) vit dans git.
 
     **Ce que ça change dans les invariants du projet.** La règle 2 (« les noms
     humains ne se perdent jamais ») devient « les noms de QUI ». Un conflit
@@ -1271,7 +1291,20 @@ qui en découle : éditer → redémarrer → **observer** → livrer.
        `auteurs`. Banc : `verifier_non_fuite.py` contrôles 8–9 — **OBSERVÉ
        12 verts, 0 fuite** (29/08 21:50) ; reste le 403 sur une photo partagée
        (`--cle-partagee`) ;
-    6. la corbeille à 6 mois ;
+    6. la corbeille à 6 mois — **POSÉE ET OBSERVÉE (session 66, soir)** :
+       le journal `fichiers_undo.json` dit QUI (`par`) et QUAND ça expire
+       (`expire` = +180 j, `fichiers.RETENTION_JOURS`) ; `FileOps.corbeille()`,
+       `restaurer(ts)` (UN effacement précis, sous le garde de l'étape 5),
+       `purger(appliquer)` (à blanc par défaut, seulement un panier que le
+       journal connaît ET qui est sous `.corbeille-rangement` — 12 tests) ;
+       `/api/corbeille` (admin), `/api/corbeille/restaurer|purger`, section
+       « Corbeille » de Réglages. **La purge vit dans le serveur, pas dans un
+       bat** : le journal n'a qu'un écrivain. Observé : effacer `Mike-test.jpg`
+       → une entrée (Mike, +180 j, 2,9 Mo) → restaurée, vignette 200. **Reste** :
+       la corbeille des effacements est sur le PC (`C:\…\.corbeille-rangement`),
+       homonyme de celle du dédoublonnage qui est sur le NAS — question à Mike ;
+       et personne ne purge automatiquement : un bouton, ou le cycle de
+       maintenance (autonomie) ;
     7. l'onboarding rédigé.
 
 18. **Le garde-fou de la confidentialité — DEMANDÉ par Mike le 27/08.**
