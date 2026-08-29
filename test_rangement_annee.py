@@ -31,21 +31,30 @@ def main():
         ('k5', '/nas/Photos/A TRIER/variant.jpg', ts(2018)),       # tolerance casse/sep
         ('k6', '/nas/Photos/_A TRIER/dup.jpg', ts(2020)),
         ('k7', '/nas/Photos/_A TRIER/other/dup.jpg', ts(2020)),    # collision de plan
+        ('k8', '/nas/Photos/Photos Flo/_A TRIER/flo.jpg', ts(2021)),  # boite d'un proprietaire
+        ('k9', '/nas/Photos/Photos Mike/2020/img9.jpg', ts(2020)),  # deja chez Mike
     ]
     p = ra.construire_plan(items)
     dsts = {m['key']: m['dst'] for m in p['moves']}
 
-    check(dsts.get('k1', '').replace('\\', '/') == '/nas/Photos/2020/img1.jpg',
-          "range vers <base>/AAAA/ (2020)")
-    check(dsts.get('k2', '').replace('\\', '/') == '/nas/Photos/2019/img2.jpg',
+    check(dsts.get('k1', '').replace('\\', '/') == '/nas/Photos/Photos Mike/2020/img1.jpg',
+          "range vers <base>/Photos Mike/AAAA/ (2020) — jamais a la racine")
+    check(dsts.get('k2', '').replace('\\', '/') == '/nas/Photos/Photos Mike/2019/img2.jpg',
           "aplati : sous-dossier de _A TRIER -> annee directe")
-    check(dsts.get('k3', '').replace('\\', '/') == '/nas/Photos/_SANS_DATE/nodate.jpg',
+    check(dsts.get('k3', '').replace('\\', '/') == '/nas/Photos/Photos Mike/_SANS_DATE/nodate.jpg',
           "sans date fiable -> _SANS_DATE (jamais devine)")
     check('k4' not in dsts, "fichier hors _A TRIER : ignore")
-    check(dsts.get('k5', '').replace('\\', '/') == '/nas/Photos/2018/variant.jpg',
+    check(dsts.get('k5', '').replace('\\', '/') == '/nas/Photos/Photos Mike/2018/variant.jpg',
           "tolerance « A TRIER » (sans underscore)")
     check(any(c['key'] == 'k7' for c in p['conflits']),
           "collision de plan (meme nom, meme annee) -> conflit, pas ecrasement")
+    check(dsts.get('k8', '').replace('\\', '/') == '/nas/Photos/Photos Flo/2021/flo.jpg',
+          "_A TRIER d'un proprietaire : range CHEZ LUI, pas chez Mike")
+    check('k9' not in dsts and p['deja'] == 0,
+          "fichier hors _A TRIER chez Mike : ignore (pas un « deja »)")
+    check(ra.base_du_fonds('/nas/Photos') == ra.Path('/nas/Photos/Photos Mike')
+          and ra.base_du_fonds('/nas/Photos/Photos Papa') == ra.Path('/nas/Photos/Photos Papa'),
+          "base_du_fonds : racine -> Photos Mike, proprietaire -> lui-meme")
     check(p['sans_date'] == 1, "compteur sans_date")
     check(p['par_annee'].get(2020) == 2 and p['par_annee'].get(2019) == 1
           and p['par_annee'].get(2018) == 1, "repartition par annee (k1+k6 en 2020, k7 en conflit)")

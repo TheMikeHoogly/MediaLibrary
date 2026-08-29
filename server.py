@@ -1213,12 +1213,19 @@ LAST_WRITE_ERROR = ""
 
 
 def repair_file(path):
-    """Reconstruit les métadonnées d'un fichier au bloc EXIF endommagé.
-    ExifTool réécrit toutes les métadonnées lisibles ; une sauvegarde
-    « nom.jpg_original » est conservée à côté du fichier."""
+    """DERNIER RECOURS : reconstruit les métadonnées (`-all=` puis recopie).
+
+    Ce que ça coûte, mesuré le 29/08 (`verifier_reparation_exif.py`) : le
+    trailer Samsung part — la vidéo d'un Motion Photo, 2 à 3 Mo — et le profil
+    ICC avec lui, même avec `--trailer:all`. Quatorze photos de 2024 l'ont subi
+    le 28/08. D'où l'ordre désormais : d'abord `write_metadata`, qui sur un EXIF
+    illisible réécrit XMP + IPTC SANS toucher l'EXIF (tout est gardé) ; ceci
+    seulement si cette voie-là échoue aussi. La sauvegarde « nom.jpg_original »
+    reste à côté du fichier — c'est elle qui porte ce qui est perdu."""
     if not EXIFTOOL:
         return False
-    print(f"  🔧 Réparation EXIF : {path.name}")
+    print(f"  🔧 Réparation EXIF (dernier recours, trailer et ICC PERDUS, "
+          f"sauvegarde *_original) : {path.name}")
     r = _run_exiftool(["-all=", "-tagsfromfile", "@", "-all:all", "-unsafe",
                        "-charset", "filename=UTF8", str(path)])
     if r.returncode != 0:
@@ -1229,27 +1236,35 @@ def repair_file(path):
 
 
 def write_metadata(path, keywords, desc):
-    """Écrit les mots-clés/description dans le fichier (XMP + IPTC + XPKeywords)."""
+    """Écrit les mots-clés/description dans le fichier (XMP + IPTC + XPKeywords).
+
+    Si ExifTool refuse parce qu'il ne sait pas RELIRE l'EXIF (« Error reading
+    OtherImageStart data in IFD0 » — Motion Photo Samsung), second essai en
+    XMP + IPTC seulement : l'EXIF n'est pas réécrit, le trailer (vidéo
+    embarquée) et le profil ICC restent. Mesuré sur une copie le 29/08 :
+    +501 octets, tout gardé. Un rattrapage ne détruit jamais plus que ce
+    qu'il répare."""
     global LAST_WRITE_ERROR
     LAST_WRITE_ERROR = ""
     if not EXIFTOOL:
         return _write_metadata_piexif(path, keywords, desc)
-    args = ["-overwrite_original", "-q", "-m",
-            "-charset", "filename=UTF8", "-codedcharacterset=utf8"]
-    for k in keywords:
-        args.append(f"-MWG:Keywords={k}")
-    if desc:
-        args.append(f"-MWG:Description={' '.join(desc.split())}")
-    if path.suffix.lower() in ('.jpg', '.jpeg'):
-        args.append(f"-XPKeywords={'; '.join(keywords)}")
-    args.append(str(path))
+    jpeg = path.suffix.lower() in ('.jpg', '.jpeg')
     try:
-        r = _run_exiftool(args)
-        if r.returncode != 0:
-            LAST_WRITE_ERROR = r.stderr.strip()[:200]
-            print(f"  ⚠ ExifTool: {LAST_WRITE_ERROR}")
-            return False
-        return True
+        r = _run_exiftool(ecriture_meta.args_ecriture(keywords, desc, jpeg) + [str(path)])
+        if r.returncode == 0:
+            return True
+        err = r.stderr.strip()
+        if ecriture_meta.exif_illisible(err):
+            print(f"  ⚠ EXIF illisible pour ExifTool ({err[:80]}) → "
+                  f"XMP + IPTC seulement, EXIF et trailer conservés : {path.name}")
+            r2 = _run_exiftool(ecriture_meta.args_ecriture(keywords, desc, jpeg,
+                                                           sans_exif=True) + [str(path)])
+            if r2.returncode == 0:
+                return True
+            err = r2.stderr.strip() or err
+        LAST_WRITE_ERROR = err[:200]
+        print(f"  ⚠ ExifTool: {LAST_WRITE_ERROR}")
+        return False
     except Exception as e:
         LAST_WRITE_ERROR = str(e)[:200]
         print(f"  ⚠ ExifTool: {e}")
@@ -1263,6 +1278,7 @@ def write_metadata(path, keywords, desc):
 # la moitié d'entre elles : jamais compté, jamais rattaché, jamais retiré
 # (audit interne I7).
 from tagging_meta import est_tag_nomme, parse_tag_nomme      # noqa: E402
+import ecriture_meta                                          # noqa: E402
 
 
 def _norm_import_kw(k):

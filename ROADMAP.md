@@ -6,6 +6,14 @@ dans **git** ; les rejets dans `eval/DECISIONS.md` (photothèque) et
 `eval/METHODE.md` ; l'éphémère dans `PROMPT_NOUVELLE_SESSION.md`. Audits :
 `docs/AUDIT_INTERNE_2026-08.md`, `docs/AUDIT_EXTERNE_2026.md`, `docs/RANGEMENT_2026.md`.
 
+> **AU DÉMARRAGE DE CHAQUE SESSION DE TRAVAIL — demander à Mike de connecter
+> `N:\Photos`** (le NAS). Ce n'est pas persistant : le dossier se rattache
+> par session, via le picker « Add folder » de l'app (l'UNC et un lecteur
+> mappé sont ingrantables). Une fois connecté, il se lit avec
+> `device_list_dir` / se prélève avec `device_stage_files` / s'écrit avec
+> `device_commit_files` — mais PAS monté dans `device_bash` (réseau).
+> Sans lui, l'accès au NAS repasse par l'agent banc (Windows, UNC).
+
 ## Priorité (26/08/2026, refixée session 53) — le garde-fou est POSÉ
 
 **Le point 1 est fait, prouvé, livré** (voir l'état de session 53 ci-dessous) :
@@ -44,26 +52,34 @@ distance, contrairement à `/sante`. **Risque nommé** : `task_done()` est dans
 un `finally`, un fil tué avant laisse un élément perdu et un compteur faussé —
 la relance repart de la FILE, jamais de l'élément que le fil tenait.
 
-**1 quinquies. Google — VÉRIFIÉ (29/08, session 64) : le feu vert est le
-geste de Mike.** Les 297 « Google porte mieux » sont rapatriés ; la
-vérification finale a tourné : ABSENT 0, et les **199 « NAS plus petit »
-sont nos propres copies** — 14 Motion Photos passées par `repair_file`
-(trailer jeté, `_original` intact à côté, 14/14) et 185 à −2…−57 Ko de
-padding, zéro tag perdu (`diagnostic_trailer_google.py`). Question posée
-dans `QUESTIONS_MIKE.md`. **À faire, code** : `repair_file` doit préserver le
-trailer Samsung (vidéo embarquée + ICC) — banc sur une copie d'un Motion
-Photo du Takeout AVANT, l'écriture après.
+**1 quinquies. Google — VÉRIFIÉ (29/08, session 64) : Mike EFFACE chez
+Google, le correctif de réparation est MESURÉ.** Les 297 « Google porte
+mieux » sont rapatriés ; la vérification finale : ABSENT 0, et les **199
+« NAS plus petit » sont nos propres copies** — 14 Motion Photos passées par
+`repair_file` (trailer jeté, `_original` intact 14/14) et 185 à −2…−57 Ko
+de padding, zéro tag perdu. Mike a le feu vert (voir la marche dans le fil du
+29/08). **Correctif tranché par le banc** (`verifier_reparation_exif.py`, sur
+une COPIE d'un Motion Photo) : sur un fichier où l'écriture EXIF normale
+échoue (« Error reading OtherImageStart »), il ne faut PAS appeler
+`repair_file` (candidats A et B détruisent le trailer ou l'ICC) — il faut
+retomber sur une écriture **XMP+IPTC seulement** (candidat C : +501 o, SEFT
+gardé, ftyp gardé, ICC gardé, 189 tags, mots-clés écrits). Donc :
+`write_metadata` détecte l'échec « OtherImageStart » et bascule sur
+`-XMP-dc:Subject`/`-IPTC:Keywords` au lieu de réparer ; un banc l'exige sur
+un Motion Photo. Ne PAS toucher au Takeout de `C:\GOOGLE PHOTOS\extrait`
+avant la copie hors site (seule 2e copie des Motion Photos complets).
 
-**1 sexies. DÉFAUT (29/08) : le plan par année range à la RACINE.**
-`rangement_annee.cible()` vise `Photos\<année>` ; le fonds vit sous
-`Photos Mike` depuis le 26/08. Bat 26 a posé **1 217 photos (3,7 Go)** dans
-17 dossiers racine les 27 et 28/08 — quatre journaux `docs/undo_annee_*`
-les couvrent à l'unité. Chemin : corriger `cible()` (constante + test) →
-serveur arrêté, `--undo` ×4 → plan → bat 26 → `.bat` en `rd` non récursif
-sur les 17 dossiers. Mesurer avant l'undo les décisions humaines accrochées à
-ces clés (re-clé hors-ligne : 5 magasins sur 7). Choix de Mike en attente ;
-`_Uploads` → boîte de réception par propriétaire proposé dans le même
-mouvement (chantier 17).
+**1 sexies. Le rangement des 1 217 A REBONDI (29/08) — cause : le plan n'est
+régénéré QUE par le bouton Réglages, jamais au démarrage.** `cible()` était
+corrigé et gravé, mais le plan `docs/plan_rangement_annee.json` datait du 28/08
+18:57 (cibles RACINE) ; bat 26 l'a relu et re-rangé à la racine ; bat 34 a
+refusé les 17 dossiers (pleins) — rien perdu. **Garde-fou posé + testé**
+(`appliquer_plan_annee.plan_vise_la_racine`) : bat 26 refuse un plan qui vise
+la racine. Reprise : bat 35 → serveur+livrer → **bouton Réglages** (le geste
+manquant) → vérifier que le plan vise `Photos Mike` → bat 26 → bat 34. **À
+coder** : `_run_plan_annee()` au démarrage, pour qu'un plan périmé ne puisse
+plus être appliqué. `_Uploads` → boîte de réception par propriétaire : TRANCHÉ
+(`eval/DECISIONS.md`).
 
 **1 quater. Le 9 septembre au matin : VÉRIFIER que Windows a demandé.** Patch
 Tuesday tombe le 8 ; le redémarrage arrivait toujours vers 01:30 la nuit
@@ -73,6 +89,41 @@ prouvé**. Lire `Get-WinEvent -FilterHashtable @{LogName='System'; Id=1074}` et
 la bannière du journal : si le serveur a tourné sans interruption, les
 réglages tiennent ; sinon la stratégie de groupe n'a pas été honorée et il
 faut regarder « Stratégies de mise à jour configurées ».
+
+**1 septies. RÈGLE Motion Photo — MÉTHODE VÉRIFIÉE, à mettre en oeuvre (29/08).**
+Règle tranchée (`eval/DECISIONS.md`) : une Motion Photo ne garde que son image,
+la vidéo embarquée est jetée. **Méthode confirmée par banc**
+(`verifier_strip_motionphoto.py`, sur copie) : `exiftool -trailer:all=` rend
+l'image IDENTIQUE au pixel, retire trailer+vidéo, JPEG valide, **−61 %**
+(5,45→2,14 Mo). Troncature = JPEG invalide (rejetée), Pillow = perte (rejetée).
+Mise en oeuvre en deux temps, réversible : (1) strip sur le fonds — `exiftool
+-trailer:all= -ext jpg -ext jpeg -r <racine>`, qui laisse un `*.jpg_original`
+(la version complète) POUR les seuls fichiers modifiés et ne touche pas les
+autres ; (2) après vérif des stills, purge des `*.jpg_original`. Les paires
+`.jpg`/`.jpg_original` déjà présentes dans `Google porte mieux` SONT l'état (1)
+— leur purge relève de (2). **À faire** : bat de strip + bat de purge (ou
+intégrer à `25 - Maintenance`), et compter d'abord (`mesure_` ou exiftool).
+
+**1 octies. CHANTIER : intégrer les VIDÉOS (comme les images).** Aujourd'hui
+les `.mp4` vivent dans `_A TRIER` mais ne sont NI indexées (le scan filtre
+`IMAGE_EXT`), NI taguées, NI rangées, NI cherchables. `recensement_doublons.py`
+les compte déjà (il inclut `VIDEO_EXT`), mais c'est tout. Plan par phases, la
+valeur d'abord :
+- **Phase 0 — RANGEMENT par année** (le plus utile, le moins cher) : indexer
+  les `VIDEO_EXT`, dater par `exiftool` (QuickTime `CreateDate`), et les inclure
+  dans `generer_plan_annee` → elles filent dans `Photos <Nom>\<année>` comme
+  les photos. Un rename, pas de GPU.
+- **Phase 1 — vignette/poster** : une image-clé par `ffmpeg` (milieu), affichée
+  dans la galerie avec un badge lecture ; lecture dans la visionneuse.
+- **Phase 2 — tagging IA** : passer le pipeline vision existant sur 1..N
+  images-clés, agréger, ÉCRIRE les mots-clés dans le conteneur MP4 (`exiftool`
+  QuickTime/XMP) — analogue à `write_metadata`.
+- **Phase 3 — visages/animaux** sur les images-clés, rattachés aux fiches.
+- **Phase 4 — recherche sémantique** : encoder l'image-clé, comme une photo.
+- Transverse : dédup vidéo (déjà par `recensement_doublons`), gros fichiers
+  (le rename gère déjà), coût CPU/GPU de l'extraction+inférence à mesurer,
+  `ffmpeg` à installer côté Windows. **Dépendance** : Phase 0 profite du
+  correctif `cible()` (rangement par propriétaire) déjà posé.
 
 **2. Le pense-bête des raccourcis DANS l'interface** (point 6 du plancher).
 Il manque la brique : **un fichier JS commun injecté sur toutes les pages**,

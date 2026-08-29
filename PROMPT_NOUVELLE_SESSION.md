@@ -9,58 +9,82 @@ FUSIONNÉ — ce document, non. Puis `ROADMAP.md`, `eval/DECISIONS.md`,
 `eval/METHODE.md` — et `docs/DECISIONS_OUTILLAGE.md` si le sujet touche aux
 canaux, à la livraison ou au MCP. Débrief en 2–3 lignes, puis on attaque.
 
-## Où on en est (29/08/2026, session 64, en cours)
+## Où on en est (29/08/2026, session 64, ~02:00 — SI LE PC A PLANTÉ, LIS CECI)
 
-Git propre, tout fusionné (`36b706d` puis cette session). Trois fenêtres du
-bat 0 vivantes, serveur redémarré 00:24:58, zéro fil mort.
+**Tout le code ci-dessous est VÉRIFIÉ vert cette nuit** (les trois bancs de test lancés nommément, jamais `discover` : `ecriture_meta`, `rangement_annee`, `appliquer_plan_annee` — tous VERTS ; la voie C de réparation confirmée par `verifier_reparation_exif.py` sur une copie). Une partie a été écrite par un tour qui a planté avant de le dire ; Mike a relancé. **Une seule session** — le « deuxième écrivain était moi.** Ne pas re-faire ce travail : le vérifier sur le disque, il y est.
 
-### Google — vérifié, le feu vert est le geste de Mike
+**RIEN de cette session n'est encore dans git après `a6ff878`** (les agents
+étaient fermés). Sur le disque, non gravés : `server.py` (réparation EXIF
+corrigée), `ecriture_meta.py` + test, `rangement_annee.py` +
+`appliquer_plan_annee.py` + tests (cible `Photos Mike`, 7 magasins), les
+bats `34` et `35`, `verifier_reparation_exif.py`, `eval/DECISIONS.md`,
+`QUESTIONS_MIKE.md`, `ROADMAP.md`, ce fichier. **Premier geste après le
+redémarrage du serveur : `livrer`** (règle 5 : `server.py` doit tourner).
 
-`verifier_photos_google` a tourné (165 s) : **ABSENT 0**, CERTAIN 4 280,
-PROBABLE 9 625, **199 « NAS plus petit » — tous sous `_A TRIER\Google porte
-mieux`, nos propres copies**. Mesuré fichier par fichier
-(`diagnostic_trailer_google.py`, banc) :
+### Le rangement des 1 217 photos — DÉCISION DE MIKE : nettoyage manuel
 
-- **14 Motion Photos Samsung de 2024, −1 à −3,3 Mo** : ExifTool refuse d'y
-  écrire (« Error reading OtherImageStart »), `server.repair_file` fait
-  `-all=` puis recopie — et **jette le trailer** : vidéo embarquée + profil
-  ICC (88 tags). Le `nom.jpg_original` est à côté, 14/14 à la taille de
-  Google. Rien de perdu ; le défaut, lui, est réel et ancien (les originaux
-  de `Photos Mike\2024` font 2,3 Mo, Google 5,5).
-- **185 à −2…−57 Ko** : écriture XMP normale, trailer conservé, zéro tag
-  présent seulement chez Google. Du padding.
+**Ce qui s'est passé (29/08 matin).** Le rangement a rebondi : `_run_plan_annee`
+n'est appelé QUE par le bouton Réglages, jamais au démarrage ; le plan datait du
+28/08 18:57 (cibles RACINE) ; bat 26 l'a relu et re-rangé à la racine ; bat 34 a
+refusé les 17 dossiers (pleins). **Rien perdu.**
 
-Trois questions posées à Mike (`QUESTIONS_MIKE.md`) : effacer chez Google ;
-rapatrier les 1 217 ; `_Uploads` → boîte de réception par propriétaire.
+**Décision de Mike (29/08) : il NETTOIE la racine À LA MAIN, serveur ALLUMÉ.**
+Beaucoup des fichiers racine viennent de l'album des 40 ans de Florine, déjà
+dans le fonds — donc des doublons à effacer, pas à ranger. C'est SÛR : le scan
+(5 min) via `forget_everywhere` purge tags + détections + vecteurs, **aucun nom
+humain perdu** (fiches keyées par nom). Le dance undo→bat26 pour les 658 Takeout
+est donc ABANDONNÉ. **État à vérifier en début de session** : `device_list_dir`
+sur `N:\Photos\<annee>` (racine) — combien reste-t-il ? Un keeper (non-doublon)
+laissé à la racine se remet dans `Photos Mike\<annee>` en le DÉPLAÇANT à la main
+(le scan re-clé sans re-taguer, `_sync_dir` étape 1, décisions préservées) — ou
+me le signaler et je le range.
 
-### DÉFAUT trouvé : le plan par année range à la RACINE
+**Dédoublonner `_A TRIER` (déjà rangé) — OUTILS PRÊTS (29/08).** Les collisions du bat 26 sont des JUMEAUX déjà dans le fonds, différant de quelques octets de tags (donc `recensement_doublons` sha256 les rate). `verifier_doublons_atrier.py` (lecture seule) les confirme par `exiftool -ImageDataHash` (validé 30/30 sur Samsung 2021) ; `deplacer_doublons_atrier.py` les met en `.corbeille-rangement` (serveur ALLUMÉ, ne touche pas la base, réversible `--undo`, auto-purge bat 24) ; garde « aucun nom perdu » via `--db`. **Bat 36** enchaîne détection → aperçu → retrait. Le plein dépasse 600 s → via le bat, pas le banc.
 
-Les 17 dossiers `Photos\2005…2026` ne sont PAS vides : **1 217 photos,
-3,7 Go** (`inventaire_racine_photos.py`, 8 s). `rangement_annee.cible()`
-vise `Photos\<année>`, pas `Photos Mike\<année>`. Quatre journaux
-`docs/undo_annee_2026082{7,8}_*.json` (20+539+20+638) couvrent tout.
-**Ne pas écrire de `.bat` d'effacement avant** : corriger `cible()` →
-`--undo` ×4 serveur arrêté → plan → bat 26 → `rd` non récursif.
+**Reste à ranger par le plan : les 559 photos 2021 dans
+`_A TRIER\211108-210801 Samsung Mike\`** (correctement annulées, toujours là).
+Elles, elles passent par le plan : serveur allumé → **bouton Réglages « Plan de
+rangement par année »** → VÉRIFIER que `docs/plan_rangement_annee.json` vise
+`Photos Mike` (`device_list_dir` ne monte pas le NAS ; lire le JSON qui, lui,
+est dans le projet) → serveur arrêté → **bat 26** (le garde-fou laisse passer un
+plan sain, refuse un plan-racine) → démarrer → bat 34 si des dossiers année sont
+vides.
 
-## Prochain pas
+**Garde-fou posé et testé** (`appliquer_plan_annee.plan_vise_la_racine` ;
+`test_appliquer_plan_annee.py` 6) VERT) : bat 26 refuse un plan qui range à la
+racine et dit de le régénérer. Agit sans redémarrage (bat 26 lit ce script).
 
-1. **Selon la réponse de Mike** : `repair_file` qui préserve le trailer
-   (banc AVANT sur une copie d'un Motion Photo de
-   `C:\GOOGLE PHOTOS\extrait`, `SEFT` en fin de fichier + `ftyp` + ICC
-   après) ; puis le rapatriement des 1 217 dans l'ordre ci-dessus.
-2. **Ranger les 297 « Google porte mieux »** — après la correction de
-   `cible()`, sinon ils iront à la racine aussi. Le plan vient de l'index EN
-   MÉMOIRE : attendre que `queues.tag` retombe, régénérer.
-3. **Supprimer `_to_delete/`** (43 Mo). Geste de Mike.
-4. **Le 9 septembre au matin** : Windows a-t-il DEMANDÉ ? `Get-WinEvent
+**À CODER ensuite** : `_run_plan_annee()` au démarrage du serveur, pour qu'un
+plan périmé ne puisse plus être appliqué faute d'avoir été régénéré.
+
+### Tranché par Mike cette nuit
+
+- **Google** : il efface (`photos.google.com` sur PC, sauvegarde du téléphone
+  COUPÉE avant, corbeille à vider ensuite ; le Takeout dézippé reste la 2e
+  copie des Motion Photos complets). La vérification a rendu : ABSENT 0, les
+  199 « NAS plus petit » sont nos copies (14 Motion Photos amputées par
+  `repair_file`, `_original` intact ; 185 de padding, zéro tag perdu).
+- **`_Uploads`** → boîte de réception par propriétaire,
+  `Photos <Nom>\_A TRIER\` (`eval/DECISIONS.md`). À coder dans le chantier 17.
+- **`repair_file`** ne détruit plus : `write_metadata` réécrit XMP + IPTC
+  sans toucher l'EXIF quand ExifTool ne sait pas le relire
+  (`verifier_reparation_exif.py`, voie C ; `ecriture_meta.py`, 14 verts).
+
+## Prochain pas (après le nettoyage racine + rangement Samsung + `livrer`)
+
+0. **Demander à Mike de reconnecter `N:\Photos`** (voir l'encadré ROADMAP),
+   puis `device_list_dir` sur les dossiers racine `N:\Photos\<annee>` pour voir
+   où en est son nettoyage manuel.
+1. **Supprimer `_to_delete/`** (43 Mo). Geste de Mike.
+2. **Le 9 septembre au matin** : Windows a-t-il DEMANDÉ ? `Get-WinEvent
    -FilterHashtable @{LogName='System'; Id=1074}`.
-5. **Chantier 18 (confidentialité)** : le jeu étiqueté et son banc d'abord.
-6. **Le panneau `?` des raccourcis** — brique : un JS commun injecté partout.
-7. **Chantier 17** : PROPRIÉTAIRE (avec `_Uploads` redéfini), puis attribution
-   rétroactive des 3 767 décisions.
-8. **UNIFIER le re-clé** (trois primitives divergentes) — le rapatriement des
-   1 217 en est le premier client.
-9. **Reste d'audit** : O8–O9, O11, O13–O15 ; I1 ; `animal:luna` (3) vs
+3. **Chantier 17** : PROPRIÉTAIRE, avec `_Uploads` → boîte de réception ;
+   puis attribution rétroactive des 3 767 décisions.
+4. **Chantier 18 (confidentialité)** : le jeu étiqueté et son banc d'abord.
+5. **Le panneau `?` des raccourcis** — brique : un JS commun injecté partout.
+6. **UNIFIER le re-clé** (trois primitives) — l'annulation de cette nuit en
+   est le premier client réel.
+7. **Reste d'audit** : O8–O9, O11, O13–O15 ; I1 ; `animal:luna` (3) vs
    `animal:Luna` (355) ; quatre pages sans `components.css` (`/map` est
    témoin de `verifier_pages_composants`).
 
@@ -117,6 +141,8 @@ en argument SÉPARÉ) et son plafond est **600 s** — échantillonner au-delà.
 lit l'**index en mémoire** : un fichier n'y entre qu'une fois TAGUÉ. J'ai fait
 attendre Mike des heures pour rien en confondant les deux.
 
+**Le plan n'est régénéré QUE par le bouton Réglages / `POST /api/maint/plan-annee` — JAMAIS au démarrage.** Un `cible()` corrigé ne suffit pas : sans un clic, bat 26 relit un vieux plan et range au mauvais endroit (rebond du 29/08). Le garde-fou `plan_vise_la_racine` refuse maintenant un plan-racine ; régénérer et VÉRIFIER reste le réflexe.
+
 **Un plan appliqué n'est pas un plan calculé.** `appliquer_plan_annee` relit
 `docs/plan_rangement_annee.json` ; s'il date, il rend `skip: N` et ne range
 rien.
@@ -148,6 +174,19 @@ redémarrage — qui interrompt tagging et scan.
 
 **Un `_exiftool_tmp` condamne sa photo** — balayage jamais par défaut.
 
+> **`N:\\Photos` est CONNECTÉ (29/08)** — le NAS en direct. Se lit avec
+> `device_list_dir` (rapide, rend tailles+mtime), se prélève avec
+> `device_stage_files`, s'écrit avec `device_commit_files`. MAIS c'est un
+> emplacement réseau : **PAS monté sous `$HOME/mnt/` dans `device_bash`**
+> (seul `MediaLibrary` l'est). Donc pas de `grep`/`find`/python direct sur
+> le NAS — pour un script sur tout le fonds, passer par l'agent banc
+> (Windows, accès UNC) ; pour inspecter ou dédoublonner du ciblé,
+> `device_list_dir` + `device_stage_files` suffisent. L'UNC `\\NAS-…` et un
+> lecteur mappé restent, eux, ingrantables : c'est le picker de l'app qui
+> a monté `N:\\Photos`.
+>
+> **Piège git via `device_bash`** : le bac à sable REFUSE à git de délier son propre `.git/index.lock` (« Operation not permitted »), donc chaque `git status` d'ici laisse un verrou résiduel qui bloquerait l'agent `livrer` natif de Mike. Ne PAS faire de git depuis `device_bash` juste avant que l'agent tourne ; si un lock traîne, le renommer (`mv`, permis) au lieu de `rm`. Deux `.git/index.lock.stale-*` inertes traînent — git les ignore, Mike ou une session peut les retirer.
+>
 > **Piège d'horloge** : `device_bash` est en **UTC** (−2 h chez Mike).
 >
 > **Le dossier monté a un cache** : le `mtime` dit la vérité, `tail` peut

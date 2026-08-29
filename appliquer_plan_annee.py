@@ -27,6 +27,7 @@ Securite (ordre = garantie « aucune info perdue ») :
   4. RE-CLE l'index : rekey tags + faces/people/animals/pets + semantique (memes
      primitives que server.rekey_everywhere, via appliquer_plan.rekey_stores),
      pour que tags/detections/empreintes suivent le fichier — aucun nom perdu.
+     Et depuis le 29/08 le 7e magasin, `gps_places.json` (libelles de lieu).
   5. Journalise l'op (undo).
 
 Le rangement ne FUSIONNE aucun nom (contrairement au dedoublonnage) : c'est un
@@ -50,8 +51,34 @@ from pathlib import Path
 # Reutilise les primitives d'index deja testees du dedoublonnage : rekey_stores
 # est le miroir EXACT de server.rekey_everywhere (tags + sujets + semantique).
 from appliquer_plan import open_stores, rekey_stores
+import rangement_annee as _ra  # PROPRIETAIRE_RE : garde anti-plan-perime
 
 RACINE = Path(__file__).resolve().parent
+# Le 7e magasin : les libelles de geocodage, keyes par CHEMIN de photo. Ni
+# `rekey_stores` ni le serveur hors-ligne ne le transportaient ; une photo
+# rangee perdait son « Bremblens » et le redemandait au geocodeur.
+GPS = RACINE / 'gps_places.json'
+
+
+def charger_gps(chemin=None):
+    """Le dictionnaire des libelles, ou {} s'il n'existe pas / est illisible."""
+    try:
+        return json.loads(Path(chemin or GPS).read_text(encoding='utf-8'))
+    except (OSError, ValueError):
+        return {}
+
+
+def recler_gps(gps, old, new):
+    """Transporte le libelle de `old` vers `new`. Rend vrai s'il y en avait un."""
+    if gps is None or old not in gps:
+        return False
+    gps[new] = gps.pop(old)
+    return True
+
+
+def ecrire_gps(gps, chemin=None):
+    Path(chemin or GPS).write_text(json.dumps(gps, ensure_ascii=False, indent=1),
+                                   encoding='utf-8')
 
 
 def _new_key(op):
@@ -61,7 +88,7 @@ def _new_key(op):
     return nk if nk else str(Path(op['dst']))
 
 
-def apply_move(op, stores, semantic, journal, dry=True, compte=None):
+def apply_move(op, stores, semantic, journal, dry=True, compte=None, gps=None):
     src, dst = op['src'], op['dst']
     old_key = op['key']
     new_key = _new_key(op)
@@ -94,6 +121,8 @@ def apply_move(op, stores, semantic, journal, dry=True, compte=None):
                                    compte=compte)
         except Exception as e:                                    # noqa: BLE001
             print(f"    ! re-cle index {old_key} -> {new_key} : {e}")
+    if rekeyed and recler_gps(gps, old_key, new_key) and compte is not None:
+        compte['gps'] = compte.get('gps', 0) + 1
 
     # 5) journal undo
     journal['operations'].append(
@@ -104,7 +133,7 @@ def apply_move(op, stores, semantic, journal, dry=True, compte=None):
     return 'ok'
 
 
-def undo(journal_path, stores, semantic, dry=True, compte=None):
+def undo(journal_path, stores, semantic, dry=True, compte=None, gps=None):
     j = json.loads(Path(journal_path).read_text(encoding='utf-8'))
     ops = list(reversed(j.get('operations', [])))
     print(f"Undo : {len(ops)} operation(s) a inverser depuis {journal_path}")
@@ -131,6 +160,7 @@ def undo(journal_path, stores, semantic, dry=True, compte=None):
             try:
                 rekey_stores(op['new_key'], op['old_key'], stores, semantic,
                              compte=compte)
+                recler_gps(gps, op['new_key'], op['old_key'])
             except Exception as e:                                # noqa: BLE001
                 print(f"    ! re-cle d'annulation : {e}")
         # nettoie le dossier annee s'il est devenu vide
@@ -224,6 +254,32 @@ def refus_d_ecriture(db, dry, forcer=False, url=SERVEUR_URL):
 refus_du_verrou = refus_d_ecriture
 
 
+def parent_du_dossier_annee(dst):
+    """Nom du dossier qui CONTIENT le dossier <annee> d'un `dst`.
+
+    `...\\Photos\\Photos Mike\\2005\\x.jpg` -> `Photos Mike`. Robuste aux deux
+    separateurs : le plan porte des chemins Windows (`\\`), le test tourne sous
+    Linux (`/`) ; `Path` ne coupe pas `\\` sous Linux, donc on normalise a la
+    main plutot que de s'y fier."""
+    parts = str(dst).replace('\\', '/').rstrip('/').split('/')
+    return parts[-3] if len(parts) >= 3 else ''
+
+
+def plan_vise_la_racine(moves):
+    """Le premier `dst` qui range dans un `<annee>` a la RACINE (dont le parent
+    n'est PAS un dossier proprietaire `Photos <Nom>`), ou None si le plan est
+    sain. C'est le defaut du 28/08 : `cible()` visait `Photos\\<annee>` au lieu
+    de `Photos\\Photos Mike\\<annee>`, et un plan PERIME (calcule avant le
+    correctif) re-semait le desordre a chaque `bat 26`. On refuse de l'appliquer
+    et on dit de le REGENERER, plutot que de deplacer 1 200 photos au mauvais
+    endroit en silence."""
+    for op in moves:
+        parent = parent_du_dossier_annee(op.get('dst', ''))
+        if parent and not _ra.PROPRIETAIRE_RE.match(parent):
+            return op.get('dst', '')
+    return None
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--appliquer', action='store_true', help='executer (sinon dry-run)')
@@ -244,7 +300,10 @@ def main():
         stores = semantic = None
         if Path(args.db).exists():
             stores, semantic = open_stores(args.db)
-        undo(args.undo, stores, semantic, dry=dry)
+        gps = charger_gps() if not dry else None
+        undo(args.undo, stores, semantic, dry=dry, gps=gps)
+        if gps is not None:
+            ecrire_gps(gps)
         return 0
 
     plan = json.loads(Path(args.plan).read_text(encoding='utf-8'))
@@ -252,6 +311,15 @@ def main():
     if args.limite:
         moves = moves[:args.limite]
     dry = not args.appliquer
+    racine = plan_vise_la_racine(moves)
+    if racine and not args.forcer:
+        print("  REFUS : ce plan range a la RACINE de Photos, pas sous un")
+        print("  dossier proprietaire. Exemple : " + str(racine))
+        print("  C'est un plan PERIME (calcule avant le correctif de cible()).")
+        print("  Regenere-le (Reglages -> \"Plan de rangement par annee\", ou")
+        print("  POST /api/maint/plan-annee) AVANT de ranger. --forcer passe")
+        print("  outre, a tes risques.")
+        return 1
     conflits = len(plan.get('conflits', []))
     print(f"{'DRY-RUN' if dry else 'APPLICATION'} : {len(moves)} deplacement(s)"
           + (f" — {conflits} conflit(s) de plan ignore(s)" if conflits else ""))
@@ -270,10 +338,13 @@ def main():
     journal = {'genere_le': time.strftime('%Y-%m-%d %H:%M:%S'),
                'plan': str(args.plan), 'operations': []}
     compte = {'ok': 0, 'dry': 0, 'skip': 0}
+    gps = charger_gps() if not dry else None
     for op in moves:
         r = apply_move(op, stores, semantic, journal, dry=dry,
-                       compte=compte)
+                       compte=compte, gps=gps)
         compte[r] = compte.get(r, 0) + 1
+    if gps is not None and compte.get('gps'):
+        ecrire_gps(gps)
 
     if not dry and journal['operations']:
         jp = RACINE / 'docs' / f"undo_annee_{time.strftime('%Y%m%d_%H%M%S')}.json"

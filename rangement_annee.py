@@ -3,7 +3,8 @@
 """Plan de rangement par ANNEE (lecture seule, testable hors serveur).
 
 Regle (docs/RANGEMENT_2026.md, « Reorganisation par annee ») : un fichier sous
-`_A TRIER` est range vers `<base>/AAAA/` d'apres sa date de prise de vue
+`_A TRIER` est range vers `<base>/Photos Mike/AAAA/` (ou `<proprietaire>/AAAA/`
+si `_A TRIER` vit deja chez un proprietaire) d'apres sa date de prise de vue
 (`_best_time` cote serveur, injecte ici comme un simple timestamp). Sans date
 FIABLE, il va dans un bac explicite `_SANS_DATE/` — on ne devine jamais une
 annee. On aplatit (on ne recree pas l'arborescence sous `_A TRIER`).
@@ -21,6 +22,27 @@ from pathlib import Path
 # _A TRIER, A TRIER, _A_TRIER, a trier... (tolerant a la casse et au separateur)
 ATRI_RE = re.compile(r'^_?a[ _]tri', re.I)
 SANS_DATE = "_SANS_DATE"
+
+# Le fonds a un PROPRIETAIRE (chantier 17, 26/08/2026) : ce qui sort de
+# `Photos\_A TRIER` descend dans « Photos Mike », pas a la racine. Le 27 et le
+# 28/08, faute de cette ligne, 1 217 photos du Takeout ont ete rangees dans
+# `Photos\<annee>` — un dossier par annee a cote des dossiers proprietaires.
+DOSSIER_FONDS = "Photos Mike"
+# « Photos Mike », « Photos Flo », « Photos Papa » : un dossier proprietaire.
+PROPRIETAIRE_RE = re.compile(r'^photos\s+\S', re.I)
+
+
+def base_du_fonds(base):
+    """Sous quel dossier ranger ce qui sort de `<base>/_A TRIER`.
+
+    - `<base>` est deja un dossier proprietaire (« Photos Flo/_A TRIER ») :
+      on range chez lui — c'est la boite de reception par proprietaire.
+    - `<base>` est la racine `Photos` : on range chez le proprietaire du
+      fonds, `Photos/Photos Mike/<annee>`."""
+    base = Path(base)
+    if PROPRIETAIRE_RE.match(base.name or ''):
+        return base
+    return base / DOSSIER_FONDS
 
 
 def annee_de(ts):
@@ -50,7 +72,7 @@ def cible(abspath, ts):
         return None
     base = Path(*p.parts[:idx]) if idx > 0 else Path(p.anchor or ".")
     an = annee_de(ts)
-    dst_dir = base / (str(an) if an else SANS_DATE)
+    dst_dir = base_du_fonds(base) / (str(an) if an else SANS_DATE)
     return dst_dir, dst_dir / p.name
 
 

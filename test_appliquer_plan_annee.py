@@ -77,8 +77,11 @@ def main():
 
         print("2) APPLICATION : deplacement + re-cle")
         journal = {'genere_le': 't', 'plan': 'test', 'operations': []}
-        r = A.apply_move(op, stores, semantic, journal, dry=False)
+        gps = {sk: 'Bremblens', 'autre': 'Lausanne'}     # le 7e magasin
+        r = A.apply_move(op, stores, semantic, journal, dry=False, gps=gps)
         check(r == 'ok', "op appliquee")
+        check(gps.get(dk) == 'Bremblens' and sk not in gps and gps['autre'] == 'Lausanne',
+              "libelle de lieu (gps_places) transporte vers dst, les autres intacts")
         check(not src.exists(), "source retiree de _A TRIER")
         check(dst.exists() and dst.read_bytes() == contenu, "fichier dans le dossier annee, octets intacts")
         check(dk in stores['tags'].data and sk not in stores['tags'].data,
@@ -108,8 +111,10 @@ def main():
         print("4) UNDO : restauration fichier + index")
         jp = tmp / "undo.json"
         jp.write_text(json.dumps(journal, ensure_ascii=False), encoding='utf-8')
-        A.undo(str(jp), stores, semantic, dry=False)
+        A.undo(str(jp), stores, semantic, dry=False, gps=gps)
         check(src.exists() and not dst.exists(), "fichier restaure sous _A TRIER")
+        check(gps.get(sk) == 'Bremblens' and dk not in gps,
+              "libelle de lieu revenu sous la cle d'origine")
         check(sk in stores['tags'].data and dk not in stores['tags'].data,
               "index tags re-cle dst -> src")
         check(vec_rows(stores['faces'].cx, 'faces', sk) == 1
@@ -134,6 +139,22 @@ def main():
             s.cx.close()
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
+
+    print("6) GARDE anti-plan-perime : refus d'un plan qui vise la racine")
+    # parent du dossier annee
+    check(A.parent_du_dossier_annee(r'\\NAS\home\Photos\Photos Mike\2005\x.jpg') == 'Photos Mike',
+          "parent : sain (Windows) -> Photos Mike")
+    check(A.parent_du_dossier_annee('/nas/Photos/Photos Mike/2005/x.jpg') == 'Photos Mike',
+          "parent : sain (Linux) -> Photos Mike")
+    check(A.parent_du_dossier_annee(r'\\NAS\home\Photos\2005\x.jpg') == 'Photos',
+          "parent : perime -> Photos (racine)")
+    sain = [{'dst': r'\\NAS\home\Photos\Photos Mike\2005\x.jpg'},
+            {'dst': r'\\NAS\home\Photos\Photos Papa\_SANS_DATE\y.jpg'}]
+    perime = [{'dst': r'\\NAS\home\Photos\Photos Mike\2005\x.jpg'},
+              {'dst': r'\\NAS\home\Photos\2022\z.jpg'}]
+    check(A.plan_vise_la_racine(sain) is None, "plan sain : accepte")
+    bad = A.plan_vise_la_racine(perime)
+    check(bad and bad.endswith('2022\\z.jpg'), "plan perime : refuse, pointe le fautif")
 
     print()
     if FAIL:
