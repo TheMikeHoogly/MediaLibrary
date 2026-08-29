@@ -18,6 +18,14 @@ de A, deja indexee) : A la voit ; B ne la voit pas, et RIEN ne la trahit :
   5. /api/people/photos     -> la cle absente chez B pour ces noms
   6. /api/search?q=<nom>    -> la cle absente chez B (si un nom est porte)
   7. sans cookie            -> 401 sur l'API, 302 sur une page (la porte)
+  8. /api/files/delete      -> B sur le PRIVE de A : 404, et A la voit encore ;
+     (etape 5)                 B sur une photo PARTAGEE de A : 403, intacte ;
+                               A sur la sienne, renommee a l'IDENTIQUE : permis
+                               (le seul geste d'ecriture qui ne change rien —
+                               c'est le temoin POSITIF : la garde ne refuse pas tout)
+  9. /api/people/delete, /api/maint/census -> 403 pour B (admin seul) ;
+     le nom vise n'existe pas et le recensement est en lecture seule : si la
+     porte cedait, rien ne serait perdu.
 Un « ne SAIT pas » (pas de nom sur la photo) est dit, pas rendu vert ; et si A
 ne voit pas la cle (pas indexee, chemin faux), le banc S'ARRETE (code 2) : un
 banc sans matiere ne rend ni vert ni rouge.
@@ -85,6 +93,8 @@ def main(argv=None):
     ap.add_argument('--b', required=True, help="l'autre")
     ap.add_argument('--mdp-b', required=True)
     ap.add_argument('--cle', required=True, help='chemin (cle d index) d une photo du PRIVE de A')
+    ap.add_argument('--cle-partagee', default=None,
+                    help='chemin d une photo PARTAGEE de A (hors PRIVE) ; sinon cherchee par les noms')
     a = ap.parse_args(argv)
     cle = deb64(a.cle)
     A, B, anon = Client(a.url), Client(a.url), Client(a.url)
@@ -128,7 +138,7 @@ def main(argv=None):
     # 2. les faits
     _, fb = B.json('/api/faits?key=' + urllib.parse.quote(cle))
     fait_a = (fa or {}).get('faits', {}).get(cle)
-    ok(cle in ((fb or {}).get('inconnues') or []), '/api/faits : pour B, la cle est « inconnue »')
+    ok(cle in ((fb or {}).get('inconnues') or []), '/api/faits : pour B, la cle est "inconnue"')
     noms = list((fait_a or {}).get('noms') or [])
     if not noms:
         print('  (la photo ne porte aucun nom : les controles 4-6 ne peuvent pas etre faits sur elle)')
@@ -168,6 +178,57 @@ def main(argv=None):
             txt = json.dumps(sb or {}, ensure_ascii=False)
             ok(cle.replace('\\', '\\\\') not in txt and cle not in txt,
                'recherche personne:%s pour B : la cle est absente' % asc(n))
+
+    # 8. l'ecriture (etape 5) : B ne touche pas aux photos de A
+    _, moi_b = B.json('/api/moi')
+    if (moi_b or {}).get('admin'):
+        print('  (B est ADMIN : les controles 8-9 ne prouveraient rien — choisir un B sans droits)')
+    else:
+        cb, db = B.json('/api/files/delete', {'key': cle})
+        ok(cb == 404, '/api/files/delete du PRIVE de A par B -> %d (attendu 404, jamais 403)' % cb)
+        ca, _, _ = A.req('/api/thumb?key=' + urllib.parse.quote(cle))
+        ok(ca == 200, 'apres la tentative de B, A voit toujours sa photo (%d)' % ca)
+        # une photo PARTAGEE de A : donnee, ou cherchee dans ce que B voit de A
+        partagee = deb64(a.cle_partagee) if a.cle_partagee else None
+        if not partagee and noms:
+            for n in noms:
+                _, pb = B.json('/api/people/photos?name=' + urllib.parse.quote(n) + '&limit=50000&light=1')
+                for ph in (pb or {}).get('photos', []):
+                    k = str(ph.get('key') or '')
+                    if ('Photos ' + a.a) in k and 'PRIVE' not in k.upper():
+                        partagee = k; break
+                if partagee:
+                    break
+        if partagee:
+            cb, db = B.json('/api/files/delete', {'key': partagee})
+            ok(cb == 403, '/api/files/delete d une photo PARTAGEE de A par B -> %d (attendu 403)' % cb)
+            cb2, _, _ = B.req('/api/thumb?key=' + urllib.parse.quote(partagee))
+            ok(cb2 == 200, 'la photo partagee est intacte et toujours visible de B (%d)' % cb2)
+        else:
+            print('  (aucune photo PARTAGEE de A trouvee : passer --cle-partagee ; controle 403 non fait)')
+        # temoin positif : A garde la main chez lui. Renommer a l'identique
+        # passe la garde puis rend `changed: false` SANS toucher au disque.
+        tgt = None
+        kp = cle.replace('\\', '/')
+        if '/Photos/' in kp:
+            for i in range(6):
+                ca, da = A.json('/api/files/rename',
+                                {'idx': i, 'rel': kp.split('/Photos/', 1)[1], 'name': kp.rsplit('/', 1)[1]})
+                if ca == 200 and da and da.get('ok'):
+                    tgt = (i, da); break
+                if ca == 403:
+                    tgt = (i, da); break
+        if tgt and tgt[1].get('ok'):
+            ok(tgt[1].get('changed') is False, 'A renomme sa photo a l identique : permis, rien ne change (changed=%s)' % tgt[1].get('changed'))
+        elif tgt:
+            ok(False, 'A est REFUSE chez lui : %s' % asc(tgt[1]))
+        else:
+            print('  (temoin positif non fait : aucune racine /media ne porte la cle)')
+        # 9. fiche entiere et maintenance : admin seul
+        cb, _ = B.json('/api/people/delete', {'name': '__banc_non_fuite_inexistant__'})
+        ok(cb == 403, '/api/people/delete par B -> %d (attendu 403 : admin seul)' % cb)
+        cb, _ = B.json('/api/maint/census', {})
+        ok(cb == 403, '/api/maint/census par B -> %d (attendu 403 : admin seul)' % cb)
 
     for l in notes:
         print('  ' + asc(l))

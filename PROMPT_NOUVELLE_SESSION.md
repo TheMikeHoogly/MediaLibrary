@@ -9,13 +9,40 @@ FUSIONNÉ — ce document, non. Puis `ROADMAP.md`, `eval/DECISIONS.md`,
 `eval/METHODE.md` — et `docs/DECISIONS_OUTILLAGE.md` si le sujet touche aux
 canaux, à la livraison ou au MCP. Débrief en 2–3 lignes, puis on attaque.
 
-## Où on en est (29/08/2026, session 66, après-midi)
+## Où on en est (29/08/2026, session 66, soir)
 
-**Git** : tout fusionné jusqu'à `fix/le-plan-dit-quand-il-a-fini` (13:19) ;
-la session 66 livre `feat/les-9-homonymes-google-en-quarantaine` — vérifier
+**Git** : tout fusionné jusqu'à `chore/ffmpeg-est-la` (`b38ce6c`, 15:33) ;
+le soir livre `feat/l-ecriture-restreinte` (étape 5) — vérifier
 `.git/logs/refs/heads/main`.
 
-**Serveur** : redémarré par Mike à 13:24 sur le code livré, zéro fil mort.
+**Serveur** : redémarré à 21:35:22 sur le code de l'étape 5, zéro fil mort,
+porte fermée (2 comptes). Index 43 702.
+
+**Bat 39 : FAIT par Mike (21:17, deux passes, 20 + 3 053 = 3 073 vidéos →
+`Photos Mike\<année>`, undo `docs/undo_annee_20260829_2117*.json` et
+`_2121*`)** ; le banc a reconfirmé à 21:22 **0 vidéo** dans `_A TRIER`.
+Reste `_to_delete/` (43 Mo), geste de Mike.
+
+**Chantier 17, étape 5 — l'ÉCRITURE RESTREINTE, POSÉE (21:33, choix de Mike :
+fichier au propriétaire, fiche entière et maintenance à l'admin)** :
+`visibilite.peut_ecrire` / `refus_ecriture` (7 tests, 21 verts), injecté dans
+`fichiers.FileOps(garde=…)` — un seul goulot, consulté AVANT le disque sur
+source et destination, et sur le journal AVANT de dépiler un `undo` (11 tests
+neufs, tous verts) ; `server.py` : `refus_ecriture()` à côté de
+`chemin_visible()`, `FileOpRefus` → son code (403/404) avec `{ok:false,
+error}` que les clients lisent déjà, `_exige_admin` sur `people|pets/
+rename|delete` et `/api/maint/*`. **Les décisions sur photo ne passent pas
+par là** (arbitrées par `auteurs`). Verdict gravé dans `eval/DECISIONS.md`.
+**Banc** : `verifier_non_fuite.py` contrôles 8–9 (B efface le PRIVE de A →
+404 et A la voit encore ; B efface une PARTAGÉE de A → 403, intacte ; témoin
+POSITIF : A renomme à l'identique → permis, `changed:false`, rien ne bouge ;
+`people/delete` et `maint/census` par B → 403). **OBSERVÉ EN RÉEL (21:50,
+lancé par Mike)** : **12 verts, 0 fuite** — dont B → 404 sur le PRIVE de A,
+A la voit encore, A renomme à l'identique (permis, `changed=False`), B → 403
+sur `people/delete` et `maint/census`. **Non observé** : le 403 sur une
+photo PARTAGÉE de A — le banc la cherche par les noms et « 1 Bolivia » n'en
+porte aucun ; couvert par `test_fichiers.py`, à observer avec
+`--cle-partagee` (ou dès qu'un nom est posé sur la PRIVE : contrôles 4–6).
 
 **Le rangement `_A TRIER`** : bat 26 a tourné à 13:22 (**29 rangés**, undo
 `docs/undo_annee_20260829_1322*.json`). Les **9 restants** du plan sont des
@@ -65,17 +92,9 @@ le contrôle `/media` ne dépendait plus d'une fiche (URL construite). **Reste
 à observer** : les contrôles 4–6 (COMPTEUR A = B + 1, fiche, recherche) —
 ils exigent un nom sur la photo PRIVE ; c'est le point 17b lui-même.
 
-**Traite autonome (Mike parti ~15:25)** : (1) **dossiers vides de `_A TRIER`** :
-`inventaire_dossiers_vides.py` + `effacer_dossiers_vides.py` + **bat 38** —
-mesuré sur le NAS : **0 dossier vide** (19 dossiers, tous portent des vidéos ;
-125 `*.jpg_original` comptés RELIQUATS, gardés). (2) **Vidéos, phase 0** :
-`inventaire_videos.py` (date par le nom / ExifTool `-fast` / dossier année,
-jamais le mtime ; 8 tests) + **bat 39** (`appliquer_plan_annee --plan
-docs/plan_rangement_videos.json`, mêmes gardes, serveur arrêté). Mesuré :
-**3 073 vidéos, 73,7 Go, 0 sans date, 0 conflit** → `Photos Mike\<année>`.
-Piège vu : ExifTool `-fast2` ne lit pas le `moov` en fin de MP4 (0/7 datées),
-`-fast` oui (7/7). Deux questions dans `QUESTIONS_MIKE.md` (Floflo, `_original`). Phase 1
-(image-clé) : **ffmpeg 7.1.1 est sur le PATH** (`verifier_outils_video.py`).
+**Traite de l'après-midi** : bat 38 (0 dossier vide, 125 `_original`
+RELIQUATS gardés), vidéos phase 0 (`inventaire_videos.py`, bat 39, ffmpeg
+7.1.1 présent) — livrés, fusionnés, et bat 39 a tourné (ci-dessus).
 
 **`N:\\Photos`** : règle permanente dans `CLAUDE.md` (« Tester en réel »).
 
@@ -83,16 +102,15 @@ Piège vu : ExifTool `-fast2` ne lit pas le `moov` en fin de MP4 (0/7 datées),
 
 ## Prochain pas
 
-1. **Bat 39** (vidéos, serveur arrêté : `arret` → bat 39 → `marche`), puis
-   `_to_delete/` (43 Mo) — gestes de Mike. Bat 38 n'a rien à effacer aujourd'hui. (Bat 34 : FAIT, racine vérifiée
-   à 14:20 : `_A TRIER`, `_Uploads`, `Photos Flo/Mike/Papa`, rien d'autre.)
-2. **Chantier 17 : OBSERVER l'étape 4 en réel** (comptes de Mike et Flo,
-   photo PRIVE, `verifier_non_fuite.py` vert — lire son rapport, chaque
-   rouge est un défaut de niveau A à corriger AVANT toute suite). Puis
-   **étape 5, l'écriture restreinte** : chacun n'écrit que sur ses photos ;
-   attention, sous un utilisateur courant `STORE.data[k] = …` en direct
-   tombe sur la vue (lecture seule) — passer par `store.set`. Reste de
-   l'étape 2 : conflit de `faces` ENTRE fiches.
+1. **Chantier 17 : OBSERVER l'étape 5** — `verifier_non_fuite.py` lancé par
+   Mike (mots de passe), lire son rapport : chaque rouge est un défaut de
+   niveau A à corriger AVANT toute suite ; les contrôles 4–6 exigent un nom
+   sur la photo PRIVE. Puis **étape 6, la corbeille à 6 mois** (17d : purge
+   datée, et un endroit où l'admin voit ce qui va expirer) ; et l'envoi
+   (`/upload`) sous un compte devrait atterrir CHEZ l'envoyeur (`Photos
+   <Nom>\_A TRIER`), pas dans `_Uploads` de la racine — à trancher avec Mike
+   (touche l'onboarding, étape 7). Reste de l'étape 2 : conflit de `faces`
+   ENTRE fiches. `_to_delete/` (43 Mo) : geste de Mike.
 3. **`ROADMAP.md` pèse 1 545 lignes** dont ~740 de chronique de sessions
    closes et ~325 de points CLOS racontés : contraire à son rôle (« carte des
    priorités, rien d'autre »). À réduire vers ~200 lignes — le détail vit

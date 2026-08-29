@@ -1260,7 +1260,17 @@ qui en découle : éditer → redémarrer → **observer** → livrer.
        une photo dans `Photos Mike\PRIVE`, et **`verifier_non_fuite.py`**
        (7 contrôles : thumb, faits, /media, compteur, fiche, recherche, porte)
        — le plancher du chantier, enfin prouvable ;
-    5. l'écriture restreinte (effacement, nommage, renommage) ;
+    5. l'écriture restreinte — **POSÉE (session 66, soir ; choix de Mike :
+       fiche entière et maintenance à l'admin seul)** : `visibilite.peut_ecrire`
+       / `refus_ecriture` (propriétaire ou admin là où il voit ; hors dossier
+       propriétaire, admin seul ; invisible → 404, partagé → 403 ; 7 tests),
+       injecté dans `fichiers.FileOps(garde=…)` — UN goulot consulté avant le
+       disque sur source ET destination, et sur le journal AVANT de dépiler
+       un `undo` (11 tests) ; `_exige_admin` sur `people|pets/rename|delete`
+       et `/api/maint/*`. Les décisions sur photo restent arbitrées par
+       `auteurs`. Banc : `verifier_non_fuite.py` contrôles 8–9 — **OBSERVÉ
+       12 verts, 0 fuite** (29/08 21:50) ; reste le 403 sur une photo partagée
+       (`--cle-partagee`) ;
     6. la corbeille à 6 mois ;
     7. l'onboarding rédigé.
 

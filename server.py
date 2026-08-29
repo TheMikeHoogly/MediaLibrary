@@ -662,6 +662,15 @@ def chemin_visible(chemin):
     return _visibilite.visible(str(chemin), utilisateur_vu())
 
 
+def refus_ecriture(chemin):
+    """Le garde des gestes sur FICHIER (chantier 17, étape 5 — renommer,
+    déplacer, effacer, créer un dossier, annuler) : None si l'utilisateur
+    courant a la main, sinon (code, message). Injecté dans `FileOps` — un
+    seul goulot, consulté AVANT de toucher au disque. Les DÉCISIONS sur une
+    photo ne passent pas ici (arbitrées par `auteurs`)."""
+    return _visibilite.refus_ecriture(str(chemin), utilisateur_vu())
+
+
 for _st in (STORE, FACE_STORE, ANIMAL_STORE):
     _visibilite.brancher(_st, utilisateur_vu)
 for _st in (PEOPLE_STORE, PETS_STORE):
@@ -4335,7 +4344,8 @@ def file_ops():
             store_keys=lambda: list(STORE.data.keys()),
             rekey=rekey_everywhere,
             journal_path=SCRIPT_DIR / "fichiers_undo.json",
-            trash_dir=FILES_TRASH_DIR)
+            trash_dir=FILES_TRASH_DIR,
+            garde=refus_ecriture)          # étape 5 : chacun n'efface que ses photos
     return FILE_OPS
 
 
@@ -10110,6 +10120,19 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
         return False
 
+    def _exige_admin(self, quoi):
+        """Étape 5 (choix de Mike, 29/08) : supprimer ou renommer une FICHE
+        entière, et la maintenance du fonds, sont à l'admin seul — tant que la
+        porte est fermée (sans compte, rien ne change). Rend True si la
+        requête peut continuer ; sinon le 403 est déjà parti."""
+        nom = utilisateur_vu()
+        if not COMPTES.actifs() or (nom and COMPTES.est_admin(nom)):
+            return True
+        print(f"  ⛔ {nom} : {quoi} refusé (403) — réservé à l'admin")
+        self._send(403, json.dumps({"ok": False, "error": f"{quoi} : réservé à l'admin."},
+                   ensure_ascii=False).encode(), 'application/json')
+        return False
+
     def do_GET(self):
         try:
             if self._ouvrir():
@@ -10400,6 +10423,13 @@ class Handler(BaseHTTPRequestHandler):
                     self._send(404, b'Not found', 'text/plain')
                     return
             self._send(200, json.dumps({"ok": True, **res},
+                       ensure_ascii=False).encode(), 'application/json')
+        except fichiers.FileOpRefus as e:
+            # étape 5 : 403 sur une photo partagée qui n'est pas à lui, 404
+            # sur une photo qu'il ne voit pas. Le client lit `error` comme
+            # pour toute autre erreur ; le journal dit QUI a été refusé.
+            print(f"  ⛔ {utilisateur_vu()} : {path} refusé ({e.code}) — {e}")
+            self._send(e.code, json.dumps({"ok": False, "error": str(e)},
                        ensure_ascii=False).encode(), 'application/json')
         except fichiers.FileOpError as e:
             self._send(200, json.dumps({"ok": False, "error": str(e)},
@@ -11562,10 +11592,14 @@ class Handler(BaseHTTPRequestHandler):
             self._send(200, json.dumps({"ok": n > 0, "removed": n}).encode(),
                        'application/json')
         elif path == '/api/pets/rename':
+            if not self._exige_admin('Renommer une fiche'):
+                return
             n = rename_cat(data.get('old', ''), data.get('new', ''))
             self._send(200, json.dumps({"ok": n > 0, "moved": n}).encode(),
                        'application/json')
         elif path == '/api/pets/delete':
+            if not self._exige_admin('Supprimer une fiche'):
+                return
             n = delete_cat(data.get('name', ''))
             self._send(200, json.dumps({"ok": True, "removed": n}).encode(),
                        'application/json')
@@ -12128,10 +12162,14 @@ class Handler(BaseHTTPRequestHandler):
             self._send(200, json.dumps({"ok": n > 0, "removed": n}).encode(),
                        'application/json')
         elif path == '/api/people/rename':
+            if not self._exige_admin('Renommer une fiche'):
+                return
             n = rename_person(data.get('old', ''), data.get('new', ''))
             self._send(200, json.dumps({"ok": n > 0, "moved": n}).encode(),
                        'application/json')
         elif path == '/api/people/delete':
+            if not self._exige_admin('Supprimer une fiche'):
+                return
             n = delete_person(data.get('name', ''))
             self._send(200, json.dumps({"ok": True, "removed": n}).encode(),
                        'application/json')
@@ -12320,6 +12358,8 @@ class Handler(BaseHTTPRequestHandler):
         l'autonomie du cycle (quarantaine reversible), jamais un rm ici."""
         global MAINT_PAUSED
         import subprocess
+        if not self._exige_admin('La maintenance du fonds'):
+            return
         if path == '/api/maint/run':
             threading.Thread(target=_run_maint_once, daemon=True).start()
             res = {'ok': True, 'msg': 'Cycle de maintenance lance en arriere-plan.'}

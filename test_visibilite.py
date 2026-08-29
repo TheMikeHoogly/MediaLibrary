@@ -45,6 +45,49 @@ class Regle(unittest.TestCase):
         self.assertIsNone(V.filtre(None))
 
 
+class Ecriture(unittest.TestCase):
+    """Etape 5 : chacun n'efface (ne renomme, ne deplace) que ses photos."""
+
+    def test_le_proprietaire_ecrit_chez_lui(self):
+        self.assertTrue(V.peut_ecrire(MIKE_PUB, 'Mike'))
+        self.assertTrue(V.peut_ecrire(MIKE_PRIV, 'Mike'))
+        self.assertTrue(V.peut_ecrire(FLO_PRIV, 'Flo'))
+        self.assertTrue(V.peut_ecrire(r'\\NAS\home\Photos\Photos Flo\2020\f.jpg', 'Flo'))
+
+    def test_une_photo_partagee_se_voit_mais_ne_se_touche_pas(self):
+        self.assertTrue(V.visible(MIKE_PUB, 'Flo'))
+        self.assertFalse(V.peut_ecrire(MIKE_PUB, 'Flo'))
+        self.assertFalse(V.peut_ecrire(MIKE_PUB, 'Papa'))
+        code, msg = V.refus_ecriture(MIKE_PUB, 'Flo')
+        self.assertEqual(code, 403)
+        self.assertIn('Mike', msg)
+
+    def test_l_admin_ecrit_partout_ou_il_voit(self):
+        self.assertTrue(V.peut_ecrire(RACINE, 'Mike'))
+        self.assertTrue(V.peut_ecrire(RACINE_PRIV, 'Mike'))
+        self.assertTrue(V.peut_ecrire(r'\\NAS\home\Photos\Photos Flo\2020\f.jpg', 'Mike'))
+        self.assertFalse(V.peut_ecrire(FLO_PRIV, 'Mike'))     # pas un passe-partout
+        self.assertEqual(V.refus_ecriture(FLO_PRIV, 'Mike'), (404, 'Fichier introuvable.'))
+
+    def test_hors_dossier_proprietaire_seul_l_admin(self):
+        self.assertFalse(V.peut_ecrire(RACINE, 'Flo'))
+        code, msg = V.refus_ecriture(RACINE, 'Flo')
+        self.assertEqual(code, 403)
+        self.assertIn('admin', msg)
+
+    def test_l_invisible_est_introuvable_jamais_interdit(self):
+        self.assertFalse(V.peut_ecrire(MIKE_PRIV, 'Flo'))
+        self.assertEqual(V.refus_ecriture(MIKE_PRIV, 'Flo'), (404, 'Fichier introuvable.'))
+
+    def test_les_fils_de_fond_ecrivent_tout(self):
+        for c in (MIKE_PUB, MIKE_PRIV, FLO_PRIV, RACINE_PRIV, RACINE):
+            self.assertTrue(V.peut_ecrire(c, None), c)
+            self.assertIsNone(V.refus_ecriture(c, None), c)
+
+    def test_permis_rend_none(self):
+        self.assertIsNone(V.refus_ecriture(MIKE_PUB, 'Mike'))
+
+
 class Vue(unittest.TestCase):
     D = {MIKE_PUB: {'kw_fr': ['personne:Flo']}, MIKE_PRIV: {'kw_fr': ['personne:Flo']},
          FLO_PRIV: {'kw_fr': ['personne:Mike']}}

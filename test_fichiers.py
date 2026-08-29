@@ -150,6 +150,62 @@ def main():
               "move dossier : enfant re-cle (relatif -> absolu)")
         check(names(store) == noms1, "move dossier : nom Zab preserve")
 
+        # --- etape 5 : le garde (l'utilisateur courant est injecte) ---
+        from fichiers import FileOpRefus
+        qui = {"nom": "Flo"}
+
+        def garde(chemin):
+            # regle miniature : Flo n'a la main que sous "Photos Flo" ; l'admin partout
+            if qui["nom"] == "Mike":
+                return None
+            return None if ("Photos " + qui["nom"]) in chemin else (403, "pas a vous")
+        opsg = FileOps(roots_fn=lambda: roots, resolve_key=ops.resolve_key,
+                       store_keys=ops.store_keys, rekey=ops.rekey,
+                       journal_path=base / "undo.json", trash_dir=base / ".corbeille-rangement",
+                       garde=garde)
+        (nas / "Photos Flo").mkdir()
+        (nas / "Photos Flo" / "flo.jpg").write_bytes(b"f")
+        store[str(nas / "Photos Flo" / "flo.jpg")] = {"tags": ["personne:Flo"]}
+        noms2 = names(store)
+        try:
+            opsg.delete(1, "2020/vac.jpg", up)
+            check(False, "garde : Flo ne supprime pas une photo de Mike")
+        except FileOpRefus as e:
+            check(e.code == 403 and (nas / "2020" / "vac.jpg").exists(),
+                  "garde : Flo refusee (403), fichier intact")
+        try:
+            opsg.move(1, "Photos Flo/flo.jpg", 1, "2020", up)
+            check(False, "garde : la destination compte aussi")
+        except FileOpRefus:
+            check((nas / "Photos Flo" / "flo.jpg").exists(), "garde : deplacer CHEZ un autre est refuse")
+        try:
+            opsg.mkdir(1, "2020", "Nouveau")
+            check(False, "garde : creer un dossier chez un autre")
+        except FileOpRefus:
+            check(not (nas / "2020" / "Nouveau").exists(), "garde : mkdir chez un autre refuse")
+        r = opsg.rename(1, "Photos Flo/flo.jpg", "florine.jpg", up)
+        check(r["changed"] and (nas / "Photos Flo" / "florine.jpg").exists(),
+              "garde : Flo renomme chez elle")
+        r = opsg.delete(1, "Photos Flo/florine.jpg", up)
+        check(r["rekeyed"] == 1, "garde : Flo efface chez elle (corbeille)")
+        n_journal = len(opsg._load_journal())
+        qui["nom"] = "Papa"
+        try:
+            opsg.undo(up)
+            check(False, "garde : Papa n'annule pas le geste de Flo")
+        except FileOpRefus:
+            check(len(opsg._load_journal()) == n_journal,
+                  "garde : undo refuse, le journal garde l'entree")
+        qui["nom"] = "Flo"
+        r = opsg.undo(up)
+        check(r["undone"] == "delete" and (nas / "Photos Flo" / "florine.jpg").exists(),
+              "garde : Flo annule son effacement (dst = corbeille, a personne)")
+        check(names(store) == noms2, "garde : aucun nom humain perdu")
+        qui["nom"] = "Mike"
+        r = opsg.rename(1, "2020/vac.jpg", "vac2.jpg", up)
+        check(r["changed"], "garde : l'admin ecrit partout")
+        check((ops.garde is None), "sans garde : tout est permis, comme avant")
+
         print()
         if FAIL:
             print(f"ECHEC : {len(FAIL)} assertion(s) — {FAIL}")

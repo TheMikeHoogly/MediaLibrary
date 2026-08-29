@@ -37,7 +37,8 @@ Deux formes de magasin, deux filtres :
 
 CE QUE LA VUE NE FAIT PAS
 
-Elle ne restreint pas l'ÉCRITURE (étape 5) et ne sait pas QUI regarde :
+Elle ne sait pas QUI regarde (l'écriture sur FICHIER, elle, a sa règle plus
+bas : `peut_ecrire`, étape 5) :
 `utilisateur()` est fourni par le serveur (thread-local, posé par le routeur
 à l'étape 4 ; None = fil de fond, pas de filtre). Elle n'est pas non plus la
 preuve de non-fuite : le banc `test_visibilite.py` prouve la règle et la vue ;
@@ -87,6 +88,42 @@ def filtre(utilisateur):
     if utilisateur is None:
         return None
     return lambda cle: visible(cle, utilisateur)
+
+
+# ─── L'ÉCRITURE restreinte (chantier 17, étape 5 — 29/08/2026, choix de Mike :
+# « chacun n'efface que ses propres photos », ROADMAP 17(d)) ─────────────────
+# Le geste sur FICHIER (renommer, déplacer, effacer, créer un dossier, annuler)
+# est au PROPRIÉTAIRE du dossier `Photos <Nom>` — et à l'admin, partout où il
+# VOIT (le PRIVE de Flo lui reste fermé : ne pas voir, c'est ne pas toucher).
+# Hors d'un dossier propriétaire (racine, `_A TRIER`, `_Uploads`), personne
+# n'est chez soi : l'admin seul. Les DÉCISIONS sur une photo (confirmer,
+# exclure, nommer un visage) ne passent PAS ici : elles restent arbitrées par
+# `auteurs` (le propriétaire l'emporte, le perdant est `#contesté`) — juger
+# une photo partagée est permis, la détruire ne l'est pas.
+
+def peut_ecrire(chemin, utilisateur):
+    """`utilisateur` peut-il toucher ce FICHIER ? None (fil de fond) : tout."""
+    if utilisateur is None:
+        return True
+    if not visible(chemin, utilisateur):
+        return False
+    if utilisateur == ADMIN:
+        return True
+    return proprietaire_de(chemin) == utilisateur
+
+
+def refus_ecriture(chemin, utilisateur):
+    """None si le geste est permis ; sinon (code, message) : 404 quand la
+    photo n'est pas visible (dire « interdit » dirait « ça existe »), 403
+    quand elle est partagée mais n'est pas à lui."""
+    if peut_ecrire(chemin, utilisateur):
+        return None
+    if not visible(chemin, utilisateur):
+        return 404, 'Fichier introuvable.'
+    proprietaire = proprietaire_de(chemin)
+    if proprietaire is None:
+        return 403, "Hors d'un dossier propriétaire, seul l'admin range ou efface."
+    return 403, f"Cette photo est à {proprietaire} : {proprietaire} ou l'admin peuvent la déplacer ou l'effacer, pas vous."
 
 
 class VueFiltree(Mapping):

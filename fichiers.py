@@ -35,6 +35,16 @@ class FileOpError(Exception):
     """Erreur d'operation previsible (message montrable a l'utilisateur)."""
 
 
+class FileOpRefus(FileOpError):
+    """Le geste est REFUSE a cet utilisateur (chantier 17, etape 5) : `code`
+    HTTP a rendre — 403 sur une photo partagee qui n'est pas a lui, 404 sur
+    une photo qu'il ne voit pas (dire « interdit » dirait « ca existe »)."""
+
+    def __init__(self, code, message):
+        super().__init__(message)
+        self.code = int(code)
+
+
 def norm(p):
     """Cle de correspondance insensible au separateur et a la casse.
     Miroir EXACT de server._pkey : Path(p).as_posix().lower()."""
@@ -109,16 +119,36 @@ class FileOps:
       rekey(old,new,mtime=None) -> bool            (server.rekey_everywhere)
       journal_path : Path du journal JSON d'annulation
       trash_dir    : Path de .corbeille-rangement/ (creee au besoin)
+      garde(abs)   -> None | (code, message)   (etape 5 : l'utilisateur courant
+                      peut-il toucher ce chemin ? None = permis ; facultatif,
+                      sans garde tout est permis, comme avant)
+
+    Le garde est UN goulot : chaque geste le consulte sur le chemin absolu
+    qu'il va toucher (source, et destination pour deplacer/creer) AVANT de
+    toucher au disque ; `undo` le consulte sur le journal AVANT de le depiler
+    — une annulation refusee ne perd pas l'entree.
     """
 
     def __init__(self, roots_fn, resolve_key, store_keys, rekey,
-                 journal_path, trash_dir):
+                 journal_path, trash_dir, garde=None):
         self.roots_fn = roots_fn
         self.resolve_key = resolve_key
         self.store_keys = store_keys
         self.rekey = rekey
         self.journal_path = Path(journal_path)
         self.trash_dir = Path(trash_dir)
+        self.garde = garde
+
+    def _permis(self, *chemins):
+        """Leve FileOpRefus si l'utilisateur courant n'a pas la main sur l'un
+        des chemins (le premier refus parle)."""
+        if self.garde is None:
+            return
+        for c in chemins:
+            verdict = self.garde(str(c))
+            if verdict:
+                code, message = verdict
+                raise FileOpRefus(code, message)
 
     # ----- journal d'annulation -----
     def _load_journal(self):
@@ -191,6 +221,7 @@ class FileOps:
         root, src = resolve_target(roots, idx, rel)
         if src == root:
             raise FileOpError('On ne renomme pas la racine.')
+        self._permis(src)
         if not src.exists():
             raise FileOpError('Fichier introuvable.')
         dst = src.with_name(sanitize_name(new_name))
@@ -213,6 +244,7 @@ class FileOps:
         droot, ddir = resolve_target(roots, dst_idx, dst_rel)
         if src == root:
             raise FileOpError('On ne deplace pas la racine.')
+        self._permis(src, ddir / src.name)
         if not src.exists():
             raise FileOpError('Fichier introuvable.')
         if not ddir.is_dir():
@@ -236,9 +268,10 @@ class FileOps:
     def mkdir(self, idx, rel, name):
         roots = self.roots_fn()
         root, parent = resolve_target(roots, idx, rel)
+        new = parent / sanitize_name(name)
+        self._permis(new)
         if not parent.is_dir():
             raise FileOpError('Dossier parent invalide.')
-        new = parent / sanitize_name(name)
         if new.exists():
             raise FileOpError('Ce dossier existe deja.')
         new.mkdir(parents=False)
@@ -253,6 +286,7 @@ class FileOps:
         root, src = resolve_target(roots, idx, rel)
         if src == root:
             raise FileOpError('On ne supprime pas la racine.')
+        self._permis(src)
         if not src.exists():
             raise FileOpError('Fichier introuvable.')
         stamp = time.strftime('%Y%m%d-%H%M%S') + f"-{int(time.time() * 1000) % 1000:03d}"
@@ -270,10 +304,20 @@ class FileOps:
                 'trash': str(dst)}
 
     def undo(self, upload_dir):
-        """Annule la derniere operation (deplace en sens inverse + re-cle)."""
-        rec = self._pop()
+        """Annule la derniere operation (deplace en sens inverse + re-cle).
+        Le garde est consulte sur le journal AVANT de le depiler : un refus
+        laisse l'entree a celui qui a la main (l'auteur du geste, ou l'admin)."""
+        j = self._load_journal()
+        rec = j[-1] if j else None
         if not rec:
             raise FileOpError('Rien a annuler.')
+        if rec.get('op') == 'mkdir':
+            self._permis(rec['dir'])
+        elif rec.get('op') == 'delete':
+            self._permis(rec['src'])          # `dst` est la corbeille : a personne
+        else:
+            self._permis(rec['src'], rec['dst'])
+        rec = self._pop()
         op = rec.get('op')
         if op == 'mkdir':
             d = Path(rec['dir'])
