@@ -151,7 +151,15 @@ valeur d'abord :
 soir).** Banc écrit dans la nuit : `mesure_requete_fr_en.py --base copie.db`
 (rappel@200 / @1500 de la requête FR, EN, FR+EN, « une photo de … » ; vérité
 = paires de tags fr/en du tagueur, 40 paires, encodeur CPU) — **à faire
-tourner** (le canal du banc était pris par les doublons). Deux défauts vus et corrigés le soir même, sur ses captures : (a) sur
+tourner** — **TOURNÉ (30/08 00:40, 50 s)** : sur 40 paires, rappel@200
+**FR 0,583 · EN 0,683 · FR+EN 0,663** · gabarit « une photo de … » 0,551 ;
+**l'anglais bat le français sur 33/40** (sol 0,00 → 0,63 ; roche 0,06 →
+0,54 ; extérieur 0,26 → 0,60), FR+EN bat FR sur 35/40. Le gabarit NUIT.
+**Verdict** : élargir la requête FR par sa traduction EN vaut +14 % de rappel
+sans toucher au modèle ; le dictionnaire est DÉJÀ dans l'index (les paires
+`kw_fr`/`kw_en` du tagueur, celles-là mêmes qui ont servi de vérité — à
+extraire par co-occurrence, 0 dépendance) ; retirer le gabarit. Reste à
+trancher par Mike puis à câbler dans `semantic_search`. Deux défauts vus et corrigés le soir même, sur ses captures : (a) sur
 une grille qui est un RÉSULTAT (`?jour=`, `?sim=`), la recherche IA
 intersectait la grille avec les 200 plus proches du FONDS — « ours en
 peluche » sur un 11 avril rendait **0** ; règle du 21/08 étendue (Entrée
@@ -174,8 +182,16 @@ essai, tous accentués ; reprenable, cache dans `docs/doublons_image.json`,
 ~1,2 fichier/s sur le NAS donc ~6 passes de 7 min). Premiers chiffres (2 990
 groupes candidats, 6 187 clés) : après 1 400 clés, **IDENTIQUE partout sauf
 1** (une paire Flo `2011 Tessin`/`Love` réellement différente), 776 groupes
-Flo + Mike. Le rapport final dit par groupe la CANONIQUE et ce qu'il faut
-recopier avant retrait. Le
+Flo + Mike. **TERMINÉ (30/08 00:37, 8 passes)** : sur **2 990** groupes,
+**2 757 IDENTIQUES** (mêmes pixels), **233 DIFFÉRENTES** (toutes chez Mike
+seul, 2007–2016 : des retouches ou des ré-exports, à laisser), 0 inconnu.
+**Retraits proposés : 2 929 fichiers, 10,45 Go** ; 833 groupes entre
+propriétaires (Indonésie 472, Calinous 236 → canonique chez Mike, règle du
+29/08), 1 812 chez Mike seul (2025↔2026 : 407 ; 2010 : 363 ; Caline↔Calinous
+134), 112 groupes sans copie chez Mike (Flo seule, Papa) où la canonique est
+la copie rangée par année. **18 copies portent un nom que la canonique n'a
+pas** (Mike, Zab, Florine, Gaétan, Mutz…) : à recopier AVANT tout retrait.
+Rapport complet, groupe par groupe : `docs/doublons_image.json`. Le
 dédoublonnage n'a vu que les copies IDENTIQUES AU BIT (`recensement_doublons`
 : 0 groupe restant le 23/08). Or **mesuré sur une copie de l'index (29/08)** :
 **3 818** groupes de photos prises la MÊME SECONDE (8 582 clés), dont

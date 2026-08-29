@@ -140,18 +140,23 @@ RELIQUATS gardés), vidéos phase 0 (`inventaire_videos.py`, bat 39, ffmpeg
    diffère le chargement ; `document.visibilityState = hidden`). Piège vu :
    la première passe du scan a duré 20 min (énumération pendant que le banc
    hachait le NAS) puis 8 min d'ExifTool sur 4 086 vidéos — une fois.
-2. **Doublons — banc écrit, en cours** (`mesure_doublons_image.py`, ROADMAP
-   1 decies) : reprenable, `--budget-s 420` (à 560 une passe a été TUÉE à
-   600 s par le canal, cache de la passe perdu). Après 1 400 clés :
-   IDENTIQUE partout sauf 1. Relancer jusqu'à `termine: true`.
-3. **Recherche IA — banc écrit, pas tourné** (`mesure_requete_fr_en.py`).
-4. Les deux bancs sont sur la branche vidéo (un seul `commit`).
+2. **Doublons — MESURÉ, terminé 00:37** (8 passes ; `--budget-s 450`, à 560
+   une passe a été tuée à 600 s par le canal) : **2 757 identiques / 233
+   différentes / 0 inconnu ; 2 929 retraits, 10,45 Go ; 18 noms à recopier
+   d'abord**. Chiffres en ROADMAP 1 decies et `eval/DECISIONS.md` ; rapport
+   `docs/doublons_image.json`. RIEN n'a bougé sur le NAS.
+3. **Recherche IA — MESURÉ 00:40** : FR 0,583 / EN 0,683 / FR+EN 0,663 /
+   gabarit 0,551 (rappel@200, 40 paires). Verdict proposé : élargir FR par
+   EN (dictionnaire tiré de l'index), retirer le gabarit — à trancher.
+4. Branches de la nuit : `feat/les-videos-dans-la-galerie` (code + bancs),
+   `docs/les-mesures-de-la-nuit` (chiffres). `main` intacte.
 
 ## Prochain pas
 
 0. **Regarder la branche `feat/les-videos-dans-la-galerie`** (le serveur
    tourne dessus) : cliquer une vidéo dans la galerie, la LIRE ; puis fusionner
-   ou jeter. Lire le rapport des doublons ; lancer le banc FR/EN.
+   ou jeter. Puis trancher : (a) l'applicateur des doublons (à blanc →
+   quarantaine), (b) l'élargissement FR→EN de la recherche.
 1. Au choix de Mike : **doublons** (1 decies :
    d'abord `mesure_doublons_image.py`, lecture seule, par l'agent banc) ;
    **vidéos phase 1** (1 octies : scan → vignette ffmpeg → galerie) ;

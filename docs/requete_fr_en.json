@@ -1,0 +1,1072 @@
+{
+ "genere_le": "2026-08-30 00:38:17",
+ "base": "copie.db",
+ "K": [
+  200,
+  1500
+ ],
+ "moyennes": {
+  "fr:r200": 0.583,
+  "fr:r1500": 0.435,
+  "fr:p200": 0.583,
+  "en:r200": 0.683,
+  "en:r1500": 0.525,
+  "en:p200": 0.683,
+  "fr+en:r200": 0.663,
+  "fr+en:r1500": 0.508,
+  "fr+en:p200": 0.663,
+  "gabarit:r200": 0.551,
+  "gabarit:r1500": 0.424,
+  "gabarit:p200": 0.551
+ },
+ "resume": [
+  "REQUETE FR / EN sur 40 paires (verite = tags du tagueur, fr OU en) :",
+  "  fr       rappel@200 0.583   rappel@1500 0.435   precision@200 0.583",
+  "  en       rappel@200 0.683   rappel@1500 0.525   precision@200 0.683",
+  "  fr+en    rappel@200 0.663   rappel@1500 0.508   precision@200 0.663",
+  "  gabarit  rappel@200 0.551   rappel@1500 0.424   precision@200 0.551",
+  "  l anglais bat le francais sur 33/40 paires ; fr+en bat fr sur 35/40"
+ ],
+ "paires": [
+  {
+   "fr": {
+    "rappel200": 0.605,
+    "rappel1500": 0.523,
+    "precision200": 0.605
+   },
+   "en": {
+    "rappel200": 0.71,
+    "rappel1500": 0.561,
+    "precision200": 0.71
+   },
+   "verite": 8916,
+   "n_fr": 8892,
+   "n_en": 2499,
+   "co": 2475,
+   "fr+en": {
+    "rappel200": 0.65,
+    "rappel1500": 0.566,
+    "precision200": 0.65
+   },
+   "gabarit": {
+    "rappel200": 0.645,
+    "rappel1500": 0.489,
+    "precision200": 0.645
+   }
+  },
+  {
+   "fr": {
+    "rappel200": 0.5,
+    "rappel1500": 0.575,
+    "precision200": 0.5
+   },
+   "en": {
+    "rappel200": 0.88,
+    "rappel1500": 0.839,
+    "precision200": 0.88
+   },
+   "verite": 6151,
+   "n_fr": 6073,
+   "n_en": 3786,
+   "co": 3708,
+   "fr+en": {
+    "rappel200": 0.8,
+    "rappel1500": 0.733,
+    "precision200": 0.8
+   },
+   "gabarit": {
+    "rappel200": 0.73,
+    "rappel1500": 0.695,
+    "precision200": 0.73
+   }
+  },
+  {
+   "fr": {
+    "rappel200": 0.26,
+    "rappel1500": 0.276,
+    "precision200": 0.26
+   },
+   "en": {
+    "rappel200": 0.6,
+    "rappel1500": 0.507,
+    "precision200": 0.6
+   },
+   "verite": 6321,
+   "n_fr": 5801,
+   "n_en": 3006,
+   "co": 2486,
+   "fr+en": {
+    "rappel200": 0.515,
+    "rappel1500": 0.384,
+    "precision200": 0.515
+   },
+   "gabarit": {
+    "rappel200": 0.185,
+    "rappel1500": 0.239,
+    "precision200": 0.185
+   }
+  },
+  {
+   "fr": {
+    "rappel200": 0.8,
+    "rappel1500": 0.627,
+    "precision200": 0.8
+   },
+   "en": {
+    "rappel200": 0.9,
+    "rappel1500": 0.768,
+    "precision200": 0.9
+   },
+   "verite": 5189,
+   "n_fr": 5169,
+   "n_en": 1838,
+   "co": 1818,
+   "fr+en": {
+    "rappel200": 0.88,
+    "rappel1500": 0.748,
+    "precision200": 0.88
+   },
+   "gabarit": {
+    "rappel200": 0.845,
+    "rappel1500": 0.64,
+    "precision200": 0.845
+   }
+  },
+  {
+   "fr": {
+    "rappel200": 0.53,
+    "rappel1500": 0.443,
+    "precision200": 0.53
+   },
+   "en": {
+    "rappel200": 0.435,
+    "rappel1500": 0.332,
+    "precision200": 0.435
+   },
+   "verite": 5116,
+   "n_fr": 4880,
+   "n_en": 3039,
+   "co": 2803,
+   "fr+en": {
+    "rappel200": 0.52,
+    "rappel1500": 0.421,
+    "precision200": 0.52
+   },
+   "gabarit": {
+    "rappel200": 0.57,
+    "rappel1500": 0.447,
+    "precision200": 0.57
+   }
+  },
+  {
+   "fr": {
+    "rappel200": 0.555,
+    "rappel1500": 0.404,
+    "precision200": 0.555
+   },
+   "en": {
+    "rappel200": 0.605,
+    "rappel1500": 0.443,
+    "precision200": 0.605
+   },
+   "verite": 4701,
+   "n_fr": 4624,
+   "n_en": 2089,
+   "co": 2012,
+   "fr+en": {
+    "rappel200": 0.59,
+    "rappel1500": 0.456,
+    "precision200": 0.59
+   },
+   "gabarit": {
+    "rappel200": 0.385,
+    "rappel1500": 0.234,
+    "precision200": 0.385
+   }
+  },
+  {
+   "fr": {
+    "rappel200": 0.705,
+    "rappel1500": 0.621,
+    "precision200": 0.705
+   },
+   "en": {
+    "rappel200": 0.9,
+    "rappel1500": 0.815,
+    "precision200": 0.9
+   },
+   "verite": 4495,
+   "n_fr": 4473,
+   "n_en": 2498,
+   "co": 2476,
+   "fr+en": {
+    "rappel200": 0.895,
+    "rappel1500": 0.728,
+    "precision200": 0.895
+   },
+   "gabarit": {
+    "rappel200": 0.615,
+    "rappel1500": 0.612,
+    "precision200": 0.615
+   }
+  },
+  {
+   "fr": {
+    "rappel200": 0.815,
+    "rappel1500": 0.657,
+    "precision200": 0.815
+   },
+   "en": {
+    "rappel200": 0.9,
+    "rappel1500": 0.769,
+    "precision200": 0.9
+   },
+   "verite": 4436,
+   "n_fr": 4414,
+   "n_en": 1934,
+   "co": 1912,
+   "fr+en": {
+    "rappel200": 0.89,
+    "rappel1500": 0.736,
+    "precision200": 0.89
+   },
+   "gabarit": {
+    "rappel200": 0.79,
+    "rappel1500": 0.654,
+    "precision200": 0.79
+   }
+  },
+  {
+   "fr": {
+    "rappel200": 0.745,
+    "rappel1500": 0.568,
+    "precision200": 0.745
+   },
+   "en": {
+    "rappel200": 0.82,
+    "rappel1500": 0.654,
+    "precision200": 0.82
+   },
+   "verite": 4072,
+   "n_fr": 4015,
+   "n_en": 2885,
+   "co": 2828,
+   "fr+en": {
+    "rappel200": 0.845,
+    "rappel1500": 0.637,
+    "precision200": 0.845
+   },
+   "gabarit": {
+    "rappel200": 0.685,
+    "rappel1500": 0.499,
+    "precision200": 0.685
+   }
+  },
+  {
+   "fr": {
+    "rappel200": 0.79,
+    "rappel1500": 0.787,
+    "precision200": 0.79
+   },
+   "en": {
+    "rappel200": 0.885,
+    "rappel1500": 0.829,
+    "precision200": 0.885
+   },
+   "verite": 3447,
+   "n_fr": 3436,
+   "n_en": 1130,
+   "co": 1119,
+   "fr+en": {
+    "rappel200": 0.83,
+    "rappel1500": 0.809,
+    "precision200": 0.83
+   },
+   "gabarit": {
+    "rappel200": 0.805,
+    "rappel1500": 0.78,
+    "precision200": 0.805
+   }
+  },
+  {
+   "fr": {
+    "rappel200": 0.64,
+    "rappel1500": 0.565,
+    "precision200": 0.64
+   },
+   "en": {
+    "rappel200": 0.795,
+    "rappel1500": 0.693,
+    "precision200": 0.795
+   },
+   "verite": 3615,
+   "n_fr": 3420,
+   "n_en": 1797,
+   "co": 1602,
+   "fr+en": {
+    "rappel200": 0.755,
+    "rappel1500": 0.663,
+    "precision200": 0.755
+   },
+   "gabarit": {
+    "rappel200": 0.425,
+    "rappel1500": 0.523,
+    "precision200": 0.425
+   }
+  },
+  {
+   "fr": {
+    "rappel200": 0.385,
+    "rappel1500": 0.392,
+    "precision200": 0.385
+   },
+   "en": {
+    "rappel200": 0.475,
+    "rappel1500": 0.426,
+    "precision200": 0.475
+   },
+   "verite": 3315,
+   "n_fr": 3289,
+   "n_en": 1277,
+   "co": 1249,
+   "fr+en": {
+    "rappel200": 0.445,
+    "rappel1500": 0.412,
+    "precision200": 0.445
+   },
+   "gabarit": {
+    "rappel200": 0.51,
+    "rappel1500": 0.457,
+    "precision200": 0.51
+   }
+  },
+  {
+   "fr": {
+    "rappel200": 0.39,
+    "rappel1500": 0.367,
+    "precision200": 0.39
+   },
+   "en": {
+    "rappel200": 0.52,
+    "rappel1500": 0.451,
+    "precision200": 0.52
+   },
+   "verite": 3394,
+   "n_fr": 3285,
+   "n_en": 1461,
+   "co": 1351,
+   "fr+en": {
+    "rappel200": 0.485,
+    "rappel1500": 0.44,
+    "precision200": 0.485
+   },
+   "gabarit": {
+    "rappel200": 0.36,
+    "rappel1500": 0.304,
+    "precision200": 0.36
+   }
+  },
+  {
+   "fr": {
+    "rappel200": 0.895,
+    "rappel1500": 0.929,
+    "precision200": 0.895
+   },
+   "en": {
+    "rappel200": 0.98,
+    "rappel1500": 0.971,
+    "precision200": 0.98
+   },
+   "verite": 3076,
+   "n_fr": 3040,
+   "n_en": 1551,
+   "co": 1515,
+   "fr+en": {
+    "rappel200": 0.96,
+    "rappel1500": 0.959,
+    "precision200": 0.96
+   },
+   "gabarit": {
+    "rappel200": 0.925,
+    "rappel1500": 0.949,
+    "precision200": 0.925
+   }
+  },
+  {
+   "fr": {
+    "rappel200": 0.765,
+    "rappel1500": 0.633,
+    "precision200": 0.765
+   },
+   "en": {
+    "rappel200": 0.86,
+    "rappel1500": 0.715,
+    "precision200": 0.86
+   },
+   "verite": 2661,
+   "n_fr": 2605,
+   "n_en": 1803,
+   "co": 1747,
+   "fr+en": {
+    "rappel200": 0.855,
+    "rappel1500": 0.701,
+    "precision200": 0.855
+   },
+   "gabarit": {
+    "rappel200": 0.71,
+    "rappel1500": 0.567,
+    "precision200": 0.71
+   }
+  },
+  {
+   "fr": {
+    "rappel200": 0.02,
+    "rappel1500": 0.041,
+    "precision200": 0.02
+   },
+   "en": {
+    "rappel200": 0.19,
+    "rappel1500": 0.15,
+    "precision200": 0.19
+   },
+   "verite": 2401,
+   "n_fr": 2305,
+   "n_en": 536,
+   "co": 440,
+   "fr+en": {
+    "rappel200": 0.1,
+    "rappel1500": 0.11,
+    "precision200": 0.1
+   },
+   "gabarit": {
+    "rappel200": 0.005,
+    "rappel1500": 0.027,
+    "precision200": 0.005
+   }
+  },
+  {
+   "fr": {
+    "rappel200": 0.79,
+    "rappel1500": 0.545,
+    "precision200": 0.79
+   },
+   "en": {
+    "rappel200": 0.81,
+    "rappel1500": 0.683,
+    "precision200": 0.81
+   },
+   "verite": 2685,
+   "n_fr": 2281,
+   "n_en": 1935,
+   "co": 1531,
+   "fr+en": {
+    "rappel200": 0.8,
+    "rappel1500": 0.638,
+    "precision200": 0.8
+   },
+   "gabarit": {
+    "rappel200": 0.775,
+    "rappel1500": 0.634,
+    "precision200": 0.775
+   }
+  },
+  {
+   "fr": {
+    "rappel200": 0.575,
+    "rappel1500": 0.377,
+    "precision200": 0.575
+   },
+   "en": {
+    "rappel200": 0.58,
+    "rappel1500": 0.39,
+    "precision200": 0.58
+   },
+   "verite": 2262,
+   "n_fr": 2233,
+   "n_en": 913,
+   "co": 883,
+   "fr+en": {
+    "rappel200": 0.645,
+    "rappel1500": 0.412,
+    "precision200": 0.645
+   },
+   "gabarit": {
+    "rappel200": 0.325,
+    "rappel1500": 0.24,
+    "precision200": 0.325
+   }
+  },
+  {
+   "fr": {
+    "rappel200": 0.775,
+    "rappel1500": 0.657,
+    "precision200": 0.775
+   },
+   "en": {
+    "rappel200": 0.895,
+    "rappel1500": 0.752,
+    "precision200": 0.895
+   },
+   "verite": 2276,
+   "n_fr": 2224,
+   "n_en": 1102,
+   "co": 1050,
+   "fr+en": {
+    "rappel200": 0.84,
+    "rappel1500": 0.727,
+    "precision200": 0.84
+   },
+   "gabarit": {
+    "rappel200": 0.51,
+    "rappel1500": 0.643,
+    "precision200": 0.51
+   }
+  },
+  {
+   "fr": {
+    "rappel200": 0.87,
+    "rappel1500": 0.586,
+    "precision200": 0.87
+   },
+   "en": {
+    "rappel200": 0.945,
+    "rappel1500": 0.678,
+    "precision200": 0.945
+   },
+   "verite": 2170,
+   "n_fr": 2142,
+   "n_en": 1618,
+   "co": 1590,
+   "fr+en": {
+    "rappel200": 0.925,
+    "rappel1500": 0.665,
+    "precision200": 0.925
+   },
+   "gabarit": {
+    "rappel200": 0.75,
+    "rappel1500": 0.539,
+    "precision200": 0.75
+   }
+  },
+  {
+   "fr": {
+    "rappel200": 0.265,
+    "rappel1500": 0.244,
+    "precision200": 0.265
+   },
+   "en": {
+    "rappel200": 0.41,
+    "rappel1500": 0.308,
+    "precision200": 0.41
+   },
+   "verite": 2179,
+   "n_fr": 2096,
+   "n_en": 719,
+   "co": 636,
+   "fr+en": {
+    "rappel200": 0.385,
+    "rappel1500": 0.304,
+    "precision200": 0.385
+   },
+   "gabarit": {
+    "rappel200": 0.265,
+    "rappel1500": 0.229,
+    "precision200": 0.265
+   }
+  },
+  {
+   "fr": {
+    "rappel200": 0.0,
+    "rappel1500": 0.017,
+    "precision200": 0.0
+   },
+   "en": {
+    "rappel200": 0.63,
+    "rappel1500": 0.415,
+    "precision200": 0.63
+   },
+   "verite": 2114,
+   "n_fr": 2091,
+   "n_en": 852,
+   "co": 829,
+   "fr+en": {
+    "rappel200": 0.405,
+    "rappel1500": 0.282,
+    "precision200": 0.405
+   },
+   "gabarit": {
+    "rappel200": 0.22,
+    "rappel1500": 0.163,
+    "precision200": 0.22
+   }
+  },
+  {
+   "fr": {
+    "rappel200": 0.215,
+    "rappel1500": 0.189,
+    "precision200": 0.215
+   },
+   "en": {
+    "rappel200": 0.15,
+    "rappel1500": 0.193,
+    "precision200": 0.15
+   },
+   "verite": 1988,
+   "n_fr": 1983,
+   "n_en": 747,
+   "co": 742,
+   "fr+en": {
+    "rappel200": 0.215,
+    "rappel1500": 0.191,
+    "precision200": 0.215
+   },
+   "gabarit": {
+    "rappel200": 0.21,
+    "rappel1500": 0.203,
+    "precision200": 0.21
+   }
+  },
+  {
+   "fr": {
+    "rappel200": 0.325,
+    "rappel1500": 0.263,
+    "precision200": 0.325
+   },
+   "en": {
+    "rappel200": 0.6,
+    "rappel1500": 0.388,
+    "precision200": 0.6
+   },
+   "verite": 2123,
+   "n_fr": 1968,
+   "n_en": 1182,
+   "co": 1027,
+   "fr+en": {
+    "rappel200": 0.55,
+    "rappel1500": 0.358,
+    "precision200": 0.55
+   },
+   "gabarit": {
+    "rappel200": 0.21,
+    "rappel1500": 0.21,
+    "precision200": 0.21
+   }
+  },
+  {
+   "fr": {
+    "rappel200": 0.195,
+    "rappel1500": 0.155,
+    "precision200": 0.195
+   },
+   "en": {
+    "rappel200": 0.31,
+    "rappel1500": 0.281,
+    "precision200": 0.31
+   },
+   "verite": 2157,
+   "n_fr": 1959,
+   "n_en": 1085,
+   "co": 887,
+   "fr+en": {
+    "rappel200": 0.295,
+    "rappel1500": 0.251,
+    "precision200": 0.295
+   },
+   "gabarit": {
+    "rappel200": 0.105,
+    "rappel1500": 0.108,
+    "precision200": 0.105
+   }
+  },
+  {
+   "fr": {
+    "rappel200": 0.835,
+    "rappel1500": 0.498,
+    "precision200": 0.835
+   },
+   "en": {
+    "rappel200": 0.82,
+    "rappel1500": 0.509,
+    "precision200": 0.82
+   },
+   "verite": 1898,
+   "n_fr": 1868,
+   "n_en": 814,
+   "co": 784,
+   "fr+en": {
+    "rappel200": 0.845,
+    "rappel1500": 0.516,
+    "precision200": 0.845
+   },
+   "gabarit": {
+    "rappel200": 0.72,
+    "rappel1500": 0.441,
+    "precision200": 0.72
+   }
+  },
+  {
+   "fr": {
+    "rappel200": 0.935,
+    "rappel1500": 0.693,
+    "precision200": 0.935
+   },
+   "en": {
+    "rappel200": 0.895,
+    "rappel1500": 0.657,
+    "precision200": 0.895
+   },
+   "verite": 1833,
+   "n_fr": 1828,
+   "n_en": 731,
+   "co": 726,
+   "fr+en": {
+    "rappel200": 0.945,
+    "rappel1500": 0.689,
+    "precision200": 0.945
+   },
+   "gabarit": {
+    "rappel200": 0.945,
+    "rappel1500": 0.673,
+    "precision200": 0.945
+   }
+  },
+  {
+   "fr": {
+    "rappel200": 0.93,
+    "rappel1500": 0.321,
+    "precision200": 0.93
+   },
+   "en": {
+    "rappel200": 0.795,
+    "rappel1500": 0.682,
+    "precision200": 0.795
+   },
+   "verite": 1927,
+   "n_fr": 1666,
+   "n_en": 951,
+   "co": 690,
+   "fr+en": {
+    "rappel200": 0.695,
+    "rappel1500": 0.699,
+    "precision200": 0.695
+   },
+   "gabarit": {
+    "rappel200": 0.735,
+    "rappel1500": 0.237,
+    "precision200": 0.735
+   }
+  },
+  {
+   "fr": {
+    "rappel200": 0.895,
+    "rappel1500": 0.506,
+    "precision200": 0.895
+   },
+   "en": {
+    "rappel200": 0.91,
+    "rappel1500": 0.528,
+    "precision200": 0.91
+   },
+   "verite": 1666,
+   "n_fr": 1659,
+   "n_en": 353,
+   "co": 345,
+   "fr+en": {
+    "rappel200": 0.925,
+    "rappel1500": 0.54,
+    "precision200": 0.925
+   },
+   "gabarit": {
+    "rappel200": 0.73,
+    "rappel1500": 0.416,
+    "precision200": 0.73
+   }
+  },
+  {
+   "fr": {
+    "rappel200": 0.795,
+    "rappel1500": 0.499,
+    "precision200": 0.795
+   },
+   "en": {
+    "rappel200": 0.84,
+    "rappel1500": 0.585,
+    "precision200": 0.84
+   },
+   "verite": 1661,
+   "n_fr": 1637,
+   "n_en": 542,
+   "co": 518,
+   "fr+en": {
+    "rappel200": 0.805,
+    "rappel1500": 0.571,
+    "precision200": 0.805
+   },
+   "gabarit": {
+    "rappel200": 0.74,
+    "rappel1500": 0.473,
+    "precision200": 0.74
+   }
+  },
+  {
+   "fr": {
+    "rappel200": 0.925,
+    "rappel1500": 0.594,
+    "precision200": 0.925
+   },
+   "en": {
+    "rappel200": 0.94,
+    "rappel1500": 0.614,
+    "precision200": 0.94
+   },
+   "verite": 1620,
+   "n_fr": 1611,
+   "n_en": 652,
+   "co": 641,
+   "fr+en": {
+    "rappel200": 0.94,
+    "rappel1500": 0.617,
+    "precision200": 0.94
+   },
+   "gabarit": {
+    "rappel200": 0.92,
+    "rappel1500": 0.576,
+    "precision200": 0.92
+   }
+  },
+  {
+   "fr": {
+    "rappel200": 0.055,
+    "rappel1500": 0.065,
+    "precision200": 0.055
+   },
+   "en": {
+    "rappel200": 0.535,
+    "rappel1500": 0.415,
+    "precision200": 0.535
+   },
+   "verite": 1657,
+   "n_fr": 1597,
+   "n_en": 378,
+   "co": 318,
+   "fr+en": {
+    "rappel200": 0.485,
+    "rappel1500": 0.371,
+    "precision200": 0.485
+   },
+   "gabarit": {
+    "rappel200": 0.365,
+    "rappel1500": 0.327,
+    "precision200": 0.365
+   }
+  },
+  {
+   "fr": {
+    "rappel200": 0.035,
+    "rappel1500": 0.06,
+    "precision200": 0.035
+   },
+   "en": {
+    "rappel200": 0.055,
+    "rappel1500": 0.055,
+    "precision200": 0.055
+   },
+   "verite": 1571,
+   "n_fr": 1554,
+   "n_en": 450,
+   "co": 433,
+   "fr+en": {
+    "rappel200": 0.04,
+    "rappel1500": 0.061,
+    "precision200": 0.04
+   },
+   "gabarit": {
+    "rappel200": 0.03,
+    "rappel1500": 0.058,
+    "precision200": 0.03
+   }
+  },
+  {
+   "fr": {
+    "rappel200": 0.57,
+    "rappel1500": 0.275,
+    "precision200": 0.57
+   },
+   "en": {
+    "rappel200": 0.525,
+    "rappel1500": 0.254,
+    "precision200": 0.525
+   },
+   "verite": 1829,
+   "n_fr": 1553,
+   "n_en": 956,
+   "co": 680,
+   "fr+en": {
+    "rappel200": 0.56,
+    "rappel1500": 0.279,
+    "precision200": 0.56
+   },
+   "gabarit": {
+    "rappel200": 0.565,
+    "rappel1500": 0.265,
+    "precision200": 0.565
+   }
+  },
+  {
+   "fr": {
+    "rappel200": 0.6,
+    "rappel1500": 0.377,
+    "precision200": 0.6
+   },
+   "en": {
+    "rappel200": 0.655,
+    "rappel1500": 0.375,
+    "precision200": 0.655
+   },
+   "verite": 1573,
+   "n_fr": 1546,
+   "n_en": 530,
+   "co": 503,
+   "fr+en": {
+    "rappel200": 0.66,
+    "rappel1500": 0.386,
+    "precision200": 0.66
+   },
+   "gabarit": {
+    "rappel200": 0.56,
+    "rappel1500": 0.373,
+    "precision200": 0.56
+   }
+  },
+  {
+   "fr": {
+    "rappel200": 0.605,
+    "rappel1500": 0.305,
+    "precision200": 0.605
+   },
+   "en": {
+    "rappel200": 0.745,
+    "rappel1500": 0.409,
+    "precision200": 0.745
+   },
+   "verite": 1509,
+   "n_fr": 1477,
+   "n_en": 504,
+   "co": 472,
+   "fr+en": {
+    "rappel200": 0.715,
+    "rappel1500": 0.373,
+    "precision200": 0.715
+   },
+   "gabarit": {
+    "rappel200": 0.575,
+    "rappel1500": 0.279,
+    "precision200": 0.575
+   }
+  },
+  {
+   "fr": {
+    "rappel200": 0.92,
+    "rappel1500": 0.562,
+    "precision200": 0.92
+   },
+   "en": {
+    "rappel200": 0.845,
+    "rappel1500": 0.586,
+    "precision200": 0.845
+   },
+   "verite": 1455,
+   "n_fr": 1407,
+   "n_en": 602,
+   "co": 554,
+   "fr+en": {
+    "rappel200": 0.865,
+    "rappel1500": 0.589,
+    "precision200": 0.865
+   },
+   "gabarit": {
+    "rappel200": 0.83,
+    "rappel1500": 0.525,
+    "precision200": 0.83
+   }
+  },
+  {
+   "fr": {
+    "rappel200": 0.345,
+    "rappel1500": 0.321,
+    "precision200": 0.345
+   },
+   "en": {
+    "rappel200": 0.38,
+    "rappel1500": 0.346,
+    "precision200": 0.38
+   },
+   "verite": 1395,
+   "n_fr": 1388,
+   "n_en": 598,
+   "co": 591,
+   "fr+en": {
+    "rappel200": 0.38,
+    "rappel1500": 0.341,
+    "precision200": 0.38
+   },
+   "gabarit": {
+    "rappel200": 0.31,
+    "rappel1500": 0.287,
+    "precision200": 0.31
+   }
+  },
+  {
+   "fr": {
+    "rappel200": 0.705,
+    "rappel1500": 0.427,
+    "precision200": 0.705
+   },
+   "en": {
+    "rappel200": 0.71,
+    "rappel1500": 0.413,
+    "precision200": 0.71
+   },
+   "verite": 1461,
+   "n_fr": 1376,
+   "n_en": 973,
+   "co": 888,
+   "fr+en": {
+    "rappel200": 0.71,
+    "rappel1500": 0.426,
+    "precision200": 0.71
+   },
+   "gabarit": {
+    "rappel200": 0.64,
+    "rappel1500": 0.424,
+    "precision200": 0.64
+   }
+  },
+  {
+   "fr": {
+    "rappel200": 0.745,
+    "rappel1500": 0.457,
+    "precision200": 0.745
+   },
+   "en": {
+    "rappel200": 0.9,
+    "rappel1500": 0.544,
+    "precision200": 0.9
+   },
+   "verite": 1369,
+   "n_fr": 1362,
+   "n_en": 420,
+   "co": 413,
+   "fr+en": {
+    "rappel200": 0.87,
+    "rappel1500": 0.513,
+    "precision200": 0.87
+   },
+   "gabarit": {
+    "rappel200": 0.81,
+    "rappel1500": 0.505,
+    "precision200": 0.81
+   }
+  }
+ ]
+}
