@@ -12006,6 +12006,12 @@ class Handler(BaseHTTPRequestHandler):
             except Exception:
                 return None
 
+        def mtime_de(name):
+            try:
+                return (docs / name).stat().st_mtime
+            except OSError:
+                return None
+
         def summ(o):
             """Resume sur : garde les scalaires, remplace listes/dicts par leur
             taille. Robuste au schema (pas besoin de connaitre les cles)."""
@@ -12087,7 +12093,11 @@ class Handler(BaseHTTPRequestHandler):
                 'total_a_ranger': pa.get('total_a_ranger'),
                 'sans_date': pa.get('sans_date'), 'deja': pa.get('deja'),
                 'conflits': len(pa.get('conflits') or []),
-                'par_annee': pa.get('par_annee') or {}})(load('plan_rangement_annee.json') or {}),
+                'par_annee': pa.get('par_annee') or {},
+                # Quand le plan a ete ECRIT : c'est ce que la page attend pour
+                # dire « fini » (le bouton ne l'a jamais dit, 29/08).
+                'genere_le': mtime_de('plan_rangement_annee.json')})(
+                    load('plan_rangement_annee.json') or {}),
             'config': {'MODEL': MODEL, 'ANIMAL_PIPELINE_VERSION': ANIMAL_PIPELINE_VERSION,
                        'TAGGING_PIPELINE_VERSION': TAGGING_PIPELINE_VERSION,
                        'tagging_pipe': _tagging_pipe_counts(),

@@ -373,7 +373,27 @@ document.getElementById('refresh').onclick=load;
 document.getElementById('run').onclick=function(){ act('/api/maint/run'); };
 document.getElementById('pause').onclick=function(){ act('/api/maint/toggle'); };
 document.getElementById('census').onclick=function(){ act('/api/maint/census', 'Lancer le recensement complet ? Lecture seule mais ~4 h et sollicite le NAS.'); };
-document.getElementById('planyear').onclick=function(){ act('/api/maint/plan-annee'); };
+document.getElementById('planyear').onclick=function(){
+  // Le POST rend tout de suite (le plan se calcule en tache de fond) : on attend
+  // que le fichier du plan ait ete REECRIT (genere_le change) pour dire « fini ».
+  var el=document.getElementById('maint-msg'), avant=null;
+  j('/api/maint/status').then(function(s){ avant=(s.plan_annee||{}).genere_le||null; })
+  .catch(function(){}).then(function(){
+    act('/api/maint/plan-annee');
+    var essais=0, t=setInterval(function(){
+      essais++;
+      j('/api/maint/status').then(function(s){
+        var pa=s.plan_annee||{};
+        if(pa.genere_le && pa.genere_le!==avant){
+          clearInterval(t);
+          el.textContent='Plan de rangement par annee genere : '+pa.total_a_ranger+' a ranger, '
+            +(pa.sans_date||0)+' sans date, '+(pa.conflits||0)+' conflit(s).';
+          load();
+        } else if(essais>=60){ clearInterval(t); el.textContent='Le plan n a pas ete reecrit apres 2 min : voir le journal du serveur.'; }
+      }).catch(function(){});
+    }, 2000);
+  });
+};
 document.getElementById('planren').onclick=function(){ act('/api/maint/plan-renommage', null, 'ren-msg'); };
 document.getElementById('rencheck').onclick=function(){ act('/api/maint/rename-check', null, 'ren-msg'); };
 document.getElementById('renapply').onclick=function(){ act('/api/maint/rename-apply', 'Appliquer un lot de renommage (max 200 fichiers, EN PLACE sur le NAS) ? Reversible via Annuler.', 'ren-msg'); };

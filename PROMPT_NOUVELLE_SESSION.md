@@ -35,9 +35,18 @@ contradiction entre deux décisions de Mike (28/08 « le dernier gagne » vs
 29/08 « le propriétaire l'emporte ») a été vue et tranchée : le propriétaire ;
 la ligne du 28/08 est marquée REMPLACÉE.
 
+**Dernier geste (13:17)** : le bouton Réglages « Plan de rangement par année »
+disait « en cours… » pour toujours (le POST rend tout de suite, rien ne
+disait « fini »). Corrigé : `/api/maint/status` expose `plan_annee.genere_le`
+(mtime du plan) et la page attend que le plan soit RÉÉCRIT pour afficher
+« généré : N à ranger… ». Serveur redémarré à 13:17:27 sur ce code (plan
+38, migration auteurs silencieuse = idempotente, zéro fil mort). **À
+observer par Mike** : cliquer le bouton, le message doit finir en quelques
+secondes. Livré (voir `.git/logs/refs/heads/main`).
+
 ## Prochain pas
 
-1. Mike : `arret` → **bat 26** (38 moves ; le plan de 12:49:51 passe les deux
+1. Mike : `arret` → **bat 26** (38 moves ; le plan de 13:17:34 passe les deux
    gardes tant qu'on ne redémarre pas avant) → `marche` → **bat 34**.
 2. **Chantier 17, reste de l'étape 2** : `#contesté` VISIBLE dans la fiche
    `/people` ; puis **étape 3** : la VUE par utilisateur (`PRIVE`) et son banc
