@@ -74,7 +74,8 @@ jamais le mtime ; 8 tests) + **bat 39** (`appliquer_plan_annee --plan
 docs/plan_rangement_videos.json`, mêmes gardes, serveur arrêté). Mesuré :
 **3 073 vidéos, 73,7 Go, 0 sans date, 0 conflit** → `Photos Mike\<année>`.
 Piège vu : ExifTool `-fast2` ne lit pas le `moov` en fin de MP4 (0/7 datées),
-`-fast` oui (7/7). Deux questions dans `QUESTIONS_MIKE.md` (Floflo, `_original`).
+`-fast` oui (7/7). Deux questions dans `QUESTIONS_MIKE.md` (Floflo, `_original`). Phase 1
+(image-clé) : **ffmpeg 7.1.1 est sur le PATH** (`verifier_outils_video.py`).
 
 **`N:\\Photos`** : règle permanente dans `CLAUDE.md` (« Tester en réel »).
 

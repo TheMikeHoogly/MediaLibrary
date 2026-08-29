@@ -121,7 +121,8 @@ valeur d'abord :
 - **Phase 4 — recherche sémantique** : encoder l'image-clé, comme une photo.
 - Transverse : dédup vidéo (déjà par `recensement_doublons`), gros fichiers
   (le rename gère déjà), coût CPU/GPU de l'extraction+inférence à mesurer,
-  `ffmpeg` à installer côté Windows. **Dépendance** : Phase 0 profite du
+  `ffmpeg` : **PRÉSENT** (7.1.1 sur le PATH, `verifier_outils_video.py`,
+  29/08) — la phase 1 peut commencer sans installation. **Dépendance** : Phase 0 profite du
   correctif `cible()` (rangement par propriétaire) déjà posé.
 
 **2. Le pense-bête des raccourcis DANS l'interface** (point 6 du plancher).
