@@ -9,64 +9,53 @@ FUSIONNÉ — ce document, non. Puis `ROADMAP.md`, `eval/DECISIONS.md`,
 `eval/METHODE.md` — et `docs/DECISIONS_OUTILLAGE.md` si le sujet touche aux
 canaux, à la livraison ou au MCP. Débrief en 2–3 lignes, puis on attaque.
 
-## Où on en est (30/08/2026, session 67 — l'applicateur des doublons est écrit)
+## Où on en est (30/08/2026, session 68 — la recherche IA est dans la barre)
 
-**Git** : fusionné jusqu'à `feat/elargissement-fr-en` — vérifier
-`.git/logs/refs/heads/main`. Serveur redémarré 13:45 sur ce code (index
-46 895), scission à la relecture XMP chargée (pas encore exercée : aucun
-nouveau fichier importé depuis). **Serveur** : tourne depuis 23:54 sur
-le code de la nuit (index **47 789** dont 4 086 vidéos), non redémarré (rien
-dans `server.py` n'a bougé). **Carnet `QUESTIONS_MIKE.md` : vide.**
+**Git** : fusionné jusqu'à `feat/elargissement-fr-en` (`a78faa4`) ; la
+session 68 livre `feat/recherche-dans-la-barre` — vérifier
+`.git/logs/refs/heads/main`. **Serveur** : redémarré 16:55 sur ce code (index
+**44 860**, 0 fil mort). **Carnet `QUESTIONS_MIKE.md` : UNE question** (les 10
+noms re-retirés, ci-dessous).
 
-**Doublons (1 decies) — ÉCRIT, TESTÉ, APERÇU TOURNÉ, PAS APPLIQUÉ** :
-`verifier_doublons_image.py` (aperçu lecture seule, famille du banc, `--base
-copie.db` pour les noms du jour), `appliquer_doublons_image.py` (serveur
-arrêté et prouvé ; noms d'abord XMP+index sinon copie GARDÉE ; texte IA
-hérité par une canonique VIDE seulement ; décisions fusionnées sur la
-canonique ; corbeille `.corbeille-rangement\dedup_image_<date>` + manifeste ;
-`--undo`), `test_appliquer_doublons_image.py` (vert, rougit sur 3 mutations),
-**bat 40**. Aperçu réel (agent banc, 10 s) : **lot 1 = 833 groupes, 894
-retraits, 3,55 Go, 0 sauté, 4 noms à recopier** ; tout = 2 929 / 10,45 Go / 18
-noms. **Rien n'a bougé sur le NAS.**
+**Doublons (1 decies) — APPLIQUÉS PAR MIKE le 30/08**, les deux lots : 2 929
+fichiers en `.corbeille-rangement\dedup_image_*`, index 47 789 → 44 860, 218
+décisions fusionnées, 19 noms recopiés. **Caillou observé** : 10 de ces noms
+ont été re-retirés au démarrage (« exclusion humaine ré-appliquée ») — la
+canonique excluait la personne que la copie nommait ; rien de perdu (XMP de la
+copie, manifeste), mais la fiche ne dit pas le désaccord. Question + liste des
+10 dans `QUESTIONS_MIKE.md`.
 
-**Mots-clés anglais dans `kw_fr` (1 undecies) — MESURÉ, OUTILLÉ, PAS
-APPLIQUÉ** : 22 196 entrées (52 %) à `kw_en` vide = XMP relu entier dans
-`kw_fr` (pas le tagueur). `scission_fr_en.py` (règle pure) +
-`appliquer_scission_fr_en.py` (index seul, serveur arrêté) + **bat 41**,
-22 190 scindables sur la copie. Reste : le geste de Mike, puis brancher la
-règle dans le serveur à la relecture d'un XMP (sinon un rescan re-mélange).
+**Scission FR/EN (1 undecies) — APPLIQUÉE PAR MIKE 15:08** : 22 176 entrées.
+Observé : « chaise » → puces françaises. Le serveur scinde à la relecture d'un
+XMP (code livré, pas encore exercé : aucun import depuis).
 
-**Recherche IA (1 nonies)** : élargissement FR→EN **OBSERVÉ** (13:46 :
-2 276 paires, « ours en peluche (+ teddy bear) » 1 500 photos) et le faux
-« 0 photo » de `/files` corrigé (IA toujours côté serveur). Livré.
+**Recherche IA partout (1 duodecies) — FAIT, OBSERVÉ (session 68)** : vrai
+`<form action="/files">` `name=q` dans `APP_NAV_HTML`, masqué sur `/files`,
+raccourci `/`, deux lignes à 390 px. **Et la brique JS commune existe** :
+`ui/global.js` (onglet actif, sablier, recherche), injectée par
+`_send_html` → `injecter_js_commun` juste après la barre, relue à chaud, cuite
+par `bundle.py`. `test_ui_global.py` : 17 verts, rougissent sur mutation.
 
 **Chantier 17** : étapes 1→6 posées. Reste : étape 7 (onboarding ; `/upload`
 sous un compte → chez l'envoyeur), conflit de `faces` ENTRE fiches, contrôle
 403 « photo partagée » du banc. **Vidéos phase 1** : la LECTURE n'a pas été
-observée (un clic de Mike). **Recherche IA** : Mike a tranché « élargir
-FR→EN, retirer le gabarit » — pas commencé.
+observée (un clic de Mike).
 
 ## Prochain pas
 
-1. **Le geste de Mike : bat 40** (serveur arrêté — `arret` dans
-   `_commande_serveur.txt` puis vérifier `_journal_serveur.log`), lot 1
-   d'abord ; puis `marche`, et **OBSERVER** : `/api/serveur` index −894,
-   compteurs des fiches (`/api/people/list`, `/api/pets`) inchangés,
-   `verifier_photos_google` inchangé, les 4 noms présents sur les canoniques
-   (`/api/faits?key=…`), `docs/undo_doublons_*.json` relu par
-   `journaux_deplacements.chaines`. Un petit lot `--limite 20` avant, si on
-   veut voir avant de croire.
-2. **La recherche IA visible dans tous les onglets** (1 duodecies, Mike
-   30/08) : la brique JS commune (`_UI_GLOBAL_FILES`) + un champ dans la barre
-   qui renvoie `/files?q=`. Puis le panneau `?` sur la même brique.
-3. **Bat 41** (scission FR/EN, index seul) — avant `marche`, après bat 40 ;
-   puis observer les puces d'une photo de juillet et la recherche « chaise ».
-   Ensuite : le serveur doit scinder lui-même à la relecture d'un XMP
-   (`read_meta_and_gps` → `scission_fr_en.scinder_entree`), un test le prouve.
+1. **Mike tranche les 10 noms** (`QUESTIONS_MIKE.md`) ; puis, côté code, faire
+   DIRE le désaccord : `appliquer_doublons_image.fusionner_fiche` — un nom
+   apporté sur une canonique qui l'exclut va dans `contestes`, pas dans le
+   silence du démarrage. Un test le prouve sur une fiche fabriquée.
+2. **Le panneau `?` des raccourcis** sur `ui/global.js` (point 2) — contenu :
+   `docs/RACCOURCIS.md`. Puis l'instrument qui relève les touches écoutées.
+3. **La Carte a deux champs** (barre + « Rechercher (noms, lieux, sens) ») :
+   à trancher avec Mike — garder les deux (fonds entier / filtre carte) ou
+   fondre.
 4. **Vidéos** : faire LIRE une vidéo à Mike ; puis phase 2.
 5. `ROADMAP.md` à réduire AVEC Mike (~1 500 lignes, rôle = carte).
 6. 9 septembre : Windows a-t-il demandé ? (`Get-WinEvent … Id=1074`).
-7. Règle Motion Photo (1 septies), chantier 18, panneau `?`, UNIFIER le re-clé.
+7. Règle Motion Photo (1 septies), chantier 18, UNIFIER le re-clé.
 
 ## En fin de projet
 

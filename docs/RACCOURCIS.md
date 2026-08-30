@@ -7,6 +7,13 @@
 >
 > Version lisible pour Mike : artefact « Raccourcis de la photothèque ».
 
+## Partout — la barre commune (`ui/global.js`, 30/08)
+
+| Touche | Effet |
+|---|---|
+| `/` | Met le focus dans « Décris la photo… » (recherche IA sur tout le fonds) — sauf quand on tape déjà dans un champ |
+| `Entrée` (dans le champ) | Ouvre la galerie des résultats (`/files?q=`) |
+
 ## Juger les propositions de noms — `/sujets`, onglet Classification
 
 N'agit que sur la carte ACTIVE (encadrée), et seulement dans cet onglet.

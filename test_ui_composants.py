@@ -75,6 +75,10 @@ def envoyer(html, composants='<style id="ui-components">.btn{}</style>'):
         'ui_shared_css': lambda: '<style id="ui-shared"></style>',
         'ui_composants_css': lambda: composants,
         '_UI_COMPOSANTS_MARQUEUR': '<!--UI:components-->',
+        # La brique JS commune (30/08) passe par _send_html aussi ; ici on la
+        # neutralise, elle a son propre test (test_ui_global.py).
+        'ui_shared_js': lambda: '',
+        'injecter_js_commun': lambda html, bloc: html,
     }
     exec(compile(ast.Module([_noeud('_send_html')], []), str(SERVER), 'exec'),
          ns)

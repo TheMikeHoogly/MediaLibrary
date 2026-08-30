@@ -29,6 +29,10 @@ MARQUEUR = '_UI_CACHE = {"css": None, "sig": None}'
 # elle, un dist sans ui/ servirait les pages converties SANS leurs boutons.
 UI_COMPOSANTS_FILES = ("components.css",)  # DOIT refleter server._UI_COMPOSANTS_FILES
 MARQUEUR_COMPOSANTS = '_UI_COMPOSANTS_CACHE = {"css": None, "sig": None}'
+# La brique JS commune (ui/global.js) : sans elle, un dist sans ui/ servirait
+# des pages sans onglet allume ni sablier ni raccourci « / ».
+UI_JS_FILES = ("global.js",)  # DOIT refleter server._UI_JS_FILES
+MARQUEUR_JS = '_UI_JS_CACHE = {"js": None, "sig": None}'
 # Gabarits de pages sortis du monolithe (point 7). Meme principe que le CSS :
 # le dist embarque ce que ui/pages/ contient, donc il se deploie seul.
 UI_PAGES_DIR = UI_DIR / "pages"
@@ -57,6 +61,22 @@ def construire_composants():
     if not parts:
         return ""
     return '<style id="ui-components">\n' + "\n".join(parts) + "\n</style>"
+
+
+def construire_js():
+    """Reproduit exactement le bloc que server.ui_shared_js() assemble."""
+    parts = []
+    for name in UI_JS_FILES:
+        try:
+            txt = (UI_DIR / name).read_text(encoding="utf-8")
+        except OSError:
+            continue
+        txt = txt.replace("</script", "<\\/script")
+        if txt.strip():
+            parts.append(f"/* {name} */\n{txt}")
+    if not parts:
+        return ""
+    return '<script id="ui-global">\n' + "\n".join(parts) + "\n</script>"
 
 
 def signature_absente(fichiers=None):
@@ -104,6 +124,17 @@ def main(argv):
             f'_UI_COMPOSANTS_CACHE = {{"css": {composants!r}, '
             f'"sig": {signature_absente(UI_COMPOSANTS_FILES)!r}}}', 1)
 
+    js = construire_js()
+    if js:
+        if MARQUEUR_JS not in out:
+            print("ERREUR : marqueur de la brique JS introuvable dans server.py.")
+            print(f"  Attendu : {MARQUEUR_JS}")
+            return 2
+        out = out.replace(
+            MARQUEUR_JS,
+            f'_UI_JS_CACHE = {{"js": {js!r}, '
+            f'"sig": {signature_absente(UI_JS_FILES)!r}}}', 1)
+
     # Les gabarits : sans eux, un dist sans ui/ servirait « Gabarit
     # introuvable » a la place des pages extraites.
     pages = cuire_les_pages()
@@ -121,6 +152,8 @@ def main(argv):
     print(f"  CSS cuit : {len(css)} caracteres depuis {', '.join(UI_GLOBAL_FILES)}")
     print(f"  Composants cuits : {len(composants)} caracteres"
           if composants else "  Composants cuits : aucun (components.css absent).")
+    print(f"  Brique JS cuite : {len(js)} caracteres"
+          if js else "  Brique JS cuite : aucune (global.js absent).")
     if pages:
         print(f"  Gabarits cuits : {len(pages)} page(s) — "
               + ", ".join(sorted(pages)))

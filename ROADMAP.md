@@ -166,39 +166,22 @@ reste, à mesurer avant de coder** : le NOM DE DOSSIER comme indice (`06 EVG
 Nounours` sur « nounours ») ; les synonymes des tags ; un mode « filtrer dans
 cette grille » HONNÊTE (classer la grille entière, pas le top-200 du fonds).
 
-**1 decies. Les DOUBLONS (demandé par Mike le 29/08 au soir).** **Banc
-écrit et EN COURS dans la nuit** : `mesure_doublons_image.py --base copie.db`
-(ExifTool `ImageDataHash`, argfile UTF-8 — 36 « inconnus » sur 80 au premier
-essai, tous accentués ; reprenable, cache dans `docs/doublons_image.json`,
-~1,2 fichier/s sur le NAS donc ~6 passes de 7 min). Premiers chiffres (2 990
-groupes candidats, 6 187 clés) : après 1 400 clés, **IDENTIQUE partout sauf
-1** (une paire Flo `2011 Tessin`/`Love` réellement différente), 776 groupes
-Flo + Mike. **TERMINÉ (30/08 00:37, 8 passes)** : sur **2 990** groupes,
-**2 757 IDENTIQUES** (mêmes pixels), **233 DIFFÉRENTES** (toutes chez Mike
-seul, 2007–2016 : des retouches ou des ré-exports, à laisser), 0 inconnu.
-**Retraits proposés : 2 929 fichiers, 10,45 Go** ; 833 groupes entre
-propriétaires (Indonésie 472, Calinous 236 → canonique chez Mike, règle du
-29/08), 1 812 chez Mike seul (2025↔2026 : 407 ; 2010 : 363 ; Caline↔Calinous
-134), 112 groupes sans copie chez Mike (Flo seule, Papa) où la canonique est
-la copie rangée par année. **18 copies portent un nom que la canonique n'a
-pas** (Mike, Zab, Florine, Gaétan, Mutz…) : à recopier AVANT tout retrait.
-Rapport complet, groupe par groupe : `docs/doublons_image.json`. **Tranché
-par Mike le 30/08 : on passe à l'applicateur** (à blanc → quarantaine
-réversible avec manifeste, serveur arrêté, Flo+Mike d'abord). **ÉCRIT le
-30/08 matin** : `verifier_doublons_image.py` (aperçu, famille du banc) +
-`appliquer_doublons_image.py` (noms d'abord dans le XMP puis l'index, sinon la
-copie est GARDÉE ; texte IA hérité par une canonique VIDE seulement — règle de
-Mike ; décisions humaines FUSIONNÉES sur la canonique, un visage seulement si
-la détection existe en face ; corbeille `dedup_image_<date>` + manifeste bat
-24 ; `--undo`), test vert qui rougit sur trois mutations, **bat 40**.
-**Aperçu à blanc TOURNÉ sur le NAS** (agent banc, 10 s) : lot 1 = 833 groupes,
-894 retraits, 3,55 Go, **0 sauté**, 4 noms à recopier (index du jour).
-**Reste : le geste de Mike (bat 40, serveur arrêté), puis observer** :
-compteurs des fiches inchangés, index −894 avec motif, `verifier_photos_google`
-inchangé. Le
-dédoublonnage au sha256 (23/08) était vrai et aveugle : 3 818 groupes « même
-seconde » dont 2 630 à moins de 20 Ko d'écart (XMP divergé) — chiffres et
-règle de la canonique dans `eval/DECISIONS.md` (29/08).
+**1 decies. Les DOUBLONS par l'image — APPLIQUÉ PAR MIKE le 30/08, un
+caillou reste.** Mesure (8 passes, ExifTool `ImageDataHash`) : 2 990 groupes,
+2 757 identiques, 233 différentes (chez Mike seul, laissées) ; règle de la
+canonique et du texte IA dans `eval/DECISIONS.md`. Outils :
+`verifier_doublons_image.py` (aperçu), `appliquer_doublons_image.py`
+(quarantaine réversible + manifeste, `--undo`, noms recopiés d'abord), bat 40.
+**Appliqué** : lot 1 à 10:28 (894), le reste à 14:04 (2 035) — **2 929
+fichiers en `.corbeille-rangement\dedup_image_*`**, index 47 789 → 44 860,
+218 décisions fusionnées, 0 texte hérité, 19 noms recopiés. **Caillou** : 10 de
+ces 19 noms ne s'affichent pas sur la canonique — re-retirés au démarrage
+(« faux positifs : exclusion humaine ré-appliquée », 3 à 12:32 = les 3 du
+lot 1, 25 à 16:13) : la canonique EXCLUAIT la personne que la copie nommait ;
+le propriétaire l'emporte (29/08), rien n'est perdu (XMP de la copie en
+corbeille + manifeste), mais la fiche ne DIT pas le désaccord. Les 10 sont
+listés dans `QUESTIONS_MIKE.md`. Le dédoublonnage au sha256 (23/08) était vrai
+et aveugle — chiffres dans `eval/DECISIONS.md` (29/08).
 
 **1 undecies. Les mots-clés ANGLAIS dans `kw_fr` (Mike, 30/08 : « chat calico »).**
 **MESURÉ le 30/08** (`mesure_anglais_dans_fr.py`, `mesure_scission_fr_en.py`,
@@ -212,8 +195,12 @@ entrées saines, vote par tag, coupure de score maximal, milieu si ex æquo :
 **22 190 sur 22 196 se scindent** (19 175 coupure unique). **Applicateur
 livré** : `appliquer_scission_fr_en.py` (index seul, serveur arrêté et
 prouvé, à blanc par défaut, `undo_scission_*.json`), test vert, **bat 41**.
-**Reste : le geste de Mike (bat 41), puis observer** les puces de la galerie
-(plus d'anglais sur une photo de juillet), la recherche « chaise ». Imparfait
+**APPLIQUÉ PAR MIKE le 30/08 15:08** : `undo_scission_20260830_150822.json`,
+**22 176 entrées scindées**. Observé (session 68, 16:20) : « chaise » rend 80
+photos en puces françaises (élargi « chair ») ; un `fence` résiduel côté FR sur
+une photo — le lot des ~5 600 neutres annoncé. Le serveur scinde lui-même à la
+relecture d'un XMP depuis `a78faa4` (`read_meta_and_gps` → `scission_fr_en`),
+pas encore exercé (aucun import depuis). Imparfait
 et dit : ~5 600 tags neutres des deux langues (orange, art, bar, jeans) restent
 côté FR ; « calico » (82) est une vraie fuite du vieux tagueur, à re-tagger
 un jour. **Le serveur devrait scinder lui-même** quand il relit un XMP
@@ -221,17 +208,24 @@ un jour. **Le serveur devrait scinder lui-même** quand il relit un XMP
 le prochain rescan re-mélange.
 
 **1 duodecies. La recherche IA VISIBLE PARTOUT (Mike, 30/08 12:55).** Le champ
-de recherche ne vit que dans la galerie ; Mike veut le trouver sur chaque
-onglet (Dossiers, Carte, Sujets, Photos). C'est un champ dans la barre commune
-qui renvoie vers `/files?q=…` — et il passe par la même brique manquante que
-le point 2 (un JS commun injecté sur toutes les pages, `_UI_GLOBAL_FILES`) :
-faire la brique, y poser le champ, puis le panneau `?`.
+de recherche ne vivait que dans la galerie ; Mike le veut sur chaque onglet.
+**FAIT, OBSERVÉ (session 68, 30/08 16:55)** : un vrai `<form action="/files">`
+`name=q` dans la barre commune (`APP_NAV_HTML`) — Entrée suffit, rien ne dépend
+du JS — masqué sur `/files` où la galerie a la sienne ; raccourci **`/`** ;
+44 px de cible ; à 390 px la barre fait deux lignes (94 px), pas trois. Et **la
+brique JS commune existe** : `ui/global.js`, injectée par `_send_html` juste
+après la barre (`injecter_js_commun`, règle pure), relue à chaud, cuite par
+`bundle.py`, chaîne vide sans `ui/` ; les deux scripts inline de la barre
+(onglet actif, sablier) y ont déménagé. `test_ui_global.py` (17, rougissent).
+Observé : « chaise » depuis Dossiers → 1 500 photos, IA, « chaise (+ chair) ».
+Reste : la Carte garde son propre champ « Rechercher (noms, lieux, sens) » —
+deux champs sur cette page, à trancher un jour (celui de la barre cherche le
+fonds entier, celui de la carte filtre la carte).
 
 **2. Le pense-bête des raccourcis DANS l'interface** (point 6 du plancher).
-Il manque la brique : **un fichier JS commun injecté sur toutes les pages**,
-comme `tokens.css` et `base.css` (`_UI_GLOBAL_FILES`). Il n'y en a aucun. La
-brique d'abord, le panneau `?` ensuite, l'instrument en dernier. Contenu
-déjà relevé : `docs/RACCOURCIS.md`.
+**La brique est POSÉE (session 68) : `ui/global.js`**, injectée sur toutes les
+pages. Reste le panneau `?` lui-même, sur cette brique, puis l'instrument.
+Contenu déjà relevé : `docs/RACCOURCIS.md` (le `/` de la barre y est).
 
 **3. La suite du chantier 17 (multi-utilisateurs)** : la notion de
 PROPRIÉTAIRE, puis l'attribution rétroactive des 3 767 décisions à Mike.

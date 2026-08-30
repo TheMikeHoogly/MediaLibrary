@@ -6331,10 +6331,32 @@ APP_NAV_CSS = """<style id="appnav-css">
   animation:netbusy-spin .7s linear infinite;}
 @keyframes netbusy-spin{to{transform:rotate(360deg);}}
 @media(prefers-reduced-motion:reduce){.netbusy__s{animation:none;}}
+/* Recherche IA depuis TOUT onglet (1 duodecies, Mike 30/08) : un vrai
+   formulaire vers /files?q=, donc Entree suffit et rien ne depend du JS.
+   Cible tactile a --touch (44 px) comme tout controle du systeme ; masque par
+   global.js sur /files, ou la galerie porte deja sa barre. */
+.appnav-q{display:flex;align-items:center;gap:var(--e-1);margin-left:var(--e-2);}
+.appnav-q input{min-height:var(--touch);width:clamp(140px,22vw,300px);
+  padding:0 var(--e-3);border:var(--trait);border-radius:var(--r-pill);
+  background:var(--salle-3);color:var(--texte);font:var(--t-sm) var(--f-texte);}
+.appnav-q input::placeholder{color:var(--graphite);opacity:1;}
+.appnav-q button{min-height:var(--touch);min-width:var(--touch);padding:0 var(--e-2);
+  border:var(--trait);border-radius:var(--r-pill);background:var(--salle-3);
+  color:var(--texte);font:var(--t-sm) var(--f-texte);cursor:pointer;}
+@media(hover:hover){.appnav-q button:hover{background:var(--salle-4);}}
+.appnav-q button:active{background:var(--salle-4);}
+.appnav-q kbd{font:var(--t-xs) var(--f-donnees);color:var(--graphite);
+  border:var(--trait);border-radius:var(--r-sm);padding:1px 5px;}
 @media(max-width:560px){
   .appnav{gap:2px;padding:8px 8px;}
   .appnav .brand span.t{display:none;}
   .appnav a.tab{padding:7px 10px;font-size:13px;}
+  /* Telephone : le champ passe en DERNIER et prend le reste de la ligne ou
+     Reglages est tombe — deux lignes de barre, pas trois (mesure a 390 px :
+     128 px avec le champ seul sur sa ligne, contre ~84 px ainsi). */
+  .appnav-q{margin-left:0;flex:1 1 160px;order:1;}
+  .appnav-q input{flex:1;width:auto;}
+  .appnav-q kbd{display:none;}
   .netbusy{right:10px;bottom:10px;padding:8px 13px;font-size:12px;}
 }
 </style>"""
@@ -6346,40 +6368,19 @@ APP_NAV_HTML = """<nav class="appnav">
   <a class="tab" data-p="/map" href="/map">&#128506;&#65039; Carte</a>
   <a class="tab" data-p="/sujets" href="/sujets">&#128450;&#65039; Sujets</a>
   <span class="sp"></span>
+  <form class="appnav-q" role="search" action="/files" method="get">
+    <label class="hors-ecran" for="appnav-q">Recherche IA : d&eacute;cris la photo</label>
+    <input type="search" id="appnav-q" name="q" placeholder="D&eacute;cris la photo&hellip;"
+           autocomplete="off" title="Recherche IA sur toute la phototh&egrave;que (raccourci : /)">
+    <button type="submit" aria-label="Chercher">&#128269;</button>
+    <kbd aria-hidden="true" title="Raccourci clavier">/</kbd>
+  </form>
   <a class="tab" data-p="/reglages" href="/reglages">&#9881;&#65039; R&eacute;glages</a>
 </nav>
 <div class="netbusy" role="status" aria-live="polite" aria-hidden="true">
   <span class="netbusy__s" aria-hidden="true"></span><span>Traitement en cours&hellip;</span>
 </div>
-<script>(function(){var p=location.pathname;
-  // Fusion « Sujets » (ROADMAP #4) : /people et /pets sont des vues
-  // specialisees de Sujets — l'onglet Sujets reste allume quand on y est.
-  if(p.indexOf('/people')===0 || p.indexOf('/pets')===0) p='/sujets';
-  document.querySelectorAll('.appnav a.tab').forEach(function(a){
-    var d=a.getAttribute('data-p');
-    if(p===d || (d!=='/'&&p.indexOf(d)===0)) a.classList.add('active');
-  });})();</script>
-<script>(function(){
-  // Indicateur d'activite reseau : enrobe window.fetch pour compter les requetes
-  // en vol (tous les appels de l'appli passent par fetch, y compris post()). Un
-  // delai de 250 ms evite un clignotement sur les requetes instantanees (ex.
-  // sondages de statut) ; seul un vrai temps d'attente affiche le sablier. Les
-  // vignettes se chargent via <img>, pas fetch -> elles ne le declenchent pas.
-  var pending=0, timer=null;
-  function el(){ return document.querySelector('.netbusy'); }
-  function show(){ var b=el(); if(b){ b.classList.add('on'); b.setAttribute('aria-hidden','false'); } }
-  function hide(){ var b=el(); if(b){ b.classList.remove('on'); b.setAttribute('aria-hidden','true'); } }
-  if(!window.fetch) return;
-  var orig=window.fetch;
-  window.fetch=function(){
-    pending++;
-    if(pending===1){ clearTimeout(timer); timer=setTimeout(show, 250); }
-    function done(){ pending--; if(pending<=0){ pending=0; clearTimeout(timer); hide(); } }
-    return orig.apply(this, arguments).then(
-      function(r){ done(); return r; },
-      function(e){ done(); throw e; });
-  };
-})();</script>"""
+<!-- l'onglet actif et le sablier reseau vivent dans ui/global.js, la brique commune -->"""
 
 
 # Sous-navigation « Sujets » (ROADMAP #2 : guichet unique). UNE source, injectée
@@ -6509,6 +6510,64 @@ def ui_shared_css():
                             "\n</style>") if parts else ""
         _UI_CACHE["sig"] = sig
     return _UI_CACHE["css"]
+
+
+# ─── La brique JS commune (1 duodecies) ──────────────────────────────────────
+# ui/global.js, injectee sur CHAQUE page par _send_html juste apres la barre
+# (<!--APPNAV-->), sinon avant </body>. Meme contrat que le CSS partage : une
+# seule source, relue si elle change, cuite par bundle.py, chaine vide si ui/
+# est absent — le serveur sert alors des pages sans onglet allume ni sablier,
+# mais il sert. Le formulaire de recherche de la barre n'en depend PAS.
+_UI_JS_FILES = ("global.js",)
+_UI_JS_CACHE = {"js": None, "sig": None}
+
+
+def _js_signature():
+    sig = []
+    for name in _UI_JS_FILES:
+        try:
+            st = (UI_DIR / name).stat()
+            sig.append((name, int(st.st_mtime), st.st_size))
+        except OSError:
+            sig.append((name, 0, 0))
+    return tuple(sig)
+
+
+def ui_shared_js():
+    """Bloc <script id="ui-global"> a injecter dans chaque page. Mis en cache,
+    recharge si ui/global.js a change. Chaine vide si ui/ absent."""
+    sig = _js_signature()
+    if _UI_JS_CACHE["sig"] != sig:
+        parts = []
+        for name in _UI_JS_FILES:
+            try:
+                txt = (UI_DIR / name).read_text(encoding="utf-8")
+            except Exception:
+                txt = ""
+            # Un « </script> » dans la source fermerait le bloc a mi-chemin.
+            txt = txt.replace("</script", "<\\/script")
+            if txt.strip():
+                parts.append(f"/* {name} */\n{txt}")
+        _UI_JS_CACHE["js"] = ('<script id="ui-global">\n' + "\n".join(parts) +
+                              "\n</script>") if parts else ""
+        _UI_JS_CACHE["sig"] = sig
+    return _UI_JS_CACHE["js"]
+
+
+def injecter_js_commun(html_str, bloc):
+    """Pose le bloc JS commun UNE fois : juste apres la barre (le sablier doit
+    enrober `fetch` AVANT les scripts de la page, et l'onglet s'allume sans
+    attendre la fin de l'analyse), sinon avant </body>. Regle pure."""
+    if not bloc or 'id="ui-global"' in html_str:
+        return html_str
+    debut_nav = html_str.find('<nav class="appnav">')
+    fin_nav = html_str.find('</nav>', debut_nav) if debut_nav >= 0 else -1
+    if fin_nav >= 0:
+        k = fin_nav + len('</nav>')
+        return html_str[:k] + bloc + html_str[k:]
+    if '</body>' in html_str:
+        return html_str.replace('</body>', bloc + '</body>', 1)
+    return html_str
 
 
 # ─── Gabarits de pages sortis du monolithe (point 7) ─────────────────────────
@@ -13335,6 +13394,7 @@ class Handler(BaseHTTPRequestHandler):
                                         ui_composants_css(), 1)
         if '<!--APPNAV-->' in html_str:
             html_str = html_str.replace('<!--APPNAV-->', APP_NAV_HTML)
+        html_str = injecter_js_commun(html_str, ui_shared_js())
         # Sous-navigation Sujets (guichet unique) : /sujets, /people, /pets.
         if '<!--SUJETSNAV-->' in html_str:
             html_str = html_str.replace('<!--SUJETSNAV-->', SUJETS_NAV_HTML)
