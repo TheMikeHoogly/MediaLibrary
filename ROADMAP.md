@@ -192,7 +192,18 @@ la copie rangée par année. **18 copies portent un nom que la canonique n'a
 pas** (Mike, Zab, Florine, Gaétan, Mutz…) : à recopier AVANT tout retrait.
 Rapport complet, groupe par groupe : `docs/doublons_image.json`. **Tranché
 par Mike le 30/08 : on passe à l'applicateur** (à blanc → quarantaine
-réversible avec manifeste, serveur arrêté, Flo+Mike d'abord). Le
+réversible avec manifeste, serveur arrêté, Flo+Mike d'abord). **ÉCRIT le
+30/08 matin** : `verifier_doublons_image.py` (aperçu, famille du banc) +
+`appliquer_doublons_image.py` (noms d'abord dans le XMP puis l'index, sinon la
+copie est GARDÉE ; texte IA hérité par une canonique VIDE seulement — règle de
+Mike ; décisions humaines FUSIONNÉES sur la canonique, un visage seulement si
+la détection existe en face ; corbeille `dedup_image_<date>` + manifeste bat
+24 ; `--undo`), test vert qui rougit sur trois mutations, **bat 40**.
+**Aperçu à blanc TOURNÉ sur le NAS** (agent banc, 10 s) : lot 1 = 833 groupes,
+894 retraits, 3,55 Go, **0 sauté**, 4 noms à recopier (index du jour).
+**Reste : le geste de Mike (bat 40, serveur arrêté), puis observer** :
+compteurs des fiches inchangés, index −894 avec motif, `verifier_photos_google`
+inchangé. Le
 dédoublonnage n'a vu que les copies IDENTIQUES AU BIT (`recensement_doublons`
 : 0 groupe restant le 23/08). Or **mesuré sur une copie de l'index (29/08)** :
 **3 818** groupes de photos prises la MÊME SECONDE (8 582 clés), dont

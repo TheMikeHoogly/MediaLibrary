@@ -9,57 +9,53 @@ FUSIONNÉ — ce document, non. Puis `ROADMAP.md`, `eval/DECISIONS.md`,
 `eval/METHODE.md` — et `docs/DECISIONS_OUTILLAGE.md` si le sujet touche aux
 canaux, à la livraison ou au MCP. Débrief en 2–3 lignes, puis on attaque.
 
-## Où on en est (30/08/2026, matin — après la session 66 et sa nuit)
+## Où on en est (30/08/2026, session 67 — l'applicateur des doublons est écrit)
 
-**Git** : tout fusionné jusqu'à `docs/deux-questions-pour-le-matin` (la
-nuit : vidéos phase 1 + deux bancs + docs, livrés le matin sur ordre de
-Mike) — vérifier `.git/logs/refs/heads/main`. **Serveur** : tourne sur ce
-code depuis 23:54 (index **47 789** dont **4 086 vidéos**), zéro fil mort,
-porte fermée (comptes Mike, Flo). **Carnet `QUESTIONS_MIKE.md` : vide.**
+**Git** : tout fusionné jusqu'à `docs/l-amorce-du-30-08` (`5a514a9`) au début
+de la session ; cette session livre `feat/applicateur-doublons-image` —
+vérifier `.git/logs/refs/heads/main`. **Serveur** : tourne depuis 23:54 sur
+le code de la nuit (index **47 789** dont 4 086 vidéos), non redémarré (rien
+dans `server.py` n'a bougé). **Carnet `QUESTIONS_MIKE.md` : vide.**
 
-**Chantier 17** : étapes 1→6 posées et observées (comptes, vue par
-utilisateur, écriture restreinte, corbeille à 6 mois sur le NAS
-`Photos\.corbeille-effacements`). Reste : étape 7 (onboarding ; `/upload`
-sous un compte devrait atterrir chez l'envoyeur, pas dans `_Uploads`),
-conflit de `faces` ENTRE fiches, contrôle 403 « photo partagée » du banc
-(`verifier_non_fuite.py --cle-partagee`).
+**Doublons (1 decies) — ÉCRIT, TESTÉ, APERÇU TOURNÉ, PAS APPLIQUÉ** :
+`verifier_doublons_image.py` (aperçu lecture seule, famille du banc, `--base
+copie.db` pour les noms du jour), `appliquer_doublons_image.py` (serveur
+arrêté et prouvé ; noms d'abord XMP+index sinon copie GARDÉE ; texte IA
+hérité par une canonique VIDE seulement ; décisions fusionnées sur la
+canonique ; corbeille `.corbeille-rangement\dedup_image_<date>` + manifeste ;
+`--undo`), `test_appliquer_doublons_image.py` (vert, rougit sur 3 mutations),
+**bat 40**. Aperçu réel (agent banc, 10 s) : **lot 1 = 833 groupes, 894
+retraits, 3,55 Go, 0 sauté, 4 noms à recopier** ; tout = 2 929 / 10,45 Go / 18
+noms. **Rien n'a bougé sur le NAS.**
 
-**Vidéos phase 1 (1 octies)** : indexées par le scan, jamais taguées,
-image-clé ffmpeg, badge « ▶ m:ss », `<video>` dans la visionneuse. **La
-LECTURE n'a pas été observée** (onglet Chrome caché) — un clic de Mike.
-
-**Doublons (1 decies)** : MESURÉ — 2 757 groupes identiques au pixel, 2 929
-retraits, 10,45 Go, 18 noms à recopier d'abord (`docs/doublons_image.json`).
-**Mike a tranché : on passe à l'applicateur.** Rien n'a bougé.
-
-**Recherche IA (1 nonies)** : MESURÉ — FR 0,583 / EN 0,683 / FR+EN 0,663,
-gabarit 0,551 (rappel@200, 40 paires). **Mike a tranché : élargir FR→EN,
-retirer le gabarit.**
+**Chantier 17** : étapes 1→6 posées. Reste : étape 7 (onboarding ; `/upload`
+sous un compte → chez l'envoyeur), conflit de `faces` ENTRE fiches, contrôle
+403 « photo partagée » du banc. **Vidéos phase 1** : la LECTURE n'a pas été
+observée (un clic de Mike). **Recherche IA** : Mike a tranché « élargir
+FR→EN, retirer le gabarit » — pas commencé.
 
 ## Prochain pas
 
-1. **Doublons : `appliquer_doublons_image.py`** — lit `docs/doublons_image.json`,
-   **à blanc par défaut** (aperçu : qui part, qui reste, noms/GPS recopiés),
-   `--appliquer` = quarantaine réversible dans `.corbeille-rangement` du NAS
-   AVEC `manifeste.json` (canonique, sha256) pour que `purger_corbeille.py`
-   (30 j) le reconnaisse ; serveur ARRÊTÉ et prouvé (modèle bat 26 :
-   `appliquer_plan_annee`), re-clé/fusion des décisions par `recle_decisions`
-   + `auteurs`, journal d'undo `docs/undo_doublons_*.json`, bat 40.
-   Ordre : les **833 groupes Flo+Mike** d'abord (`--entre-proprietaires`),
-   les 18 copies à noms recopiées AVANT le déplacement (règle 2, un test le
-   prouve). Puis observer : compteurs des fiches inchangés, `verifier_photos_google`
-   inchangé, index −2 929 avec motif déclaré.
+1. **Le geste de Mike : bat 40** (serveur arrêté — `arret` dans
+   `_commande_serveur.txt` puis vérifier `_journal_serveur.log`), lot 1
+   d'abord ; puis `marche`, et **OBSERVER** : `/api/serveur` index −894,
+   compteurs des fiches (`/api/people/list`, `/api/pets`) inchangés,
+   `verifier_photos_google` inchangé, les 4 noms présents sur les canoniques
+   (`/api/faits?key=…`), `docs/undo_doublons_*.json` relu par
+   `journaux_deplacements.chaines`. Un petit lot `--limite 20` avant, si on
+   veut voir avant de croire.
 2. **Recherche IA : l'élargissement FR→EN** dans `semantic_search` —
-   dictionnaire par co-occurrence des `kw_fr`/`kw_en` (calculé au
-   démarrage, secondes ; mot par mot ET phrase entière), requête = moyenne
-   des vecteurs FR et EN, gabarit retiré ; **re-mesurer avec
-   `mesure_requete_fr_en.py` AVANT/APRÈS** (même banc, même copie) et
-   observer « ours en peluche », « sol », « roche » en réel.
-3. **Vidéos** : faire LIRE une vidéo à Mike (galerie → clic) ; puis phase 2
-   (tagging sur image-clé) seulement après.
-4. `ROADMAP.md` à réduire AVEC Mike (~1 500 lignes, rôle = carte).
-5. 9 septembre : Windows a-t-il demandé ? (`Get-WinEvent … Id=1074`).
-6. Règle Motion Photo (1 septies), chantier 18, panneau `?`, UNIFIER le re-clé.
+   dictionnaire par co-occurrence des `kw_fr`/`kw_en` (calculé au démarrage),
+   requête = moyenne des vecteurs FR et EN, gabarit retiré ; re-mesurer avec
+   `mesure_requete_fr_en.py` AVANT/APRÈS et observer « ours en peluche »,
+   « sol », « roche » en réel.
+3. **« calico »** : un mot anglais dans le texte FR du tagueur (Caline) — à
+   bannir/traduire dans la post-traduction, puis re-tagger les copies
+   touchées ; mesurer combien de textes FR en portent avant de coder.
+4. **Vidéos** : faire LIRE une vidéo à Mike ; puis phase 2.
+5. `ROADMAP.md` à réduire AVEC Mike (~1 500 lignes, rôle = carte).
+6. 9 septembre : Windows a-t-il demandé ? (`Get-WinEvent … Id=1074`).
+7. Règle Motion Photo (1 septies), chantier 18, panneau `?`, UNIFIER le re-clé.
 
 ## En fin de projet
 
