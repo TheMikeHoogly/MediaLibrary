@@ -112,9 +112,8 @@ valeur d'abord :
   73,7 Go, 3 066 datées par le nom, 7 par ExifTool, **0 sans date**, 0 conflit,
   → `Photos Mike\2016…2026` (2024 : 1 509). Question à Mike : les 5 vidéos de
   `180328 Samsung Floflo` vont chez Mike par la règle 17c (`QUESTIONS_MIKE.md`).
-- **Phase 1 — les vidéos dans la GALERIE : POSÉE, traite du 29→30/08
-  (branche `feat/les-videos-dans-la-galerie`, à FUSIONNER par Mike après
-  son regard)**. Observé : le scan a indexé **4 086 vidéos** (index 43 703 →
+- **Phase 1 — les vidéos dans la GALERIE : POSÉE, LIVRÉE (30/08 matin,
+  fusion demandée par Mike)**. Observé : le scan a indexé **4 086 vidéos** (index 43 703 →
   47 789, +4 086 / −0, 8 min d'ExifTool `-fast` une fois), zéro fil mort,
   `/api/faits` date « 5 mars 2016 (exif) », `/api/thumb` rend l'image-clé
   ffmpeg (200, 22 Ko), badge « ▶ 0:11 » sur 11 vignettes du 5 mars, la
@@ -159,7 +158,7 @@ tourner** — **TOURNÉ (30/08 00:40, 50 s)** : sur 40 paires, rappel@200
 sans toucher au modèle ; le dictionnaire est DÉJÀ dans l'index (les paires
 `kw_fr`/`kw_en` du tagueur, celles-là mêmes qui ont servi de vérité — à
 extraire par co-occurrence, 0 dépendance) ; retirer le gabarit. Reste à
-trancher par Mike puis à câbler dans `semantic_search`. Deux défauts vus et corrigés le soir même, sur ses captures : (a) sur
+câbler dans `semantic_search` (**tranché par Mike le 30/08 : oui**). Deux défauts vus et corrigés le soir même, sur ses captures : (a) sur
 une grille qui est un RÉSULTAT (`?jour=`, `?sim=`), la recherche IA
 intersectait la grille avec les 200 plus proches du FONDS — « ours en
 peluche » sur un 11 avril rendait **0** ; règle du 21/08 étendue (Entrée
@@ -191,7 +190,9 @@ propriétaires (Indonésie 472, Calinous 236 → canonique chez Mike, règle du
 134), 112 groupes sans copie chez Mike (Flo seule, Papa) où la canonique est
 la copie rangée par année. **18 copies portent un nom que la canonique n'a
 pas** (Mike, Zab, Florine, Gaétan, Mutz…) : à recopier AVANT tout retrait.
-Rapport complet, groupe par groupe : `docs/doublons_image.json`. Le
+Rapport complet, groupe par groupe : `docs/doublons_image.json`. **Tranché
+par Mike le 30/08 : on passe à l'applicateur** (à blanc → quarantaine
+réversible avec manifeste, serveur arrêté, Flo+Mike d'abord). Le
 dédoublonnage n'a vu que les copies IDENTIQUES AU BIT (`recensement_doublons`
 : 0 groupe restant le 23/08). Or **mesuré sur une copie de l'index (29/08)** :
 **3 818** groupes de photos prises la MÊME SECONDE (8 582 clés), dont

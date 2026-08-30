@@ -14,25 +14,4 @@
 
 ## En attente
 
-### 1. Les 2 929 doublons identiques : on passe à l'applicateur ? (30/08 nuit)
-Mesuré (`docs/doublons_image.json`) : 2 757 groupes aux mêmes pixels, 10,45 Go
-à rendre, canonique par ta règle (Mike ; sinon la copie rangée par année),
-18 noms à recopier avant retrait, 233 groupes différents laissés tels quels.
-**Recommandation** : un `appliquer_doublons_image.py` à blanc d'abord
-(aperçu : qui part, qui reste, ce qui est recopié), puis quarantaine
-réversible dans `.corbeille-rangement` avec manifeste (la purge à 30 j
-existante s'applique), serveur ARRÊTÉ comme bat 26, journal d'undo. Commencer
-par les 833 groupes Flo+Mike (Indonésie, Calinous) : c'est là que ta règle
-tranche. En attendant : rien ne bouge.
-
-### 2. Recherche IA : élargir la requête française par l'anglais ? (30/08 nuit)
-Mesuré : EN bat FR sur 33 paires sur 40 (+17 % de rappel), FR+EN rattrape
-80 % de l'écart, et le gabarit « une photo de … » fait perdre 3 points.
-**Recommandation** : (a) retirer le gabarit ; (b) dictionnaire FR→EN tiré
-des paires `kw_fr`/`kw_en` de l'index (co-occurrence, aucune dépendance),
-requête élargie = moyenne des vecteurs FR et EN, mot par mot et sur la
-phrase entière ; (c) re-mesurer avec le même banc AVANT/APRÈS. Coût : un
-dictionnaire recalculé au démarrage (secondes). Ce que ça ne règle pas :
-« ours en peluche » n'est pas un tag fréquent — la phrase entière passe
-alors telle quelle, comme aujourd'hui.
-
+*(vide — 30/08 matin : l'applicateur des doublons et l'élargissement FR→EN de la recherche tranchés par Mike « ok pour tes recommandations », verdicts dans `eval/DECISIONS.md`)*
