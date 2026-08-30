@@ -3167,14 +3167,29 @@ def _sync_dir(label, cur, own_keys, first=False, deep=False):
         # file de tagging IA — rien n'est perdu, rien n'est marqué.
         existing, _vus = read_existing_metadata([cur[k] for k in unknown],
                                                 progress=first)
-        n_import = n_queue = 0
+        # Le XMP porte UNE liste : `kw_fr + kw_en` telle que write_metadata
+        # l'a écrite. Relue entière dans `kw_fr` avec un `kw_en` vide, elle a
+        # fait 22 196 entrées « anglaises » (52 %, mesure du 30/08). On la
+        # scinde à la relecture, par la règle pure `scission_fr_en` (les
+        # vocabulaires s'apprennent sur l'index déjà là : 22 190 / 22 196 sur
+        # la copie). Sans index sain (premier démarrage à vide), rien ne vote
+        # et tout reste en `kw_fr`, comme avant.
+        import scission_fr_en
+        vfr, ven = scission_fr_en.vocabulaires(STORE.data) if existing else ({}, {})
+        n_import = n_queue = n_scinde = 0
         for k in unknown:
             p = cur[k]
             size, mtime = _stat_of(p)
             meta = existing.get(_pkey(p))
             if meta:
                 kw, desc = meta
-                STORE.set(k, {"kw_fr": kw, "kw_en": [], "desc": desc,
+                kw_en = []
+                if vfr:
+                    r = scission_fr_en.scinder_entree({"kw_fr": kw, "kw_en": []}, vfr, ven)
+                    if r:
+                        kw, kw_en = r[0], r[1]
+                        n_scinde += 1
+                STORE.set(k, {"kw_fr": kw, "kw_en": kw_en, "desc": desc,
                               "in_file": True, "at": time.time(),
                               "size": size, "mtime": mtime,
                               "imported": True}, save=False)
@@ -3184,7 +3199,8 @@ def _sync_dir(label, cur, own_keys, first=False, deep=False):
                 n_queue += 1
         STORE.save()
         print(f"  🏷  {label} : {n_queue} photo(s) à taguer"
-              + (f", {n_import} importée(s)" if n_import else ""))
+              + (f", {n_import} importée(s)" if n_import else "")
+              + (f" dont {n_scinde} FR/EN scindée(s)" if n_scinde else ""))
     elif first and not moved:
         print(f"  🏷  {label} : rien de nouveau à taguer")
 
@@ -3375,6 +3391,55 @@ def _semantic_mod():
         except Exception:
             pass
     return semantic
+
+
+_DICO_FR_EN = {'dico': None, 'quand': 0.0}
+DICO_FR_EN_TTL_S = 6 * 3600
+
+
+def dico_fr_en():
+    """Le dictionnaire FR→EN appris sur l'index (`elargissement_fr_en`),
+    reconstruit au plus toutes les 6 h — 1,7 s sur 42 714 entrées, 2 339
+    paires le 30/08. Mesuré sur la copie (`mesure_elargissement.py`) :
+    rappel@200 de la requête française 0,583 → 0,658 avec l'élargissement,
+    pour un plafond idéal de 0,663 (Mike a tranché l'élargissement le 30/08).
+    Jamais None après le premier appel : un index vide donne un dictionnaire
+    vide, et la requête part seule, comme avant."""
+    import elargissement_fr_en
+    maintenant = time.time()
+    if _DICO_FR_EN['dico'] is None or maintenant - _DICO_FR_EN['quand'] > DICO_FR_EN_TTL_S:
+        try:
+            # Instantané sous STORE.lock : le scan et le tagueur écrivent
+            # l'index pendant qu'on le lit (« dictionary changed size »).
+            with STORE.lock:
+                entrees = list(STORE.data.values())
+            t0 = time.time()
+            _DICO_FR_EN['dico'] = elargissement_fr_en.Dictionnaire(entrees)
+            print(f"  📖 dictionnaire FR→EN : {len(_DICO_FR_EN['dico'])} paire(s) apprises sur "
+                  f"{_DICO_FR_EN['dico'].n_photos} photo(s) bilingues, {time.time() - t0:.1f} s")
+        except Exception as e:                                    # noqa: BLE001
+            print(f"  ! dictionnaire FR→EN : {e}")
+            _DICO_FR_EN['dico'] = elargissement_fr_en.Dictionnaire()
+        _DICO_FR_EN['quand'] = maintenant
+    return _DICO_FR_EN['dico']
+
+
+def encoder_requete(sem, texte, detail=None):
+    """Le vecteur d'une requête texte : la requête ET sa forme anglaise
+    (élargissement FR→EN, moyenne des deux vecteurs normée — la forme
+    `fr+en` du banc), ou la requête seule quand rien n'est connu. `detail`
+    reçoit `elargi` : ce que le moteur a ajouté, pour le DIRE."""
+    import elargissement_fr_en
+    import numpy as np
+    textes = elargissement_fr_en.formes(dico_fr_en(), texte)
+    if detail is not None:
+        detail['elargi'] = textes[1] if len(textes) > 1 else None
+    with SEMANTIC_LOCK:            # le modèle n'est pas réentrant
+        V = sem.encoder_textes(textes)
+    if len(textes) == 1:
+        return V[0]
+    q = V.mean(axis=0)
+    return q / (np.linalg.norm(q) or 1.0)
 
 
 def photo_vectors():
@@ -5024,12 +5089,10 @@ def semantic_search(requete, limite=80, detail=None):
                 detail['total'] = len(ordre)
                 detail['tronque'] = max(0, len(ordre) - int(limite))
             return [(k, 1.0) for k in ordre[:limite]]
-        with SEMANTIC_LOCK:
-            q = sem.encoder_textes([reste])[0]
+        q = encoder_requete(sem, reste, detail)
         return vs.search(sem.KIND, q, limite=limite, restreindre=candidats)
 
-    with SEMANTIC_LOCK:            # le modèle n'est pas réentrant
-        q = sem.encoder_textes([requete])[0]
+    q = encoder_requete(sem, requete, detail)
     return vs.search(sem.KIND, q, limite=limite)
 
 
@@ -11326,7 +11389,11 @@ class Handler(BaseHTTPRequestHandler):
              # réinventer le plafond muet à l'autre bout.
              'total': detail.get('total'),
              'tronque': detail.get('tronque'),
-             'reste': detail.get('reste', requete)},
+             'reste': detail.get('reste', requete),
+             # L'élargissement FR→EN (30/08) : ce que le moteur a encodé EN
+             # PLUS de la requête, ou null. Un moteur qui ajoute des mots
+             # sans le dire serait un plafond muet d'un autre genre.
+             'elargi': detail.get('elargi')},
             ensure_ascii=False).encode(), 'application/json')
 
     def _serve_similar(self):
@@ -11486,6 +11553,13 @@ class Handler(BaseHTTPRequestHandler):
     def _serve_semantic_status(self):
         etat = dict(SEMANTIC_STATE)
         etat['total'] = len(STORE.data)
+        # L'élargissement FR→EN (30/08) : taille du dictionnaire appris, pour
+        # que « elargi: null » se lise (dictionnaire vide ? jamais construit ?)
+        # au lieu de se deviner.
+        d = _DICO_FR_EN.get('dico')
+        etat['dico_fr_en'] = None if d is None else {
+            'paires': len(d), 'photos': d.n_photos,
+            'construit': time.strftime('%H:%M:%S', time.localtime(_DICO_FR_EN['quand']))}
         # Rendre l'ordonnancement OBSERVABLE : sans ça, un travail affamé
         # ressemble à un travail lent, et on cherche au mauvais endroit.
         try:

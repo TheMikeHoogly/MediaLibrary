@@ -11,9 +11,10 @@ canaux, à la livraison ou au MCP. Débrief en 2–3 lignes, puis on attaque.
 
 ## Où on en est (30/08/2026, session 67 — l'applicateur des doublons est écrit)
 
-**Git** : tout fusionné jusqu'à `docs/l-amorce-du-30-08` (`5a514a9`) au début
-de la session ; cette session livre `feat/applicateur-doublons-image` —
-vérifier `.git/logs/refs/heads/main`. **Serveur** : tourne depuis 23:54 sur
+**Git** : fusionné jusqu'à `feat/elargissement-fr-en` — vérifier
+`.git/logs/refs/heads/main`. Serveur redémarré 13:45 sur ce code (index
+46 895), scission à la relecture XMP chargée (pas encore exercée : aucun
+nouveau fichier importé depuis). **Serveur** : tourne depuis 23:54 sur
 le code de la nuit (index **47 789** dont 4 086 vidéos), non redémarré (rien
 dans `server.py` n'a bougé). **Carnet `QUESTIONS_MIKE.md` : vide.**
 
@@ -35,6 +36,10 @@ APPLIQUÉ** : 22 196 entrées (52 %) à `kw_en` vide = XMP relu entier dans
 22 190 scindables sur la copie. Reste : le geste de Mike, puis brancher la
 règle dans le serveur à la relecture d'un XMP (sinon un rescan re-mélange).
 
+**Recherche IA (1 nonies)** : élargissement FR→EN **OBSERVÉ** (13:46 :
+2 276 paires, « ours en peluche (+ teddy bear) » 1 500 photos) et le faux
+« 0 photo » de `/files` corrigé (IA toujours côté serveur). Livré.
+
 **Chantier 17** : étapes 1→6 posées. Reste : étape 7 (onboarding ; `/upload`
 sous un compte → chez l'envoyeur), conflit de `faces` ENTRE fiches, contrôle
 403 « photo partagée » du banc. **Vidéos phase 1** : la LECTURE n'a pas été
@@ -51,11 +56,9 @@ FR→EN, retirer le gabarit » — pas commencé.
    (`/api/faits?key=…`), `docs/undo_doublons_*.json` relu par
    `journaux_deplacements.chaines`. Un petit lot `--limite 20` avant, si on
    veut voir avant de croire.
-2. **Recherche IA : l'élargissement FR→EN** dans `semantic_search` —
-   dictionnaire par co-occurrence des `kw_fr`/`kw_en` (calculé au démarrage),
-   requête = moyenne des vecteurs FR et EN, gabarit retiré ; re-mesurer avec
-   `mesure_requete_fr_en.py` AVANT/APRÈS et observer « ours en peluche »,
-   « sol », « roche » en réel.
+2. **La recherche IA visible dans tous les onglets** (1 duodecies, Mike
+   30/08) : la brique JS commune (`_UI_GLOBAL_FILES`) + un champ dans la barre
+   qui renvoie `/files?q=`. Puis le panneau `?` sur la même brique.
 3. **Bat 41** (scission FR/EN, index seul) — avant `marche`, après bat 40 ;
    puis observer les puces d'une photo de juillet et la recherche « chaise ».
    Ensuite : le serveur doit scinder lui-même à la relecture d'un XMP

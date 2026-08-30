@@ -390,6 +390,14 @@ __FOLDERS__
   // avec les 200 plus proches du FONDS : « ours en peluche » sur la page d'un
   // 11 avril rendait 0 (29/08). Meme regle que SEARCHQ : Entree relance.
   var GRILLE_RESULTAT = __GRILLE_RESULTAT__ === 1;
+  // 30/08 (Mike) : « ours en peluche » tape sur /files rendait 0 photo. La
+  // grille par defaut est le dossier _Uploads (20 photos) et une recherche IA
+  // « dedans » n'intersectait que ce dossier avec les 200 plus proches du
+  // FONDS. Aucune grille n'est le fonds entier (1 500 au plus) : une
+  // recherche IA passe donc TOUJOURS par le serveur (/files?q=), qui classe
+  // le fonds et compte vrai. Le « filtrer dans cette grille » honnete (classer
+  // la grille entiere) reste a faire — ROADMAP 1 nonies.
+  var IA_PAR_LE_SERVEUR = true;
   var SEARCHMETA = __SEARCHMETA__;  // ce que le serveur a compris de SEARCHQ ({} sinon)
   var MOTIFS = __MOTIFS__;
   var sorted = FILES.slice();
@@ -414,14 +422,14 @@ __FOLDERS__
     // a 354 (observe le 21/08). On attend une intention explicite. Hors mode
     // IA, la barre FILTRE des mots-cles dans la planche : la, filtrer dans ce
     // qui est charge est exactement ce qu'on demande.
-    if (modeIA && (SEARCHQ || GRILLE_RESULTAT)) { majIndiceRelance(); return; }
+    if (modeIA && (SEARCHQ || GRILLE_RESULTAT || IA_PAR_LE_SERVEUR)) { majIndiceRelance(); return; }
     qTimer = setTimeout(modeIA ? rechercheIA : applyFilter, modeIA ? 450 : 250);
   });
   qInput.addEventListener('keydown', function(e) {
     if (e.key !== 'Enter') return;
     e.preventDefault();
     if (qTimer) clearTimeout(qTimer);
-    if (modeIA && (SEARCHQ || GRILLE_RESULTAT)) { relancerCoteServeur(qInput.value); return; }
+    if (modeIA && (SEARCHQ || GRILLE_RESULTAT || IA_PAR_LE_SERVEUR)) { relancerCoteServeur(qInput.value); return; }
     if (modeIA) rechercheIA(); else applyFilter();
   });
 
@@ -436,7 +444,7 @@ __FOLDERS__
   function majIndiceRelance() {
     var el = document.getElementById('relance');
     if (!el) return;
-    var differe = modeIA && (SEARCHQ || GRILLE_RESULTAT) && qInput.value.trim() !== SEARCHQ
+    var differe = modeIA && (SEARCHQ || GRILLE_RESULTAT || IA_PAR_LE_SERVEUR) && qInput.value.trim() !== SEARCHQ
                   && qInput.value.trim() !== '';
     el.style.display = differe ? '' : 'none';
   }
@@ -478,7 +486,10 @@ __FOLDERS__
       bouts.push('filtre inconnu : ' + d.axes_inconnus.join(': , ')
                  + ': (aucune photo)');
     if (d.periode) bouts.push(d.periode);
-    if (d.reste) bouts.push(d.reste);
+    // L'elargissement FR->EN (30/08) : le moteur encode AUSSI la forme
+    // anglaise de la requete quand il la connait ; il le dit ici, entre
+    // parentheses, pour que « ours en peluche (+ teddy bear) » se lise.
+    if (d.reste) bouts.push(d.reste + (d.elargi ? ' (+ ' + d.elargi + ')' : ''));
     iaCompris = bouts.join(' · ');
     iaEcartees = d.sans_date || 0;
     iaSansOrdre = d.sans_date_tri || 0;
@@ -529,7 +540,7 @@ __FOLDERS__
     // « 3 photos » la ou le fonds en a 349 — un compte qui ment, la forme
     // d'erreur la plus chere du projet. Une puce cliquee est une intention
     // EXPLICITE : on relance la requete cote serveur.
-    if (SEARCHQ || GRILLE_RESULTAT) { relancerCoteServeur(apres); return; }
+    if (SEARCHQ || GRILLE_RESULTAT || IA_PAR_LE_SERVEUR) { relancerCoteServeur(apres); return; }
     if (apres) rechercheIA(); else { iaResultats = null; majEspeceChips([]);
                                      oublierPertinence(); }
   }
@@ -580,7 +591,10 @@ __FOLDERS__
     // Sans classement, « Pertinence » n'a plus de sens : on retombe sur la date
     // plutot que de laisser un bouton actif sans ordre derriere lui.
     if (currentSort === 'pertinence') { currentSort = ''; sortAsc = true; }
-    if (modeIA && qInput.value.trim()) rechercheIA();
+    if (modeIA && qInput.value.trim()) {
+      if (IA_PAR_LE_SERVEUR) { relancerCoteServeur(qInput.value); return; }
+      rechercheIA();
+    }
     else if (currentSort === '') sortBy('date');
     else { updateSortButtons(); applyFilter(); }
     if (modeIA) qInput.focus();

@@ -146,33 +146,25 @@ valeur d'abord :
   29/08) — la phase 1 peut commencer sans installation. **Dépendance** : Phase 0 profite du
   correctif `cible()` (rangement par propriétaire) déjà posé.
 
-**1 nonies. L'INTELLIGENCE de la recherche IA (demandé par Mike le 29/08 au
-soir).** Banc écrit dans la nuit : `mesure_requete_fr_en.py --base copie.db`
-(rappel@200 / @1500 de la requête FR, EN, FR+EN, « une photo de … » ; vérité
-= paires de tags fr/en du tagueur, 40 paires, encodeur CPU) — **à faire
-tourner** — **TOURNÉ (30/08 00:40, 50 s)** : sur 40 paires, rappel@200
-**FR 0,583 · EN 0,683 · FR+EN 0,663** · gabarit « une photo de … » 0,551 ;
-**l'anglais bat le français sur 33/40** (sol 0,00 → 0,63 ; roche 0,06 →
-0,54 ; extérieur 0,26 → 0,60), FR+EN bat FR sur 35/40. Le gabarit NUIT.
-**Verdict** : élargir la requête FR par sa traduction EN vaut +14 % de rappel
-sans toucher au modèle ; le dictionnaire est DÉJÀ dans l'index (les paires
-`kw_fr`/`kw_en` du tagueur, celles-là mêmes qui ont servi de vérité — à
-extraire par co-occurrence, 0 dépendance) ; retirer le gabarit. Reste à
-câbler dans `semantic_search` (**tranché par Mike le 30/08 : oui**). Deux défauts vus et corrigés le soir même, sur ses captures : (a) sur
-une grille qui est un RÉSULTAT (`?jour=`, `?sim=`), la recherche IA
-intersectait la grille avec les 200 plus proches du FONDS — « ours en
-peluche » sur un 11 avril rendait **0** ; règle du 21/08 étendue (Entrée
-relance côté serveur, observé : **1 500**, teddy bear 288) ; (b) les puces
-« Filtres (60 tags) » de TOUTE grille-résultat comptaient les tags du dossier
-`_Uploads`, pas ceux du résultat (mêmes 60 puces sur « Indonésie » 1 002
-photos et sur une requête à 0) — corrigé, observé. **Ce qui reste, à
-mesurer avant de coder** (banc en aveugle, `eval/METHODE.md`) : la requête en
-FRANÇAIS face à un SigLIP qui lit surtout l'anglais (« ours en peluche » →
-« teddy bear » : traduire ou élargir la requête, mesurer le rappel avant/
-après) ; le NOM DE DOSSIER comme indice (`06 EVG Nounours` devrait sortir
-sur « nounours ») ; les synonymes des tags FR/EN déjà là ; et un mode
-« filtrer dans cette grille » HONNÊTE (classer la grille entière, pas le
-top-200 du fonds) pour qui veut vraiment chercher dans une journée.
+**1 nonies. L'INTELLIGENCE de la recherche IA (Mike, 29/08).** **MESURÉ
+(nuit du 30/08, `mesure_requete_fr_en.py`, 40 paires)** : rappel@200 FR 0,583
+· EN 0,683 · FR+EN 0,663, gabarit 0,551 ; l'anglais bat le français 33/40.
+**Tranché par Mike, CÂBLÉ et OBSERVÉ le 30/08** : `elargissement_fr_en.py`
+(dictionnaire FR→EN par co-occurrence, Dice, couverture ≥ 50 % ; règle dans
+`eval/DECISIONS.md`), `mesure_elargissement.py` sur la copie : fr 0,583 →
+**fr+dico 0,658** (idéal 0,663) ; serveur `encoder_requete` (moyenne des
+vecteurs FR et EN), `/api/search` rend `elargi`, la galerie l'affiche.
+Observé 13:46 : « 📖 2 276 paires sur 19 413 photos », « 1 500 photo(s) —
+ours en peluche (+ teddy bear) ». Au premier démarrage le dictionnaire était
+VIDE sans erreur (itération de `STORE.data` pendant le scan, probable) :
+instantané sous `STORE.lock`, ligne 📖, `dico_fr_en` dans
+`/api/search/status`. **Corrigé le même jour** : sur `/files` (grille
+`_Uploads`, 20 photos) la recherche IA rendait 0 — elle relance TOUJOURS
+côté serveur (« ↵ Entrée pour relancer »), observé 1 500. Défauts du 29/08
+(grille-résultat, puces `_Uploads`) : corrigés, récit dans git. **Ce qui
+reste, à mesurer avant de coder** : le NOM DE DOSSIER comme indice (`06 EVG
+Nounours` sur « nounours ») ; les synonymes des tags ; un mode « filtrer dans
+cette grille » HONNÊTE (classer la grille entière, pas le top-200 du fonds).
 
 **1 decies. Les DOUBLONS (demandé par Mike le 29/08 au soir).** **Banc
 écrit et EN COURS dans la nuit** : `mesure_doublons_image.py --base copie.db`
@@ -227,6 +219,13 @@ côté FR ; « calico » (82) est une vraie fuite du vieux tagueur, à re-tagger
 un jour. **Le serveur devrait scinder lui-même** quand il relit un XMP
 (`read_meta_and_gps` → `kw_fr` seul) : à brancher sur `scission_fr_en`, sinon
 le prochain rescan re-mélange.
+
+**1 duodecies. La recherche IA VISIBLE PARTOUT (Mike, 30/08 12:55).** Le champ
+de recherche ne vit que dans la galerie ; Mike veut le trouver sur chaque
+onglet (Dossiers, Carte, Sujets, Photos). C'est un champ dans la barre commune
+qui renvoie vers `/files?q=…` — et il passe par la même brique manquante que
+le point 2 (un JS commun injecté sur toutes les pages, `_UI_GLOBAL_FILES`) :
+faire la brique, y poser le champ, puis le panneau `?`.
 
 **2. Le pense-bête des raccourcis DANS l'interface** (point 6 du plancher).
 Il manque la brique : **un fichier JS commun injecté sur toutes les pages**,
