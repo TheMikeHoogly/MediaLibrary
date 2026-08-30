@@ -36,22 +36,17 @@ tests UI, banc des pages composants sur le serveur VIVANT, l'œil en dernier.
 **1 ter. La résilience des fils de travail : FAIT (session 61)** — superviseur,
 relance à attente doublante, cinq morts consécutives alertent (`/sante` + journal).
 
-**1 quinquies. Google — VÉRIFIÉ (29/08, session 64) : Mike EFFACE chez
-Google, le correctif de réparation est MESURÉ.** Les 297 « Google porte
-mieux » sont rapatriés ; la vérification finale : ABSENT 0, et les **199
-« NAS plus petit » sont nos propres copies** — 14 Motion Photos passées par
-`repair_file` (trailer jeté, `_original` intact 14/14) et 185 à −2…−57 Ko
-de padding, zéro tag perdu. Mike a le feu vert (voir la marche dans le fil du
-29/08). **Correctif tranché par le banc** (`verifier_reparation_exif.py`, sur
-une COPIE d'un Motion Photo) : sur un fichier où l'écriture EXIF normale
-échoue (« Error reading OtherImageStart »), il ne faut PAS appeler
-`repair_file` (candidats A et B détruisent le trailer ou l'ICC) — il faut
-retomber sur une écriture **XMP+IPTC seulement** (candidat C : +501 o, SEFT
-gardé, ftyp gardé, ICC gardé, 189 tags, mots-clés écrits). Donc :
-`write_metadata` détecte l'échec « OtherImageStart » et bascule sur
-`-XMP-dc:Subject`/`-IPTC:Keywords` au lieu de réparer ; un banc l'exige sur
-un Motion Photo. Ne PAS toucher au Takeout de `C:\GOOGLE PHOTOS\extrait`
-avant la copie hors site (seule 2e copie des Motion Photos complets).
+**1 quinquies. Google — VÉRIFIÉ, CLOS pour l'essentiel (29/08, session 64).**
+Mike EFFACE chez Google ; les 297 « Google porte mieux » sont rapatriés,
+ABSENT 0, les 199 « NAS plus petit » sont nos propres copies (14 Motion Photos
+réparées `_original` intact, 185 à −2…−57 Ko de padding, zéro tag perdu).
+**Reste un correctif tranché par banc** (`verifier_reparation_exif.py`) : sur
+un fichier où l'écriture EXIF échoue (« Error reading OtherImageStart »), ne
+PAS appeler `repair_file` — `write_metadata` doit détecter l'échec et retomber
+sur XMP+IPTC seulement (candidat C : trailer, ftyp, ICC gardés) ; un banc
+l'exige sur un Motion Photo. Ne PAS toucher au Takeout de
+`C:\GOOGLE PHOTOS\extrait` avant la copie hors site (seule 2e copie des
+Motion Photos complets).
 
 **1 sexies. Le rangement par année — CLOS (29/08, sessions 65–66).** Le
 rebond du 29/08 (plan périmé relu par bat 26) a deux garde-fous testés :
@@ -169,7 +164,10 @@ ces 19 noms ne s'affichent pas sur la canonique — re-retirés au démarrage
 lot 1, 25 à 16:13) : la canonique EXCLUAIT la personne que la copie nommait ;
 le propriétaire l'emporte (29/08), rien n'est perdu (XMP de la copie en
 corbeille + manifeste), mais la fiche ne DIT pas le désaccord. Les 10 sont
-listés dans `QUESTIONS_MIKE.md`. Le dédoublonnage au sha256 (23/08) était vrai
+listés dans `QUESTIONS_MIKE.md`. **Le caillou est CLOS (30/08 soir)** : Mike a tranché les 10
+photo par photo, verdicts appliqués par l'API et observés après redémarrage ;
+`confirm` grave `confirmed` et l'exclusion confirmée perd son autorité sans
+s'effacer (`eval/DECISIONS.md`). Le dédoublonnage au sha256 (23/08) était vrai
 et aveugle — chiffres dans `eval/DECISIONS.md` (29/08).
 
 **1 undecies. Les mots-clés ANGLAIS dans `kw_fr` (Mike, 30/08 : « chat calico »).**

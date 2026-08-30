@@ -14,16 +14,14 @@ canaux, à la livraison ou au MCP. Débrief en 2–3 lignes, puis on attaque.
 **Git** : fusionné jusqu'à `feat/elargissement-fr-en` (`a78faa4`) ; la
 session 68 livre `feat/recherche-dans-la-barre` — vérifier
 `.git/logs/refs/heads/main`. **Serveur** : redémarré 16:55 sur ce code (index
-**44 860**, 0 fil mort). **Carnet `QUESTIONS_MIKE.md` : UNE question** (les 10
-noms re-retirés, ci-dessous).
+**44 860**, 0 fil mort). **Carnet `QUESTIONS_MIKE.md` : vide** (les 10 noms tranchés le 30/08 soir).
 
 **Doublons (1 decies) — APPLIQUÉS PAR MIKE le 30/08**, les deux lots : 2 929
 fichiers en `.corbeille-rangement\dedup_image_*`, index 47 789 → 44 860, 218
-décisions fusionnées, 19 noms recopiés. **Caillou observé** : 10 de ces noms
-ont été re-retirés au démarrage (« exclusion humaine ré-appliquée ») — la
-canonique excluait la personne que la copie nommait ; rien de perdu (XMP de la
-copie, manifeste), mais la fiche ne dit pas le désaccord. Question + liste des
-10 dans `QUESTIONS_MIKE.md`.
+décisions fusionnées, 19 noms recopiés. **Le caillou des 10 noms re-retirés est CLOS** :
+Mike a tout tranché le soir même, verdicts appliqués et observés ; `confirm`
+grave `confirmed`, qui neutralise l'exclusion sans l'effacer
+(`test_confirm_grave.py`, `eval/DECISIONS.md`).
 
 **Scission FR/EN (1 undecies) — APPLIQUÉE PAR MIKE 15:08** : 22 176 entrées.
 Observé : « chaise » → puces françaises. Le serveur scinde à la relecture d'un
@@ -51,10 +49,8 @@ observée (un clic de Mike).
 
 ## Prochain pas
 
-1. **Mike tranche les 10 noms** (`QUESTIONS_MIKE.md`) ; puis, côté code, faire
-   DIRE le désaccord : `appliquer_doublons_image.fusionner_fiche` — un nom
-   apporté sur une canonique qui l'exclut va dans `contestes`, pas dans le
-   silence du démarrage. Un test le prouve sur une fiche fabriquée.
+1. **FAIT (30/08 soir)** : les 10 noms tranchés et appliqués ; la
+   confirmation fait autorité sur l'exclusion (gravé, testé).
 2. **Panneau `?` : FAIT** (session 68, `feat/panneau-raccourcis`). Reste
    l'instrument qui relève les touches écoutées dans `ui/pages`.
 3. **La loupe de la classification : encadrer le visage visé** (la boîte

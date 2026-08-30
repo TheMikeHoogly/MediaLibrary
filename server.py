@@ -907,16 +907,31 @@ class SubjectStore:
                 for (s, k, i) in props[:limit]]
 
     def confirm(self, name, keys):
-        """Valide l'attribution de photos au sujet (écrit le tag)."""
+        """Valide l'attribution de photos au sujet (écrit le tag).
+
+        Et GRAVE la confirmation dans la fiche (`confirmed`) : sans elle, un
+        tag reposé sur une photo que la fiche EXCLUT est re-retiré par la
+        correction « exclusion humaine ré-appliquée » à chaque démarrage — le
+        30/08, 2 des 19 noms recopiés par le dédoublonnage ont rebondi ainsi
+        avant que Mike ne tranche « c'est bien lui ». L'exclusion n'est PAS
+        effacée (règle du 29/08 : rien ne s'efface, les deux jugements restent
+        écrits) ; `confirmed` passe simplement devant, comme dans le healer."""
         name = (name or "").strip()[:60]
         if not name:
             return 0
         tag = f"{self.prefix}:{name}"
+        pk = name.lower()
+        pe = self.store.data.get(pk)
+        confirmed = set(pe.get("confirmed") or []) if isinstance(pe, dict) else set()
         n = 0
         for k in keys:
             _index_add_person(k, tag)
             _enqueue_person_write(k, tag)
+            confirmed.add(k)
             n += 1
+        if isinstance(pe, dict):
+            pe["confirmed"] = list(confirmed)
+            self.store.set(pk, pe)
         STORE.save()
         return n
 
@@ -2742,7 +2757,15 @@ def _autorite_des_noms():
                     fiches.append(("%s:%s" % (prefix, pe['name']), pe))
         for tag, pe in fiches:                    # passe 1 : les retraits
             canon.setdefault(tag.lower(), tag)
+            # Une photo que la MEME fiche confirme ET exclut porte deux
+            # jugements contradictoires : la confirmation (le geste explicite
+            # « c'est bien lui », 30/08) neutralise l'AUTORITE de l'exclusion
+            # sans l'effacer — même préséance que le healer du démarrage,
+            # sinon confirmer une photo exclue ne changerait rien à l'écran.
+            conf = set(pe.get('confirmed') or [])
             for k in (pe.get('exclude') or []):
+                if k in conf:
+                    continue
                 exclus.setdefault(k, set()).add(tag.lower())
         for tag, pe in fiches:                    # passe 2 : les attributions
             for kf in (pe.get('faces') or []):
