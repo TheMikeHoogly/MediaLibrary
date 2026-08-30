@@ -53,26 +53,15 @@ gardé, ftyp gardé, ICC gardé, 189 tags, mots-clés écrits). Donc :
 un Motion Photo. Ne PAS toucher au Takeout de `C:\GOOGLE PHOTOS\extrait`
 avant la copie hors site (seule 2e copie des Motion Photos complets).
 
-**1 sexies. Le rangement des 1 217 A REBONDI (29/08) — cause : le plan n'est
-régénéré QUE par le bouton Réglages, jamais au démarrage.** `cible()` était
-corrigé et gravé, mais le plan `docs/plan_rangement_annee.json` datait du 28/08
-18:57 (cibles RACINE) ; bat 26 l'a relu et re-rangé à la racine ; bat 34 a
-refusé les 17 dossiers (pleins) — rien perdu. **Garde-fou posé + testé**
-(`appliquer_plan_annee.plan_vise_la_racine`) : bat 26 refuse un plan qui vise
-la racine. **Deuxième étage posé (29/08, session 65, CODÉ, à observer au
-redémarrage)** : `_run_plan_annee()` tourne à chaque démarrage (`fil_surveille`,
-un coup) et `appliquer_plan_annee.plan_perime` refuse un plan plus vieux que la
-dernière bannière `DEMARRAGE` du journal (test 7 vert). Un plan applicable est
-donc toujours un plan calculé sur l'index qu'on vient d'arrêter. Reprise :
-redémarrer (le plan sort au démarrage : ligne `🗂 plan rangement annee` au
-journal) → vérifier qu'il vise `Photos Mike` → arrêt → bat 26 → bat 34. `_Uploads` → boîte de réception par propriétaire : TRANCHÉ
-(`eval/DECISIONS.md`).
-**Session 66 (29/08, 13:22)** : bat 26 a tourné, **29 rangés** sur 38 ; les
-**9 restants** sont des ré-encodages Google (9 des 21 `IMAGE_DIFFERENTE`)
-dont le fonds a déjà l'homonyme — même noms, et le NAS a le GPS que Google a
-retiré. Décision Mike : quarantaine des 9 → **bat 37** (`deplacer_doublons_atrier
---homonymes-differents`, opt-in, règle des noms tenue). **FAIT et OBSERVÉ**
-(13:49 → index −9 à 13:53 → plan **0 à ranger** à 14:11). Reste bat 34.
+**1 sexies. Le rangement par année — CLOS (29/08, sessions 65–66).** Le
+rebond du 29/08 (plan périmé relu par bat 26) a deux garde-fous testés :
+`plan_vise_la_racine` refuse un plan-racine, `plan_perime` refuse un plan plus
+vieux que la dernière bannière `DEMARRAGE` — et le plan est recalculé à chaque
+démarrage (ligne `🗂 plan rangement annee` au journal). Bat 26 a rangé 29 sur
+38 ; les 9 restants (ré-encodages Google homonymes) sont en quarantaine par
+bat 37 (`--homonymes-differents`, décision Mike), observé : index −9, plan
+« 0 à ranger ». `_Uploads` → boîte de réception par propriétaire : TRANCHÉ
+(`eval/DECISIONS.md`). Reste bat 34 (dossiers année vides à la racine).
 
 **1 quater. Le 9 septembre au matin : VÉRIFIER que Windows a demandé.** Patch
 Tuesday tombe le 8 ; le redémarrage arrivait toujours vers 01:30 la nuit
@@ -221,6 +210,18 @@ Observé : « chaise » depuis Dossiers → 1 500 photos, IA, « chaise (+ chair
 Reste : la Carte garde son propre champ « Rechercher (noms, lieux, sens) » —
 deux champs sur cette page, à trancher un jour (celui de la barre cherche le
 fonds entier, celui de la carte filtre la carte).
+
+**1 terdecies. La visionneuse : la description en clair, les mots-clés au
+survol, le DOSSIER de la photo en lien (Mike, 30/08 19:50) — FAIT, OBSERVÉ
+(session 68).** Sous la photo : faits, puis la description (texte, plus en
+italique gris), puis une pastille `📁 Photos/Photos Flo/2022 Bolivia` qui
+ouvre `/files?dir=…&vers=<nom>` — la page du dossier fait défiler jusqu'à la
+photo et l'encadre (`.cell.vers`, liseré veilleuse) sans l'ouvrir : « c'était
+quand / où, ça ? ». Les mots-clés sont repliés : survol de la zone (souris)
+OU bouton « Mots-clés » (`aria-expanded`, doigt et clavier — un contenu au
+seul survol serait injoignable, WCAG 1.4.13) ; repliés à chaque photo.
+Observé : masque → Floufline, Bolivia ; `verifier_controles` 25 natifs, 0 non
+remonté.
 
 **2. Le pense-bête des raccourcis DANS l'interface — FAIT, OBSERVÉ (session
 68, 30/08 19:41).** Panneau `?` sur `ui/global.js` : bouton dans la barre,

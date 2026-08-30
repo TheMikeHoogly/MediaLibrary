@@ -29,6 +29,9 @@ copie, manifeste), mais la fiche ne dit pas le désaccord. Question + liste des
 Observé : « chaise » → puces françaises. Le serveur scinde à la relecture d'un
 XMP (code livré, pas encore exercé : aucun import depuis).
 
+**Visionneuse (1 terdecies, Mike 19:50) — FAIT, OBSERVÉ** : description en
+clair, mots-clés au survol ou par le bouton, lien `📁 dossier` →
+`/files?dir=…&vers=<nom>` qui encadre la photo dans son dossier.
 **Panneau `?` (point 2) — FAIT, OBSERVÉ** : `/api/raccourcis` sert
 `docs/RACCOURCIS.md`, `global.js` le rend (section de la page en tête).
 **Recherche IA partout (1 duodecies) — FAIT, OBSERVÉ (session 68)** : vrai

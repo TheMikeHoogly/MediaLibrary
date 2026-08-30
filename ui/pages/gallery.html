@@ -159,9 +159,35 @@ body { min-height: 100vh; }
   font-size: var(--t-xs); color: var(--texte); background: rgba(12,11,10,.72);
   padding: 2px 6px; border-radius: var(--r-sm); pointer-events: none; }
 #lb-meta { background: var(--salle-2); padding: var(--e-3) var(--e-4) 0; }
-#lb-tags { font-size: var(--t-md); color: var(--texte); line-height: 1.4; }
-#lb-tags.none { color: var(--graphite); font-style: italic; }
-#lb-desc { font-size: var(--t-sm); color: var(--graphite); margin-top: var(--e-1); font-style: italic; }
+/* Sous la photo (Mike, 30/08) : la DESCRIPTION en clair -- c'est elle qu'on
+   lit -- et, a la place de la ligne de mots-cles, le DOSSIER de la photo
+   (« tiens, c'etait quand / ou, ca ? » : un clic ramene a sa vue Dossiers).
+   Les mots-cles restent la, replies : au survol de la zone, ou par le bouton
+   « Mots-cles » -- un contenu qui n'apparait QU'au survol serait injoignable
+   au doigt et au clavier (WCAG 1.4.13), le bouton est la version qui compte,
+   le survol le confort souris. */
+/* « Vous etes ici » a l'arrivee depuis la visionneuse (?vers=) : le lisere de
+   focus, pose par une classe parce que Chrome n'allume pas :focus-visible
+   sur un focus programme apres un clic. */
+.cell.vers { outline: 2px solid var(--veilleuse); outline-offset: 2px; }
+#lb-desc { font-size: var(--t-md); color: var(--texte); line-height: 1.45; }
+#lb-desc.none { color: var(--graphite); font-style: italic; }
+#lb-prov { display: flex; align-items: center; gap: var(--e-3); flex-wrap: wrap;
+           margin-top: var(--e-2); }
+#lb-folder { display: inline-flex; align-items: center; gap: var(--e-1); min-height: var(--touch);
+             padding: 0 var(--e-3); border-radius: var(--r-pill); border: var(--trait);
+             background: var(--salle-3); color: var(--texte); text-decoration: none;
+             font-size: var(--t-sm); max-width: 100%; }
+#lb-folder .chemin { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+@media (hover: hover) { #lb-folder:hover { background: var(--salle-4); } }
+#lb-kwbtn { font-size: var(--t-sm); }
+#lb-tags { font-size: var(--t-sm); color: var(--graphite); line-height: 1.4;
+           margin-top: var(--e-2); }
+#lb-tags.none { font-style: italic; }
+#lb-tags[hidden] { display: none; }
+/* Confort souris : la zone survolee devoile les mots-cles sans clic. Le
+   `[hidden]` reste la verite pour le clavier et le doigt (bouton). */
+@media (hover: hover) { #lb-meta:hover #lb-tags[hidden] { display: block; } }
 /* Visionneuse : une photo a la fois, donc la place de DIRE la provenance
    (exif / nom du fichier / annee du dossier -- gps / chemin). C'est la
    promesse du projet : aucun fait affirme sans provenance. */
@@ -348,8 +374,12 @@ __FOLDERS__
   <video id="lb-video" controls playsinline preload="metadata" hidden></video>
   <div id="lb-meta">
     <div id="lb-faits"></div>
-    <div id="lb-tags"></div>
     <div id="lb-desc"></div>
+    <div id="lb-prov">
+      <a id="lb-folder" href="/files" title="Ouvrir le dossier de cette photo"><span aria-hidden="true">&#128193;</span> <span class="chemin"></span></a>
+      <button type="button" class="btn" id="lb-kwbtn" aria-expanded="false" aria-controls="lb-tags">Mots-cl&eacute;s</button>
+    </div>
+    <div id="lb-tags" hidden></div>
   </div>
   <div id="lb-bar">
     <button class="btn" id="lb-prev">&#8592;</button>
@@ -1055,7 +1085,22 @@ __FOLDERS__
       t.textContent = 'aucun mot-clé au-delà des noms';
       t.className = 'none';
     } else { t.textContent = 'pas encore de tags'; t.className = 'none'; }
-    document.getElementById('lb-desc').textContent = f.desc || '';
+    // La description en clair ; les mots-clés repliés (bouton, ou survol).
+    // On REPLIE à chaque photo : un état ouvert qui suivrait d'une photo à
+    // l'autre transformerait le confort en bruit.
+    var d = document.getElementById('lb-desc');
+    if (f.desc) { d.textContent = f.desc; d.className = ''; }
+    else { d.textContent = 'pas encore de description'; d.className = 'none'; }
+    t.hidden = true;
+    document.getElementById('lb-kwbtn').setAttribute('aria-expanded', 'false');
+    // Le dossier de la photo : « c'était quand / où, ça ? » → sa vue Dossiers.
+    var fl = document.getElementById('lb-folder');
+    // `vers=` : la page du dossier fait defiler jusqu'a CETTE photo et lui
+    // donne le focus -- on arrive sur le contexte, pas sur une planche
+    // anonyme de 800 vignettes ou il faudrait la retrouver.
+    fl.href = (f.gurl || '/files') + (f.name ? (f.gurl && f.gurl.indexOf('?') >= 0 ? '&' : '?')
+              + 'vers=' + encodeURIComponent(f.name) : '');
+    fl.querySelector('.chemin').textContent = f.folder || 'Dossier';
     // Pas de date au jour pres -> pas de bouton (29 % de la photothèque en
     // est la). Le libelle porte le jour : « Même jour (14 août) », accent
     // compris — c'est ce que la page d'arrivee affiche.
@@ -1523,6 +1568,11 @@ __FOLDERS__
   document.getElementById('lb-next').onclick  = function() { lbMove(1); };
   document.getElementById('lb-close').onclick = function() { closeLb(); };
   document.getElementById('ss-stop').onclick  = function() { stopSlideshow(); };
+  document.getElementById('lb-kwbtn').onclick = function() {
+    var t = document.getElementById('lb-tags');
+    t.hidden = !t.hidden;
+    this.setAttribute('aria-expanded', t.hidden ? 'false' : 'true');
+  };
 
   buildTagbar();
   sortBy('date');
@@ -1743,6 +1793,26 @@ __FOLDERS__
   var pl = new URLSearchParams(location.search).get('play');
   if (pl === 'seq' || pl === 'rnd') {
     setTimeout(function() { startSlideshow(pl); }, 300);
+  }
+  // Arrivee depuis la visionneuse (« ouvrir le dossier de cette photo ») :
+  // on montre la photo DANS son dossier, focus dessus (liseré --veilleuse
+  // = « vous etes ici »), sans l'ouvrir : c'est le contexte qu'on venait voir.
+  var vers = new URLSearchParams(location.search).get('vers');
+  if (vers) {
+    var vi = -1;
+    for (var k = 0; k < visible.length; k++) {
+      if (visible[k].name === vers || visible[k].key === vers) { vi = k; break; }
+    }
+    var vcell = vi >= 0 ? document.getElementById('grid').children[vi] : null;
+    if (vcell) {
+      // Le focus programme n'allume pas toujours `:focus-visible` (Chrome le
+      // reserve au clavier) : la classe porte le meme lisere, a coup sur.
+      vcell.classList.add('vers');
+      setTimeout(function() {
+        vcell.scrollIntoView({ block: 'center' });
+        vcell.focus();
+      }, 100);
+    }
   }
 })();
 </script>
