@@ -29,6 +29,9 @@ copie, manifeste), mais la fiche ne dit pas le désaccord. Question + liste des
 Observé : « chaise » → puces françaises. Le serveur scinde à la relecture d'un
 XMP (code livré, pas encore exercé : aucun import depuis).
 
+**Classification : loupe sur la vignette (1 quaterdecies, Mike 20:10) — FAIT,
+OBSERVÉ.** Reste : encadrer le visage visé dans la loupe (boîte à exposer
+par `/api/curator/list`).
 **Visionneuse (1 terdecies, Mike 19:50) — FAIT, OBSERVÉ** : description en
 clair, mots-clés au survol ou par le bouton, lien `📁 dossier` →
 `/files?dir=…&vers=<nom>` qui encadre la photo dans son dossier.
@@ -54,13 +57,15 @@ observée (un clic de Mike).
    silence du démarrage. Un test le prouve sur une fiche fabriquée.
 2. **Panneau `?` : FAIT** (session 68, `feat/panneau-raccourcis`). Reste
    l'instrument qui relève les touches écoutées dans `ui/pages`.
-3. **La Carte a deux champs** (barre + « Rechercher (noms, lieux, sens) ») :
+3. **La loupe de la classification : encadrer le visage visé** (la boîte
+   dans `/api/curator/list`, un rectangle veilleuse sur la photo).
+4. **La Carte a deux champs** (barre + « Rechercher (noms, lieux, sens) ») :
    à trancher avec Mike — garder les deux (fonds entier / filtre carte) ou
    fondre.
-4. **Vidéos** : faire LIRE une vidéo à Mike ; puis phase 2.
-5. `ROADMAP.md` à réduire AVEC Mike (~1 500 lignes, rôle = carte).
-6. 9 septembre : Windows a-t-il demandé ? (`Get-WinEvent … Id=1074`).
-7. Règle Motion Photo (1 septies), chantier 18, UNIFIER le re-clé.
+5. **Vidéos** : faire LIRE une vidéo à Mike ; puis phase 2.
+6. `ROADMAP.md` à réduire AVEC Mike (~1 500 lignes, rôle = carte).
+7. 9 septembre : Windows a-t-il demandé ? (`Get-WinEvent … Id=1074`).
+8. Règle Motion Photo (1 septies), chantier 18, UNIFIER le re-clé.
 
 ## En fin de projet
 

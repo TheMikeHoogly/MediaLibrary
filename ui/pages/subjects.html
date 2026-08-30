@@ -103,6 +103,21 @@
     padding:var(--e-3);margin-bottom:var(--e-3);}
   /* Tri au clavier : la carte « en cours de décision » porte l'anneau veilleuse. */
   .cl.active{outline:2px solid var(--veilleuse);outline-offset:2px;}
+  /* La vignette d'une carte est un BOUTON : un clic ouvre la photo entiere
+     dans une loupe, en place (Mike, 30/08 : « avec la seule icone, on ne sait
+     pas toujours qui c'est »). Le jugement continue au clavier, loupe ouverte. */
+  .crop-btn{padding:0;border:var(--trait);border-radius:var(--r-md);background:var(--salle-3);
+    cursor:zoom-in;line-height:0;width:80px;height:80px;flex-shrink:0;}
+  .crop-btn img{width:100%;height:100%;object-fit:cover;border-radius:var(--r-md);display:block;}
+  .loupe{position:fixed;inset:0;z-index:800;display:none;align-items:center;justify-content:center;
+    background:#000d;padding:var(--e-4);cursor:zoom-out;}
+  .loupe.on{display:flex;}
+  .loupe img{max-width:100%;max-height:100%;object-fit:contain;border-radius:var(--r-sm);
+    box-shadow:0 12px 40px #000c;}
+  .loupe .btn{position:absolute;top:var(--e-4);right:var(--e-4);cursor:pointer;}
+  .loupe .aide{position:absolute;bottom:var(--e-4);left:50%;transform:translateX(-50%);
+    color:var(--graphite);font:var(--t-sm) var(--f-texte);background:var(--salle-2);
+    padding:var(--e-2) var(--e-3);border-radius:var(--r-pill);white-space:nowrap;}
   .cl .row{display:flex;gap:var(--e-2);align-items:center;flex-wrap:wrap;}
   .cl .row > *{min-width:0;}
   .cl .row .sz{color:var(--graphite);font-size:var(--t-sm);flex:1 1 12rem;
@@ -441,7 +456,7 @@ function loadCurator(rebuild){
     box.innerHTML='';
     items.forEach(function(s){
       var el=document.createElement('div'); el.className='cl'; var html='';
-      var crop='<img loading="lazy" src="'+esc(s.crop_url)+'" style="width:80px;height:80px;object-fit:cover;border-radius:var(--r-md);background:var(--salle-3)" alt="">';
+      var crop=loupeBouton(s);
       if(s.type==='merge'){
         html='<div class="row"><span class="sz">M\u00eame personne ? <b>'+esc(s.a)+'</b> et <b>'+esc(s.b)+'</b> (sim '+s.sim+')</span>'+
           '<button class="btn btn--principal">\u2713 Fusionner</button><button class="btn">\u2717 Diff\u00e9rents</button></div>';
@@ -532,7 +547,7 @@ function loadPetCurator(rebuild){
     box.innerHTML='';
     items.forEach(function(s){
       var el=document.createElement('div'); el.className='cl';
-      var crop='<img loading="lazy" src="'+esc(s.crop_url)+'" style="width:80px;height:80px;object-fit:cover;border-radius:var(--r-md);background:var(--salle-3)" alt="">';
+      var crop=loupeBouton(s);
       var doute=s.rival
         ? (' <span style="color:var(--veilleuse)">\u00b7 h\u00e9site avec <b>'+esc(s.rival)+
            '</b> ('+s.rival_sim+', \u00e9cart '+s.margin+')</span>') : '';
@@ -569,6 +584,54 @@ function curUndo(){
   fetch('/api/undo',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'})
     .then(function(){ loadCurator(true); loadPetCurator(true); }).catch(function(){});
 }
+// ── La loupe : la photo ENTIERE d'une carte, en place ──────────────────────
+// Ouverte par la vignette (un vrai <button>), fermee par Echap, un clic, ou
+// le bouton ; les touches de jugement passent au travers ET la ferment (la
+// carte suivante n'est pas celle qu'on regardait).
+function loupeBouton(s){
+  return '<button type="button" class="crop-btn" data-loupe="'+esc(s.url)+'" aria-label="Voir la photo enti\u00e8re">'+
+    '<img loading="lazy" src="'+esc(s.crop_url)+'" alt=""></button>';
+}
+var LOUPE=null, LOUPE_FOCUS=null;
+function loupeEl(){
+  if(LOUPE) return LOUPE;
+  LOUPE=document.createElement('div'); LOUPE.className='loupe';
+  LOUPE.innerHTML='<img src="" alt="Photo enti\u00e8re"><button type="button" class="btn">Fermer</button>'+
+    '<span class="aide">\u00c9chap ou un clic pour fermer \u00b7 Espace / X jugent quand m\u00eame</span>';
+  document.body.appendChild(LOUPE);
+  // controle: redondant -- fermer en cliquant a cote de la photo ; le meme
+  // geste a son bouton (Fermer) et sa touche (Echap), le fond est la zone qui reste.
+  LOUPE.addEventListener('click', function(){ loupeFermer(); });
+  return LOUPE;
+}
+function loupeOuvrir(url, depuis){
+  var l=loupeEl(); LOUPE_FOCUS=depuis||document.activeElement;
+  l.querySelector('img').src=url; l.classList.add('on');
+  l.querySelector('.btn').focus();
+}
+function loupeFermer(){
+  if(!LOUPE||!LOUPE.classList.contains('on')) return;
+  LOUPE.classList.remove('on'); LOUPE.querySelector('img').src='';
+  // Les cartes se repeignent au fil des sondages : si la vignette d'origine
+  // n'existe plus, le focus va a celle de la carte ACTIVE, jamais dans le vide.
+  var cible=(LOUPE_FOCUS&&document.contains(LOUPE_FOCUS))?LOUPE_FOCUS
+            :document.querySelector('.cl.active .crop-btn');
+  if(cible&&cible.focus) cible.focus();
+}
+document.addEventListener('click', function(e){
+  var b=e.target.closest&&e.target.closest('.crop-btn'); if(!b) return;
+  e.preventDefault();
+  // La carte cliquee devient la carte ACTIVE : Espace / X jugeront celle-la.
+  var cl=b.closest('.cl'); if(cl){ document.querySelectorAll('.cl.active').forEach(function(x){x.classList.remove('active');}); cl.classList.add('active'); }
+  loupeOuvrir(b.getAttribute('data-loupe'), b);
+});
+document.addEventListener('keydown', function(e){
+  if(!LOUPE||!LOUPE.classList.contains('on')) return;
+  if(e.key==='Escape'){ e.preventDefault(); e.stopPropagation(); loupeFermer(); return; }
+  // Une touche de jugement ferme la loupe et continue son chemin.
+  if(e.key===' '||e.key==='Enter'||/^[a-zA-Z]$/.test(e.key)||e.key==='Delete') loupeFermer();
+}, true);
+
 document.addEventListener('keydown', function(e){
   if(VUE!=='classif') return;
   var tag=(e.target.tagName||'').toLowerCase();

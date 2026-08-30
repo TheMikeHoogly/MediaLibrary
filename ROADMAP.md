@@ -223,6 +223,17 @@ seul survol serait injoignable, WCAG 1.4.13) ; repliés à chaque photo.
 Observé : masque → Floufline, Bolivia ; `verifier_controles` 25 natifs, 0 non
 remonté.
 
+**1 quaterdecies. Classification : la vignette ouvre la photo ENTIÈRE en
+loupe (Mike, 30/08 20:10) — FAIT, OBSERVÉ (session 68).** La vignette de
+chaque carte (personnes, animaux, faux positifs) est un `<button>` ; un clic
+ouvre la photo complète en place (`.loupe`), rend la carte ACTIVE, Échap / clic
+/ Fermer referment, et les touches de jugement (Espace, X, Z, lettre) passent
+au travers en refermant. Focus rendu à la vignette, ou à celle de la carte
+active si le sondage a repeint les cartes. `verifier_controles` : 20 natifs,
+0 grief. **Reste** : dans la loupe, ENCADRER le visage dont parle la carte —
+sur une tablée de huit, la photo entière ne dit pas lequel ; il faut que
+`/api/curator/list` porte la boîte du visage (`i` est déjà là).
+
 **2. Le pense-bête des raccourcis DANS l'interface — FAIT, OBSERVÉ (session
 68, 30/08 19:41).** Panneau `?` sur `ui/global.js` : bouton dans la barre,
 touche `?`, `Échap` ferme, focus rendu ; contenu = `docs/RACCOURCIS.md` servi
