@@ -30,6 +30,9 @@ body { min-height: 100vh; }
 .row .nm { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .row .sz { color: var(--graphite); font-size: var(--t-xs); flex-shrink: 0; }
 .row.dir .nm { color: var(--texte); }
+/* << voir >> : la ligne du fichier qu'on venait chercher (lien << dossier >>
+   de la visionneuse, #voir=<nom>) -- meme lisere veilleuse que .cell.vers. */
+.row.voir { outline: 2px solid var(--veilleuse); outline-offset: -2px; }
 .empty { color: var(--graphite); text-align: center; padding: var(--e-8); }
 /* Etape B — gestion de fichiers : rangees selectionnables + barre d'actions sur
    PAPIER (surface « decider »). Cibles 44px, primaire = fixateur, suppr = encre. */
@@ -138,6 +141,18 @@ __ROWS__
       if(r.ok){ flash('Dossier cr\u00e9\u00e9.'); location.reload(); } else toast(r.error||'Echec.', false); }); });
   bind('fx-undo', function(){ api('undo',{}).then(function(r){ if(r.ok){ flash('Annul\u00e9.'); location.reload(); } else toast(r.error||'Rien \u00e0 annuler.', false); }); });
   refresh();
+  // Arrivee depuis la visionneuse (lien << dossier >>, #voir=<nom>) : on fait
+  // defiler la liste jusqu'au fichier et on le surligne -- on venait voir
+  // CETTE photo dans son contexte, pas une liste anonyme.
+  (function(){
+    var m=(location.hash||'').match(/^#voir=(.+)$/); if(!m) return;
+    var nom=decodeURIComponent(m[1]);
+    var ligne=null, rows=document.querySelectorAll('.row[data-name]');
+    for(var i=0;i<rows.length;i++){ if(rows[i].getAttribute('data-name')===nom){ ligne=rows[i]; break; } }
+    if(!ligne) return;
+    ligne.classList.add('voir');
+    setTimeout(function(){ ligne.scrollIntoView({block:'center'}); }, 50);
+  })();
 })();
 </script>
 </body>

@@ -1095,11 +1095,13 @@ __FOLDERS__
     document.getElementById('lb-kwbtn').setAttribute('aria-expanded', 'false');
     // Le dossier de la photo : « c'était quand / où, ça ? » → sa vue Dossiers.
     var fl = document.getElementById('lb-folder');
-    // `vers=` : la page du dossier fait defiler jusqu'a CETTE photo et lui
-    // donne le focus -- on arrive sur le contexte, pas sur une planche
-    // anonyme de 800 vignettes ou il faudrait la retrouver.
-    fl.href = (f.gurl || '/files') + (f.name ? (f.gurl && f.gurl.indexOf('?') >= 0 ? '&' : '?')
-              + 'vers=' + encodeURIComponent(f.name) : '');
+    // La vue DOSSIERS (/browse), pas la galerie filtree : c'est la vue du
+    // repertoire que Mike a demandee (30/08, corrige 21:05 apres son essai).
+    // `gurl` est `/files?dir=<i>/<rel>` -> on en derive `/browse/<i>/<rel>`,
+    // et `#voir=<nom>` fait defiler la liste jusqu'au fichier, surligne.
+    var gd = (f.gurl || '').split('?dir=')[1] || '';
+    fl.href = (gd ? '/browse/' + gd : '/browse')
+              + (f.name ? '#voir=' + encodeURIComponent(f.name) : '');
     fl.querySelector('.chemin').textContent = f.folder || 'Dossier';
     // Pas de date au jour pres -> pas de bouton (29 % de la photothèque en
     // est la). Le libelle porte le jour : « Même jour (14 août) », accent

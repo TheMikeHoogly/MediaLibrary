@@ -205,10 +205,11 @@ fonds entier, celui de la carte filtre la carte).
 **1 terdecies. La visionneuse : la description en clair, les mots-clés au
 survol, le DOSSIER de la photo en lien (Mike, 30/08 19:50) — FAIT, OBSERVÉ
 (session 68).** Sous la photo : faits, puis la description (texte, plus en
-italique gris), puis une pastille `📁 Photos/Photos Flo/2022 Bolivia` qui
-ouvre `/files?dir=…&vers=<nom>` — la page du dossier fait défiler jusqu'à la
-photo et l'encadre (`.cell.vers`, liseré veilleuse) sans l'ouvrir : « c'était
-quand / où, ça ? ». Les mots-clés sont repliés : survol de la zone (souris)
+italique gris), puis une pastille `📁 Photos/Photos Flo/2022 Bolivia`.
+**Corrigé après l'essai de Mike (21:05)** : la pastille ouvre la vue
+DOSSIERS — `/browse/<i>/<rel>#voir=<nom>`, la ligne du fichier surlignée et
+défilée en vue (`.row.voir`) — pas la galerie filtrée ; la galerie garde son
+`?vers=` (`.cell.vers`) pour qui y arrive par ce chemin. Les mots-clés sont repliés : survol de la zone (souris)
 OU bouton « Mots-clés » (`aria-expanded`, doigt et clavier — un contenu au
 seul survol serait injoignable, WCAG 1.4.13) ; repliés à chaque photo.
 Observé : masque → Floufline, Bolivia ; `verifier_controles` 25 natifs, 0 non

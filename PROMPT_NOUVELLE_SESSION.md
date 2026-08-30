@@ -32,7 +32,8 @@ OBSERVÉ, et le visage visé est ENCADRÉ dans la loupe** (`box` dans les cartes
 liseré veilleuse, 5 tests).
 **Visionneuse (1 terdecies, Mike 19:50) — FAIT, OBSERVÉ** : description en
 clair, mots-clés au survol ou par le bouton, lien `📁 dossier` →
-`/files?dir=…&vers=<nom>` qui encadre la photo dans son dossier.
+la vue DOSSIERS `/browse/<i>/<rel>#voir=<nom>`, ligne surlignée (corrigé
+21:05 après l'essai de Mike — il voulait `/browse`, pas la galerie filtrée).
 **Panneau `?` (point 2) — FAIT, OBSERVÉ** : `/api/raccourcis` sert
 `docs/RACCOURCIS.md`, `global.js` le rend (section de la page en tête).
 **Recherche IA partout (1 duodecies) — FAIT, OBSERVÉ (session 68)** : vrai
