@@ -112,8 +112,14 @@
   .loupe{position:fixed;inset:0;z-index:800;display:none;align-items:center;justify-content:center;
     background:#000d;padding:var(--e-4);cursor:zoom-out;}
   .loupe.on{display:flex;}
-  .loupe img{max-width:100%;max-height:100%;object-fit:contain;border-radius:var(--r-sm);
-    box-shadow:0 12px 40px #000c;}
+  .loupe .cadre{position:relative;max-width:100%;max-height:100%;line-height:0;}
+  .loupe img{max-width:100%;max-height:calc(100vh - 2*var(--e-4));object-fit:contain;
+    border-radius:var(--r-sm);box-shadow:0 12px 40px #000c;}
+  /* Le visage dont parle la carte : lisere veilleuse (= << c'est LUI qu'on
+     juge >>), pose en pixels par loupePlacerBoite. */
+  .loupe .vise{position:absolute;border:3px solid var(--veilleuse);
+    border-radius:var(--r-sm);box-shadow:0 0 0 2px #0008;pointer-events:none;}
+  .loupe .vise[hidden]{display:none;}
   .loupe .btn{position:absolute;top:var(--e-4);right:var(--e-4);cursor:pointer;}
   .loupe .aide{position:absolute;bottom:var(--e-4);left:50%;transform:translateX(-50%);
     color:var(--graphite);font:var(--t-sm) var(--f-texte);background:var(--salle-2);
@@ -589,14 +595,17 @@ function curUndo(){
 // le bouton ; les touches de jugement passent au travers ET la ferment (la
 // carte suivante n'est pas celle qu'on regardait).
 function loupeBouton(s){
-  return '<button type="button" class="crop-btn" data-loupe="'+esc(s.url)+'" aria-label="Voir la photo enti\u00e8re">'+
+  var box=(s.box&&s.box.length===4)?' data-box="'+s.box.join(',')+'"':'';
+  return '<button type="button" class="crop-btn" data-loupe="'+esc(s.url)+'"'+box+' aria-label="Voir la photo enti\u00e8re">'+
     '<img loading="lazy" src="'+esc(s.crop_url)+'" alt=""></button>';
 }
 var LOUPE=null, LOUPE_FOCUS=null;
 function loupeEl(){
   if(LOUPE) return LOUPE;
   LOUPE=document.createElement('div'); LOUPE.className='loupe';
-  LOUPE.innerHTML='<img src="" alt="Photo enti\u00e8re"><button type="button" class="btn">Fermer</button>'+
+  LOUPE.innerHTML='<div class="cadre"><img src="" alt="Photo enti\u00e8re">'+
+    '<div class="vise" hidden></div></div>'+
+    '<button type="button" class="btn">Fermer</button>'+
     '<span class="aide">\u00c9chap ou un clic pour fermer \u00b7 Espace / X jugent quand m\u00eame</span>';
   document.body.appendChild(LOUPE);
   // controle: redondant -- fermer en cliquant a cote de la photo ; le meme
@@ -604,11 +613,36 @@ function loupeEl(){
   LOUPE.addEventListener('click', function(){ loupeFermer(); });
   return LOUPE;
 }
-function loupeOuvrir(url, depuis){
-  var l=loupeEl(); LOUPE_FOCUS=depuis||document.activeElement;
-  l.querySelector('img').src=url; l.classList.add('on');
-  l.querySelector('.btn').focus();
+// Le LISERÉ sur le visage vise : bbox en pixels de l'image d'origine
+// (data-box), replacée sur l'image AFFICHÉE (object-fit contain) via
+// naturalWidth/Height. Recalculée au chargement et au redimensionnement.
+function loupePlacerBoite(){
+  var l=loupeEl(), img=l.querySelector('img'), v=l.querySelector('.vise');
+  var b=l._box;
+  if(!b||!img.naturalWidth){ v.hidden=true; return; }
+  var r=img.getBoundingClientRect(), c=l.querySelector('.cadre').getBoundingClientRect();
+  var ech=Math.min(r.width/img.naturalWidth, r.height/img.naturalHeight);
+  var dx=(r.width-img.naturalWidth*ech)/2+(r.left-c.left);
+  var dy=(r.height-img.naturalHeight*ech)/2+(r.top-c.top);
+  v.style.left=(dx+b[0]*ech)+'px';
+  v.style.top=(dy+b[1]*ech)+'px';
+  v.style.width=((b[2]-b[0])*ech)+'px';
+  v.style.height=((b[3]-b[1])*ech)+'px';
+  v.hidden=false;
 }
+function loupeOuvrir(url, depuis, box){
+  var l=loupeEl(); LOUPE_FOCUS=depuis||document.activeElement;
+  l._box=box||null;
+  var img=l.querySelector('img');
+  l.querySelector('.vise').hidden=true;
+  img.onload=loupePlacerBoite;
+  img.src=url; l.classList.add('on');
+  l.querySelector('.btn').focus();
+  loupePlacerBoite();
+}
+window.addEventListener('resize', function(){
+  if(LOUPE&&LOUPE.classList.contains('on')) loupePlacerBoite();
+});
 function loupeFermer(){
   if(!LOUPE||!LOUPE.classList.contains('on')) return;
   LOUPE.classList.remove('on'); LOUPE.querySelector('img').src='';
@@ -623,7 +657,9 @@ document.addEventListener('click', function(e){
   e.preventDefault();
   // La carte cliquee devient la carte ACTIVE : Espace / X jugeront celle-la.
   var cl=b.closest('.cl'); if(cl){ document.querySelectorAll('.cl.active').forEach(function(x){x.classList.remove('active');}); cl.classList.add('active'); }
-  loupeOuvrir(b.getAttribute('data-loupe'), b);
+  var bx=b.getAttribute('data-box');
+  loupeOuvrir(b.getAttribute('data-loupe'), b,
+              bx?bx.split(',').map(Number):null);
 });
 document.addEventListener('keydown', function(e){
   if(!LOUPE||!LOUPE.classList.contains('on')) return;

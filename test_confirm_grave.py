@@ -113,5 +113,40 @@ class LaConfirmationNeutraliseL_Exclusion(unittest.TestCase):
         self.assertIn('personne:mike', exclus.get('K1', set()))
 
 
+class LaBoiteDeLaDetectionPartDansLesCartes(unittest.TestCase):
+    """`_boite_visage` / `_boite_animal` : la bbox [x1,y1,x2,y2] de la
+    détection visée, ou None — jamais une exception, jamais un index hors
+    liste (le ré-embedding périme les index)."""
+
+    def _boite(self, nom, entree, i):
+        class FauxStore:
+            def __init__(self, e): self._e = e
+            def get(self, k): return self._e
+        ns = {('FACE_STORE' if nom == '_boite_visage' else 'ANIMAL_STORE'):
+              FauxStore(entree)}
+        exec(compile(ast.Module([_methode(nom)], []), 'server_boite', 'exec'), ns)
+        return ns[nom]('K', i)
+
+    def test_visage_present(self):
+        e = {'faces': [{'bbox': [10, 20, 110, 140]}]}
+        self.assertEqual(self._boite('_boite_visage', e, 0), [10, 20, 110, 140])
+
+    def test_index_perime_rend_None(self):
+        e = {'faces': [{'bbox': [10, 20, 110, 140]}]}
+        self.assertIsNone(self._boite('_boite_visage', e, 3))
+
+    def test_entree_absente_ou_sans_bbox(self):
+        self.assertIsNone(self._boite('_boite_visage', None, 0))
+        self.assertIsNone(self._boite('_boite_visage', {'faces': [{}]}, 0))
+
+    def test_animal(self):
+        e = {'animals': [{'bbox': [1, 2, 3, 4]}, {'bbox': [5, 6, 7, 8]}]}
+        self.assertEqual(self._boite('_boite_animal', e, 1), [5, 6, 7, 8])
+
+    def test_les_trois_cartes_portent_la_boite(self):
+        self.assertEqual(SOURCE.count('"box": _boite_visage('), 2)
+        self.assertEqual(SOURCE.count('"box": _boite_animal('), 1)
+
+
 if __name__ == '__main__':
     unittest.main(verbosity=1)

@@ -28,8 +28,8 @@ Observé : « chaise » → puces françaises. Le serveur scinde à la relecture
 XMP (code livré, pas encore exercé : aucun import depuis).
 
 **Classification : loupe sur la vignette (1 quaterdecies, Mike 20:10) — FAIT,
-OBSERVÉ.** Reste : encadrer le visage visé dans la loupe (boîte à exposer
-par `/api/curator/list`).
+OBSERVÉ, et le visage visé est ENCADRÉ dans la loupe** (`box` dans les cartes,
+liseré veilleuse, 5 tests).
 **Visionneuse (1 terdecies, Mike 19:50) — FAIT, OBSERVÉ** : description en
 clair, mots-clés au survol ou par le bouton, lien `📁 dossier` →
 `/files?dir=…&vers=<nom>` qui encadre la photo dans son dossier.
@@ -53,8 +53,7 @@ observée (un clic de Mike).
    confirmation fait autorité sur l'exclusion (gravé, testé).
 2. **Panneau `?` : FAIT** (session 68, `feat/panneau-raccourcis`). Reste
    l'instrument qui relève les touches écoutées dans `ui/pages`.
-3. **La loupe de la classification : encadrer le visage visé** (la boîte
-   dans `/api/curator/list`, un rectangle veilleuse sur la photo).
+3. **FAIT** : le visage visé est encadré dans la loupe.
 4. **La Carte a deux champs** (barre + « Rechercher (noms, lieux, sens) ») :
    à trancher avec Mike — garder les deux (fonds entier / filtre carte) ou
    fondre.

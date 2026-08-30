@@ -8329,6 +8329,7 @@ def build_cat_suggestions():
                                   "margin": round(marge, 3), "rival": rival,
                                   "rival_sim": round(second, 3),
                                   "crop_url": _animal_crop_url(k, ai),
+                                  "box": _boite_animal(k, int(ai)),
                                   "url": _url_for_key(k)})
                     break   # un seul chat représentatif par photo suffit
         items.sort(key=lambda x: x.get("margin", 9.9))
@@ -8661,6 +8662,34 @@ def _gather_faces():
 
 def _crop_url(key, i):
     return '/api/facecrop?key=' + urllib.parse.quote(key, safe='') + '&i=' + str(i)
+
+
+def _boite_visage(key, i):
+    """[x1, y1, x2, y2] du visage `i` (pixels de l'image ORIENTÉE), ou None.
+
+    Part dans les cartes de classification : la loupe encadre le visage dont
+    parle la carte — sur une tablée de huit, la photo entière ne dit pas
+    lequel. Le client normalise avec naturalWidth/Height : mêmes pixels que
+    la détection (exif_transpose côté serveur, orientation native côté
+    navigateur)."""
+    e = FACE_STORE.get(key)
+    faces = (e.get('faces') or []) if isinstance(e, dict) else []
+    if 0 <= i < len(faces):
+        b = faces[i].get('bbox')
+        if isinstance(b, (list, tuple)) and len(b) == 4:
+            return [int(v) for v in b]
+    return None
+
+
+def _boite_animal(key, i):
+    """Même contrat que `_boite_visage`, pour une détection d'animal."""
+    e = ANIMAL_STORE.get(key)
+    dets = (e.get('animals') or []) if isinstance(e, dict) else []
+    if 0 <= i < len(dets):
+        b = dets[i].get('bbox')
+        if isinstance(b, (list, tuple)) and len(b) == 4:
+            return [int(v) for v in b]
+    return None
 
 
 def _filter_known(vecs, meta):
@@ -10183,6 +10212,7 @@ def build_suggestions():
                         rival = names[int(ordre[1])]
                     items.append({"type": "add", "person": nm, "key": k, "i": i,
                                   "sim": round(best, 3), "crop_url": _crop_url(k, i),
+                                  "box": _boite_visage(k, i),
                                   "url": _url_for_key(k), "strong": best >= CUR_ADD_STRONG,
                                   "margin": round(margin, 3),
                                   "rival": rival, "rival_sim": round(second, 3)})
@@ -10260,6 +10290,7 @@ def build_suggestions():
                             rm_seen.add(kk)
                             items.append({"type": "remove", "person": nm, "key": k, "i": bi,
                                           "sim": round(bestsim, 3), "crop_url": _crop_url(k, bi),
+                                          "box": _boite_visage(k, bi),
                                           "url": _url_for_key(k), "strong": bestsim < CUR_FP_STRONG})
             if fp_healed:
                 STORE.save()

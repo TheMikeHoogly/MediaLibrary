@@ -18,20 +18,13 @@ NÉGATIF est un banc (`verifier_filtre_negatif.py`, 15 contrôles, deux canaux).
 Le point 4 de la liste précédente — le déplacement `Photos Mike` — était déjà
 fait en session 52. L'ordre reprend donc à ce qui reste.
 
-**1. Les boutons de `gallery` — FAIT, y compris l'œil TÉLÉPHONE (27/08,
-session 59) ; reste `.fchip`.** Le banc vivant, l'œil bureau (session 58) puis
-l'œil à 390 px (session 59) sont passés — et le passage mobile a trouvé et
-corrigé un vrai défaut : la rangée de la visionneuse débordait, « Fermer »
-était hors écran. Ne reste que la décision `.fchip` (question ouverte dans
-`QUESTIONS_MIKE.md`).
+**1. Les boutons de `gallery` — FAIT (session 59), œil bureau et 390 px
+passés ; reste la décision `.fchip`.**
 
-**1 bis. Ce qui restait de l'option 1 tranchée le 26/08 :** Les cinq familles maison (`.tb` 34 px, `.geobtn`
-28 px, `.fchip` 35 px, `.georow button` 34 px, `#ss-stop` 34 px) passent au
-`.btn` canonique. Coût mesuré et accepté : **+19 px** de hauteur de barres.
-Aperçu validé (artefact « Boutons de la Galerie »). Preuve dans l'ordre
-habituel : `verifier_css_cascade --page` (feuille commune EN PREMIER dans
-`--apres`), `verifier_cibles`, `verifier_contraste`, `verifier_controles`,
-tests UI, banc des pages composants sur le serveur VIVANT, l'œil en dernier.
+**1 bis. Les cinq familles maison passent au `.btn` canonique** (`.tb`,
+`.geobtn`, `.fchip`, `.georow button`, `#ss-stop` ; coût accepté +19 px).
+Preuve dans l'ordre habituel : cascade → cibles → contraste → contrôles →
+tests UI → banc des pages sur serveur vivant → l'œil.
 
 **1 ter. La résilience des fils de travail : FAIT (session 61)** — superviseur,
 relance à attente doublante, cinq morts consécutives alertent (`/sante` + journal).
@@ -228,9 +221,12 @@ ouvre la photo complète en place (`.loupe`), rend la carte ACTIVE, Échap / cli
 / Fermer referment, et les touches de jugement (Espace, X, Z, lettre) passent
 au travers en refermant. Focus rendu à la vignette, ou à celle de la carte
 active si le sondage a repeint les cartes. `verifier_controles` : 20 natifs,
-0 grief. **Reste** : dans la loupe, ENCADRER le visage dont parle la carte —
-sur une tablée de huit, la photo entière ne dit pas lequel ; il faut que
-`/api/curator/list` porte la boîte du visage (`i` est déjà là).
+0 grief. **Et le visage visé est ENCADRÉ (même session, 20:45)** : les cartes
+portent `box` (`_boite_visage` / `_boite_animal`, bbox de la détection en
+pixels d'origine, None si l'index est périmé — 5 tests), la loupe pose un
+liseré veilleuse recalé sur l'image affichée (`object-fit: contain`,
+naturalWidth, recalcul au redimensionnement). Observé : le bon visage encadré
+sur une photo à trois enfants.
 
 **2. Le pense-bête des raccourcis DANS l'interface — FAIT, OBSERVÉ (session
 68, 30/08 19:41).** Panneau `?` sur `ui/global.js` : bouton dans la barre,
