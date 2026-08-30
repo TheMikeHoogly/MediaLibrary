@@ -28,6 +28,13 @@ canonique ; corbeille `.corbeille-rangement\dedup_image_<date>` + manifeste ;
 retraits, 3,55 Go, 0 sauté, 4 noms à recopier** ; tout = 2 929 / 10,45 Go / 18
 noms. **Rien n'a bougé sur le NAS.**
 
+**Mots-clés anglais dans `kw_fr` (1 undecies) — MESURÉ, OUTILLÉ, PAS
+APPLIQUÉ** : 22 196 entrées (52 %) à `kw_en` vide = XMP relu entier dans
+`kw_fr` (pas le tagueur). `scission_fr_en.py` (règle pure) +
+`appliquer_scission_fr_en.py` (index seul, serveur arrêté) + **bat 41**,
+22 190 scindables sur la copie. Reste : le geste de Mike, puis brancher la
+règle dans le serveur à la relecture d'un XMP (sinon un rescan re-mélange).
+
 **Chantier 17** : étapes 1→6 posées. Reste : étape 7 (onboarding ; `/upload`
 sous un compte → chez l'envoyeur), conflit de `faces` ENTRE fiches, contrôle
 403 « photo partagée » du banc. **Vidéos phase 1** : la LECTURE n'a pas été
@@ -49,9 +56,10 @@ FR→EN, retirer le gabarit » — pas commencé.
    requête = moyenne des vecteurs FR et EN, gabarit retiré ; re-mesurer avec
    `mesure_requete_fr_en.py` AVANT/APRÈS et observer « ours en peluche »,
    « sol », « roche » en réel.
-3. **« calico »** : un mot anglais dans le texte FR du tagueur (Caline) — à
-   bannir/traduire dans la post-traduction, puis re-tagger les copies
-   touchées ; mesurer combien de textes FR en portent avant de coder.
+3. **Bat 41** (scission FR/EN, index seul) — avant `marche`, après bat 40 ;
+   puis observer les puces d'une photo de juillet et la recherche « chaise ».
+   Ensuite : le serveur doit scinder lui-même à la relecture d'un XMP
+   (`read_meta_and_gps` → `scission_fr_en.scinder_entree`), un test le prouve.
 4. **Vidéos** : faire LIRE une vidéo à Mike ; puis phase 2.
 5. `ROADMAP.md` à réduire AVEC Mike (~1 500 lignes, rôle = carte).
 6. 9 septembre : Windows a-t-il demandé ? (`Get-WinEvent … Id=1074`).

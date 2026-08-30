@@ -204,25 +204,29 @@ la détection existe en face ; corbeille `dedup_image_<date>` + manifeste bat
 **Reste : le geste de Mike (bat 40, serveur arrêté), puis observer** :
 compteurs des fiches inchangés, index −894 avec motif, `verifier_photos_google`
 inchangé. Le
-dédoublonnage n'a vu que les copies IDENTIQUES AU BIT (`recensement_doublons`
-: 0 groupe restant le 23/08). Or **mesuré sur une copie de l'index (29/08)** :
-**3 818** groupes de photos prises la MÊME SECONDE (8 582 clés), dont
-**2 921 portent le même nom de fichier** ; parmi elles **27** seulement ont la
-même taille, **2 630** diffèrent de moins de 20 Ko — ce sont les copies
-taguées SÉPARÉMENT, dont le XMP a divergé (`Voyage Indonésie (1).jpg` :
-4 406 996 vs 4 407 261 octets, même `taken`). Le hachage de fichier est
-aveugle à ça ; le hachage d'IMAGE (`verifier_doublons_atrier`, IMAGE_DIFFERENTE)
-ne l'est pas. **Répartition** : 1 980 groupes chez Mike seul, **831
-Flo/Mike** (`Photos Flo\2016 Indonésie` ↔ `Photos Mike\2016\07 Voyage en
-Indonésie` : 506 ; Calinous : 260), 102 chez Flo. **Pas de rescan complet** :
-l'index porte déjà `taken` et `size`, les candidats se lisent en mémoire ;
-seul le hachage d'image des ~2 900 groupes lit le NAS (banc, lecture seule).
-Plan : (1) `mesure_doublons_image.py` — candidats par `taken`+nom, hachage
-d'image, rapport (identiques / différentes / lesquelles portent des noms ou
-un GPS que l'autre n'a pas) ; (2) la copie CANONIQUE : **entre propriétaires, celle de `Photos Mike`
-par défaut (tranché le 29/08 soir)** ; entre deux dossiers d'un même
-propriétaire, à trancher sur les chiffres du banc ; (3) quarantaine réversible par le plan existant, en
-FUSIONNANT les décisions et tags des deux copies (règle 2 : rien ne se perd).
+dédoublonnage au sha256 (23/08) était vrai et aveugle : 3 818 groupes « même
+seconde » dont 2 630 à moins de 20 Ko d'écart (XMP divergé) — chiffres et
+règle de la canonique dans `eval/DECISIONS.md` (29/08).
+
+**1 undecies. Les mots-clés ANGLAIS dans `kw_fr` (Mike, 30/08 : « chat calico »).**
+**MESURÉ le 30/08** (`mesure_anglais_dans_fr.py`, `mesure_scission_fr_en.py`,
+copie de l'index) : ce n'est pas le tagueur. **22 196 photos (52 %) ont un
+`kw_en` VIDE** et un `kw_fr` qui porte les deux langues à la suite — la liste
+`kw_fr + kw_en` écrite dans le XMP par `write_metadata`, relue telle quelle
+quand l'index a été reconstruit depuis les fichiers (3 147 le 11/07, `pipe`
+absent). Le tagueur v2ctx fuit 11 photos sur 4 804. **Règle écrite et
+mesurée** : `scission_fr_en.py` (pure) — vocabulaires FR/EN appris sur les
+entrées saines, vote par tag, coupure de score maximal, milieu si ex æquo :
+**22 190 sur 22 196 se scindent** (19 175 coupure unique). **Applicateur
+livré** : `appliquer_scission_fr_en.py` (index seul, serveur arrêté et
+prouvé, à blanc par défaut, `undo_scission_*.json`), test vert, **bat 41**.
+**Reste : le geste de Mike (bat 41), puis observer** les puces de la galerie
+(plus d'anglais sur une photo de juillet), la recherche « chaise ». Imparfait
+et dit : ~5 600 tags neutres des deux langues (orange, art, bar, jeans) restent
+côté FR ; « calico » (82) est une vraie fuite du vieux tagueur, à re-tagger
+un jour. **Le serveur devrait scinder lui-même** quand il relit un XMP
+(`read_meta_and_gps` → `kw_fr` seul) : à brancher sur `scission_fr_en`, sinon
+le prochain rescan re-mélange.
 
 **2. Le pense-bête des raccourcis DANS l'interface** (point 6 du plancher).
 Il manque la brique : **un fichier JS commun injecté sur toutes les pages**,

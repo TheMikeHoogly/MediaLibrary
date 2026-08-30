@@ -118,6 +118,8 @@ docs/undo_rangement_*.json
 docs/plan_rangement_annee.json
 docs/plan_rangement_annee.md
 docs/undo_annee_*.json
+docs/undo_doublons_*.json
+docs/undo_scission_*.json
 docs/migration_auteurs.json
 docs/plan_renommage.json
 docs/plan_renommage.md
