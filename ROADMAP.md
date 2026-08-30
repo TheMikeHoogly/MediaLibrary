@@ -9,14 +9,10 @@ dans **git** ; les rejets dans `eval/DECISIONS.md` (photothèque) et
 > **`N:\\Photos` se connecte à chaque session** — règle dans `CLAUDE.md`
 > (« Tester en réel »), depuis le 29/08.
 
-## Priorité (26/08/2026, refixée session 53) — le garde-fou est POSÉ
+## Priorité (26/08/2026, refixée session 53)
 
-**Le point 1 est fait, prouvé, livré** (voir l'état de session 53 ci-dessous) :
-un jeton `<axe>:<valeur>` insatisfaisable rend RIEN et le DIT sur les cinq
-axes, la barre comprend enfin ce que les pastilles écrivent, et le contrôle
-NÉGATIF est un banc (`verifier_filtre_negatif.py`, 15 contrôles, deux canaux).
-Le point 4 de la liste précédente — le déplacement `Photos Mike` — était déjà
-fait en session 52. L'ordre reprend donc à ce qui reste.
+Le garde-fou du filtre est posé (jeton insatisfaisable → RIEN, dit, banc
+`verifier_filtre_negatif.py`) ; l'ordre reprend à ce qui reste.
 
 **1. Les boutons de `gallery` — FAIT (session 59), œil bureau et 390 px
 passés ; reste la décision `.fchip`.**
@@ -89,8 +85,8 @@ valeur d'abord :
   73,7 Go, 3 066 datées par le nom, 7 par ExifTool, **0 sans date**, 0 conflit,
   → `Photos Mike\2016…2026` (2024 : 1 509). Question à Mike : les 5 vidéos de
   `180328 Samsung Floflo` vont chez Mike par la règle 17c (`QUESTIONS_MIKE.md`).
-- **Phase 1 — les vidéos dans la GALERIE : POSÉE, LIVRÉE (30/08 matin,
-  fusion demandée par Mike)**. Observé : le scan a indexé **4 086 vidéos** (index 43 703 →
+- **Phase 1 — les vidéos dans la GALERIE : CLOSE (30/08 — livrée le matin,
+  la LECTURE observée par Mike le soir : « la vidéo fonctionne »)**. Observé : le scan a indexé **4 086 vidéos** (index 43 703 →
   47 789, +4 086 / −0, 8 min d'ExifTool `-fast` une fois), zéro fil mort,
   `/api/faits` date « 5 mars 2016 (exif) », `/api/thumb` rend l'image-clé
   ffmpeg (200, 22 Ko), badge « ▶ 0:11 » sur 11 vignettes du 5 mars, la
@@ -207,9 +203,15 @@ survol, le DOSSIER de la photo en lien (Mike, 30/08 19:50) — FAIT, OBSERVÉ
 (session 68).** Sous la photo : faits, puis la description (texte, plus en
 italique gris), puis une pastille `📁 Photos/Photos Flo/2022 Bolivia`.
 **Corrigé après l'essai de Mike (21:05)** : la pastille ouvre la vue
-DOSSIERS — `/browse/<i>/<rel>#voir=<nom>`, la ligne du fichier surlignée et
-défilée en vue (`.row.voir`) — pas la galerie filtrée ; la galerie garde son
-`?vers=` (`.cell.vers`) pour qui y arrive par ce chemin. Les mots-clés sont repliés : survol de la zone (souris)
+DOSSIERS — `/browse/<i>/<rel>#voir=<nom>`, tuile surlignée, défilée en vue.
+**Et la vue Dossiers est une PLANCHE (Mike, 21:20, session 68)** : les
+fichiers images et vidéos y sont des tuiles avec vignette (`/api/thumb` 512,
+badge ▶, nom + taille, case de sélection) — la gestion de fichiers (renommer,
+couper, corbeille) lit les mêmes `.row`/`.sel`, rien n'a bougé ; les dossiers
+restent une liste étroite au-dessus, les fichiers non visuels aussi. Et dans
+l'ANNUAIRE Sujets, cliquer un sujet ouvre sa GALERIE (`/files?q=personne:Nom`
+/ `animal:` / lieu en `q=`) ; la FICHE (corriger, renommer) reste sous les
+onglets Personnes / Animaux de la sous-barre. Les mots-clés sont repliés : survol de la zone (souris)
 OU bouton « Mots-clés » (`aria-expanded`, doigt et clavier — un contenu au
 seul survol serait injoignable, WCAG 1.4.13) ; repliés à chaque photo.
 Observé : masque → Floufline, Bolivia ; `verifier_controles` 25 natifs, 0 non

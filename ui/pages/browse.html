@@ -21,7 +21,27 @@ body { min-height: 100vh; }
 .back { color: var(--texte); text-decoration: none; font-size: var(--t-md); }
 .crumbs { color: var(--graphite); font-size: var(--t-md); }
 .crumbs a { color: var(--texte); text-decoration: none; }
-.list { max-width: 720px; margin: 0 auto; padding: var(--e-3); }
+.list { max-width: 1200px; margin: 0 auto; padding: var(--e-3); }
+/* Les DOSSIERS restent une liste etroite et lisible au centre… */
+.row.dir { max-width: 720px; margin-left: auto; margin-right: auto; }
+/* …les FICHIERS visuels sont une PLANCHE de vignettes (Mike, 30/08) : la
+   densite par auto-fill + clamp (photo-ui), jamais un nombre de colonnes en
+   dur. Meme .row / .sel / .lk que la liste : la gestion de fichiers ne voit
+   aucune difference. */
+.planche { display: grid; gap: var(--e-2); margin-bottom: var(--e-2);
+           grid-template-columns: repeat(auto-fill, minmax(clamp(120px, 18vw, 180px), 1fr)); }
+.planche .row.tuile { position: relative; flex-direction: column; align-items: stretch;
+                      gap: var(--e-1); padding: var(--e-2); margin-bottom: 0; }
+.tuile .lk { flex-direction: column; align-items: stretch; gap: var(--e-1); }
+.tuile .th { width: 100%; aspect-ratio: 1; object-fit: cover; display: block;
+             border-radius: var(--r-sm); background: var(--salle-3); }
+.tuile .nm { font-size: var(--t-xs); color: var(--graphite); text-align: center; }
+.tuile .sz { text-align: center; }
+.tuile .sel { position: absolute; top: var(--e-2); left: var(--e-2); z-index: 2; }
+.tuile .vid { position: absolute; top: var(--e-2); right: var(--e-2); z-index: 2;
+              color: var(--texte); background: rgba(12,11,10,.72);
+              padding: 2px 7px; border-radius: var(--r-sm); font-size: var(--t-xs);
+              pointer-events: none; }
 .row { display: flex; align-items: center; gap: var(--e-3); padding: var(--e-3) var(--e-4);
        background: var(--salle-2); border-radius: var(--r-md); margin-bottom: var(--e-2);
        text-decoration: none; color: var(--texte); font-size: var(--t-md); }

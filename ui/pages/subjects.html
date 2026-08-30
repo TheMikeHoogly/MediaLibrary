@@ -227,10 +227,13 @@ function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){
 function _norm(s){return String(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');}
 var ALL=[], FILT='tous';
 function href(s){
-  // Personne/animal -> fiche detail (?name=) ; lieu -> galerie filtree (?q=),
-  // qui gere deja le filtrage par lieu (semantic_search / _extraire_lieux).
+  // TOUT sujet ouvre sa GALERIE (Mike, 30/08 : « comme une galerie photo ») :
+  // lieu -> ?q=<nom> ; personne/animal -> le jeton d'axe (?q=personne:Nom),
+  // que la recherche decompose exactement (noms, pas de texte libre).
+  // La FICHE (corriger, renommer, references) reste sous les onglets
+  // Personnes / Animaux de la sous-barre Sujets.
   if(s.type==='lieu') return '/files?q='+encodeURIComponent(s.name);
-  return (s.type==='animal'?'/pets':'/people')+'?name='+encodeURIComponent(s.name);
+  return '/files?q='+encodeURIComponent((s.type==='animal'?'animal:':'personne:')+s.name);
 }
 function typeMot(t){return t==='animal'?'animal':t==='lieu'?'lieu':'personne';}
 function carte(s){

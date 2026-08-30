@@ -32,8 +32,11 @@ OBSERVÉ, et le visage visé est ENCADRÉ dans la loupe** (`box` dans les cartes
 liseré veilleuse, 5 tests).
 **Visionneuse (1 terdecies, Mike 19:50) — FAIT, OBSERVÉ** : description en
 clair, mots-clés au survol ou par le bouton, lien `📁 dossier` →
-la vue DOSSIERS `/browse/<i>/<rel>#voir=<nom>`, ligne surlignée (corrigé
-21:05 après l'essai de Mike — il voulait `/browse`, pas la galerie filtrée).
+la vue DOSSIERS `/browse/<i>/<rel>#voir=<nom>`, tuile surlignée. **Dossiers
+est une PLANCHE de vignettes depuis 21:25** (tuiles `/api/thumb`, gestion de
+fichiers intacte), et l'annuaire Sujets ouvre la GALERIE du sujet
+(`?q=personne:Nom`) — la fiche reste sous Personnes / Animaux. **Vidéos :
+la lecture est OBSERVÉE par Mike (« la vidéo fonctionne ») — phase 1 CLOSE.**
 **Panneau `?` (point 2) — FAIT, OBSERVÉ** : `/api/raccourcis` sert
 `docs/RACCOURCIS.md`, `global.js` le rend (section de la page en tête).
 **Recherche IA partout (1 duodecies) — FAIT, OBSERVÉ (session 68)** : vrai
@@ -45,8 +48,8 @@ par `bundle.py`. `test_ui_global.py` : 17 verts, rougissent sur mutation.
 
 **Chantier 17** : étapes 1→6 posées. Reste : étape 7 (onboarding ; `/upload`
 sous un compte → chez l'envoyeur), conflit de `faces` ENTRE fiches, contrôle
-403 « photo partagée » du banc. **Vidéos phase 1** : la LECTURE n'a pas été
-observée (un clic de Mike).
+403 « photo partagée » du banc. **Vidéos phase 1 : CLOSE** (lecture observée
+par Mike le 30/08 soir).
 
 ## Prochain pas
 
@@ -58,7 +61,8 @@ observée (un clic de Mike).
 4. **La Carte a deux champs** (barre + « Rechercher (noms, lieux, sens) ») :
    à trancher avec Mike — garder les deux (fonds entier / filtre carte) ou
    fondre.
-5. **Vidéos** : faire LIRE une vidéo à Mike ; puis phase 2.
+5. **Vidéos : phase 1 close (lecture observée par Mike, 30/08 soir)** —
+   lancer la phase 2 (tagging ? transcodage ? à cadrer avec Mike).
 6. `ROADMAP.md` à réduire AVEC Mike (~1 500 lignes, rôle = carte).
 7. 9 septembre : Windows a-t-il demandé ? (`Get-WinEvent … Id=1074`).
 8. Règle Motion Photo (1 septies), chantier 18, UNIFIER le re-clé.

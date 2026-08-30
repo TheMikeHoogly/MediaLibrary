@@ -13301,6 +13301,14 @@ class Handler(BaseHTTPRequestHandler):
                         f'<input type="checkbox" class="sel" aria-label="Selectionner {nm_a}">'
                         f'<a class="lk" href="{href}"><span class="ic">&#128193;</span>'
                         f'<span class="nm">{html.escape(e.name)}</span></a></div>')
+        # Les fichiers : une PLANCHE de vignettes (Mike, 30/08 : « une vue
+        # avec les previews, comme une galerie »), pas une liste de noms.
+        # Meme structure .row / .sel / .lk que la liste (la gestion de
+        # fichiers — selection, renommer, couper, corbeille — lit ces
+        # classes) ; seule la mise en page change. /api/thumb rend 512 px
+        # (image OU image-cle d'une video) et REDIRIGE vers l'original quand
+        # il ne sait pas — le client n'a aucun cas particulier.
+        tuiles = []
         for e in files:
             relf = (sub + '/' if sub else '') + e.name
             href = f'/media/{idx}/' + urllib.parse.quote(relf)
@@ -13309,18 +13317,28 @@ class Handler(BaseHTTPRequestHandler):
             except OSError:
                 sz = '?'
             ext = e.suffix.lower()
-            if ext in IMAGE_EXT:
-                icon = '&#128247;'
-            elif ext in {'.mp4', '.mov', '.avi', '.mkv'}:
-                icon = '&#127909;'
-            else:
-                icon = '&#128196;'
             nm_a = html.escape(e.name, quote=True)
-            rows.append(f'<div class="row" data-idx="{idx}" data-rel="{html.escape(relf, quote=True)}" data-name="{nm_a}">'
-                        f'<input type="checkbox" class="sel" aria-label="Selectionner {nm_a}">'
-                        f'<a class="lk" href="{href}" target="_blank"><span class="ic">{icon}</span>'
-                        f'<span class="nm">{html.escape(e.name)}</span></a>'
-                        f'<span class="sz">{sz}</span></div>')
+            visuel = ext in IMAGE_EXT or ext in {'.mp4', '.mov', '.avi', '.mkv'}
+            if visuel:
+                thumb = ('/api/thumb?key='
+                         + urllib.parse.quote(str(e), safe='') + '&s=512')
+                badge = ('<span class="vid" aria-hidden="true">&#9654;</span>'
+                         if ext not in IMAGE_EXT else '')
+                tuiles.append(
+                    f'<div class="row tuile" data-idx="{idx}" data-rel="{html.escape(relf, quote=True)}" data-name="{nm_a}">'
+                    f'<input type="checkbox" class="sel" aria-label="Selectionner {nm_a}">'
+                    f'<a class="lk" href="{href}" target="_blank">'
+                    f'<img class="th" loading="lazy" src="{thumb}" alt="">{badge}'
+                    f'<span class="nm">{html.escape(e.name)}</span></a>'
+                    f'<span class="sz">{sz}</span></div>')
+            else:
+                rows.append(f'<div class="row" data-idx="{idx}" data-rel="{html.escape(relf, quote=True)}" data-name="{nm_a}">'
+                            f'<input type="checkbox" class="sel" aria-label="Selectionner {nm_a}">'
+                            f'<a class="lk" href="{href}" target="_blank"><span class="ic">&#128196;</span>'
+                            f'<span class="nm">{html.escape(e.name)}</span></a>'
+                            f'<span class="sz">{sz}</span></div>')
+        if tuiles:
+            rows.append('<div class="planche">' + '\n'.join(tuiles) + '</div>')
 
         dirval = f"{idx}/{sub}" if sub else str(idx)
         glink = ('<a class="back" href="/files?dir='
