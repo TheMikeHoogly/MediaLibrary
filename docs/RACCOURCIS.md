@@ -1,9 +1,11 @@
 # Raccourcis clavier — relevé du 26/08/2026
 
 > **Relevé DANS le code**, pas de mémoire : ce sont les touches réellement
-> écoutées par les onze pages de `ui/pages`. Source unique pour le futur
-> panneau `?` dans l'interface — quand il existera, **il se lira ici**, et
-> cette page cessera d'être une copie à maintenir.
+> écoutées par les pages de `ui/pages`. **Source unique du panneau `?` de
+> l'interface** (30/08) : `ui/global.js` lit ce fichier via `/api/raccourcis`
+> et le rend tel quel — jusqu'au marqueur `panneau: fin` ci-dessous. Une
+> section dont le titre nomme la page courante (`/sujets`, « Galerie »…)
+> remonte en tête avec une pastille « ici ».
 >
 > Version lisible pour Mike : artefact « Raccourcis de la photothèque ».
 
@@ -13,6 +15,7 @@
 |---|---|
 | `/` | Met le focus dans « Décris la photo… » (recherche IA sur tout le fonds) — sauf quand on tape déjà dans un champ |
 | `Entrée` (dans le champ) | Ouvre la galerie des résultats (`/files?q=`) |
+| `?` | Ouvre ou ferme ce pense-bête (aussi le bouton `?` de la barre) ; `Échap` le ferme |
 
 ## Juger les propositions de noms — `/sujets`, onglet Classification
 
@@ -78,17 +81,13 @@ Les candidats portent une lettre, `A`–`H` (`LETTRES = 'ABCDEFGH'`).
   neutralisés — sinon taper « Zoé » annulerait le jugement précédent au
   premier caractère.
 
-## Ce qui manque, et pourquoi c'est le point 6 du plancher
+<!-- panneau: fin -->
 
-**Une seule page affiche ses raccourcis** (`/sujets`, une ligne `.kbd-hint`).
-Les six autres contextes ne les disent nulle part : il faut les connaître pour
-s'en servir — l'inverse de ce que fait un raccourci. Le plancher
-d'accessibilité exige « documente les raccourcis dans l'interface elle-même » ;
-c'est la sixième de ses sept règles, et elle n'a **ni instrument ni mise en
-œuvre**.
+## Le point 6 du plancher : POSÉ le 30/08
 
-Ce que ça demande : un **fichier JS commun injecté sur toutes les pages**,
-comme `tokens.css` et `base.css` le sont déjà (`_UI_GLOBAL_FILES`). Il
-n'existe pas encore — ce serait le premier. Sans lui, écrire le panneau `?`
-onze fois recréerait exactement la divergence que `components.css` a servi à
-supprimer.
+« Documente les raccourcis dans l'interface elle-même » : le panneau `?`
+(bouton dans la barre commune, touche `?`, `Échap` ferme) est rendu par
+`ui/global.js` — la brique JS commune, injectée sur toutes les pages comme
+`tokens.css` et `base.css` — à partir de CE fichier. Ce qui manque encore :
+l'**instrument** qui relève les touches écoutées dans `ui/pages` et compare à
+ce relevé, pour qu'une touche ajoutée sans être documentée se voie.

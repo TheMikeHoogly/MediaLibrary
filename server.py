@@ -6347,8 +6347,40 @@ APP_NAV_CSS = """<style id="appnav-css">
 .appnav-q button:active{background:var(--salle-4);}
 .appnav-q kbd{font:var(--t-xs) var(--f-donnees);color:var(--graphite);
   border:var(--trait);border-radius:var(--r-sm);padding:1px 5px;}
+/* Le pense-bete des raccourcis (point 6 du plancher). Bouton « ? » dans la
+   barre, panneau ouvert par la touche ? ou le bouton, ferme par Echap ; le
+   contenu vient de /api/raccourcis (docs/RACCOURCIS.md), rendu par global.js.
+   Un panneau qu'on LIT, pas ou l'on decide : surface sombre, pas papier. */
+.appnav-aide{min-height:var(--touch);min-width:var(--touch);border:var(--trait);
+  border-radius:var(--r-pill);background:var(--salle-3);color:var(--texte);
+  font:600 var(--t-md)/1 var(--f-donnees);cursor:pointer;}
+@media(hover:hover){.appnav-aide:hover{background:var(--salle-4);}}
+.appnav-aide:active{background:var(--salle-4);}
+.raccourcis{position:fixed;inset:0;z-index:900;display:none;align-items:flex-start;
+  justify-content:center;padding:var(--e-6) var(--e-4);background:#000a;overflow:auto;}
+.raccourcis.on{display:flex;}
+.raccourcis__p{width:min(720px,100%);background:var(--salle-2);color:var(--texte);
+  border:var(--trait);border-radius:var(--r-md);padding:var(--e-4) var(--e-6);
+  box-shadow:0 12px 40px #000c;font-family:var(--f-texte);}
+.raccourcis__t{display:flex;align-items:center;gap:var(--e-3);margin:0 0 var(--e-3);}
+.raccourcis__t h2{margin:0;font:600 var(--t-lg)/1.2 var(--f-affichage);flex:1;}
+.raccourcis__p h3{margin:var(--e-4) 0 var(--e-2);font:600 var(--t-md)/1.2 var(--f-affichage);
+  color:var(--texte);}
+.raccourcis__p h3 .ici{font:var(--t-xs) var(--f-texte);color:var(--texte-papier);
+  background:var(--papier);border-radius:var(--r-pill);padding:2px 8px;margin-left:var(--e-2);}
+.raccourcis__p p{margin:0 0 var(--e-2);color:var(--graphite);font-size:var(--t-sm);}
+.raccourcis__p table{border-collapse:collapse;width:100%;font-size:var(--t-sm);}
+.raccourcis__p td{padding:var(--e-1) var(--e-2);border-top:var(--trait);vertical-align:top;}
+.raccourcis__p td:first-child{white-space:nowrap;width:1%;}
+.raccourcis__p kbd,.raccourcis__p code{font:var(--t-xs) var(--f-donnees);color:var(--texte);
+  border:var(--trait);border-radius:var(--r-sm);padding:1px 5px;background:var(--salle-3);}
+.raccourcis__p .btn{min-height:var(--touch);padding:0 var(--e-4);border:var(--trait);
+  border-radius:var(--r-md);background:var(--salle-3);color:var(--texte);cursor:pointer;
+  font:500 var(--t-sm)/1 var(--f-texte);}
 @media(max-width:560px){
   .appnav{gap:2px;padding:8px 8px;}
+  .raccourcis{padding:var(--e-2);}
+  .raccourcis__p{padding:var(--e-3) var(--e-4);}
   .appnav .brand span.t{display:none;}
   .appnav a.tab{padding:7px 10px;font-size:13px;}
   /* Telephone : le champ passe en DERNIER et prend le reste de la ligne ou
@@ -6376,6 +6408,8 @@ APP_NAV_HTML = """<nav class="appnav">
     <kbd aria-hidden="true" title="Raccourci clavier">/</kbd>
   </form>
   <a class="tab" data-p="/reglages" href="/reglages">&#9881;&#65039; R&eacute;glages</a>
+  <button type="button" class="appnav-aide" aria-label="Raccourcis clavier"
+          aria-haspopup="dialog" aria-expanded="false" title="Raccourcis clavier (touche ?)">?</button>
 </nav>
 <div class="netbusy" role="status" aria-live="polite" aria-hidden="true">
   <span class="netbusy__s" aria-hidden="true"></span><span>Traitement en cours&hellip;</span>
@@ -10584,6 +10618,9 @@ class Handler(BaseHTTPRequestHandler):
         elif path == '/api/serveur':
             self._serve_serveur_etat()
 
+        elif path == '/api/raccourcis':
+            self._serve_raccourcis()
+
         elif path == '/api/maint/status':
             self._serve_maint_status()
 
@@ -12613,6 +12650,21 @@ class Handler(BaseHTTPRequestHandler):
             'code_a_jour': a_jour,
         }, ensure_ascii=False).encode()
         self._send(200, body, 'application/json')
+
+    def _serve_raccourcis(self):
+        """Le pense-bête des raccourcis (point 6 du plancher) : `docs/RACCOURCIS.md`
+        tel quel, en Markdown. UNE source — le panneau « ? » de `ui/global.js` le
+        lit ici, la doc n'est plus une copie à maintenir. Un `stat` local, relu
+        à chaque appel (le fichier est petit et le panneau rare). Absent : 404
+        qui le DIT, pas une page vide."""
+        chemin = SCRIPT_DIR / 'docs' / 'RACCOURCIS.md'
+        try:
+            body = chemin.read_bytes()
+        except OSError:
+            self._send(404, 'docs/RACCOURCIS.md introuvable'.encode('utf-8'),
+                       'text/plain; charset=utf-8')
+            return
+        self._send(200, body, 'text/markdown; charset=utf-8')
 
     # ─── Centre de controle : /reglages ───────────────────────────────────
     def _serve_reglages(self):

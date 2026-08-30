@@ -222,10 +222,13 @@ Reste : la Carte garde son propre champ « Rechercher (noms, lieux, sens) » —
 deux champs sur cette page, à trancher un jour (celui de la barre cherche le
 fonds entier, celui de la carte filtre la carte).
 
-**2. Le pense-bête des raccourcis DANS l'interface** (point 6 du plancher).
-**La brique est POSÉE (session 68) : `ui/global.js`**, injectée sur toutes les
-pages. Reste le panneau `?` lui-même, sur cette brique, puis l'instrument.
-Contenu déjà relevé : `docs/RACCOURCIS.md` (le `/` de la barre y est).
+**2. Le pense-bête des raccourcis DANS l'interface — FAIT, OBSERVÉ (session
+68, 30/08 19:41).** Panneau `?` sur `ui/global.js` : bouton dans la barre,
+touche `?`, `Échap` ferme, focus rendu ; contenu = `docs/RACCOURCIS.md` servi
+tel quel par `GET /api/raccourcis` (une source, jusqu'au marqueur
+`panneau: fin`), la section de la page courante remonte avec une pastille
+« ici ». Reste **l'instrument** : relever les touches écoutées dans
+`ui/pages` et les comparer au relevé.
 
 **3. La suite du chantier 17 (multi-utilisateurs)** : la notion de
 PROPRIÉTAIRE, puis l'attribution rétroactive des 3 767 décisions à Mike.

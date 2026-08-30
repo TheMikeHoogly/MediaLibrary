@@ -135,6 +135,39 @@ class LaBarreN_aPlusDeScriptInline(unittest.TestCase):
         self.assertIn("window.fetch.__uiGlobal", GLOBAL_JS)
 
 
+class LePanneauDesRaccourcisLitUneSeuleSource(unittest.TestCase):
+    """Point 6 du plancher : le panneau `?` rend docs/RACCOURCIS.md, servi
+    par /api/raccourcis. Ni copie dans le JS, ni copie dans le serveur."""
+
+    RACCOURCIS = (HERE / "docs" / "RACCOURCIS.md").read_text(encoding="utf-8")
+
+    def test_la_route_existe_et_sert_le_fichier(self):
+        src = ast.get_source_segment(SOURCE, _noeud('_do_get'))
+        self.assertIn("path == '/api/raccourcis'", src)
+        h = ast.get_source_segment(SOURCE, _noeud('_serve_raccourcis'))
+        self.assertIn("'RACCOURCIS.md'", h)
+        self.assertIn("text/markdown", h)
+
+    def test_le_bouton_de_la_barre_est_un_bouton_nomme(self):
+        self.assertIn('class="appnav-aide" aria-label="Raccourcis clavier"', NAV)
+        self.assertIn('aria-haspopup="dialog"', NAV)
+
+    def test_global_js_lit_la_route_et_ne_recopie_pas_la_doc(self):
+        self.assertIn("fetch('/api/raccourcis')", GLOBAL_JS)
+        self.assertIn("ev.key !== '?'", GLOBAL_JS)
+        self.assertIn("ev.key === 'Escape'", GLOBAL_JS)
+        self.assertIn('role="dialog"', GLOBAL_JS)
+        # une ligne de la doc ne doit PAS vivre dans le JS
+        self.assertNotIn("Trancher un", GLOBAL_JS)
+
+    def test_la_doc_porte_le_marqueur_de_fin_et_le_raccourci_lui_meme(self):
+        self.assertIn("<!-- panneau: fin -->", self.RACCOURCIS)
+        self.assertIn("| `?` |", self.RACCOURCIS)
+        # ce qui suit le marqueur est le meta, pas des raccourcis
+        apres = self.RACCOURCIS.split("<!-- panneau: fin -->", 1)[1]
+        self.assertNotIn("| Touche |", apres)
+
+
 class ServerEtBundleAccordent(unittest.TestCase):
 
     def test_meme_bloc(self):

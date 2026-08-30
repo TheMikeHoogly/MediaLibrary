@@ -29,6 +29,8 @@ copie, manifeste), mais la fiche ne dit pas le désaccord. Question + liste des
 Observé : « chaise » → puces françaises. Le serveur scinde à la relecture d'un
 XMP (code livré, pas encore exercé : aucun import depuis).
 
+**Panneau `?` (point 2) — FAIT, OBSERVÉ** : `/api/raccourcis` sert
+`docs/RACCOURCIS.md`, `global.js` le rend (section de la page en tête).
 **Recherche IA partout (1 duodecies) — FAIT, OBSERVÉ (session 68)** : vrai
 `<form action="/files">` `name=q` dans `APP_NAV_HTML`, masqué sur `/files`,
 raccourci `/`, deux lignes à 390 px. **Et la brique JS commune existe** :
@@ -47,8 +49,8 @@ observée (un clic de Mike).
    DIRE le désaccord : `appliquer_doublons_image.fusionner_fiche` — un nom
    apporté sur une canonique qui l'exclut va dans `contestes`, pas dans le
    silence du démarrage. Un test le prouve sur une fiche fabriquée.
-2. **Le panneau `?` des raccourcis** sur `ui/global.js` (point 2) — contenu :
-   `docs/RACCOURCIS.md`. Puis l'instrument qui relève les touches écoutées.
+2. **Panneau `?` : FAIT** (session 68, `feat/panneau-raccourcis`). Reste
+   l'instrument qui relève les touches écoutées dans `ui/pages`.
 3. **La Carte a deux champs** (barre + « Rechercher (noms, lieux, sens) ») :
    à trancher avec Mike — garder les deux (fonds entier / filtre carte) ou
    fondre.
