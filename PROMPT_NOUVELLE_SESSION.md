@@ -78,6 +78,13 @@ privée » POSÉ et OBSERVÉ** (bouton 🔒, `/api/files/prive`, annulable).
 **Le banc est en PAUSE tant que la ventilation n'est pas réglée** (Mike s'en
 charge) : ne pas le relancer sans son feu vert.
 
+**Menu de COMPTE (Mike, 31/08) — FAIT, OBSERVÉ** : pastille + nom dans la
+barre, menu (Mes photos, Mon dossier privé si existant, taille des
+vignettes, Raccourcis, Réglages/Santé si admin, Se déconnecter).
+**Vidéos phase 2 et RE-TAGGING du fonds : cadrés dans `ROADMAP.md`
+(1 octies (d) et 2 bis), à MESURER avant d'écrire, et rien avant le
+dépoussiérage.**
+
 ## Prochain pas
 
 1. **FAIT (30/08 soir)** : les 10 noms tranchés et appliqués ; la
@@ -88,14 +95,19 @@ charge) : ne pas le relancer sans son feu vert.
 4. **La Carte a deux champs** (barre + « Rechercher (noms, lieux, sens) ») :
    à trancher avec Mike — garder les deux (fonds entier / filtre carte) ou
    fondre.
-5. **Chantier 18, la suite** : quand la machine est refroidie, finir le banc
+5. **Le banc qui décide du re-tagging** (2 bis) : ~100 photos, moitié
+   « XMP relu » moitié `v2ctx`, re-taguées et comparées — le gain AVANT la
+   dépense (26 h de GPU sinon). Puis, s'il est net, le sous-ensemble
+   « XMP relu » d'abord.
+6. **Vidéos phase 2** (1 octies (d)) : le banc des images-clés — 30 vidéos,
+   1 image puis 3, mesurer ce que les suivantes AJOUTENT.
+7. **Chantier 18, la suite** : quand la machine est refroidie, finir le banc
    (90 questions, 7 catégories) → la liste que Mike juge → seuil → la
    question dans la MÊME invocation du tagueur → l'écran d'envoi (les trois
    gestes : 🔒 PRIVE — déjà là —, corbeille, « non ») → passe rétroactive.
-6. **Vidéos : phase 1 close** — cadrer la phase 2 avec Mike.
-7. `ROADMAP.md` à réduire AVEC Mike (~1 500 lignes, rôle = carte).
-8. 9 septembre : Windows a-t-il demandé ? (`Get-WinEvent … Id=1074`).
-9. Règle Motion Photo (1 septies), chantier 18, UNIFIER le re-clé.
+8. `ROADMAP.md` à réduire AVEC Mike (~1 500 lignes, rôle = carte).
+9. 9 septembre : Windows a-t-il demandé ? (`Get-WinEvent … Id=1074`).
+10. Règle Motion Photo (1 septies), chantier 18, UNIFIER le re-clé.
 
 ## En fin de projet
 

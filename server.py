@@ -675,6 +675,33 @@ def chemin_visible(chemin):
 
 PRIVE_NOM = _visibilite.PRIVE      # « PRIVE » : une seule source, cote regle
 
+# Le dossier PRIVE de quelqu'un, en URL de la vue Dossiers — pour le menu de
+# compte (31/08). MIS EN CACHE 60 s : `/api/moi` est appele par la brique
+# commune sur CHAQUE page, et sans cache c'est un `stat` SMB par page.
+# Rend None quand le dossier n'existe pas : on n'ouvre pas une porte sur une
+# page qui n'a rien a montrer (meme regle que le bouton « Meme jour »).
+_PRIVE_URL_CACHE = {}
+
+
+def _prive_url(nom, ttl=60):
+    if not nom:
+        return None
+    vu = _PRIVE_URL_CACHE.get(nom)
+    if vu and time.time() - vu[0] < ttl:
+        return vu[1]
+    url = None
+    try:
+        for i, (_lbl, racine) in enumerate(media_roots()):
+            dossier = Path(racine) / ("Photos %s" % nom) / PRIVE_NOM
+            if dossier.is_dir():
+                url = ('/browse/%d/' % i) + urllib.parse.quote(
+                    "Photos %s/%s" % (nom, PRIVE_NOM), safe='/')
+                break
+    except OSError:
+        url = None
+    _PRIVE_URL_CACHE[nom] = (time.time(), url)
+    return url
+
 
 def refus_ecriture(chemin):
     """Le garde des gestes sur FICHIER (chantier 17, étape 5 — renommer,
@@ -6388,6 +6415,52 @@ APP_NAV_CSS = """<style id="appnav-css">
 .appnav-q button:active{background:var(--salle-4);}
 .appnav-q kbd{font:var(--t-xs) var(--f-donnees);color:var(--graphite);
   border:var(--trait);border-radius:var(--r-sm);padding:1px 5px;}
+/* MON COMPTE (Mike, 31/08) : savoir QUI regarde, et regler ce qui se regle.
+   Pastille = surface papier, comme l'onglet actif : le vocabulaire << vous
+   etes ici >> vaut aussi pour << vous etes vous >>. Aucune couleur inventee
+   par personne -- un accent a un SENS dans ce systeme, il ne decore pas. */
+.appnav-moi{position:relative;}
+.moi-bouton{display:inline-flex;align-items:center;gap:var(--e-2);
+  min-height:var(--touch);padding:0 var(--e-2) 0 var(--e-1);border:var(--trait);
+  border-radius:var(--r-pill);background:var(--salle-3);color:var(--texte);
+  font:500 var(--t-sm)/1 var(--f-texte);cursor:pointer;}
+@media(hover:hover){.moi-bouton:hover{background:var(--salle-4);}}
+.moi-bouton:active{background:var(--salle-4);}
+.moi-pastille{display:inline-flex;align-items:center;justify-content:center;
+  width:32px;height:32px;border-radius:50%;background:var(--papier);
+  color:var(--texte-papier);font:600 var(--t-sm)/1 var(--f-affichage);
+  flex-shrink:0;text-transform:uppercase;}
+.moi-menu{position:absolute;top:calc(100% + var(--e-2));right:0;z-index:120;
+  min-width:250px;padding:var(--e-2);background:var(--salle-2);
+  border:var(--trait);border-radius:var(--r-md);box-shadow:0 12px 40px #000c;}
+.moi-menu[hidden]{display:none;}
+.moi-menu .tete{padding:var(--e-2) var(--e-3) var(--e-3);border-bottom:var(--trait);
+  margin-bottom:var(--e-2);}
+.moi-menu .tete b{display:block;font:600 var(--t-md)/1.2 var(--f-affichage);
+  color:var(--texte);}
+.moi-menu .tete span{font-size:var(--t-xs);color:var(--graphite);}
+.moi-menu a,.moi-menu button.item{display:flex;align-items:center;gap:var(--e-2);
+  width:100%;min-height:var(--touch);padding:0 var(--e-3);border:0;
+  border-radius:var(--r-md);background:transparent;color:var(--texte);
+  font:var(--t-sm)/1 var(--f-texte);text-decoration:none;cursor:pointer;
+  text-align:left;}
+@media(hover:hover){.moi-menu a:hover,.moi-menu button.item:hover{background:var(--salle-3);}}
+.moi-menu a:active,.moi-menu button.item:active{background:var(--salle-3);}
+.moi-menu .sep{height:1px;background:#26221E;margin:var(--e-2) 0;}
+.moi-menu .titre{padding:var(--e-1) var(--e-3);font-size:var(--t-xs);
+  color:var(--graphite);text-transform:uppercase;letter-spacing:.06em;}
+/* Densite de la planche : trois crans, un seul actif -- meme convention que
+   les chips (la classe PEINT, aria-pressed DIT). */
+.moi-menu .crans{display:flex;gap:var(--e-1);padding:0 var(--e-3) var(--e-2);}
+.moi-menu .crans button{flex:1;min-height:var(--touch);border:var(--trait);
+  border-radius:var(--r-md);background:var(--salle-3);color:var(--graphite);
+  font:var(--t-xs)/1 var(--f-texte);cursor:pointer;}
+.moi-menu .crans button[aria-pressed="true"]{background:var(--papier);
+  border-color:var(--papier);color:var(--texte-papier);}
+/* « Se deconnecter » NE PORTE PAS --encre : mesure a 3,50:1 sur --salle-2,
+   sous le plancher AA -- et surtout, se deconnecter ne DETRUIT rien. Un
+   accent a un sens dans ce systeme ; le rouge est celui du destructif. */
+@media(max-width:560px){.moi-menu{right:auto;left:0;min-width:220px;}}
 /* Le pense-bete des raccourcis (point 6 du plancher). Bouton « ? » dans la
    barre, panneau ouvert par la touche ? ou le bouton, ferme par Echap ; le
    contenu vient de /api/raccourcis (docs/RACCOURCIS.md), rendu par global.js.
@@ -6448,9 +6521,16 @@ APP_NAV_HTML = """<nav class="appnav">
     <button type="submit" aria-label="Chercher">&#128269;</button>
     <kbd aria-hidden="true" title="Raccourci clavier">/</kbd>
   </form>
-  <a class="tab" data-p="/reglages" href="/reglages">&#9881;&#65039; R&eacute;glages</a>
   <button type="button" class="appnav-aide" aria-label="Raccourcis clavier"
           aria-haspopup="dialog" aria-expanded="false" title="Raccourcis clavier (touche ?)">?</button>
+  <div class="appnav-moi" hidden>
+    <button type="button" class="moi-bouton" aria-haspopup="menu" aria-expanded="false"
+            aria-controls="moi-menu" title="Mon compte">
+      <span class="moi-pastille" aria-hidden="true"></span>
+      <span class="moi-nom"></span>
+    </button>
+    <div class="moi-menu" id="moi-menu" role="menu" hidden></div>
+  </div>
 </nav>
 <div class="netbusy" role="status" aria-live="polite" aria-hidden="true">
   <span class="netbusy__s" aria-hidden="true"></span><span>Traitement en cours&hellip;</span>
@@ -10509,8 +10589,10 @@ class Handler(BaseHTTPRequestHandler):
 
     def _serve_moi(self):
         nom = utilisateur_vu()
-        self._send(200, json.dumps({"nom": nom, "admin": bool(nom and COMPTES.est_admin(nom)),
-                                    "porte": COMPTES.actifs()}).encode(), 'application/json')
+        self._send(200, json.dumps(
+            {"nom": nom, "admin": bool(nom and COMPTES.est_admin(nom)),
+             "porte": COMPTES.actifs(), "prive": _prive_url(nom)},
+            ensure_ascii=False).encode(), 'application/json')
 
     def _serve_comptes(self):
         """Gestion des comptes, ADMIN seulement. Sans compte (porte ouverte),

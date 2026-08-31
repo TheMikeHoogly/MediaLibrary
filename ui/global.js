@@ -11,7 +11,11 @@
      4. le panneau « ? » des raccourcis (point 6 du plancher) : la touche ?
         ou le bouton de la barre, Échap ferme ; le contenu est
         docs/RACCOURCIS.md servi par /api/raccourcis — UNE source, la doc
-        n'est pas recopiée ici. */
+        n'est pas recopiée ici ;
+     5. MON COMPTE (Mike, 31/08) : qui regarde, et le peu qui se règle.
+        Un seul appel à /api/moi par page, et le menu se construit à
+        l'ouverture — pas au chargement : la plupart des visites ne
+        l'ouvrent jamais. */
 (function () {
   'use strict';
   var p = location.pathname;
@@ -217,7 +221,120 @@
   // Injecté juste APRÈS la barre, la brique la trouve déjà : on marque tout de
   // suite, sans attendre la fin de l'analyse (un onglet qui s'allume en retard
   // se voit sur une grande galerie). Sinon — page sans barre — on attend.
-  function demarrer() { marquerOngletActif(); poserRecherche(); poserAide(); }
+  // ── 5. mon compte ────────────────────────────────────────────────────────
+  // La DENSITÉ de la planche est le seul réglage vraiment personnel du site :
+  // elle change ce qu'on voit d'un coup d'œil, et elle ne regarde que celui
+  // qui la choisit. Elle vit donc dans son navigateur (localStorage), posée
+  // sur :root avant tout rendu — la galerie et les Dossiers lisent `--vig`
+  // avec leur propre clamp en repli, donc l'absence de réglage ne casse rien.
+  var CRANS = { serre: '86px', normal: '', large: '210px' };
+  function densiteLue() {
+    try { return localStorage.getItem('densite') || 'normal'; } catch (e) { return 'normal'; }
+  }
+  function poserDensite(cran) {
+    var v = CRANS[cran] === undefined ? '' : CRANS[cran];
+    if (v) document.documentElement.style.setProperty('--vig', v);
+    else document.documentElement.style.removeProperty('--vig');
+    try { localStorage.setItem('densite', cran); } catch (e) {}
+  }
+  poserDensite(densiteLue());          // AVANT le premier rendu de la planche
+
+  var MOI = null, MENU_OUVERT = false;
+  function zoneMoi() { return document.querySelector('.appnav-moi'); }
+  function esc(t) {
+    return String(t == null ? '' : t).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+  function construireMenu() {
+    var m = document.getElementById('moi-menu');
+    var h = '<div class="tete"><b>' + esc(MOI.nom) + '</b><span>' +
+      (MOI.admin ? 'Administrateur' : 'Compte') + '</span></div>';
+    h += '<a href="/files?q=' + encodeURIComponent('personne:' + MOI.nom) +
+      '" role="menuitem"><span aria-hidden="true">\uD83D\uDC64</span> Mes photos</a>';
+    // Le dossier privé n'apparaît QUE s'il existe (le serveur le dit) :
+    // ouvrir une porte sur une page vide serait pire que ne rien offrir.
+    if (MOI.prive) {
+      h += '<a href="' + esc(MOI.prive) + '" role="menuitem">' +
+        '<span aria-hidden="true">\uD83D\uDD12</span> Mon dossier priv\u00e9</a>';
+    }
+    h += '<div class="sep"></div><div class="titre">Taille des vignettes</div>' +
+      '<div class="crans">';
+    ['serre', 'normal', 'large'].forEach(function (c) {
+      h += '<button type="button" data-cran="' + c + '" aria-pressed="' +
+        (densiteLue() === c) + '">' +
+        { serre: 'Serr\u00e9', normal: 'Normal', large: 'Large' }[c] + '</button>';
+    });
+    h += '</div><div class="sep"></div>' +
+      '<button type="button" class="item" data-aide role="menuitem">' +
+      '<span aria-hidden="true">\u2328\uFE0F</span> Raccourcis clavier</button>';
+    if (MOI.admin) {
+      h += '<a href="/reglages" role="menuitem"><span aria-hidden="true">\u2699\uFE0F</span> R\u00e9glages</a>' +
+        '<a href="/sante" role="menuitem"><span aria-hidden="true">\uD83E\uDE7A</span> Sant\u00e9 du serveur</a>';
+    }
+    if (MOI.porte) {
+      h += '<div class="sep"></div><button type="button" class="item" data-sortir role="menuitem">' +
+        '<span aria-hidden="true">\u21AA</span> Se d\u00e9connecter</button>';
+    }
+    m.innerHTML = h;
+    m.querySelectorAll('[data-cran]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        var c = b.getAttribute('data-cran');
+        poserDensite(c);
+        m.querySelectorAll('[data-cran]').forEach(function (x) {
+          x.setAttribute('aria-pressed', String(x === b));
+        });
+      });
+    });
+    var aide = m.querySelector('[data-aide]');
+    if (aide) aide.addEventListener('click', function () { fermerMenu(); ouvrirPanneau(); });
+    var sortir = m.querySelector('[data-sortir]');
+    if (sortir) sortir.addEventListener('click', function () {
+      fetch('/api/deconnexion', { method: 'POST' })
+        .then(function () { location.href = '/connexion'; })
+        .catch(function () { location.href = '/connexion'; });
+    });
+  }
+  function ouvrirMenu() {
+    var z = zoneMoi(); if (!z || !MOI) return;
+    construireMenu();
+    z.querySelector('.moi-menu').hidden = false;
+    z.querySelector('.moi-bouton').setAttribute('aria-expanded', 'true');
+    MENU_OUVERT = true;
+  }
+  function fermerMenu() {
+    var z = zoneMoi(); if (!z || !MENU_OUVERT) return;
+    z.querySelector('.moi-menu').hidden = true;
+    z.querySelector('.moi-bouton').setAttribute('aria-expanded', 'false');
+    MENU_OUVERT = false;
+  }
+  function poserMoi() {
+    var z = zoneMoi(); if (!z) return;
+    fetch('/api/moi').then(function (r) { return r.json(); }).then(function (d) {
+      if (!d || !d.nom) return;          // porte ouverte, personne connecté
+      MOI = d;
+      z.querySelector('.moi-pastille').textContent = d.nom.trim().charAt(0);
+      z.querySelector('.moi-nom').textContent = d.nom;
+      z.querySelector('.moi-bouton').setAttribute(
+        'aria-label', 'Mon compte : ' + d.nom);
+      z.hidden = false;
+      z.querySelector('.moi-bouton').addEventListener('click', function () {
+        if (MENU_OUVERT) fermerMenu(); else ouvrirMenu();
+      });
+      // controle: redondant -- fermer en cliquant ailleurs ; le meme geste a
+      // son bouton (rappuyer) et sa touche (Echap).
+      document.addEventListener('click', function (ev) {
+        if (MENU_OUVERT && !z.contains(ev.target)) fermerMenu();
+      });
+      document.addEventListener('keydown', function (ev) {
+        if (ev.key === 'Escape' && MENU_OUVERT) { fermerMenu(); }
+      });
+    }).catch(function () { /* sans identite, la barre reste telle quelle */ });
+  }
+
+  function demarrer() {
+    marquerOngletActif(); poserRecherche(); poserAide(); poserMoi();
+  }
   if (document.querySelector('.appnav') || document.readyState !== 'loading') demarrer();
   else document.addEventListener('DOMContentLoaded', demarrer);
 })();

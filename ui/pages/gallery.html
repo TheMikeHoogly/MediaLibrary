@@ -116,7 +116,7 @@ body { min-height: 100vh; }
 /* Etape B : planche contact. Densite par auto-fill + clamp (jamais un nombre
    de colonnes en dur), gouttiere serree facon film. content-visibility sur les
    cellules pour tenir les grandes planches sans virtual scroll. */
-.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(clamp(96px, 18vw, 168px), 1fr));
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(var(--vig, clamp(96px, 18vw, 168px)), 1fr));
         gap: var(--e-1); padding: var(--e-2); background: var(--salle); }
 
 .cell { background: var(--salle-3); border-radius: var(--r-sm); overflow: hidden; cursor: pointer;

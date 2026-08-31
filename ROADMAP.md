@@ -25,27 +25,21 @@ tests UI → banc des pages sur serveur vivant → l'œil.
 **1 ter. La résilience des fils de travail : FAIT (session 61)** — superviseur,
 relance à attente doublante, cinq morts consécutives alertent (`/sante` + journal).
 
-**1 quinquies. Google — VÉRIFIÉ, CLOS pour l'essentiel (29/08, session 64).**
-Mike EFFACE chez Google ; les 297 « Google porte mieux » sont rapatriés,
-ABSENT 0, les 199 « NAS plus petit » sont nos propres copies (14 Motion Photos
-réparées `_original` intact, 185 à −2…−57 Ko de padding, zéro tag perdu).
-**Reste un correctif tranché par banc** (`verifier_reparation_exif.py`) : sur
-un fichier où l'écriture EXIF échoue (« Error reading OtherImageStart »), ne
-PAS appeler `repair_file` — `write_metadata` doit détecter l'échec et retomber
-sur XMP+IPTC seulement (candidat C : trailer, ftyp, ICC gardés) ; un banc
-l'exige sur un Motion Photo. Ne PAS toucher au Takeout de
-`C:\GOOGLE PHOTOS\extrait` avant la copie hors site (seule 2e copie des
-Motion Photos complets).
+**1 quinquies. Google — CLOS pour l'essentiel (29/08).** Mike efface chez
+Google ; les 297 « Google porte mieux » sont rapatriés, ABSENT 0, les 199
+« NAS plus petit » sont nos propres copies, zéro tag perdu. **Reste un
+correctif tranché par banc** (`verifier_reparation_exif.py`) : quand
+l'écriture EXIF échoue (« Error reading OtherImageStart »), `write_metadata`
+doit retomber sur XMP+IPTC seulement au lieu d'appeler `repair_file` (qui
+détruit le trailer ou l'ICC) ; un banc l'exige sur un Motion Photo. Ne PAS
+toucher au Takeout de `C:\GOOGLE PHOTOS\extrait` avant la copie hors site.
 
-**1 sexies. Le rangement par année — CLOS (29/08, sessions 65–66).** Le
-rebond du 29/08 (plan périmé relu par bat 26) a deux garde-fous testés :
-`plan_vise_la_racine` refuse un plan-racine, `plan_perime` refuse un plan plus
-vieux que la dernière bannière `DEMARRAGE` — et le plan est recalculé à chaque
-démarrage (ligne `🗂 plan rangement annee` au journal). Bat 26 a rangé 29 sur
-38 ; les 9 restants (ré-encodages Google homonymes) sont en quarantaine par
-bat 37 (`--homonymes-differents`, décision Mike), observé : index −9, plan
-« 0 à ranger ». `_Uploads` → boîte de réception par propriétaire : TRANCHÉ
-(`eval/DECISIONS.md`). Bat 34 : FAIT par Mike (31/08 matin) — 1 sexies CLOS.
+**1 sexies. Le rangement par année — CLOS (29-31/08).** Deux garde-fous
+testés contre le rebond du 29/08 : `plan_vise_la_racine` refuse un
+plan-racine, `plan_perime` refuse un plan plus vieux que la dernière
+bannière `DEMARRAGE` — et le plan est recalculé à chaque démarrage. Bat 26 a
+rangé 29 sur 38 ; les 9 restants (ré-encodages Google homonymes) sont en
+quarantaine par bat 37. Bat 34 fait par Mike le 31/08.
 
 **1 quater. Le 9 septembre au matin : VÉRIFIER que Windows a demandé.**
 Patch Tuesday tombe le 8 ; le redémarrage arrivait toujours vers 01:30 la nuit
@@ -80,8 +74,28 @@ intégrer à `25 - Maintenance`), et compter d'abord (`mesure_` ou exiftool).
   la LECTURE observée par Mike le soir (« la vidéo fonctionne »). Scan :
   **4 086 vidéos** indexées (index 43 703 → 47 789), image-clé ffmpeg par
   `/api/thumb`, badge « ▶ durée », `<video controls>` sur l'original en flux.
-- **Phase 2 : à CADRER avec Mike** — tagging du contenu ? transcodage ?
-  recherche dans les vidéos ? Rien n'est décidé, ne pas commencer sans lui.
+- **Phase 2 — TAGGING et RECHERCHE des vidéos : demandée par Mike (31/08),
+  à MESURER avant d'écrire.** La voie sobre, et la seule qui tienne dans
+  4 Go de VRAM : **pas de modèle vidéo**, on traite des IMAGES-CLÉS. Le
+  serveur en extrait déjà une par vidéo (ffmpeg, `/api/thumb`) ; il en
+  faudra plusieurs pour qu'un plan de fin ne soit pas invisible.
+  - (a) **Tagger** : N images-clés → le tagueur de prod (`qwen3-vl:2b`,
+    prompt v2ctx inchangé) → mots-clés FUSIONNÉS sur l'entrée vidéo, une
+    description par vidéo. Aucun cinquième pipeline (invariant n° 4).
+  - (b) **Chercher** : les mêmes images-clés encodées par SigLIP →
+    `vectors` → les vidéos entrent dans la recherche IA existante, avec le
+    MAX des similarités de leurs images (une vidéo est pertinente si UN de
+    ses plans l'est).
+  - (c) **La question qui décide du coût** : combien d'images par vidéo ?
+    1 (≈ 4 086 taggings, ~5 h) ; 3 aux quarts (≈ 12 000, ~15 h) ; une toutes
+    les 10 s (des dizaines de milliers, hors de portée). **À trancher par un
+    banc**, pas par une intuition : prendre 30 vidéos, tagger 1 image puis
+    3, et mesurer ce que la 2ᵉ et la 3ᵉ AJOUTENT vraiment.
+  - (d) **Le SON est écarté pour l'instant** : une transcription (Whisper)
+    serait un cinquième pipeline et un second modèle en VRAM. À parquer,
+    pas à improviser.
+  - **Contrainte de calendrier** : rien de tout ça ne se lance avant que le
+    refroidissement soit réparé (voir la surchauffe du 30-31/08).
 
 **1 nonies. L'INTELLIGENCE de la recherche IA (Mike, 29/08).** **MESURÉ
 (nuit du 30/08, `mesure_requete_fr_en.py`, 40 paires)** : rappel@200 FR 0,583
@@ -194,6 +208,34 @@ lancement, mais après avoir trouvé DEUX défauts dans l'instrument lui-même**
 fabriquait seize faux griefs). 15 tests, rouges sur chaque mutation.
 Portée dite : ni `keyCode`, ni écouteur assemblé à l'exécution, ni ce que
 `server.py` injecte.
+
+**2 bis. RE-TAGGER tout le fonds ? — QUESTION DE MIKE (31/08), à MESURER
+avant de répondre.** Le fait qui la motive : **22 196 entrées (52 %) n'ont
+jamais vu le tagueur actuel** — leurs mots-clés viennent d'un XMP relu
+(index reconstruit depuis les fichiers, 11/07), pas de `v2ctx` adopté le
+12/08. Le fonds est donc tagué par DEUX générations d'outil, et « calico »
+(82 photos) est une trace du plus ancien. **Mais** : ~4,3 s par photo
+mesuré, soit **~26 h de GPU** pour ces 22 196 — sur une machine qui a coupé
+quatre fois en trois jours. **Ordre recommandé** : (1) un banc de
+comparaison sur ~100 photos déjà taguées, moitié « XMP relu » moitié
+`v2ctx`, qui CHIFFRE le gain avant de le payer ; (2) si le gain est net,
+re-tagger d'abord le sous-ensemble « XMP relu », pas le fonds entier ;
+(3) rien avant le dépoussiérage. Ne pas relancer un tagging global à
+l'aveugle : 26 h de GPU pour un gain inconnu, c'est un pari, pas une mesure.
+
+**2 ter. Le menu de COMPTE — FAIT, OBSERVÉ (31/08).** Pastille avec
+l'initiale + nom dans la barre (surface papier, comme l'onglet actif : aucun
+accent inventé), menu déroulant bâti à l'OUVERTURE (`/api/moi` une fois par
+page ; le bâtir au chargement ferait payer treize pages pour un geste rare).
+Contenu : Mes photos (`?q=personne:Nom`), Mon dossier privé (**seulement
+s'il existe** — `_prive_url`, mis en cache 60 s, sinon un `stat` SMB par
+page), taille des vignettes (3 crans, `--vig` sur `:root` + localStorage,
+les deux planches gardent leur `clamp` en repli), Raccourcis, puis Réglages
+et Santé pour l'admin seul, et Se déconnecter. `⚙️ Réglages` a QUITTÉ la
+barre : un lien admin-seulement n'a rien à faire dans la barre de tous.
+Observé : densité 96 → 86 → 210 px sur la planche, Échap ferme, cible 44 px.
+`--encre` a été retiré du « Se déconnecter » — mesuré à 3,50:1 sur
+`--salle-2`, sous le plancher AA, et se déconnecter ne détruit rien.
 
 **3. La suite du chantier 17 (multi-utilisateurs)** : la notion de
 PROPRIÉTAIRE, puis l'attribution rétroactive des 3 767 décisions à Mike.

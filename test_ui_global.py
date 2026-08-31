@@ -170,6 +170,75 @@ class LePanneauDesRaccourcisLitUneSeuleSource(unittest.TestCase):
         self.assertNotIn("| Touche |", apres)
 
 
+class LeMenuDeCompte(unittest.TestCase):
+    """Savoir QUI regarde, et regler le peu qui se regle (Mike, 31/08).
+
+    Le menu est bati en JS a l'OUVERTURE : la plupart des visites ne
+    l'ouvrent jamais, et le batir au chargement ferait payer treize pages
+    pour un geste rare. On teste donc la source, pas le DOM."""
+
+    def test_la_barre_porte_le_bouton_et_son_menu(self):
+        self.assertIn('class="appnav-moi" hidden', NAV)
+        self.assertIn('aria-haspopup="menu"', NAV)
+        self.assertIn('aria-controls="moi-menu"', NAV)
+        self.assertIn('role="menu"', NAV)
+
+    def test_reglages_a_quitte_la_barre_pour_le_menu(self):
+        # Un lien admin-seulement n a rien a faire dans la barre de tous.
+        self.assertNotIn('data-p="/reglages"', NAV)
+        self.assertIn('href="/reglages"', GLOBAL_JS)
+
+    def test_l_identite_vient_du_SERVEUR(self):
+        self.assertIn("fetch('/api/moi')", GLOBAL_JS)
+        h = ast.get_source_segment(SOURCE, _noeud('_serve_moi'))
+        self.assertIn('"prive": _prive_url(nom)', h)
+        self.assertIn('"admin"', h)
+
+    def test_le_dossier_prive_n_apparait_que_s_il_EXISTE(self):
+        # On n ouvre pas une porte sur une page qui n a rien a montrer.
+        h = ast.get_source_segment(SOURCE, _noeud('_prive_url'))
+        self.assertIn('is_dir()', h)
+        self.assertIn('return None', h)
+        self.assertIn('if (MOI.prive)', GLOBAL_JS)
+
+    def test_l_url_du_prive_est_mise_en_cache(self):
+        # /api/moi part sur CHAQUE page : sans cache, un stat SMB par page.
+        h = ast.get_source_segment(SOURCE, _noeud('_prive_url'))
+        self.assertIn('_PRIVE_URL_CACHE', h)
+        self.assertIn('ttl', h)
+
+    def test_se_deconnecter_n_est_offert_que_si_la_porte_est_fermee(self):
+        self.assertIn('if (MOI.porte)', GLOBAL_JS)
+        self.assertIn("'/api/deconnexion'", GLOBAL_JS)
+
+    def test_se_deconnecter_ne_porte_PAS_l_accent_destructif(self):
+        # Mesure : --encre sur --salle-2 = 3,50:1, sous le plancher AA ; et
+        # se deconnecter ne detruit rien.
+        i = SOURCE.index('.moi-menu')
+        self.assertNotIn('.part{color:var(--encre)', SOURCE[i:i + 3000])
+
+    def test_la_densite_est_posee_AVANT_le_premier_rendu(self):
+        # Sinon la planche se peint deux fois, et ca se voit.
+        self.assertLess(GLOBAL_JS.index('poserDensite(densiteLue())'),
+                        GLOBAL_JS.index('function poserMoi()'))
+        self.assertIn("localStorage.getItem('densite')", GLOBAL_JS)
+
+    def test_les_deux_planches_lisent_la_densite_avec_un_repli(self):
+        for page in ('gallery', 'browse'):
+            html = (HERE / 'ui' / 'pages' / (page + '.html')).read_text(encoding='utf-8')
+            self.assertIn('var(--vig, clamp(', html,
+                          page + ' : sans repli, aucun reglage = aucune planche')
+
+    def test_le_menu_se_ferme_par_Echap_et_par_le_bouton(self):
+        self.assertIn("ev.key === 'Escape' && MENU_OUVERT", GLOBAL_JS)
+        self.assertIn('if (MENU_OUVERT) fermerMenu(); else ouvrirMenu();', GLOBAL_JS)
+
+    def test_le_nom_est_echappe(self):
+        # Un nom de compte est une chaine choisie par un humain, et elle
+        # entre dans du HTML construit a la main.
+        self.assertIn('esc(MOI.nom)', GLOBAL_JS)
+
+
 class ServerEtBundleAccordent(unittest.TestCase):
 
     def test_meme_bloc(self):
