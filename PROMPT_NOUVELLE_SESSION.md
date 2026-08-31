@@ -51,6 +51,15 @@ sous un compte → chez l'envoyeur), conflit de `faces` ENTRE fiches, contrôle
 403 « photo partagée » du banc. **Vidéos phase 1 : CLOSE** (lecture observée
 par Mike le 30/08 soir).
 
+**SURCHAUFFE (31/08 matin) : le PC a coupé brutalement 4× en 7 jours**
+(Kernel-Power 41 : 28/08 ~08:54 et 22:47, 30/08 21:47 et 22:05 — les deux
+derniers PENDANT les passes du banc + Ollama). Diagnostic
+`diagnostic_thermique.py` (famille banc) : pas d'événement Kernel-Thermal
+explicite (l'EC coupe sans journaliser), GPU jamais vu > 55 °C — le suspect
+est le CPU/VRM et une courbe de ventilation trop passive. Conseils donnés à
+Mike (MSI Center : courbe Advanced / Cooler Boost, dépoussiérage, plafonner
+le turbo CPU). Les bancs prennent `--pause-s` pour ménager la machine.
+
 ## Prochain pas
 
 1. **FAIT (30/08 soir)** : les 10 noms tranchés et appliqués ; la

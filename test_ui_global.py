@@ -128,8 +128,10 @@ class LaBarreN_aPlusDeScriptInline(unittest.TestCase):
         self.assertIn("tag === 'input' || tag === 'textarea'", GLOBAL_JS)
         self.assertIn("isContentEditable", GLOBAL_JS)
 
-    def test_masque_sur_files(self):
-        self.assertIn("p.indexOf('/files') === 0", GLOBAL_JS)
+    def test_masque_la_ou_la_page_a_son_champ(self):
+        # UN SEUL outil de recherche par page (Mike, 31/08) : /files (barre de
+        # la galerie) et /map (champ de la carte, meme moteur /api/search).
+        self.assertIn("p.indexOf('/files') === 0 || p.indexOf('/map') === 0", GLOBAL_JS)
 
     def test_le_sablier_ne_s_enrobe_pas_deux_fois(self):
         self.assertIn("window.fetch.__uiGlobal", GLOBAL_JS)

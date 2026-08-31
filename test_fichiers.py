@@ -263,6 +263,23 @@ def main():
         check(names(store) == noms3, "corbeille : aucun nom humain perdu")
         qui["nom"] = "Mike"
 
+        # --- la purge AUTOMATIQUE (choix de Mike, 30/08 soir) : structurel ---
+        # La boucle de maintenance porte purger(appliquer=True) sous un try
+        # (une purge qui echoue ne tue jamais la boucle). Sur la SOURCE de
+        # server.py : la boucle est intestable sans serveur.
+        import ast as _ast
+        _src = (Path(__file__).resolve().parent / 'server.py').read_text(encoding='utf-8')
+        _corps = ''
+        for _n in _ast.walk(_ast.parse(_src)):
+            if isinstance(_n, _ast.FunctionDef) and _n.name == 'maintenance_loop':
+                _corps = _ast.get_source_segment(_src, _n)
+                break
+        check('purger(appliquer=True)' in _corps,
+              "maintenance_loop purge la corbeille (appliquer=True)")
+        _i = _corps.find('purger(appliquer=True)')
+        check(_i > 0 and 'try:' in _corps[max(0, _i - 200):_i],
+              "la purge vit sous un try (une panne ne tue pas la boucle)")
+
         print()
         if FAIL:
             print(f"ECHEC : {len(FAIL)} assertion(s) — {FAIL}")

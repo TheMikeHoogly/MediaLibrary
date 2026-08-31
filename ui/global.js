@@ -56,12 +56,14 @@
 
   // ── 3. la recherche dans la barre ────────────────────────────────────────
   // Le champ est un vrai <form action="/files"> : Entrée suffit, sans JS.
-  // Sur /files la galerie porte déjà sa barre (tags, IA) : deux champs sur
-  // une même page se contrediraient — on masque celui de la barre.
+  // UN SEUL outil de recherche par page (Mike, 31/08) : sur /files la galerie
+  // porte déjà sa barre (tags, IA), sur /map la carte porte la sienne (même
+  // moteur /api/search, mais elle FILTRE la carte) — on masque celui de la
+  // barre là où la page a le sien.
   function poserRecherche() {
     var form = document.querySelector('.appnav-q');
     if (!form) return;
-    if (p.indexOf('/files') === 0) { form.hidden = true; return; }
+    if (p.indexOf('/files') === 0 || p.indexOf('/map') === 0) { form.hidden = true; return; }
     var champ = form.querySelector('input[name="q"]');
     if (!champ) return;
     // Un envoi vide renverrait la galerie entière : on le retient.

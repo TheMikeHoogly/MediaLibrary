@@ -45,7 +45,7 @@ démarrage (ligne `🗂 plan rangement annee` au journal). Bat 26 a rangé 29 su
 38 ; les 9 restants (ré-encodages Google homonymes) sont en quarantaine par
 bat 37 (`--homonymes-differents`, décision Mike), observé : index −9, plan
 « 0 à ranger ». `_Uploads` → boîte de réception par propriétaire : TRANCHÉ
-(`eval/DECISIONS.md`). Reste bat 34 (dossiers année vides à la racine).
+(`eval/DECISIONS.md`). Bat 34 : FAIT par Mike (31/08 matin) — 1 sexies CLOS.
 
 **1 quater. Le 9 septembre au matin : VÉRIFIER que Windows a demandé.** Patch
 Tuesday tombe le 8 ; le redémarrage arrivait toujours vers 01:30 la nuit
@@ -159,29 +159,15 @@ photo par photo, verdicts appliqués par l'API et observés après redémarrage 
 s'effacer (`eval/DECISIONS.md`). Le dédoublonnage au sha256 (23/08) était vrai
 et aveugle — chiffres dans `eval/DECISIONS.md` (29/08).
 
-**1 undecies. Les mots-clés ANGLAIS dans `kw_fr` (Mike, 30/08 : « chat calico »).**
-**MESURÉ le 30/08** (`mesure_anglais_dans_fr.py`, `mesure_scission_fr_en.py`,
-copie de l'index) : ce n'est pas le tagueur. **22 196 photos (52 %) ont un
-`kw_en` VIDE** et un `kw_fr` qui porte les deux langues à la suite — la liste
-`kw_fr + kw_en` écrite dans le XMP par `write_metadata`, relue telle quelle
-quand l'index a été reconstruit depuis les fichiers (3 147 le 11/07, `pipe`
-absent). Le tagueur v2ctx fuit 11 photos sur 4 804. **Règle écrite et
-mesurée** : `scission_fr_en.py` (pure) — vocabulaires FR/EN appris sur les
-entrées saines, vote par tag, coupure de score maximal, milieu si ex æquo :
-**22 190 sur 22 196 se scindent** (19 175 coupure unique). **Applicateur
-livré** : `appliquer_scission_fr_en.py` (index seul, serveur arrêté et
-prouvé, à blanc par défaut, `undo_scission_*.json`), test vert, **bat 41**.
-**APPLIQUÉ PAR MIKE le 30/08 15:08** : `undo_scission_20260830_150822.json`,
-**22 176 entrées scindées**. Observé (session 68, 16:20) : « chaise » rend 80
-photos en puces françaises (élargi « chair ») ; un `fence` résiduel côté FR sur
-une photo — le lot des ~5 600 neutres annoncé. Le serveur scinde lui-même à la
-relecture d'un XMP depuis `a78faa4` (`read_meta_and_gps` → `scission_fr_en`),
-pas encore exercé (aucun import depuis). Imparfait
-et dit : ~5 600 tags neutres des deux langues (orange, art, bar, jeans) restent
-côté FR ; « calico » (82) est une vraie fuite du vieux tagueur, à re-tagger
-un jour. **Le serveur devrait scinder lui-même** quand il relit un XMP
-(`read_meta_and_gps` → `kw_fr` seul) : à brancher sur `scission_fr_en`, sinon
-le prochain rescan re-mélange.
+**1 undecies. Les mots-clés ANGLAIS dans `kw_fr` — APPLIQUÉ (30/08).**
+Cause mesurée : 22 196 entrées au `kw_en` vide (XMP relu entier dans `kw_fr`,
+pas le tagueur ; le tagueur v2ctx ne fuit que 11/4 804). Règle
+`scission_fr_en.py` (vocabulaires appris, vote par tag), applicateur + bat 41 :
+**22 176 scindées par Mike à 15:08** (`undo_scission_*.json`), observé
+(« chaise » → puces FR, élargi « chair »). Le serveur scinde lui-même à la
+relecture d'un XMP (`read_meta_and_gps` → `scinder_entree`, livré `a78faa4`,
+pas encore exercé). Imparfait et dit : ~5 600 tags neutres des deux langues
+restent côté FR ; « calico » (82) est une fuite du vieux tagueur, à re-tagger.
 
 **1 duodecies. La recherche IA VISIBLE PARTOUT (Mike, 30/08 12:55).** Le champ
 de recherche ne vivait que dans la galerie ; Mike le veut sur chaque onglet.
@@ -245,13 +231,18 @@ Spécifié — six décisions de Mike, plus bas dans ce fichier : l'exécuter, n
 pas le rouvrir. Deux questions ouvertes dans `QUESTIONS_MIKE.md` bloquent
 l'écriture partagée.
 
-**3 bis. Le garde-fou de la confidentialité (chantier 18, demandé le 27/08)** :
-signaler à l'envoi les photos qui portent des données personnelles — factures,
-fiches de paie, pièces d'identité — pour que leur auteur les déplace dans son
-`PRIVE` ou les efface. **Le détecteur se greffe sur la passe de tagging qui
-regarde déjà chaque photo** : pas de cinquième pipeline. Le geste « déplacer
-dans PRIVE » attend 17a ; le reste, non. C'est la seule fuite de ce projet qui
-ne demande AUCUNE erreur de manipulation — juste l'oubli d'un geste.
+**3 bis. Le garde-fou de la confidentialité (chantier 18) — EN COURS
+(session 68, 30/08 soir).** Catégories TRANCHÉES : les six de la spec
+(`eval/DECISIONS.md`). **La mesure d'abord (18e)** : `mesure_sensibles.py`
+interroge le modèle de prod sur un échantillon (candidats « document / reçu /
+capture… » + témoins aléatoires, tirage séedé, cache reprenable, axe fermé)
+→ `docs/sensibles_echantillon.json`, une liste à JUGER par Mike — rien ne
+bouge. Banc lancé le 30/08 soir (~16 s/photo, passes successives sous le
+plafond du canal). Ensuite : la question dans la MÊME invocation du tagueur
+(pas de cinquième pipeline), l'axe `sensible:` en base seulement (jamais le
+XMP — 18c), l'écran d'envoi aux trois gestes (PRIVE / corbeille / « non »,
+mémorisé), la passe rétroactive. Et la **purge automatique de la corbeille
+(180 j) est POSÉE** (maintenance, 1×/jour — `test_fichiers.py`).
 
 **4. UNIFIER le re-clé** — la réparation est faite (27/08, voir l'état de
 session 57), mais la primitive complète existe désormais **TROIS fois** :

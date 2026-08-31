@@ -5981,6 +5981,21 @@ def maintenance_loop():
         # le travail humain reste sur un volume sauvegardé, sans SQLite sur SMB.
         # L'échéance se lit sur le FICHIER, pas sur un compteur de tours :
         # voir _backup_du() — le compteur ne survivait pas au redémarrage.
+        # Purge de la corbeille des effacements (choix de Mike, 30/08 soir) :
+        # ce qui a depasse la retention (180 j) part DEFINITIVEMENT, par le
+        # meme code que le bouton admin (`fichiers.purger`, qui ne touche
+        # jamais un chemin hors corbeille et ne lit que son journal). Une
+        # fois par jour suffit — au 12e cycle (l'heure creuse du demarrage
+        # est passee), puis toutes les ~24 h. Silencieux quand il n'y a rien.
+        if cycle % 288 == 12:
+            try:
+                res = file_ops().purger(appliquer=True)
+                if res['purges']:
+                    print(f"  🗑 corbeille : {len(res['purges'])} panier(s) "
+                          f"expire(s) purge(s) ({res['octets']} o), "
+                          f"{res['restent']} restant(s)")
+            except Exception as e:                            # noqa: BLE001
+                print(f"  ⚠ purge de la corbeille ignorée : {e}")
         cycle += 1
         if _backup_du():
             backup_db()
