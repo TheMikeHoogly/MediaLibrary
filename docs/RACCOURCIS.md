@@ -83,11 +83,15 @@ Les candidats portent une lettre, `A`–`H` (`LETTRES = 'ABCDEFGH'`).
 
 <!-- panneau: fin -->
 
-## Le point 6 du plancher : POSÉ le 30/08
+## Le point 6 du plancher : CLOS le 31/08
 
 « Documente les raccourcis dans l'interface elle-même » : le panneau `?`
 (bouton dans la barre commune, touche `?`, `Échap` ferme) est rendu par
 `ui/global.js` — la brique JS commune, injectée sur toutes les pages comme
-`tokens.css` et `base.css` — à partir de CE fichier. Ce qui manque encore :
-l'**instrument** qui relève les touches écoutées dans `ui/pages` et compare à
-ce relevé, pour qu'une touche ajoutée sans être documentée se voie.
+`tokens.css` et `base.css` — à partir de CE fichier. Et **l'instrument
+existe** : `verifier_raccourcis.py` relève les touches réellement écoutées
+dans `ui/pages/*.html` + `ui/global.js`, les compare à ce relevé, et rend
+deux chiffres — les touches écoutées qu'on ne peut pas deviner, et celles
+que le relevé promet sans que personne ne les écoute. **Ce fichier n'est
+donc plus une copie à maintenir : il est mesuré.** Le lancer après toute
+touche ajoutée ou retirée (famille `verifier_`, donc par l'agent banc).

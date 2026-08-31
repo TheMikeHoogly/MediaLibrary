@@ -47,14 +47,14 @@ bat 37 (`--homonymes-differents`, décision Mike), observé : index −9, plan
 « 0 à ranger ». `_Uploads` → boîte de réception par propriétaire : TRANCHÉ
 (`eval/DECISIONS.md`). Bat 34 : FAIT par Mike (31/08 matin) — 1 sexies CLOS.
 
-**1 quater. Le 9 septembre au matin : VÉRIFIER que Windows a demandé.** Patch
-Tuesday tombe le 8 ; le redémarrage arrivait toujours vers 01:30 la nuit
-suivante. Trois réglages ont été posés le 28/08 (notification ACTIVÉE,
-préversions coupées, `NoAutoRebootWithLoggedOnUsers=1`) et **aucun n'est
-prouvé**. Lire `Get-WinEvent -FilterHashtable @{LogName='System'; Id=1074}` et
-la bannière du journal : si le serveur a tourné sans interruption, les
-réglages tiennent ; sinon la stratégie de groupe n'a pas été honorée et il
-faut regarder « Stratégies de mise à jour configurées ».
+**1 quater. Le 9 septembre au matin : VÉRIFIER que Windows a demandé.**
+Patch Tuesday tombe le 8 ; le redémarrage arrivait toujours vers 01:30 la nuit
+suivante. Trois réglages posés le 28/08 (notification activée, préversions
+coupées, `NoAutoRebootWithLoggedOnUsers=1`) et **aucun n'est prouvé**. Lire
+`Get-WinEvent -FilterHashtable @{LogName='System'; Id=1074}` et la bannière du
+journal ; sinon regarder « Stratégies de mise à jour configurées ». Attention
+au bruit : depuis le 28/08 la machine a aussi coupé BRUTALEMENT (Id 41) pour
+cause thermique — voir `diagnostic_thermique.py`, ne pas confondre les deux.
 
 **1 septies. RÈGLE Motion Photo — MÉTHODE VÉRIFIÉE, à mettre en oeuvre (29/08).**
 Règle tranchée (`eval/DECISIONS.md`) : une Motion Photo ne garde que son image,
@@ -70,54 +70,18 @@ autres ; (2) après vérif des stills, purge des `*.jpg_original`. Les paires
 — leur purge relève de (2). **À faire** : bat de strip + bat de purge (ou
 intégrer à `25 - Maintenance`), et compter d'abord (`mesure_` ou exiftool).
 
-**1 octies. CHANTIER : intégrer les VIDÉOS (comme les images).** Aujourd'hui
-les `.mp4` vivent dans `_A TRIER` mais ne sont NI indexées (le scan filtre
-`IMAGE_EXT`), NI taguées, NI rangées, NI cherchables. `recensement_doublons.py`
-les compte déjà (il inclut `VIDEO_EXT`), mais c'est tout. Plan par phases, la
-valeur d'abord :
-- **Phase 0 — RANGEMENT par année : OUTILLÉ (session 66), à appliquer par
-  Mike (bat 39)**. Sans passer par l'index : `inventaire_videos.py` (lecture
-  seule, 21 s sur le NAS) date par le NOM (`AAAAMMJJ_HHMMSS`, `VID-…-WA`),
-  sinon ExifTool `-fast` (QuickTime), sinon le dossier année du Takeout —
-  jamais le mtime — et écrit `docs/plan_rangement_videos.json` avec la règle
-  des photos (`rangement_annee.construire_plan`) ; `appliquer_plan_annee.py
-  --plan …` le range (mêmes gardes, même undo). **Mesuré** : 3 073 vidéos,
-  73,7 Go, 3 066 datées par le nom, 7 par ExifTool, **0 sans date**, 0 conflit,
-  → `Photos Mike\2016…2026` (2024 : 1 509). Question à Mike : les 5 vidéos de
-  `180328 Samsung Floflo` vont chez Mike par la règle 17c (`QUESTIONS_MIKE.md`).
-- **Phase 1 — les vidéos dans la GALERIE : CLOSE (30/08 — livrée le matin,
-  la LECTURE observée par Mike le soir : « la vidéo fonctionne »)**. Observé : le scan a indexé **4 086 vidéos** (index 43 703 →
-  47 789, +4 086 / −0, 8 min d'ExifTool `-fast` une fois), zéro fil mort,
-  `/api/faits` date « 5 mars 2016 (exif) », `/api/thumb` rend l'image-clé
-  ffmpeg (200, 22 Ko), badge « ▶ 0:11 » sur 11 vignettes du 5 mars, la
-  visionneuse ouvre un `<video controls>` sur l'original (206 en flux, 5 Mo/s
-  mesuré). **Non observé** : la LECTURE elle-même — Chrome diffère le
-  chargement d'une vidéo dans un onglet caché, et l'onglet de Claude l'est ;
-  à regarder par Mike, un clic. `VIDEOS_DANS_L_INDEX = False` rend le scan
-  d'hier. Le diaporama montre l'image-clé, pas la vidéo (accepté en phase 1).
-  Ce que ça touche, dans l'ordre (ce qui est fait est marqué ✓) : (a) le SCAN les indexe (`VIDEO_EXT` à côté
-  d'`IMAGE_EXT` dans `scan_uploads`/`_sync_dir` ; entrée `{video: true,
-  duree, taken}` — date par le nom / ExifTool `-fast`, jamais le mtime, comme
-  `inventaire_videos`) ; (b) la VIGNETTE : une image-clé `ffmpeg -ss <milieu>
-  -frames:v 1` dans `photo_thumbs/` sous la même clé que les photos, calculée
-  par le fil des vignettes (coût CPU à mesurer sur 3 073 vidéos, 73,7 Go —
-  échantillonner) ; (c) la GALERIE : badge « ▶ durée » sur la vignette, la
-  visionneuse ouvre un `<video controls>` (le seek marche déjà : `_send_file`
-  gère Range) ; (d) le TAGGING : pas dans cette phase — la vidéo est visible
-  et lisible sans lui (phase 2). Gardes : ne jamais envoyer une vidéo au
-  tagueur ni aux visages tant que la phase 2 n'existe pas (`in_file`,
-  `write_metadata` refusent les `VIDEO_EXT`) ; 3 073 clés de plus dans un
-  index de 43 702.
-- **Phase 2 — tagging IA** : passer le pipeline vision existant sur 1..N
-  images-clés, agréger, ÉCRIRE les mots-clés dans le conteneur MP4 (`exiftool`
-  QuickTime/XMP) — analogue à `write_metadata`.
-- **Phase 3 — visages/animaux** sur les images-clés, rattachés aux fiches.
-- **Phase 4 — recherche sémantique** : encoder l'image-clé, comme une photo.
-- Transverse : dédup vidéo (déjà par `recensement_doublons`), gros fichiers
-  (le rename gère déjà), coût CPU/GPU de l'extraction+inférence à mesurer,
-  `ffmpeg` : **PRÉSENT** (7.1.1 sur le PATH, `verifier_outils_video.py`,
-  29/08) — la phase 1 peut commencer sans installation. **Dépendance** : Phase 0 profite du
-  correctif `cible()` (rangement par propriétaire) déjà posé.
+**1 octies. Les VIDÉOS — phases 0 et 1 CLOSES (30/08).**
+- **Phase 0, rangement par année** : `inventaire_videos.py` date par le NOM
+  (`AAAAMMJJ_HHMMSS`, `VID-…-WA`), sinon ExifTool `-fast`, sinon le dossier
+  année du Takeout — jamais le mtime ; `appliquer_plan_annee.py --plan …`
+  range (mêmes gardes, même undo), **bat 39**. Mesuré : 3 073 vidéos, 73,7 Go,
+  0 sans date, 0 conflit.
+- **Phase 1, les vidéos dans la GALERIE : CLOSE** — livrée le 30/08 matin,
+  la LECTURE observée par Mike le soir (« la vidéo fonctionne »). Scan :
+  **4 086 vidéos** indexées (index 43 703 → 47 789), image-clé ffmpeg par
+  `/api/thumb`, badge « ▶ durée », `<video controls>` sur l'original en flux.
+- **Phase 2 : à CADRER avec Mike** — tagging du contenu ? transcodage ?
+  recherche dans les vidéos ? Rien n'est décidé, ne pas commencer sans lui.
 
 **1 nonies. L'INTELLIGENCE de la recherche IA (Mike, 29/08).** **MESURÉ
 (nuit du 30/08, `mesure_requete_fr_en.py`, 40 paires)** : rappel@200 FR 0,583
@@ -217,13 +181,19 @@ liseré veilleuse recalé sur l'image affichée (`object-fit: contain`,
 naturalWidth, recalcul au redimensionnement). Observé : le bon visage encadré
 sur une photo à trois enfants.
 
-**2. Le pense-bête des raccourcis DANS l'interface — FAIT, OBSERVÉ (session
-68, 30/08 19:41).** Panneau `?` sur `ui/global.js` : bouton dans la barre,
-touche `?`, `Échap` ferme, focus rendu ; contenu = `docs/RACCOURCIS.md` servi
-tel quel par `GET /api/raccourcis` (une source, jusqu'au marqueur
-`panneau: fin`), la section de la page courante remonte avec une pastille
-« ici ». Reste **l'instrument** : relever les touches écoutées dans
-`ui/pages` et les comparer au relevé.
+**2. Le pense-bête des raccourcis DANS l'interface — CLOS (31/08).**
+Panneau `?` sur `ui/global.js` (bouton dans la barre, touche `?`, `Échap`
+ferme, focus rendu ; contenu = `docs/RACCOURCIS.md` servi tel quel par
+`GET /api/raccourcis`, section de la page courante en tête). **Et
+l'instrument est posé** : `verifier_raccourcis.py` relève ce que les pages
+écoutent (`=== `, `!== `, la plage `/^[a-zA-Z]$/`, une constante de lettres
+indexée), compare au relevé et rend DEUX chiffres — écoutées non
+documentées / promises plus écoutées. **Vert sur les 13 sources au premier
+lancement, mais après avoir trouvé DEUX défauts dans l'instrument lui-même**
+(`strip()` effaçait la touche `Espace` ; la plage `A`–`Z` développée
+fabriquait seize faux griefs). 15 tests, rouges sur chaque mutation.
+Portée dite : ni `keyCode`, ni écouteur assemblé à l'exécution, ni ce que
+`server.py` injecte.
 
 **3. La suite du chantier 17 (multi-utilisateurs)** : la notion de
 PROPRIÉTAIRE, puis l'attribution rétroactive des 3 767 décisions à Mike.

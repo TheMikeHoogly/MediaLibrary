@@ -51,14 +51,25 @@ sous un compte → chez l'envoyeur), conflit de `faces` ENTRE fiches, contrôle
 403 « photo partagée » du banc. **Vidéos phase 1 : CLOSE** (lecture observée
 par Mike le 30/08 soir).
 
+**Poste de travail Linux de l'app HS (31/08 matin)** : `device_bash` ne
+démarre plus. Contournement qui MARCHE et qui a servi à livrer : lecture par
+`device_stage_files`, écriture par `device_commit_files` (y compris les
+fichiers de commande des agents, en CRLF), observation par Claude-in-Chrome.
+
 **SURCHAUFFE (31/08 matin) : le PC a coupé brutalement 4× en 7 jours**
 (Kernel-Power 41 : 28/08 ~08:54 et 22:47, 30/08 21:47 et 22:05 — les deux
 derniers PENDANT les passes du banc + Ollama). Diagnostic
 `diagnostic_thermique.py` (famille banc) : pas d'événement Kernel-Thermal
 explicite (l'EC coupe sans journaliser), GPU jamais vu > 55 °C — le suspect
-est le CPU/VRM et une courbe de ventilation trop passive. Conseils donnés à
-Mike (MSI Center : courbe Advanced / Cooler Boost, dépoussiérage, plafonner
-le turbo CPU). Les bancs prennent `--pause-s` pour ménager la machine.
+est le CPU/VRM et une courbe de ventilation trop passive. **Réglé par Mike avec ThrottleStop** : `Disable Turbo` (qui coûtait 41 % de
+vitesse) remplacé par un plafond de PUISSANCE — PL1 24 W, PL2 35 W, 28 s,
+`Sync MMIO` (sans quoi le firmware MSI garde ses 28/35 et le réglage ne
+s'applique jamais). Mesuré au TS Bench 120M/8 fils : **26,652 s → 18,907 s**
+(+41 %), pic 88 → 92 °C, `PKG Max` inchangé à 34,9 W. `PROCHOT Offset` est
+VERROUILLÉ par le BIOS (97 °C, pas de filet intermédiaire). Reste : le
+dépoussiérage — 88 °C pour 35 W trahit un refroidissement encrassé, les
+limites achètent de la marge sans réparer la cause. Les bancs prennent
+`--pause-s` pour ménager la machine.
 
 **Chantier 18 (31/08 matin)** : 7 catégories (`administratif` ajoutée),
 empreinte de prompt dans le cache du banc (les 43 verdicts des six sont
@@ -71,8 +82,8 @@ charge) : ne pas le relancer sans son feu vert.
 
 1. **FAIT (30/08 soir)** : les 10 noms tranchés et appliqués ; la
    confirmation fait autorité sur l'exclusion (gravé, testé).
-2. **Panneau `?` : FAIT** (session 68, `feat/panneau-raccourcis`). Reste
-   l'instrument qui relève les touches écoutées dans `ui/pages`.
+2. **Panneau `?` et son INSTRUMENT : FAITS** (`verifier_raccourcis.py`,
+   31/08) — le point 2 est clos.
 3. **FAIT** : le visage visé est encadré dans la loupe.
 4. **La Carte a deux champs** (barre + « Rechercher (noms, lieux, sens) ») :
    à trancher avec Mike — garder les deux (fonds entier / filtre carte) ou
