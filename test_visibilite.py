@@ -283,5 +283,40 @@ class MagasinReel(unittest.TestCase):
             self.assertEqual(len(st.data), 2)
 
 
+class LaCiblePrive(unittest.TestCase):
+    """« Rendre privee, c'est deplacer » (17a) : le geste en un clic doit
+    savoir OU, et le DIRE quand il n'y a pas de chez-soi."""
+
+    def test_chez_un_proprietaire(self):
+        self.assertEqual(
+            V.cible_prive('Photos Mike/2016/07 Voyage/x.jpg'),
+            ('Photos Mike/PRIVE', None))
+        self.assertEqual(V.cible_prive('Photos Flo/Love/a.jpg')[0],
+                         'Photos Flo/PRIVE')
+
+    def test_les_deux_separateurs(self):
+        self.assertEqual(
+            V.cible_prive('Photos Mike\\2016\\x.jpg')[0],
+            'Photos Mike/PRIVE')
+
+    def test_deja_privee_refuse_et_dit_pourquoi(self):
+        cible, raison = V.cible_prive('Photos Mike/PRIVE/a.jpg')
+        self.assertIsNone(cible)
+        self.assertIn('deja', raison)
+
+    def test_hors_dossier_proprietaire_refuse(self):
+        for rel in ('_A TRIER/b.jpg', '_Uploads/c.jpg', 'd.jpg', ''):
+            cible, raison = V.cible_prive(rel)
+            self.assertIsNone(cible, rel)
+            self.assertTrue(raison)
+
+    def test_la_cible_est_bien_privee_pour_la_regle(self):
+        # la boucle se ferme : ce que le geste produit, `est_prive` le voit.
+        cible, _ = V.cible_prive('Photos Mike/2016/x.jpg')
+        self.assertTrue(V.est_prive(cible + '/x.jpg'))
+        self.assertFalse(V.visible(cible + '/x.jpg', 'Flo'))
+        self.assertTrue(V.visible(cible + '/x.jpg', 'Mike'))
+
+
 if __name__ == '__main__':
     unittest.main()

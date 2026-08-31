@@ -60,6 +60,13 @@ est le CPU/VRM et une courbe de ventilation trop passive. Conseils donnés à
 Mike (MSI Center : courbe Advanced / Cooler Boost, dépoussiérage, plafonner
 le turbo CPU). Les bancs prennent `--pause-s` pour ménager la machine.
 
+**Chantier 18 (31/08 matin)** : 7 catégories (`administratif` ajoutée),
+empreinte de prompt dans le cache du banc (les 43 verdicts des six sont
+écartés — le banc REPART de zéro, ~90 questions à 16 s). **Geste « rendre
+privée » POSÉ et OBSERVÉ** (bouton 🔒, `/api/files/prive`, annulable).
+**Le banc est en PAUSE tant que la ventilation n'est pas réglée** (Mike s'en
+charge) : ne pas le relancer sans son feu vert.
+
 ## Prochain pas
 
 1. **FAIT (30/08 soir)** : les 10 noms tranchés et appliqués ; la
@@ -70,11 +77,14 @@ le turbo CPU). Les bancs prennent `--pause-s` pour ménager la machine.
 4. **La Carte a deux champs** (barre + « Rechercher (noms, lieux, sens) ») :
    à trancher avec Mike — garder les deux (fonds entier / filtre carte) ou
    fondre.
-5. **Vidéos : phase 1 close (lecture observée par Mike, 30/08 soir)** —
-   lancer la phase 2 (tagging ? transcodage ? à cadrer avec Mike).
-6. `ROADMAP.md` à réduire AVEC Mike (~1 500 lignes, rôle = carte).
-7. 9 septembre : Windows a-t-il demandé ? (`Get-WinEvent … Id=1074`).
-8. Règle Motion Photo (1 septies), chantier 18, UNIFIER le re-clé.
+5. **Chantier 18, la suite** : quand la machine est refroidie, finir le banc
+   (90 questions, 7 catégories) → la liste que Mike juge → seuil → la
+   question dans la MÊME invocation du tagueur → l'écran d'envoi (les trois
+   gestes : 🔒 PRIVE — déjà là —, corbeille, « non ») → passe rétroactive.
+6. **Vidéos : phase 1 close** — cadrer la phase 2 avec Mike.
+7. `ROADMAP.md` à réduire AVEC Mike (~1 500 lignes, rôle = carte).
+8. 9 septembre : Windows a-t-il demandé ? (`Get-WinEvent … Id=1074`).
+9. Règle Motion Photo (1 septies), chantier 18, UNIFIER le re-clé.
 
 ## En fin de projet
 

@@ -5,8 +5,8 @@ deterministe, lecture du verdict. Aucun acces NAS, base ni Ollama."""
 
 import unittest
 
-from mesure_sensibles import (CATEGORIES, echantillonner, est_candidat,
-                              lire_verdict, mots_de)
+from mesure_sensibles import (CATEGORIES, echantillonner, empreinte_prompt,
+                              est_candidat, lire_verdict, mots_de)
 
 
 class LaCandidature(unittest.TestCase):
@@ -66,9 +66,36 @@ class LaLectureDuVerdict(unittest.TestCase):
         self.assertEqual(lire_verdict('')[0], 'illisible')
         self.assertEqual(lire_verdict('pas du json')[0], 'illisible')
 
-    def test_les_six_categories_de_mike(self):
-        self.assertEqual(CATEGORIES, ('facture', 'paie', 'identite',
-                                      'banque', 'medical', 'message'))
+    def test_les_sept_categories_de_mike(self):
+        # Six le 30/08 ; `administratif` ajoutee le 31/08 (la lettre de la
+        # ville de Lausanne que le banc laissait passer en << non >>).
+        self.assertEqual(CATEGORIES, ('facture', 'paie', 'identite', 'banque',
+                                      'medical', 'message', 'administratif'))
+
+    def test_administratif_est_un_verdict_lisible(self):
+        self.assertEqual(lire_verdict('{"sensible": "administratif"}')[0],
+                         'administratif')
+
+
+class L_EmpreinteDuPrompt(unittest.TestCase):
+    """Le cache porte l'empreinte de la QUESTION posee : changer les
+    categories change l'empreinte, donc les vieux verdicts sont ecartes."""
+
+    def test_stable_et_courte(self):
+        e = empreinte_prompt()
+        self.assertEqual(e, empreinte_prompt())
+        self.assertEqual(len(e), 12)
+
+    def test_change_avec_les_categories(self):
+        import mesure_sensibles as m
+        avant = empreinte_prompt()
+        anciennes = m.CATEGORIES
+        try:
+            m.CATEGORIES = anciennes[:-1]      # comme avant le 31/08
+            self.assertNotEqual(empreinte_prompt(), avant)
+        finally:
+            m.CATEGORIES = anciennes
+        self.assertEqual(empreinte_prompt(), avant)
 
 
 if __name__ == '__main__':

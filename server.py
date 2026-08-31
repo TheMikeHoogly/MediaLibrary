@@ -673,6 +673,9 @@ def chemin_visible(chemin):
     return _visibilite.visible(str(chemin), utilisateur_vu())
 
 
+PRIVE_NOM = _visibilite.PRIVE      # « PRIVE » : une seule source, cote regle
+
+
 def refus_ecriture(chemin):
     """Le garde des gestes sur FICHIER (chantier 17, étape 5 — renommer,
     déplacer, effacer, créer un dossier, annuler) : None si l'utilisateur
@@ -10777,9 +10780,9 @@ class Handler(BaseHTTPRequestHandler):
 
     def _do_files_post(self, path):
         """Operations de fichiers (vue Dossiers) : renommer / deplacer / creer
-        un dossier / supprimer (quarantaine reversible) / annuler. La logique
-        vit dans fichiers.py (module pur, teste). do_POST a deja appele
-        note_heavy_activity() (invariant UI > NAS)."""
+        un dossier / rendre privee / supprimer (quarantaine reversible) /
+        annuler. La logique vit dans fichiers.py (module pur, teste). do_POST
+        a deja appele note_heavy_activity() (invariant UI > NAS)."""
         d = self._read_json_body()
         ops = file_ops()
         up = UPLOAD_DIR
@@ -10804,6 +10807,8 @@ class Handler(BaseHTTPRequestHandler):
                                 "Photo introuvable dans les dossiers connus.")
                         idx, rel = tgt
                     res = ops.delete(idx, rel, up)
+                elif path == '/api/files/prive':
+                    res = self._rendre_privee(ops, d, up)
                 elif path == '/api/files/undo':
                     res = ops.undo(up)
                 else:
@@ -10821,6 +10826,33 @@ class Handler(BaseHTTPRequestHandler):
         except fichiers.FileOpError as e:
             self._send(200, json.dumps({"ok": False, "error": str(e)},
                        ensure_ascii=False).encode(), 'application/json')
+
+    def _rendre_privee(self, ops, d, up):
+        """« Rendre privee » en UN geste (17a, demande de Mike le 30/08) :
+        la photo part dans le `PRIVE` de son proprietaire — un DEPLACEMENT,
+        comme le veut la regle (« rendre une photo privee, c'est la
+        deplacer »), donc journalise, re-cle et ANNULABLE par le meme
+        « Annuler » que les autres gestes. La destination est calculee par la
+        regle pure `visibilite.cible_prive` ; le dossier est cree s'il manque.
+
+        Le garde d'ecriture n'est PAS re-implemente ici : `ops.mkdir` et
+        `ops.move` le consultent deja (etape 5). Un refus remonte donc tel
+        quel, avec son 403 ou son 404."""
+        cle = d.get('key')
+        tgt = _key_to_target(cle) if cle is not None else (d.get('idx'), d.get('rel', ''))
+        if not tgt or tgt[0] is None:
+            raise fichiers.FileOpError('Photo introuvable dans les dossiers connus.')
+        idx, rel = tgt
+        dossier, raison = _visibilite.cible_prive(rel)
+        if dossier is None:
+            raise fichiers.FileOpError(raison)
+        try:
+            ops.mkdir(idx, dossier.rsplit('/', 1)[0], PRIVE_NOM)
+        except fichiers.FileOpError:
+            pass                      # existe deja : c'est le cas courant
+        res = ops.move(idx, rel, idx, dossier, up)
+        print(f"  🔒 {utilisateur_vu()} rend privee {Path(rel).name} → {dossier}")
+        return {**res, 'prive': dossier}
 
     def _do_post(self):
         path = urllib.parse.urlparse(self.path).path

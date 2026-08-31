@@ -232,8 +232,13 @@ pas le rouvrir. Deux questions ouvertes dans `QUESTIONS_MIKE.md` bloquent
 l'écriture partagée.
 
 **3 bis. Le garde-fou de la confidentialité (chantier 18) — EN COURS
-(session 68, 30/08 soir).** Catégories TRANCHÉES : les six de la spec
-(`eval/DECISIONS.md`). **La mesure d'abord (18e)** : `mesure_sensibles.py`
+(session 68, 30/08 soir).** Catégories TRANCHÉES : **sept** — les six de la spec
+plus `administratif` (Mike, 31/08, après la lettre de Lausanne que le banc
+laissait passer ; `eval/DECISIONS.md`). Le cache du banc porte l'empreinte du
+prompt : changer la question écarte les verdicts de l'ancienne.
+**Le geste « rendre privée » est POSÉ et OBSERVÉ** (bouton 🔒 de la
+visionneuse → `POST /api/files/prive`, règle pure `visibilite.cible_prive`,
+annulable ; aller-retour prouvé en réel). **La mesure d'abord (18e)** : `mesure_sensibles.py`
 interroge le modèle de prod sur un échantillon (candidats « document / reçu /
 capture… » + témoins aléatoires, tirage séedé, cache reprenable, axe fermé)
 → `docs/sensibles_echantillon.json`, une liste à JUGER par Mike — rien ne

@@ -68,6 +68,31 @@ def est_prive(chemin):
     return any(s.strip().upper() == PRIVE for s in _segments(c))
 
 
+def cible_prive(rel):
+    """Le dossier PRIVE ou ranger cette photo, en chemin RELATIF a sa racine
+    -- ou (None, raison) quand le geste n'a pas de sens. Regle pure.
+
+    « Rendre une photo privee, c'est la deplacer » (17a) : le geste en un clic
+    a donc besoin d'UNE destination evidente, et d'une seule. C'est le `PRIVE`
+    du dossier de son PROPRIETAIRE (`Photos Mike/PRIVE`), jamais un PRIVE
+    invente ailleurs : a la racine, dans `_A TRIER` ou `_Uploads`, personne
+    n'est chez soi -- il n'y a pas de chez-soi ou mettre la photo, et le dire
+    vaut mieux qu'en fabriquer un.
+
+    Rend (dossier_relatif, None) si le geste est possible,
+    (None, raison) sinon -- deja privee, ou hors dossier proprietaire."""
+    segs = _segments(rel)
+    if not segs:
+        return None, 'Chemin vide.'
+    if est_prive(rel):
+        return None, 'Cette photo est deja dans un dossier prive.'
+    for i, seg in enumerate(segs):
+        if proprietaire_de(seg):
+            return '/'.join(segs[:i + 1] + [PRIVE]), None
+    return None, ("Cette photo n'est dans le dossier de personne : "
+                  "la ranger d'abord chez son proprietaire.")
+
+
 def visible(chemin, utilisateur):
     """`utilisateur` peut-il voir cette photo ? None (fil de fond) voit tout.
     Chacun voit tout ce qui n'est pas le PRIVE d'un autre ; l'admin voit EN

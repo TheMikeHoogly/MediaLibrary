@@ -1,0 +1,309 @@
+{
+ "genere_le": "2026-08-31 07:33:03",
+ "modele": "qwen3-vl:2b",
+ "graine": 42,
+ "complet": false,
+ "lignes": [
+  {
+   "key": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Famille\\20170528_objet-en-carton.jpg",
+   "groupe": "candidat",
+   "verdict": "non",
+   "confiance": "basse",
+   "duree_s": 23.1
+  },
+  {
+   "key": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2025\\20250429_080427.jpg",
+   "groupe": "candidat",
+   "verdict": "non",
+   "confiance": "haute",
+   "duree_s": 10.6
+  },
+  {
+   "key": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\Screenshot_20260206_184851_Chrome.jpg",
+   "groupe": "candidat",
+   "verdict": "non",
+   "confiance": "haute",
+   "duree_s": 10.1
+  },
+  {
+   "key": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Appartement Bremblens\\20260622_095057.jpg",
+   "groupe": "candidat",
+   "verdict": "non",
+   "confiance": "basse",
+   "duree_s": 16.1
+  },
+  {
+   "key": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20240727_203830.jpg",
+   "groupe": "candidat",
+   "verdict": "non",
+   "confiance": "haute",
+   "duree_s": 14.4
+  },
+  {
+   "key": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2022\\20220427_191459.jpg",
+   "groupe": "candidat",
+   "verdict": "non",
+   "confiance": "haute",
+   "duree_s": 16.6
+  },
+  {
+   "key": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\Screenshot_20260607_133915_Gallery.jpg",
+   "groupe": "candidat",
+   "verdict": "non",
+   "confiance": "basse",
+   "duree_s": 9.9
+  },
+  {
+   "key": "\\\\NAS-Bremblens\\home\\Photos\\Photos Papa\\1998\\1998 Bern\\Postkarte von Mic.jpg",
+   "groupe": "candidat",
+   "verdict": "non",
+   "confiance": "haute",
+   "duree_s": 11.2
+  },
+  {
+   "key": "\\\\NAS-Bremblens\\home\\Photos\\Photos Papa\\2002\\20021217 Ing Arturo\\Aida Enrique Vivi.JPG",
+   "groupe": "candidat",
+   "verdict": "non",
+   "confiance": "haute",
+   "duree_s": 16.6
+  },
+  {
+   "key": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Appartement Bremblens\\20221229_141019.jpg",
+   "groupe": "candidat",
+   "verdict": "non",
+   "confiance": "haute",
+   "duree_s": 10.6
+  },
+  {
+   "key": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2015\\09 Mariage Charles & Martine\\20150913_105326.jpg",
+   "groupe": "candidat",
+   "verdict": "non",
+   "confiance": "haute",
+   "duree_s": 11.3
+  },
+  {
+   "key": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Friends 2\\20180610_125512.jpg",
+   "groupe": "candidat",
+   "verdict": "non",
+   "confiance": "haute",
+   "duree_s": 10.7
+  },
+  {
+   "key": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\201011\\201011A0\\18112010303.jpg",
+   "groupe": "candidat",
+   "verdict": "non",
+   "confiance": "haute|basse",
+   "duree_s": 12.8
+  },
+  {
+   "key": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2020\\20200516_214854.jpg",
+   "groupe": "candidat",
+   "verdict": "non",
+   "confiance": "haute",
+   "duree_s": 10.8
+  },
+  {
+   "key": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Sista\\40 ans Val et Thierry\\20210425_Flo-et-Thierry-et-Val.jpg",
+   "groupe": "candidat",
+   "verdict": "non",
+   "confiance": "haute",
+   "duree_s": 12.0
+  },
+  {
+   "key": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\2023 Lyon week-end amies\\20230430_Alba-et-Flo-et-Flora-et-al-5.jpg",
+   "groupe": "candidat",
+   "verdict": "non",
+   "confiance": "haute",
+   "duree_s": 11.1
+  },
+  {
+   "key": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2019\\02 Février\\20190221-222642_lettre-officielle-de-la-fondation.jpg",
+   "groupe": "candidat",
+   "verdict": "non",
+   "confiance": "haute|basse",
+   "duree_s": 17.2
+  },
+  {
+   "key": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\Didier (42).jpg",
+   "groupe": "candidat",
+   "verdict": "illisible",
+   "confiance": "",
+   "duree_s": 91.1
+  },
+  {
+   "key": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Floufline\\20240405-162350_coeur-jaune-papier.jpeg",
+   "groupe": "candidat",
+   "verdict": "non",
+   "confiance": "haute",
+   "duree_s": 26.4
+  },
+  {
+   "key": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20240726_134709.jpg",
+   "groupe": "candidat",
+   "verdict": "non",
+   "confiance": "haute",
+   "duree_s": 18.1
+  },
+  {
+   "key": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2021\\20211221_160913.jpg",
+   "groupe": "candidat",
+   "verdict": "non",
+   "confiance": "basse",
+   "duree_s": 27.0
+  },
+  {
+   "key": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Sandra\\20180706_122943.jpg",
+   "groupe": "candidat",
+   "verdict": "non",
+   "confiance": "haute",
+   "duree_s": 18.7
+  },
+  {
+   "key": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2022\\20220708_195016.jpg",
+   "groupe": "candidat",
+   "verdict": "non",
+   "confiance": "haute",
+   "duree_s": 20.5
+  },
+  {
+   "key": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\20260201_202251.jpg",
+   "groupe": "candidat",
+   "verdict": "illisible",
+   "confiance": "",
+   "duree_s": 93.0
+  },
+  {
+   "key": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\201007\\201007A0\\21072010043.jpg",
+   "groupe": "candidat",
+   "verdict": "non",
+   "confiance": "haute",
+   "duree_s": 18.6
+  },
+  {
+   "key": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2019\\08 Août\\20190812-161257_voiture-rouge-avec-une-plaque.jpg",
+   "groupe": "candidat",
+   "verdict": "non",
+   "confiance": "haute",
+   "duree_s": 18.7
+  },
+  {
+   "key": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Restaurant Yoann Comte\\20180819_102244.jpg",
+   "groupe": "candidat",
+   "verdict": "non",
+   "confiance": "haute",
+   "duree_s": 18.9
+  },
+  {
+   "key": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2022\\20221028_090038.jpg",
+   "groupe": "candidat",
+   "verdict": "non",
+   "confiance": "haute|basse",
+   "duree_s": 21.2
+  },
+  {
+   "key": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Luna & Inti\\20241114_231853.jpg",
+   "groupe": "candidat",
+   "verdict": "non",
+   "confiance": "basse",
+   "duree_s": 25.5
+  },
+  {
+   "key": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2020\\20200611_094444.jpg",
+   "groupe": "candidat",
+   "verdict": "illisible",
+   "confiance": "",
+   "duree_s": 89.5
+  },
+  {
+   "key": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\2023 Seychelles\\20230307_seychelles_page-de-document-avec-offre.jpg",
+   "groupe": "candidat",
+   "verdict": "non",
+   "confiance": "haute",
+   "duree_s": 31.6
+  },
+  {
+   "key": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\260531_Samsung_MHU\\Camera\\20260411_160856.jpg",
+   "groupe": "candidat",
+   "verdict": "illisible",
+   "confiance": "",
+   "duree_s": 85.8
+  },
+  {
+   "key": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2022\\20220816_084445.jpg",
+   "groupe": "candidat",
+   "verdict": "illisible",
+   "confiance": "",
+   "duree_s": 84.8
+  },
+  {
+   "key": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20240124_222801.jpg",
+   "groupe": "candidat",
+   "verdict": "non",
+   "confiance": "haute",
+   "duree_s": 23.3
+  },
+  {
+   "key": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\09 Septembre\\20180920_181401.jpg",
+   "groupe": "candidat",
+   "verdict": "non",
+   "confiance": "haute",
+   "duree_s": 23.7
+  },
+  {
+   "key": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\Screenshot_20241008_123351_Chrome.jpg",
+   "groupe": "candidat",
+   "verdict": "non",
+   "confiance": "haute",
+   "duree_s": 25.1
+  },
+  {
+   "key": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2017\\07 Juillet\\Mariage Sandra & Laurent\\20170708_201922.jpg",
+   "groupe": "candidat",
+   "verdict": "non",
+   "confiance": "haute",
+   "duree_s": 22.8
+  },
+  {
+   "key": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2021\\20210917_180954.jpg",
+   "groupe": "candidat",
+   "verdict": "non",
+   "confiance": "haute",
+   "duree_s": 33.4
+  },
+  {
+   "key": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2020\\20200916_124109.jpg",
+   "groupe": "candidat",
+   "verdict": "non",
+   "confiance": "haute|basse",
+   "duree_s": 27.5
+  },
+  {
+   "key": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20241008_170831.jpg",
+   "groupe": "candidat",
+   "verdict": "non",
+   "confiance": "haute",
+   "duree_s": 20.7
+  },
+  {
+   "key": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2021\\20210401_142543.jpg",
+   "groupe": "candidat",
+   "verdict": "facture",
+   "confiance": "basse",
+   "duree_s": 26.0
+  },
+  {
+   "key": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Floufline\\20230527_document-page-3.jpg",
+   "groupe": "candidat",
+   "verdict": "non",
+   "confiance": "haute",
+   "duree_s": 20.9
+  },
+  {
+   "key": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2023\\20230303_225309.jpg",
+   "groupe": "candidat",
+   "verdict": "illisible",
+   "confiance": "",
+   "duree_s": 87.0
+  }
+ ]
+}

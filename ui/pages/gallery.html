@@ -387,6 +387,7 @@ __FOLDERS__
     <button class="btn" id="lb-next">&#8594;</button>
     <button class="btn" id="lb-sim" aria-label="Voir les photos semblables">&#128269; Semblables</button>
     <button class="btn" id="lb-jour" aria-label="Voir les photos du m&ecirc;me jour, toutes ann&eacute;es">&#128197; M&ecirc;me jour</button>
+    <button class="btn" id="lb-prive" aria-label="Rendre cette photo priv&eacute;e">&#128274; Rendre priv&eacute;e</button>
     <button class="btn btn--destructif" id="lb-del" aria-label="Supprimer cette photo">&#128465;&#65039; Supprimer</button>
     <button class="btn" id="lb-close">Fermer</button>
   </div>
@@ -1106,6 +1107,13 @@ __FOLDERS__
     // Pas de date au jour pres -> pas de bouton (29 % de la photothèque en
     // est la). Le libelle porte le jour : « Même jour (14 août) », accent
     // compris — c'est ce que la page d'arrivee affiche.
+    // Le bouton « Rendre privée » : seulement chez un propriétaire, et
+    // seulement si la photo n'y est pas déjà. Même règle que le serveur
+    // (`visibilite.cible_prive`), lue ici sur le libellé de dossier.
+    var dos = String(f.folder || '');
+    var pb = document.getElementById('lb-prive');
+    pb.hidden = !(/(^|\/)Photos [^\/]+/.test(dos)
+                  && !/(^|\/)PRIVE(\/|$)/i.test(dos));
     var jb = document.getElementById('lb-jour');
     jb.hidden = !f.jour;
     if (f.jour) jb.textContent = '📅 Même jour (' + jourLisible(f.jour) + ')';
@@ -1654,6 +1662,31 @@ __FOLDERS__
     renderGrid();
     showLb();
   }
+
+  // « Rendre privée » (17a, Mike 30/08) : la photo part dans le PRIVE de son
+  // propriétaire — un DÉPLACEMENT annulable, pas un marquage. Le bouton se
+  // cache là où le geste n'a pas de sens (photo déjà privée, ou hors dossier
+  // propriétaire) : un bouton qui ne peut qu'échouer ne devrait pas exister.
+  document.getElementById('lb-prive').onclick = function() {
+    var f = visible[lbIdx];
+    if (!f) return;
+    var btn = this; btn.disabled = true;
+    fetch('/api/files/prive', {method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({key: f.key})})
+      .then(function(r) { return r.json(); })
+      .then(function(r) {
+        btn.disabled = false;
+        if (!r.ok) { gToast(r.error || 'Echec.', false); return; }
+        removeCurrent();
+        gToast('Photo déplacée dans ' + (r.prive || 'PRIVE') +
+               ' — elle n’est plus visible des autres.', true);
+      })
+      .catch(function() {
+        btn.disabled = false;
+        gToast('Le serveur n a pas répondu.', false);
+      });
+  };
 
   document.getElementById('lb-del').onclick = function() {
     var f = visible[lbIdx];
