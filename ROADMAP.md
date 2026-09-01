@@ -50,19 +50,21 @@ journal ; sinon regarder « Stratégies de mise à jour configurées ». Attenti
 au bruit : depuis le 28/08 la machine a aussi coupé BRUTALEMENT (Id 41) pour
 cause thermique — voir `diagnostic_thermique.py`, ne pas confondre les deux.
 
-**1 septies. RÈGLE Motion Photo — MÉTHODE VÉRIFIÉE, à mettre en oeuvre (29/08).**
-Règle tranchée (`eval/DECISIONS.md`) : une Motion Photo ne garde que son image,
-la vidéo embarquée est jetée. **Méthode confirmée par banc**
-(`verifier_strip_motionphoto.py`, sur copie) : `exiftool -trailer:all=` rend
-l'image IDENTIQUE au pixel, retire trailer+vidéo, JPEG valide, **−61 %**
-(5,45→2,14 Mo). Troncature = JPEG invalide (rejetée), Pillow = perte (rejetée).
-Mise en oeuvre en deux temps, réversible : (1) strip sur le fonds — `exiftool
--trailer:all= -ext jpg -ext jpeg -r <racine>`, qui laisse un `*.jpg_original`
-(la version complète) POUR les seuls fichiers modifiés et ne touche pas les
-autres ; (2) après vérif des stills, purge des `*.jpg_original`. Les paires
-`.jpg`/`.jpg_original` déjà présentes dans `Google porte mieux` SONT l'état (1)
-— leur purge relève de (2). **À faire** : bat de strip + bat de purge (ou
-intégrer à `25 - Maintenance`), et compter d'abord (`mesure_` ou exiftool).
+**1 septies. RÈGLE Motion Photo — COMPTÉ (01/09), OUTILLÉ : le geste est à Mike.**
+Le compte (`mesure_motion_photos.py`, banc reprenable, nuit du 31/08 au 01/09,
+40 271/40 291 JPEG couverts) : **2 441 Motion Photos, toutes chez Mike**
+(2021 : 461 · 2024 : 1 241 · 2025 : 504 · 2026 : 188 · sans année : 47),
+**8,64 Go de vidéo** sur 16,83 Go touchés. À côté : **16 519 trailers SEF
+SANS vidéo** (métadonnées Samsung, Flo 2017-2019 — rien à y gagner), 31 sans
+taille estimée, 2 en erreur. Rapport `docs/motion_photos.json` (hors git,
+régénérable). L'outillage est POSÉ : **bat 42** (aperçu → essai
+20 → tout ; `appliquer_strip_motionphoto.py`, serveur ARRÊTÉ exigé, manifeste,
+undo = `*.jpg_original`) puis **bat 43** (purge des originaux en quarantaine
+`.corbeille-rangement`, manifeste ; l'option `_A TRIER` couvre les 125 de la
+décision du 29/08). 11 tests. Pièges du banc : `SEFT` sans mp4
+n'est PAS une Motion (l'annuaire `SEFH` tranche sans lecture pleine) ; un
+`ftyp` nu dans l'entropie JPEG ment (boîte validée taille+brand). La spec
+d'origine (29/08) vit dans git.
 
 **1 octies. Les VIDÉOS — phases 0 et 1 CLOSES (30/08).**
 - **Phase 0, rangement par année** : `inventaire_videos.py` date par le NOM
