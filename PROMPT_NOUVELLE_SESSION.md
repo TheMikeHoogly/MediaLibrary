@@ -50,14 +50,20 @@ recherche IA partout : FAITS, OBSERVÉS** — détail dans `ROADMAP.md` et git.
 3. **Ventilation/dépoussiérage** (Mike) → feu vert des trois bancs GPU :
    sensibles (ch. 18), re-tagging 2 bis (~100 photos comparées AVANT les
    26 h), vidéos phase 2 (30 vidéos, 1 puis 3 images-clés).
-4. **La Carte a deux champs** (barre + « Rechercher (noms, lieux, sens) ») :
+4. **UPLOAD : de fond, et reprenable (Mike, 01/09 — 1 quindecies)** :
+   (a) l'envoi se met en pause quand l'onglet perd le focus — suspect : les
+   minuteurs JS throttlés en arrière-plan ; MESURER où ça bloque, puis
+   enchaîner les `fetch` sans `setTimeout` ; (b) à la reprise d'un envoi
+   interrompu, SAUTER ce que le serveur a déjà (nom+taille, ou hash, demandé
+   avant d'envoyer chaque fichier).
+5. **La Carte a deux champs** (barre + « Rechercher (noms, lieux, sens) ») :
    à trancher avec Mike — garder les deux ou fondre.
-5. Chantier 17 (étape 7 onboarding, conflit `faces` entre fiches, 403 du
+6. Chantier 17 (étape 7 onboarding, conflit `faces` entre fiches, 403 du
    banc) ; chantier 18 la suite (liste à juger → seuil → écran d'envoi →
    passe rétroactive).
-6. `ROADMAP.md` à réduire AVEC Mike (~1 540 lignes, rôle = carte).
-7. 9 septembre : Windows a-t-il demandé ? (`Get-WinEvent … Id=1074`).
-8. UNIFIER le re-clé (3 copies de la primitive).
+7. `ROADMAP.md` à réduire AVEC Mike (~1 540 lignes, rôle = carte).
+8. 9 septembre : Windows a-t-il demandé ? (`Get-WinEvent … Id=1074`).
+9. UNIFIER le re-clé (3 copies de la primitive).
 
 ## En fin de projet
 

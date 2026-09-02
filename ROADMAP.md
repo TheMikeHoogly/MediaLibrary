@@ -51,20 +51,15 @@ au bruit : depuis le 28/08 la machine a aussi coupé BRUTALEMENT (Id 41) pour
 cause thermique — voir `diagnostic_thermique.py`, ne pas confondre les deux.
 
 **1 septies. RÈGLE Motion Photo — COMPTÉ (01/09), OUTILLÉ : le geste est à Mike.**
-Le compte (`mesure_motion_photos.py`, banc reprenable, nuit du 31/08 au 01/09,
-40 271/40 291 JPEG couverts) : **2 441 Motion Photos, toutes chez Mike**
-(2021 : 461 · 2024 : 1 241 · 2025 : 504 · 2026 : 188 · sans année : 47),
-**8,64 Go de vidéo** sur 16,83 Go touchés. À côté : **16 519 trailers SEF
-SANS vidéo** (métadonnées Samsung, Flo 2017-2019 — rien à y gagner), 31 sans
-taille estimée, 2 en erreur. Rapport `docs/motion_photos.json` (hors git,
-régénérable). L'outillage est POSÉ : **bat 42** (aperçu → essai
-20 → tout ; `appliquer_strip_motionphoto.py`, serveur ARRÊTÉ exigé, manifeste,
-undo = `*.jpg_original`) puis **bat 43** (purge des originaux en quarantaine
-`.corbeille-rangement`, manifeste ; l'option `_A TRIER` couvre les 125 de la
-décision du 29/08). 11 tests. Pièges du banc : `SEFT` sans mp4
-n'est PAS une Motion (l'annuaire `SEFH` tranche sans lecture pleine) ; un
-`ftyp` nu dans l'entropie JPEG ment (boîte validée taille+brand). La spec
-d'origine (29/08) vit dans git.
+Compte (`mesure_motion_photos.py`, reprenable, 40 271/40 291 JPEG) : **2 441
+Motion Photos, toutes chez Mike** (2021 : 461 · 2024 : 1 241 · 2025 : 504 ·
+2026 : 188 · 47 sans année), **8,64 Go de vidéo** sur 16,83 Go touchés ;
+16 519 trailers SEF SANS vidéo (Flo 2017-2019, rien à y gagner), 31 sans
+taille, 2 en erreur. Rapport `docs/motion_photos.json` (hors git). Outillage
+POSÉ : **bat 42** (strip, aperçu → essai 20 → tout, serveur ARRÊTÉ exigé,
+undo = `*.jpg_original`) puis **bat 43** (originaux en quarantaine
+`.corbeille-rangement` ; option `_A TRIER` = les 125 du 29/08). 11 tests ;
+pièges du banc et spec : amorce + git.
 
 **1 octies. Les VIDÉOS — phases 0 et 1 CLOSES (30/08).**
 - **Phase 0, rangement par année** : `inventaire_videos.py` date par le NOM
@@ -196,6 +191,12 @@ pixels d'origine, None si l'index est périmé — 5 tests), la loupe pose un
 liseré veilleuse recalé sur l'image affichée (`object-fit: contain`,
 naturalWidth, recalcul au redimensionnement). Observé : le bon visage encadré
 sur une photo à trois enfants.
+
+**1 quindecies. UPLOAD : de fond, et reprenable (Mike, 01/09).** (a) L'envoi
+se met en PAUSE quand l'onglet perd le focus — suspect : les minuteurs JS
+throttlés en arrière-plan ; MESURER, puis enchaîner les `fetch` sans
+`setTimeout`. (b) À la REPRISE d'un envoi interrompu, SAUTER ce que le
+serveur a déjà (demander nom+taille, ou hash, avant d'envoyer).
 
 **2. Le pense-bête des raccourcis DANS l'interface — CLOS (31/08).**
 Panneau `?` sur `ui/global.js` (bouton dans la barre, touche `?`, `Échap`
