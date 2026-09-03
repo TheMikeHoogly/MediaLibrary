@@ -287,268 +287,55 @@ finition, à faire au fil de l'eau.
 **Le Takeout Google : CLOS** (27→29/08) — les 3 776 absentes sont rapatriées,
 ABSENT = 0, les paires indéterminées tranchées (`eval/DECISIONS.md`).
 
-## État (29/08/2026, session 63) — LE SERVEUR PREND SA PROPRE TEMPÉRATURE
+## Ce qu'il faut garder des sessions 57 → 63 (le récit vit dans git)
 
-**La machine s'est coupée net à 23:10:15 sous charge** — `Kernel-Power 41`,
-aucun minidump, rien au journal. Aucune mise à jour n'y est pour rien (pas de
-1074), et le BIOS date de **juillet 2023** : il n'a jamais été flashé, contre
-l'hypothèse de départ.
-
-**Le seul indice était indirect, et je l'ai d'abord MAL LU.** J'ai comparé les
-durées de tagging *à l'intérieur* de la session — plates — et conclu « pas de
-signature thermique ». Le signal était *entre* les sessions :
-
-| session | photos | moyenne | médiane |
-|---|---|---|---|
-| 07:08 · 07:48 · 08:44 | 173 | 14,6 → 18,8 s | 13–18 s |
-| 20:21 · 20:47 | 80 | 22,8 · **9,7 s** | 22 · 9 s |
-| **22:36 — celle qui est morte** | 47 | **27,2 s** | **28 s** |
-| 23:16 — après redémarrage à froid | 69 | **14,0 s** | 12 s |
-
-Deux à trois fois plus lente, puis plus rien, et la vitesse revenue après un
-démarrage à froid **sur le même travail**. **Mauvaise échelle de mesure,
-mauvaise conclusion** — la leçon du jour.
-
-### Le thermomètre est désormais DANS le journal
-
-Sur une idée de Mike, et c'est mieux qu'un CSV externe : le journal porte déjà
-les durées de tagging, **y joindre la température les corrèle par
-construction**.
-
-- **`mesure_thermique.py`** (neuf) interroge `nvidia-smi` **champ par champ**
-  et rend l'inventaire de ce que la carte accepte. Il a payé immédiatement :
-  **`power.limit` et `temperature.memory` rendent `[N/A]`** sur cette
-  RTX 3050, et un seul champ refusé fait échouer TOUTE la requête groupée —
-  sans dire lequel. Les avoir mis à l'aveugle aurait **aveuglé `hw_state` sur
-  sa propre VRAM**, donc cassé l'arbitre GPU.
-- **`hw_state`** gagne `temp_c`, `clocks_mhz`, `clocks_max_mhz`, `watts`,
-  `bridage` et `bride_thermique` — via un lecteur tolérant `_nombre` qui rend
-  `None` au lieu de lever : **une sonde ne doit jamais priver le serveur de
-  `hw_state`**. Le jugement se fait sur les **deux drapeaux booléens**
-  (`hw/sw_thermal_slowdown`, rendus en toutes lettres) et non sur le masque
-  NVML, dont il faudrait connaître les constantes par cœur.
-- **`thermique_loop`** écrit au journal : une ligne de référence au démarrage,
-  puis une toutes les 10 min ; **chaque relevé** au-delà de 85 °C ou dès que la
-  carte avoue brider ; et le **basculement** du bridage dans les deux sens —
-  c'est l'instant qu'on cherchera après coup. Lancée sous `fil_surveille`.
-
-**État mesuré ce soir** : 60–73 °C, horloges 1 620–1 747 / 2 100 MHz, 38 W en
-charge, les trois drapeaux de ralentissement à « Not Active ». **La machine va
-bien en ce moment** — d'où l'intérêt d'enregistrer dans la durée plutôt que
-d'échantillonner une minute.
-
-`test_thermique.py`, 9 contrôles, **9 rouges sur le code d'avant**. Deux ont
-rougi sur MOI d'abord : l'un lisait `power.limit` dans le commentaire qui
-explique son exclusion (**un commentaire est de la PROSE** — le test lit
-maintenant la chaîne de la requête), l'autre attendait une ligne là où le code
-en écrit deux, la première étant la référence de démarrage — le code avait
-raison.
-
-### Ce que le CPU ne dira pas
-
-`psutil.sensors_temperatures()` ne rend rien sous Windows et
-`MSAcpi_ThermalZoneTemperature` n'est presque jamais implémentée sur un
-portable. **La température CPU demande un logiciel tiers** (HWiNFO64). Le GPU
-suffit ici : c'est lui qui sature.
-
-## État (28/08/2026, session 62) — LE SECOND CAS GOOGLE EST OUTILLÉ, ET LE DOSSIER EST RANGÉ
-
-**`copier_absentes.py` sait désormais rapatrier le SECOND cas.** Jusqu'ici il
-ne connaissait que les ABSENTES. Deux options l'ouvrent — `--verdict` (répétable)
-et `--nas-plus-petit-de OCTETS` — sans rien changer par défaut. Sur le rapport
-du 28/08 : **100 fichiers, 1,26 Go, 91 photos et 9 vidéos**. Le `.bat 33` les
-dépose dans un dossier À PART.
-
-**Un test a trouvé un défaut que la relecture n'avait pas vu** : le seuil de
-taille s'appliquait AUSSI aux ABSENTES — or une absente n'a pas de contrepartie
-sur le NAS, donc « plus petite d'un mégaoctet » l'écartait toujours. Cumuler
-les deux verdicts aurait fait disparaître le rapatriement des absentes **en
-silence**. Six contrôles neufs.
-
-**Le dossier est rangé.** Huit corbeilles et 53 journaux d'annulation
-antérieurs au 25/08 (**43 Mo**) sont dans `_to_delete/`, en deux sous-dossiers
-nommés. **Gardés délibérément** : `_corbeille_copies` (le rapatriement Google
-du 27/08, dont on se sert encore), `_corbeille_deplacements` (26/08) et les
-deux `undo_annee` du 27/08. Vider le filet de sécurité de l'opération en cours
-aurait été le seul vrai risque de ce rangement.
-
-**Les docs sont taillées** : `QUESTIONS_MIKE.md` passe de 15 000 à 3 500
-octets — dix-neuf entrées réglées retirées, trois vraies questions restent.
-
-**L'ŒIL EST POSÉ** (28/08, après relance de Chrome). Sur le serveur vivant :
-- la barre de dossiers de `/files?dir=` — « ⬆️ Dossiers », « 📄 Liste » —
-  rend deux `<a>` de **44 px exactement**, même forme que la barre d'outils
-  au-dessus, sans soulignement. Un seul vocabulaire ;
-- la bande « même jour » rend **17 `.fetiquette`** : des `<span>`, `border:
-  none`, fond transparent, `cursor: auto`, et les millésimes en `ui-monospace`
-  avec leur compte en gras. Elles ne ressemblent plus à des boutons, et c'était
-  tout l'enjeu ;
-- **zéro `.fchip` dans le DOM rendu**, sur les deux pages.
-
-Ce que l'œil ajoute au banc : les instruments disaient que les règles étaient
-là ; ils ne pouvaient pas dire que l'étiquette avait cessé de ressembler à un
-bouton. C'est un jugement de forme, et il se pose avec les yeux.
-
-## État (28/08/2026, session 61) — LES VINGT FILS ONT UN FILET, ET GOOGLE A SON COMPTE
-
-**Le superviseur de fils est écrit, et les vingt fils y passent.** Règle de
-Mike : le fil mort SE RELANCE, cinq morts consécutives ALERTENT. `fil_surveille`
-enregistre chaque fil dans `FILS`, relance avec une attente qui double (1 → 300 s),
-remet le compteur à zéro dès qu'une reprise tient 5 min, et **`/sante` affiche
-désormais les fils avant les fichiers** — c'était le manque exact du 27/08 : la
-mort était dans le journal, elle n'était sur aucune page.
-
-**Qui BOUCLE et qui REND a été MESURÉ, pas supposé** : un balayage AST des
-`while True:` a classé les vingt fonctions. Quinze bouclent (elles se
-relancent), cinq rendent — les trois `_backfill`, `reconcile_named_tags` — et
-celles-là ont le DROIT de finir : les relancer leur ferait refaire leur travail
-sans le savoir. C'est le mode de panne que ce mécanisme pouvait CRÉER.
-
-**Un piège évité, et il valait la peine** : en rattrapant l'exception, le
-superviseur prive `threading.excepthook` de son passage. Sans réimprimer la
-trace, on échangerait huit heures d'arrêt contre la PERTE du diagnostic qui a
-permis de comprendre la panne. Un test tient cette ligne.
-
-`test_fils_surveilles.py`, 10 contrôles, **10 rouges sur le code d'avant** —
-dont un seul l'est pour une raison de FOND (le garde de source qui interdit un
-`threading.Thread` nu sur un fil de travail) ; les neuf autres le sont parce
-que le mécanisme n'existait pas, ce qui est le seul rouge possible pour du
-neuf. Le dire vaut mieux qu'un compte flatteur.
-
-**`.fchip` est mort, et deux noms l'ont remplacé** (décision de Mike) : les
-`<a>` de navigation prennent `.btn btn--nav` (cible 44 px, un seul
-vocabulaire), les `<span>` d'information deviennent `.fetiquette` — sans
-bordure ni curseur, pour qu'on ne puisse plus les confondre en les LISANT.
-Instruments verts, banc des pages composants vert sur le serveur vivant.
-**L'œil manque** : l'extension Chrome n'était pas connectée après le
-redémarrage du PC. À poser au prochain passage.
-
-### Google : ABSENT = 0, et un écart qui se lit en deux paquets
-
-Vérification d'après rapatriement (244 s) : sur **13 905 médias**,
-**4 293 CERTAIN** (55,6 Go), **9 612 « taille différente »**, **0 ABSENT**.
-
-Les 9 612 se séparent nettement. Le NAS est plus GROS dans 9 315 cas, écart
-médian **4 101 octets** — la taille d'un bloc XMP : ce sont nos propres tags,
-le NAS porte la photo de Google PLUS nos noms. Mais **297 fois le NAS est plus
-PETIT, dont 89 de plus d'un mégaoctet**, et ça ne s'explique pas par des
-métadonnées.
-
-**Les vidéos** : 3 114, dont **3 104 identiques au bit près**. Les 10 autres
-sont plus petites côté NAS, lourdement (−73 Mo, −40 Mo, −22 Mo). Côté photos,
-`Luzarches 2016 (33).jpg` fait 8,5 Mo chez Google et 0,6 Mo sur le NAS.
-**Ces ~106 fichiers-là ne doivent pas être effacés chez Google avant d'être
-rapatriés.** Le reste peut partir. Détail et recommandation :
-`QUESTIONS_MIKE.md`.
-
-## État (28/08/2026, session 60) — LE TAGUEUR EST MORT D'AVOIR VOULU NOTER SA MORT
-
-Condensé (le récit vit dans git, `docs/DECISIONS_OUTILLAGE.md` et `eval/DECISIONS.md`) :
-le tagueur mourait sur `database is locked` en essayant de JOURNALISER son échec —
-un rattrapage ne dépend jamais de la ressource qui vient de tomber. Corrigé, observé ;
-le superviseur de fils (session 61) en est la suite.
-
-## État (27/08/2026, session 59) — LA VISIONNEUSE DÉBORDAIT SUR TÉLÉPHONE
-
-**Le rendu 390 px a enfin été vu — en contournant le zoom.** Le
-redimensionnement de fenêtre ne changeait pas la capture (session 58) parce
-que le zoom du navigateur (~50 %) maintenait ~1 023 px CSS de viewport quelle
-que soit la fenêtre. Contournement : une **iframe de 390 px** posée sur une
-page du même origine — les media/wrap s'y évaluent à 390, le serveur VIVANT
-sert la page, et on n'a touché ni au zoom de Mike ni à sa fenêtre.
-
-**Le défaut trouvé : `#lb-bar` en `nowrap`, 566 px dans 370.** Sur téléphone,
-« 🗑️ Supprimer » était à moitié coupé et **« Fermer » entièrement HORS
-ÉCRAN, sans aucun défilement pour l'atteindre** (pas d'Échap au doigt). Et le
-libellé dynamique « 📅 Même jour (31 mai) » se pliait en **quatre lignes de
-78 px**. Les cinq familles de la session 58 étaient conformes une à une — le
-défaut était dans la RANGÉE, que personne ne mesurait : `verifier_cibles`
-juge chaque cible, pas leur tenue collective à une largeur donnée.
-
-**Correctif : deux déclarations, zéro restart** (`gallery.html` est relu à
-chaud) : `flex-wrap: wrap` sur `#lb-bar`, `white-space: nowrap` sur ses
-`.btn` — le BOUTON passe à la ligne, jamais son texte. Preuves : cascade
-0 disparue / 0 changée / 2 apparues (les voulues) ; cibles 0 manquement ;
-contraste et contrôles verts ; 35 tests UI OK ; l'œil à 390 px (trois
-rangées, tout à 44 px, Supprimer rouge plein, Fermer revenu) et à 1 200 px
-(une rangée, barre 68 px — rien ne bouge sur bureau). La barre d'outils et
-les chips, eux, se replient proprement à 390 : le coût +19 px tient sur
-mobile, rien d'autre à corriger.
-
-**Le tableau de corrélation trailer/tag (point 3) a rencontré le plafond du
-banc.** `croiser --exclure Takeout` sur le fonds entier lit ~70 000 queues de
-JPEG sur SMB : bien au-delà des 600 s (`TIMEOUT_S` de `banc_agent`, plafond
-1 800 non levable par ordre). Relancé en
-**échantillon** (3 000 tirés des 72 584 hors Takeout, 574 s) : **la
-corrélation N'EST PAS LÀ.** Sur 975 JPEG Samsung jugés, les photos NOMMÉES
-par notre écriture gardent leur SEF à **86,9 %** (Wilson 95 % : 83,4–89,8),
-les non nommées à **83,9 %** (80,5–86,7). Les intervalles se recouvrent et
-le signe est du MAUVAIS côté pour accuser : **rien n'accuse notre écriture
-XMP.** Les 99 paires Google au trailer zéro étaient un sous-ensemble biaisé,
-pas le fonds. La CAUSE reste à prouver dans les deux sens — le juge est
-l'avant/après sur le MÊME fichier, armé (`_rapport_sef_avant.json`), que le
-travail du curateur fera parler.
-
-## État (27/08/2026, session 58) — les boutons de `gallery` : CLOS
-
-Les cinq familles maison sont passées au `.btn` canonique, le « Supprimer »
-de la visionneuse a été mesuré, et l'œil bureau puis téléphone (session 59)
-ont validé — verdicts dans `eval/DECISIONS.md` (Interface), récit dans git.
-
-## État (27/08/2026, session 57) — LE RANGEMENT PAR ANNÉE DÉCROCHAIT ENCORE LES DÉCISIONS
-
-**Mike allait lancer `26 - Ranger par annee.bat` sur 559 photos. Deux défauts
-l'attendaient, et aucun des deux ne se serait annoncé.**
-
-**Le premier : `appliquer_plan.rekey_stores` n'était pas le miroir qu'elle
-disait être.** Son docstring affirmait « miroir de `server.rekey_everywhere` » ;
-elle bouclait sur les quatre magasins de sujets en appelant
-`store.rekey(ancien_chemin, nouveau_chemin)`. Or **`people` et `pets` sont
-keyés par NOM** — leurs chemins vivent DANS la fiche. `rekey` y cherche une
-entrée dont la clé serait un chemin, n'en trouve jamais, renvoie faux, **et la
-boucle ne regardait même pas le retour**. Quatre magasins à l'écran, deux en
-vrai. Le correctif (`recle_decisions.recler_fiche`) existait depuis le 22/08 —
-**branché dans `server.py` et nulle part ailleurs**. L'applicateur hors ligne,
-que portent le rangement par année ET le dédoublonnage, décrochait donc encore
-des décisions cinq jours plus tard.
-
-Ce qui se perdait n'a jamais été le NOM (il vit dans l'index et dans le XMP,
-règle 2 tenue) : c'est la **vérité terrain** — quel visage est qui, quelles
-photos ont été écartées d'un nom, lesquelles ont été confirmées. Une exclusion
-perdue est un faux positif qui revient. Le compte du 22/08 : **928 décisions
-sur 3 364** décrochées, sur 804 clés.
-
-**Le second : l'en-tête disait « À LANCER SERVEUR ARRÊTÉ » et personne ne le
-vérifiait.** Le serveur de Mike tournait. Deux écrivains sur `photos.db`, c'est
-l'invariant 4 du projet. Le script le **PROUVE** désormais, comme
-`deplacer_dossiers` — et avec **deux** preuves, parce qu'une seule ne suffit
-pas : la base est en **WAL**, donc le serveur ne tient le verrou d'écriture que
-pendant ses transactions, et `BEGIN IMMEDIATE` peut l'obtenir alors qu'il est
-bel et bien vivant. On demande donc AUSSI au serveur s'il répond
-(`GET /api/serveur`) — une preuve qui ne dépend pas de l'instant. `--forcer`
-lève les deux, explicitement.
-
-**Et les décisions re-clées se COMPTENT** (`Bilan : … dont N décision(s)
-humaine(s) re-clée(s) `) : ce qui n'est pas compté n'est pas diagnosticable
-après coup, et c'est précisément ce qui a laissé 928 décisions partir en
-silence.
-
-### PROUVÉ EN RÉEL, le soir même : **27 décisions**
-
-Le rangement des 559 photos a rendu
-`{'ok': 539, 'dry': 0, 'skip': 20, 'decisions': 27}`. **27 rattachements,
-exclusions ou confirmations ont suivi leur photo** — et l'ancien code les
-aurait laissés sur l'ancien chemin, sans erreur, sans trace. Le premier lot de
-20 en avait rendu **zéro**, ce qui ne prouvait rien : ces vingt-là n'en
-portaient simplement aucune. C'est le lot complet qui a produit le chiffre, et
-c'est pour ça qu'on ne conclut pas sur un échantillon qu'on n'a pas choisi.
-
-**18 tests neufs** (`test_recle_hors_ligne.py`), dont le ROUGE observé : la
-boucle des quatre magasins laissée telle quelle, qui ne déplace ni le
-rattachement, ni l'exclusion, ni la confirmation — et ne lève aucune erreur.
-Au passage, mon premier jeu d'essai écrivait l'`avatar` en chaîne alors que
-c'est une PAIRE `[chemin, index]` : **c'était le test qui était faux, pas
-l'instrument.**
+- **Le GPU se surveille lui-même** (63) : `mesure_thermique.py` +
+  `thermique_loop` journalisent temp/horloges/watts/bridage toutes les
+  10 min, et à chaque relevé anormal ou bascule. A expliqué la coupure
+  nette du 29/08 (`Kernel-Power 41`, pas une MAJ Windows) : le signal était
+  ENTRE les sessions (tagging 2à 3 fois plus lent juste avant), pas dedans
+  — mauvaise échelle, mauvaise conclusion au premier essai. Piège NVML :
+  `power.limit` et `temperature.memory` rendent `[N/A]` sur cette RTX 3050,
+  et un seul champ refusé fait échouer TOUTE la requête groupée. 9 tests.
+- **Second cas Google rapatrié, dossier rangé** (62) : `copier_absentes.py
+  --verdict`/`--nas-plus-petit-de` (100 fichiers, 1,26 Go, bat 33) ; un test a
+  trouvé que le seuil de taille s'appliquait à tort aux ABSENTES (les aurait
+  fait disparaître en silence). 8 corbeilles et 53 journaux (43 Mo)
+  déplacés en `_to_delete/`, filets de sécurité actifs gardés.
+  `QUESTIONS_MIKE.md` 15 000 → 3 500 octets. Œil posé sur `/files?dir=` et
+  la bande « même jour » : zéro `.fchip` restant dans le DOM rendu.
+- **Les vingt fils ont un filet** (61) : un fil mort SE RELANCE (attente
+  doublante), cinq morts CONSÉCUTIVES alertent, `/sante` affiche les fils
+  avant les fichiers. 20 fils classés par AST (15 bouclent, 5 rendent
+  légitimement — les relancer leur ferait refaire leur travail sans le
+  savoir). `.fchip` remplacé par `.btn btn--nav` / `.fetiquette`. Google
+  reconfirmé après rapatriement : 0 ABSENT sur 13 905 médias ; ~106
+  fichiers (photos + 10 vidéos) où le NAS est nettement PLUS PETIT que
+  Google restent à rapatrier avant tout effacement chez Google. 10 tests.
+- **Le tagueur mourait en notant sa propre mort** (60) : `database is
+  locked` en journalisant son échec — un rattrapage ne dépend jamais de la
+  ressource qui vient de tomber. Corrigé ; le superviseur de fils (61) en
+  est la suite.
+- **La visionneuse débordait sur téléphone** (59) : une iframe de 390 px
+  a permis de VOIR le rendu mobile réel (le zoom du navigateur masquait le
+  défaut au redimensionnement de fenêtre). `#lb-bar` en `nowrap` faisait
+  sortir « Fermer » entièrement de l'écran, sans défilement pour
+  l'atteindre. Corrigé par deux déclarations (`flex-wrap`/`nowrap`), 0
+  restart nécessaire. La piste « trailer Samsung corrompu par notre écriture
+  XMP » a été MESURÉE sur échantillon (3 000/72 584, hors plafond du banc
+  sur le fonds entier) : les intervalles de confiance se recouvrent, rien
+  n'accuse notre écriture.
+- **Les boutons de `gallery` : CLOS** (58) — cinq familles maison au `.btn`
+  canonique, verdicts dans `eval/DECISIONS.md` (Interface).
+- **Le rangement par année décrochait encore des décisions** (57) :
+  `appliquer_plan.rekey_stores` prétendait miroiter `rekey_everywhere` mais
+  ratait `people`/`pets` (keyés par NOM, pas par chemin) — **928 décisions
+  sur 3 364** décrochaient en silence sur 804 clés. Corrigé
+  (`recle_decisions.recler_fiche`, branché dans `server.py` depuis le 22/08
+  mais nulle part ailleurs), et l'applicateur PROUVE désormais par DEUX voies
+  que le serveur est arrêté (WAL + `GET /api/serveur`) avant d'écrire.
+  Observé en réel le soir même : 27 décisions re-clées sur le lot rangé.
+  18 tests.
 
 ## Ce qu'il faut garder des sessions 54 → 56 (le récit vit dans git)
 

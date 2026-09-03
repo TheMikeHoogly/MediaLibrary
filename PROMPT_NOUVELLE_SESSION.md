@@ -9,60 +9,70 @@ FUSIONNÉ — ce document, non. Puis `ROADMAP.md`, `eval/DECISIONS.md`,
 `eval/METHODE.md` — et `docs/DECISIONS_OUTILLAGE.md` si le sujet touche aux
 canaux, à la livraison ou au MCP. Débrief en 2–3 lignes, puis on attaque.
 
-## Où on en est (nuit du 31/08 au 01/09, session 70 — le compte Motion Photo)
+## Où on en est (03/09/2026, session 71 — précontrôle upload, ménage ROADMAP)
 
-**Git** : fusionné jusqu'à `feat/menu-de-compte` (`34a9f1d`, 31/08 22:33) ;
-la session 70 livre `feat/compte-motion-photo` en BRANCHE (traite autonome,
-`commit` — la fusion attend Mike) — vérifier `.git/logs/refs/heads/main`.
-**Serveur** : redémarré 31/08 22:39 sur `34a9f1d` (index 44 852, 0 fil mort).
-**Carnet `QUESTIONS_MIKE.md` : vide.**
+**Git** : `feat/compte-motion-photo` FUSIONNÉE dans `main` ce commit (fast-
+forward, technique du bat 27, jamais de `checkout main`) — vérifier
+`.git/logs/refs/heads/main`. Elle portait déjà le compte Motion Photo
+(session 70) et le pré-contrôle d'upload (ce commit, voir plus bas).
+**Serveur** : redémarré 03/09 ~19:16 sur ce code (`code_a_jour` vérifié vrai
+en réel). **Carnet `QUESTIONS_MIKE.md` : vide.**
 
-**Motion Photo (1 septies) — COMPTÉ et OUTILLÉ (session 70).** Le banc
-`mesure_motion_photos.py` (reprenable, ~14 passes de 450 s par le canal banc)
-a couvert 40 271/40 291 JPEG de l'index : **2 441 Motion Photos, toutes chez
-Mike** (2021 : 461 · 2024 : 1 241 · 2025 : 504 · 2026 : 188 · 47 sans année),
-**8,64 Go de vidéo à reprendre** sur 16,83 Go de fichiers. Et **16 519
-trailers SEF SANS vidéo** (Flo 2017-2019 surtout) : PAS des Motion, rien à y
-gagner. Rapport `docs/motion_photos.json`. Outillage posé, 11 tests verts
-(Windows aussi), bats contrôlés ASCII : **bat 42** = strip (aperçu → essai
-20 → tout ; serveur ARRÊTÉ exigé par `refus_d_ecriture` ; chaque fichier
-laisse `photo.jpg_original` = undo ; manifeste
-`docs/strip_motionphoto_manifeste.json`) ; **bat 43** = purge des originaux
-en QUARANTAINE `.corbeille-rangement\strip_motionphoto_*` (manifeste,
-réversible ; l'option `_A TRIER` couvre les 125 de la décision du 29/08).
-**Le strip et la purge sont des gestes de MIKE** — rien ne se lance d'ici.
+**UPLOAD (1 quindecies) — FAIT, OBSERVÉ.** (a) déjà réglé le 02/09
+(`29047e7`) : plus de `setTimeout` dans la boucle d'envoi, le focus perdu ne
+la throttle plus. (b) fait cette session : `/api/upload/check` — le client
+hashe le fichier EN LOCAL (`crypto.subtle`, SHA-256) et n'envoie que
+taille+hash ; le serveur répond `SKIP` sans qu'un octet du fichier ait
+traversé le réseau si un identique est déjà dans Uploads. Dégrade proprement
+(envoi direct, comme avant) si `crypto.subtle` est indisponible — c'est le
+cas sur `http://192.168.0.13:8080` en clair (Web Crypto exige un contexte
+sécurisé) : **seul le nom Tailscale en HTTPS profite pleinement de
+l'optimisation sur le LAN**. `_upload_dup_by_hash` factorisée hors de
+`_upload_content_dup`. 10 tests (`test_upload_precontrole.py`, lit le vrai
+code de `server.py` par `ast`, aucun import de `server.py` — la VM ne sait
+pas ouvrir `photos.db`, `disk I/O error` propre, rien écrit, vérifié après
+coup). **Reste pour Mike** : observer une VRAIE reprise après coupure sur un
+gros album (le SKIP n'est prouvé qu'en synthétique + en direct sur le
+serveur vivant, jamais sur un album réel interrompu — je n'allais pas écrire
+dans ton vrai dossier Uploads sans ton feu vert).
 
-**Ventilation : PAS FAITE (Mike, 31/08 soir)** — les bancs GPU restent en
-PAUSE : sensibles (ch. 18, ~90 questions), re-tagging (2 bis), vidéos
-phase 2 (1 octies d). Ne rien relancer sans son feu vert. La liaison avec le
-PC est tombée ~01:35 et revenue ~02:20 (cause inconnue — demander à Mike si
-le PC a coupé, Kernel-Power 41 ?).
-
-**Menu de compte, panneau `?`, loupe encadrée, visionneuse, planche Dossiers,
-recherche IA partout : FAITS, OBSERVÉS** — détail dans `ROADMAP.md` et git.
+**ROADMAP.md dégonflée (session 71)** : les six sections `## État (…,
+session 57 à 63)` — narration de travaux déjà CLOS, déjà dans git —
+condensées en un seul bloc `Ce qu'il faut garder`, comme le sont déjà les
+sessions 28 à 56. **99 951 → 87 918 octets** (le seuil du lint est
+100 000). **Reste un plus gros caillou, repéré mais PAS touché** : la
+section `## À faire — par ordre de valeur` (~530 lignes) mélange les
+chantiers 17/18 encore VIVANTS (spec citée par la Priorité du haut — n'y
+touche pas) et environ 320 lignes d'items `0ter` à `16`, presque tous
+CLOS entre le 12/08 et le 22/08, antérieurs au refixage des priorités du
+26/08. Probablement le plus gros gisement de condensation qui reste, mais
+je n'ai pas vérifié un par un s'il en subsiste un « ne pas reproposer » qui
+ne vit nulle part ailleurs — à faire AVEC Mike (relire chaque item avant
+de couper), pas en un passage solitaire.
 
 ## Prochain pas
 
-1. **Mike lance le bat 42** (strip : aperçu → essai 20 → tout, serveur
-   arrêté), vérifie des stills, puis **bat 43** (purge). ~8,6 Go rendus.
-2. **Fusionner `feat/compte-motion-photo`** (`livrer`, ou 27 - Git) après
-   son regard.
-3. **Ventilation/dépoussiérage** (Mike) → feu vert des trois bancs GPU :
-   sensibles (ch. 18), re-tagging 2 bis (~100 photos comparées AVANT les
-   26 h), vidéos phase 2 (30 vidéos, 1 puis 3 images-clés).
-4. **UPLOAD (1 quindecies) : FAIT, OBSERVÉ (03/09)** -- (a) plus de
-   `setTimeout` dans la boucle d'envoi (02/09, `29047e7`) ; (b)
-   `/api/upload/check`, hash LOCAL avant l'envoi, SKIP sans transfert si
-   deja present (10 tests, `test_upload_precontrole.py`). Reste a Mike :
-   verifier une VRAIE reprise sur un gros album, en reel.
-5. **La Carte a deux champs** (barre + « Rechercher (noms, lieux, sens) ») :
+1. **Mike lance le bat 42** (strip Motion Photo : aperçu → essai 20 → tout,
+   serveur ARRÊTÉ), vérifie des stills, puis **bat 43** (purge). ~8,6 Go
+   rendus. Rien de tout ça ne s'est encore produit — c'est le geste concret
+   le plus ancien encore en attente.
+2. **Ventilation/dépoussiérage** (Mike) → feu vert des trois bancs GPU en
+   pause : sensibles (ch. 18, ~90 questions), re-tagging 2 bis (~100 photos
+   comparées AVANT les 26 h de GPU), vidéos phase 2 (30 vidéos, 1 puis 3
+   images-clés). Rien ne se relance sans son feu vert.
+3. **La Carte a deux champs** (barre + « Rechercher (noms, lieux, sens) ») :
    à trancher avec Mike — garder les deux ou fondre.
-6. Chantier 17 (étape 7 onboarding, conflit `faces` entre fiches, 403 du
+4. Condenser `## À faire — par ordre de valeur` AVEC Mike (voir ci-dessus) :
+   le prochain vrai gain d'« efficience » sur `ROADMAP.md`.
+5. Chantier 17 (étape 7 onboarding, conflit `faces` entre fiches, 403 du
    banc) ; chantier 18 la suite (liste à juger → seuil → écran d'envoi →
    passe rétroactive).
-7. `ROADMAP.md` à réduire AVEC Mike (~1 540 lignes, rôle = carte).
-8. 9 septembre : Windows a-t-il demandé ? (`Get-WinEvent … Id=1074`).
-9. UNIFIER le re-clé (3 copies de la primitive).
+6. 9 septembre au matin : Windows a-t-il demandé le redémarrage du Patch
+   Tuesday ? (`Get-WinEvent -FilterHashtable @{LogName='System'; Id=1074}`,
+   ne pas confondre avec la coupure thermique brutale — Id 41 — du 29/08).
+7. UNIFIER le re-clé (`server.rekey_everywhere`,
+   `deplacer_dossiers.recle_une_cle`, `appliquer_plan.rekey_stores` : trois
+   copies d'une même règle, déjà divergentes une fois).
 
 ## En fin de projet
 
@@ -88,14 +98,19 @@ avant de paralléliser — et une erreur non nommée et non cachée rend
 « TERMINÉ » inatteignable.
 
 **La bonne ÉCHELLE, sinon la bonne conclusion sur les mauvaises données.**
-Dérive par rapport à QUOI — le signal était ENTRE les sessions.
+Dérive par rapport à QUOI — le signal thermique du 29/08 était ENTRE les
+sessions, pas dedans (`ROADMAP.md`, sessions 57→63).
 
 **Le canal du banc n'admet que `[A-Za-z0-9_.:/=-]`** (espaces via jeton
 `b64:`), plafond **600 s** : un banc long est REPRENABLE (cache écrit à
 chaque passe) et se lance avec `--budget-s 450`.
 
-**Ne JAMAIS lancer `unittest discover` depuis la VM** : trois tests ouvrent le
-vrai `photos.db`.
+**Ne JAMAIS lancer `unittest discover` depuis la VM** : plusieurs tests
+importent `server.py`, qui ouvre `photos.db` — la VM ne sait même pas
+l'ouvrir en LECTURE par-dessus le montage (`disk I/O error` immédiat,
+observé le 03/09, rien écrit). Un test qui a besoin du code de `server.py`
+le lit par `ast` (voir `test_ui_global.py`, `test_upload_precontrole.py`),
+il ne l'importe pas.
 
 **ExifTool sous Windows perd les accents des arguments** : argfile UTF-8 BOM
 (`server._run_exiftool`, repris par `appliquer_strip_motionphoto`).
@@ -143,6 +158,8 @@ strip le VÉRIFIE fichier par fichier.
 > (Windows, UNC).
 >
 > **Piège git via `device_bash`** : jamais de git d'ici (`.git/index.lock`
-> résiduel indélébile) ; un lock qui traîne se renomme (`mv`), ne s'efface pas.
+> résiduel indélébile) — même un `rev-parse` en lecture seule est à éviter,
+> la règle est catégorique, pas seulement pour les écritures ; un lock qui
+> traîne se renomme (`mv`), ne s'efface pas.
 >
 > **Piège d'horloge** : `device_bash` est en **UTC** (−2 h chez Mike).
