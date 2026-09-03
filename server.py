@@ -2466,21 +2466,30 @@ def _upload_size_map_add(p):
                 pass
 
 
-def _upload_content_dup(data):
-    """Chemin d'un fichier Uploads au contenu identique (même taille ET même
-    sha256), quel que soit son nom — ou None. La taille filtre d'abord ; on ne
-    hashe que les rares fichiers de même taille."""
-    cands = _upload_size_map().get(len(data))
+def _upload_dup_by_hash(taille, empreinte_hex):
+    """Chemin d'un fichier Uploads de même TAILLE et même sha256 hexadécimal
+    donné — ou None. Partagée par le dédoublonnage après réception
+    (`_upload_content_dup`, ci-dessous) et par le PRÉ-CONTRÔLE
+    `/api/upload/check` (1 quindecies-b) : celui-ci vérifie AVANT que le
+    client envoie les octets, avec un hash calculé côté client (Web Crypto),
+    pour qu'une reprise après coupure ne retransmette pas ce qui est déjà là."""
+    cands = _upload_size_map().get(taille)
     if not cands:
         return None
-    cible = _sha256_bytes(data)
     for p in list(cands):
         try:
-            if p.is_file() and _sha256_file(p) == cible:
+            if p.is_file() and _sha256_file(p) == empreinte_hex:
                 return p
         except OSError:
             continue
     return None
+
+
+def _upload_content_dup(data):
+    """Chemin d'un fichier Uploads au contenu identique (même taille ET même
+    sha256), quel que soit son nom — ou None. La taille filtre d'abord ; on ne
+    hashe que les rares fichiers de même taille."""
+    return _upload_dup_by_hash(len(data), _sha256_bytes(data))
 
 
 def _pkey(p):
@@ -10936,6 +10945,28 @@ class Handler(BaseHTTPRequestHandler):
         print(f"  🔒 {utilisateur_vu()} rend privee {Path(rel).name} → {dossier}")
         return {**res, 'prive': dossier}
 
+    def _do_upload_check(self):
+        """Pré-contrôle AVANT l'envoi des octets (1 quindecies-b, demande de
+        Mike, 01/09) : le client calcule le sha256 du fichier en LOCAL (Web
+        Crypto, `crypto.subtle`) et n'envoie que la taille et l'empreinte —
+        quelques centaines d'octets — au lieu du fichier entier, pour savoir
+        s'il est déjà présent. Répond SKIP/OK comme `/upload`, mais n'écrit
+        RIEN : c'est une question, pas un dépôt. Si le navigateur ne sait pas
+        hasher en local (contexte non sécurisé — HTTP simple sur le LAN plutôt
+        que le nom Tailscale en HTTPS — ou vieux navigateur), le client saute
+        ce contrôle et part directement sur `/upload` : jamais bloquant."""
+        d = self._read_json_body()
+        taille = d.get('size')
+        empreinte = d.get('sha256')
+        valide = (isinstance(taille, int) and taille >= 0
+                  and isinstance(empreinte, str) and len(empreinte) == 64
+                  and all(c in '0123456789abcdef' for c in empreinte.lower()))
+        if not valide:
+            self._send(400, b'Bad request', 'text/plain')
+            return
+        dup = _upload_dup_by_hash(taille, empreinte.lower())
+        self._send(200, b'SKIP' if dup is not None else b'OK', 'text/plain')
+
     def _do_post(self):
         path = urllib.parse.urlparse(self.path).path
         if path == '/api/connexion':
@@ -10983,6 +11014,9 @@ class Handler(BaseHTTPRequestHandler):
             return
         if path == '/eval/notes':
             self._do_eval_notes()
+            return
+        if path == '/api/upload/check':
+            self._do_upload_check()
             return
         if self.path != '/upload':
             self._send(404, b'Not found', 'text/plain')

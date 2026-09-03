@@ -192,11 +192,11 @@ liseré veilleuse recalé sur l'image affichée (`object-fit: contain`,
 naturalWidth, recalcul au redimensionnement). Observé : le bon visage encadré
 sur une photo à trois enfants.
 
-**1 quindecies. UPLOAD : de fond, et reprenable (Mike, 01/09).** (a) L'envoi
-se met en PAUSE quand l'onglet perd le focus — suspect : les minuteurs JS
-throttlés en arrière-plan ; MESURER, puis enchaîner les `fetch` sans
-`setTimeout`. (b) À la REPRISE d'un envoi interrompu, SAUTER ce que le
-serveur a déjà (demander nom+taille, ou hash, avant d'envoyer).
+**1 quindecies. UPLOAD : de fond, et reprenable — FAIT, OBSERVÉ (03/09).**
+(a) plus de `setTimeout` dans la boucle d'envoi (02/09, `29047e7`).
+(b) `/api/upload/check` : hash LOCAL (`crypto.subtle`) avant l'envoi,
+SKIP sans transfert si déjà présent ; dégrade sans HTTPS. 10 tests
+(`test_upload_precontrole.py`). Observé après redémarrage réel.
 
 **2. Le pense-bête des raccourcis DANS l'interface — CLOS (31/08).**
 Panneau `?` sur `ui/global.js` (bouton dans la barre, touche `?`, `Échap`

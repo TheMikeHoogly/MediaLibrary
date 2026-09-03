@@ -50,12 +50,11 @@ recherche IA partout : FAITS, OBSERVÉS** — détail dans `ROADMAP.md` et git.
 3. **Ventilation/dépoussiérage** (Mike) → feu vert des trois bancs GPU :
    sensibles (ch. 18), re-tagging 2 bis (~100 photos comparées AVANT les
    26 h), vidéos phase 2 (30 vidéos, 1 puis 3 images-clés).
-4. **UPLOAD : de fond, et reprenable (Mike, 01/09 — 1 quindecies)** :
-   (a) l'envoi se met en pause quand l'onglet perd le focus — suspect : les
-   minuteurs JS throttlés en arrière-plan ; MESURER où ça bloque, puis
-   enchaîner les `fetch` sans `setTimeout` ; (b) à la reprise d'un envoi
-   interrompu, SAUTER ce que le serveur a déjà (nom+taille, ou hash, demandé
-   avant d'envoyer chaque fichier).
+4. **UPLOAD (1 quindecies) : FAIT, OBSERVÉ (03/09)** -- (a) plus de
+   `setTimeout` dans la boucle d'envoi (02/09, `29047e7`) ; (b)
+   `/api/upload/check`, hash LOCAL avant l'envoi, SKIP sans transfert si
+   deja present (10 tests, `test_upload_precontrole.py`). Reste a Mike :
+   verifier une VRAIE reprise sur un gros album, en reel.
 5. **La Carte a deux champs** (barre + « Rechercher (noms, lieux, sens) ») :
    à trancher avec Mike — garder les deux ou fondre.
 6. Chantier 17 (étape 7 onboarding, conflit `faces` entre fiches, 403 du

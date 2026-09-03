@@ -205,6 +205,39 @@
         + '</b> &middot; erreurs <b>' + err + '</b> &middot; ' + done + '/' + files.length;
     }
 
+    function sha256Hex(file) {
+      // Empreinte calculee EN LOCAL (Web Crypto), pour le pre-controle avant
+      // envoi (1 quindecies-b) : indisponible hors contexte securise (HTTP
+      // simple sur le LAN) ou navigateur ancien -- alors null, et l'appelant
+      // saute le pre-controle sans bloquer l'envoi.
+      if (!(window.crypto && window.crypto.subtle && file.arrayBuffer)) {
+        return Promise.resolve(null);
+      }
+      return file.arrayBuffer().then(function(buf) {
+        return crypto.subtle.digest('SHA-256', buf);
+      }).then(function(hashBuf) {
+        var bytes = new Uint8Array(hashBuf), hex = '';
+        for (var j = 0; j < bytes.length; j++) {
+          hex += (bytes[j] < 16 ? '0' : '') + bytes[j].toString(16);
+        }
+        return hex;
+      }).catch(function() { return null; });
+    }
+
+    function preCheck(file) {
+      // OK par defaut : un pre-controle qui echoue (reseau, hash indisponible,
+      // route absente sur un vieux serveur) ne doit jamais empecher l'envoi
+      // reel, qui reste juge en dernier ressort par le SKIP du serveur.
+      return sha256Hex(file).then(function(hex) {
+        if (!hex) return 'OK';
+        return fetch('/api/upload/check', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ size: file.size, sha256: hex })
+        }).then(function(r) { return r.ok ? r.text() : 'OK'; });
+      }).catch(function() { return 'OK'; });
+    }
+
     function next(i) {
       if (i >= files.length) {
         btn.textContent = 'Envoyer d\'autres ?';
@@ -212,20 +245,25 @@
         btn.onclick = function() { location.reload(); };
         return;
       }
-      setState(i, 'Envoi...', 'pending');
-      var fd = new FormData();
-      fd.append('file', files[i], files[i].name);
-      fd.append('relpath', relOf(files[i]));
-      fetch('/upload', { method: 'POST', body: fd })
-        .then(function(r) { return r.text().then(function(t) {
-          return { ok: r.ok, status: r.status, body: t }; }); })
-        .then(function(res) {
-          if (res.ok && res.body === 'SKIP') { skip++; tick(i, 'Deja present', 'ok'); }
-          else if (res.ok) { ok++; tick(i, 'OK', 'ok'); }
-          else { err++; tick(i, 'Erreur ' + res.status, 'err'); }
-          next(i + 1);
-        })
-        .catch(function(e) { err++; tick(i, 'Echec reseau', 'err'); next(i + 1); });
+      var f = files[i];
+      setState(i, 'Verification...', 'pending');
+      preCheck(f).then(function(verdict) {
+        if (verdict === 'SKIP') { skip++; tick(i, 'Deja present', 'ok'); next(i + 1); return; }
+        setState(i, 'Envoi...', 'pending');
+        var fd = new FormData();
+        fd.append('file', f, f.name);
+        fd.append('relpath', relOf(f));
+        fetch('/upload', { method: 'POST', body: fd })
+          .then(function(r) { return r.text().then(function(t) {
+            return { ok: r.ok, status: r.status, body: t }; }); })
+          .then(function(res) {
+            if (res.ok && res.body === 'SKIP') { skip++; tick(i, 'Deja present', 'ok'); }
+            else if (res.ok) { ok++; tick(i, 'OK', 'ok'); }
+            else { err++; tick(i, 'Erreur ' + res.status, 'err'); }
+            next(i + 1);
+          })
+          .catch(function(e) { err++; tick(i, 'Echec reseau', 'err'); next(i + 1); });
+      });
     }
     next(0);
   };
