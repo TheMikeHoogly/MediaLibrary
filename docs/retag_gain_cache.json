@@ -1,0 +1,99 @@
+{
+ "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2015\\06 EVG Nounours\\EVG Nounours (122).jpg": {
+  "groupe": "v0",
+  "jaccard": 0.588,
+  "ajoutes": [
+   "ecosystem",
+   "pollution",
+   "écosystème"
+  ],
+  "retires": [
+   "déchets",
+   "scattered",
+   "trash",
+   "éparpillées"
+  ],
+  "duree_s": 13.2
+ },
+ "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\2017 Copenhague et Malmö\\2017-07-30 19.18.13.jpg": {
+  "groupe": "v0",
+  "jaccard": 0.476,
+  "ajoutes": [
+   "sauce",
+   "tomate",
+   "tomato"
+  ],
+  "retires": [
+   "cabbage",
+   "chopped greens",
+   "pommes de terre",
+   "purple cabbage",
+   "red peppers",
+   "salad",
+   "sauce tomate",
+   "tomato sauce"
+  ],
+  "duree_s": 5.3
+ },
+ "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2023\\20231010_211539.jpg": {
+  "groupe": "v0",
+  "jaccard": 0.636,
+  "ajoutes": [
+   "bois",
+   "brown"
+  ],
+  "retires": [
+   "chatte",
+   "chien",
+   "floor",
+   "sol",
+   "stray",
+   "striped"
+  ],
+  "duree_s": 5.7
+ },
+ "\\\\NAS-Bremblens\\home\\Photos\\Photos Papa\\1985\\1985-01Enero\\Wald und Gurten\\14_Eli auf Treppe.jpg": {
+  "groupe": "v2ctx",
+  "jaccard": 0.7,
+  "ajoutes": [
+   "arbre",
+   "tree"
+  ],
+  "retires": [
+   "arbres",
+   "bleu",
+   "blue",
+   "trees"
+  ],
+  "duree_s": 5.7
+ },
+ "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20241225_120530.jpg": {
+  "groupe": "v2ctx",
+  "jaccard": 0.765,
+  "ajoutes": [
+   "sofa"
+  ],
+  "retires": [
+   "chairs",
+   "chaises",
+   "couch"
+  ],
+  "duree_s": 5.7
+ },
+ "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2025\\20251108_171835(0).jpg": {
+  "groupe": "v2ctx",
+  "jaccard": 0.727,
+  "ajoutes": [
+   "fall",
+   "tombe"
+  ],
+  "retires": [
+   "falling",
+   "paysage",
+   "pluie",
+   "yard"
+  ],
+  "duree_s": 6.0
+ },
+ "_prompt": "47e35ce90f02"
+}
