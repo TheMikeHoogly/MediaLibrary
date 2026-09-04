@@ -226,6 +226,8 @@ re-tagger d'abord le sous-ensemble « XMP relu », pas le fonds entier ;
 (3) rien avant le dépoussiérage. Ne pas relancer un tagging global à
 l'aveugle : 26 h de GPU pour un gain inconnu, c'est un pari, pas une mesure.
 
+**Le banc de comparaison (1) — TERMINÉ (04/09 soir, complet: true, 100/100).** `mesure_retag_gain.py` (nouveau, chantier 2 bis) rejoue le tagueur de PROD sur 50 photos « v0 » (sans `pipe`, XMP relu) et 50 déjà `v2ctx`, et mesure la similarité de Jaccard entre l'ancien et le nouveau jeu de mots-clés — le groupe `v2ctx` sert de PLANCHER DE BRUIT (le modèle n'est pas déterministe, deux passes du même pipeline sur la même photo ne rendent pas exactement les mêmes mots). Résultat : jaccard moyen v0 = 0,589 (divergence ~41 %) contre v2ctx = 0,739 (divergence ~26 %, le bruit) — écart de **0,15** (15 points). Un signal RÉEL (v0 diverge nettement plus que le bruit du modèle) mais MODÉRÉ, pas spectaculaire. Le détail : v0 perd en moyenne 4,86 mots-clés et en gagne 3,4 par photo (le nouveau prompt est plus discipliné que l'ancien XMP relu), contre 2,76 perdus / 2,04 gagnés pour `v2ctx` (bruit pur). Rapport : `docs/retag_gain_echantillon.json` — **une liste à JUGER par Mike**, rien n'a bougé dans l'index ni dans un fichier. Reste sa décision : 0,15 de gain net justifie-t-il ~26 h de GPU sur une machine qui a déjà coupé quatre fois, même nettoyée et turbo off ? Piste (2) toujours valable si oui : re-tagger d'abord le seul sous-ensemble « XMP relu », pas le fonds entier.
+
 **2 ter. Le menu de COMPTE — FAIT, OBSERVÉ (31/08).** Pastille avec
 l'initiale + nom dans la barre (surface papier, comme l'onglet actif : aucun
 accent inventé), menu déroulant bâti à l'OUVERTURE (`/api/moi` une fois par

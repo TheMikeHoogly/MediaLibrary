@@ -95,5 +95,1426 @@
   ],
   "duree_s": 6.0
  },
+ "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Luna & Inti\\20230101_155303.jpg": {
+  "groupe": "v0",
+  "jaccard": 0.773,
+  "ajoutes": [
+   "shelf"
+  ],
+  "retires": [
+   "dining",
+   "fenetre",
+   "furniture",
+   "window"
+  ],
+  "duree_s": 6.7
+ },
+ "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Love\\20160306_Flo-et-Mike.jpg": {
+  "groupe": "v0",
+  "jaccard": 0.529,
+  "ajoutes": [
+   "tesla"
+  ],
+  "retires": [
+   "car",
+   "ciel",
+   "hiver",
+   "paires",
+   "sky",
+   "voiture",
+   "winter"
+  ],
+  "duree_s": 4.9
+ },
+ "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Floufline\\20230323_Flo-2.jpg": {
+  "groupe": "v0",
+  "jaccard": 1.0,
+  "ajoutes": [],
+  "retires": [],
+  "duree_s": 5.1
+ },
+ "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Famille\\20210930_183935.jpg": {
+  "groupe": "v0",
+  "jaccard": 0.636,
+  "ajoutes": [
+   "laughing",
+   "outdoor",
+   "riant"
+  ],
+  "retires": [
+   "assise",
+   "outdoors",
+   "rire",
+   "seated",
+   "smiling"
+  ],
+  "duree_s": 5.7
+ },
+ "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\201009\\201009A0\\10092010175.jpg": {
+  "groupe": "v0",
+  "jaccard": 1.0,
+  "ajoutes": [],
+  "retires": [],
+  "duree_s": 4.5
+ },
+ "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Luna & Inti\\20230918_135836.jpg": {
+  "groupe": "v0",
+  "jaccard": 0.2,
+  "ajoutes": [
+   "bois",
+   "cat",
+   "chat",
+   "coussin",
+   "furniture",
+   "mobilier",
+   "pillow",
+   "wooden"
+  ],
+  "retires": [
+   "bedroom",
+   "chambre",
+   "coussins",
+   "deux chats",
+   "jeu",
+   "pillows",
+   "toys",
+   "two cats"
+  ],
+  "duree_s": 5.3
+ },
+ "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Sista\\20200423_Val-2.jpg": {
+  "groupe": "v0",
+  "jaccard": 0.778,
+  "ajoutes": [
+   "sunlight"
+  ],
+  "retires": [
+   "bag",
+   "bague",
+   "light"
+  ],
+  "duree_s": 5.3
+ },
+ "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Appartement Bremblens\\20241110_152407.jpg": {
+  "groupe": "v0",
+  "jaccard": 0.174,
+  "ajoutes": [
+   "adultes",
+   "adults",
+   "birthday cake",
+   "chaise de balan",
+   "children",
+   "enfants",
+   "gâteau de fête",
+   "swing chair"
+  ],
+  "retires": [
+   "adult",
+   "cake",
+   "chair",
+   "chaise",
+   "chambre",
+   "child",
+   "gâteau",
+   "kitchen",
+   "manger",
+   "swing",
+   "table"
+  ],
+  "duree_s": 5.6
+ },
+ "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2020\\20200818_134247.jpg": {
+  "groupe": "v0",
+  "jaccard": 0.769,
+  "ajoutes": [],
+  "retires": [
+   "play structure",
+   "structure",
+   "sunny"
+  ],
+  "duree_s": 5.5
+ },
+ "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2025\\20251004_175536.jpg": {
+  "groupe": "v0",
+  "jaccard": 0.75,
+  "ajoutes": [
+   "acteur",
+   "actor"
+  ],
+  "retires": [
+   "monteur",
+   "rider"
+  ],
+  "duree_s": 5.5
+ },
+ "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Floufline\\20190530_bouteille-de-vin-en-main.jpg": {
+  "groupe": "v0",
+  "jaccard": 0.5,
+  "ajoutes": [
+   "1986",
+   "aliment",
+   "chateau",
+   "château",
+   "food",
+   "plat",
+   "plate"
+  ],
+  "retires": [],
+  "duree_s": 5.4
+ },
+ "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2025\\20250912_193822.jpg": {
+  "groupe": "v0",
+  "jaccard": 0.778,
+  "ajoutes": [
+   "sunset"
+  ],
+  "retires": [
+   "overalls",
+   "salles",
+   "sunglasses"
+  ],
+  "duree_s": 5.4
+ },
+ "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2022\\20220521_161212.jpg": {
+  "groupe": "v0",
+  "jaccard": 0.619,
+  "ajoutes": [],
+  "retires": [
+   "allongé",
+   "assise",
+   "canapé",
+   "couch",
+   "jeu",
+   "lying",
+   "sitting",
+   "toy"
+  ],
+  "duree_s": 5.6
+ },
+ "\\\\NAS-Bremblens\\home\\Photos\\Photos Papa\\2002\\20020812 Markus diversos\\119-1968_IMG.JPG": {
+  "groupe": "v0",
+  "jaccard": 0.615,
+  "ajoutes": [
+   "markus"
+  ],
+  "retires": [
+   "clair",
+   "homme",
+   "light",
+   "man"
+  ],
+  "duree_s": 4.7
+ },
+ "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\2018 Norvège\\20180729_121050.jpg": {
+  "groupe": "v0",
+  "jaccard": 0.882,
+  "ajoutes": [
+   "terrace"
+  ],
+  "retires": [
+   "balcony"
+  ],
+  "duree_s": 5.5
+ },
+ "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2017\\05 Mai\\MGM Menerga\\20170522_184758.jpg": {
+  "groupe": "v0",
+  "jaccard": 0.13,
+  "ajoutes": [
+   "activité",
+   "bouncy",
+   "challenge",
+   "conference",
+   "conférence",
+   "défi",
+   "event",
+   "gruppe",
+   "team",
+   "équipe",
+   "événement"
+  ],
+  "retires": [
+   "background",
+   "blue",
+   "collaboration",
+   "dark",
+   "indoor",
+   "people",
+   "red",
+   "structure",
+   "teamwork"
+  ],
+  "duree_s": 5.8
+ },
+ "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2025\\20250410_212009.jpg": {
+  "groupe": "v0",
+  "jaccard": 0.0,
+  "ajoutes": [
+   "barcode",
+   "code-barre",
+   "identifiant",
+   "identification",
+   "qr_code",
+   "verification"
+  ],
+  "retires": [
+   "chiffre",
+   "code",
+   "qr"
+  ],
+  "duree_s": 4.8
+ },
+ "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20240729_110604.jpg": {
+  "groupe": "v0",
+  "jaccard": 0.522,
+  "ajoutes": [
+   "habitation",
+   "hill",
+   "residential",
+   "skyline"
+  ],
+  "retires": [
+   "buildings",
+   "hillside",
+   "immeubles",
+   "rooftops",
+   "sky",
+   "toits",
+   "village"
+  ],
+  "duree_s": 6.1
+ },
+ "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20240304_212930.jpg": {
+  "groupe": "v0",
+  "jaccard": 0.524,
+  "ajoutes": [
+   "cigares",
+   "cigars",
+   "lego"
+  ],
+  "retires": [
+   "building",
+   "cigar",
+   "cigare",
+   "hand",
+   "main",
+   "maison",
+   "toy"
+  ],
+  "duree_s": 5.9
+ },
+ "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2025\\20250714_203458.jpg": {
+  "groupe": "v0",
+  "jaccard": 0.619,
+  "ajoutes": [
+   "audience",
+   "bloc party",
+   "party bloc"
+  ],
+  "retires": [
+   "chanteur",
+   "concert",
+   "crowd",
+   "performance",
+   "singer"
+  ],
+  "duree_s": 5.6
+ },
+ "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Diapo Sandra\\photos sandra\\20151222_Sandra.jpg": {
+  "groupe": "v0",
+  "jaccard": 0.171,
+  "ajoutes": [
+   "bateaux",
+   "black jacket",
+   "black pants",
+   "boats",
+   "chaussures blanches",
+   "colorful buildings",
+   "lockpicking",
+   "maisons colorées",
+   "manteau noir",
+   "pantalon noir",
+   "passeport",
+   "white boots"
+  ],
+  "retires": [
+   "bateau",
+   "boat",
+   "bridge",
+   "building",
+   "chateau",
+   "ciel",
+   "colorful",
+   "fer",
+   "ferry",
+   "house",
+   "maison",
+   "mer",
+   "moulin",
+   "museum",
+   "navire",
+   "pont",
+   "ship"
+  ],
+  "duree_s": 5.5
+ },
+ "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Appartement Bremblens\\20190327_124339.jpg": {
+  "groupe": "v0",
+  "jaccard": 0.842,
+  "ajoutes": [],
+  "retires": [
+   "constructions",
+   "pipes",
+   "wire"
+  ],
+  "duree_s": 8.4
+ },
+ "\\\\NAS-Bremblens\\home\\Photos\\Photos Papa\\2002\\20020520 Sirki Mayo02\\02_Camino a Hampaturi.JPG": {
+  "groupe": "v0",
+  "jaccard": 0.789,
+  "ajoutes": [
+   "rock"
+  ],
+  "retires": [
+   "dirt",
+   "rocky",
+   "sol"
+  ],
+  "duree_s": 5.3
+ },
+ "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2009\\01 Janvier\\Soirée déguisée JJ janv. 2009 - Les péchés capitaux\\01.jpg": {
+  "groupe": "v0",
+  "jaccard": 0.5,
+  "ajoutes": [
+   "furniture",
+   "jeans",
+   "meuble",
+   "pantalon",
+   "table"
+  ],
+  "retires": [
+   "balloon",
+   "casual",
+   "décontracté",
+   "gonfler",
+   "inflating",
+   "room",
+   "salle"
+  ],
+  "duree_s": 5.3
+ },
+ "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2022\\20220725_113137.jpg": {
+  "groupe": "v0",
+  "jaccard": 0.619,
+  "ajoutes": [
+   " désert",
+   "sky"
+  ],
+  "retires": [
+   "blanc",
+   "blue",
+   "dry",
+   "désert",
+   "solaire",
+   "sèche"
+  ],
+  "duree_s": 5.7
+ },
+ "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\2014 Guadeloupe\\20131230_145201.jpg": {
+  "groupe": "v0",
+  "jaccard": 0.417,
+  "ajoutes": [
+   "2013",
+   "december",
+   "décembre",
+   "outdoor",
+   "vegetation",
+   "végétation"
+  ],
+  "retires": [
+   "boue",
+   "bushes",
+   "day",
+   "green",
+   "jour",
+   "outdoors",
+   "passeport",
+   "vert"
+  ],
+  "duree_s": 5.7
+ },
+ "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\2010 Temple-sur-Lot\\DSC01756.JPG": {
+  "groupe": "v0",
+  "jaccard": 0.696,
+  "ajoutes": [
+   "arcade"
+  ],
+  "retires": [
+   "arche",
+   "cathedral",
+   "colonne",
+   "column",
+   "extérieur",
+   "outdoor"
+  ],
+  "duree_s": 6.0
+ },
+ "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2019\\02 Février\\20190221-221620_certificat-de-travail.jpg": {
+  "groupe": "v0",
+  "jaccard": 0.429,
+  "ajoutes": [
+   "certification",
+   "humains",
+   "human rights",
+   "militantism"
+  ],
+  "retires": [
+   "amnesty",
+   "certificate",
+   "collaboration",
+   "congrès",
+   "document",
+   "education",
+   "humanes",
+   "organisation"
+  ],
+  "duree_s": 5.9
+ },
+ "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2023\\20230613_091214.jpg": {
+  "groupe": "v0",
+  "jaccard": 0.579,
+  "ajoutes": [
+   "barrier",
+   "sign",
+   "signe"
+  ],
+  "retires": [
+   "fence",
+   "lieu",
+   "signes",
+   "signs",
+   "site"
+  ],
+  "duree_s": 5.5
+ },
+ "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2021\\20210717_134011.jpg": {
+  "groupe": "v0",
+  "jaccard": 0.714,
+  "ajoutes": [
+   "salle à manger"
+  ],
+  "retires": [
+   "canapé",
+   "lighting",
+   "lumière",
+   "salle a faire",
+   "sofa"
+  ],
+  "duree_s": 5.8
+ },
+ "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\Calinous\\20140511-234314_morges_chat-blanc-et-orange-est.jpg": {
+  "groupe": "v0",
+  "jaccard": 0.792,
+  "ajoutes": [
+   "fourrure",
+   "furry",
+   "human"
+  ],
+  "retires": [
+   "moussy",
+   "person"
+  ],
+  "duree_s": 6.0
+ },
+ "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Famille\\20220417_Laura-et-Quentin.jpg": {
+  "groupe": "v0",
+  "jaccard": 0.545,
+  "ajoutes": [],
+  "retires": [
+   "kiss",
+   "living room",
+   "outdoor",
+   "sofa",
+   "window"
+  ],
+  "duree_s": 5.2
+ },
+ "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2025\\20250216_113350.jpg": {
+  "groupe": "v0",
+  "jaccard": 0.864,
+  "ajoutes": [
+   "rock",
+   "source"
+  ],
+  "retires": [
+   "rocky"
+  ],
+  "duree_s": 6.5
+ },
+ "\\\\NAS-Bremblens\\home\\Photos\\Photos Papa\\2004\\20040320 Cuzco_Yucay_04\\Gente\\MaTeresa_Pati.jpg": {
+  "groupe": "v0",
+  "jaccard": 0.583,
+  "ajoutes": [
+   "jour ensoleillé",
+   "outdoor",
+   "sunny day"
+  ],
+  "retires": [
+   "casual",
+   "outdoors"
+  ],
+  "duree_s": 4.9
+ },
+ "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Famille\\20251116_femme-soutient-un-enfant.jpg": {
+  "groupe": "v0",
+  "jaccard": 0.391,
+  "ajoutes": [
+   "lumière chaude",
+   "soutien",
+   "staircase",
+   "support",
+   "warm_light"
+  ],
+  "retires": [
+   "chaude",
+   "crawling",
+   "home",
+   "light",
+   "lumière",
+   "soutenant",
+   "stairs",
+   "supporting",
+   "warm"
+  ],
+  "duree_s": 5.2
+ },
+ "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2025\\20250301-193541_video-de-conversation-en-cours.jpg": {
+  "groupe": "v0",
+  "jaccard": 0.1,
+  "ajoutes": [
+   "conversation",
+   "mobile device",
+   "phone",
+   "screen recording",
+   "video call"
+  ],
+  "retires": [
+   "call",
+   "screen",
+   "video",
+   "écran"
+  ],
+  "duree_s": 4.5
+ },
+ "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2022\\20220605_212556.jpg": {
+  "groupe": "v0",
+  "jaccard": 0.444,
+  "ajoutes": [
+   "ciel",
+   "cloud",
+   "coucher_de_lune",
+   "dawn",
+   "matin",
+   "nuage",
+   "sky"
+  ],
+  "retires": [
+   "clouds",
+   "nuages",
+   "soleil"
+  ],
+  "duree_s": 5.6
+ },
+ "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Photos\\DSC00989.JPG": {
+  "groupe": "v0",
+  "jaccard": 1.0,
+  "ajoutes": [],
+  "retires": [],
+  "duree_s": 5.2
+ },
+ "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2021\\20210218_124554.jpg": {
+  "groupe": "v0",
+  "jaccard": 0.114,
+  "ajoutes": [
+   "birthday party",
+   "cadeaux",
+   "celebration",
+   "coffee table",
+   "célébration",
+   "dinner table",
+   "fête de naissance",
+   "gifts",
+   "group of people",
+   "gruppe de personnes",
+   "happy birthday",
+   "living room",
+   "partie de fête",
+   "salle de séjour",
+   "table de café",
+   "table de dîner"
+  ],
+  "retires": [
+   "birthday",
+   "cuisine",
+   "dining",
+   "fête",
+   "group",
+   "gruppe",
+   "happy",
+   "joyeux",
+   "living",
+   "people",
+   "personnes",
+   "room",
+   "salle",
+   "social",
+   "table"
+  ],
+  "duree_s": 6.2
+ },
+ "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\09 Septembre\\20180928_161312.jpg": {
+  "groupe": "v0",
+  "jaccard": 0.667,
+  "ajoutes": [
+   "museum",
+   "musée",
+   "skyline"
+  ],
+  "retires": [
+   "empty",
+   "sky",
+   "vide"
+  ],
+  "duree_s": 5.9
+ },
+ "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20240827_193800.jpg": {
+  "groupe": "v0",
+  "jaccard": 0.895,
+  "ajoutes": [
+   "sunlight"
+  ],
+  "retires": [
+   "sun"
+  ],
+  "duree_s": 6.2
+ },
+ "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2022\\20220806_120854.jpg": {
+  "groupe": "v0",
+  "jaccard": 0.933,
+  "ajoutes": [
+   "sun"
+  ],
+  "retires": [],
+  "duree_s": 5.8
+ },
+ "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\201009\\201009A0\\10092010170.jpg": {
+  "groupe": "v0",
+  "jaccard": 0.765,
+  "ajoutes": [
+   "extérieur",
+   "outdoor"
+  ],
+  "retires": [
+   "army",
+   "armée"
+  ],
+  "duree_s": 5.5
+ },
+ "\\\\NAS-Bremblens\\home\\Photos\\Photos Papa\\2003\\20030501 Yani2003\\72 Los demas 11.JPG": {
+  "groupe": "v0",
+  "jaccard": 0.6,
+  "ajoutes": [
+   "costume traditionnel",
+   "dress",
+   "flowers",
+   "yellow"
+  ],
+  "retires": [
+   "couleurs",
+   "dresses",
+   "floral",
+   "marche",
+   "orange",
+   "people"
+  ],
+  "duree_s": 5.6
+ },
+ "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2022\\20220918_103631.jpg": {
+  "groupe": "v0",
+  "jaccard": 0.5,
+  "ajoutes": [
+   "clair",
+   "clear",
+   "eau",
+   "personne",
+   "surfage",
+   "surfing"
+  ],
+  "retires": [
+   "bateau",
+   "ciel",
+   "homme",
+   "océan",
+   "sky",
+   "surfboard"
+  ],
+  "duree_s": 5.8
+ },
+ "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\Caline\\20201113_101014.jpg": {
+  "groupe": "v0",
+  "jaccard": 0.333,
+  "ajoutes": [
+   "blue jeans",
+   "calico cat",
+   "chat calico",
+   "endormi",
+   "jeans bleus"
+  ],
+  "retires": [
+   "calico",
+   "cat",
+   "chat",
+   "poussière",
+   "sommeil"
+  ],
+  "duree_s": 5.5
+ },
+ "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2022\\20220724_130200.jpg": {
+  "groupe": "v0",
+  "jaccard": 0.647,
+  "ajoutes": [
+   "man",
+   "sandy",
+   "sun"
+  ],
+  "retires": [
+   "person",
+   "sand",
+   "sunny"
+  ],
+  "duree_s": 5.6
+ },
+ "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\2010 Turienzo\\DSC02486.JPG": {
+  "groupe": "v2ctx",
+  "jaccard": 1.0,
+  "ajoutes": [],
+  "retires": [],
+  "duree_s": 5.6
+ },
+ "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2022\\20220604_181737.jpg": {
+  "groupe": "v2ctx",
+  "jaccard": 0.889,
+  "ajoutes": [],
+  "retires": [
+   "indoor"
+  ],
+  "duree_s": 5.6
+ },
+ "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2025\\20250511_130240.jpg": {
+  "groupe": "v2ctx",
+  "jaccard": 0.667,
+  "ajoutes": [
+   "exterior",
+   "sun"
+  ],
+  "retires": [
+   "outdoor",
+   "roses",
+   "sunlight"
+  ],
+  "duree_s": 5.9
+ },
+ "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\20180428_231429.jpg": {
+  "groupe": "v2ctx",
+  "jaccard": 0.31,
+  "ajoutes": [
+   "chambre en bois",
+   "dinner",
+   "dîner",
+   "femme jeune",
+   "wooden room",
+   "young woman"
+  ],
+  "retires": [
+   "bois",
+   "boisson",
+   "bottle",
+   "bouteille",
+   "chairs",
+   "chaises",
+   "chambre",
+   "drink",
+   "femme",
+   "furniture",
+   "meubles",
+   "room",
+   "woman",
+   "wooden"
+  ],
+  "duree_s": 5.7
+ },
+ "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2025\\20250416_112323.jpg": {
+  "groupe": "v2ctx",
+  "jaccard": 0.739,
+  "ajoutes": [
+   "swimwear",
+   "water"
+  ],
+  "retires": [
+   "bathing",
+   "bright",
+   "swimsuit",
+   "vif"
+  ],
+  "duree_s": 5.9
+ },
+ "\\\\NAS-Bremblens\\home\\Photos\\Photos Papa\\2002\\20021225 Isla del Sol con Eli\\02_RO auf Fähre.JPG": {
+  "groupe": "v2ctx",
+  "jaccard": 0.75,
+  "ajoutes": [
+   "lac",
+   "lake"
+  ],
+  "retires": [
+   "fishing",
+   "pêche"
+  ],
+  "duree_s": 5.6
+ },
+ "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2020\\20201231_231649.jpg": {
+  "groupe": "v2ctx",
+  "jaccard": 0.875,
+  "ajoutes": [],
+  "retires": [
+   "birthday",
+   "partie"
+  ],
+  "duree_s": 6.3
+ },
+ "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2021\\20211024_154926.jpg": {
+  "groupe": "v2ctx",
+  "jaccard": 0.652,
+  "ajoutes": [
+   "coat",
+   "manteau",
+   "outdoor",
+   "scarf",
+   "sweater"
+  ],
+  "retires": [
+   "bannière",
+   "landscape",
+   "outdoors"
+  ],
+  "duree_s": 6.0
+ },
+ "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2022\\20220305_214757.jpg": {
+  "groupe": "v2ctx",
+  "jaccard": 0.889,
+  "ajoutes": [],
+  "retires": [
+   "feu",
+   "fireworks"
+  ],
+  "duree_s": 5.7
+ },
+ "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20240330_122527.jpg": {
+  "groupe": "v2ctx",
+  "jaccard": 0.68,
+  "ajoutes": [
+   "living_room",
+   "salle_a_manger"
+  ],
+  "retires": [
+   "adultes",
+   "adults",
+   "children",
+   "enfants",
+   "living room",
+   "salle a manger"
+  ],
+  "duree_s": 6.1
+ },
+ "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20240107_141358.jpg": {
+  "groupe": "v2ctx",
+  "jaccard": 0.6,
+  "ajoutes": [
+   "extérieur",
+   "froide",
+   "frozen",
+   "soleil",
+   "sunny"
+  ],
+  "retires": [
+   "exterieur",
+   "landscape",
+   "neigeuse",
+   "scène",
+   "snowy"
+  ],
+  "duree_s": 6.0
+ },
+ "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20240723_123206.jpg": {
+  "groupe": "v2ctx",
+  "jaccard": 0.565,
+  "ajoutes": [
+   "group of people",
+   "gruppe de personnes"
+  ],
+  "retires": [
+   "bikes",
+   "group",
+   "gruppe",
+   "magasin",
+   "people",
+   "personnes",
+   "shop",
+   "sunset"
+  ],
+  "duree_s": 6.2
+ },
+ "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\JJ\\Entraînement juillet 2010\\75.JPG": {
+  "groupe": "v2ctx",
+  "jaccard": 0.737,
+  "ajoutes": [
+   "arts martiales",
+   "martial arts"
+  ],
+  "retires": [
+   "people",
+   "personnes",
+   "yokozuna"
+  ],
+  "duree_s": 6.1
+ },
+ "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2025\\20250312_212530.jpg": {
+  "groupe": "v2ctx",
+  "jaccard": 1.0,
+  "ajoutes": [],
+  "retires": [],
+  "duree_s": 5.8
+ },
+ "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Photos Nokia 2010\\DSC00734.JPG": {
+  "groupe": "v2ctx",
+  "jaccard": 1.0,
+  "ajoutes": [],
+  "retires": [],
+  "duree_s": 5.5
+ },
+ "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\Didier (20).jpg": {
+  "groupe": "v2ctx",
+  "jaccard": 0.714,
+  "ajoutes": [
+   "deux",
+   "people",
+   "personnes",
+   "two"
+  ],
+  "retires": [],
+  "duree_s": 5.5
+ },
+ "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Photos Nokia 2010\\Photo144.jpg": {
+  "groupe": "v2ctx",
+  "jaccard": 0.684,
+  "ajoutes": [],
+  "retires": [
+   "2010",
+   "femelle",
+   "feminine",
+   "road",
+   "urbain",
+   "urban"
+  ],
+  "duree_s": 4.8
+ },
+ "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2020\\20200821_170355.jpg": {
+  "groupe": "v2ctx",
+  "jaccard": 0.609,
+  "ajoutes": [
+   "bain",
+   "bath",
+   "nature"
+  ],
+  "retires": [
+   "baignade",
+   "bathing",
+   "femme",
+   "natural",
+   "naturel",
+   "woman"
+  ],
+  "duree_s": 6.0
+ },
+ "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\04 Avril\\Weekend Ju-Jitsu Chateau d'Oex\\013.png": {
+  "groupe": "v2ctx",
+  "jaccard": 0.588,
+  "ajoutes": [],
+  "retires": [
+   "belt",
+   "class",
+   "exercise",
+   "mat",
+   "people",
+   "training",
+   "uniform"
+  ],
+  "duree_s": 10.5
+ },
+ "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2025\\20250622_121954.jpg": {
+  "groupe": "v2ctx",
+  "jaccard": 1.0,
+  "ajoutes": [],
+  "retires": [],
+  "duree_s": 6.1
+ },
+ "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2025\\20251109_172232.jpg": {
+  "groupe": "v2ctx",
+  "jaccard": 0.846,
+  "ajoutes": [],
+  "retires": [
+   "musician",
+   "musicien"
+  ],
+  "duree_s": 5.1
+ },
+ "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2020\\20201224_195515.jpg": {
+  "groupe": "v2ctx",
+  "jaccard": 0.727,
+  "ajoutes": [
+   "24 décembre 2020",
+   "christmas",
+   "famille"
+  ],
+  "retires": [
+   "24 decembre 2020",
+   "découvrir",
+   "family"
+  ],
+  "duree_s": 6.6
+ },
+ "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\Sandra (10).jpeg": {
+  "groupe": "v2ctx",
+  "jaccard": 0.417,
+  "ajoutes": [
+   "beer",
+   "bière",
+   "boissons",
+   "drinks",
+   "table",
+   "vin",
+   "wine"
+  ],
+  "retires": [],
+  "duree_s": 5.0
+ },
+ "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2023\\20230625_151627.jpg": {
+  "groupe": "v2ctx",
+  "jaccard": 0.7,
+  "ajoutes": [
+   "outdoor"
+  ],
+  "retires": [
+   "arbres",
+   "grass",
+   "herbe",
+   "outdoors",
+   "trees"
+  ],
+  "duree_s": 5.7
+ },
+ "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2025\\Screenshot_20250805_135405_WhatsApp.jpg": {
+  "groupe": "v2ctx",
+  "jaccard": 0.667,
+  "ajoutes": [
+   "appareil",
+   "device"
+  ],
+  "retires": [
+   "mobile"
+  ],
+  "duree_s": 4.8
+ },
+ "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\Screenshot_20260610_081101_Chrome.jpg": {
+  "groupe": "v2ctx",
+  "jaccard": 0.889,
+  "ajoutes": [],
+  "retires": [
+   "meme"
+  ],
+  "duree_s": 5.2
+ },
+ "\\\\NAS-Bremblens\\home\\Photos\\Photos Papa\\2004\\20040815 VisitaMic_Eli\\LosSanchez\\Sanchez.Linda.JPG": {
+  "groupe": "v2ctx",
+  "jaccard": 0.571,
+  "ajoutes": [
+   "knitted sweater",
+   "smile"
+  ],
+  "retires": [
+   "chapeau",
+   "headband",
+   "knit sweater",
+   "smiling"
+  ],
+  "duree_s": 5.4
+ },
+ "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20240629_193005.jpg": {
+  "groupe": "v2ctx",
+  "jaccard": 0.476,
+  "ajoutes": [
+   "gold chain",
+   "sunlight",
+   "t-shirt"
+  ],
+  "retires": [
+   "chain",
+   "family",
+   "gruppe",
+   "light",
+   "lumière",
+   "people",
+   "shirt",
+   "sun"
+  ],
+  "duree_s": 5.5
+ },
+ "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2025\\20251231_211427.jpg": {
+  "groupe": "v2ctx",
+  "jaccard": 0.905,
+  "ajoutes": [
+   "belt"
+  ],
+  "retires": [
+   "black belt"
+  ],
+  "duree_s": 5.7
+ },
+ "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2025\\20250520_213535.jpg": {
+  "groupe": "v2ctx",
+  "jaccard": 0.538,
+  "ajoutes": [
+   "pipes",
+   "tuyaux",
+   "under-sink"
+  ],
+  "retires": [
+   "fix",
+   "réparer",
+   "undercounter"
+  ],
+  "duree_s": 5.4
+ },
+ "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2020\\20201224_200336.jpg": {
+  "groupe": "v2ctx",
+  "jaccard": 0.75,
+  "ajoutes": [
+   "fauve",
+   "salle_a_manger"
+  ],
+  "retires": [
+   "feu",
+   "salle a manger"
+  ],
+  "duree_s": 5.7
+ },
+ "\\\\NAS-Bremblens\\home\\Photos\\Photos Papa\\2001\\20010609 Ajuankhota\\MarkusNieve2.JPG": {
+  "groupe": "v2ctx",
+  "jaccard": 0.889,
+  "ajoutes": [
+   "alpine"
+  ],
+  "retires": [
+   "alpinist"
+  ],
+  "duree_s": 5.6
+ },
+ "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2020\\20200606_175928.jpg": {
+  "groupe": "v2ctx",
+  "jaccard": 0.8,
+  "ajoutes": [
+   "clothing",
+   "outdoor"
+  ],
+  "retires": [
+   "jackets",
+   "outdoors"
+  ],
+  "duree_s": 7.0
+ },
+ "\\\\NAS-Bremblens\\home\\Photos\\Photos Papa\\1985\\1985-01Enero\\Wald und Gurten\\09_Mic Eli.jpg": {
+  "groupe": "v2ctx",
+  "jaccard": 0.867,
+  "ajoutes": [
+   "gloves",
+   "walking"
+  ],
+  "retires": [],
+  "duree_s": 5.6
+ },
+ "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\Screenshot_20240715_221217_Chrome.jpg": {
+  "groupe": "v2ctx",
+  "jaccard": 0.533,
+  "ajoutes": [
+   "airport",
+   "aéroport",
+   "date",
+   "departure",
+   "départ",
+   "flight",
+   "vol"
+  ],
+  "retires": [],
+  "duree_s": 5.7
+ },
+ "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20241216_202717.jpg": {
+  "groupe": "v2ctx",
+  "jaccard": 1.0,
+  "ajoutes": [],
+  "retires": [],
+  "duree_s": 6.2
+ },
+ "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2022\\20221218_115854.jpg": {
+  "groupe": "v2ctx",
+  "jaccard": 0.905,
+  "ajoutes": [
+   "tv"
+  ],
+  "retires": [
+   "television"
+  ],
+  "duree_s": 7.0
+ },
+ "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\Maryline (12).jpeg": {
+  "groupe": "v2ctx",
+  "jaccard": 0.917,
+  "ajoutes": [
+   "date"
+  ],
+  "retires": [],
+  "duree_s": 5.2
+ },
+ "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\Mams (2).jpeg": {
+  "groupe": "v2ctx",
+  "jaccard": 0.75,
+  "ajoutes": [
+   "exterior"
+  ],
+  "retires": [
+   "outdoors"
+  ],
+  "duree_s": 4.8
+ },
+ "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2023\\20230408_155424.jpg": {
+  "groupe": "v2ctx",
+  "jaccard": 0.833,
+  "ajoutes": [
+   "sunlight"
+  ],
+  "retires": [
+   "purple",
+   "sun"
+  ],
+  "duree_s": 6.3
+ },
+ "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2023\\20231225_144740.jpg": {
+  "groupe": "v2ctx",
+  "jaccard": 0.7,
+  "ajoutes": [
+   "salle_de_bain",
+   "table"
+  ],
+  "retires": [
+   "assise",
+   "furniture",
+   "salle de bain",
+   "sitting"
+  ],
+  "duree_s": 5.8
+ },
+ "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\Alba (24).JPG": {
+  "groupe": "v2ctx",
+  "jaccard": 0.467,
+  "ajoutes": [
+   "lumière du soleil",
+   "sunlight",
+   "sunset"
+  ],
+  "retires": [
+   "beach",
+   "piscine",
+   "solaire",
+   "sunglasses",
+   "sunscreen"
+  ],
+  "duree_s": 4.9
+ },
+ "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20241005_203741.jpg": {
+  "groupe": "v2ctx",
+  "jaccard": 0.5,
+  "ajoutes": [
+   "assiette",
+   "bowl",
+   "meal",
+   "plat",
+   "plate",
+   "repas",
+   "restaurant",
+   "table"
+  ],
+  "retires": [
+   "dining area",
+   "espace de repas"
+  ],
+  "duree_s": 6.4
+ },
+ "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20241221_141534.jpg": {
+  "groupe": "v2ctx",
+  "jaccard": 0.714,
+  "ajoutes": [
+   "canvas",
+   "floor",
+   "tableau"
+  ],
+  "retires": [
+   "ground",
+   "painted",
+   "painting"
+  ],
+  "duree_s": 6.3
+ },
+ "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20240403_160218.jpg": {
+  "groupe": "v2ctx",
+  "jaccard": 0.778,
+  "ajoutes": [
+   "exterieur",
+   "outside"
+  ],
+  "retires": [
+   "extérieur",
+   "outdoor"
+  ],
+  "duree_s": 6.0
+ },
+ "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\2010 Turienzo\\DSC02168.JPG": {
+  "groupe": "v2ctx",
+  "jaccard": 0.667,
+  "ajoutes": [
+   "baignade",
+   "basking",
+   "lying",
+   "outdoor"
+  ],
+  "retires": [
+   "lie down",
+   "outdoors"
+  ],
+  "duree_s": 5.7
+ },
+ "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2021\\20210817_201306.jpg": {
+  "groupe": "v2ctx",
+  "jaccard": 1.0,
+  "ajoutes": [],
+  "retires": [],
+  "duree_s": 6.3
+ },
  "_prompt": "47e35ce90f02"
 }
