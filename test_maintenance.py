@@ -6,6 +6,7 @@ stores/rekey/FS simules, is_busy pilotable, dry. Verifie cadence, autonomie,
 priorite UI, et un cycle reel (dedup in-process + purge).
 """
 
+import ast
 import hashlib
 import json
 import shutil
@@ -23,6 +24,43 @@ def check(cond, msg):
     print(("  OK  " if cond else "  FAIL") + " " + msg)
     if not cond:
         FAIL.append(msg)
+
+
+def check_cablage_refus_standalone():
+    """1 sexdecies (03/09, demande de Mike) : main() DOIT verifier le verrou
+    (refus_d_ecriture) AVANT make_standalone_sv/run_cycle -- sur le texte
+    source (ast), jamais en executant main() pour de vrai : ce lanceur mute
+    photos.db si le verrou est absent."""
+    print("0) cablage : main() verifie le verrou avant de muter (1 sexdecies)")
+    source = Path(__file__).resolve().parent.joinpath('maintenance.py') \
+        .read_text(encoding='utf-8')
+    tree = ast.parse(source)
+    main_fn = next((n for n in ast.walk(tree)
+                     if isinstance(n, ast.FunctionDef) and n.name == 'main'), None)
+    check(main_fn is not None, "main() trouvable dans maintenance.py")
+    if main_fn is None:
+        return
+
+    def nom_appel(n):
+        if isinstance(n.func, ast.Attribute):
+            return n.func.attr
+        return getattr(n.func, 'id', None)
+
+    appels = [(getattr(n, 'lineno', 0), nom_appel(n))
+              for n in ast.walk(main_fn) if isinstance(n, ast.Call)]
+    noms = [nom for _, nom in appels]
+    check('refus_d_ecriture' in noms,
+          "main() appelle refus_d_ecriture (le verrou n'est plus une simple promesse en commentaire)")
+
+    ordre = sorted(appels)
+    premiers = [nom for _, nom in ordre if nom in ('refus_d_ecriture', 'make_standalone_sv')]
+    check(bool(premiers) and premiers[0] == 'refus_d_ecriture',
+          "refus_d_ecriture est appele AVANT make_standalone_sv (sinon le cycle "
+          "standalone peut deja avoir mute l'index avant le refus)")
+
+    src_main = ast.get_source_segment(source, main_fn) or ''
+    check("'--dry' in sys.argv" in src_main and "'--forcer' in sys.argv" in src_main,
+          "dry et forcer restent lisibles depuis la ligne de commande, comme les autres appliquer_*.py")
 
 
 class FakeSv:
@@ -69,6 +107,9 @@ class FakeSv:
 
 
 def main():
+    check_cablage_refus_standalone()
+    print()
+
     tmp = Path(tempfile.mkdtemp(prefix="maint_"))
     try:
         # --- fabrique un plan de dedoublonnage avec 1 quarantaine reelle ---

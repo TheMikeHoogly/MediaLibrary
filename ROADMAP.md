@@ -240,11 +240,13 @@ Observé : densité 96 → 86 → 210 px sur la planche, Échap ferme, cible 44 
 `--encre` a été retiré du « Se déconnecter » — mesuré à 3,50:1 sur
 `--salle-2`, sous le plancher AA, et se déconnecter ne détruit rien.
 
-**3. La suite du chantier 17 (multi-utilisateurs)** : la notion de
-PROPRIÉTAIRE, puis l'attribution rétroactive des 3 767 décisions à Mike.
-Spécifié — six décisions de Mike, plus bas dans ce fichier : l'exécuter, ne
-pas le rouvrir. Deux questions ouvertes dans `QUESTIONS_MIKE.md` bloquent
-l'écriture partagée.
+**3. La suite du chantier 17 (multi-utilisateurs) — PRESQUE FINI.** Étapes 1
+à 6 sur 7 POSÉES ET OBSERVÉES (sessions 65-66) : propriétaire + attribution
+rétroactive, vue filtrée par utilisateur, comptes, écriture restreinte,
+corbeille à 6 mois. Les six décisions de Mike sont EXÉCUTÉES, pas
+seulement spécifiées ; `QUESTIONS_MIKE.md` est vide, plus rien ne bloque.
+**Reste la seule étape 7 : l'onboarding rédigé** — le chantier se termine,
+il ne se relance pas.
 
 **3 bis. Le garde-fou de la confidentialité (chantier 18) — EN COURS
 (session 68, 30/08 soir).** Catégories TRANCHÉES : **sept** — les six de la spec

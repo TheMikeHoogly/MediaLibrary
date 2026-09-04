@@ -313,9 +313,23 @@ def make_standalone_sv(dry=False):
 
 def main():
     dry = '--dry' in sys.argv
+    forcer = '--forcer' in sys.argv
+    # 1 sexdecies (03/09, demande de Mike) : ce lanceur MUTE photos.db en
+    # ouvrant ses propres stores (StandaloneSv._ensure -> appliquer_plan.
+    # open_stores), donc le meme verrou que les autres appliquer_*.py --
+    # avant, le bat se contentait de PREVENIR ("serveur suppose ARRETE") et
+    # laissait Mike faire confiance a sa propre memoire. Desormais le script
+    # le VERIFIE lui-meme (refus_d_ecriture, deja teste et utilise par
+    # appliquer_plan_annee.py et consorts) : le dry-run reste toujours permis
+    # (rien n'est ecrit), --forcer passe outre a tes risques comme ailleurs.
+    import appliquer_plan_annee as APA
+    refus = APA.refus_d_ecriture(str(RACINE / 'photos.db'), dry, forcer)
+    if refus:
+        print(refus)
+        return 1
     sv = make_standalone_sv(dry=dry)
     print(f"{'DRY-RUN' if dry else 'MAINTENANCE'} — un cycle "
-          "(serveur suppose ARRETE pour les etapes mutantes).")
+          "(serveur verifie ARRETE pour les etapes mutantes).")
     lance = run_cycle(sv)
     print("\nEtapes lancees :", json.dumps(lance, ensure_ascii=False))
     return 0

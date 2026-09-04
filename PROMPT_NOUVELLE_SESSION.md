@@ -9,7 +9,7 @@ FUSIONNÉ — ce document, non. Puis `ROADMAP.md`, `eval/DECISIONS.md`,
 `eval/METHODE.md` — et `docs/DECISIONS_OUTILLAGE.md` si le sujet touche aux
 canaux, à la livraison ou au MCP. Débrief en 2–3 lignes, puis on attaque.
 
-## Où on en est (03/09/2026, session 71 — précontrôle upload, ménage ROADMAP)
+## Où on en est (03/09/2026, session 71 — précontrôle upload, ménage ROADMAP, verrou maintenance.py)
 
 **Git** : `feat/compte-motion-photo` FUSIONNÉE dans `main` ce commit (fast-
 forward, technique du bat 27, jamais de `checkout main`) — vérifier
@@ -50,16 +50,56 @@ je n'ai pas vérifié un par un s'il en subsiste un « ne pas reproposer » qui
 ne vit nulle part ailleurs — à faire AVEC Mike (relire chaque item avant
 de couper), pas en un passage solitaire.
 
+**ROADMAP.md, la Priorité du haut sur le chantier 17 était FAUSSE (repérée
+et corrigée session 71)** : elle disait « spécifié, deux questions ouvertes
+bloquent » — en réalité les six décisions de Mike sont EXÉCUTÉES depuis les
+sessions 65-66 (étapes 1 à 6 sur 7 POSÉES ET OBSERVÉES, `QUESTIONS_MIKE.md`
+est vide) et le détail plus bas (item 17) le disait déjà. Corrigé : ne
+reste que l'étape 7, l'onboarding rédigé. **Leçon** : le résumé du haut et
+le détail du bas peuvent diverger silencieusement — les deux se relisent,
+pas un seul.
+
+**Audit des `.bat` qui exigent le serveur ARRÊTÉ (demande de Mike, session
+71) : UN SEUL trou, colmaté.** Passé en revue les ~23 `.bat` dont le nom ou
+le contenu touche à `arret`/`SERVEUR` et leurs scripts Python sous-jacents.
+Résultat :
+- `maintenance.py` (bat 25, lancé en one-shot hors serveur) ouvrait
+  `photos.db` en écriture (`StandaloneSv`) en se contentant d'AFFIRMER
+  « serveur suppose ARRETE » dans un commentaire et un `print` — jamais
+  vérifié. **Corrigé** : `main()` appelle désormais `refus_d_ecriture`
+  (la même fonction, déjà prouvée, qu'`appliquer_plan_annee.py` et les
+  trois autres `appliquer_*.py`) AVANT `make_standalone_sv`/`run_cycle` ;
+  `--dry` reste toujours permis, `--forcer` passe outre comme ailleurs.
+  Testé par un contrôle de câblage sur l'AST (`test_maintenance.py`, une
+  nouvelle fonction `check_cablage_refus_standalone` en tête — jamais
+  `main()` n'est exécuté pour de vrai, ce lanceur mute l'index si le
+  verrou est absent).
+- Tous les autres : soit strictement en LECTURE (inventaires, vérifs), soit
+  conçus et documentés pour tourner SERVEUR ALLUME (`deplacer_doublons_atrier.py`
+  bat 36/37, `copier_absentes.py` bat 32 — le scan du serveur absorbe seul
+  l'écart), soit ne touchent jamais `photos.db` ni un `.jpg` du fonds
+  (`appliquer_purge_motionphoto.py` bat 43 — ne déplace que des
+  `*.jpg_original`, déjà écrit ainsi ; les bancs qui REFUSENT le nom
+  `photos.db` comme cible). Rien d'autre à corriger.
+
 ## Prochain pas
 
-1. **Mike lance le bat 42** (strip Motion Photo : aperçu → essai 20 → tout,
-   serveur ARRÊTÉ), vérifie des stills, puis **bat 43** (purge). ~8,6 Go
-   rendus. Rien de tout ça ne s'est encore produit — c'est le geste concret
-   le plus ancien encore en attente.
-2. **Ventilation/dépoussiérage** (Mike) → feu vert des trois bancs GPU en
-   pause : sensibles (ch. 18, ~90 questions), re-tagging 2 bis (~100 photos
-   comparées AVANT les 26 h de GPU), vidéos phase 2 (30 vidéos, 1 puis 3
-   images-clés). Rien ne se relance sans son feu vert.
+1. **Bat 42 (strip Motion Photo) EN COURS depuis 03/09 ~22h** (lancé par
+   Mike, serveur ARRÊTÉ par le bat lui-même — vérifié). À la fin : Mike
+   vérifie des stills à l'œil, puis lance **bat 43** (purge des
+   `_original`, indifférent à l'état du serveur — voir ci-dessus). ~8,6 Go
+   à rendre au total.
+2. **Ventilation dégagée mais pas nettoyée en profondeur (Mike, 03/09)** —
+   feu vert PARTIEL pour tester quand même, sans bloquer le projet.
+   **Ordre proposé, prudence thermique oblige** (coupure brutale déjà
+   vécue le 29/08, Id 41) : attendre la FIN du bat 42 (le serveur est de
+   toute façon arrêté pendant qu'il tourne) et le redémarrage du serveur,
+   PUIS lancer le plus court des trois bancs en pause — le re-tagging 2 bis
+   (~100 photos comparées) — en surveillant `_journal_serveur.log` (🌡) en
+   direct ; si la température tient, enchaîner sur sensibles (ch. 18, ~90
+   questions) ; les vidéos phase 2 (~26 h de GPU) restent pour après un
+   nettoyage complet, ce n'est pas le format d'un test prudent. Rien ne se
+   lance sans que Mike le confirme au fil de l'eau.
 3. **La Carte a deux champs** (barre + « Rechercher (noms, lieux, sens) ») :
    à trancher avec Mike — garder les deux ou fondre.
 4. Condenser `## À faire — par ordre de valeur` AVEC Mike (voir ci-dessus) :
