@@ -3,25 +3,169 @@
   "groupe": "candidat",
   "verdict": "non",
   "confiance": "haute",
-  "duree_s": 78.4
+  "duree_s": 8.1
  },
  "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\260531_Samsung_MHU\\Camera\\20260411_160856.jpg": {
   "groupe": "candidat",
-  "verdict": "banque",
-  "confiance": "haute",
-  "duree_s": 57.4
+  "verdict": "illisible",
+  "confiance": "",
+  "duree_s": 49.8
  },
  "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\Appart Bremblens\\20181028_224939.jpg": {
   "groupe": "candidat",
   "verdict": "non",
   "confiance": "haute",
-  "duree_s": 42.9
+  "duree_s": 5.9
  },
  "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2022\\20221231_201448.jpg": {
   "groupe": "candidat",
-  "verdict": "erreur",
-  "confiance": "timed out",
-  "duree_s": 120.3
+  "verdict": "illisible",
+  "confiance": "",
+  "duree_s": 50.6
+ },
+ "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2022\\20220707_110835.jpg": {
+  "groupe": "candidat",
+  "verdict": "non",
+  "confiance": "haute",
+  "duree_s": 3.6
+ },
+ "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2023\\20230326_190923.jpg": {
+  "groupe": "candidat",
+  "verdict": "facture",
+  "confiance": "haute",
+  "duree_s": 5.3
+ },
+ "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2022\\20220920_182551.jpg": {
+  "groupe": "candidat",
+  "verdict": "non",
+  "confiance": "haute",
+  "duree_s": 2.5
+ },
+ "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2022\\20220805_200910.jpg": {
+  "groupe": "candidat",
+  "verdict": "banque",
+  "confiance": "haute",
+  "duree_s": 17.1
+ },
+ "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\260531_Samsung_MHU\\Camera\\20260502_093501.jpg": {
+  "groupe": "candidat",
+  "verdict": "illisible",
+  "confiance": "",
+  "duree_s": 50.5
+ },
+ "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\2023 Lyon week-end amies\\20230430_Alba-et-Flo-et-Flora-et-al-5.jpg": {
+  "groupe": "candidat",
+  "verdict": "non",
+  "confiance": "haute",
+  "duree_s": 4.0
+ },
+ "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2025\\20250201_212032.jpg": {
+  "groupe": "candidat",
+  "verdict": "non",
+  "confiance": "haute",
+  "duree_s": 3.5
+ },
+ "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\Screenshot_20260529_203121_Chrome.jpg": {
+  "groupe": "candidat",
+  "verdict": "non",
+  "confiance": "haute",
+  "duree_s": 8.1
+ },
+ "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Luna & Inti\\20241114_231740.jpg": {
+  "groupe": "candidat",
+  "verdict": "non",
+  "confiance": "haute",
+  "duree_s": 3.3
+ },
+ "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2023\\20231216_170807.jpg": {
+  "groupe": "candidat",
+  "verdict": "non",
+  "confiance": "haute",
+  "duree_s": 2.8
+ },
+ "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\20260716_124021.jpg": {
+  "groupe": "candidat",
+  "verdict": "non",
+  "confiance": "haute",
+  "duree_s": 3.6
+ },
+ "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2020\\02 Février\\Repas famile Läser chez Bea\\20200223-154212_document-historique-detaille-presentant.jpg": {
+  "groupe": "candidat",
+  "verdict": "illisible",
+  "confiance": "",
+  "duree_s": 52.1
+ },
+ "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20241208_170017.jpg": {
+  "groupe": "candidat",
+  "verdict": "illisible",
+  "confiance": "",
+  "duree_s": 50.6
+ },
+ "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2019\\06 Juin\\Festi Neuch\\20190615-233757_scene-de-demonstration-politique.jpg": {
+  "groupe": "candidat",
+  "verdict": "non",
+  "confiance": "haute",
+  "duree_s": 5.7
+ },
+ "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\09 Septembre\\20180901_193005.jpg": {
+  "groupe": "candidat",
+  "verdict": "non",
+  "confiance": "haute",
+  "duree_s": 4.3
+ },
+ "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Floufline\\20240226_223732.jpg": {
+  "groupe": "candidat",
+  "verdict": "illisible",
+  "confiance": "",
+  "duree_s": 50.7
+ },
+ "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Famille\\20231225_Val.jpg": {
+  "groupe": "candidat",
+  "verdict": "non",
+  "confiance": "basse",
+  "duree_s": 8.8
+ },
+ "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20240130_182929.jpg": {
+  "groupe": "candidat",
+  "verdict": "illisible",
+  "confiance": "",
+  "duree_s": 48.6
+ },
+ "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\20260201_202623.jpg": {
+  "groupe": "candidat",
+  "verdict": "illisible",
+  "confiance": "",
+  "duree_s": 48.9
+ },
+ "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2025\\20250204_171801.jpg": {
+  "groupe": "candidat",
+  "verdict": "non",
+  "confiance": "basse",
+  "duree_s": 13.3
+ },
+ "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Calinous\\20220103_image-de-lumiere-floue.jpg": {
+  "groupe": "candidat",
+  "verdict": "non",
+  "confiance": "haute",
+  "duree_s": 7.9
+ },
+ "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\Screenshot_20241205_115722_Maps.jpg": {
+  "groupe": "candidat",
+  "verdict": "non",
+  "confiance": "basse",
+  "duree_s": 15.7
+ },
+ "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20240331_180521.jpg": {
+  "groupe": "candidat",
+  "verdict": "non",
+  "confiance": "haute",
+  "duree_s": 6.3
+ },
+ "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Remise du CAS FPP\\20180920_Flo.jpg": {
+  "groupe": "candidat",
+  "verdict": "illisible",
+  "confiance": "",
+  "duree_s": 95.5
  },
  "_prompt": "f629bf10b8dd"
 }

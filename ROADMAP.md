@@ -260,7 +260,12 @@ interroge le modèle de prod sur un échantillon (candidats « document / reçu 
 capture… » + témoins aléatoires, tirage séedé, cache reprenable, axe fermé)
 → `docs/sensibles_echantillon.json`, une liste à JUGER par Mike — rien ne
 bouge. Banc lancé le 30/08 soir (~16 s/photo, passes successives sous le
-plafond du canal). Ensuite : la question dans la MÊME invocation du tagueur
+plafond du canal), repris le 04/09 après le dégagement PARTIEL des prises
+d'air (28/90 en cache) : deux créneaux de ~450 s ont tenu, 69 puis 73°C,
+mais la MACHINE ENTIÈRE a coupé par surchauffe sur le créneau suivant —
+le dégagement seul ne suffit pas, le nettoyage en profondeur (prévu par
+Mike) reste la condition avant d'aller plus loin. Ensuite : la question
+dans la MÊME invocation du tagueur
 (pas de cinquième pipeline), l'axe `sensible:` en base seulement (jamais le
 XMP — 18c), l'écran d'envoi aux trois gestes (PRIVE / corbeille / « non »,
 mémorisé), la passe rétroactive. Et la **purge automatique de la corbeille
@@ -270,7 +275,25 @@ mémorisé), la passe rétroactive. Et la **purge automatique de la corbeille
 session 57), mais la primitive complète existe désormais **TROIS fois** :
 `server.rekey_everywhere`, `deplacer_dossiers.recle_une_cle` et
 `appliquer_plan.rekey_stores`. Trois endroits où la même règle peut diverger,
-et elle a déjà divergé une fois pendant cinq jours. Une seule doit rester.
+et elle a déjà divergé une fois pendant cinq jours. **Nuance (04/09, après
+lecture des trois)** : la partie la plus risquée — les décisions humaines
+dans les fiches PEOPLE/PETS — est DÉJÀ unifiée, les trois passent par
+`recle_decisions.recler_fiche`. Ce qui reste TROIS copies, c'est
+l'orchestration (quels magasins, dans quel ordre) — et ça peut diverger en
+silence : trouvé et corrigé aujourd'hui un vrai cas, `maintenance.py`
+(bat 25, StandaloneSv) appelait `rekey_stores` sans jamais transporter le
+7ᵉ magasin (`gps_places.json`) — `deplacer_dossiers.py` le disait de
+lui-même en commentaire depuis un moment (« il ignore aussi
+gps_places.json ») sans que personne ne corrige l'appelant manquant.
+Fusionner `server.rekey_everywhere` avec les deux autres n'est PAS une
+suppression de code mort : il tourne sur des globals EN PROCESSUS
+(`STORE`, `FACE_STORE`…) que les scripts autonomes n'ont pas — de vrais
+contextes différents. Une vraie fusion demanderait de faire passer
+`server.py` par des stores injectés plutôt que des globals, un chantier à
+part, pas une correction solo. Vérifié (grep de tous les appelants) : les deux autres,
+`appliquer_doublons_image.py` et `appliquer_plan_annee.py`, transportent
+déjà `gps_places.json` eux-mêmes autour de `rekey_stores` — le trou était
+propre à `StandaloneSv`.
 
 **5. Le reste d'audit** : O8–O9, O11, O13–O15 ; **I1** visible dans
 `/reglages` ; `animal:luna` en minuscule sur 3 photos à côté de `animal:Luna`

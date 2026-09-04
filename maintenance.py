@@ -174,6 +174,15 @@ def apply_pending_dedup(sv):
         c['ok'] += 1
     if not sv.dry and journal['operations']:
         sv.tags_save()
+        # 1 sexdecies suite (04/09) : le 7e magasin (gps_places.json) ne suit
+        # PAS AP.rekey_stores tout seul -- deplacer_dossiers.py le dit de
+        # lui-meme ("Il ignore aussi gps_places.json"). StandaloneSv le
+        # transporte desormais (voir rekey/gps_save ci-dessous) ; _MaintSv
+        # (le sv du serveur, in-process) n'a pas besoin de ce geste, son
+        # rekey() delegue a rekey_everywhere qui sauve gps_places lui-meme --
+        # d'ou le hasattr, pour ne rien casser des deux cotes.
+        if hasattr(sv, 'gps_save'):
+            sv.gps_save()
         jp = DOCS / f"undo_rangement_{time.strftime('%Y%m%d_%H%M%S')}_maint.json"
         jp.write_text(json.dumps(journal, ensure_ascii=False, indent=1),
                       encoding='utf-8')
@@ -250,7 +259,7 @@ class StandaloneSv:
     """`sv` pour un one-shot hors serveur : ouvre ses propres stores et re-cle
     via les memes primitives que rekey_everywhere (appliquer_plan)."""
 
-    def __init__(self, db=None, dry=False, autonomy=None):
+    def __init__(self, db=None, dry=False, autonomy=None, gps=None):
         self.dry = dry
         self.autonomy = dict(AUTONOMY, **(autonomy or {}))
         self.intervals = dict(INTERVALS)
@@ -268,16 +277,36 @@ class StandaloneSv:
             pass
         self._stores = self._sem = None
         self._db = db or str(RACINE / 'photos.db')
+        # 1 sexdecies suite (04/09) : le 7e magasin, comme AP.open_stores
+        # pour la base -- injectable pour les tests, RACINE/gps_places.json
+        # en usage reel (meme defaut qu'appliquer_plan_annee.GPS).
+        self._gps_path = gps or str(RACINE / 'gps_places.json')
+        self._gps = None
+        self._gps_dirty = False
 
     def _ensure(self):
         if self._stores is None:
             import appliquer_plan as AP
             self._stores, self._sem = AP.open_stores(self._db)
+        if self._gps is None:
+            import appliquer_plan_annee as APA
+            self._gps = APA.charger_gps(self._gps_path)
 
     def rekey(self, old, new):
         import appliquer_plan as AP
         self._ensure()
-        return AP.rekey_stores(old, new, self._stores, self._sem)
+        rekeyed = AP.rekey_stores(old, new, self._stores, self._sem)
+        if rekeyed:
+            import appliquer_plan_annee as APA
+            if APA.recler_gps(self._gps, old, new):
+                self._gps_dirty = True
+        return rekeyed
+
+    def gps_save(self):
+        if self._gps_dirty:
+            import appliquer_plan_annee as APA
+            APA.ecrire_gps(self._gps, self._gps_path)
+            self._gps_dirty = False
 
     def tags_get(self, key):
         self._ensure()

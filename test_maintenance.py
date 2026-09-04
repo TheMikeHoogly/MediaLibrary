@@ -106,8 +106,50 @@ class FakeSv:
         return 0
 
 
+def check_gps_standalone():
+    """1 sexdecies suite (04/09) : StandaloneSv.rekey() doit transporter
+    gps_places.json (7e magasin) -- AP.rekey_stores seul l'ignore
+    (deplacer_dossiers.py le dit de lui-meme : "Il ignore aussi
+    gps_places.json"), exactement la divergence que redoute l'item
+    ROADMAP "UNIFIER le re-cle". `appliquer_plan` est bouchonne : ni vraie
+    base ni vrai gps_places.json touches."""
+    print("0 ter) StandaloneSv transporte gps_places.json au re-cle (1 sexdecies)")
+    import appliquer_plan as AP
+
+    tmp = Path(tempfile.mkdtemp(prefix="maint_gps_"))
+    try:
+        gps_path = tmp / 'gps_places.json'
+        gps_path.write_text(json.dumps({'\\\\nas\\a.jpg': 'Lausanne'}),
+                            encoding='utf-8')
+
+        appels = []
+        original_open, original_rekey = AP.open_stores, AP.rekey_stores
+        AP.open_stores = lambda db: ({}, None)
+        AP.rekey_stores = (lambda old, new, stores, semantic, compte=None:
+                            appels.append((old, new)) or True)
+        try:
+            sv = M.StandaloneSv(db=str(tmp / 'photos.db'), gps=str(gps_path))
+            ok = sv.rekey('\\\\nas\\a.jpg', '\\\\nas\\b.jpg')
+            check(ok, "rekey() renvoie vrai (delegue a rekey_stores bouchonne)")
+            check(appels == [('\\\\nas\\a.jpg', '\\\\nas\\b.jpg')],
+                  "rekey_stores a bien recu les deux cles")
+            avant = json.loads(gps_path.read_text(encoding='utf-8'))
+            check(avant == {'\\\\nas\\a.jpg': 'Lausanne'},
+                  "gps_places.json pas encore ecrit avant gps_save (dirty en memoire seulement)")
+            sv.gps_save()
+            relu = json.loads(gps_path.read_text(encoding='utf-8'))
+            check(relu == {'\\\\nas\\b.jpg': 'Lausanne'},
+                  "gps_places.json suit le re-cle (7e magasin, plus jamais silencieux)")
+        finally:
+            AP.open_stores, AP.rekey_stores = original_open, original_rekey
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
 def main():
     check_cablage_refus_standalone()
+    print()
+    check_gps_standalone()
     print()
 
     tmp = Path(tempfile.mkdtemp(prefix="maint_"))
