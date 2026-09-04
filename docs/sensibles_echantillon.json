@@ -1,8 +1,8 @@
 {
- "genere_le": "2026-09-04 08:15:36",
+ "genere_le": "2026-09-04 23:08:01",
  "modele": "qwen3-vl:2b",
  "graine": 42,
- "complet": false,
+ "complet": true,
  "prompt": "f629bf10b8dd",
  "categories": [
   "facture",
@@ -174,6 +174,475 @@
    "verdict": "illisible",
    "confiance": "",
    "duree_s": 48.9
+  },
+  {
+   "key": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2025\\20250204_171801.jpg",
+   "groupe": "candidat",
+   "verdict": "non",
+   "confiance": "basse",
+   "duree_s": 13.3
+  },
+  {
+   "key": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Calinous\\20220103_image-de-lumiere-floue.jpg",
+   "groupe": "candidat",
+   "verdict": "non",
+   "confiance": "haute",
+   "duree_s": 7.9
+  },
+  {
+   "key": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\Screenshot_20241205_115722_Maps.jpg",
+   "groupe": "candidat",
+   "verdict": "non",
+   "confiance": "basse",
+   "duree_s": 15.7
+  },
+  {
+   "key": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20240331_180521.jpg",
+   "groupe": "candidat",
+   "verdict": "non",
+   "confiance": "haute",
+   "duree_s": 6.3
+  },
+  {
+   "key": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Remise du CAS FPP\\20180920_Flo.jpg",
+   "groupe": "candidat",
+   "verdict": "illisible",
+   "confiance": "",
+   "duree_s": 95.5
+  },
+  {
+   "key": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Remise du CAS FPP\\20180920_Flo-17.jpg",
+   "groupe": "candidat",
+   "verdict": "administratif",
+   "confiance": "haute",
+   "duree_s": 53.9
+  },
+  {
+   "key": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Mickinou\\20250307_194817.jpg",
+   "groupe": "candidat",
+   "verdict": "non",
+   "confiance": "haute",
+   "duree_s": 20.5
+  },
+  {
+   "key": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2019\\01 Janvier\\20190112-224543_carte-d-invitation-du-hotel.jpg",
+   "groupe": "candidat",
+   "verdict": "non",
+   "confiance": "haute",
+   "duree_s": 19.8
+  },
+  {
+   "key": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\2023 Seychelles\\20230307_seychelles_page-de-document-avec-offre.jpg",
+   "groupe": "candidat",
+   "verdict": "illisible",
+   "confiance": "",
+   "duree_s": 80.7
+  },
+  {
+   "key": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2022\\20221031_170643.jpg",
+   "groupe": "candidat",
+   "verdict": "non",
+   "confiance": "haute",
+   "duree_s": 20.7
+  },
+  {
+   "key": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\Screenshot_20240323_231427_Gmail.jpg",
+   "groupe": "candidat",
+   "verdict": "illisible",
+   "confiance": "",
+   "duree_s": 80.7
+  },
+  {
+   "key": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\20260426_181958.jpg",
+   "groupe": "candidat",
+   "verdict": "non",
+   "confiance": "basse",
+   "duree_s": 34.8
+  },
+  {
+   "key": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2023\\20230326_184324.jpg",
+   "groupe": "candidat",
+   "verdict": "administratif",
+   "confiance": "haute",
+   "duree_s": 22.8
+  },
+  {
+   "key": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2023\\20230406_121526.jpg",
+   "groupe": "candidat",
+   "verdict": "non",
+   "confiance": "haute",
+   "duree_s": 20.9
+  },
+  {
+   "key": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2020\\20200712_150639.jpg",
+   "groupe": "candidat",
+   "verdict": "illisible",
+   "confiance": "",
+   "duree_s": 81.0
+  },
+  {
+   "key": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Luna & Inti\\20240204_114703.jpg",
+   "groupe": "candidat",
+   "verdict": "non",
+   "confiance": "basse",
+   "duree_s": 26.3
+  },
+  {
+   "key": "\\\\NAS-Bremblens\\home\\Photos\\Photos Papa\\2004\\20041126 CorlapPersonal\\Teresa Revilla.jpg",
+   "groupe": "candidat",
+   "verdict": "non",
+   "confiance": "haute",
+   "duree_s": 20.9
+  },
+  {
+   "key": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2022\\20221020_094743.jpg",
+   "groupe": "candidat",
+   "verdict": "non",
+   "confiance": "haute",
+   "duree_s": 20.5
+  },
+  {
+   "key": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\Screenshot_20241120_164626_Chrome.jpg",
+   "groupe": "candidat",
+   "verdict": "non",
+   "confiance": "haute",
+   "duree_s": 19.5
+  },
+  {
+   "key": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Floufline\\20240628_232339.jpg",
+   "groupe": "candidat",
+   "verdict": "non",
+   "confiance": "haute",
+   "duree_s": 31.4
+  },
+  {
+   "key": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\Screenshot_20240622_092619_Gmail.jpg",
+   "groupe": "candidat",
+   "verdict": "non",
+   "confiance": "haute",
+   "duree_s": 18.6
+  },
+  {
+   "key": "\\\\NAS-Bremblens\\home\\Photos\\Photos Papa\\1998\\1998 0701 Schottland\\HK und Eli Bikini.jpg",
+   "groupe": "candidat",
+   "verdict": "non",
+   "confiance": "basse",
+   "duree_s": 21.8
+  },
+  {
+   "key": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2025\\Screenshot_20251126_101811_Chrome.jpg",
+   "groupe": "candidat",
+   "verdict": "illisible",
+   "confiance": "",
+   "duree_s": 80.6
+  },
+  {
+   "key": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2025\\20251202-175421_veuillez-consulter-les-billets.jpg",
+   "groupe": "candidat",
+   "verdict": "illisible",
+   "confiance": "",
+   "duree_s": 80.1
+  },
+  {
+   "key": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20240528_170500.jpg",
+   "groupe": "candidat",
+   "verdict": "non",
+   "confiance": "haute",
+   "duree_s": 19.3
+  },
+  {
+   "key": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Appartement Bremblens\\20260622_093737.jpg",
+   "groupe": "candidat",
+   "verdict": "non",
+   "confiance": "basse",
+   "duree_s": 23.7
+  },
+  {
+   "key": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2023\\20230807_070310.jpg",
+   "groupe": "candidat",
+   "verdict": "illisible",
+   "confiance": "",
+   "duree_s": 80.1
+  },
+  {
+   "key": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2020\\20200522_123626.jpg",
+   "groupe": "candidat",
+   "verdict": "administratif",
+   "confiance": "haute",
+   "duree_s": 20.8
+  },
+  {
+   "key": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2025\\20250922_152638.jpg",
+   "groupe": "candidat",
+   "verdict": "non",
+   "confiance": "basse",
+   "duree_s": 27.2
+  },
+  {
+   "key": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\Screenshot_20241212_143600_Chrome.jpg",
+   "groupe": "candidat",
+   "verdict": "illisible",
+   "confiance": "",
+   "duree_s": 80.8
+  },
+  {
+   "key": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\201012\\201012A0\\13122010392.jpg",
+   "groupe": "candidat",
+   "verdict": "non",
+   "confiance": "haute",
+   "duree_s": 21.5
+  },
+  {
+   "key": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Luna & Inti\\20241114_231731.jpg",
+   "groupe": "candidat",
+   "verdict": "non",
+   "confiance": "haute",
+   "duree_s": 24.6
+  },
+  {
+   "key": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Malika\\20211115_Flora-et-Malika.jpg",
+   "groupe": "candidat",
+   "verdict": "non",
+   "confiance": "haute",
+   "duree_s": 18.7
+  },
+  {
+   "key": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2023\\20230826_141421.jpg",
+   "groupe": "candidat",
+   "verdict": "illisible",
+   "confiance": "",
+   "duree_s": 79.9
+  },
+  {
+   "key": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20241206-185514_interface-de-planification-de-voyage.jpg",
+   "groupe": "candidat",
+   "verdict": "non",
+   "confiance": "haute",
+   "duree_s": 19.6
+  },
+  {
+   "key": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2023\\20230716_110734.jpg",
+   "groupe": "candidat",
+   "verdict": "non",
+   "confiance": "haute",
+   "duree_s": 20.6
+  },
+  {
+   "key": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2021\\20211224_194340.jpg",
+   "groupe": "candidat",
+   "verdict": "non",
+   "confiance": "haute",
+   "duree_s": 21.6
+  },
+  {
+   "key": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\20180616_143222.jpg",
+   "groupe": "temoin",
+   "verdict": "non",
+   "confiance": "haute",
+   "duree_s": 20.7
+  },
+  {
+   "key": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2025\\20250622_155556.jpg",
+   "groupe": "temoin",
+   "verdict": "non",
+   "confiance": "basse",
+   "duree_s": 33.1
+  },
+  {
+   "key": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\Calinous\\20110303-163612_chat-blanc-et-orange-dormant.jpg",
+   "groupe": "temoin",
+   "verdict": "non",
+   "confiance": "haute",
+   "duree_s": 19.1
+  },
+  {
+   "key": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2017\\07 Juillet\\Danemark\\20170731_001351.jpg",
+   "groupe": "temoin",
+   "verdict": "non",
+   "confiance": "haute",
+   "duree_s": 19.5
+  },
+  {
+   "key": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\Mathilde (5).jpeg",
+   "groupe": "temoin",
+   "verdict": "non",
+   "confiance": "haute",
+   "duree_s": 19.6
+  },
+  {
+   "key": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\260531_Samsung_MHU\\Camera\\20260528_191739.jpg",
+   "groupe": "temoin",
+   "verdict": "non",
+   "confiance": "haute",
+   "duree_s": 21.4
+  },
+  {
+   "key": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2016\\07 Voyage en Indonésie\\Voyage Indonésie (66).jpg",
+   "groupe": "temoin",
+   "verdict": "non",
+   "confiance": "haute",
+   "duree_s": 19.3
+  },
+  {
+   "key": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Sista\\20260411_Val-12.jpg",
+   "groupe": "temoin",
+   "verdict": "non",
+   "confiance": "haute",
+   "duree_s": 19.9
+  },
+  {
+   "key": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Sista\\40 ans Val et Thierry\\20210425_Bea-et-Didier-2.jpg",
+   "groupe": "temoin",
+   "verdict": "non",
+   "confiance": "basse",
+   "duree_s": 33.7
+  },
+  {
+   "key": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2025\\20250821_100816.jpg",
+   "groupe": "temoin",
+   "verdict": "illisible",
+   "confiance": "",
+   "duree_s": 99.7
+  },
+  {
+   "key": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2022\\20220818_122915.jpg",
+   "groupe": "temoin",
+   "verdict": "non",
+   "confiance": "basse",
+   "duree_s": 40.3
+  },
+  {
+   "key": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2023\\20230312_171719.jpg",
+   "groupe": "temoin",
+   "verdict": "non",
+   "confiance": "basse",
+   "duree_s": 43.0
+  },
+  {
+   "key": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20240724_135501.jpg",
+   "groupe": "temoin",
+   "verdict": "non",
+   "confiance": "haute",
+   "duree_s": 38.2
+  },
+  {
+   "key": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\2011 Tessin\\20110721-122533_canyon-profond-avec-des-falaises.jpg",
+   "groupe": "temoin",
+   "verdict": "non",
+   "confiance": "basse",
+   "duree_s": 40.9
+  },
+  {
+   "key": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2023\\20230308_130708.jpg",
+   "groupe": "temoin",
+   "verdict": "non",
+   "confiance": "haute",
+   "duree_s": 37.9
+  },
+  {
+   "key": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2020\\20201231_232122(0).jpg",
+   "groupe": "temoin",
+   "verdict": "non",
+   "confiance": "basse",
+   "duree_s": 42.7
+  },
+  {
+   "key": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2023\\20230718_162228.jpg",
+   "groupe": "temoin",
+   "verdict": "non",
+   "confiance": "haute",
+   "duree_s": 38.6
+  },
+  {
+   "key": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\Calinous\\20200815_112232.jpg",
+   "groupe": "temoin",
+   "verdict": "non",
+   "confiance": "basse",
+   "duree_s": 43.8
+  },
+  {
+   "key": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20240909_130018.jpg",
+   "groupe": "temoin",
+   "verdict": "non",
+   "confiance": "haute",
+   "duree_s": 20.3
+  },
+  {
+   "key": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\201011\\201011A0\\07112010297.jpg",
+   "groupe": "temoin",
+   "verdict": "non",
+   "confiance": "haute",
+   "duree_s": 38.8
+  },
+  {
+   "key": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\Sandra (16).jpeg",
+   "groupe": "temoin",
+   "verdict": "non",
+   "confiance": "haute",
+   "duree_s": 37.8
+  },
+  {
+   "key": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2007\\Cousins&Cousines\\100NIKON\\DSCN0170.JPG",
+   "groupe": "temoin",
+   "verdict": "non",
+   "confiance": "haute",
+   "duree_s": 37.9
+  },
+  {
+   "key": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2025\\Screenshot_20250917_083317_Chrome.jpg",
+   "groupe": "temoin",
+   "verdict": "non",
+   "confiance": "haute",
+   "duree_s": 39.3
+  },
+  {
+   "key": "\\\\NAS-Bremblens\\home\\Photos\\Photos Papa\\2003\\20031221 Navidad_Coro_2003\\22Coro.jpg",
+   "groupe": "temoin",
+   "verdict": "non",
+   "confiance": "haute",
+   "duree_s": 38.4
+  },
+  {
+   "key": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2020\\20200821_170609.jpg",
+   "groupe": "temoin",
+   "verdict": "non",
+   "confiance": "haute",
+   "duree_s": 36.8
+  },
+  {
+   "key": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Marche Morges-Villeneuve\\20240403_villeneuve_Flo-et-Mike.jpg",
+   "groupe": "temoin",
+   "verdict": "illisible",
+   "confiance": "",
+   "duree_s": 99.6
+  },
+  {
+   "key": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Luna & Inti\\20230325_125740.jpg",
+   "groupe": "temoin",
+   "verdict": "non",
+   "confiance": "haute",
+   "duree_s": 38.5
+  },
+  {
+   "key": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\09 Septembre\\20180929_132025.jpg",
+   "groupe": "temoin",
+   "verdict": "non",
+   "confiance": "haute",
+   "duree_s": 37.5
+  },
+  {
+   "key": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2016\\07 Voyage en Indonésie\\Voyage Indonésie (376).jpg",
+   "groupe": "temoin",
+   "verdict": "non",
+   "confiance": "haute",
+   "duree_s": 37.3
+  },
+  {
+   "key": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2020\\20200920_134627.jpg",
+   "groupe": "temoin",
+   "verdict": "non",
+   "confiance": "haute",
+   "duree_s": 21.8
   }
  ]
 }

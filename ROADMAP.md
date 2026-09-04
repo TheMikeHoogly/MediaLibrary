@@ -255,17 +255,21 @@ laissait passer ; `eval/DECISIONS.md`). Le cache du banc porte l'empreinte du
 prompt : changer la question écarte les verdicts de l'ancienne.
 **Le geste « rendre privée » est POSÉ et OBSERVÉ** (bouton 🔒 de la
 visionneuse → `POST /api/files/prive`, règle pure `visibilite.cible_prive`,
-annulable ; aller-retour prouvé en réel). **La mesure d'abord (18e)** : `mesure_sensibles.py`
-interroge le modèle de prod sur un échantillon (candidats « document / reçu /
-capture… » + témoins aléatoires, tirage séedé, cache reprenable, axe fermé)
-→ `docs/sensibles_echantillon.json`, une liste à JUGER par Mike — rien ne
-bouge. Banc lancé le 30/08 soir (~16 s/photo, passes successives sous le
-plafond du canal), repris le 04/09 après le dégagement PARTIEL des prises
-d'air (28/90 en cache) : deux créneaux de ~450 s ont tenu, 69 puis 73°C,
-mais la MACHINE ENTIÈRE a coupé par surchauffe sur le créneau suivant —
-le dégagement seul ne suffit pas, le nettoyage en profondeur (prévu par
-Mike) reste la condition avant d'aller plus loin. Ensuite : la question
-dans la MÊME invocation du tagueur
+annulable ; aller-retour prouvé en réel). **La mesure d'abord (18e) — TERMINÉE (04/09, complet: true, 90/90).**
+`mesure_sensibles.py` a interrogé le modèle de prod sur l'échantillon
+(60 candidats « document / reçu / capture… » + 30 témoins aléatoires, tirage
+séedé) → `docs/sensibles_echantillon.json` : 66 « non », 19 illisibles,
+1 facture, 1 banque, 3 administratif — **une liste à JUGER par Mike, rien
+n'a bougé**. Chronologie du banc, utile pour la suite GPU du projet : lancé
+le 30/08 soir (~16 s/photo) ; repris le 04/09 matin après le dégagement
+PARTIEL des prises d'air seul — deux créneaux de ~450 s ont tenu (69 puis
+73°C) mais la MACHINE ENTIÈRE a coupé par surchauffe au troisième ; **repris
+et terminé le 04/09 soir** après nettoyage en profondeur + turbo boost
+désactivé — cinq créneaux enchaînés sans incident, pic observé **66°C à
+100 %** contre 69-73°C avant nettoyage pour la même charge. Le nettoyage
++ turbo off est la condition qui manquait, confirmée par la mesure, pas
+seulement par l'intuition. Ensuite : la question dans la MÊME invocation
+du tagueur
 (pas de cinquième pipeline), l'axe `sensible:` en base seulement (jamais le
 XMP — 18c), l'écran d'envoi aux trois gestes (PRIVE / corbeille / « non »,
 mémorisé), la passe rétroactive. Et la **purge automatique de la corbeille
