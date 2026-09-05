@@ -397,14 +397,17 @@ deux dans le sens de la prudence, tous deux tenus par des tests :
   Et un retag RÉUSSI complète l'entrée au lieu de la remplacer : ce que la
   passe n'a pas recalculé (date, GPS, import) survit à un hoquet d'ExifTool.
 
-**Conséquence NON prévue, à trancher par Mike avant l'étape 6** : le
-dictionnaire FR→EN de la recherche (1 nonies, +0,075 de rappel mesuré) est
-RÉAPPRIS toutes les 6 h sur les entrées BILINGUES de l'index. Le FR seul les
-fait disparaître une à une — à la fin de la campagne le dictionnaire serait
-vide et l'élargissement mourrait en silence, ramenant le rappel de 0,658 à
-0,583. Recommandation : le GELER (le construire une fois maintenant, l'écrire
-sur disque, le relire ensuite) plutôt que de le réapprendre sur un index qui
-n'a plus d'anglais. Question ouverte dans `QUESTIONS_MIKE.md`.
+**Conséquence NON prévue, trouvée en écrivant le code, TRANCHÉE et CÂBLÉE
+le même jour** : le dictionnaire FR→EN de la recherche (1 nonies, +0,075 de
+rappel mesuré) était RÉAPPRIS toutes les 6 h sur les entrées BILINGUES de
+l'index. Le FR seul les fait disparaître une à une — à la fin de la campagne le
+dictionnaire aurait été vide et l'élargissement serait mort en silence,
+ramenant le rappel de 0,658 à 0,583. **Mike a tranché : le GELER**
+(`dico_fr_en.json`, écriture atomique, relu dès que l'index apprend moins de
+paires que le fichier ; `source`/`appris`/`gele` rendus dans
+`/api/search/status`). Une traduction ne se périme pas ; ce qui se périme,
+c'est la matière qui l'a produite. Détail et alternatives rejetées :
+`eval/DECISIONS.md`.
 
 Ordre initial (rien n'était encore codé au moment de l'écrire) :
 1. **FAIT.** `tagging_meta.py` : FR seul (`keywords_en` retiré du schéma), +
@@ -436,8 +439,13 @@ Ordre initial (rien n'était encore codé au moment de l'écrire) :
    `TAGGING_PIPELINE_VERSION` = `"qwen3.5:4b|v3fr|kb1"`, bumpée en même temps
    que le prompt. Bumper seul ne déclenche rien (voir (a)) tant que le levier
    de l'étape 4 n'est pas posé.
-3. `enrichir_lieux.py` tourne une fois (geste (c)), avant ou pendant la
-   préparation du reste — indépendant, sans urgence particulière.
+3. **OUTILLÉ, le geste reste à Mike.** `enrichir_lieux.py` tourne une fois
+   (geste (c)) — **bat 44** (« Enrichir les lieux (geocodage hors ligne) ») :
+   aperçu à blanc, puis `--ecrire` sur confirmation, `.bak` sur `lieux.txt`,
+   refus explicite si le gazetteer manque (bat 18). **Le serveur peut rester
+   allumé** (base lue en `mode=ro`) et il reprend `gps_places.json` tout seul
+   au changement de `mtime` — aucun redémarrage. Ni la VM ni l'agent banc ne
+   peuvent le lancer : il ouvre `photos.db` et il ÉCRIT.
 4. **FAIT, PAS ACTIVÉ.** `retag_actif.txt` (levier externe, relu à chaque
    scan — le poser démarre, le retirer arrête au lot suivant), sélection pure
    `tagging_meta.cles_a_retaguer` (saute `failed`, vidéos, déjà à la version,

@@ -41,28 +41,36 @@ photothèque sur cinq jours), et un retag raté CONSERVE l'entrée
 lieu de l'écraser par un `failed` — un timeout d'Ollama aurait sinon coûté à la
 photo ses mots-clés, sa date et son GPS.
 
-**Tests** : `test_tagging_meta.py` (logique pure : prompt FR seul, levier,
-sélection des clés) et `test_retag_campagne.py` (16, cablage lu sur le code de
-prod par `ast`, sans importer `server.py`).
+4. **Le dictionnaire FR→EN est GELÉ sur disque** (`dico_fr_en.json`, tranché
+   par Mike le 05/09). Il s'apprenait toutes les 6 h sur les entrées BILINGUES
+   de l'index : le FR seul les efface une à une, l'élargissement (+0,075 de
+   rappel) serait mort SANS ERREUR à la fin de la campagne. Règle : le plus
+   riche gagne, et le plus riche est gelé. **Observé en réel** : 3 862 paires
+   sur 39 710 photos bilingues, fichier écrit et rechargé (« chaise → chair »,
+   « ours en peluche → teddy bear »). Le fichier est versionné exprès — c'est
+   la seule copie d'un savoir que l'index ne saura plus refaire.
+5. **Bat 44** — « Enrichir les lieux (geocodage hors ligne) » : l'étape 3 du
+   chantier est OUTILLÉE, le geste reste à Mike (le script ouvre `photos.db` et
+   il ÉCRIT : ni la VM ni l'agent banc ne peuvent le lancer). Serveur allumé
+   accepté, pas de redémarrage : `gps_places.json` est relu au changement de
+   `mtime`.
+
+**Tests** : `test_tagging_meta.py` (prompt FR seul, levier, sélection des
+clés), `test_retag_campagne.py` (16, câblage lu sur le code de prod par `ast`,
+sans importer `server.py`), `test_elargissement_fr_en.py` (gel : aller-retour
+JSON, tolérance à un fichier abîmé, « le plus riche gagne »).
 
 ## Prochain pas
 
-**1. RÉPONDRE À LA QUESTION DU DICTIONNAIRE — avant tout le reste.**
-`QUESTIONS_MIKE.md` porte une entrée, la seule : l'élargissement FR→EN de la
-recherche (+0,075 de rappel, mesuré le 30/08) réapprend sa traduction toutes
-les 6 h sur les entrées BILINGUES de l'index. Le FR seul les efface une à une :
-à la fin de la campagne le dictionnaire serait vide et l'élargissement mourrait
-SANS ERREUR. Recommandation écrite : le geler sur disque avant de poser
-`retag_actif.txt`. Ne pas lancer la campagne avant d'avoir tranché.
-
-**2. Ce qui reste du chantier 2 quater, dans l'ordre :**
-- **Étape 3** : `enrichir_lieux.py` une passe (rafraîchit `gps_places.json`,
-  hors ligne, hors GPU). **Ne tourne PAS depuis la VM** : il lit `photos.db`,
-  que la VM ne sait pas ouvrir par-dessus le montage. Geste de Mike, ou banc.
+**1. Ce qui reste du chantier 2 quater, dans l'ordre.** `QUESTIONS_MIKE.md`
+est VIDE : plus rien n'attend Mike.
+- **Étape 3** : lancer le **bat 44** (aperçu, puis écriture sur confirmation).
+  Geste de Mike : le script ouvre `photos.db` et il ÉCRIT — ni la VM ni l'agent
+  banc ne peuvent le lancer.
 - **Étape 5** : endurance thermique sur une fenêtre LONGUE (heures) —
   l'endurance n'est prouvée que par rafales de ~450 s (04/09).
 - **Étape 6** : poser `retag_actif.txt` (vide = la version courante) → la
-  campagne démarre, observée : `/api/serveur` → `config.retag`
+  campagne démarre, observée : `/api/maint/status` → `config.retag`
   (`reste`, `en_file`, `abandons`), boucle thermique, et des spot-checks de
   moins de 10 photos de temps en temps sur le FORMAT (6-10 mots-clés courts,
   pas une phrase) ET les hallucinations type « lgbtq ».
@@ -73,12 +81,12 @@ doc/UI/CSS. **À éviter** : la phase 2 vidéo (1 octies), tout nouveau banc
 `mesure_`/`eval_` qui appelle Ollama avec un AUTRE modèle, tout chantier qui
 bumperait une autre version de pipeline en même temps.
 
-**3. Chantier 18 (confidentialité) : la mesure est FINIE, la liste ATTEND
+**2. Chantier 18 (confidentialité) : la mesure est FINIE, la liste ATTEND
 Mike.** `docs/sensibles_echantillon.json` (90/90, 04/09 soir) : 66 « non »,
 19 illisibles, 1 facture, 1 banque, 3 administratif — à JUGER photo par photo,
 rien n'a bougé.
 
-**4. Items non touchés depuis la session 71 (03/09), statut À REVÉRIFIER — le
+**3. Items non touchés depuis la session 71 (03/09), statut À REVÉRIFIER — le
 journal git ne dit rien de ces sujets, ils ne se prouvent qu'en réel :**
 - Bat 42 (strip Motion Photo, ~8,6 Go à rendre) était EN COURS le 03/09 soir —
   demander à Mike où ça en est avant de supposer que bat 43 a suivi.
@@ -201,9 +209,13 @@ strip le VÉRIFIE fichier par fichier.
 
 > **`N:\Photos` se CONNECTE à chaque session** (picker « Add folder », non
 > persistant) : demander à Mike au « Go ». Connecté : `device_list_dir` /
-> `device_stage_files` / `device_commit_files` — mais PAS monté dans
-> `device_bash` (réseau) : un script sur tout le fonds passe par l'agent banc
-> (Windows, UNC).
+> `device_stage_files` / `device_commit_files` — **et, CONTRAIREMENT à ce que
+> ce document a dit jusqu'au 05/09, il EST monté dans `device_bash`**
+> (`$HOME/mnt/Photos`) et il se lit. Mesuré : le listage est rapide (2 140
+> fichiers d'un dossier en 1 s) mais la lecture fichier par fichier plafonne à
+> **~5 fichiers/s** — donc un coup d'œil ou une poignée de photos, oui ; un
+> script sur TOUT le fonds, non, il passe toujours par l'agent banc (Windows,
+> UNC, natif).
 >
 > **Piège git via `device_bash`** : jamais de git d'ici (`.git/index.lock`
 > résiduel indélébile) — même un `rev-parse` en lecture seule est à éviter,

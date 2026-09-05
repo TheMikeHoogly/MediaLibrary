@@ -46,6 +46,49 @@ def main():
           and E.formes(None, "chat") == ["chat"], "formes : [fr, en] ou [fr] ; sans dictionnaire, [fr]")
     d2 = E.Dictionnaire({"a": photos[0], "b": photos[1]}, minimum=1)
     check(d2.traduire("enfant") == "child", "un dict {cle: entree} s apprend aussi")
+
+    # ── GEL (05/09) : le FR seul efface la matiere de l apprentissage, la
+    #    traduction elle, ne se perime pas. Aller-retour + tolerance aux
+    #    donnees abimees : un gel corrompu ne remplace jamais un apprentissage.
+    import json as _json
+    etat = E.serialiser(d)
+    check(etat["fr_en"]["plage"] == "beach" and etat["n_photos"] == 15,
+          "serialiser : les paires et le compte de photos")
+    r = E.charger(_json.loads(_json.dumps(etat)))
+    check(len(r) == len(d) and r.traduire("ours en peluche") == "teddy bear",
+          "aller-retour JSON : meme dictionnaire, meme traduction")
+    check(r.n_photos == 15 and r.serrage == d.serrage and r.minimum == d.minimum,
+          "aller-retour : les reglages suivent")
+    for abime in (None, {}, {"fr_en": {}}, {"fr_en": "pas un dict"},
+                  {"fr_en": {"a": 1}}, [1, 2], "texte"):
+        check(E.charger(abime) is None,
+              "gel inexploitable -> None (%r)" % (abime,))
+    check(E.charger({"fr_en": {" Plage ": " Beach "}}).traduire("plage") == "beach",
+          "charger normalise casse et espaces, comme l apprentissage")
+    check(E.charger({"fr_en": {"plage": "beach"}, "n_photos": "zut"}).n_photos == 0,
+          "un compte de photos illisible ne fait pas tomber le chargement")
+
+    # ── LE PLUS RICHE GAGNE. C est la regle qui decidera seule, sans temoin,
+    #    le jour ou le retag FR seul aura vide l index de son anglais.
+    riche = E.charger({"fr_en": {"a": "aa", "b": "bb", "c": "cc"}})
+    pauvre = E.charger({"fr_en": {"a": "aa"}})
+    vide = E.Dictionnaire()
+    check(E.le_plus_riche(riche, pauvre) == (riche, "index"),
+          "index plus riche que le gel : l index sert")
+    check(E.le_plus_riche(pauvre, riche) == (riche, "gele"),
+          "index appauvri (le FR seul) : le GEL prend le relais")
+    check(E.le_plus_riche(riche, None) == (riche, "index"),
+          "pas encore de gel : l index sert")
+    check(E.le_plus_riche(vide, riche) == (riche, "gele"),
+          "index vide : le gel sert - c est TOUT l objet du gel")
+    check(E.le_plus_riche(riche, riche) == (riche, "index"),
+          "a egalite l index gagne : on ne fige pas un savoir encore vivant")
+    check(E.le_plus_riche(None, riche) == (riche, "gele"),
+          "apprentissage rate : le gel rattrape")
+    check(E.le_plus_riche(None, None) == (None, "vide"),
+          "ni l un ni l autre : vide, dit - jamais une exception")
+    check(E.le_plus_riche(vide, None) == (vide, "index"),
+          "rien appris et rien de gele : le vide sert, la requete part seule")
     print()
     if FAIL:
         print("ECHEC : %d assertion(s) fausse(s)" % len(FAIL))

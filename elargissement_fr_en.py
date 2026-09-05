@@ -137,6 +137,71 @@ class Dictionnaire:
         return None if en == t else en
 
 
+def serialiser(dico):
+    """Etat DURABLE d'un dictionnaire, pret a ecrire en JSON.
+
+    POURQUOI un etat durable (05/09, chantier 2 quater) : ce dictionnaire
+    s'apprend sur les entrees d'index qui portent A LA FOIS `kw_fr` et `kw_en`.
+    Le passage au FR seul les efface une a une ; a la fin du re-tagging complet
+    il n'y en aurait plus une seule, le dictionnaire serait VIDE et
+    l'elargissement mourrait SANS ERREUR -- exactement la panne muette que le
+    projet a deja payee (backfills, boucle de maintenance). Or la traduction
+    d'un tag ne se perime pas : « chaise -> chair » restera vrai quand l'index
+    n'aura plus un mot d'anglais. On la GELE donc, au lieu de la reapprendre
+    sur une matiere qui disparait."""
+    return {'version': 1,
+            'n_photos': int(dico.n_photos),
+            'serrage': float(dico.serrage),
+            'minimum': int(dico.minimum),
+            'fr_en': dict(dico.fr_en)}
+
+
+def charger(donnees):
+    """Reconstruit un Dictionnaire depuis `serialiser`, ou None si les donnees
+    ne sont pas exploitables.
+
+    Tolerant a dessein : un fichier tronque, vide ou d'une version inconnue
+    rend None, et l'appelant garde ce qu'il a appris. Un gel corrompu ne doit
+    ni remplacer un apprentissage valide, ni faire tomber la recherche."""
+    if not isinstance(donnees, dict):
+        return None
+    fr_en = donnees.get('fr_en')
+    if not isinstance(fr_en, dict) or not fr_en:
+        return None
+    paires = {_norm(k): _norm(v) for k, v in fr_en.items()
+              if isinstance(k, str) and isinstance(v, str) and k.strip() and v.strip()}
+    if not paires:
+        return None
+    d = Dictionnaire()
+    try:
+        d.serrage = float(donnees.get('serrage', d.serrage))
+        d.minimum = int(donnees.get('minimum', d.minimum))
+        d.n_photos = int(donnees.get('n_photos') or 0)
+    except (TypeError, ValueError):
+        pass
+    d.fr_en = paires
+    return d
+
+
+def le_plus_riche(appris, gele):
+    """Entre ce qui vient d'etre APPRIS sur l'index et ce qui est GELE sur
+    disque, lequel sert ? Le plus riche des deux.
+
+    Regle PURE a dessein : le jour ou elle comptera vraiment -- un index que le
+    re-tagging FR seul a vide de son anglais -- personne ne sera la pour la
+    voir se tromper, et une recherche appauvrie ne leve aucune erreur. Elle se
+    prouve donc ici, pas en production.
+
+    Renvoie (dictionnaire, source) ou source vaut 'index', 'gele' ou 'vide'."""
+    n_appris = len(appris) if appris is not None else -1
+    n_gele = len(gele) if gele is not None else -1
+    if n_gele > n_appris:
+        return gele, 'gele'
+    if appris is None:
+        return None, 'vide'
+    return appris, 'index'
+
+
 def formes(dico, texte):
     """Les textes à encoder pour une requête : [fr] ou [fr, en]. L'appelant
     moyenne les vecteurs (comme le banc : `fr+en`)."""

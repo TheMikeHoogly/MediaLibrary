@@ -3662,8 +3662,38 @@ def _semantic_mod():
     return semantic
 
 
-_DICO_FR_EN = {'dico': None, 'quand': 0.0}
+_DICO_FR_EN = {'dico': None, 'quand': 0.0, 'source': '', 'appris': 0, 'gele': 0}
 DICO_FR_EN_TTL_S = 6 * 3600
+DICO_FR_EN_FICHIER = SCRIPT_DIR / "dico_fr_en.json"
+
+
+def _dico_gele_lire():
+    """Le dictionnaire GELÉ sur disque, ou None. Jamais une exception : un
+    fichier absent, tronqué ou illisible doit laisser la recherche marcher sur
+    ce qu'elle vient d'apprendre."""
+    import elargissement_fr_en
+    try:
+        return elargissement_fr_en.charger(
+            json.loads(DICO_FR_EN_FICHIER.read_text(encoding='utf-8')))
+    except (OSError, ValueError, TypeError):
+        return None
+
+
+def _dico_gele_ecrire(dico):
+    """Gèle le dictionnaire sur disque, écriture ATOMIQUE (invariant n° 2 :
+    jamais directement sur le fichier de destination). Silencieuse en cas
+    d'échec — geler est un confort, pas une dépendance."""
+    import elargissement_fr_en
+    tmp = DICO_FR_EN_FICHIER.with_suffix('.json.tmp')
+    try:
+        tmp.write_text(json.dumps(elargissement_fr_en.serialiser(dico),
+                                  ensure_ascii=False, indent=1),
+                       encoding='utf-8')
+        os.replace(tmp, DICO_FR_EN_FICHIER)
+        return True
+    except (OSError, TypeError, ValueError) as e:
+        print(f"  ! gel du dictionnaire FR→EN impossible : {e}")
+        return False
 
 
 def dico_fr_en():
@@ -3673,7 +3703,15 @@ def dico_fr_en():
     rappel@200 de la requête française 0,583 → 0,658 avec l'élargissement,
     pour un plafond idéal de 0,663 (Mike a tranché l'élargissement le 30/08).
     Jamais None après le premier appel : un index vide donne un dictionnaire
-    vide, et la requête part seule, comme avant."""
+    vide, et la requête part seule, comme avant.
+
+    GELÉ SUR DISQUE depuis le 05/09 (`dico_fr_en.json`, tranché par Mike) : le
+    passage au FR seul (chantier 2 quater) efface les `kw_en` photo par photo,
+    donc la matière même de cet apprentissage. À la fin de la campagne l'index
+    n'aurait plus une paire, le dictionnaire serait vide et l'élargissement
+    mourrait SANS ERREUR. Règle : le plus riche gagne, et le plus riche est
+    gelé — l'index tant qu'il apprend mieux, le fichier ensuite. Une traduction
+    ne se périme pas ; ce qui se périme, c'est la matière qui l'a produite."""
     import elargissement_fr_en
     maintenant = time.time()
     if _DICO_FR_EN['dico'] is None or maintenant - _DICO_FR_EN['quand'] > DICO_FR_EN_TTL_S:
@@ -3683,12 +3721,41 @@ def dico_fr_en():
             with STORE.lock:
                 entrees = list(STORE.data.values())
             t0 = time.time()
-            _DICO_FR_EN['dico'] = elargissement_fr_en.Dictionnaire(entrees)
-            print(f"  📖 dictionnaire FR→EN : {len(_DICO_FR_EN['dico'])} paire(s) apprises sur "
-                  f"{_DICO_FR_EN['dico'].n_photos} photo(s) bilingues, {time.time() - t0:.1f} s")
+            appris = elargissement_fr_en.Dictionnaire(entrees)
+            gele = _dico_gele_lire()
+            # LE PLUS RICHE GAGNE, et le plus riche est GELÉ. Tant que l'index
+            # est bilingue, il apprend mieux que le fichier et le remplace ; dès
+            # que le retag FR seul le vide de son anglais, le fichier prend le
+            # relais et l'élargissement continue de marcher. Sans ce garde-fou
+            # la campagne éteindrait la recherche élargie SANS UNE LIGNE
+            # d'erreur — et une mesure de +0,075 de rappel serait perdue sans
+            # que personne le voie.
+            choisi, source = elargissement_fr_en.le_plus_riche(appris, gele)
+            if source == 'gele':
+                _DICO_FR_EN['dico'] = choisi
+                _DICO_FR_EN['source'] = 'gelé'
+                print(f"  📖 dictionnaire FR→EN : {len(gele)} paire(s) reprises du "
+                      f"GEL ({DICO_FR_EN_FICHIER.name}) — l'index n'en donne plus que "
+                      f"{len(appris)} sur {appris.n_photos} photo(s) bilingues")
+            else:
+                _DICO_FR_EN['dico'] = appris
+                _DICO_FR_EN['source'] = 'index'
+                # On ne réécrit QUE si l'apprentissage a vraiment enrichi le
+                # gel : sinon le fichier changerait toutes les 6 h pour rien et
+                # bruiterait chaque livraison. Il est versionné exprès — c'est
+                # la seule copie d'un savoir que l'index ne saura plus produire.
+                if gele is None or len(appris) > len(gele):
+                    _dico_gele_ecrire(appris)
+                print(f"  📖 dictionnaire FR→EN : {len(appris)} paire(s) apprises sur "
+                      f"{appris.n_photos} photo(s) bilingues, {time.time() - t0:.1f} s "
+                      f"— gelé dans {DICO_FR_EN_FICHIER.name}")
+            _DICO_FR_EN['appris'] = len(appris)
+            _DICO_FR_EN['gele'] = len(gele) if gele is not None else 0
         except Exception as e:                                    # noqa: BLE001
             print(f"  ! dictionnaire FR→EN : {e}")
-            _DICO_FR_EN['dico'] = elargissement_fr_en.Dictionnaire()
+            secours = _dico_gele_lire()
+            _DICO_FR_EN['dico'] = secours or elargissement_fr_en.Dictionnaire()
+            _DICO_FR_EN['source'] = 'gelé (secours)' if secours else 'vide'
         _DICO_FR_EN['quand'] = maintenant
     return _DICO_FR_EN['dico']
 
@@ -12079,6 +12146,13 @@ class Handler(BaseHTTPRequestHandler):
         d = _DICO_FR_EN.get('dico')
         etat['dico_fr_en'] = None if d is None else {
             'paires': len(d), 'photos': d.n_photos,
+            # D'OÙ il vient : « index » (appris à l'instant) ou « gelé » (repris
+            # du fichier parce que l'index n'a plus assez de bilingue). Sans ce
+            # mot, le jour où le retag FR seul aura vidé l'index, on lirait un
+            # compte de paires normal sans savoir qu'il ne vient plus des photos.
+            'source': _DICO_FR_EN.get('source') or '',
+            'appris': _DICO_FR_EN.get('appris', 0),
+            'gele': _DICO_FR_EN.get('gele', 0),
             'construit': time.strftime('%H:%M:%S', time.localtime(_DICO_FR_EN['quand']))}
         # Rendre l'ordonnancement OBSERVABLE : sans ça, un travail affamé
         # ressemble à un travail lent, et on cherche au mauvais endroit.
