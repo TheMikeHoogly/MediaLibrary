@@ -9,110 +9,106 @@ FUSIONNÉ — ce document, non. Puis `ROADMAP.md`, `eval/DECISIONS.md`,
 `eval/METHODE.md` — et `docs/DECISIONS_OUTILLAGE.md` si le sujet touche aux
 canaux, à la livraison ou au MCP. Débrief en 2–3 lignes, puis on attaque.
 
-## Où on en est (03/09/2026, session 71 — précontrôle upload, ménage ROADMAP, verrou maintenance.py)
+## Où on en est (05/09/2026 — chantier 2 quater décidé, GO de Mike reçu)
 
-**Git** : `feat/compte-motion-photo` FUSIONNÉE dans `main` ce commit (fast-
-forward, technique du bat 27, jamais de `checkout main`) — vérifier
-`.git/logs/refs/heads/main`. Elle portait déjà le compte Motion Photo
-(session 70) et le pré-contrôle d'upload (ce commit, voir plus bas).
-**Serveur** : redémarré 03/09 ~19:16 sur ce code (`code_a_jour` vérifié vrai
-en réel). **Carnet `QUESTIONS_MIKE.md` : vide.**
+**Git** : dernier commit fusionné dans `main` = `b99d1ed` (vérifier
+`.git/logs/refs/heads/main`). Chaîne de la session qui vient de finir :
+`4a5dab4` (qwen3-vl 2b vs 4b, 8 photos) → `bb4cfb7` (+ qwen3.5 2b/4b,
+`--sortie` configurable sur `mesure_modele_vision.py`) → `ba529e8` (chantier
+**2 quater** créé, `ROADMAP.md` dégonflée 91 ko → 42 ko) → `dd3de22` (2 quater
+RÉVISÉ : passe unique coordonnée au lieu d'une pré-passe en 2 phases, mesurée
+par `mesure_detection_cpu.py`) → `b99d1ed` (clarification : préservation des
+identités humaines pendant le retag, vérifiée dans le code). **Serveur : PAS
+redémarré pendant cette suite** — aucun `server.py` touché, uniquement
+`ROADMAP.md`/`eval/DECISIONS.md` et deux bancs de mesure. Il tourne donc
+toujours sur le code observé le 03/09 ~19:16 (session 71). **`QUESTIONS_MIKE.md`
+: vide.**
 
-**UPLOAD (1 quindecies) — FAIT, OBSERVÉ.** (a) déjà réglé le 02/09
-(`29047e7`) : plus de `setTimeout` dans la boucle d'envoi, le focus perdu ne
-la throttle plus. (b) fait cette session : `/api/upload/check` — le client
-hashe le fichier EN LOCAL (`crypto.subtle`, SHA-256) et n'envoie que
-taille+hash ; le serveur répond `SKIP` sans qu'un octet du fichier ait
-traversé le réseau si un identique est déjà dans Uploads. Dégrade proprement
-(envoi direct, comme avant) si `crypto.subtle` est indisponible — c'est le
-cas sur `http://192.168.0.13:8080` en clair (Web Crypto exige un contexte
-sécurisé) : **seul le nom Tailscale en HTTPS profite pleinement de
-l'optimisation sur le LAN**. `_upload_dup_by_hash` factorisée hors de
-`_upload_content_dup`. 10 tests (`test_upload_precontrole.py`, lit le vrai
-code de `server.py` par `ast`, aucun import de `server.py` — la VM ne sait
-pas ouvrir `photos.db`, `disk I/O error` propre, rien écrit, vérifié après
-coup). **Reste pour Mike** : observer une VRAIE reprise après coupure sur un
-gros album (le SKIP n'est prouvé qu'en synthétique + en direct sur le
-serveur vivant, jamais sur un album réel interrompu — je n'allais pas écrire
-dans ton vrai dossier Uploads sans ton feu vert).
+**DÉCISION : re-tagger le fonds ENTIER, FR seul, avec `qwen3.5:4b` — Mike a
+donné le GO pour l'implémentation (05/09 soir).** Résumé, le détail complet
+(mesures, raisonnement, invariants vérifiés) vit dans `ROADMAP.md` chantier
+**2 quater** et dans `eval/DECISIONS.md` section « Tagging / description » :
 
-**ROADMAP.md dégonflée (session 71)** : les six sections `## État (…,
-session 57 à 63)` — narration de travaux déjà CLOS, déjà dans git —
-condensées en un seul bloc `Ce qu'il faut garder`, comme le sont déjà les
-sessions 28 à 56. **99 951 → 87 918 octets** (le seuil du lint est
-100 000). **Reste un plus gros caillou, repéré mais PAS touché** : la
-section `## À faire — par ordre de valeur` (~530 lignes) mélange les
-chantiers 17/18 encore VIVANTS (spec citée par la Priorité du haut — n'y
-touche pas) et environ 320 lignes d'items `0ter` à `16`, presque tous
-CLOS entre le 12/08 et le 22/08, antérieurs au refixage des priorités du
-26/08. Probablement le plus gros gisement de condensation qui reste, mais
-je n'ai pas vérifié un par un s'il en subsiste un « ne pas reproposer » qui
-ne vit nulle part ailleurs — à faire AVEC Mike (relire chaque item avant
-de couper), pas en un passage solitaire.
-
-**ROADMAP.md, la Priorité du haut sur le chantier 17 était FAUSSE (repérée
-et corrigée session 71)** : elle disait « spécifié, deux questions ouvertes
-bloquent » — en réalité les six décisions de Mike sont EXÉCUTÉES depuis les
-sessions 65-66 (étapes 1 à 6 sur 7 POSÉES ET OBSERVÉES, `QUESTIONS_MIKE.md`
-est vide) et le détail plus bas (item 17) le disait déjà. Corrigé : ne
-reste que l'étape 7, l'onboarding rédigé. **Leçon** : le résumé du haut et
-le détail du bas peuvent diverger silencieusement — les deux se relisent,
-pas un seul.
-
-**Audit des `.bat` qui exigent le serveur ARRÊTÉ (demande de Mike, session
-71) : UN SEUL trou, colmaté.** Passé en revue les ~23 `.bat` dont le nom ou
-le contenu touche à `arret`/`SERVEUR` et leurs scripts Python sous-jacents.
-Résultat :
-- `maintenance.py` (bat 25, lancé en one-shot hors serveur) ouvrait
-  `photos.db` en écriture (`StandaloneSv`) en se contentant d'AFFIRMER
-  « serveur suppose ARRETE » dans un commentaire et un `print` — jamais
-  vérifié. **Corrigé** : `main()` appelle désormais `refus_d_ecriture`
-  (la même fonction, déjà prouvée, qu'`appliquer_plan_annee.py` et les
-  trois autres `appliquer_*.py`) AVANT `make_standalone_sv`/`run_cycle` ;
-  `--dry` reste toujours permis, `--forcer` passe outre comme ailleurs.
-  Testé par un contrôle de câblage sur l'AST (`test_maintenance.py`, une
-  nouvelle fonction `check_cablage_refus_standalone` en tête — jamais
-  `main()` n'est exécuté pour de vrai, ce lanceur mute l'index si le
-  verrou est absent).
-- Tous les autres : soit strictement en LECTURE (inventaires, vérifs), soit
-  conçus et documentés pour tourner SERVEUR ALLUME (`deplacer_doublons_atrier.py`
-  bat 36/37, `copier_absentes.py` bat 32 — le scan du serveur absorbe seul
-  l'écart), soit ne touchent jamais `photos.db` ni un `.jpg` du fonds
-  (`appliquer_purge_motionphoto.py` bat 43 — ne déplace que des
-  `*.jpg_original`, déjà écrit ainsi ; les bancs qui REFUSENT le nom
-  `photos.db` comme cible). Rien d'autre à corriger.
+- Passage au FR seul (fin du bilingue) → tout le fonds redevient candidat au
+  retag, pas seulement les 22 196 entrées « v0 » du 2 bis.
+- `qwen3.5:4b` (MÊME gabarit VRAM que `qwen3-vl:4b`, 3,4 Go) bat `qwen3-vl:4b`
+  sur les corrections concrètes (chat calico, lac/océan, fuite de noms) et
+  tourne **~3× plus vite** (11,3 s/photo contre 35,2 s), quasi la vitesse
+  actuelle de `qwen3-vl:2b` en prod.
+- **Une seule passe coordonnée** (détecter visages + animaux JUSTE AVANT
+  chaque appel Ollama, dans le pipeline de retag lui-même) bat la première
+  idée d'une pré-passe séparée en 2 phases — mesuré (`mesure_detection_cpu.py`) :
+  ~10 % de surcoût pour 100 % de couverture, contre une pré-passe qui n'aurait
+  rattrapé qu'une partie du travail.
+- **Mike voit ce retag complet, UNIQUE, comme la « première passe officielle »
+  de MediaLibrary** — un soin d'initialisation, PAS un changement de la
+  logique standard de `tagger_worker` (qui reste inchangée pour les uploads
+  du quotidien : pas de re-tagging automatique d'une photo déjà taguée).
+- **Garde-fou vérifié dans le code, pas supposé** : les noms `personne:Nom` /
+  `animal:Nom` ne vivent PAS dans les mots-clés Ollama mais dans les fiches
+  durables `PEOPLE_STORE`/`PETS_STORE` ; `_noms_attendus()` les réinjecte à
+  CHAQUE écriture du worker de tagging (commentaire du code : « PÉRENNITÉ : ne
+  jamais perdre les tags nommés »). La détection visages/animaux du retag ne
+  se déclenche QUE si l'entrée manque encore dans `FACE_STORE`/`ANIMAL_STORE`
+  — jamais de re-détection qui romprait un cluster déjà nommé. **Le pipeline
+  de retag à écrire DOIT réutiliser cette même logique de fusion
+  (`_merge_named_tags`, `_noms_attendus`), pas la contourner.**
 
 ## Prochain pas
 
-1. **Bat 42 (strip Motion Photo) EN COURS depuis 03/09 ~22h** (lancé par
-   Mike, serveur ARRÊTÉ par le bat lui-même — vérifié). À la fin : Mike
-   vérifie des stills à l'œil, puis lance **bat 43** (purge des
-   `_original`, indifférent à l'état du serveur — voir ci-dessus). ~8,6 Go
-   à rendre au total.
-2. **Ventilation dégagée mais pas nettoyée en profondeur (Mike, 03/09)** —
-   feu vert PARTIEL pour tester quand même, sans bloquer le projet.
-   **Ordre proposé, prudence thermique oblige** (coupure brutale déjà
-   vécue le 29/08, Id 41) : attendre la FIN du bat 42 (le serveur est de
-   toute façon arrêté pendant qu'il tourne) et le redémarrage du serveur,
-   PUIS lancer le plus court des trois bancs en pause — le re-tagging 2 bis
-   (~100 photos comparées) — en surveillant `_journal_serveur.log` (🌡) en
-   direct ; si la température tient, enchaîner sur sensibles (ch. 18, ~90
-   questions) ; les vidéos phase 2 (~26 h de GPU) restent pour après un
-   nettoyage complet, ce n'est pas le format d'un test prudent. Rien ne se
-   lance sans que Mike le confirme au fil de l'eau.
-3. **La Carte a deux champs** (barre + « Rechercher (noms, lieux, sens) ») :
-   à trancher avec Mike — garder les deux ou fondre.
-4. Condenser `## À faire — par ordre de valeur` AVEC Mike (voir ci-dessus) :
-   le prochain vrai gain d'« efficience » sur `ROADMAP.md`.
-5. Chantier 17 (étape 7 onboarding, conflit `faces` entre fiches, 403 du
-   banc) ; chantier 18 la suite (liste à juger → seuil → écran d'envoi →
-   passe rétroactive).
-6. 9 septembre au matin : Windows a-t-il demandé le redémarrage du Patch
-   Tuesday ? (`Get-WinEvent -FilterHashtable @{LogName='System'; Id=1074}`,
-   ne pas confondre avec la coupure thermique brutale — Id 41 — du 29/08).
-7. UNIFIER le re-clé (`server.rekey_everywhere`,
-   `deplacer_dossiers.recle_une_cle`, `appliquer_plan.rekey_stores` : trois
-   copies d'une même règle, déjà divergentes une fois).
+**1. Attaquer l'implémentation, chantier 2 quater, DANS L'ORDRE (`ROADMAP.md`
+en a le détail) — rien de tout ça n'est encore codé :**
+1. `tagging_meta.py` : FR seul (retirer `keywords_en` du schéma JSON envoyé à
+   Ollama) + consigne anti-répétition explicite. Étendre/vérifier ses tests
+   avant livraison.
+2. `server.py` : `MODEL` bascule vers `qwen3.5:4b` **via `modele.txt`** (pas
+   une ligne de code — aucun redémarrage-preuve requis par `git_agent`,
+   ce fichier n'est pas dans le graphe d'import). `TAGGING_PIPELINE_VERSION`
+   bumpée en même temps que le prompt (ex. `"qwen3.5:4b|v3fr|kb1"`) — bumper
+   seul ne déclenche rien tant que le levier de l'étape 4 n'existe pas.
+3. `enrichir_lieux.py` tourne une fois (rafraîchit `gps_places.json`,
+   indépendant, sans urgence particulière).
+4. `server.py` : le levier `retag_actif.txt` + le bloc de scan pipe-aware
+   (piggyback sur le bloc existant de `_sync_dir`, « fichiers modifiés ») +
+   le pipeline de retag dédié qui détecte visages/animaux AVANT de tagger
+   (si l'entrée manque encore dans `FACE_STORE`/`ANIMAL_STORE`) — livré et
+   testé, mais **PAS activé** (fichier absent = rien ne bouge, `tagger_worker`
+   standard inchangé).
+5. Test d'endurance thermique sur une fenêtre LONGUE (heures, pas minutes) —
+   l'endurance n'a été prouvée que par rafales de ~450 s (chantier
+   confidentialité, 04/09).
+6. `retag_actif.txt` posé → la campagne démarre, observée (`/sante`, boucle
+   thermique, spot-checks < 10 photos de temps en temps sur le format ET les
+   hallucinations type « lgbtq »).
+
+**Pendant la campagne (une fois l'étape 6 lancée), ce qui reste sûr à faire
+avancer** : 1 bis (`.btn` canonique), l'étape 7 du chantier 17 (onboarding),
+le reste de l'audit, toute doc/UI/CSS. **À éviter ou reporter** : la phase 2
+vidéo (1 octies), tout nouveau banc `mesure_`/`eval_` GPU, tout chantier qui
+bumperait une AUTRE version de pipeline en même temps (confusion de
+diagnostic).
+
+**2. Chantier 18 (confidentialité) : la mesure est FINIE, la liste ATTEND
+Mike.** `docs/sensibles_echantillon.json` (90/90, 04/09 soir) : 66 « non »,
+19 illisibles, 1 facture, 1 banque, 3 administratif — à JUGER photo par
+photo, rien n'a bougé.
+
+**3. Items non touchés depuis session 71 (03/09), statut À REVÉRIFIER — le
+journal git ne dit rien de ces sujets, ils ne se prouvent qu'en réel :**
+- Bat 42 (strip Motion Photo, ~8,6 Go à rendre) était EN COURS le 03/09 soir
+  — demander à Mike où ça en est avant de supposer que bat 43 (purge des
+  `_original`) a suivi.
+- Ventilation dégagée mais pas nettoyée en profondeur : feu vert PARTIEL de
+  Mike pour tester quand même, prudence thermique (voir aussi le test
+  d'endurance de l'étape 5 ci-dessus, qui répond au même besoin pour 2 quater).
+- La Carte a deux champs (barre commune + « Rechercher (noms, lieux, sens) »)
+  : à trancher avec Mike — garder les deux ou fondre.
+- 9 septembre au matin : Windows a-t-il demandé le redémarrage du Patch
+  Tuesday ? (`Get-WinEvent -FilterHashtable @{LogName='System'; Id=1074}`,
+  ne pas confondre avec la coupure thermique brutale du 29/08 — Id 41).
+- UNIFIER le re-clé (`server.rekey_everywhere`,
+  `deplacer_dossiers.recle_une_cle`, `appliquer_plan.rekey_stores` : trois
+  copies d'une même règle, déjà divergentes une fois).
 
 ## En fin de projet
 
@@ -141,6 +137,13 @@ avant de paralléliser — et une erreur non nommée et non cachée rend
 Dérive par rapport à QUOI — le signal thermique du 29/08 était ENTRE les
 sessions, pas dedans (`ROADMAP.md`, sessions 57→63).
 
+**Ne JAMAIS supposer un chiffre gagné avant de l'avoir mesuré en réel sur la
+machine cible.** Le « 9+ jours » du 04/09 pour le retag qwen3-vl:4b mélangeait
+deux mesures ; corrigé en « ~16 jours » après re-calcul propre — et le passage
+à qwen3.5:4b l'a ramené à ~5 jours, comparable au débit actuel. Trois chiffres
+différents pour la même question en une semaine : le chiffre solide était le
+RATIO (~3×), jamais le nombre de jours absolu tiré de 8 photos difficiles.
+
 **Le canal du banc n'admet que `[A-Za-z0-9_.:/=-]`** (espaces via jeton
 `b64:`), plafond **600 s** : un banc long est REPRENABLE (cache écrit à
 chaque passe) et se lance avec `--budget-s 450`.
@@ -155,6 +158,16 @@ il ne l'importe pas.
 **ExifTool sous Windows perd les accents des arguments** : argfile UTF-8 BOM
 (`server._run_exiftool`, repris par `appliquer_strip_motionphoto`).
 
+**`device_bash` tronque une commande trop longue SANS le dire (~4 Ko).** Un
+`cat > fichier << 'EOF'` dont le payload dépasse ce seuil part amputé — le
+heredoc échoue (« here-document … delimited by end-of-file ») ou pire, écrit
+un fichier tronqué sans erreur visible. Pour transférer un script Python avec
+des accents (non ASCII, donc en base64) : découper le `.b64` en morceaux
+d'environ 1200 octets, les concaténer par `cat >>` successifs, puis vérifier
+la taille cumulée (`wc -c`) ET le `sha256sum` des deux côtés — CLOUD et
+Windows — avant de décoder et d'exécuter. Repéré et contourné le 05/09
+(transfert de `patch_roadmap2.py`, `patch_roadmap3.py`).
+
 ### Lire
 
 **Le journal du serveur d'abord**, depuis la dernière bannière :
@@ -168,10 +181,25 @@ il ne l'importe pas.
 **Le plan n'est régénéré QUE par le bouton Réglages / `POST
 /api/maint/plan-annee`.** `plan_vise_la_racine` et `plan_perime` gardent.
 
+**`.git/logs/refs/heads/main` se lit en texte, sans `git`.** Chaque ligne
+donne l'ancien et le nouveau hash, l'auteur, l'horodatage UNIX (`+0200`, donc
+UTC+2 chez Mike) et l'action (`fetch … fast-forward` pour une fusion de
+`git_agent`). `_etat_git.json` a un tableau `historique` (pas seulement
+`dernier`) qui garde titre + commit + branche des dix dernières livraisons —
+plus rapide qu'un `git log` pour retrouver CE QUI a été livré et QUAND, sans
+jamais invoquer `git`.
+
 ### Juger
 
 **Avant de RECOMMANDER une règle, relire `eval/DECISIONS.md` en entier sur le
 sujet.** Le carnet des décisions n'est pas un journal — c'est la contrainte.
+**Une clôture n'est pas éternelle** : la re-passe de tagging en lot avait été
+CLOSE le 16/08 (gain net non prouvé) ; le 05/09 elle est redevenue une
+décision active — pas parce que l'ancienne mesure était fausse, mais parce
+que deux faits nouveaux (FR seul rend le statu quo intenable, un modèle
+mesurablement meilleur existe) changent la question posée. La clôture du
+16/08 reste vraie SUR CE QU'ELLE MESURAIT ; elle ne s'applique plus à une
+question différente.
 
 **Un rattrapage ne doit jamais dépendre de la ressource qui vient de tomber.**
 
@@ -200,6 +228,9 @@ strip le VÉRIFIE fichier par fichier.
 > **Piège git via `device_bash`** : jamais de git d'ici (`.git/index.lock`
 > résiduel indélébile) — même un `rev-parse` en lecture seule est à éviter,
 > la règle est catégorique, pas seulement pour les écritures ; un lock qui
-> traîne se renomme (`mv`), ne s'efface pas.
+> traîne se renomme (`mv`), ne s'efface pas. Un `git status` de simple
+> curiosité EST une violation, même si son verdict était juste (commis par
+> erreur le 05/09, noté ici pour ne pas recommencer) : `_etat_git.json` (champ
+> `historique`) et les fichiers `.git/logs/*` lus en texte suffisent toujours.
 >
 > **Piège d'horloge** : `device_bash` est en **UTC** (−2 h chez Mike).

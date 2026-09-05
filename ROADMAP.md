@@ -244,7 +244,7 @@ Observé : densité 96 → 86 → 210 px sur la planche, Échap ferme, cible 44 
 
 **2 quater. RE-TAGGER en FR seul, modèle qwen3.5:4b, EN UNE SEULE PASSE
 coordonnée par photo — DÉCIDÉ (05/09), révisé le même jour sur mesure
-réelle.** Suite du 2 bis : Mike tranche deux choses le 05/09 — (i) plus de
+réelle. **GO de Mike pour l'implémentation, reçu le 05/09 au soir** : passage au code, dans l'ordre des 6 étapes ci-dessous.** Suite du 2 bis : Mike tranche deux choses le 05/09 — (i) plus de
 bilingue FR/EN, FR seul pour l'avenir (le retag devient donc inévitable
 pour TOUT le fonds, pas seulement les 22 196 « v0 » du 2 bis) ; (ii)
 « meilleur, pas plus gros » — chercher un modèle qui batte `qwen3-vl:4b`
