@@ -139,6 +139,9 @@ def main(argv=None):
                     help='repetable : au moins deux modeles a comparer')
     ap.add_argument('--cle', action='append', required=True, dest='cles',
                     help='repetable : b64:<cle en base64url>, ou la cle telle quelle')
+    ap.add_argument('--sortie', default='docs/comparaison_modeles_vision.json',
+                    help='chemin du rapport JSON (par defaut, ne pas ecraser '
+                         'une comparaison precedente en changeant ce chemin)')
     a = ap.parse_args(argv)
 
     cles = [dejeton(c) for c in a.cles]
@@ -163,7 +166,7 @@ def main(argv=None):
                                         Path(k).name[:40]))
         resultats[k] = ligne
 
-    out = Path('docs/comparaison_modeles_vision.json')
+    out = Path(a.sortie)
     out.parent.mkdir(exist_ok=True)
     out.write_text(json.dumps({
         'genere_le': time.strftime('%Y-%m-%d %H:%M:%S'),

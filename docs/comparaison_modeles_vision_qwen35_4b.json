@@ -1,0 +1,316 @@
+{
+ "genere_le": "2026-09-05 10:53:57",
+ "modeles": [
+  "qwen3.5:4b"
+ ],
+ "resultats": {
+  "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2017\\05 Mai\\MGM Menerga\\20170522_184758.jpg": {
+   "ancien_kw": [
+    "inflatable",
+    "structure",
+    "group",
+    "people",
+    "collaboration",
+    "teamwork",
+    "activity",
+    "indoor",
+    "red",
+    "blue",
+    "dark",
+    "background"
+   ],
+   "qwen3.5:4b": {
+    "kw_fr": [
+     "travail d'équipe",
+     "jeu gonflable",
+     "événement intérieur",
+     "activité de groupe",
+     "concurrence",
+     "castle gonflable"
+    ],
+    "kw_en": [
+     "teamwork",
+     "inflatable game",
+     "indoor event",
+     "group activity",
+     "competition",
+     "bouncy castle"
+    ],
+    "desc": "Un groupe participe à un jeu sur une structure gonflable rouge et bleue dans une salle fermée.",
+    "duree_s": 24.8
+   }
+  },
+  "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2025\\20250410_212009.jpg": {
+   "ancien_kw": [
+    "code",
+    "chiffre",
+    "qr"
+   ],
+   "qwen3.5:4b": {
+    "kw_fr": [
+     "code qr",
+     "lgbtq",
+     "surface rayée",
+     "fond coloré",
+     "marqueur numérique"
+    ],
+    "kw_en": [
+     "qr code",
+     "lgbtq",
+     "scrape surface",
+     "colorful background",
+     "digital marker"
+    ],
+    "desc": "Un QR code sur une surface rayée avec du texte LGBTQ en arrière-plan.",
+    "duree_s": 10.4
+   }
+  },
+  "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Floufline\\20190530_bouteille-de-vin-en-main.jpg": {
+   "ancien_kw": [
+    "vin",
+    "bouteille",
+    "main",
+    "table",
+    "wine",
+    "bottle",
+    "hand",
+    "table"
+   ],
+   "qwen3.5:4b": {
+    "kw_fr": [
+     "bouteille de vin",
+     "château du gravir",
+     "vintage 1986",
+     "vin bordeaux",
+     "main tenant",
+     "table repas"
+    ],
+    "kw_en": [
+     "wine bottle",
+     "chateau du gravir",
+     "1986 vintage",
+     "bordeaux wine",
+     "hand holding",
+     "dinner table"
+    ],
+    "desc": "Une main tient une bouteille de vin Château du Gravir vintage 1986 sur une table de dîner.",
+    "duree_s": 12.6
+   }
+  },
+  "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Luna & Inti\\20230918_135836.jpg": {
+   "ancien_kw": [
+    "deux chats",
+    "lit",
+    "coussins",
+    "commode",
+    "jeu",
+    "chambre",
+    "two cats",
+    "bed",
+    "pillows",
+    "nightstand",
+    "toys",
+    "bedroom"
+   ],
+   "qwen3.5:4b": {
+    "kw_fr": [
+     "deux chats",
+     "chambre",
+     "dormir",
+     "ragamuffin",
+     "lit blanc",
+     "commode bois"
+    ],
+    "kw_en": [
+     "two cats",
+     "bedroom",
+     "sleeping",
+     "tabby",
+     "pajamas",
+     "nightstand"
+    ],
+    "desc": "Deux chats Ragamuffin gris et tabby doré reposent sur un lit avec des oreillers bleus dans une chambre calme.",
+    "duree_s": 10.7
+   }
+  },
+  "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\20180428_231429.jpg": {
+   "ancien_kw": [
+    "homme",
+    "femme",
+    "chambre",
+    "bois",
+    "chaises",
+    "table",
+    "bouteilles",
+    "alimentation",
+    "meubles",
+    "chaise",
+    "bouteille",
+    "boisson",
+    "man",
+    "woman",
+    "room",
+    "wooden",
+    "chairs",
+    "table",
+    "bottles",
+    "food",
+    "furniture",
+    "chair",
+    "bottle",
+    "drink"
+   ],
+   "qwen3.5:4b": {
+    "kw_fr": [
+     "intérieur",
+     "personnes",
+     "debout",
+     "souriant",
+     "gesticulant",
+     "murs bois"
+    ],
+    "kw_en": [
+     "indoor",
+     "people",
+     "standing",
+     "smiling",
+     "gesturing",
+     "wooden walls"
+    ],
+    "desc": "Une photo d'intérieur montrant un homme et une femme debout dans une pièce en bois, l'une sourit avec les mains levées.",
+    "duree_s": 11.2
+   }
+  },
+  "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\Caline\\20201113_101014.jpg": {
+   "ancien_kw": [
+    "chat",
+    "sommeil",
+    "lit",
+    "soleil",
+    "poussière",
+    "calico",
+    "cat",
+    "sleeping",
+    "bed",
+    "sunlight"
+   ],
+   "qwen3.5:4b": {
+    "kw_fr": [
+     "chat",
+     "dormant",
+     "soleil",
+     "jean",
+     "tricolore",
+     "intérieur",
+     "repos"
+    ],
+    "kw_en": [
+     "cat",
+     "sleeping",
+     "sunlight",
+     "jeans",
+     "calico",
+     "indoor",
+     "resting"
+    ],
+    "desc": "Un chat tricolore dort paisiblement sur un genou couvert de jean, baigné dans la lumière du soleil.",
+    "duree_s": 11.1
+   }
+  },
+  "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2021\\20210218_124554.jpg": {
+   "ancien_kw": [
+    "gruppe",
+    "personnes",
+    "social",
+    "cuisine",
+    "salle",
+    "chaise",
+    "table",
+    "ballons",
+    "joyeux",
+    "fête",
+    "group",
+    "people",
+    "social",
+    "dining",
+    "living",
+    "room",
+    "chair",
+    "table",
+    "balloons",
+    "happy",
+    "birthday"
+   ],
+   "qwen3.5:4b": {
+    "kw_fr": [
+     "fete",
+     "amies",
+     "maison",
+     "cadeaux",
+     "ballons",
+     "cuisine",
+     "rires",
+     "interieur",
+     "sociale",
+     "groupe"
+    ],
+    "kw_en": [
+     "party",
+     "celebration",
+     "friends",
+     "home",
+     "gifts",
+     "balloons",
+     "kitchen",
+     "laughing",
+     "indoor",
+     "social"
+    ],
+    "desc": "Un groupe de personnes fêtent ensemble à la maison avec des cadeaux et des ballons.",
+    "duree_s": 12.9
+   }
+  },
+  "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2022\\20220918_103631.jpg": {
+   "ancien_kw": [
+    "mer",
+    "bateau",
+    "homme",
+    "montagnes",
+    "océan",
+    "ciel",
+    "bleu",
+    "calme",
+    "vent",
+    "water",
+    "surfboard",
+    "person",
+    "mountains",
+    "ocean",
+    "sky",
+    "blue",
+    "calm",
+    "wind"
+   ],
+   "qwen3.5:4b": {
+    "kw_fr": [
+     "eau lac",
+     "chaîne montagneuse",
+     "ciel bleu",
+     "remous blanc",
+     "homme debout",
+     "planche noire"
+    ],
+    "kw_en": [
+     "lake water",
+     "mountain range",
+     "sky blue",
+     "wake white",
+     "person standing",
+     "surfboard black"
+    ],
+    "desc": "Un homme se tient sur une planche au milieu d'un lac calme avec des montagnes en arrière-plan sous un ciel clair.",
+    "duree_s": 10.4
+   }
+  }
+ }
+}

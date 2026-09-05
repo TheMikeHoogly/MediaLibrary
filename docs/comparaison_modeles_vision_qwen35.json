@@ -1,0 +1,278 @@
+{
+ "genere_le": "2026-09-05 10:51:52",
+ "modeles": [
+  "qwen3.5:2b"
+ ],
+ "resultats": {
+  "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2017\\05 Mai\\MGM Menerga\\20170522_184758.jpg": {
+   "ancien_kw": [
+    "inflatable",
+    "structure",
+    "group",
+    "people",
+    "collaboration",
+    "teamwork",
+    "activity",
+    "indoor",
+    "red",
+    "blue",
+    "dark",
+    "background"
+   ],
+   "qwen3.5:2b": {
+    "kw_fr": [
+     "tir de corde inflable équipe compétition",
+     "photographie événement intérieur",
+     "activité d'équipe construction"
+    ],
+    "kw_en": [
+     "inflatable tug-of-war team competition",
+     "indoor event photography",
+     "team building activity"
+    ],
+    "desc": "des équipes s'affrontent dans un tir de corde inflable lors d'un événement interne.",
+    "duree_s": 43.3
+   }
+  },
+  "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2025\\20250410_212009.jpg": {
+   "ancien_kw": [
+    "code",
+    "chiffre",
+    "qr"
+   ],
+   "qwen3.5:2b": {
+    "kw_fr": [
+     "code QR",
+     "texte partiel",
+     "rayures dispersées"
+    ],
+    "kw_en": [
+     "QR code",
+     "text fragment",
+     "scattered scratches"
+    ],
+    "desc": "",
+    "duree_s": 2.7
+   }
+  },
+  "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Floufline\\20190530_bouteille-de-vin-en-main.jpg": {
+   "ancien_kw": [
+    "vin",
+    "bouteille",
+    "main",
+    "table",
+    "wine",
+    "bottle",
+    "hand",
+    "table"
+   ],
+   "qwen3.5:2b": {
+    "kw_fr": [
+     "bouteille de vin",
+     "Château du Grann",
+     "Appellation Bordeaux",
+     "vintage 1986"
+    ],
+    "kw_en": [
+     "wine bottle",
+     "chateau du grann",
+     "bordeaux appellation",
+     "1986 vintage"
+    ],
+    "desc": "",
+    "duree_s": 3.3
+   }
+  },
+  "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Luna & Inti\\20230918_135836.jpg": {
+   "ancien_kw": [
+    "deux chats",
+    "lit",
+    "coussins",
+    "commode",
+    "jeu",
+    "chambre",
+    "two cats",
+    "bed",
+    "pillows",
+    "nightstand",
+    "toys",
+    "bedroom"
+   ],
+   "qwen3.5:2b": {
+    "kw_fr": [
+     "deux chats sur lit",
+     "chat tabby se brosser",
+     "coussin bleu motif",
+     "commode avec objets"
+    ],
+    "kw_en": [
+     "two cats on bed",
+     "tabby cat grooming",
+     "blue patterned pillow",
+     "nightstand with items"
+    ],
+    "desc": "Deux chats, l'un en train de se brosser, reposent confortablement sur un lit blanc devant des coussins bleus.",
+    "duree_s": 4.1
+   }
+  },
+  "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\20180428_231429.jpg": {
+   "ancien_kw": [
+    "homme",
+    "femme",
+    "chambre",
+    "bois",
+    "chaises",
+    "table",
+    "bouteilles",
+    "alimentation",
+    "meubles",
+    "chaise",
+    "bouteille",
+    "boisson",
+    "man",
+    "woman",
+    "room",
+    "wooden",
+    "chairs",
+    "table",
+    "bottles",
+    "food",
+    "furniture",
+    "chair",
+    "bottle",
+    "drink"
+   ],
+   "qwen3.5:2b": {
+    "kw_fr": [
+     "personnes dansant intérieur bois salle fête"
+    ],
+    "kw_en": [
+     "people dancing indoors wooden room celebration party"
+    ],
+    "desc": "",
+    "duree_s": 2.4
+   }
+  },
+  "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\Caline\\20201113_101014.jpg": {
+   "ancien_kw": [
+    "chat",
+    "sommeil",
+    "lit",
+    "soleil",
+    "poussière",
+    "calico",
+    "cat",
+    "sleeping",
+    "bed",
+    "sunlight"
+   ],
+   "qwen3.5:2b": {
+    "kw_fr": [
+     "chat calicot dormant",
+     "pieds en jean bleu",
+     "posture détendue",
+     "lumière naturelle",
+     "décor de chambre"
+    ],
+    "kw_en": [
+     "calico cat sleeping",
+     "blue jeans lap",
+     "relaxed pose",
+     "natural light",
+     "bedroom setting"
+    ],
+    "desc": "Un chat calicot doré et blanc repose paisiblement sur les genoux d'une personne assise, sous une lumière douce.",
+    "duree_s": 4.5
+   }
+  },
+  "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2021\\20210218_124554.jpg": {
+   "ancien_kw": [
+    "gruppe",
+    "personnes",
+    "social",
+    "cuisine",
+    "salle",
+    "chaise",
+    "table",
+    "ballons",
+    "joyeux",
+    "fête",
+    "group",
+    "people",
+    "social",
+    "dining",
+    "living",
+    "room",
+    "chair",
+    "table",
+    "balloons",
+    "happy",
+    "birthday"
+   ],
+   "qwen3.5:2b": {
+    "kw_fr": [
+     "fête de fin d'année",
+     "réunion amicale",
+     "échange de cadeaux",
+     "événement social",
+     "partage de joyeux moments",
+     "cérémonie familiale"
+    ],
+    "kw_en": [
+     "birthday party",
+     "celebration",
+     "friends gathering",
+     "home celebration",
+     "gift exchange",
+     "social event"
+    ],
+    "desc": "Quatre amis se réunissent dans une salle chaleureuse pour célébrer leur anniversaire, échangent des cadeaux et rient ensemble autour d'une table.",
+    "duree_s": 4.5
+   }
+  },
+  "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2022\\20220918_103631.jpg": {
+   "ancien_kw": [
+    "mer",
+    "bateau",
+    "homme",
+    "montagnes",
+    "océan",
+    "ciel",
+    "bleu",
+    "calme",
+    "vent",
+    "water",
+    "surfboard",
+    "person",
+    "mountains",
+    "ocean",
+    "sky",
+    "blue",
+    "calm",
+    "wind"
+   ],
+   "qwen3.5:2b": {
+    "kw_fr": [
+     "planche à vagues",
+     "lac",
+     "montagnes",
+     "ciel bleu",
+     "sport en eau",
+     "soirée",
+     "silhouette"
+    ],
+    "kw_en": [
+     "wakeboarding",
+     "lake",
+     "mountains",
+     "blue sky",
+     "water sport",
+     "sunset",
+     "silhouette"
+    ],
+    "desc": "Un plancher de vagues sur un lac avec des montagnes au loin sous un ciel bleu.",
+    "duree_s": 3.9
+   }
+  }
+ }
+}
