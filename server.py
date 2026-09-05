@@ -1222,16 +1222,40 @@ RETAG_LOT = 500            # clés enfilées au plus, par racine et par scan
 RETAG_PENDING = set()      # clés en file POUR retag (sous PENDING_LOCK)
 
 
+_RETAG_REFUS_DIT = {'quoi': None}
+
+
 def retag_cible():
     """Version de pipeline visée par la campagne, ou None si `retag_actif.txt`
     est absent (= comportement d'avant). Relu à chaque scan : poser ou retirer
-    le fichier suffit, aucun redémarrage. Règle pure : tagging_meta."""
+    le fichier suffit, aucun redémarrage. Règle pure : tagging_meta.
+
+    GARDE-FOU : une cible qui n'est PAS la version du code est refusée, et la
+    campagne ne démarre pas. Le worker estampille chaque entrée avec
+    `TAGGING_PIPELINE_VERSION`, jamais avec ce qui est écrit ici : viser autre
+    chose ferait re-taguer le fonds ENTIER à chaque scan, pour l'éternité, sans
+    qu'aucun compteur ne baisse. Un fichier vide (ou tout en commentaires) est
+    la forme sûre, et c'est celle qu'on recommande — mais la sûreté ne doit pas
+    dépendre de ce que la main a tapé."""
     import tagging_meta
     try:
         txt = RETAG_FICHIER.read_text(encoding='utf-8')
     except OSError:
-        txt = None
-    return tagging_meta.version_retag(txt, TAGGING_PIPELINE_VERSION)
+        _RETAG_REFUS_DIT['quoi'] = None
+        return None
+    cible = tagging_meta.version_retag(txt, TAGGING_PIPELINE_VERSION)
+    if cible and cible != TAGGING_PIPELINE_VERSION:
+        # Dit UNE fois par valeur fautive : le scan repasse toutes les heures,
+        # un journal qui déverse ne se lit plus.
+        if _RETAG_REFUS_DIT['quoi'] != cible:
+            _RETAG_REFUS_DIT['quoi'] = cible
+            print(f"  ✗ {RETAG_FICHIER.name} vise « {cible} » alors que le code"
+                  f" estampille « {TAGGING_PIPELINE_VERSION} » : la campagne ne"
+                  f" démarre PAS (elle re-taguerait le fonds sans fin). Vider le"
+                  f" fichier, ou y écrire exactement la version du code.")
+        return None
+    _RETAG_REFUS_DIT['quoi'] = None
+    return cible
 
 
 def _retag_etat():
@@ -1240,6 +1264,11 @@ def _retag_etat():
     VOIR — c'est la leçon des backfills morts en silence pendant des mois."""
     cible = retag_cible()
     if not cible:
+        # Un levier POSÉ mais REFUSÉ doit se voir : sinon Mike lit « inactif »
+        # alors qu'il vient de créer le fichier, et cherche au mauvais endroit.
+        if _RETAG_REFUS_DIT['quoi']:
+            return {'actif': False, 'refus': _RETAG_REFUS_DIT['quoi'],
+                    'attendu': TAGGING_PIPELINE_VERSION}
         return {'actif': False}
     reste = abandons = 0
     for e in list(STORE.data.values()):

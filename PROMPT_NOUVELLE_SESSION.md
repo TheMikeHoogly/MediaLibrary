@@ -68,8 +68,11 @@ est VIDE : plus rien n'attend Mike.
   endurance thermique mesurée — 371 photos, 0,95 h de charge, max 75 °C, aucun
   bridage avoué sur 237 relevés, débit plat. **8,9 s/photo en médiane → ~4,5
   jours pour les 44 135 entrées.**
-- **Étape 6, le SEUL pas qui reste, et il est à Mike** : poser `retag_actif.txt`
-  (vide = la version courante) → la campagne démarre, observée :
+- **Étape 6, le SEUL pas qui reste, et il est à Mike** : créer
+  `retag_actif.txt` à la racine du projet, **VIDE** (une version cible y est
+  acceptée, mais seulement si elle est EXACTEMENT celle du code : toute autre
+  est refusée et dite dans `/api/maint/status` → `config.retag.refus`, sinon
+  elle re-taguerait le fonds sans fin). La campagne démarre, observée :
   `/api/maint/status` → `config.retag` (`reste`, `en_file`, `abandons`), boucle
   thermique au journal, et des spot-checks de moins de 10 photos de temps en
   temps sur le FORMAT (6-10 mots-clés courts, pas une phrase) ET les

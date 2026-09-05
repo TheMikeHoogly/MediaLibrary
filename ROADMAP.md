@@ -485,8 +485,9 @@ Ordre initial (rien n'était encore codé au moment de l'écrire) :
    d'une pause, plafond du canal) alors que la campagne tournera à 100 %, et
    une heure n'est pas cinq jours. Le garde des cinq jours reste
    `thermique_loop`, qui écrit au journal dès 85 °C ou au premier aveu.
-6. **Le seul pas qui reste, et il est à Mike** : poser `retag_actif.txt`
-   (vide = la version courante) → la campagne démarre, observée
+6. **Le seul pas qui reste, et il est à Mike** : créer
+   `C:\Prog\Claude\MediaLibrary\retag_actif.txt`, **VIDE** → la campagne
+   démarre, observée
    (`/api/maint/status` → `config.retag`, boucle thermique au journal,
    spot-checks < 10 photos de temps en temps sur le FORMAT et sur les
    hallucinations type « lgbtq »). **Ce qui est irréversible et doit être dit
@@ -495,6 +496,18 @@ Ordre initial (rien n'était encore codé au moment de l'écrire) :
    la décision « FR seul » assumée, et le dictionnaire gelé garde la traduction
    ; mais ça se dit avant, pas après. Retirer le fichier arrête la campagne au
    lot suivant, et rien n'est perdu : la progression vit dans le `pipe`.
+   **Garde-fou posé le 05/09 (question de Mike : « que dois-je faire avec ? »)**
+   : le fichier peut porter une version cible, et une version qui n'est PAS
+   celle du code ferait re-taguer le fonds ENTIER à chaque scan, sans fin — le
+   worker estampille `TAGGING_PIPELINE_VERSION`, jamais ce qui est écrit là.
+   `retag_cible()` refuse désormais toute cible étrangère, le dit une fois au
+   journal, et le refus est LISIBLE dans `/api/maint/status`
+   (`config.retag.refus` / `attendu`). **Observé en réel** : fichier posé avec
+   `qwen3-vl:2b|v2ctx|kb1`, l'API a rendu
+   `{actif: false, refus: …, attendu: qwen3.5:4b|v3fr|kb1}` et le journal la
+   ligne de refus ; fichier retiré, retour à `{actif: false}`. Un fichier vide
+   reste la forme recommandée — mais la sûreté ne dépend plus de ce que la main
+   a tapé.
 
 **Pendant la campagne, ce qui reste sûr à faire avancer** (aucune contention
 GPU) : 1 bis (`.btn` canonique), l'étape 7 du chantier 17 (onboarding), le

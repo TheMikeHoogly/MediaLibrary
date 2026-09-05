@@ -56,6 +56,19 @@ class LevierAbsentNeFaitRien(unittest.TestCase):
         self.assertIn("except OSError", s)
         self.assertIn("version_retag", s)
 
+    def test_cible_etrangere_refusee(self):
+        # Une cible qui n est pas la version du code ferait re-taguer le fonds
+        # a CHAQUE scan sans qu aucun compteur baisse : le worker estampille
+        # TAGGING_PIPELINE_VERSION, jamais ce qui est ecrit dans le fichier.
+        s = _src("retag_cible")
+        self.assertIn("cible != TAGGING_PIPELINE_VERSION", s)
+        self.assertIn("return None", s.split("cible != TAGGING_PIPELINE_VERSION")[1])
+
+    def test_refus_visible_dans_l_api(self):
+        s = _src("_retag_etat")
+        self.assertIn("_RETAG_REFUS_DIT", s)
+        self.assertIn("'refus'", s)
+
     def test_selection_sous_scan_approfondi_et_cible(self):
         s = _src("_sync_dir")
         self.assertIn("if deep and TAG_QUEUE.qsize() < RETAG_LOT:", s)
