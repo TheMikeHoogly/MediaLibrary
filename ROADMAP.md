@@ -17,10 +17,25 @@ Le garde-fou du filtre est posé (jeton insatisfaisable → RIEN, dit, banc
 **1. Les boutons de `gallery` — FAIT (session 59), œil bureau et 390 px
 passés ; reste la décision `.fchip`.**
 
-**1 bis. Les cinq familles maison passent au `.btn` canonique** (`.tb`,
-`.geobtn`, `.fchip`, `.georow button`, `#ss-stop` ; coût accepté +19 px).
-Preuve dans l'ordre habituel : cascade → cibles → contraste → contrôles →
-tests UI → banc des pages sur serveur vivant → l'œil.
+**1 bis. Les cinq familles maison au `.btn` canonique — DÉJÀ FAIT, VÉRIFIÉ
+(05/09). Cette ligne était périmée.** `.tb`, `.geobtn`, `.fchip`,
+`.georow button`, `#ss-stop` ne peignent plus que leur ÉTAT dans
+`ui/pages/gallery.html` ; taille, forme, police et survol viennent de
+`components.css` (le coût de +19 px de hauteur de barres est écrit dans le CSS,
+donc accepté et mesuré à l'époque). **Preuve refaite dans l'ordre habituel** :
+`verifier_css_cascade --commun`, `verifier_cibles` (0 manquement prouvé),
+`verifier_contraste` (24 couples AA), `verifier_controles` (0 grief de niveau A
+sur 165 gestionnaires) — et le **regard en réel** sur serveur vivant, page par
+page depuis un navigateur connecté : les **7 pages adoptantes** (`/files`,
+`/people`, `/pets`, `/sujets`, `/tranche`, `/residu`, `/`) reçoivent bien
+`components.css` AVANT leur propre `<style>` (elles gardent le dernier mot) et
+aucune ne traîne le marqueur ; les 3 non converties (`/map` = témoin,
+`/browse`, `/reglages`) ne le reçoivent pas et gardent `tokens.css`. **Reste
+ouvert, et c'est un AUTRE chantier** : l'adoption de `components.css` par
+`browse`, `faces` et `reglages` — `/map` est le témoin, on n'y touche pas.
+Seule divergence encore signalée par la cascade, et elle est VOULUE :
+`.tb.active { border-color }` vaut `--fixateur` sur la galerie et `transparent`
+sur la carte (rendu identique, la carte n'ayant pas adopté la feuille commune).
 
 **1 ter. La résilience des fils de travail : FAIT (session 61)** — superviseur,
 relance à attente doublante, cinq morts consécutives alertent (`/sante` + journal).

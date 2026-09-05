@@ -86,8 +86,17 @@ class LevierAbsentNeFaitRien(unittest.TestCase):
     def test_index_jamais_vide_par_la_campagne(self):
         # Le bloc de retag n'appelle PAS remove_many : la photo reste visible.
         s = _src("_sync_dir")
-        bloc = s.split("# 3 bis)")[1].split("# 4)")[0]
+        bloc = s.split("# 2 bis)")[1].split("# 3)")[0]
         self.assertNotIn("remove_many", bloc)
+
+    def test_retag_enfile_avant_la_passe_des_modifies(self):
+        # La passe des « fichiers modifies » fait un stat sur CHAQUE fichier de
+        # la racine (44 876 sur le NAS, plusieurs minutes). Le bloc de retag ne
+        # touche QUE la memoire : le faire attendre derriere, c'est laisser le
+        # GPU vider sa file et s'arreter. Observe le 05/09.
+        s = _src("_sync_dir")
+        self.assertLess(s.index("# 2 bis)"), s.index("# 3) fichiers modifi"),
+                        "le retag doit enfiler AVANT la passe des modifies")
 
 
 class UnEchecNeCoutePasLaPhoto(unittest.TestCase):

@@ -215,7 +215,19 @@ def verifier(hote, port, ecrire=print, chercher=chercher):
                    % (chemin, role, arrivee))
             ecrire("             une page nommee ici et lue la-bas ne prouve "
                    "rien : le verdict ne peut pas parler d'elle")
-            fautes += 1
+            # ... et ne peut donc pas non plus la CONDAMNER. Jusqu'au 05/09
+            # cette branche comptait une FAUTE : depuis que la porte est
+            # fermee (comptes, 29/08), les dix pages repondaient /connexion et
+            # le banc rendait « 10 griefs -- l'adoption ne tient pas en reel »
+            # sans avoir lu une seule ligne des pages en question. Un
+            # instrument qui condamne ce qu'il n'a pas vu est pire qu'un
+            # instrument muet : le muet fait chercher, l'autre fait corriger
+            # ce qui n'est pas casse. Le texte de la ligne le disait deja --
+            # « le verdict ne peut pas parler d'elle » -- et le compteur
+            # disait l'inverse.
+            muettes.append((chemin, "REPOND AILLEURS, servie depuis %s "
+                                    "-- non regardee (porte fermee ?)"
+                                    % arrivee))
             continue
         griefs = (juger_adoptante(chemin, html)
                   if chemin in ADOPTANTES else juger_temoin(chemin, html))
@@ -235,6 +247,18 @@ def verifier(hote, port, ecrire=print, chercher=chercher):
         for chemin, pourquoi in muettes:
             ecrire("          %-10s %s" % (chemin, pourquoi))
         ecrire("Sur celles-la il n'y a pas de faute : il n'y a pas de preuve.")
+        # ... et pas de preuve ne peut PAS sortir en vert. `code 0` se lirait
+        # « tout va bien » alors qu'il veut dire « je n'ai pas regarde ». Le
+        # compte rendu ne change donc pas de nature (ce ne sont pas des
+        # griefs, et le mot n'est pas employe), mais le CODE DE SORTIE, si :
+        # une page non regardee suffit a le rendre non nul, exactement comme
+        # une page fautive. C'est ce qui empeche le vert emprunte du temoin
+        # `/faces` -- nommer une page, en lire une autre, et conclure.
+        if not lues:
+            ecrire("AUCUNE page n'a pu etre lue : ce banc ne rend PAS un vert.")
+            ecrire("Pour un vrai regard : ouvrir une session, ou lire les "
+                   "pages depuis un navigateur deja connecte.")
+        return len(muettes) + fautes
     elif fautes:
         ecrire("VERDICT : %d grief(s). L'adoption ne tient pas en reel."
                % fautes)

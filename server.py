@@ -3479,6 +3479,38 @@ def _sync_dir(label, cur, own_keys, first=False, deep=False):
     elif first and not moved:
         print(f"  🏷  {label} : rien de nouveau à taguer")
 
+    # 2 bis) campagne de RETAG (chantier 2 quater) : tant que `retag_actif.txt`
+    # est posé, le scan approfondi enfile AUSSI les entrées dont le `pipe` n'est
+    # pas la version visée.
+    #
+    # AVANT la passe des « fichiers modifiés », et ce n'est pas cosmétique :
+    # celle-ci fait un `stat` sur CHAQUE fichier de la racine — 44 876 appels
+    # sur le NAS, plusieurs minutes. Placé après, le bloc de retag attendait
+    # tout ce temps avant d'enfiler quoi que ce soit, pendant que le GPU vidait
+    # sa file et finissait par ne plus rien avoir à faire. Observé le 05/09 au
+    # premier vrai cycle : « rien de nouveau à taguer » à 17:00:44, et toujours
+    # aucune photo enfilée quatre minutes plus tard. Ce bloc-ci ne touche QUE
+    # la mémoire (`STORE.data`) : il n'a aucune raison d'attendre le disque. Par LOTS, et seulement quand la file a de la place :
+    # la file est en MÉMOIRE, l'enfiler entière (~40 000 clés) ferait un état
+    # qu'un redémarrage perdrait — la progression, elle, vit dans le `pipe` de
+    # chaque entrée, sur disque. Rien n'est retiré de l'index : la photothèque
+    # reste entière, nommée et cherchable pendant les jours que dure la campagne.
+    if deep and TAG_QUEUE.qsize() < RETAG_LOT:
+        import tagging_meta as _tm
+        cible = retag_cible()
+        if cible:
+            with PENDING_LOCK:
+                deja = set(PENDING)
+            n_retag = 0
+            for k in _tm.cles_a_retaguer(
+                    ((c, STORE.data.get(c)) for c in cur), cible,
+                    exclues=deja, lot=RETAG_LOT):
+                if enqueue_retag(k):
+                    n_retag += 1
+            if n_retag:
+                print(f"  ♻ {label} : {n_retag} photo(s) en file de RE-TAGGING"
+                      f" (campagne « {cible} »)")
+
     # 3) fichiers modifiés (scan approfondi ~1x/heure) : re-tagging
     if deep:
         changed = []
@@ -3504,29 +3536,6 @@ def _sync_dir(label, cur, own_keys, first=False, deep=False):
             for k in changed:
                 enqueue(k)
             print(f"  ♻ {label} : {len(changed)} fichier(s) modifié(s) → re-tagging")
-
-    # 3 bis) campagne de RETAG (chantier 2 quater) : tant que `retag_actif.txt`
-    # est posé, le scan approfondi enfile AUSSI les entrées dont le `pipe` n'est
-    # pas la version visée. Par LOTS, et seulement quand la file a de la place :
-    # la file est en MÉMOIRE, l'enfiler entière (~40 000 clés) ferait un état
-    # qu'un redémarrage perdrait — la progression, elle, vit dans le `pipe` de
-    # chaque entrée, sur disque. Rien n'est retiré de l'index : la photothèque
-    # reste entière, nommée et cherchable pendant les jours que dure la campagne.
-    if deep and TAG_QUEUE.qsize() < RETAG_LOT:
-        import tagging_meta as _tm
-        cible = retag_cible()
-        if cible:
-            with PENDING_LOCK:
-                deja = set(PENDING)
-            n_retag = 0
-            for k in _tm.cles_a_retaguer(
-                    ((c, STORE.data.get(c)) for c in cur), cible,
-                    exclues=deja, lot=RETAG_LOT):
-                if enqueue_retag(k):
-                    n_retag += 1
-            if n_retag:
-                print(f"  ♻ {label} : {n_retag} photo(s) en file de RE-TAGGING"
-                      f" (campagne « {cible} »)")
 
     # 4) fichiers disparus : nettoyage (la racine vient d'être listée, donc joignable)
     #    forget_everywhere purge en cascade tags + détections visages/animaux +
