@@ -1,0 +1,6065 @@
+{
+ "quand": "2026-09-06 00:36:32",
+ "vignette_max_px": 320,
+ "regardees": 985,
+ "total": 985,
+ "par_classe": {
+  "valide": {
+   "n": 5,
+   "octets": 105640346
+  },
+  "recuperee": {
+   "n": 941,
+   "octets": 3042906093
+  },
+  "creuse": {
+   "n": 1,
+   "octets": 2464063
+  },
+  "tronquee": {
+   "n": 38,
+   "octets": 129910347
+  }
+ },
+ "detail": [
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Sandra\\DSC_0337 - copie.JPG",
+   "classe": "valide",
+   "octets": 3867694,
+   "dims": [
+    4512,
+    3000
+   ]
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2008\\02 Février\\Marilene in the place.JPG",
+   "classe": "recuperee",
+   "octets": 2729465,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2008\\03 Mars\\Mon anni\\DSC00327.JPG",
+   "classe": "creuse",
+   "octets": 2464063,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2008\\08 Aout\\Sanetsch\\DSC00551.JPG",
+   "classe": "recuperee",
+   "octets": 3110647,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2008\\08 Aout\\Sanetsch\\DSC00552.JPG",
+   "classe": "recuperee",
+   "octets": 3266135,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2008\\08 Aout\\Sanetsch\\DSC00553.JPG",
+   "classe": "recuperee",
+   "octets": 3257364,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2008\\08 Aout\\Sanetsch\\DSC00554.JPG",
+   "classe": "recuperee",
+   "octets": 2966697,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2008\\08 Aout\\Sanetsch\\IMGP0181.JPG",
+   "classe": "recuperee",
+   "octets": 2408776,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2008\\08 Aout\\Sanetsch\\IMGP0182.JPG",
+   "classe": "recuperee",
+   "octets": 2517945,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2008\\08 Aout\\Sanetsch\\IMGP0183.JPG",
+   "classe": "recuperee",
+   "octets": 2437075,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2008\\08 Aout\\Sanetsch\\IMGP0184.JPG",
+   "classe": "recuperee",
+   "octets": 2532756,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2008\\08 Aout\\Sanetsch\\IMGP0185.JPG",
+   "classe": "recuperee",
+   "octets": 2450401,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2008\\08 Aout\\Sanetsch\\IMGP0186.JPG",
+   "classe": "recuperee",
+   "octets": 2439657,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2008\\08 Aout\\Sanetsch\\IMGP0187.JPG",
+   "classe": "recuperee",
+   "octets": 2453614,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2008\\08 Aout\\Sanetsch\\IMGP0188.JPG",
+   "classe": "recuperee",
+   "octets": 2487472,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2008\\08 Aout\\Sanetsch\\IMGP0189.JPG",
+   "classe": "recuperee",
+   "octets": 2472643,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2008\\08 Aout\\Sanetsch\\IMGP0190.JPG",
+   "classe": "recuperee",
+   "octets": 2387939,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2008\\08 Aout\\Sanetsch\\IMGP0191.JPG",
+   "classe": "recuperee",
+   "octets": 2333565,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2008\\08 Aout\\Sanetsch\\IMGP0192.JPG",
+   "classe": "recuperee",
+   "octets": 2403765,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2008\\08 Aout\\Sanetsch\\IMGP0193.JPG",
+   "classe": "recuperee",
+   "octets": 2461010,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2008\\08 Aout\\Sanetsch\\IMGP0194.JPG",
+   "classe": "recuperee",
+   "octets": 2500204,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2008\\08 Aout\\Sanetsch\\IMGP0195.JPG",
+   "classe": "recuperee",
+   "octets": 2460160,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2009\\04 Avril\\France & Belgique\\DSC00796.JPG",
+   "classe": "recuperee",
+   "octets": 2877468,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2009\\04 Avril\\France & Belgique\\DSC00797.JPG",
+   "classe": "recuperee",
+   "octets": 2910955,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2009\\04 Avril\\France & Belgique\\DSC00798.JPG",
+   "classe": "recuperee",
+   "octets": 3265161,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2009\\04 Avril\\France & Belgique\\DSC00799.JPG",
+   "classe": "recuperee",
+   "octets": 3285814,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2009\\04 Avril\\France & Belgique\\DSC00800.JPG",
+   "classe": "recuperee",
+   "octets": 3259733,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2009\\04 Avril\\France & Belgique\\DSC00801.JPG",
+   "classe": "recuperee",
+   "octets": 2825678,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2009\\04 Avril\\France & Belgique\\DSC00802.JPG",
+   "classe": "recuperee",
+   "octets": 3094408,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2009\\04 Avril\\France & Belgique\\DSC00803.JPG",
+   "classe": "recuperee",
+   "octets": 3022757,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2009\\04 Avril\\France & Belgique\\DSC00804.JPG",
+   "classe": "recuperee",
+   "octets": 2319645,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2009\\04 Avril\\France & Belgique\\DSC00805.JPG",
+   "classe": "recuperee",
+   "octets": 3009189,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2009\\04 Avril\\France & Belgique\\DSC00806.JPG",
+   "classe": "recuperee",
+   "octets": 3327898,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2009\\04 Avril\\France & Belgique\\DSC00807.JPG",
+   "classe": "recuperee",
+   "octets": 2760278,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2009\\04 Avril\\France & Belgique\\DSC00808.JPG",
+   "classe": "recuperee",
+   "octets": 2619996,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2009\\04 Avril\\France & Belgique\\DSC00809.JPG",
+   "classe": "recuperee",
+   "octets": 2648774,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2009\\04 Avril\\France & Belgique\\DSC00810.JPG",
+   "classe": "recuperee",
+   "octets": 2713489,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2009\\04 Avril\\France & Belgique\\DSC00811.JPG",
+   "classe": "recuperee",
+   "octets": 2680994,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2009\\04 Avril\\France & Belgique\\DSC00812.JPG",
+   "classe": "recuperee",
+   "octets": 2839871,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2009\\04 Avril\\France & Belgique\\DSC00813.JPG",
+   "classe": "recuperee",
+   "octets": 3320351,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2009\\04 Avril\\France & Belgique\\DSC00815.JPG",
+   "classe": "recuperee",
+   "octets": 3137854,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2009\\04 Avril\\France & Belgique\\DSC00816.JPG",
+   "classe": "recuperee",
+   "octets": 2769095,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2009\\04 Avril\\France & Belgique\\DSC00819.JPG",
+   "classe": "recuperee",
+   "octets": 3037250,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2009\\04 Avril\\France & Belgique\\DSC00820.JPG",
+   "classe": "recuperee",
+   "octets": 2972710,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2009\\04 Avril\\France & Belgique\\DSC00821.JPG",
+   "classe": "recuperee",
+   "octets": 2735666,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2009\\04 Avril\\France & Belgique\\DSC00822.JPG",
+   "classe": "recuperee",
+   "octets": 2995977,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2009\\04 Avril\\France & Belgique\\DSC00824.JPG",
+   "classe": "recuperee",
+   "octets": 2823548,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2009\\04 Avril\\France & Belgique\\DSC00825.JPG",
+   "classe": "recuperee",
+   "octets": 2874660,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2009\\04 Avril\\France & Belgique\\DSC00826.JPG",
+   "classe": "recuperee",
+   "octets": 3155685,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2009\\04 Avril\\France & Belgique\\DSC00828.JPG",
+   "classe": "recuperee",
+   "octets": 3138460,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2009\\04 Avril\\France & Belgique\\DSC00831.JPG",
+   "classe": "recuperee",
+   "octets": 2698971,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2009\\04 Avril\\France & Belgique\\DSC00832.JPG",
+   "classe": "recuperee",
+   "octets": 2372446,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2009\\04 Avril\\France & Belgique\\DSC00833.JPG",
+   "classe": "recuperee",
+   "octets": 2748139,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2009\\04 Avril\\France & Belgique\\DSC00834.JPG",
+   "classe": "recuperee",
+   "octets": 2762657,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2009\\04 Avril\\France & Belgique\\DSC00835.JPG",
+   "classe": "recuperee",
+   "octets": 2638523,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2009\\Photos mams\\DSCN0278.JPG",
+   "classe": "tronquee",
+   "octets": 1296589,
+   "dims": [
+    2560,
+    1920
+   ]
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2009\\Photos mams\\DSCN0349.JPG",
+   "classe": "recuperee",
+   "octets": 1297178,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2009\\Photos mams\\DSCN0452.JPG",
+   "classe": "recuperee",
+   "octets": 1290972,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2009\\Photos mams\\DSCN0458.JPG",
+   "classe": "recuperee",
+   "octets": 1259345,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2009\\Photos mams\\DSCN0553.JPG",
+   "classe": "recuperee",
+   "octets": 1317610,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2009\\Photos mams\\DSCN0555.JPG",
+   "classe": "recuperee",
+   "octets": 1285782,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2009\\Photos mams\\DSCN0562.JPG",
+   "classe": "recuperee",
+   "octets": 1297880,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2009\\Photos mams\\DSCN0564.JPG",
+   "classe": "recuperee",
+   "octets": 1289705,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2009\\Photos mams\\DSCN0659.JPG",
+   "classe": "recuperee",
+   "octets": 1299013,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2009\\Photos mams\\DSCN0662.JPG",
+   "classe": "recuperee",
+   "octets": 1274753,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2009\\Photos mams\\DSCN0677.JPG",
+   "classe": "recuperee",
+   "octets": 1281435,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2009\\Photos mams\\DSCN0748.JPG",
+   "classe": "recuperee",
+   "octets": 1203366,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2009\\Photos mams\\DSCN0751.JPG",
+   "classe": "recuperee",
+   "octets": 1269129,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2009\\Photos mams\\DSCN0752.JPG",
+   "classe": "recuperee",
+   "octets": 1225669,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2009\\Photos mams\\DSCN0755.JPG",
+   "classe": "recuperee",
+   "octets": 1271751,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2009\\Photos mams\\DSCN0757.JPG",
+   "classe": "recuperee",
+   "octets": 1258149,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2009\\Photos mams\\DSCN0758.JPG",
+   "classe": "recuperee",
+   "octets": 1294446,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2009\\Photos mams\\DSCN0759.JPG",
+   "classe": "recuperee",
+   "octets": 1248418,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2009\\Photos mams\\DSCN0766.JPG",
+   "classe": "recuperee",
+   "octets": 1289889,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2009\\Photos mams\\DSCN0768.JPG",
+   "classe": "recuperee",
+   "octets": 1280041,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2009\\Photos mams\\DSCN0769.JPG",
+   "classe": "recuperee",
+   "octets": 1266133,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2009\\Photos mams\\DSCN0774.JPG",
+   "classe": "recuperee",
+   "octets": 1277082,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2009\\Photos mams\\DSCN0775.JPG",
+   "classe": "recuperee",
+   "octets": 1272373,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2009\\Photos mams\\DSCN0780.JPG",
+   "classe": "recuperee",
+   "octets": 1273674,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2009\\Photos mams\\Eli Clase 92.JPG",
+   "classe": "recuperee",
+   "octets": 642969,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2009\\Photos mams\\Eli en classe ca 92.JPG",
+   "classe": "recuperee",
+   "octets": 425451,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2009\\Photos mams\\EliClase93.jpg",
+   "classe": "recuperee",
+   "octets": 806703,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2009\\Photos mams\\Imagen_028.jpg",
+   "classe": "recuperee",
+   "octets": 73404,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2009\\Photos mams\\Imagen_047.jpg",
+   "classe": "recuperee",
+   "octets": 72763,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2009\\Photos mams\\Imagen_077.jpg",
+   "classe": "recuperee",
+   "octets": 85321,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2009\\Photos mams\\Imagen_093.jpg",
+   "classe": "recuperee",
+   "octets": 67531,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2009\\Photos mams\\Imagen_099.jpg",
+   "classe": "recuperee",
+   "octets": 82355,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2009\\Photos mams\\Imagen_109.jpg",
+   "classe": "recuperee",
+   "octets": 81035,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2009\\Photos mams\\Lisa est jolie.jpg",
+   "classe": "recuperee",
+   "octets": 116785,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2009\\Photos mams\\Mic93_Clase_2.jpg",
+   "classe": "recuperee",
+   "octets": 675492,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2009\\Photos mams\\Mike_BlingBling_01.jpg",
+   "classe": "recuperee",
+   "octets": 4121563,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2009\\Photos mams\\Mike_BlingBling_02.jpg",
+   "classe": "recuperee",
+   "octets": 4167363,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2009\\Photos mams\\Mike_Diable.jpg",
+   "classe": "recuperee",
+   "octets": 176926,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2009\\Photos mams\\Pili_Jaime_Bryan_Manuela.jpg",
+   "classe": "recuperee",
+   "octets": 467264,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2009\\Photos mams\\Sanchez Alicia.jpg",
+   "classe": "recuperee",
+   "octets": 247773,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2009\\Photos mams\\Sanchez Felipa.jpg",
+   "classe": "recuperee",
+   "octets": 207244,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2009\\Photos mams\\Sanchez Laura.jpg",
+   "classe": "recuperee",
+   "octets": 225826,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2009\\Photos mams\\Sanchez Linda.jpg",
+   "classe": "recuperee",
+   "octets": 208279,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2009\\Photos mams\\Sanchez René.jpg",
+   "classe": "recuperee",
+   "octets": 210922,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2009\\Photos mams\\Sanchez Ruben.jpg",
+   "classe": "recuperee",
+   "octets": 209913,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2009\\Photos mams\\Sanchez y nosotoros.jpg",
+   "classe": "recuperee",
+   "octets": 261968,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2009\\Photos mams\\Viva_Peru_01.jpg",
+   "classe": "recuperee",
+   "octets": 933693,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2009\\Photos mams\\Viva_Peru_05.jpg",
+   "classe": "recuperee",
+   "octets": 909488,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\France avec Mams\\DSC01438.JPG",
+   "classe": "recuperee",
+   "octets": 2937585,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\France avec Mams\\DSC01439.JPG",
+   "classe": "recuperee",
+   "octets": 3353050,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\France avec Mams\\DSC01440.JPG",
+   "classe": "recuperee",
+   "octets": 3032834,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\France avec Mams\\DSC01441.JPG",
+   "classe": "recuperee",
+   "octets": 2044569,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\France avec Mams\\DSC01442.JPG",
+   "classe": "recuperee",
+   "octets": 1974889,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\France avec Mams\\DSC01443.JPG",
+   "classe": "recuperee",
+   "octets": 3041410,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\France avec Mams\\DSC01444.JPG",
+   "classe": "recuperee",
+   "octets": 3266903,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\France avec Mams\\DSC01445.JPG",
+   "classe": "recuperee",
+   "octets": 1503258,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\France avec Mams\\DSC01447.JPG",
+   "classe": "recuperee",
+   "octets": 1819762,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\France avec Mams\\DSC01448.JPG",
+   "classe": "recuperee",
+   "octets": 3342317,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\France avec Mams\\DSC01449.JPG",
+   "classe": "recuperee",
+   "octets": 1253965,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\France avec Mams\\DSC01451.JPG",
+   "classe": "recuperee",
+   "octets": 2237175,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\France avec Mams\\DSC01452.JPG",
+   "classe": "recuperee",
+   "octets": 2047885,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\France avec Mams\\DSC01453.JPG",
+   "classe": "recuperee",
+   "octets": 2113959,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\France avec Mams\\DSC01454.JPG",
+   "classe": "recuperee",
+   "octets": 2157298,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\France avec Mams\\DSC01456.JPG",
+   "classe": "recuperee",
+   "octets": 1761696,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\France avec Mams\\DSC01457.JPG",
+   "classe": "recuperee",
+   "octets": 3180253,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\France avec Mams\\DSC01458.JPG",
+   "classe": "recuperee",
+   "octets": 2839838,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\France avec Mams\\DSC01459.JPG",
+   "classe": "recuperee",
+   "octets": 1951461,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\France avec Mams\\DSC01460.JPG",
+   "classe": "recuperee",
+   "octets": 3183722,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\France avec Mams\\DSC01461.JPG",
+   "classe": "recuperee",
+   "octets": 3213924,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\France avec Mams\\DSC01462.JPG",
+   "classe": "recuperee",
+   "octets": 3271991,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\France avec Mams\\DSC01463.JPG",
+   "classe": "recuperee",
+   "octets": 3266009,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\France avec Mams\\DSC01464.JPG",
+   "classe": "recuperee",
+   "octets": 3325959,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\France avec Mams\\DSC01465.JPG",
+   "classe": "recuperee",
+   "octets": 3159383,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\France avec Mams\\DSC01466.JPG",
+   "classe": "recuperee",
+   "octets": 3329943,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\France avec Mams\\DSC01467.JPG",
+   "classe": "recuperee",
+   "octets": 3126729,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\France avec Mams\\DSC01468.JPG",
+   "classe": "recuperee",
+   "octets": 3244431,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\France avec Mams\\DSC01473.JPG",
+   "classe": "recuperee",
+   "octets": 1904296,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\France avec Mams\\DSC01474.JPG",
+   "classe": "recuperee",
+   "octets": 3254964,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\France avec Mams\\DSC01475.JPG",
+   "classe": "recuperee",
+   "octets": 2986346,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\France avec Mams\\DSC01476.JPG",
+   "classe": "recuperee",
+   "octets": 2869896,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\France avec Mams\\DSC01510.JPG",
+   "classe": "tronquee",
+   "octets": 2838642,
+   "dims": [
+    3072,
+    2304
+   ]
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\France avec Mams\\DSC01511.JPG",
+   "classe": "recuperee",
+   "octets": 3131156,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\France avec Mams\\DSC01512.JPG",
+   "classe": "recuperee",
+   "octets": 3091491,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\France avec Mams\\DSC01513.JPG",
+   "classe": "recuperee",
+   "octets": 3142573,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\France avec Mams\\DSC01514.JPG",
+   "classe": "recuperee",
+   "octets": 3100279,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\France avec Mams\\DSC01515.JPG",
+   "classe": "recuperee",
+   "octets": 3009441,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\France avec Mams\\DSC01516.JPG",
+   "classe": "recuperee",
+   "octets": 3295898,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\France avec Mams\\DSC01517.JPG",
+   "classe": "recuperee",
+   "octets": 2351881,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\France avec Mams\\DSC01518.JPG",
+   "classe": "recuperee",
+   "octets": 2313437,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\France avec Mams\\DSC01519.JPG",
+   "classe": "recuperee",
+   "octets": 2601734,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\France avec Mams\\DSC01520.JPG",
+   "classe": "recuperee",
+   "octets": 2263891,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\France avec Mams\\DSC01521.JPG",
+   "classe": "recuperee",
+   "octets": 2832571,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\France avec Mams\\DSC01522.JPG",
+   "classe": "recuperee",
+   "octets": 2809528,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\France avec Mams\\DSC01523.JPG",
+   "classe": "recuperee",
+   "octets": 3034460,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\France avec Mams\\DSC01524.JPG",
+   "classe": "recuperee",
+   "octets": 3074669,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\France avec Mams\\DSC01525.JPG",
+   "classe": "recuperee",
+   "octets": 2495730,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\France avec Mams\\DSC01526.JPG",
+   "classe": "recuperee",
+   "octets": 2802375,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\France avec Mams\\DSC01527.JPG",
+   "classe": "recuperee",
+   "octets": 2919418,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\France avec Mams\\DSC01528.JPG",
+   "classe": "recuperee",
+   "octets": 3089152,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\France avec Mams\\DSC01529.JPG",
+   "classe": "recuperee",
+   "octets": 2996151,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\France avec Mams\\DSC01530.JPG",
+   "classe": "recuperee",
+   "octets": 3125861,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\France avec Mams\\DSC01531.JPG",
+   "classe": "recuperee",
+   "octets": 2958211,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\France avec Mams\\DSC01532.JPG",
+   "classe": "recuperee",
+   "octets": 3195222,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\France avec Mams\\DSC01533.JPG",
+   "classe": "recuperee",
+   "octets": 2854036,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\France avec Mams\\DSC01534.JPG",
+   "classe": "recuperee",
+   "octets": 2834592,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\France avec Mams\\DSC01535.JPG",
+   "classe": "recuperee",
+   "octets": 1720524,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\France avec Mams\\DSC01536.JPG",
+   "classe": "recuperee",
+   "octets": 2177181,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\France avec Mams\\DSC01537.JPG",
+   "classe": "recuperee",
+   "octets": 2127796,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\France avec Mams\\DSC01538.JPG",
+   "classe": "recuperee",
+   "octets": 2706052,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\France avec Mams\\DSC01539.JPG",
+   "classe": "recuperee",
+   "octets": 2253301,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\France avec Mams\\DSC01540.JPG",
+   "classe": "recuperee",
+   "octets": 3105473,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\JJ\\DSC01118.JPG",
+   "classe": "recuperee",
+   "octets": 3412954,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Mariage Mams & Silvio\\DSC01093.JPG",
+   "classe": "tronquee",
+   "octets": 2613173,
+   "dims": [
+    3072,
+    2304
+   ]
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Mariage Mams & Silvio\\DSC01094.JPG",
+   "classe": "recuperee",
+   "octets": 2792164,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Mariage Mams & Silvio\\DSC01095.JPG",
+   "classe": "recuperee",
+   "octets": 2839286,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Mariage Mams & Silvio\\DSC01096.JPG",
+   "classe": "recuperee",
+   "octets": 2742813,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Mariage Mams & Silvio\\DSC01097.JPG",
+   "classe": "recuperee",
+   "octets": 2719798,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Mariage Mams & Silvio\\DSC01098.JPG",
+   "classe": "recuperee",
+   "octets": 2884312,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Mariage Mams & Silvio\\DSC01099.JPG",
+   "classe": "recuperee",
+   "octets": 1947093,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Mariage Mams & Silvio\\DSC01100.JPG",
+   "classe": "recuperee",
+   "octets": 2530668,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Mariage Mams & Silvio\\DSC01101.JPG",
+   "classe": "recuperee",
+   "octets": 2456937,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Mariage Mams & Silvio\\DSC01102.JPG",
+   "classe": "recuperee",
+   "octets": 3087235,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Mariage Mams & Silvio\\DSC01103.JPG",
+   "classe": "recuperee",
+   "octets": 2653466,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Mariage Mams & Silvio\\DSC01104.JPG",
+   "classe": "recuperee",
+   "octets": 2834992,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Mariage Mams & Silvio\\DSC01105.JPG",
+   "classe": "recuperee",
+   "octets": 2743392,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Mariage Mams & Silvio\\DSC01106.JPG",
+   "classe": "recuperee",
+   "octets": 2508240,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Mariage Mams & Silvio\\DSC01107.JPG",
+   "classe": "recuperee",
+   "octets": 2447753,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Mariage Mams & Silvio\\DSC01108.JPG",
+   "classe": "recuperee",
+   "octets": 3029907,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Mariage Mams & Silvio\\DSC01109.JPG",
+   "classe": "recuperee",
+   "octets": 2581467,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Mariage Mams & Silvio\\DSC01110.JPG",
+   "classe": "recuperee",
+   "octets": 2544059,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Mariage Mams & Silvio\\DSC01111.JPG",
+   "classe": "recuperee",
+   "octets": 3118498,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Photos Nokia 2010\\201012\\201012A0\\13122010373.jpg",
+   "classe": "tronquee",
+   "octets": 575593,
+   "dims": [
+    2592,
+    1944
+   ]
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Photos Nokia 2010\\201012\\201012A0\\13122010374.jpg",
+   "classe": "recuperee",
+   "octets": 538590,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Photos Nokia 2010\\201012\\201012A0\\13122010375.jpg",
+   "classe": "recuperee",
+   "octets": 602431,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Photos Nokia 2010\\201012\\201012A0\\13122010376.jpg",
+   "classe": "recuperee",
+   "octets": 778152,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Photos Nokia 2010\\201012\\201012A0\\13122010377.jpg",
+   "classe": "recuperee",
+   "octets": 802919,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Photos Nokia 2010\\201012\\201012A0\\13122010378.jpg",
+   "classe": "recuperee",
+   "octets": 831297,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Photos Nokia 2010\\201012\\201012A0\\13122010379.jpg",
+   "classe": "recuperee",
+   "octets": 642016,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Photos Nokia 2010\\201012\\201012A0\\13122010380.jpg",
+   "classe": "recuperee",
+   "octets": 649874,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Photos Nokia 2010\\201012\\201012A0\\13122010381.jpg",
+   "classe": "recuperee",
+   "octets": 737284,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Photos Nokia 2010\\201012\\201012A0\\13122010382.jpg",
+   "classe": "recuperee",
+   "octets": 592863,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Photos Nokia 2010\\201012\\201012A0\\13122010383.jpg",
+   "classe": "recuperee",
+   "octets": 701188,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Photos Nokia 2010\\201012\\201012A0\\13122010384.jpg",
+   "classe": "recuperee",
+   "octets": 439792,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Photos Nokia 2010\\201012\\201012A0\\13122010385.jpg",
+   "classe": "recuperee",
+   "octets": 693671,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Photos Nokia 2010\\201012\\201012A0\\13122010386.jpg",
+   "classe": "recuperee",
+   "octets": 656179,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Photos Nokia 2010\\201012\\201012A0\\13122010387.jpg",
+   "classe": "recuperee",
+   "octets": 603552,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Photos Nokia 2010\\201012\\201012A0\\13122010388.jpg",
+   "classe": "recuperee",
+   "octets": 738081,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Photos Nokia 2010\\201012\\201012A0\\13122010389.jpg",
+   "classe": "recuperee",
+   "octets": 666469,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Photos Nokia 2010\\201012\\201012A0\\13122010390.jpg",
+   "classe": "recuperee",
+   "octets": 553229,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Photos Nokia 2010\\201012\\201012A0\\13122010391.jpg",
+   "classe": "recuperee",
+   "octets": 703794,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Photos Nokia 2010\\201012\\201012A0\\13122010392.jpg",
+   "classe": "recuperee",
+   "octets": 800221,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Photos Nokia 2010\\201012\\201012A0\\13122010393.jpg",
+   "classe": "recuperee",
+   "octets": 731272,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Photos Nokia 2010\\201012\\201012A0\\13122010394.jpg",
+   "classe": "recuperee",
+   "octets": 493330,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Photos Nokia 2010\\201012\\201012A0\\13122010395.jpg",
+   "classe": "recuperee",
+   "octets": 323212,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Photos Nokia 2010\\201012\\201012A0\\13122010396.jpg",
+   "classe": "recuperee",
+   "octets": 591395,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Photos Nokia 2010\\201012\\201012A0\\13122010397.jpg",
+   "classe": "recuperee",
+   "octets": 782545,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Photos Nokia 2010\\201012\\201012A0\\13122010398.jpg",
+   "classe": "recuperee",
+   "octets": 1636135,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Photos Nokia 2010\\201012\\201012A0\\13122010399.jpg",
+   "classe": "recuperee",
+   "octets": 1409666,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Photos Nokia 2010\\201012\\201012A0\\13122010400.jpg",
+   "classe": "recuperee",
+   "octets": 1106241,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Photos Nokia 2010\\201012\\201012A0\\13122010401.jpg",
+   "classe": "recuperee",
+   "octets": 1685296,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Photos Nokia 2010\\201012\\201012A0\\13122010402.jpg",
+   "classe": "recuperee",
+   "octets": 1374581,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Photos Nokia 2010\\201012\\201012A0\\13122010403.jpg",
+   "classe": "recuperee",
+   "octets": 1492256,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Photos Nokia 2010\\201012\\201012A0\\13122010404.jpg",
+   "classe": "recuperee",
+   "octets": 2269708,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Photos Nokia 2010\\201012\\201012A0\\13122010405.jpg",
+   "classe": "recuperee",
+   "octets": 767533,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Photos Nokia 2010\\201012\\201012A0\\13122010406.jpg",
+   "classe": "recuperee",
+   "octets": 773459,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Photos Nokia 2010\\201012\\201012A0\\14122010407.jpg",
+   "classe": "recuperee",
+   "octets": 577298,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Photos Nokia 2010\\201012\\201012A0\\14122010408.jpg",
+   "classe": "recuperee",
+   "octets": 575396,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Photos Nokia 2010\\201012\\201012A0\\14122010409.jpg",
+   "classe": "recuperee",
+   "octets": 749552,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Photos Nokia 2010\\201012\\201012A0\\14122010410.jpg",
+   "classe": "recuperee",
+   "octets": 387625,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Photos Nokia 2010\\201012\\201012A0\\14122010411.jpg",
+   "classe": "recuperee",
+   "octets": 424456,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Photos Nokia 2010\\201012\\201012A0\\14122010412.jpg",
+   "classe": "recuperee",
+   "octets": 346080,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Photos Nokia 2010\\201012\\201012A0\\16122010413.jpg",
+   "classe": "recuperee",
+   "octets": 631546,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Photos Nokia 2010\\201012\\201012A0\\16122010415.jpg",
+   "classe": "recuperee",
+   "octets": 699942,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Photos Nokia 2010\\201012\\201012A0\\16122010417.jpg",
+   "classe": "recuperee",
+   "octets": 666059,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Photos Nokia 2010\\201012\\201012A0\\18122010418.jpg",
+   "classe": "recuperee",
+   "octets": 309381,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Photos Nokia 2010\\201012\\201012A0\\19122010419.jpg",
+   "classe": "recuperee",
+   "octets": 425259,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Photos Nokia 2010\\201012\\201012A0\\19122010420.jpg",
+   "classe": "recuperee",
+   "octets": 425893,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Photos Nokia 2010\\201012\\201012A0\\21122010421.jpg",
+   "classe": "recuperee",
+   "octets": 811411,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Photos Nokia 2010\\201012\\201012A0\\21122010422.jpg",
+   "classe": "recuperee",
+   "octets": 576898,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Photos Nokia 2010\\201012\\201012A0\\21122010423.jpg",
+   "classe": "recuperee",
+   "octets": 474854,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Photos Nokia 2010\\201012\\201012A0\\21122010424.jpg",
+   "classe": "recuperee",
+   "octets": 333012,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Photos Nokia 2010\\201012\\201012A0\\21122010425.jpg",
+   "classe": "recuperee",
+   "octets": 350077,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Photos Nokia 2010\\201012\\201012A0\\21122010426.jpg",
+   "classe": "recuperee",
+   "octets": 473396,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Photos Nokia 2010\\201012\\201012A0\\21122010427.jpg",
+   "classe": "recuperee",
+   "octets": 678176,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Photos Nokia 2010\\201012\\201012A0\\21122010428.jpg",
+   "classe": "recuperee",
+   "octets": 390048,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Photos Nokia 2010\\201012\\201012A0\\21122010429.jpg",
+   "classe": "recuperee",
+   "octets": 583138,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Photos Nokia 2010\\201012\\201012A0\\21122010431.jpg",
+   "classe": "recuperee",
+   "octets": 456051,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Photos Nokia 2010\\201012\\201012A0\\21122010432.jpg",
+   "classe": "recuperee",
+   "octets": 403817,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Photos Nokia 2010\\201012\\201012A0\\21122010433.jpg",
+   "classe": "recuperee",
+   "octets": 450154,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Photos Nokia 2010\\201012\\201012A0\\22122010434.jpg",
+   "classe": "recuperee",
+   "octets": 376491,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Photos Nokia 2010\\201012\\201012A0\\22122010435.jpg",
+   "classe": "recuperee",
+   "octets": 419572,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Photos Nokia 2010\\201012\\201012A0\\22122010436.jpg",
+   "classe": "recuperee",
+   "octets": 595995,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Photos Nokia 2010\\201012\\201012A0\\23122010437.jpg",
+   "classe": "recuperee",
+   "octets": 380379,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Photos\\DSC00995.JPG",
+   "classe": "tronquee",
+   "octets": 3162527,
+   "dims": [
+    3072,
+    2304
+   ]
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Photos\\DSC00996.JPG",
+   "classe": "recuperee",
+   "octets": 2908123,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Photos\\DSC00997.JPG",
+   "classe": "recuperee",
+   "octets": 3219756,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Photos\\DSC00998.JPG",
+   "classe": "recuperee",
+   "octets": 2986012,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Photos\\DSC00999.JPG",
+   "classe": "recuperee",
+   "octets": 3149776,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Photos\\DSC01000.JPG",
+   "classe": "recuperee",
+   "octets": 3114659,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Photos\\DSC01001.JPG",
+   "classe": "recuperee",
+   "octets": 3064924,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Photos\\DSC01002.JPG",
+   "classe": "recuperee",
+   "octets": 3165108,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Photos\\DSC01003.JPG",
+   "classe": "recuperee",
+   "octets": 3237218,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Photos\\DSC01004.JPG",
+   "classe": "recuperee",
+   "octets": 2810983,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Photos\\DSC01005.JPG",
+   "classe": "recuperee",
+   "octets": 2826058,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Photos\\DSC01006.JPG",
+   "classe": "recuperee",
+   "octets": 3012217,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Photos\\DSC01007.JPG",
+   "classe": "recuperee",
+   "octets": 2935217,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Photos\\DSC01008.JPG",
+   "classe": "recuperee",
+   "octets": 3000348,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Photos\\DSC01009.JPG",
+   "classe": "recuperee",
+   "octets": 2919321,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Photos\\DSC01010.JPG",
+   "classe": "recuperee",
+   "octets": 2983177,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Photos\\DSC01011.JPG",
+   "classe": "recuperee",
+   "octets": 2698963,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Photos\\DSC01012.JPG",
+   "classe": "recuperee",
+   "octets": 2643040,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Photos\\DSC01013.JPG",
+   "classe": "recuperee",
+   "octets": 2518771,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Photos\\DSC01014.JPG",
+   "classe": "recuperee",
+   "octets": 2561318,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Photos\\DSC01015.JPG",
+   "classe": "recuperee",
+   "octets": 2694494,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Photos\\DSC01016.JPG",
+   "classe": "recuperee",
+   "octets": 2810972,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Photos\\DSC01017.JPG",
+   "classe": "recuperee",
+   "octets": 2768700,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Photos\\DSC01018.JPG",
+   "classe": "recuperee",
+   "octets": 2780394,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Photos\\DSC01019.JPG",
+   "classe": "recuperee",
+   "octets": 2532871,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Photos\\DSC01020.JPG",
+   "classe": "recuperee",
+   "octets": 2849652,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Photos\\DSC01021.JPG",
+   "classe": "recuperee",
+   "octets": 2941751,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Photos\\DSC01022.JPG",
+   "classe": "recuperee",
+   "octets": 2546661,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Photos\\DSC01023.JPG",
+   "classe": "recuperee",
+   "octets": 2955962,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Photos\\DSC01024.JPG",
+   "classe": "recuperee",
+   "octets": 2650611,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Photos\\DSC01025.JPG",
+   "classe": "recuperee",
+   "octets": 2720799,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Photos\\DSC01026.JPG",
+   "classe": "recuperee",
+   "octets": 2985014,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Photos\\DSC01027.JPG",
+   "classe": "recuperee",
+   "octets": 2651554,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Photos\\DSC01028.JPG",
+   "classe": "recuperee",
+   "octets": 3258445,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Sud de la France 2010\\DSC01315.JPG",
+   "classe": "tronquee",
+   "octets": 2596980,
+   "dims": [
+    2304,
+    3072
+   ]
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Sud de la France 2010\\DSC01316.JPG",
+   "classe": "recuperee",
+   "octets": 2614972,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Sud de la France 2010\\DSC01317.JPG",
+   "classe": "recuperee",
+   "octets": 2617937,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Sud de la France 2010\\DSC01318.JPG",
+   "classe": "recuperee",
+   "octets": 3349163,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Sud de la France 2010\\DSC01321.JPG",
+   "classe": "recuperee",
+   "octets": 3292665,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Sud de la France 2010\\DSC01322.JPG",
+   "classe": "recuperee",
+   "octets": 3266732,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Sud de la France 2010\\DSC01323.JPG",
+   "classe": "recuperee",
+   "octets": 3449205,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Sud de la France 2010\\DSC01324.JPG",
+   "classe": "recuperee",
+   "octets": 3131830,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Sud de la France 2010\\DSC01326.JPG",
+   "classe": "recuperee",
+   "octets": 3410406,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Sud de la France 2010\\DSC01327.JPG",
+   "classe": "recuperee",
+   "octets": 3180713,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Sud de la France 2010\\DSC01328.JPG",
+   "classe": "recuperee",
+   "octets": 3247360,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Sud de la France 2010\\DSC01330.JPG",
+   "classe": "recuperee",
+   "octets": 3289550,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Sud de la France 2010\\DSC01331.JPG",
+   "classe": "recuperee",
+   "octets": 2862804,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Sud de la France 2010\\DSC01332.JPG",
+   "classe": "recuperee",
+   "octets": 2591209,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Sud de la France 2010\\DSC01333.JPG",
+   "classe": "recuperee",
+   "octets": 2832252,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Sud de la France 2010\\DSC01336.JPG",
+   "classe": "recuperee",
+   "octets": 3073885,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Sud de la France 2010\\DSC01337.JPG",
+   "classe": "recuperee",
+   "octets": 3018685,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Sud de la France 2010\\DSC01338.JPG",
+   "classe": "recuperee",
+   "octets": 2660867,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Sud de la France 2010\\DSC01341.JPG",
+   "classe": "recuperee",
+   "octets": 2818284,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Sud de la France 2010\\DSC01342.JPG",
+   "classe": "recuperee",
+   "octets": 2755602,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Sud de la France 2010\\DSC01348.JPG",
+   "classe": "recuperee",
+   "octets": 3259539,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Sud de la France 2010\\DSC01349.JPG",
+   "classe": "recuperee",
+   "octets": 3221176,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Sud de la France 2010\\DSC01350.JPG",
+   "classe": "recuperee",
+   "octets": 3234086,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Sud de la France 2010\\DSC01351.JPG",
+   "classe": "recuperee",
+   "octets": 3293928,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Sud de la France 2010\\DSC01352.JPG",
+   "classe": "recuperee",
+   "octets": 2717650,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Sud de la France 2010\\DSC01353.JPG",
+   "classe": "recuperee",
+   "octets": 3185143,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Sud de la France 2010\\DSC01354.JPG",
+   "classe": "recuperee",
+   "octets": 2790295,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Sud de la France 2010\\DSC01355.JPG",
+   "classe": "recuperee",
+   "octets": 2779689,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Sud de la France 2010\\DSC01356.JPG",
+   "classe": "recuperee",
+   "octets": 2688741,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Sud de la France 2010\\DSC01357.JPG",
+   "classe": "recuperee",
+   "octets": 2967705,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Sud de la France 2010\\DSC01358.JPG",
+   "classe": "recuperee",
+   "octets": 3228290,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Sud de la France 2010\\DSC01359.JPG",
+   "classe": "recuperee",
+   "octets": 3378040,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2015\\02 Visite Lola\\20150214_162628.jpg",
+   "classe": "recuperee",
+   "octets": 4391804,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2015\\02 Visite Lola\\20150214_162657.jpg",
+   "classe": "recuperee",
+   "octets": 5630883,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2015\\02 Visite Lola\\20150214_162810.jpg",
+   "classe": "recuperee",
+   "octets": 3551690,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2015\\06 Ballade à vélo avec Floufline\\20150606_140119.jpg",
+   "classe": "recuperee",
+   "octets": 9315557,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2015\\06 Ballade à vélo avec Floufline\\20150606_140141.jpg",
+   "classe": "recuperee",
+   "octets": 4421399,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2015\\06 Ballade à vélo avec Floufline\\20150606_140205.jpg",
+   "classe": "recuperee",
+   "octets": 3854233,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2015\\06 Ballade à vélo avec Floufline\\20150606_140328.jpg",
+   "classe": "recuperee",
+   "octets": 4085945,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2015\\06 Ballade à vélo avec Floufline\\20150606_140442.jpg",
+   "classe": "recuperee",
+   "octets": 3672244,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2015\\06 Ballade à vélo avec Floufline\\20150606_140743.jpg",
+   "classe": "recuperee",
+   "octets": 8075170,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2015\\06 Ballade à vélo avec Floufline\\20150606_140744.jpg",
+   "classe": "recuperee",
+   "octets": 7988673,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2015\\06 Ballade à vélo avec Floufline\\20150606_140745.jpg",
+   "classe": "recuperee",
+   "octets": 7982161,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2015\\06 Ballade à vélo avec Floufline\\20150606_140845.jpg",
+   "classe": "recuperee",
+   "octets": 7299567,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2015\\06 Ballade à vélo avec Floufline\\20150606_140852.jpg",
+   "classe": "recuperee",
+   "octets": 5303326,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2015\\06 Ballade à vélo avec Floufline\\20150606_141237.jpg",
+   "classe": "recuperee",
+   "octets": 7194247,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2015\\06 Ballade à vélo avec Floufline\\20150606_141802.jpg",
+   "classe": "recuperee",
+   "octets": 4222266,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2015\\06 Ballade à vélo avec Floufline\\20150606_141804.jpg",
+   "classe": "recuperee",
+   "octets": 4341167,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2015\\06 Ballade à vélo avec Floufline\\20150606_141839.jpg",
+   "classe": "recuperee",
+   "octets": 3895210,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2015\\06 Ballade à vélo avec Floufline\\20150606_141840.jpg",
+   "classe": "recuperee",
+   "octets": 3868417,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2015\\06 Ballade à vélo avec Floufline\\20150606_141900.jpg",
+   "classe": "recuperee",
+   "octets": 4518699,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2015\\06 EVG Nounours\\EVG Nounours (1).jpg",
+   "classe": "recuperee",
+   "octets": 9421451,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2015\\06 EVG Nounours\\EVG Nounours (10).jpg",
+   "classe": "recuperee",
+   "octets": 4670829,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2015\\06 EVG Nounours\\EVG Nounours (100).jpg",
+   "classe": "recuperee",
+   "octets": 1816789,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2015\\06 EVG Nounours\\EVG Nounours (101).jpg",
+   "classe": "recuperee",
+   "octets": 1779086,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2015\\06 EVG Nounours\\EVG Nounours (102).jpg",
+   "classe": "recuperee",
+   "octets": 1870748,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2015\\06 EVG Nounours\\EVG Nounours (103).jpg",
+   "classe": "recuperee",
+   "octets": 1904953,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2015\\06 EVG Nounours\\EVG Nounours (104).JPG",
+   "classe": "recuperee",
+   "octets": 1456344,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2015\\06 EVG Nounours\\EVG Nounours (105).JPG",
+   "classe": "recuperee",
+   "octets": 1410125,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2015\\06 EVG Nounours\\EVG Nounours (106).jpg",
+   "classe": "recuperee",
+   "octets": 2089211,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2015\\06 EVG Nounours\\EVG Nounours (107).jpg",
+   "classe": "recuperee",
+   "octets": 1598432,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2015\\06 EVG Nounours\\EVG Nounours (108).jpg",
+   "classe": "recuperee",
+   "octets": 1574706,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2015\\06 EVG Nounours\\EVG Nounours (109).jpg",
+   "classe": "recuperee",
+   "octets": 1859166,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2015\\06 EVG Nounours\\EVG Nounours (11).JPG",
+   "classe": "recuperee",
+   "octets": 2327560,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2015\\06 EVG Nounours\\EVG Nounours (110).jpg",
+   "classe": "recuperee",
+   "octets": 1755540,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2015\\06 EVG Nounours\\EVG Nounours (111).jpg",
+   "classe": "recuperee",
+   "octets": 1776481,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2015\\06 EVG Nounours\\EVG Nounours (112).jpg",
+   "classe": "recuperee",
+   "octets": 1758767,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2015\\06 EVG Nounours\\EVG Nounours (113).jpg",
+   "classe": "recuperee",
+   "octets": 1742601,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2015\\06 EVG Nounours\\EVG Nounours (114).jpg",
+   "classe": "recuperee",
+   "octets": 1847151,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2015\\06 EVG Nounours\\EVG Nounours (115).jpg",
+   "classe": "recuperee",
+   "octets": 2375615,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2015\\06 EVG Nounours\\EVG Nounours (116).jpg",
+   "classe": "recuperee",
+   "octets": 2550376,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2015\\06 EVJF Danica\\20150627_121631.jpg",
+   "classe": "tronquee",
+   "octets": 4432494,
+   "dims": [
+    5312,
+    2988
+   ]
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2015\\06 EVJF Danica\\20150627_121632.jpg",
+   "classe": "recuperee",
+   "octets": 4698232,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2015\\06 EVJF Danica\\20150627_122031.jpg",
+   "classe": "recuperee",
+   "octets": 6624715,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2015\\06 EVJF Danica\\20150627_122034.jpg",
+   "classe": "recuperee",
+   "octets": 7489043,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2015\\06 EVJF Danica\\20150627_122043.jpg",
+   "classe": "recuperee",
+   "octets": 6250558,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2015\\06 EVJF Danica\\20150627_122045.jpg",
+   "classe": "recuperee",
+   "octets": 6750359,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2015\\06 EVJF Danica\\20150627_122051.jpg",
+   "classe": "recuperee",
+   "octets": 6835553,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2015\\06 EVJF Danica\\20150627_122137.jpg",
+   "classe": "recuperee",
+   "octets": 6368587,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2015\\06 EVJF Danica\\20150627_122139.jpg",
+   "classe": "recuperee",
+   "octets": 6595244,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2015\\06 EVJF Danica\\20150627_122140.jpg",
+   "classe": "recuperee",
+   "octets": 6387228,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2015\\06 EVJF Danica\\20150627_122823.jpg",
+   "classe": "recuperee",
+   "octets": 4902237,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2015\\06 EVJF Danica\\20150627_122828.jpg",
+   "classe": "recuperee",
+   "octets": 4785419,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2015\\06 EVJF Danica\\20150627_122906.jpg",
+   "classe": "recuperee",
+   "octets": 5783141,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2015\\06 EVJF Danica\\20150627_122917.jpg",
+   "classe": "recuperee",
+   "octets": 5931705,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2015\\06 EVJF Danica\\20150627_122931.jpg",
+   "classe": "recuperee",
+   "octets": 4132785,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2015\\06 EVJF Danica\\20150627_140135.jpg",
+   "classe": "recuperee",
+   "octets": 6731117,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2015\\06 EVJF Danica\\20150627_140137.jpg",
+   "classe": "recuperee",
+   "octets": 8121895,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2015\\07 Bolivie 2015 MicFlo\\20150727_134509.jpg",
+   "classe": "tronquee",
+   "octets": 5613653,
+   "dims": [
+    5312,
+    2988
+   ]
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2015\\07 Bolivie 2015 MicFlo\\20150727_135158.jpg",
+   "classe": "recuperee",
+   "octets": 9950474,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2015\\07 Bolivie 2015 MicFlo\\20150727_154819.jpg",
+   "classe": "recuperee",
+   "octets": 5666418,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2015\\07 Bolivie 2015 MicFlo\\20150727_154827.jpg",
+   "classe": "recuperee",
+   "octets": 6661133,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2015\\07 Bolivie 2015 MicFlo\\20150727_164839.jpg",
+   "classe": "recuperee",
+   "octets": 3616342,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2015\\07 Bolivie 2015 MicFlo\\20150727_165427.jpg",
+   "classe": "recuperee",
+   "octets": 2921117,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2015\\07 Bolivie 2015 MicFlo\\20150727_183131.jpg",
+   "classe": "recuperee",
+   "octets": 4251974,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2015\\07 Bolivie 2015 MicFlo\\20150727_194117.jpg",
+   "classe": "recuperee",
+   "octets": 3855580,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2015\\07 Bolivie 2015 MicFlo\\20150727_194255.jpg",
+   "classe": "recuperee",
+   "octets": 4982642,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2015\\07 Bolivie 2015 MicFlo\\20150727_194444.jpg",
+   "classe": "recuperee",
+   "octets": 3217889,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2015\\07 Bolivie 2015 MicFlo\\20150728_100951.jpg",
+   "classe": "recuperee",
+   "octets": 5160175,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2015\\07 Bolivie 2015 MicFlo\\20150728_111041.jpg",
+   "classe": "recuperee",
+   "octets": 3652243,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2015\\07 Bolivie 2015 MicFlo\\20150728_111849.jpg",
+   "classe": "recuperee",
+   "octets": 261294,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2015\\07 Bolivie 2015 MicFlo\\20150728_112436.jpg",
+   "classe": "recuperee",
+   "octets": 3808249,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2015\\07 Bolivie 2015 MicFlo\\20150728_112908.jpg",
+   "classe": "recuperee",
+   "octets": 3826884,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2015\\07 Bolivie 2015 MicFlo\\20150728_112914.jpg",
+   "classe": "recuperee",
+   "octets": 4178025,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2015\\07 Bolivie 2015 MicFlo\\20150728_112919.jpg",
+   "classe": "recuperee",
+   "octets": 3848402,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2015\\07 Bolivie 2015 MicFlo\\20150728_112949.jpg",
+   "classe": "recuperee",
+   "octets": 4294732,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2015\\07 Bolivie 2015 MicFlo\\20150728_113923.jpg",
+   "classe": "recuperee",
+   "octets": 4433840,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2015\\07 Bolivie 2015 MicFlo\\20150728_114343.jpg",
+   "classe": "recuperee",
+   "octets": 3638779,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2015\\07 Bolivie 2015 MicFlo\\20150728_114604.jpg",
+   "classe": "recuperee",
+   "octets": 3242459,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2015\\07 Bolivie 2015 MicFlo\\20150728_115230.jpg",
+   "classe": "recuperee",
+   "octets": 4163297,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2015\\07 Bolivie 2015 MicFlo\\20150728_115235.jpg",
+   "classe": "recuperee",
+   "octets": 4354355,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2015\\07 Bolivie 2015 MicFlo\\20150804_105833.jpg",
+   "classe": "tronquee",
+   "octets": 4776637,
+   "dims": [
+    5312,
+    2988
+   ]
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2015\\07 Bolivie 2015 MicFlo\\20150804_113628.jpg",
+   "classe": "recuperee",
+   "octets": 5361960,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2015\\07 Bolivie 2015 MicFlo\\20150804_125354.jpg",
+   "classe": "recuperee",
+   "octets": 5202162,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2015\\07 Bolivie 2015 MicFlo\\20150804_131703.jpg",
+   "classe": "recuperee",
+   "octets": 7467182,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2015\\07 Bolivie 2015 MicFlo\\20150804_131710.jpg",
+   "classe": "recuperee",
+   "octets": 7537386,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2015\\07 Bolivie 2015 MicFlo\\20150804_132146.jpg",
+   "classe": "recuperee",
+   "octets": 4818676,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2015\\07 Bolivie 2015 MicFlo\\20150804_133009.jpg",
+   "classe": "recuperee",
+   "octets": 5575562,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2015\\07 Mariage DaniNours\\20150718_184615.jpg",
+   "classe": "recuperee",
+   "octets": 7061944,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2015\\08 EVG Charles\\20150815_133506.jpg",
+   "classe": "recuperee",
+   "octets": 3789405,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2015\\11 Le bain de Pticon\\20151121_222552.jpg",
+   "classe": "recuperee",
+   "octets": 3705039,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2015\\11 Le bain de Pticon\\20151121_222554.jpg",
+   "classe": "recuperee",
+   "octets": 4244534,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2015\\11 Le bain de Pticon\\20151121_222624.jpg",
+   "classe": "recuperee",
+   "octets": 4086558,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2015\\_Divers\\20150509_165420.jpg",
+   "classe": "tronquee",
+   "octets": 4148099,
+   "dims": [
+    5312,
+    2988
+   ]
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2015\\_Divers\\20150513_082055.jpg",
+   "classe": "recuperee",
+   "octets": 8242625,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2015\\_Divers\\20150518_174559.jpg",
+   "classe": "recuperee",
+   "octets": 9308146,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2015\\_Divers\\20150521_183947.jpg",
+   "classe": "recuperee",
+   "octets": 4048656,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2015\\_Divers\\20150523_214519.jpg",
+   "classe": "recuperee",
+   "octets": 3878916,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2015\\_Divers\\20150529_183817.jpg",
+   "classe": "recuperee",
+   "octets": 3976686,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2015\\_Divers\\20150531_185043.jpg",
+   "classe": "recuperee",
+   "octets": 7404642,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2015\\_Divers\\20150531_185054.jpg",
+   "classe": "recuperee",
+   "octets": 6769035,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2016\\04 Les grottes de Vallorbe\\20160402_163540.jpg",
+   "classe": "tronquee",
+   "octets": 4800090,
+   "dims": [
+    5312,
+    2988
+   ]
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2016\\04 Les grottes de Vallorbe\\20160402_163554.jpg",
+   "classe": "recuperee",
+   "octets": 4833438,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2016\\04 Les grottes de Vallorbe\\20160402_163558.jpg",
+   "classe": "recuperee",
+   "octets": 4944101,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2016\\04 Les grottes de Vallorbe\\20160402_163601.jpg",
+   "classe": "recuperee",
+   "octets": 4339989,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2016\\04 Les grottes de Vallorbe\\20160402_172015.jpg",
+   "classe": "recuperee",
+   "octets": 6943194,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2016\\06 RBI Record du monde\\20160514_160007.jpg",
+   "classe": "recuperee",
+   "octets": 5095195,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2016\\06 RBI Record du monde\\20160514_160008.jpg",
+   "classe": "recuperee",
+   "octets": 5197005,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2016\\06 RBI Record du monde\\20160514_160009.jpg",
+   "classe": "recuperee",
+   "octets": 5272343,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2016\\06 RBI Record du monde\\20160514_160446.jpg",
+   "classe": "recuperee",
+   "octets": 4446415,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2016\\06 RBI Record du monde\\20160514_160447.jpg",
+   "classe": "recuperee",
+   "octets": 4592051,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2016\\06 RBI Record du monde\\20160514_160450.jpg",
+   "classe": "recuperee",
+   "octets": 5483987,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2016\\06 RBI Record du monde\\20160514_160451.jpg",
+   "classe": "recuperee",
+   "octets": 5267832,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2016\\07 Voyage en Indonésie\\Voyage Indonésie (178).jpg",
+   "classe": "tronquee",
+   "octets": 3771571,
+   "dims": [
+    5312,
+    2988
+   ]
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2016\\07 Voyage en Indonésie\\Voyage Indonésie (179).jpg",
+   "classe": "recuperee",
+   "octets": 4196570,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2016\\07 Voyage en Indonésie\\Voyage Indonésie (18).jpg",
+   "classe": "recuperee",
+   "octets": 604752,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2016\\07 Voyage en Indonésie\\Voyage Indonésie (180).jpg",
+   "classe": "recuperee",
+   "octets": 4926032,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2016\\07 Voyage en Indonésie\\Voyage Indonésie (271).jpg",
+   "classe": "tronquee",
+   "octets": 5192357,
+   "dims": [
+    5312,
+    2988
+   ]
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2016\\07 Voyage en Indonésie\\Voyage Indonésie (272).jpg",
+   "classe": "recuperee",
+   "octets": 9952231,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2016\\07 Voyage en Indonésie\\Voyage Indonésie (273).jpg",
+   "classe": "recuperee",
+   "octets": 5999048,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2016\\07 Voyage en Indonésie\\Voyage Indonésie (274).jpg",
+   "classe": "recuperee",
+   "octets": 9572140,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2016\\07 Voyage en Indonésie\\Voyage Indonésie (275).jpg",
+   "classe": "recuperee",
+   "octets": 9046311,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2016\\07 Voyage en Indonésie\\Voyage Indonésie (276).jpg",
+   "classe": "recuperee",
+   "octets": 4289072,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2016\\07 Voyage en Indonésie\\Voyage Indonésie (277).jpg",
+   "classe": "recuperee",
+   "octets": 2729316,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2016\\07 Voyage en Indonésie\\Voyage Indonésie (278).jpg",
+   "classe": "recuperee",
+   "octets": 2297294,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2016\\07 Voyage en Indonésie\\Voyage Indonésie (279).jpg",
+   "classe": "recuperee",
+   "octets": 5168099,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2016\\07 Voyage en Indonésie\\Voyage Indonésie (28).jpg",
+   "classe": "recuperee",
+   "octets": 5459541,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2016\\07 Voyage en Indonésie\\Voyage Indonésie (280).jpg",
+   "classe": "recuperee",
+   "octets": 4081422,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2016\\07 Voyage en Indonésie\\Voyage Indonésie (281).jpg",
+   "classe": "recuperee",
+   "octets": 4352978,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2016\\07 Voyage en Indonésie\\Voyage Indonésie (282).jpg",
+   "classe": "recuperee",
+   "octets": 3692589,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2016\\07 Voyage en Indonésie\\Voyage Indonésie (283).jpg",
+   "classe": "recuperee",
+   "octets": 4222835,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2016\\07 Voyage en Indonésie\\Voyage Indonésie (379).jpg",
+   "classe": "tronquee",
+   "octets": 7951314,
+   "dims": [
+    5312,
+    2988
+   ]
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2016\\07 Voyage en Indonésie\\Voyage Indonésie (38).jpg",
+   "classe": "recuperee",
+   "octets": 4667216,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2016\\07 Voyage en Indonésie\\Voyage Indonésie (380).jpg",
+   "classe": "recuperee",
+   "octets": 8436922,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2016\\07 Voyage en Indonésie\\Voyage Indonésie (381).jpg",
+   "classe": "recuperee",
+   "octets": 4862886,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2016\\07 Voyage en Indonésie\\Voyage Indonésie (382).jpg",
+   "classe": "recuperee",
+   "octets": 7051285,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2016\\07 Voyage en Indonésie\\Voyage Indonésie (383).jpg",
+   "classe": "recuperee",
+   "octets": 7000093,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2016\\07 Voyage en Indonésie\\Voyage Indonésie (384).jpg",
+   "classe": "recuperee",
+   "octets": 8310550,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2016\\07 Voyage en Indonésie\\Voyage Indonésie (385).jpg",
+   "classe": "recuperee",
+   "octets": 5755033,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2016\\07 Voyage en Indonésie\\Voyage Indonésie (386).jpg",
+   "classe": "recuperee",
+   "octets": 7707509,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2016\\07 Voyage en Indonésie\\Voyage Indonésie (387).jpg",
+   "classe": "recuperee",
+   "octets": 7664948,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2016\\07 Voyage en Indonésie\\Voyage Indonésie (388).jpg",
+   "classe": "recuperee",
+   "octets": 6855106,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2016\\07 Voyage en Indonésie\\Voyage Indonésie (389).jpg",
+   "classe": "recuperee",
+   "octets": 6607306,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2016\\07 Voyage en Indonésie\\Voyage Indonésie (39).jpg",
+   "classe": "recuperee",
+   "octets": 3976325,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2016\\07 Voyage en Indonésie\\Voyage Indonésie (390).jpg",
+   "classe": "recuperee",
+   "octets": 6606909,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2016\\07 Voyage en Indonésie\\Voyage Indonésie (391).jpg",
+   "classe": "recuperee",
+   "octets": 4156541,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2016\\07 Voyage en Indonésie\\Voyage Indonésie (392).jpg",
+   "classe": "recuperee",
+   "octets": 4102787,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2016\\07 Voyage en Indonésie\\Voyage Indonésie (393).jpg",
+   "classe": "recuperee",
+   "octets": 3701478,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2016\\09 Pirates sur la Galère\\20160910_152719.jpg",
+   "classe": "tronquee",
+   "octets": 5427078,
+   "dims": [
+    5312,
+    2988
+   ]
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2016\\09 Pirates sur la Galère\\20160910_152720.jpg",
+   "classe": "recuperee",
+   "octets": 5373782,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2016\\12 La Vrac\\20161230_142943.jpg",
+   "classe": "recuperee",
+   "octets": 9503576,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2016\\12 La Vrac\\20161230_142944.jpg",
+   "classe": "recuperee",
+   "octets": 9689451,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2016\\12 La Vrac\\20161230_143004.jpg",
+   "classe": "recuperee",
+   "octets": 10369152,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2016\\12 La Vrac\\20161230_143005.jpg",
+   "classe": "recuperee",
+   "octets": 10331635,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2016\\12 La Vrac\\20161230_143029.jpg",
+   "classe": "recuperee",
+   "octets": 9649865,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2016\\12 La Vrac\\20161230_143116.jpg",
+   "classe": "recuperee",
+   "octets": 9727069,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2016\\12 La Vrac\\20161230_143121.jpg",
+   "classe": "recuperee",
+   "octets": 10206486,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2016\\12 La Vrac\\20161230_143122.jpg",
+   "classe": "recuperee",
+   "octets": 9999850,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2016\\12 La Vrac\\20161230_143127.jpg",
+   "classe": "recuperee",
+   "octets": 10009059,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2016\\12 La Vrac\\20161230_143129.jpg",
+   "classe": "recuperee",
+   "octets": 9879025,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2016\\12 Noel\\20161224_211958.jpg",
+   "classe": "tronquee",
+   "octets": 4346983,
+   "dims": [
+    4032,
+    3024
+   ]
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2016\\12 Noel\\20161224_212000.jpg",
+   "classe": "recuperee",
+   "octets": 4422141,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2016\\12 Noel\\20161224_212003.jpg",
+   "classe": "recuperee",
+   "octets": 4414214,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2016\\12 Noel\\20161224_212010.jpg",
+   "classe": "recuperee",
+   "octets": 4521771,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2016\\12 Noel\\20161224_214718.jpg",
+   "classe": "recuperee",
+   "octets": 4676455,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2016\\12 Noel\\20161224_214725.jpg",
+   "classe": "recuperee",
+   "octets": 4328606,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2016\\12 Noel\\20161224_214727.jpg",
+   "classe": "recuperee",
+   "octets": 3367015,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2016\\12 Noel\\20161224_214731.jpg",
+   "classe": "recuperee",
+   "octets": 4552163,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2016\\12 Noel\\20161224_214928.jpg",
+   "classe": "recuperee",
+   "octets": 5910819,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2016\\12 Noel\\20161224_215041.jpg",
+   "classe": "recuperee",
+   "octets": 4154452,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2016\\12 Noel\\20161224_215047.jpg",
+   "classe": "recuperee",
+   "octets": 5111844,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2016\\12 Noel\\20161224_215107.jpg",
+   "classe": "recuperee",
+   "octets": 5104387,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2016\\12 Noel\\20161224_232450.jpg",
+   "classe": "recuperee",
+   "octets": 3177211,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2016\\12 Noel\\20161224_232456.jpg",
+   "classe": "recuperee",
+   "octets": 4494991,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2016\\12 Noel\\20161225_182228.jpg",
+   "classe": "recuperee",
+   "octets": 4791096,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2016\\12 Noel\\20161225_182234.jpg",
+   "classe": "recuperee",
+   "octets": 4396972,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2016\\12 Noel\\20161225_182238.jpg",
+   "classe": "recuperee",
+   "octets": 4653118,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2016\\12 Noel\\20161225_183345.jpg",
+   "classe": "recuperee",
+   "octets": 3597026,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2016\\12 Noel\\20161225_183346.jpg",
+   "classe": "recuperee",
+   "octets": 4355969,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2017\\05 Mai\\MGM Menerga\\20170523_212337.jpg",
+   "classe": "tronquee",
+   "octets": 4574677,
+   "dims": [
+    4032,
+    3024
+   ]
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2017\\05 Mai\\MGM Menerga\\20170523_212343.jpg",
+   "classe": "recuperee",
+   "octets": 3558371,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2017\\05 Mai\\MGM Menerga\\20170523_212351.jpg",
+   "classe": "recuperee",
+   "octets": 3182289,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2017\\05 Mai\\Weekend Vallée d'Aoste\\20170520_141845.jpg",
+   "classe": "tronquee",
+   "octets": 5872738,
+   "dims": [
+    4032,
+    3024
+   ]
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2017\\05 Mai\\Weekend Vallée d'Aoste\\20170520_143452.jpg",
+   "classe": "recuperee",
+   "octets": 2414910,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2017\\05 Mai\\Weekend Vallée d'Aoste\\20170520_143454.jpg",
+   "classe": "recuperee",
+   "octets": 2310451,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2017\\05 Mai\\Weekend Vallée d'Aoste\\20170520_143457.jpg",
+   "classe": "recuperee",
+   "octets": 2417692,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2017\\05 Mai\\Weekend Vallée d'Aoste\\20170520_143529.jpg",
+   "classe": "recuperee",
+   "octets": 4242533,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2017\\05 Mai\\Weekend Vallée d'Aoste\\20170520_143532.jpg",
+   "classe": "recuperee",
+   "octets": 3918066,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2017\\05 Mai\\Weekend Vallée d'Aoste\\20170520_143535.jpg",
+   "classe": "recuperee",
+   "octets": 4160123,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2017\\05 Mai\\Weekend Vallée d'Aoste\\20170520_143540.jpg",
+   "classe": "recuperee",
+   "octets": 2409880,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2017\\07 Juillet\\Danemark\\20170725_155032_003.jpg",
+   "classe": "tronquee",
+   "octets": 3794397,
+   "dims": [
+    4032,
+    3024
+   ]
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2017\\07 Juillet\\Danemark\\20170725_181223(0).jpg",
+   "classe": "recuperee",
+   "octets": 4684119,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2017\\07 Juillet\\Danemark\\20170725_181223.jpg",
+   "classe": "recuperee",
+   "octets": 4713600,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2017\\07 Juillet\\Danemark\\20170725_181225.jpg",
+   "classe": "recuperee",
+   "octets": 4020545,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2017\\07 Juillet\\Danemark\\20170725_204247.jpg",
+   "classe": "recuperee",
+   "octets": 3645212,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2017\\07 Juillet\\Danemark\\20170725_204253.jpg",
+   "classe": "recuperee",
+   "octets": 1868814,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2017\\07 Juillet\\Danemark\\20170725_204255.jpg",
+   "classe": "recuperee",
+   "octets": 1837030,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2017\\07 Juillet\\Danemark\\20170725_210622.jpg",
+   "classe": "recuperee",
+   "octets": 3931424,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2017\\07 Juillet\\Danemark\\20170725_210624.jpg",
+   "classe": "recuperee",
+   "octets": 3794156,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2017\\07 Juillet\\Danemark\\20170725_210712.jpg",
+   "classe": "recuperee",
+   "octets": 3473179,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2017\\07 Juillet\\Danemark\\20170725_210714.jpg",
+   "classe": "recuperee",
+   "octets": 3509103,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2017\\07 Juillet\\Danemark\\20170725_211148.jpg",
+   "classe": "recuperee",
+   "octets": 4047055,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2017\\07 Juillet\\Danemark\\20170725_212308.jpg",
+   "classe": "recuperee",
+   "octets": 4668953,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2017\\07 Juillet\\Danemark\\20170725_212312.jpg",
+   "classe": "recuperee",
+   "octets": 4894063,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2017\\07 Juillet\\Danemark\\20170725_212313.jpg",
+   "classe": "recuperee",
+   "octets": 4766174,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2017\\07 Juillet\\Danemark\\20170725_212315.jpg",
+   "classe": "recuperee",
+   "octets": 4858819,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2017\\07 Juillet\\Danemark\\20170725_212533.jpg",
+   "classe": "recuperee",
+   "octets": 4703842,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2017\\07 Juillet\\Danemark\\20170725_212535.jpg",
+   "classe": "recuperee",
+   "octets": 4069020,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2017\\07 Juillet\\Danemark\\20170725_212537.jpg",
+   "classe": "recuperee",
+   "octets": 4594407,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2017\\07 Juillet\\Danemark\\20170725_212539.jpg",
+   "classe": "recuperee",
+   "octets": 4729871,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2017\\07 Juillet\\Danemark\\20170725_222754.jpg",
+   "classe": "recuperee",
+   "octets": 3862503,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2017\\07 Juillet\\Danemark\\20170728_122424.jpg",
+   "classe": "tronquee",
+   "octets": 4655078,
+   "dims": [
+    4032,
+    3024
+   ]
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2017\\07 Juillet\\Danemark\\20170728_122426.jpg",
+   "classe": "recuperee",
+   "octets": 4822337,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2017\\07 Juillet\\Danemark\\20170728_131613.jpg",
+   "classe": "recuperee",
+   "octets": 3464701,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2017\\07 Juillet\\Danemark\\20170728_133245.jpg",
+   "classe": "recuperee",
+   "octets": 3736787,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2017\\07 Juillet\\Danemark\\20170730_195208.jpg",
+   "classe": "tronquee",
+   "octets": 4091515,
+   "dims": [
+    4032,
+    3024
+   ]
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2017\\07 Juillet\\Danemark\\20170730_195214.jpg",
+   "classe": "recuperee",
+   "octets": 5999609,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2017\\07 Juillet\\Danemark\\20170730_200057.jpg",
+   "classe": "recuperee",
+   "octets": 3977048,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2017\\07 Juillet\\Danemark\\20170730_200100.jpg",
+   "classe": "recuperee",
+   "octets": 4485649,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2017\\07 Juillet\\Danemark\\20170730_200102.jpg",
+   "classe": "recuperee",
+   "octets": 4534955,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2017\\07 Juillet\\Danemark\\20170730_200104.jpg",
+   "classe": "recuperee",
+   "octets": 4579291,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2017\\07 Juillet\\Danemark\\20170730_202416.jpg",
+   "classe": "recuperee",
+   "octets": 3990014,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2017\\07 Juillet\\Danemark\\20170730_202419.jpg",
+   "classe": "recuperee",
+   "octets": 4163623,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2017\\07 Juillet\\Danemark\\20170730_202422.jpg",
+   "classe": "recuperee",
+   "octets": 4214434,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2017\\07 Juillet\\Danemark\\20170730_202523_001.jpg",
+   "classe": "recuperee",
+   "octets": 4990828,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2017\\07 Juillet\\Danemark\\20170730_202536.jpg",
+   "classe": "recuperee",
+   "octets": 6849811,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2017\\07 Juillet\\Danemark\\20170730_211437.jpg",
+   "classe": "recuperee",
+   "octets": 4016372,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2017\\08 Août\\Ballade autour de Morges\\20170802_185946.jpg",
+   "classe": "recuperee",
+   "octets": 8055977,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2017\\08 Août\\Ballade autour de Morges\\20170802_185949.jpg",
+   "classe": "recuperee",
+   "octets": 8183007,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2017\\08 Août\\Ballade autour de Morges\\20170802_190723.jpg",
+   "classe": "recuperee",
+   "octets": 4771910,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2017\\08 Août\\Ballade autour de Morges\\20170802_191654.jpg",
+   "classe": "recuperee",
+   "octets": 5091500,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2017\\08 Août\\Ballade autour de Morges\\20170802_191657.jpg",
+   "classe": "recuperee",
+   "octets": 5079236,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2017\\08 Août\\Ballade autour de Morges\\20170802_191700.jpg",
+   "classe": "recuperee",
+   "octets": 5136027,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2017\\08 Août\\Ballade autour de Morges\\20170802_191704.jpg",
+   "classe": "recuperee",
+   "octets": 5743815,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2017\\08 Août\\Ballade autour de Morges\\20170802_191712.jpg",
+   "classe": "recuperee",
+   "octets": 5517648,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2017\\08 Août\\Ballade autour de Morges\\20170802_192550.jpg",
+   "classe": "recuperee",
+   "octets": 4560328,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2017\\08 Août\\Ballade autour de Morges\\20170802_192553.jpg",
+   "classe": "recuperee",
+   "octets": 3989346,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2017\\08 Août\\Ballade autour de Morges\\20170802_192749.jpg",
+   "classe": "recuperee",
+   "octets": 4967644,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2017\\08 Août\\Ballade autour de Morges\\20170804_114059.jpg",
+   "classe": "recuperee",
+   "octets": 7406411,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2017\\08 Août\\Ballade autour de Morges\\20170804_114100.jpg",
+   "classe": "recuperee",
+   "octets": 7426203,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2017\\08 Août\\Ballade autour de Morges\\20170804_114111.jpg",
+   "classe": "recuperee",
+   "octets": 3507413,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2017\\08 Août\\Ballade autour de Morges\\20170804_114113.jpg",
+   "classe": "recuperee",
+   "octets": 3546265,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2017\\08 Août\\Ballade autour de Morges\\20170804_114117.jpg",
+   "classe": "recuperee",
+   "octets": 3693730,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2017\\08 Août\\Surprise Mams à Cernievillers\\20170805_132609.jpg",
+   "classe": "recuperee",
+   "octets": 7080062,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2017\\08 Août\\Surprise Mams à Cernievillers\\20170805_132610.jpg",
+   "classe": "recuperee",
+   "octets": 7107802,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2017\\08 Août\\Surprise Mams à Cernievillers\\20170805_132820.jpg",
+   "classe": "recuperee",
+   "octets": 9199491,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2017\\08 Août\\Surprise Mams à Cernievillers\\20170805_132827.jpg",
+   "classe": "recuperee",
+   "octets": 8831519,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2017\\08 Août\\Surprise Mams à Cernievillers\\20170805_133308.jpg",
+   "classe": "recuperee",
+   "octets": 7184483,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2017\\08 Août\\Surprise Mams à Cernievillers\\20170805_133335.jpg",
+   "classe": "recuperee",
+   "octets": 8553578,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2017\\08 Août\\Surprise Mams à Cernievillers\\20170805_134548.jpg",
+   "classe": "recuperee",
+   "octets": 6656666,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2017\\10 Octobre\\Balabagui\\20171008_184357.jpg",
+   "classe": "recuperee",
+   "octets": 2487430,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2017\\10 Octobre\\Balabagui\\20171008_184402.jpg",
+   "classe": "recuperee",
+   "octets": 2768978,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2017\\11 Novembre\\Visite de la caserne de Thierry\\20171112_173938.jpg",
+   "classe": "recuperee",
+   "octets": 3714767,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2017\\11 Novembre\\Visite de la caserne de Thierry\\20171112_174543.jpg",
+   "classe": "recuperee",
+   "octets": 3421574,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2017\\11 Novembre\\Visite de la caserne de Thierry\\20171112_174714.jpg",
+   "classe": "recuperee",
+   "octets": 4531718,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2017\\12 Décembre\\Noel chez Mams\\20171224_162754.jpg",
+   "classe": "recuperee",
+   "octets": 4894418,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2017\\12 Décembre\\Noel chez Mams\\20171224_163005.jpg",
+   "classe": "recuperee",
+   "octets": 3505731,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2017\\12 Décembre\\Noel chez Mams\\20171224_163008.jpg",
+   "classe": "recuperee",
+   "octets": 4176625,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2017\\12 Décembre\\Noel chez Mams\\20171224_163010.jpg",
+   "classe": "recuperee",
+   "octets": 4257562,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2017\\12 Décembre\\Noel chez Mams\\20171224_163443.jpg",
+   "classe": "recuperee",
+   "octets": 3643073,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2017\\12 Décembre\\Noel chez Mams\\20171224_170004.jpg",
+   "classe": "recuperee",
+   "octets": 3666421,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2017\\12 Décembre\\Noel chez Mams\\20171224_170011.jpg",
+   "classe": "recuperee",
+   "octets": 4846736,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2017\\12 Décembre\\Noel chez Mams\\20171224_170120.jpg",
+   "classe": "recuperee",
+   "octets": 3673271,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2017\\12 Décembre\\Noel chez Mams\\20171224_170121.jpg",
+   "classe": "recuperee",
+   "octets": 4723111,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2017\\12 Décembre\\Noel chez Mams\\20171224_170123.jpg",
+   "classe": "recuperee",
+   "octets": 4729546,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2017\\12 Décembre\\Noel chez Mams\\20171224_170925.jpg",
+   "classe": "recuperee",
+   "octets": 4318080,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2017\\12 Décembre\\Noel chez Mams\\20171224_170938.jpg",
+   "classe": "recuperee",
+   "octets": 4571798,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2017\\12 Décembre\\Noel chez Mams\\20171224_182747.jpg",
+   "classe": "recuperee",
+   "octets": 3784824,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\01 Janvier\\20180126_143008(0).jpg",
+   "classe": "tronquee",
+   "octets": 4499537,
+   "dims": [
+    4032,
+    3024
+   ]
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\01 Janvier\\20180126_143008.jpg",
+   "classe": "recuperee",
+   "octets": 3720423,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\01 Janvier\\20180126_143010.jpg",
+   "classe": "recuperee",
+   "octets": 4844895,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\01 Janvier\\20180126_143015.jpg",
+   "classe": "recuperee",
+   "octets": 3771627,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\01 Janvier\\20180128_163218.jpg",
+   "classe": "recuperee",
+   "octets": 1352762,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\01 Janvier\\20180128_163220.jpg",
+   "classe": "recuperee",
+   "octets": 1523294,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\02 Février\\Leukerbad\\20180218_132029(0).jpg",
+   "classe": "tronquee",
+   "octets": 1652861,
+   "dims": [
+    2592,
+    1944
+   ]
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\02 Février\\Leukerbad\\20180218_132029.jpg",
+   "classe": "recuperee",
+   "octets": 1661553,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\02 Février\\Leukerbad\\20180218_132030.jpg",
+   "classe": "recuperee",
+   "octets": 1649000,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\02 Février\\Leukerbad\\20180218_132031.jpg",
+   "classe": "recuperee",
+   "octets": 1683768,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\02 Février\\Leukerbad\\20180218_132032(0).jpg",
+   "classe": "recuperee",
+   "octets": 1678592,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\02 Février\\Leukerbad\\20180218_132032.jpg",
+   "classe": "recuperee",
+   "octets": 1673689,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\02 Février\\Leukerbad\\20180218_132033.jpg",
+   "classe": "recuperee",
+   "octets": 1645379,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\02 Février\\Leukerbad\\20180218_132035.jpg",
+   "classe": "recuperee",
+   "octets": 1605073,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\02 Février\\Leukerbad\\20180218_132728.jpg",
+   "classe": "recuperee",
+   "octets": 3883124,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\02 Février\\Leukerbad\\20180218_132729.jpg",
+   "classe": "recuperee",
+   "octets": 3829901,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\02 Février\\Leukerbad\\20180218_132731.jpg",
+   "classe": "recuperee",
+   "octets": 3798163,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\04 Avril\\Weekend Ju-Jitsu Chateau d'Oex\\030.png",
+   "classe": "valide",
+   "octets": 21990067,
+   "dims": [
+    4126,
+    3907
+   ]
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\04 Avril\\Weekend Ju-Jitsu Chateau d'Oex\\031.png",
+   "classe": "recuperee",
+   "octets": 26981870,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\04 Avril\\Weekend Ju-Jitsu Chateau d'Oex\\032.png",
+   "classe": "recuperee",
+   "octets": 27423583,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\04 Avril\\Weekend Ju-Jitsu Chateau d'Oex\\033.png",
+   "classe": "recuperee",
+   "octets": 25812916,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\04 Avril\\Weekend Ju-Jitsu Chateau d'Oex\\034.png",
+   "classe": "recuperee",
+   "octets": 24539075,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\04 Avril\\Weekend Ju-Jitsu Chateau d'Oex\\067.png",
+   "classe": "valide",
+   "octets": 16085813,
+   "dims": [
+    3762,
+    2871
+   ]
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\04 Avril\\Weekend Ju-Jitsu Chateau d'Oex\\068.png",
+   "classe": "recuperee",
+   "octets": 12248748,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\04 Avril\\Weekend Ju-Jitsu Chateau d'Oex\\069.png",
+   "classe": "recuperee",
+   "octets": 17329863,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\04 Avril\\Weekend Ju-Jitsu Chateau d'Oex\\070.png",
+   "classe": "recuperee",
+   "octets": 13469395,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\04 Avril\\Weekend Ju-Jitsu Chateau d'Oex\\071.png",
+   "classe": "recuperee",
+   "octets": 10309515,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\04 Avril\\Weekend Ju-Jitsu Chateau d'Oex\\072.png",
+   "classe": "recuperee",
+   "octets": 11737600,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\04 Avril\\Weekend Ju-Jitsu Chateau d'Oex\\073.png",
+   "classe": "recuperee",
+   "octets": 16786788,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\04 Avril\\Weekend Ju-Jitsu Chateau d'Oex\\074.png",
+   "classe": "recuperee",
+   "octets": 18289589,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\04 Avril\\Weekend Ju-Jitsu Chateau d'Oex\\116.png",
+   "classe": "valide",
+   "octets": 44512935,
+   "dims": [
+    5458,
+    3622
+   ]
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\04 Avril\\Weekend Ju-Jitsu Chateau d'Oex\\117.png",
+   "classe": "recuperee",
+   "octets": 30225327,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\04 Avril\\Weekend Ju-Jitsu Chateau d'Oex\\118.png",
+   "classe": "recuperee",
+   "octets": 28007019,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\04 Avril\\Weekend Ju-Jitsu Chateau d'Oex\\177.png",
+   "classe": "valide",
+   "octets": 19183837,
+   "dims": [
+    4032,
+    2563
+   ]
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\04 Avril\\Weekend Ju-Jitsu Chateau d'Oex\\178.png",
+   "classe": "recuperee",
+   "octets": 19489453,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\04 Avril\\Weekend Ju-Jitsu Chateau d'Oex\\179.png",
+   "classe": "recuperee",
+   "octets": 27063877,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\07 Juillet\\20180730_070715.jpg",
+   "classe": "tronquee",
+   "octets": 3331356,
+   "dims": [
+    4032,
+    2268
+   ]
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\07 Juillet\\20180730_070723.jpg",
+   "classe": "recuperee",
+   "octets": 1900004,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\07 Juillet\\20180730_070952.jpg",
+   "classe": "recuperee",
+   "octets": 3007859,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\07 Juillet\\20180730_071000.jpg",
+   "classe": "recuperee",
+   "octets": 2915300,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\07 Juillet\\20180730_072205.jpg",
+   "classe": "recuperee",
+   "octets": 2879320,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\07 Juillet\\20180730_114255.jpg",
+   "classe": "recuperee",
+   "octets": 4000349,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\07 Juillet\\20180730_114950.jpg",
+   "classe": "recuperee",
+   "octets": 3556831,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\07 Juillet\\20180730_114953.jpg",
+   "classe": "recuperee",
+   "octets": 3614580,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\07 Juillet\\20180730_114956.jpg",
+   "classe": "recuperee",
+   "octets": 5383809,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\07 Juillet\\20180730_115003.jpg",
+   "classe": "recuperee",
+   "octets": 4106813,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\07 Juillet\\20180730_115223.jpg",
+   "classe": "recuperee",
+   "octets": 5568354,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\07 Juillet\\20180730_115353.jpg",
+   "classe": "recuperee",
+   "octets": 4324459,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\07 Juillet\\20180730_130007.jpg",
+   "classe": "recuperee",
+   "octets": 3915524,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\07 Juillet\\20180730_130010.jpg",
+   "classe": "recuperee",
+   "octets": 3847744,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\07 Juillet\\20180730_130016.jpg",
+   "classe": "recuperee",
+   "octets": 3288713,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\07 Juillet\\20180730_130018.jpg",
+   "classe": "recuperee",
+   "octets": 2968696,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\07 Juillet\\20180730_130023.jpg",
+   "classe": "recuperee",
+   "octets": 2988950,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\08 Août\\20180808_163400.jpg",
+   "classe": "recuperee",
+   "octets": 6466652,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\08 Août\\20180808_173756.jpg",
+   "classe": "recuperee",
+   "octets": 2576693,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\08 Août\\20180808_173920.jpg",
+   "classe": "recuperee",
+   "octets": 2495350,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\08 Août\\20180808_174122.jpg",
+   "classe": "recuperee",
+   "octets": 7267626,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\08 Août\\20180808_174256.jpg",
+   "classe": "recuperee",
+   "octets": 7875716,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\08 Août\\20180808_174310.jpg",
+   "classe": "recuperee",
+   "octets": 4246161,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\08 Août\\20180808_174347.jpg",
+   "classe": "recuperee",
+   "octets": 4563646,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\08 Août\\20180808_174803.jpg",
+   "classe": "recuperee",
+   "octets": 4411602,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\08 Août\\20180808_174805.jpg",
+   "classe": "recuperee",
+   "octets": 4397401,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\08 Août\\20180812_191027.jpg",
+   "classe": "tronquee",
+   "octets": 6677240,
+   "dims": [
+    4128,
+    3744
+   ]
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\09 Septembre\\20180928_161932.jpg",
+   "classe": "tronquee",
+   "octets": 3858497,
+   "dims": [
+    4032,
+    3024
+   ]
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\09 Septembre\\20180928_162909.jpg",
+   "classe": "recuperee",
+   "octets": 4901320,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\09 Septembre\\20180928_162920.jpg",
+   "classe": "recuperee",
+   "octets": 5873170,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\09 Septembre\\20180928_162943.jpg",
+   "classe": "recuperee",
+   "octets": 4872936,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\09 Septembre\\20180928_163037.jpg",
+   "classe": "recuperee",
+   "octets": 4542368,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\09 Septembre\\20180928_163043.jpg",
+   "classe": "recuperee",
+   "octets": 4214648,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\09 Septembre\\20180928_163204.jpg",
+   "classe": "recuperee",
+   "octets": 4331840,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\09 Septembre\\20180928_163321.jpg",
+   "classe": "recuperee",
+   "octets": 4236848,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\09 Septembre\\20180928_163445.jpg",
+   "classe": "recuperee",
+   "octets": 4425608,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\09 Septembre\\20180928_163745.jpg",
+   "classe": "recuperee",
+   "octets": 3651807,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\09 Septembre\\20180928_164702.jpg",
+   "classe": "recuperee",
+   "octets": 4888881,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\09 Septembre\\20180928_165048.jpg",
+   "classe": "recuperee",
+   "octets": 4501358,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\09 Septembre\\20180928_165226.jpg",
+   "classe": "recuperee",
+   "octets": 4579952,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\09 Septembre\\20180928_165327.jpg",
+   "classe": "recuperee",
+   "octets": 4492991,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\09 Septembre\\20180928_165426.jpg",
+   "classe": "recuperee",
+   "octets": 4751091,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\09 Septembre\\20180928_165641.jpg",
+   "classe": "recuperee",
+   "octets": 4361014,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\09 Septembre\\20180930_121816.jpg",
+   "classe": "recuperee",
+   "octets": 7681276,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\09 Septembre\\20180930_121854.jpg",
+   "classe": "recuperee",
+   "octets": 6180830,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\09 Septembre\\20180930_121855.jpg",
+   "classe": "recuperee",
+   "octets": 6599216,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\EVJF Mathilde\\20180616_140831.jpg",
+   "classe": "recuperee",
+   "octets": 3960100,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\EVJF Mathilde\\20180616_140847.jpg",
+   "classe": "recuperee",
+   "octets": 3186430,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\EVJF Mathilde\\20180616_153717.jpg",
+   "classe": "recuperee",
+   "octets": 3162909,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\EVJF Mathilde\\20180616_155425.jpg",
+   "classe": "recuperee",
+   "octets": 3155062,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\EVJF Mathilde\\20180616_155430.jpg",
+   "classe": "recuperee",
+   "octets": 3341957,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\EVJF Mathilde\\20180616_160452.jpg",
+   "classe": "recuperee",
+   "octets": 3417700,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\EVJF Mathilde\\20180616_163626.jpg",
+   "classe": "recuperee",
+   "octets": 2707462,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\EVJF Mathilde\\20180616_163922.jpg",
+   "classe": "recuperee",
+   "octets": 2865729,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\EVJF Mathilde\\20180616_163932.jpg",
+   "classe": "recuperee",
+   "octets": 2750010,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\EVJF Mathilde\\20180616_164056.jpg",
+   "classe": "recuperee",
+   "octets": 3438062,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\EVJF Mathilde\\20180616_164212.jpg",
+   "classe": "recuperee",
+   "octets": 3398025,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\EVJF Mathilde\\20180616_164318.jpg",
+   "classe": "recuperee",
+   "octets": 2924572,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\EVJF Mathilde\\20180616_164738.jpg",
+   "classe": "recuperee",
+   "octets": 3041242,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\EVJF Mathilde\\20180616_164840.jpg",
+   "classe": "recuperee",
+   "octets": 2652060,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\EVJF Mathilde\\20180616_164926.jpg",
+   "classe": "recuperee",
+   "octets": 3343579,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\EVJF Mathilde\\20180616_165132.jpg",
+   "classe": "recuperee",
+   "octets": 3468239,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\EVJF Mathilde\\20180616_182123.jpg",
+   "classe": "recuperee",
+   "octets": 2885026,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\EVJF Mathilde\\20180616_215730.jpg",
+   "classe": "recuperee",
+   "octets": 2515625,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\EVJF Mathilde\\20180616_221254.jpg",
+   "classe": "recuperee",
+   "octets": 2689349,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\EVJF Mathilde\\IMG-20180616-WA0000.jpg",
+   "classe": "recuperee",
+   "octets": 474116,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\EVJF Mathilde\\IMG-20180616-WA0001.jpg",
+   "classe": "recuperee",
+   "octets": 240566,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\EVJF Mathilde\\IMG-20180616-WA0002.jpg",
+   "classe": "recuperee",
+   "octets": 250969,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\EVJF Mathilde\\IMG-20180617-WA0000.jpg",
+   "classe": "recuperee",
+   "octets": 126692,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\EVJF Mathilde\\IMG-20180617-WA0001.jpg",
+   "classe": "recuperee",
+   "octets": 255659,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\EVJF Mathilde\\IMG-20180617-WA0002.jpg",
+   "classe": "recuperee",
+   "octets": 215524,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\EVJF Mathilde\\IMG-20180617-WA0003.jpg",
+   "classe": "recuperee",
+   "octets": 301751,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\EVJF Mathilde\\IMG-20180617-WA0004.jpg",
+   "classe": "recuperee",
+   "octets": 139353,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\EVJF Mathilde\\IMG-20180617-WA0005.jpg",
+   "classe": "recuperee",
+   "octets": 355340,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\EVJF Mathilde\\IMG-20180617-WA0006.jpg",
+   "classe": "recuperee",
+   "octets": 175949,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\EVJF Mathilde\\IMG-20180617-WA0008.jpg",
+   "classe": "recuperee",
+   "octets": 377497,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\EVJF Mathilde\\IMG-20180617-WA0009.jpg",
+   "classe": "recuperee",
+   "octets": 74959,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\EVJF Mathilde\\IMG-20180617-WA0012.jpg",
+   "classe": "recuperee",
+   "octets": 243924,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\EVJF Mathilde\\IMG-20180617-WA0014.jpg",
+   "classe": "recuperee",
+   "octets": 232106,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\EVJF Mathilde\\IMG-20180617-WA0015.jpg",
+   "classe": "recuperee",
+   "octets": 206206,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\EVJF Mathilde\\IMG-20180617-WA0016.jpg",
+   "classe": "recuperee",
+   "octets": 361917,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\EVJF Mathilde\\IMG-20180617-WA0017.jpg",
+   "classe": "recuperee",
+   "octets": 364401,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\EVJF Mathilde\\IMG-20180617-WA0022.jpg",
+   "classe": "recuperee",
+   "octets": 345397,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\EVJF Mathilde\\IMG-20180617-WA0023.jpg",
+   "classe": "recuperee",
+   "octets": 420808,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\EVJF Mathilde\\IMG-20180617-WA0024.jpg",
+   "classe": "recuperee",
+   "octets": 541717,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\EVJF Mathilde\\IMG-20180617-WA0025.jpg",
+   "classe": "recuperee",
+   "octets": 427584,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\EVJF Mathilde\\IMG-20180617-WA0026.jpg",
+   "classe": "recuperee",
+   "octets": 363301,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\EVJF Mathilde\\IMG-20180617-WA0027.jpg",
+   "classe": "recuperee",
+   "octets": 354665,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\EVJF Mathilde\\IMG-20180617-WA0029.jpg",
+   "classe": "recuperee",
+   "octets": 184120,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\EVJF Mathilde\\IMG-20180617-WA0033.jpg",
+   "classe": "recuperee",
+   "octets": 206336,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\EVJF Mathilde\\IMG-20180617-WA0035.jpg",
+   "classe": "recuperee",
+   "octets": 236689,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\EVJF Mathilde\\IMG-20180617-WA0036.jpg",
+   "classe": "recuperee",
+   "octets": 349294,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\EVJF Mathilde\\IMG-20180617-WA0037.jpg",
+   "classe": "recuperee",
+   "octets": 435310,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\EVJF Mathilde\\IMG-20180617-WA0038.jpg",
+   "classe": "recuperee",
+   "octets": 312379,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\EVJF Mathilde\\IMG-20180617-WA0040.jpg",
+   "classe": "recuperee",
+   "octets": 282545,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\EVJF Mathilde\\IMG-20180617-WA0041.jpg",
+   "classe": "recuperee",
+   "octets": 141483,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\EVJF Mathilde\\IMG-20180617-WA0042.jpg",
+   "classe": "recuperee",
+   "octets": 229167,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\EVJF Mathilde\\IMG-20180617-WA0044.jpg",
+   "classe": "recuperee",
+   "octets": 166228,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\EVJF Mathilde\\IMG-20180617-WA0046.jpg",
+   "classe": "recuperee",
+   "octets": 410898,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\EVJF Mathilde\\IMG-20180617-WA0047.jpg",
+   "classe": "recuperee",
+   "octets": 341493,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\EVJF Mathilde\\IMG-20180617-WA0048.jpg",
+   "classe": "recuperee",
+   "octets": 425276,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\EVJF Mathilde\\IMG-20180617-WA0049.jpg",
+   "classe": "recuperee",
+   "octets": 470202,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\EVJF Mathilde\\IMG-20180617-WA0050.jpg",
+   "classe": "recuperee",
+   "octets": 519391,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\EVJF Mathilde\\IMG-20180617-WA0051.jpg",
+   "classe": "recuperee",
+   "octets": 301734,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\EVJF Mathilde\\IMG-20180617-WA0052.jpg",
+   "classe": "recuperee",
+   "octets": 259045,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\EVJF Mathilde\\IMG-20180617-WA0053.jpg",
+   "classe": "recuperee",
+   "octets": 269732,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\EVJF Mathilde\\IMG-20180617-WA0054.jpg",
+   "classe": "recuperee",
+   "octets": 196092,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\EVJF Mathilde\\IMG-20180617-WA0055.jpg",
+   "classe": "recuperee",
+   "octets": 256534,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\EVJF Mathilde\\IMG-20180617-WA0056.jpg",
+   "classe": "recuperee",
+   "octets": 392778,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\EVJF Mathilde\\IMG-20180617-WA0057.jpg",
+   "classe": "recuperee",
+   "octets": 449927,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\EVJF Mathilde\\IMG-20180617-WA0058.jpg",
+   "classe": "recuperee",
+   "octets": 543668,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\EVJF Mathilde\\IMG-20180617-WA0059.jpg",
+   "classe": "recuperee",
+   "octets": 509376,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\EVJF Mathilde\\IMG-20180617-WA0060.jpg",
+   "classe": "recuperee",
+   "octets": 548118,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\EVJF Mathilde\\IMG-20180617-WA0061.jpg",
+   "classe": "recuperee",
+   "octets": 406979,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\EVJF Mathilde\\IMG-20180617-WA0062.jpg",
+   "classe": "recuperee",
+   "octets": 441788,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\EVJF Mathilde\\IMG-20180617-WA0063.jpg",
+   "classe": "recuperee",
+   "octets": 485854,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\EVJF Mathilde\\IMG-20180617-WA0064.jpg",
+   "classe": "recuperee",
+   "octets": 171418,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\EVJF Mathilde\\IMG-20180617-WA0065.jpg",
+   "classe": "recuperee",
+   "octets": 151077,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\EVJF Mathilde\\IMG-20180617-WA0066.jpg",
+   "classe": "recuperee",
+   "octets": 149510,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\EVJF Mathilde\\IMG-20180617-WA0067.jpg",
+   "classe": "recuperee",
+   "octets": 566764,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\EVJF Mathilde\\IMG-20180617-WA0068.jpg",
+   "classe": "recuperee",
+   "octets": 596322,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\EVJF Mathilde\\IMG-20180617-WA0069.jpg",
+   "classe": "recuperee",
+   "octets": 499488,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\EVJF Mathilde\\IMG-20180617-WA0070.jpg",
+   "classe": "recuperee",
+   "octets": 385812,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\EVJF Mathilde\\IMG-20180617-WA0071.jpg",
+   "classe": "recuperee",
+   "octets": 362141,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\EVJF Mathilde\\IMG-20180617-WA0072.jpg",
+   "classe": "recuperee",
+   "octets": 398088,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\EVJF Mathilde\\IMG-20180617-WA0074.jpg",
+   "classe": "recuperee",
+   "octets": 448382,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\EVJF Mathilde\\IMG-20180617-WA0075.jpg",
+   "classe": "recuperee",
+   "octets": 278157,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\EVJF Mathilde\\IMG-20180617-WA0076.jpg",
+   "classe": "recuperee",
+   "octets": 369039,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\EVJF Mathilde\\IMG-20180617-WA0078.jpg",
+   "classe": "recuperee",
+   "octets": 320782,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2019\\07 Juillet\\40 ans Annick\\IMG_20190706_210851.jpg",
+   "classe": "tronquee",
+   "octets": 1802499,
+   "dims": [
+    3648,
+    2736
+   ]
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2019\\07 Juillet\\40 ans Annick\\IMG_20190706_210852.jpg",
+   "classe": "recuperee",
+   "octets": 2954351,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2019\\07 Juillet\\40 ans Annick\\IMG_20190706_215305.jpg",
+   "classe": "recuperee",
+   "octets": 4594408,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2019\\07 Juillet\\40 ans Annick\\IMG_20190706_215314.jpg",
+   "classe": "recuperee",
+   "octets": 4720429,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2019\\08 Août\\IMG_20190802_135901.jpg",
+   "classe": "recuperee",
+   "octets": 5382591,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2019\\08 Août\\IMG_20190802_135944.jpg",
+   "classe": "recuperee",
+   "octets": 8863226,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2019\\08 Août\\IMG_20190802_135946.jpg",
+   "classe": "recuperee",
+   "octets": 8576967,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2019\\08 Août\\IMG_20190802_140124.jpg",
+   "classe": "recuperee",
+   "octets": 2706088,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2019\\08 Août\\IMG_20190802_140145.jpg",
+   "classe": "recuperee",
+   "octets": 2351550,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2019\\08 Août\\IMG_20190802_140232.jpg",
+   "classe": "recuperee",
+   "octets": 1832753,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2019\\08 Août\\IMG_20190802_140652.jpg",
+   "classe": "recuperee",
+   "octets": 1645638,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2019\\08 Août\\IMG_20190802_140728.jpg",
+   "classe": "recuperee",
+   "octets": 11033582,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2019\\08 Août\\IMG_20190802_141805.jpg",
+   "classe": "recuperee",
+   "octets": 8655759,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2019\\08 Août\\IMG_20190802_143042.jpg",
+   "classe": "recuperee",
+   "octets": 3385270,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2019\\08 Août\\IMG_20190802_143057.jpg",
+   "classe": "recuperee",
+   "octets": 3094442,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2019\\08 Août\\IMG_20190802_143058.jpg",
+   "classe": "recuperee",
+   "octets": 3093821,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2019\\08 Août\\IMG_20190802_143102.jpg",
+   "classe": "recuperee",
+   "octets": 3059102,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2019\\08 Août\\IMG_20190802_143103.jpg",
+   "classe": "recuperee",
+   "octets": 3073408,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2019\\08 Août\\IMG_20190802_143106.jpg",
+   "classe": "recuperee",
+   "octets": 3102173,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2019\\08 Août\\IMG_20190802_143107.jpg",
+   "classe": "recuperee",
+   "octets": 3092665,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2019\\08 Août\\IMG_20190802_143110.jpg",
+   "classe": "recuperee",
+   "octets": 3296866,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2019\\08 Août\\IMG_20190802_143112.jpg",
+   "classe": "recuperee",
+   "octets": 3293300,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2019\\08 Août\\IMG_20190802_143116.jpg",
+   "classe": "recuperee",
+   "octets": 3325974,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2019\\08 Août\\IMG_20190802_154330.jpg",
+   "classe": "recuperee",
+   "octets": 4597750,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2019\\08 Août\\IMG_20190802_154332.jpg",
+   "classe": "recuperee",
+   "octets": 4569852,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2019\\10 Octobre\\IMG_20191013_165014.jpg",
+   "classe": "recuperee",
+   "octets": 5534862,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2019\\10 Octobre\\IMG_20191013_165100.jpg",
+   "classe": "recuperee",
+   "octets": 3368780,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2019\\10 Octobre\\IMG_20191013_165116.jpg",
+   "classe": "recuperee",
+   "octets": 3856925,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2019\\10 Octobre\\IMG_20191013_165157.jpg",
+   "classe": "recuperee",
+   "octets": 2611402,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2019\\10 Octobre\\IMG_20191013_165210.jpg",
+   "classe": "recuperee",
+   "octets": 2416463,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2019\\10 Octobre\\IMG_20191013_165211.jpg",
+   "classe": "recuperee",
+   "octets": 2420288,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2019\\10 Octobre\\IMG_20191013_165218.jpg",
+   "classe": "recuperee",
+   "octets": 2598833,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2019\\10 Octobre\\IMG_20191019_130252.jpg",
+   "classe": "recuperee",
+   "octets": 2723362,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2019\\10 Octobre\\IMG_20191020_182032.jpg",
+   "classe": "recuperee",
+   "octets": 1227268,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2019\\10 Octobre\\IMG_20191020_182045.jpg",
+   "classe": "recuperee",
+   "octets": 3865639,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2019\\10 Octobre\\IMG_20191020_182238.jpg",
+   "classe": "recuperee",
+   "octets": 2752459,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2019\\10 Octobre\\IMG_20191020_182321.jpg",
+   "classe": "recuperee",
+   "octets": 2929760,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2019\\10 Octobre\\IMG_20191029_090144.jpg",
+   "classe": "recuperee",
+   "octets": 1817945,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2020\\02 Février\\Concert Flora\\IMG_20200216_191439.jpg",
+   "classe": "tronquee",
+   "octets": 2146069,
+   "dims": [
+    3648,
+    2736
+   ]
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2020\\02 Février\\Concert Flora\\IMG_20200216_191445.jpg",
+   "classe": "recuperee",
+   "octets": 1544160,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\Appart Bremblens\\IMG_20190123_161701.jpg",
+   "classe": "tronquee",
+   "octets": 1744022,
+   "dims": [
+    3648,
+    2736
+   ]
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\Appart Bremblens\\IMG_20190123_164816.jpg",
+   "classe": "recuperee",
+   "octets": 1835726,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\Appart Bremblens\\IMG_20190126_162459.jpg",
+   "classe": "recuperee",
+   "octets": 1748254,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\Appart Bremblens\\IMG_20190126_162504.jpg",
+   "classe": "recuperee",
+   "octets": 2227357,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\Appart Bremblens\\IMG_20190126_162505.jpg",
+   "classe": "recuperee",
+   "octets": 1946694,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\Appart Bremblens\\IMG_20190126_162916.jpg",
+   "classe": "recuperee",
+   "octets": 1981563,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\Appart Bremblens\\IMG_20190127_160601.jpg",
+   "classe": "recuperee",
+   "octets": 2153009,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\Appart Bremblens\\IMG_20190127_160630.jpg",
+   "classe": "recuperee",
+   "octets": 2024452,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\Appart Bremblens\\IMG_20190127_221822.jpg",
+   "classe": "recuperee",
+   "octets": 1613316,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\Appart Bremblens\\IMG_20190127_222425.jpg",
+   "classe": "recuperee",
+   "octets": 1461383,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\Appart Bremblens\\IMG_20190129_200531.jpg",
+   "classe": "recuperee",
+   "octets": 1753463,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\Appart Bremblens\\IMG_20190130_191131.jpg",
+   "classe": "recuperee",
+   "octets": 1624882,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\Appart Bremblens\\IMG_20190130_193611.jpg",
+   "classe": "recuperee",
+   "octets": 2712484,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\Appart Bremblens\\IMG_20190130_193630.jpg",
+   "classe": "recuperee",
+   "octets": 1903217,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\Appart Bremblens\\IMG_20190204_133354.jpg",
+   "classe": "recuperee",
+   "octets": 2929797,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\Appart Bremblens\\IMG_20190204_230520.jpg",
+   "classe": "recuperee",
+   "octets": 1860175,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\Appart Bremblens\\IMG_20190221_195414.jpg",
+   "classe": "recuperee",
+   "octets": 1498585,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\Appart Bremblens\\IMG_20190221_195439.jpg",
+   "classe": "recuperee",
+   "octets": 1533267,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\Appart Bremblens\\IMG_20190224_121800.jpg",
+   "classe": "recuperee",
+   "octets": 2186521,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\Appart Bremblens\\IMG_20190224_121807.jpg",
+   "classe": "recuperee",
+   "octets": 2902790,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\Appart Bremblens\\IMG_20190224_122808.jpg",
+   "classe": "recuperee",
+   "octets": 3122412,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\Appart Bremblens\\IMG_20190224_123145.jpg",
+   "classe": "recuperee",
+   "octets": 1936917,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\Appart Bremblens\\IMG_20190224_123203.jpg",
+   "classe": "recuperee",
+   "octets": 3749737,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\Appart Bremblens\\IMG_20190224_123204.jpg",
+   "classe": "recuperee",
+   "octets": 3761102,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\Appart Bremblens\\IMG_20190224_123513.jpg",
+   "classe": "recuperee",
+   "octets": 3642652,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\Appart Bremblens\\IMG_20190224_123524.jpg",
+   "classe": "recuperee",
+   "octets": 1956249,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\Appart Bremblens\\IMG_20190224_123533.jpg",
+   "classe": "recuperee",
+   "octets": 3990182,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\Appart Bremblens\\IMG_20190224_125112.jpg",
+   "classe": "recuperee",
+   "octets": 1669452,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\Appart Bremblens\\IMG_20190224_125625.jpg",
+   "classe": "recuperee",
+   "octets": 2106176,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\Appart Bremblens\\IMG_20190301_174919.jpg",
+   "classe": "recuperee",
+   "octets": 1847902,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\Appart Bremblens\\IMG_20190301_174929.jpg",
+   "classe": "recuperee",
+   "octets": 1788491,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\Appart Bremblens\\IMG_20190301_174942.jpg",
+   "classe": "recuperee",
+   "octets": 1672607,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\Appart Bremblens\\IMG_20190317_144400.jpg",
+   "classe": "recuperee",
+   "octets": 1911840,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\Appart Bremblens\\IMG_20190317_144403.jpg",
+   "classe": "recuperee",
+   "octets": 1911159,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\Appart Bremblens\\IMG_20190317_144459.jpg",
+   "classe": "recuperee",
+   "octets": 1818137,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\Appart Bremblens\\IMG_20190317_144511.jpg",
+   "classe": "recuperee",
+   "octets": 3167001,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\Appart Bremblens\\IMG_20190317_144519.jpg",
+   "classe": "recuperee",
+   "octets": 3340653,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\Appart Bremblens\\IMG_20190317_145325.jpg",
+   "classe": "recuperee",
+   "octets": 3175915,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\Appart Bremblens\\IMG_20190317_150235.jpg",
+   "classe": "recuperee",
+   "octets": 3296734,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\Appart Bremblens\\IMG_20190317_150240.jpg",
+   "classe": "recuperee",
+   "octets": 3142729,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\Appart Bremblens\\IMG_20190416_233621.jpg",
+   "classe": "tronquee",
+   "octets": 2177341,
+   "dims": [
+    2736,
+    3648
+   ]
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\Appart Bremblens\\IMG_20190416_233631.jpg",
+   "classe": "recuperee",
+   "octets": 1936198,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\Appart Bremblens\\IMG_20190417_141757.jpg",
+   "classe": "recuperee",
+   "octets": 1564841,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\Appart Bremblens\\IMG_20190417_162516.jpg",
+   "classe": "recuperee",
+   "octets": 2294415,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\Appart Bremblens\\IMG_20190417_203007.jpg",
+   "classe": "recuperee",
+   "octets": 2053608,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\Appart Bremblens\\IMG_20190417_203014.jpg",
+   "classe": "recuperee",
+   "octets": 2413257,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\Appart Bremblens\\IMG_20190417_203016.jpg",
+   "classe": "recuperee",
+   "octets": 2229315,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\Appart Bremblens\\IMG_20190418_113757.jpg",
+   "classe": "recuperee",
+   "octets": 3047928,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\Appart Bremblens\\IMG_20190419_202351.jpg",
+   "classe": "recuperee",
+   "octets": 2142655,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\Appart Bremblens\\IMG_20190419_234126.jpg",
+   "classe": "recuperee",
+   "octets": 2243425,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\Appart Bremblens\\IMG_20190420_160101.jpg",
+   "classe": "recuperee",
+   "octets": 2792618,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\Appart Bremblens\\IMG_20190420_180555.jpg",
+   "classe": "recuperee",
+   "octets": 2995840,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\Appart Bremblens\\IMG_20190424_195717.jpg",
+   "classe": "recuperee",
+   "octets": 2120822,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\Appart Bremblens\\IMG_20190425_001300.jpg",
+   "classe": "recuperee",
+   "octets": 2249926,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\Appart Bremblens\\IMG_20190426_104100.jpg",
+   "classe": "recuperee",
+   "octets": 2759790,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\Appart Bremblens\\IMG_20190507_181013.jpg",
+   "classe": "recuperee",
+   "octets": 3955306,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\Appart Bremblens\\IMG_20190507_181028.jpg",
+   "classe": "recuperee",
+   "octets": 4871824,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\Appart Bremblens\\IMG_20190507_222533.jpg",
+   "classe": "recuperee",
+   "octets": 2300124,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\Appart Bremblens\\IMG_20190507_222601.jpg",
+   "classe": "recuperee",
+   "octets": 1888481,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\Appart Bremblens\\IMG_20190510_081624.jpg",
+   "classe": "recuperee",
+   "octets": 1969100,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\Appart Bremblens\\IMG_20190628_083145.jpg",
+   "classe": "recuperee",
+   "octets": 2107370,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\Appart Bremblens\\IMG_20190628_083205.jpg",
+   "classe": "recuperee",
+   "octets": 1913909,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\Appart Bremblens\\IMG_20190628_083232.jpg",
+   "classe": "recuperee",
+   "octets": 2245049,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\Appart Bremblens\\IMG_20190628_083239.jpg",
+   "classe": "recuperee",
+   "octets": 2090949,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\Appart Bremblens\\IMG_20190629_123306.jpg",
+   "classe": "recuperee",
+   "octets": 4019207,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\Appart Bremblens\\IMG_20190629_145106.jpg",
+   "classe": "recuperee",
+   "octets": 3223664,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\Appart Bremblens\\IMG_20190807_120626.jpg",
+   "classe": "recuperee",
+   "octets": 5122102,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\Appart Bremblens\\IMG_20190807_134412.jpg",
+   "classe": "recuperee",
+   "octets": 6846136,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\Appart Bremblens\\IMG_20190808_175601.jpg",
+   "classe": "recuperee",
+   "octets": 6637329,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\Appart Bremblens\\IMG_20190808_175606.jpg",
+   "classe": "recuperee",
+   "octets": 4070581,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\Appart Bremblens\\IMG_20190809_145046.jpg",
+   "classe": "recuperee",
+   "octets": 5597738,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\Caline\\20180227_220226.jpg",
+   "classe": "tronquee",
+   "octets": 4099276,
+   "dims": [
+    4032,
+    3024
+   ]
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\Caline\\20180304_113501.jpg",
+   "classe": "recuperee",
+   "octets": 4682473,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\Caline\\20180304_113512.jpg",
+   "classe": "recuperee",
+   "octets": 4951639,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\Caline\\20180304_113523.jpg",
+   "classe": "recuperee",
+   "octets": 4780219,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\Caline\\20180304_113529.jpg",
+   "classe": "recuperee",
+   "octets": 5047415,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\Caline\\20180310_225320.jpg",
+   "classe": "recuperee",
+   "octets": 3861443,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\Caline\\20180310_225325.jpg",
+   "classe": "recuperee",
+   "octets": 2907401,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\Caline\\20180310_225441.jpg",
+   "classe": "recuperee",
+   "octets": 3382600,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\Caline\\20210515_101932.jpg",
+   "classe": "recuperee",
+   "octets": 4415177,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\Caline\\20210515_101942.jpg",
+   "classe": "recuperee",
+   "octets": 7049340,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\Caline\\20210717_134000.jpg",
+   "classe": "recuperee",
+   "octets": 1996999,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\Caline\\20210717_134010.jpg",
+   "classe": "recuperee",
+   "octets": 1933186,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\Caline\\20210717_225716.jpg",
+   "classe": "recuperee",
+   "octets": 2341212,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\Caline\\20210719_131730.jpg",
+   "classe": "recuperee",
+   "octets": 2651932,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\Caline\\20210719_131734.jpg",
+   "classe": "recuperee",
+   "octets": 2620276,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\Caline\\20210731_094825.jpg",
+   "classe": "recuperee",
+   "octets": 1925749,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\Caline\\20210731_100553.jpg",
+   "classe": "recuperee",
+   "octets": 1729388,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\Caline\\20210731_100600.jpg",
+   "classe": "recuperee",
+   "octets": 2147579,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\Caline\\20210731_100605.jpg",
+   "classe": "recuperee",
+   "octets": 2079940,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\Caline\\20210731_100609.jpg",
+   "classe": "recuperee",
+   "octets": 2356031,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\Caline\\20210801_213109.jpg",
+   "classe": "recuperee",
+   "octets": 1971850,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\Caline\\20210814_201040.jpg",
+   "classe": "recuperee",
+   "octets": 1956966,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\Caline\\20210905_154038.jpg",
+   "classe": "recuperee",
+   "octets": 2766675,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\Caline\\20210905_154040.jpg",
+   "classe": "recuperee",
+   "octets": 2753932,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\Caline\\20210905_154044.jpg",
+   "classe": "recuperee",
+   "octets": 2717902,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\Caline\\20210908_180153.jpg",
+   "classe": "recuperee",
+   "octets": 2119680,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\Caline\\20210908_180159.jpg",
+   "classe": "recuperee",
+   "octets": 2129261,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\Caline\\20210915_123218.jpg",
+   "classe": "tronquee",
+   "octets": 2217709,
+   "dims": [
+    4608,
+    2184
+   ]
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\Caline\\IMG_20190830_072732.jpg",
+   "classe": "tronquee",
+   "octets": 3396016,
+   "dims": [
+    3648,
+    2736
+   ]
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\Caline\\IMG_20191027_141104_1.jpg",
+   "classe": "recuperee",
+   "octets": 2139508,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\Caline\\IMG_20191027_201713.jpg",
+   "classe": "recuperee",
+   "octets": 4750644,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\Caline\\IMG_20191109_220003.jpg",
+   "classe": "recuperee",
+   "octets": 1988723,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\Caline\\IMG_20191109_220004.jpg",
+   "classe": "recuperee",
+   "octets": 2013009,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\Caline\\IMG_20191202_220737.jpg",
+   "classe": "recuperee",
+   "octets": 2284914,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\Caline\\IMG_20191203_190838.jpg",
+   "classe": "recuperee",
+   "octets": 4663871,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\Caline\\IMG_20200102_004654.jpg",
+   "classe": "recuperee",
+   "octets": 4651959,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\Caline\\IMG_20200102_005400_1.jpg",
+   "classe": "recuperee",
+   "octets": 4924394,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\Caline\\IMG_20200102_005909.jpg",
+   "classe": "recuperee",
+   "octets": 2231952,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\Caline\\IMG_20200218_182454.jpg",
+   "classe": "recuperee",
+   "octets": 2073392,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\Caline\\IMG_5341.JPG",
+   "classe": "recuperee",
+   "octets": 2256808,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\Caline\\IMG_5342.JPG",
+   "classe": "recuperee",
+   "octets": 2328565,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\Caline\\IMG_5344.JPG",
+   "classe": "recuperee",
+   "octets": 1945674,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\FUN\\Friends\\Portraits\\Flo.jpg",
+   "classe": "recuperee",
+   "octets": 154940,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\FUN\\Friends\\Portraits\\Flo_Ouchy.jpg",
+   "classe": "recuperee",
+   "octets": 324319,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\FUN\\Friends\\Portraits\\Flo_chez_Danica.jpg",
+   "classe": "recuperee",
+   "octets": 235812,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\FUN\\Friends\\Portraits\\Florine à 17 ans.jpg",
+   "classe": "recuperee",
+   "octets": 505184,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\FUN\\Friends\\Portraits\\Mams_danse_orientale122.jpg",
+   "classe": "recuperee",
+   "octets": 170048,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\FUN\\Friends\\Portraits\\Marilene.jpg",
+   "classe": "recuperee",
+   "octets": 131083,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\FUN\\Friends\\Portraits\\Michael_01.jpg",
+   "classe": "recuperee",
+   "octets": 821192,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\FUN\\Friends\\Portraits\\Michael_Huegli.jpg",
+   "classe": "recuperee",
+   "octets": 278394,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\FUN\\Friends\\Portraits\\Michael_in_Dubrovnik_2004.jpeg",
+   "classe": "recuperee",
+   "octets": 5862,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\FUN\\Friends\\Portraits\\Mike.jpg",
+   "classe": "recuperee",
+   "octets": 5747,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\FUN\\Friends\\Portraits\\Mike01.png",
+   "classe": "recuperee",
+   "octets": 87464,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\FUN\\Friends\\Portraits\\Mike02.png",
+   "classe": "recuperee",
+   "octets": 359118,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\FUN\\Friends\\Portraits\\Mike03.png",
+   "classe": "recuperee",
+   "octets": 68917,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\FUN\\Friends\\Portraits\\Mike04.png",
+   "classe": "recuperee",
+   "octets": 55350,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\FUN\\Friends\\Portraits\\Mike_001.jpg",
+   "classe": "recuperee",
+   "octets": 76940,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\FUN\\Friends\\Portraits\\Mike_BlingBling.jpg",
+   "classe": "recuperee",
+   "octets": 55864,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\FUN\\Friends\\Portraits\\Mike_Gnome.jpg",
+   "classe": "recuperee",
+   "octets": 56269,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\FUN\\Friends\\Portraits\\Mike_Zarganar.jpg",
+   "classe": "recuperee",
+   "octets": 58538,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\FUN\\Friends\\Portraits\\Mike_devil_01.jpg",
+   "classe": "recuperee",
+   "octets": 90263,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\FUN\\Friends\\Portraits\\Mike_devil_02.jpg",
+   "classe": "recuperee",
+   "octets": 82343,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\FUN\\Friends\\Portraits\\Mike_devil_03.jpg",
+   "classe": "recuperee",
+   "octets": 86868,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\FUN\\Friends\\Portraits\\Mike_devil_04.jpg",
+   "classe": "recuperee",
+   "octets": 106539,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\FUN\\Friends\\Portraits\\Mike_devil_05.jpg",
+   "classe": "recuperee",
+   "octets": 68273,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\FUN\\Friends\\Portraits\\Mike_noel07.png",
+   "classe": "recuperee",
+   "octets": 285188,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\FUN\\Friends\\Portraits\\Mike_vieux.jpg",
+   "classe": "recuperee",
+   "octets": 61834,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\FUN\\Friends\\Portraits\\Portrait_Mo.jpg",
+   "classe": "recuperee",
+   "octets": 28268,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\FUN\\Friends\\Portraits\\ReMike.jpg",
+   "classe": "recuperee",
+   "octets": 3148977,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\FUN\\Friends\\Portraits\\Zab.jpg",
+   "classe": "recuperee",
+   "octets": 2816973,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\Syneco\\20151217_124113.jpg",
+   "classe": "recuperee",
+   "octets": 5322476,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\Syneco\\20151217_124124.jpg",
+   "classe": "recuperee",
+   "octets": 4692661,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\Syneco\\20151217_124200.jpg",
+   "classe": "recuperee",
+   "octets": 5598790,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\Syneco\\MGM Menerga\\20170522_092141.jpg",
+   "classe": "tronquee",
+   "octets": 3049018,
+   "dims": [
+    4032,
+    3024
+   ]
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\Syneco\\MGM Menerga\\20170522_092144.jpg",
+   "classe": "recuperee",
+   "octets": 3001021,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\Syneco\\MGM Menerga\\20170522_092154.jpg",
+   "classe": "recuperee",
+   "octets": 3049931,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\Syneco\\MGM Menerga\\20170522_092159.jpg",
+   "classe": "recuperee",
+   "octets": 2520588,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\Syneco\\MGM Menerga\\20170522_092211.jpg",
+   "classe": "recuperee",
+   "octets": 2817659,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\Syneco\\MGM Menerga\\20170522_092306.jpg",
+   "classe": "recuperee",
+   "octets": 3016422,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\Syneco\\MGM Menerga\\20170522_092308.jpg",
+   "classe": "recuperee",
+   "octets": 3020693,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\Syneco\\MGM Menerga\\20170522_092323.jpg",
+   "classe": "recuperee",
+   "octets": 1779945,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\Syneco\\MGM Menerga\\20170522_092328.jpg",
+   "classe": "recuperee",
+   "octets": 1778795,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\Syneco\\MGM Menerga\\20170522_092412.jpg",
+   "classe": "recuperee",
+   "octets": 2834215,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\Syneco\\MGM Menerga\\20170522_092414.jpg",
+   "classe": "recuperee",
+   "octets": 2850243,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\Syneco\\MGM Menerga\\20170522_150549.jpg",
+   "classe": "recuperee",
+   "octets": 4508048,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Papa\\1983\\1983_Bümpliz Weihnacht\\35_Regarde labas.jpg",
+   "classe": "recuperee",
+   "octets": 232553,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Papa\\1983\\1983_Bümpliz Weihnacht\\36_.jpg",
+   "classe": "recuperee",
+   "octets": 225319,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Papa\\2000\\2000 Besuch Arturo\\Mainau\\RO_Art_1.jpg",
+   "classe": "tronquee",
+   "octets": 1071731,
+   "dims": [
+    1552,
+    1169
+   ]
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Papa\\2000\\2000 Besuch Arturo\\Mainau\\RO_Art_3.jpg",
+   "classe": "recuperee",
+   "octets": 889592,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Papa\\2000\\2000 Besuch Arturo\\Mainau\\RO_Art_4.JPG",
+   "classe": "recuperee",
+   "octets": 969830,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Papa\\2000\\2000 Besuch Arturo\\Mainau\\RO_Fuente.jpg",
+   "classe": "recuperee",
+   "octets": 799845,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Papa\\2000\\2000 Besuch Arturo\\Mainau\\RO_See.jpg",
+   "classe": "recuperee",
+   "octets": 790624,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Papa\\2000\\2000 Besuch Arturo\\Mainau\\Schloss_aussen.jpg",
+   "classe": "recuperee",
+   "octets": 731162,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Papa\\2000\\2000 Besuch Arturo\\Mainau\\Schloss_innen.jpg",
+   "classe": "recuperee",
+   "octets": 730428,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Papa\\2000\\2000 Besuch Arturo\\Mainau\\See_Zypressen.jpg",
+   "classe": "recuperee",
+   "octets": 844176,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Papa\\2000\\2000 Besuch Arturo\\Mainau\\Unter_Ast.jpg",
+   "classe": "recuperee",
+   "octets": 809226,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Papa\\2001\\20001010 Irpavi\\UnserHaus.JPG",
+   "classe": "recuperee",
+   "octets": 513713,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Papa\\2001\\20001010 Irpavi\\Vatis Moebel1.JPG",
+   "classe": "recuperee",
+   "octets": 535583,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Papa\\2001\\20001010 Irpavi\\Vatis Moebel2.JPG",
+   "classe": "recuperee",
+   "octets": 552043,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Papa\\2001\\20001010 Irpavi\\Vivi Paola He Ce ru.JPG",
+   "classe": "recuperee",
+   "octets": 596179,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Papa\\2002\\20020812  Baile Fraternidad\\119-1994_IMG.JPG",
+   "classe": "tronquee",
+   "octets": 690803,
+   "dims": [
+    1280,
+    960
+   ]
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Papa\\2002\\20020812  Baile Fraternidad\\119-1995_IMG.JPG",
+   "classe": "recuperee",
+   "octets": 594415,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Papa\\2002\\20020812  Baile Fraternidad\\119-1996_IMG.JPG",
+   "classe": "recuperee",
+   "octets": 651228,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Papa\\2002\\20020812  Baile Fraternidad\\119-2000_IMG.JPG",
+   "classe": "recuperee",
+   "octets": 668101,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Papa\\2002\\20020812  Baile Fraternidad\\120-2001_IMG.JPG",
+   "classe": "recuperee",
+   "octets": 628891,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Papa\\2002\\20020812  Baile Fraternidad\\120-2002_IMG.JPG",
+   "classe": "recuperee",
+   "octets": 674210,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Papa\\2002\\20020812  Baile Fraternidad\\120-2003_IMG.JPG",
+   "classe": "recuperee",
+   "octets": 648421,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Papa\\2002\\20020812  Baile Fraternidad\\120-2004_IMG.JPG",
+   "classe": "recuperee",
+   "octets": 680354,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Papa\\2002\\20020812  Baile Fraternidad\\120-2005_IMG.JPG",
+   "classe": "recuperee",
+   "octets": 715353,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Papa\\2002\\20020812  Baile Fraternidad\\120-2009_IMG.JPG",
+   "classe": "recuperee",
+   "octets": 661153,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Papa\\2002\\20020812  Baile Fraternidad\\120-2011_IMG.JPG",
+   "classe": "recuperee",
+   "octets": 666566,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Papa\\2002\\20020812  Baile Fraternidad\\120-2012_IMG.JPG",
+   "classe": "recuperee",
+   "octets": 647613,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Papa\\2002\\20020812  Baile Fraternidad\\121-2121_IMG.JPG",
+   "classe": "recuperee",
+   "octets": 581676,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Papa\\2002\\20020812  Baile Fraternidad\\121-2122_IMG.JPG",
+   "classe": "recuperee",
+   "octets": 591589,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Papa\\2002\\20020812  Baile Fraternidad\\121-2123_IMG.JPG",
+   "classe": "recuperee",
+   "octets": 528739,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Papa\\2002\\20020812  Baile Fraternidad\\121-2124_IMG.JPG",
+   "classe": "recuperee",
+   "octets": 609480,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Papa\\2002\\20020812  Baile Fraternidad\\121-2125_IMG.JPG",
+   "classe": "recuperee",
+   "octets": 585548,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Papa\\2002\\20020812  Baile Fraternidad\\121-2127_IMG.JPG",
+   "classe": "recuperee",
+   "octets": 647771,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Papa\\2002\\20021109 LimaNov02\\SAP_Kurs\\Cosude y Embajada.JPG",
+   "classe": "tronquee",
+   "octets": 477750,
+   "dims": [
+    1600,
+    1200
+   ]
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Papa\\2002\\20021109 LimaNov02\\SAP_Kurs\\HUM_Alessandro.JPG",
+   "classe": "recuperee",
+   "octets": 569983,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Papa\\2002\\20021109 LimaNov02\\SAP_Kurs\\JR_Mili.JPG",
+   "classe": "recuperee",
+   "octets": 567026,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Papa\\2002\\20021109 LimaNov02\\SAP_Kurs\\La sala.JPG",
+   "classe": "recuperee",
+   "octets": 485933,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Papa\\2002\\20021109 LimaNov02\\SAP_Kurs\\Lilian_HUM_JR.JPG",
+   "classe": "recuperee",
+   "octets": 527771,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Papa\\2002\\20021109 LimaNov02\\SAP_Kurs\\Nosotros.JPG",
+   "classe": "recuperee",
+   "octets": 857377,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Papa\\2002\\20021109 LimaNov02\\SAP_Kurs\\Pausa.JPG",
+   "classe": "recuperee",
+   "octets": 766415,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Papa\\2002\\20021109 LimaNov02\\SAP_Kurs\\Residencia.JPG",
+   "classe": "recuperee",
+   "octets": 521826,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Papa\\2002\\20021109 LimaNov02\\SAP_Kurs\\Tatiana_Rosario.JPG",
+   "classe": "recuperee",
+   "octets": 590965,
+   "dims": null
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Papa\\2004\\20040703 Riberalta_Julio04\\CessnaGrandCaravan\\Illimani2.JPG",
+   "classe": "tronquee",
+   "octets": 486437,
+   "dims": [
+    1600,
+    1200
+   ]
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Papa\\2004\\20040703 Riberalta_Julio04\\CessnaGrandCaravan\\Maeander.JPG",
+   "classe": "recuperee",
+   "octets": 508386,
+   "dims": null
+  }
+ ]
+}

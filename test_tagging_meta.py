@@ -298,6 +298,43 @@ def test_retag():
     return ok
 
 
+def test_classe_contenu():
+    """Ce qu un fichier EST quand le decodeur dit seulement non (05/09)."""
+    ok = True
+    TEXTE = b'   Read error in the sector !      Read error in the sector !'
+    JPEG = b'\xff\xd8\xff\xe0' + b'JFIF' + b'\x00' * 12
+    PNG = b'\x89PNG\r\n\x1a\n' + b'\x00' * 12
+    ok &= _check(tm.classe_contenu(TEXTE) == 'perdu-texte',
+                 "du texte a la place des pixels : contenu PERDU")
+    ok &= _check(tm.classe_contenu(b'\x00' * 32) == 'perdu-vide',
+                 "que des zeros : contenu PERDU")
+    ok &= _check(tm.classe_contenu(b'') == 'perdu-vide', "vide : contenu PERDU")
+    ok &= _check(tm.classe_contenu(JPEG) == 'tronquee',
+                 "vrai JPEG mais illisible : tronquee, pas perdue")
+    ok &= _check(tm.classe_contenu(PNG) == 'tronquee', "idem PNG")
+    ok &= _check(tm.classe_contenu(JPEG, b'\xff\xd9', 9, (3000, 2000)) == 'image',
+                 "JPEG complet et grand : une image, on ne l ecarte pas")
+    ok &= _check(tm.classe_contenu(JPEG, b'zz', 9, (3000, 2000)) == 'tronquee',
+                 "marqueur de fin absent : tronquee, meme si les dims se lisent")
+    ok &= _check(tm.classe_contenu(JPEG, b'\xff\xd9', 9, (160, 120)) == 'vignette',
+                 "petite en PIXELS : vignette")
+    # LE point de la mesure du 05/09 : le POIDS ne dit rien.
+    ok &= _check(tm.classe_contenu(TEXTE, b'!!', 3110647) == 'perdu-texte',
+                 "3 Mo de texte reste du texte : aucun seuil de taille ne l attrape")
+    ok &= _check(tm.classe_contenu(JPEG, b'\xff\xd9', 40000, (1600, 1200)) == 'image',
+                 "40 ko et 1600x1200 : une vraie photo de 2005, pas une vignette")
+    ok &= _check(tm.classe_contenu(b'\x1f\x8b\x08rien') == 'inconnue',
+                 "ni image ni texte : on ne conclut pas")
+    ok &= _check(tm.classe_contenu(JPEG, b'\xff\xd9', 9, 'pas un couple') == 'inconnue',
+                 "dimensions absurdes : on ne conclut pas, on ne leve pas")
+    ok &= _check(tm.contenu_perdu('perdu-texte') and tm.contenu_perdu('perdu-vide'),
+                 "les deux classes perdues sont dites perdues")
+    ok &= _check(not any(tm.contenu_perdu(c) for c in
+                         ('tronquee', 'vignette', 'image', 'inconnue', '')),
+                 "rien d autre n est declare perdu -- surtout pas l inconnue")
+    return ok
+
+
 if __name__ == "__main__":
     print("== parse_meta_gps_item ==")
     a = test_parse()
@@ -319,8 +356,10 @@ if __name__ == "__main__":
     jj = test_date_fiable()
     print("== retag de masse (levier + selection) ==")
     kk = test_retag()
+    print("== classe_contenu (ce qu un fichier EST) ==")
+    ll = test_classe_contenu()
     print()
-    if all([a, b, d, e, f, g, h, i, jj, kk]):
+    if all([a, b, d, e, f, g, h, i, jj, kk, ll]):
         print("TOUS LES TESTS PASSENT")
         raise SystemExit(0)
     print("DES TESTS ONT ECHOUE")

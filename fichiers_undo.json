@@ -1,1 +1,17 @@
-[]
+[
+ {
+  "op": "delete",
+  "src": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2025\\Seychelles 2025\\Plongée\\Plongée_assets\\thumbnail\\TM1ZKE2EYI-1951.png",
+  "dst": "\\\\NAS-Bremblens\\home\\Photos\\.corbeille-effacements\\20260906-002733-369\\TM1ZKE2EYI-1951.png",
+  "idx": 1,
+  "keys": [
+   [
+    "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2025\\Seychelles 2025\\Plongée\\Plongée_assets\\thumbnail\\TM1ZKE2EYI-1951.png",
+    "\\\\NAS-Bremblens\\home\\Photos\\.corbeille-effacements\\20260906-002733-369\\TM1ZKE2EYI-1951.png"
+   ]
+  ],
+  "ts": 1788647256.8398154,
+  "expire": 1804199256.8398154,
+  "par": "Mike"
+ }
+]

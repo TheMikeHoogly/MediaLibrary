@@ -2363,7 +2363,78 @@ def parse_tags(raw):
     return kw_fr, kw_en, desc
 
 
-def _marquer_echec(name, raison):
+def classer_echecs():
+    """Passe UNIQUE : donne sa classe à chaque entrée en échec qui n'en a pas.
+
+    Les 941 fichiers au contenu perdu ont été marqués `failed` bien avant que
+    la classe existe. Sans ce rattrapage, la correction ne servirait qu'aux
+    échecs FUTURS — et les mille lignes de `/sante` resteraient telles quelles.
+    64 octets par fichier, une seule fois : la classe est ensuite écrite dans
+    l'entrée, et la question ne se repose plus, même au prochain démarrage.
+
+    Volontairement lente (une pause entre deux fichiers) : elle lit le NAS
+    pendant que la campagne de retag y travaille, et elle n'est pressée par
+    rien."""
+    import tagging_meta as _tm
+    time.sleep(60)                       # laisse le démarrage se faire
+    a_faire = [k for k, e in list(STORE.data.items())
+               if isinstance(e, dict) and e.get('failed') and not e.get('classe')]
+    if not a_faire:
+        return
+    print(f"  🔎 Classement des {len(a_faire)} échec(s) sans classe…")
+    comptes, n = {}, 0
+    for k in a_faire:
+        try:
+            classe = _classe_fichier(_resolve_key(k)) or 'inconnue'
+            e = STORE.data.get(k)
+            if not isinstance(e, dict) or not e.get('failed'):
+                continue
+            e = dict(e)
+            e['classe'] = classe
+            STORE.set(k, e)
+            comptes[classe] = comptes.get(classe, 0) + 1
+            n += 1
+        except Exception as ex:                               # noqa: BLE001
+            print(f"  ⚠ classement de {k} : {str(ex)[:70]}")
+        time.sleep(0.05)                 # le NAS sert la campagne, pas ce comptage
+    detail = ", ".join(f"{c} : {v}" for c, v in
+                       sorted(comptes.items(), key=lambda x: -x[1]))
+    print(f"  🔎 {n} échec(s) classé(s) — {detail}")
+
+
+def _classe_fichier(path):
+    """Ce que le fichier EST, quand le décodeur a seulement dit non.
+
+    Lit 64 octets au début, 2 à la fin, et demande ses dimensions à Pillow (qui
+    lit l'en-tête sans décoder). Le VERDICT, lui, est la règle pure
+    `tagging_meta.classe_contenu` — la même que le banc, pour qu'il n'y en ait
+    jamais deux versions. Renvoie None si même ça échoue : on ne conclut pas
+    d'un fichier qu'on n'a pas pu ouvrir."""
+    import tagging_meta
+    try:
+        taille = path.stat().st_size
+        with open(path, 'rb') as f:
+            tete = f.read(64)
+            queue = b''
+            if taille > 2:
+                f.seek(-2, 2)
+                queue = f.read(2)
+    except OSError:
+        return None
+    dims = None
+    try:
+        from PIL import Image
+        with Image.open(path) as im:
+            dims = im.size
+    except Exception:                                         # noqa: BLE001
+        dims = None
+    try:
+        return tagging_meta.classe_contenu(tete, queue, taille, dims)
+    except Exception:                                         # noqa: BLE001
+        return None
+
+
+def _marquer_echec(name, raison, classe=None):
     """Note l'échec d'un fichier dans l'index — sans JAMAIS tuer son appelant.
 
     Le 27/08 à 23:42:50, c'est cette écriture-ci qui a porté le coup fatal.
@@ -2378,8 +2449,13 @@ def _marquer_echec(name, raison):
     regrettable ; mourir en essayant de le noter fait perdre tout le reste.
     Renvoie True si la note est passée, False si l'index était indisponible."""
     try:
-        STORE.set(name, {"failed": True, "error": str(raison)[:200],
-                         "at": time.time()})
+        entry = {"failed": True, "error": str(raison)[:200], "at": time.time()}
+        if classe:
+            # La CLASSE, pas seulement le message : « contenu perdu » et
+            # « hoquet SMB » se lisaient pareil sur /sante, donc se traitaient
+            # pareil — c'est-à-dire pas du tout.
+            entry["classe"] = classe
+        STORE.set(name, entry)
         return True
     except Exception as e:
         print(f"  ⚠ {name}: échec impossible à noter ({e}) — index "
@@ -2574,6 +2650,25 @@ def tagger_worker():
                 time.sleep(30)
                 TAG_QUEUE.put(name)
         except TagError as e:
+            # Un fichier dont le contenu n'est PAS une image ne le deviendra
+            # pas au troisième essai. Mesuré le 05/09 : 941 fichiers de 2 à
+            # 3 Mo remplis d'un message d'outil de récupération, réessayés
+            # trois fois chacun à chaque démarrage depuis des mois.
+            classe = None
+            if 'illisible' in str(e):
+                try:
+                    classe = _classe_fichier(_resolve_key(name))
+                except Exception:                             # noqa: BLE001
+                    classe = None
+            import tagging_meta as _tm
+            if classe and _tm.contenu_perdu(classe):
+                print(f"  ✗ {name} : contenu perdu ({classe}) — ce fichier ne "
+                      f"porte aucune image, aucun nouvel essai")
+                if not (retag and _echec_retag(name, e)):
+                    _marquer_echec(name, f"contenu perdu ({classe}) : le fichier "
+                                         f"ne contient pas d'image", classe=classe)
+                pending_done(name)
+                continue
             n = fails.get(name, 0) + 1
             fails[name] = n
             if n < 3:
@@ -3505,7 +3600,14 @@ def _sync_dir(label, cur, own_keys, first=False, deep=False):
     # qu'un redémarrage perdrait — la progression, elle, vit dans le `pipe` de
     # chaque entrée, sur disque. Rien n'est retiré de l'index : la photothèque
     # reste entière, nommée et cherchable pendant les jours que dure la campagne.
-    if deep and TAG_QUEUE.qsize() < RETAG_LOT:
+    # PAS sous `deep` (corrigé le 06/09) : le lot ne dépendait que du scan
+    # approfondi, soit un cycle sur douze — environ 90 minutes — alors qu'un lot
+    # de 500 se consomme en ~2 h. Observé sur la nuit : trois lots seulement
+    # entre 20:00 et 00:17, file VIDE à 00:47, GPU au repos en pleine campagne.
+    # Ce bloc ne lit que la mémoire ; la seule chose qu'il attend, c'est la
+    # liste des fichiers de la racine — donc il a sa place à CHAQUE scan de
+    # cette racine, et le plafond de file suffit à le borner.
+    if TAG_QUEUE.qsize() < RETAG_LOT:
         import tagging_meta as _tm
         cible = retag_cible()
         if cible:
@@ -13694,9 +13796,24 @@ class Handler(BaseHTTPRequestHandler):
     def _serve_health(self):
         """Liste les fichiers à problème : image illisible ou métadonnées
         non inscriptibles (EXIF endommagé)."""
+        # « Contenu perdu » À PART, et compté (05/09). Sur 1 034 problèmes,
+        # 942 étaient des fichiers de 2 à 3 Mo entièrement remplis d'un message
+        # d'outil de récupération de disque — pas des images abîmées : plus
+        # d'images du tout. Les lister une par une au milieu des incidents
+        # RÉPARABLES noyait ces derniers : une page de santé qui montre mille
+        # lignes sur lesquelles on ne peut rien faire ne se lit plus, et c'est
+        # exactement ce qu'elle devait empêcher. Ils sont donc résumés en une
+        # ligne, avec leur poids — c'est ce chiffre-là qui compte, parce qu'il
+        # dit combien d'octets du NAS ne portent plus rien.
+        import tagging_meta as _tm
         problems = []
+        perdus, perdus_o = [], 0
         for name, e in sorted(STORE.data.items()):
             if e.get('failed'):
+                if _tm.contenu_perdu(e.get('classe') or ''):
+                    perdus.append(name)
+                    perdus_o += e.get('size') or 0
+                    continue
                 problems.append((name, 'illisible',
                                  'Analyse IA impossible — ' + str(e.get('error', ''))[:150]))
             elif e.get('file_error') or e.get('write_fails', 0) >= 3:
@@ -13704,6 +13821,19 @@ class Handler(BaseHTTPRequestHandler):
                                  'Image OK mais métadonnées non inscriptibles — '
                                  + str(e.get('file_error', ''))[:150]))
         rows = []
+        if perdus:
+            liste = '\n'.join(html.escape(k) for k in perdus[:2000])
+            rows.append(
+                '<details class="row" style="display:block">'
+                '<summary><span class="ic">&#128465;&#65039; contenu perdu</span>'
+                f'<span class="nm">{len(perdus)} fichier(s), '
+                f'{perdus_o / 1e9:.1f} Go — le fichier est là, l\'image n\'y est plus.'
+                '<br><small style="color:#777">Un outil de récupération a écrit '
+                'à la place des pixels. Rien à retenter : ces fichiers ne '
+                'redeviendront pas des photos. À restaurer depuis une autre '
+                'copie, ou à ranger à part.</small></span></summary>'
+                f'<pre style="white-space:pre-wrap;font-size:.75rem;'
+                f'color:#777;margin:8px 0 0">{liste}</pre></details>')
         for name, kind, msg in problems:
             badge = '&#10060; illisible' if kind == 'illisible' else '&#9888;&#65039; EXIF endommagé'
             inner = (f'<span class="ic">{badge}</span>'
@@ -13752,7 +13882,8 @@ class Handler(BaseHTTPRequestHandler):
                 .replace('__EXTRA__', '')
                 .replace('__CRUMBS__',
                          f'Santé — {len(problems)} fichier(s) à problème, '
-                         f'{len(fils)} fil(s) à signaler')
+                         + (f'{len(perdus)} au contenu perdu, ' if perdus else '')
+                         + f'{len(fils)} fil(s) à signaler')
                 .replace('__CTX__', 'null')
                 .replace('__ROWS__', body))
         self._send_html(page)
@@ -14310,6 +14441,7 @@ if __name__ == '__main__':
     fil_surveille(_backfill, nom='backfill:dates', boucle=False,
                   args=('dates', backfill_dates))
     fil_surveille(reconcile_named_tags, boucle=False)
+    fil_surveille(classer_echecs, boucle=False)
     fil_surveille(_backfill, nom='backfill:noms', boucle=False,
                   args=('noms', reimport_name_tags))
     # Le plan de rangement par année se RECALCULE à chaque démarrage. Le 29/08,

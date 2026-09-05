@@ -78,7 +78,7 @@ class LevierAbsentNeFaitRien(unittest.TestCase):
 
     def test_selection_sous_scan_approfondi_et_cible(self):
         s = _src("_sync_dir")
-        self.assertIn("if deep and TAG_QUEUE.qsize() < RETAG_LOT:", s)
+        self.assertIn("if TAG_QUEUE.qsize() < RETAG_LOT:", s)
         self.assertIn("cles_a_retaguer", s)
         # borne du lot : la file est en memoire
         self.assertIn("lot=RETAG_LOT", s)
@@ -88,6 +88,15 @@ class LevierAbsentNeFaitRien(unittest.TestCase):
         s = _src("_sync_dir")
         bloc = s.split("# 2 bis)")[1].split("# 3)")[0]
         self.assertNotIn("remove_many", bloc)
+
+    def test_le_lot_ne_depend_pas_du_scan_approfondi(self):
+        # Il en dependait : un cycle sur douze, ~90 min, alors qu un lot de 500
+        # se consomme en ~2 h. Nuit du 05 au 06/09 : trois lots entre 20:00 et
+        # 00:17, file VIDE a 00:47, GPU au repos en pleine campagne.
+        s = _src("_sync_dir")
+        bloc = s.split("# 2 bis)")[1].split("# 3)")[0]
+        self.assertNotIn("if deep and TAG_QUEUE", bloc)
+        self.assertIn("if TAG_QUEUE.qsize() < RETAG_LOT:", bloc)
 
     def test_retag_enfile_avant_la_passe_des_modifies(self):
         # La passe des « fichiers modifies » fait un stat sur CHAQUE fichier de
@@ -103,12 +112,16 @@ class UnEchecNeCoutePasLaPhoto(unittest.TestCase):
     def setUp(self):
         self.s = _src("tagger_worker")
 
-    def test_les_trois_sorties_d_echec_sont_gardees(self):
-        # Chaque `_marquer_echec` du worker est precede de la garde retag.
+    def test_chaque_sortie_d_echec_est_gardee(self):
+        # L invariant n est PAS « il y a trois sorties » -- il y en avait trois,
+        # une quatrieme est arrivee le 06/09 (contenu perdu) et ce test est
+        # devenu rouge pour une raison qui n etait pas un defaut. L invariant,
+        # c est que CHAQUE `_marquer_echec` du worker soit precede de la garde
+        # retag : ecrit ainsi, il tient encore a la cinquieme.
         n_marquer = self.s.count("_marquer_echec(name")
         n_garde = self.s.count("if not (retag and _echec_retag(name")
-        self.assertEqual(n_marquer, 3, "3 sorties d'echec attendues")
-        self.assertEqual(n_garde, 3,
+        self.assertGreaterEqual(n_marquer, 3)
+        self.assertEqual(n_marquer, n_garde,
                          "chaque sortie d'echec doit passer par _echec_retag")
 
     def test_retag_defini_avant_le_try(self):

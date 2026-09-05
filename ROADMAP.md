@@ -90,6 +90,37 @@ undo = `*.jpg_original`) puis **bat 43** (originaux en quarantaine
 `.corbeille-rangement` ; option `_A TRIER` = les 125 du 29/08). 11 tests ;
 pièges du banc et spec : amorce + git.
 
+**1 septies bis. 941 photos de 2008-2015 sont VIDES — 3,0 Go de fichiers qui
+n'en sont plus. MESURÉ le 05/09, décision à Mike.** Parti d'une remarque de
+Mike (« `/sante` liste des erreurs, ce sont sûrement des vignettes trop
+petites »), le banc `verifier_images_illisibles.py` a OUVERT les 984 « images
+illisibles » et les a classées. **Zéro vignette.** Ce qu'il y a à la place :
+**941 fichiers de 2 à 3 Mo dont le contenu est, du premier au dernier octet, le
+texte `Read error in the sector !` répété** — vérifié sur un fichier entier :
+100 % de texte imprimable, aucun marqueur JPEG nulle part. Un outil de
+récupération de disque a écrit son message À LA PLACE des pixels. S'y ajoutent
+39 tronquées (vraies photos, 2560×1920 et 3072×2304, fin manquante — donc
+récupérables), 1 creuse, 8 valides dont la cause est ailleurs.
+**Une règle de taille minimale, l'hypothèse de départ, n'en aurait écarté
+AUCUN** — et elle aurait eu l'air de marcher, le bruit diminuant pour une autre
+raison. Ces fichiers sont datés de 2008 à 2015 (DSC00551, les Nokia de 2010, la
+Bolivie 2015, l'EVG) et **ils sont passés inaperçus parce qu'ils sont là, à la
+bonne taille** : tout contrôle qui vérifie la présence ou le poids les compte
+comme saines — y compris, vraisemblablement, le rapatriement Google de fin août
+(« ABSENT 0 »). **Deux questions pour Mike** : (a) existent-elles ailleurs
+(Takeout `C:\GOOGLE PHOTOS\extrait`, vieux disque) — c'est alors une
+restauration, pas une perte, et la comparaison des 941 noms est à faire ;
+(b) que doivent-elles devenir dans la photothèque ? **Fait en attendant** :
+elles ont leur propre classe (`tagging_meta.classe_contenu`, règle pure
+partagée par le serveur ET le banc), ne sont plus réessayées trois fois à
+chaque démarrage, et `/sante` les résume en UNE ligne dépliable avec leur
+poids au lieu de 941 : **« 92 fichier(s) à problème, 942 au contenu perdu »**
+là où on lisait « 1 034 fichier(s) à problème ». Une passe unique
+(`classer_echecs`) a rattrapé les entrées marquées avant que la classe existe.
+**Piste non prise, à proposer à Mike** : `LOAD_TRUNCATED_IMAGES` rendrait les
+39 tronquées lisibles, donc taguables et affichables — c'est un changement de
+comportement du décodage, il mérite d'être décidé, pas glissé.
+
 **1 octies. Les VIDÉOS — phases 0 et 1 CLOSES (30/08).**
 - **Phase 0, rangement par année** : `inventaire_videos.py` date par le NOM
   (`AAAAMMJJ_HHMMSS`, `VID-…-WA`), sinon ExifTool `-fast`, sinon le dossier

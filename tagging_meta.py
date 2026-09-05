@@ -246,6 +246,72 @@ def prompt_tagging(a):
             + bloc_assertions(a) + '\n\n' + REGLES_JSON)
 
 
+# ─────────── Ce qu'un fichier EST, quand le decodeur dit seulement non ──────
+
+VIGNETTE_MAX_PX = 320       # cote max sous lequel une image VALIDE est une vignette
+
+
+def classe_contenu(tete, queue=b'', taille=0, dims=None):
+    """Ce qu'un fichier est vraiment, d'apres ses premiers octets, ses deux
+    derniers, sa taille et ses dimensions si un decodeur a su les lire.
+
+    POURQUOI CETTE FONCTION EXISTE (05/09). `/sante` annoncait 1 034 problemes,
+    dont 984 sous le meme libelle : « image illisible ». Un libelle unique pour
+    des causes differentes ne se traite pas -- on ne sait ni quoi retenter, ni
+    quoi ecarter, ni meme combien meritent l'un ou l'autre. Mesure faite
+    (`verifier_images_illisibles.py`, 984 fichiers ouverts) : **941 fichiers de
+    2 a 3 Mo dont le contenu est, du premier au dernier octet, le texte
+    « Read error in the sector ! » repete** -- un outil de recuperation de
+    disque a ecrit son message A LA PLACE des pixels. Zero vignette. Un seuil
+    de taille minimale, l'hypothese de depart, n'en aurait ecarte AUCUN.
+
+    Les classes, et ce qu'elles impliquent :
+      perdu-texte  contenu entierement textuel : la photo n'existe plus. Ne
+                   sera jamais lisible ; ne rien retenter, ne pas la lister
+                   ligne a ligne comme si on pouvait agir.
+      perdu-vide   octets nuls. Meme conclusion.
+      tronquee     vrai debut d'image, fin manquante. Recuperable en partie.
+      vignette     image VALIDE mais minuscule -- juge sur les PIXELS, jamais
+                   sur les octets : une photo de 2005 pese peu et fait quand
+                   meme 1600x1200, et une vignette mal reencodee peut peser
+                   plus qu'elle.
+      image        image valide de taille normale : si elle echoue, la cause
+                   est ailleurs. Ne pas l'ecarter.
+      inconnue     rien de tout cela ; on ne conclut pas.
+
+    Pure : l'appelant lit les octets, cette fonction ne fait que juger. Elle
+    est LA source unique de ce verdict -- le banc et le serveur l'appellent
+    tous les deux, pour ne pas en avoir deux versions qui divergeront.
+    """
+    tete = bytes(tete or b'')
+    if not tete:
+        return 'perdu-vide'
+    if tete[:16] == b'\x00' * 16:
+        return 'perdu-vide'
+    # Du texte imprimable la ou devraient etre des pixels : ce n'est pas une
+    # image abimee, c'est autre chose ecrit dans un fichier au nom d'image.
+    if all(32 <= b < 127 or b in (9, 10, 13) for b in tete[:16]):
+        return 'perdu-texte'
+    jpeg = tete[:2] == b'\xff\xd8'
+    png = tete[:8] == b'\x89PNG\r\n\x1a\n'
+    if dims is None:
+        return 'tronquee' if (jpeg or png) else 'inconnue'
+    if jpeg and bytes(queue or b'') != b'\xff\xd9':
+        return 'tronquee'
+    try:
+        if max(dims) <= VIGNETTE_MAX_PX:
+            return 'vignette'
+    except (TypeError, ValueError):
+        return 'inconnue'
+    return 'image'
+
+
+def contenu_perdu(classe):
+    """Cette classe designe-t-elle un fichier dont le contenu ne reviendra
+    pas ? Une seule question, un seul endroit ou la repondre."""
+    return classe in ('perdu-texte', 'perdu-vide')
+
+
 # ────────────── Campagne de RETAG de masse (chantier 2 quater) ─────────────
 
 def version_retag(texte, defaut):
