@@ -2594,6 +2594,16 @@ def tagger_worker():
 
 
 SCAN_INTERVAL = 300  # secondes entre deux scans du dossier Uploads
+# Cadence SÉPARÉE pour les racines NAS (audit O13). Uploads est local et court ;
+# une racine NAS, c'est un `rglob` de 44 876 fichiers sur SMB — MESURÉ à 7 min
+# 35 s puis 8 min 52 s le 05/09. Lancée toutes les 5 minutes, elle ne finissait
+# jamais avant la suivante : le partage était parcouru EN CONTINU, et pendant la
+# campagne de retag elle disputait au tagueur la seule ressource dont il a
+# besoin. Un tour sur six (≈ 30 min) suffit largement — les nouveautés arrivent
+# par l'upload, qui a son propre circuit et sa propre clé. Aligné sur le scan
+# approfondi (`cycle % 12 == 6`, donc toujours un multiple de 6) : un cycle
+# approfondi ne peut pas tomber sur un tour où le NAS n'est pas lu.
+NAS_SCAN_CYCLES = 6
 
 # Dossiers supplémentaires à taguer (un chemin par ligne, scan récursif)
 TAG_DIRS_FILE = SCRIPT_DIR / "dossiers_a_taguer.txt"
@@ -3553,8 +3563,11 @@ def _sync_dir(label, cur, own_keys, first=False, deep=False):
               + (f" — {ecart} déjà absente(s) de l'index" if ecart else ""))
 
 
-def scan_uploads(first=False, deep=False):
-    """Scan des racines : Uploads (plat) + dossiers à taguer (récursif)."""
+def scan_uploads(first=False, deep=False, nas=True):
+    """Scan des racines : Uploads (plat) + dossiers à taguer (récursif).
+
+    `nas=False` saute les racines NAS pour ce tour — voir `NAS_SCAN_CYCLES`.
+    Uploads, lui, est local et court : il reste à chaque cycle."""
     # ── racine Uploads, RECURSIF : fichier a plat -> clé = nom ; fichier en
     #    sous-dossier -> clé = chemin relatif posix (MEME convention que l'upload
     #    de dossier, cf. _do_post ~« dest.relative_to(UPLOAD_DIR).as_posix() »).
@@ -3588,10 +3601,13 @@ def scan_uploads(first=False, deep=False):
     # le NAS). Les entrées absolues déjà créées deviennent orphelines au scan
     # suivant → purge en cascade par forget_everywhere (étape 4 de _sync_dir).
     up_pref = _pkey(UPLOAD_DIR) + '/'
+    if not nas:
+        return
     for d in load_extra_dirs(verbose=first):
         if first:
             print(f"  🔍 Énumération de {d} — peut prendre plusieurs minutes "
                   f"sur le NAS…")
+        _t0 = time.time()
         try:
             files = [p for p in d.rglob('*')
                      if p.is_file() and p.suffix.lower() in MEDIA_EXT
@@ -3600,8 +3616,15 @@ def scan_uploads(first=False, deep=False):
         except OSError as e:
             print(f"  ⚠ Scan de {d} impossible : {e}")
             continue
-        if first:
-            print(f"  🔍 {d} : {len(files)} image(s)")
+        # DIT à chaque fois, pas seulement au démarrage (05/09). Cette
+        # énumération prend ~8 minutes sur 44 876 fichiers et elle tournait
+        # SILENCIEUSEMENT à chaque cycle de 5 minutes : le NAS était donc
+        # parcouru en boucle, sans interruption, et rien ne le disait. On ne
+        # l'a vu qu'en comparant les horodatages du journal après un
+        # redémarrage. Un travail de fond qui ne rend pas de comptes finit par
+        # ne plus travailler — ou par travailler tout le temps.
+        print(f"  🔍 {d} : {len(files)} image(s) énumérée(s) en "
+              f"{time.time() - _t0:.0f} s")
         cur = {str(p): p for p in files}
         pref = _pkey(d) + '/'
         own = [k for k in STORE.data if _pkey(k).startswith(pref)]
@@ -6299,6 +6322,10 @@ def maintenance_loop():
             # inoccupé une demi-heure avant de reprendre le travail. Sur une
             # campagne de cinq jours, c'est une journée perdue en attente.
             deep = (cycle % 12 == 6) or (cycle == 0 and retag_cible() is not None)
+            # Les racines NAS : un tour sur six (audit O13). `deep` implique le
+            # NAS, sinon la passe des modifiés et le lot de retag sauteraient un
+            # tour sur deux sans que rien ne le dise.
+            nas = first or deep or (cycle % NAS_SCAN_CYCLES == 0)
             # Réconciliation du cycle (chantier 10a) : on encadre le scan par la
             # TAILLE de l'index et on compare à ce que les mutations déclarées
             # prédisent. Le `finally` est essentiel : un cycle laissé OUVERT
@@ -6312,7 +6339,7 @@ def maintenance_loop():
             with STORE.lock:
                 REGISTRE.debut_cycle(len(STORE.data))
             try:
-                scan_uploads(first, deep)
+                scan_uploads(first, deep, nas=nas)
                 retro_write_metadata()
             finally:
                 with STORE.lock:

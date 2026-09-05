@@ -172,6 +172,37 @@ class LaDetectionNeRompsPasUnCluster(unittest.TestCase):
         self.assertLess(i_ass, i_oll)
 
 
+class LeNasNEstPasParcouruEnBoucle(unittest.TestCase):
+    """Audit O13, mesure du 05/09 : le `rglob` d une racine NAS (44 876
+    fichiers sur SMB) prend 7 a 9 minutes, et il tournait a CHAQUE cycle de
+    5 minutes -- donc en continu, sans jamais finir avant le suivant, et en
+    silence. Pendant la campagne de retag il disputait au tagueur la seule
+    ressource dont celui-ci a besoin."""
+
+    def test_cadence_nas_separee_et_multiple_du_scan_approfondi(self):
+        self.assertIn("NAS_SCAN_CYCLES = 6", SOURCE)
+        # 12 % 6 == 0 : un cycle approfondi tombe toujours sur un tour NAS.
+        self.assertEqual(12 % 6, 0)
+
+    def test_le_scan_sait_sauter_les_racines_nas(self):
+        s = _src("scan_uploads")
+        self.assertIn("nas=True", s)
+        self.assertIn("if not nas:", s)
+        # ... mais JAMAIS Uploads, qui est local et court.
+        self.assertLess(s.index('_sync_dir("Uploads"'), s.index("if not nas:"))
+
+    def test_un_cycle_approfondi_implique_le_nas(self):
+        # Sinon la passe des modifies et le lot de retag sauteraient un tour
+        # sur deux sans que rien ne le dise.
+        self.assertIn("nas = first or deep or (cycle % NAS_SCAN_CYCLES == 0)",
+                      SOURCE)
+
+    def test_l_enumeration_se_dit_a_chaque_fois(self):
+        # Elle ne se disait qu'au demarrage : c'est ce qui l'a rendue invisible.
+        s = _src("scan_uploads")
+        self.assertIn("image(s) énumérée(s) en", s)
+
+
 class LaCampagneNeJeunePasApresUnRedemarrage(unittest.TestCase):
     def test_premier_cycle_approfondi_si_campagne_active(self):
         # Le protocole impose un redemarrage pour livrer tout changement de

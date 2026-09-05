@@ -118,8 +118,17 @@
 - **O12.** Échec d'écriture XMP `personne:` jeté en silence + `PERSON_QUEUE` en RAM →
   friction avec la règle « les noms survivent dans les fichiers ». → Journal JSONL
   append-only des écritures en attente, rejoué au démarrage. Effort S/M.
-- **O13.** `rglob` complet des racines NAS toutes les 5 min → cadences différenciées
-  (Uploads 5 min, NAS 30–60 min). ~−90 % d'énumérations SMB.
+- **O13. FAIT (05/09), et c'était pire que l'audit ne le disait.** `rglob` complet des
+  racines NAS toutes les 5 min → cadences différenciées (`NAS_SCAN_CYCLES = 6`, soit
+  ≈30 min ; Uploads reste à chaque tour, il est local et court). **Mesuré avant** :
+  l'énumération de 44 876 fichiers prend **493 s** — elle ne finissait donc JAMAIS avant
+  la suivante, le partage SMB était parcouru **en continu**, et pendant la campagne de
+  retag elle disputait au tagueur la seule ressource dont il a besoin. Rien ne le disait :
+  le compte n'était imprimé qu'au démarrage, et on ne l'a vu qu'en comparant les
+  horodatages du journal entre deux redémarrages. L'énumération **se dit maintenant à
+  chaque fois, avec sa durée**. `deep` implique le NAS (12 est multiple de 6), donc ni la
+  passe des modifiés ni le lot de retag ne sautent un tour. 4 tests
+  (`test_retag_campagne.py`).
 
 ### Faible
 - **O14.** `_reconcilier` re-hash tout le store sous lock à chaque `save()` (2–4 s) →
