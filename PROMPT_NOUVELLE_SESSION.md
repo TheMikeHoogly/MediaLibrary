@@ -88,8 +88,10 @@ rien n'a bougé.
 
 **3. Items non touchés depuis la session 71 (03/09), statut À REVÉRIFIER — le
 journal git ne dit rien de ces sujets, ils ne se prouvent qu'en réel :**
-- Bat 42 (strip Motion Photo, ~8,6 Go à rendre) était EN COURS le 03/09 soir —
-  demander à Mike où ça en est avant de supposer que bat 43 a suivi.
+- **Bat 42 : RÉGLÉ le 05/09** — le manifeste (03/09 23:30) dit 2 409 strippées,
+  32 ratées, 9,27 Go retirés, et aucun `_exiftool_tmp` ne traîne. Reste **bat
+  43** : les 2 409 `*.jpg_original` sont toujours sur le NAS, ce sont eux les
+  9,27 Go. Geste de Mike. Ne PAS relancer bat 42.
 - Ventilation dégagée mais pas nettoyée en profondeur : feu vert PARTIEL de
   Mike pour tester quand même, prudence thermique.
 - La Carte a deux champs de recherche (barre commune + le sien) : à trancher.

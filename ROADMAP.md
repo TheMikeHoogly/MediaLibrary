@@ -50,7 +50,21 @@ journal ; sinon regarder « Stratégies de mise à jour configurées ». Attenti
 au bruit : depuis le 28/08 la machine a aussi coupé BRUTALEMENT (Id 41) pour
 cause thermique — voir `diagnostic_thermique.py`, ne pas confondre les deux.
 
-**1 septies. RÈGLE Motion Photo — COMPTÉ (01/09), OUTILLÉ : le geste est à Mike.**
+**1 septies. RÈGLE Motion Photo — le STRIP est FAIT (bat 42, 03/09 23:30) ;
+reste la purge des originaux (bat 43).** **Constaté le 05/09 dans le manifeste,
+pas supposé** : `docs/strip_motionphoto_manifeste.json` daté du 03/09 à
+23:30:17 porte **2 409 photos strippées et 32 ratées** (« pas de `_original` :
+exiftool n'a rien changé »), soit exactement les 2 441 comptées — **9,27 Go de
+vidéo retirés des JPEG**. Le plantage du PC est arrivé APRÈS, pas pendant : les
+quatre dossiers d'années concernés (`Photos Mike` 2021, 2024, 2025, 2026) ne
+portent **aucun `_exiftool_tmp`**, le symptôme qui aurait signé une
+interruption brutale. **Ce qui reste, c'est bat 43** : les 2 409
+`*.jpg_original` — les versions COMPLÈTES, avec la vidéo — sont toujours sur le
+NAS (6 tirés au hasard, 6 présents) ; ce sont eux les 9,27 Go encore occupés.
+Bat 43 les met en quarantaine (rien n'est supprimé), bat 24 purge ensuite.
+Relancer bat 42 serait inutile : ces photos n'ont plus de vidéo.
+
+Le compte et l'outillage, pour mémoire — COMPTÉ (01/09), OUTILLÉ :
 Compte (`mesure_motion_photos.py`, reprenable, 40 271/40 291 JPEG) : **2 441
 Motion Photos, toutes chez Mike** (2021 : 461 · 2024 : 1 241 · 2025 : 504 ·
 2026 : 188 · 47 sans année), **8,64 Go de vidéo** sur 16,83 Go touchés ;
