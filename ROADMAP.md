@@ -335,6 +335,30 @@ les assertions et d'appeler `ollama_generate` — les deux fonctions existent
 déjà, gèrent déjà seules le choix CPU/GPU, rien à réinventer côté
 arbitrage.
 
+(b bis) **Précision de Mike (05/09, complément) — l'identification humaine
+ne se perd pas, elle se complète.** Le retag ne doit PAS effacer les
+identifications déjà validées (`personne:Nom`/`animal:Nom`) ; il PEUT en
+révéler ou en confirmer de nouvelles (nouveaux visages/animaux détectés,
+meilleure reconnaissance). **Déjà garanti par l'architecture existante,
+rien à coder en plus** — vérifié dans le code, pas supposé : les noms ne
+vivent PAS dans les mots-clés produits par Ollama mais dans les fiches
+durables `PEOPLE_STORE`/`PETS_STORE` (champs `faces`/`exclude`) ; à CHAQUE
+écriture du worker de tagging (donc aussi pendant le retag complet, qui
+réutilise cette même logique), `_noms_attendus()` recalcule les noms
+attendus depuis ces fiches et les réinjecte dans `kw_fr` avant l'écriture —
+commentaire du code, à la lettre : « PÉRENNITÉ : ne jamais perdre les tags
+nommés (personne:/animal:) déjà écrits dans le fichier — un ré-tagging IA
+les ré-intègre au lieu de les écraser ». Cette re-fusion couvre même la
+course où Mike identifierait quelqu'un PENDANT un appel Ollama en cours
+(jusqu'à 10 min) : un nom ajouté n'est pas écrasé par une fusion sur des
+mots-clés déjà périmés, un nom retiré n'est pas ressuscité par erreur
+(`exclude` fait autorité). Et la détection visages/animaux ajoutée par le
+point (b) ne se déclenche QUE si la photo n'a pas encore d'entrée dans
+`FACE_STORE`/`ANIMAL_STORE` (le scan existant saute les entrées déjà
+présentes) — jamais de re-détection qui romprait un cluster déjà nommé.
+Une photo déjà identifiée reste identifiée ; une photo pas encore vue peut
+enfin l'être.
+
 (c) **Un seul geste préalable reste utile, et il est hors GPU** : lancer
 `enrichir_lieux.py` une fois avant la campagne pour rafraîchir
 `gps_places.json` sur le plus de photos possible (script existant,
