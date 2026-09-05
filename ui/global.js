@@ -267,7 +267,9 @@
     });
     h += '</div><div class="sep"></div>' +
       '<button type="button" class="item" data-aide role="menuitem">' +
-      '<span aria-hidden="true">\u2328\uFE0F</span> Raccourcis clavier</button>';
+      '<span aria-hidden="true">\u2328\uFE0F</span> Raccourcis clavier</button>' +
+      '<a href="/aide" role="menuitem">' +
+      '<span aria-hidden="true">\uD83D\uDCD6</span> Comment \u00e7a marche</a>';
     if (MOI.admin) {
       h += '<a href="/reglages" role="menuitem"><span aria-hidden="true">\u2699\uFE0F</span> R\u00e9glages</a>' +
         '<a href="/sante" role="menuitem"><span aria-hidden="true">\uD83E\uDE7A</span> Sant\u00e9 du serveur</a>';

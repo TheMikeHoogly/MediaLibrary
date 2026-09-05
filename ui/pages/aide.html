@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Comment ça marche</title>
+<!--UI:components-->
+<style>
+/* Onboarding (chantier 17, étape 7). Une page qu'on lit UNE fois, puis qu'on
+   retrouve depuis le menu de compte quand un doute revient. Surface PAPIER :
+   c'est une page où l'on comprend, pas une où l'on regarde des photos — la
+   règle du design system (« les photos se regardent sur la salle sombre »). */
+.enveloppe { max-width: 62ch; margin: 0 auto; padding: var(--e-4); }
+.feuille + .feuille { margin-top: var(--e-3); }
+.feuille p { margin-top: var(--e-2); line-height: 1.55; }
+.feuille p:first-of-type { margin-top: var(--e-1); }
+.feuille strong { font-weight: 600; }
+.titre { font: 600 var(--t-xl)/1.15 var(--f-affichage); margin: var(--e-4) 0 var(--e-2); }
+.chapo { color: var(--graphite); margin-bottom: var(--e-3); line-height: 1.5; }
+.cle { font-family: var(--f-donnees); font-size: var(--t-sm);
+       background: var(--papier-2); padding: 1px var(--e-1); border-radius: var(--r-sm); }
+</style>
+</head>
+<body>
+<!--APPNAV-->
+<div class="enveloppe">
+  <h1 class="titre">Comment ça marche</h1>
+  <p class="chapo">La photothèque de la maison, en sept points. Rien à installer,
+     rien à configurer : tout se passe dans cette page-ci et les quatre onglets
+     en haut.</p>
+
+  <section class="feuille">
+    <h3>1. Ce que tu vois</h3>
+    <p>Chaque personne a son dossier, <span class="cle">Photos Prénom</span>. Tu
+       vois le tien, et tu vois ce que les autres partagent — c'est une
+       photothèque de famille, pas un coffre-fort à cloisons.</p>
+    <p>La seule exception est le dossier <span class="cle">PRIVE</span> à
+       l'intérieur de chaque dossier personnel : celui-là n'est visible que par
+       son propriétaire. Ne pas voir, c'est ne pas toucher — une photo privée
+       n'existe pas du tout pour les autres.</p>
+  </section>
+
+  <section class="feuille">
+    <h3>2. Ce que tu peux changer</h3>
+    <p>Dans <strong>ton</strong> dossier : renommer, déplacer, mettre à la
+       corbeille, créer un dossier. C'est chez toi.</p>
+    <p>Ailleurs — la racine, <span class="cle">_A TRIER</span>,
+       <span class="cle">_Uploads</span> — seul Mike peut écrire. Si un bouton
+       refuse, ce n'est pas une panne : c'est cette règle.</p>
+    <p>En revanche, <strong>juger</strong> une photo est permis partout où tu la
+       vois : nommer un visage, confirmer, écarter une erreur. Corriger le nom
+       d'une photo partagée est utile à tout le monde ; la détruire ne l'est pas.</p>
+  </section>
+
+  <section class="feuille">
+    <h3>3. Rendre une photo privée</h3>
+    <p>Le bouton <strong>🔒 Rendre privée</strong>, sous la photo ouverte, la
+       <strong>déplace</strong> dans ton <span class="cle">PRIVE</span>. Ce n'est
+       pas une étiquette qu'on pourrait oublier de cocher : c'est un déplacement,
+       et il est annulable comme les autres.</p>
+    <p>Le bouton n'apparaît pas là où le geste ne pourrait qu'échouer — sur une
+       photo déjà privée, ou sur une photo qui n'est chez personne.</p>
+  </section>
+
+  <section class="feuille">
+    <h3>4. Supprimer ne supprime pas tout de suite</h3>
+    <p>Une photo effacée part dans une corbeille et y reste <strong>six
+       mois</strong> avant d'être vraiment retirée. Tant qu'elle y est, elle se
+       restaure. « Annuler » défait le dernier geste ; la corbeille, elle, garde
+       les anciens.</p>
+  </section>
+
+  <section class="feuille">
+    <h3>5. Chercher</h3>
+    <p>Le champ en haut cherche par le <strong>sens</strong>, pas par le nom de
+       fichier : décris ce que tu veux voir, en français — « ours en peluche »,
+       « chat qui dort », « bord de mer ». La touche <span class="cle">/</span>
+       t'y amène depuis n'importe quel onglet.</p>
+    <p>La recherche traduit toute seule vers l'anglais quand ça aide, et te le
+       dit : « ours en peluche <em>(+ teddy bear)</em> ». Tu peux aussi chercher
+       une personne (<span class="cle">personne:Florine</span>), un animal, un
+       lieu, ou une journée.</p>
+  </section>
+
+  <section class="feuille">
+    <h3>6. Les noms sont écrits dans les photos</h3>
+    <p>Quand tu nommes un visage, le nom n'est pas seulement rangé dans une base :
+       il est écrit <strong>dans le fichier lui-même</strong>. Si la base était
+       perdue et reconstruite demain, les noms seraient toujours là. C'est la
+       règle la plus protégée du projet — aucune opération n'a le droit d'en
+       perdre un.</p>
+  </section>
+
+  <section class="feuille">
+    <h3>7. L'IA travaille ici, dans la maison</h3>
+    <p>Les mots-clés et les descriptions sont produits par des modèles qui
+       tournent <strong>sur la machine de Mike</strong>. Aucune photo n'est
+       envoyée à un service en ligne — ni pour être décrite, ni pour être
+       reconnue, ni pour être située.</p>
+    <p>Une photo qui vient d'arriver n'a donc pas encore ses mots-clés : ils
+       apparaissent quand la machine y arrive, parfois quelques minutes plus
+       tard. Ce n'est pas perdu, c'est en attente.</p>
+  </section>
+
+  <section class="feuille">
+    <h3>Si quelque chose cloche</h3>
+    <p>Dis-le à Mike, avec le nom du fichier ou l'endroit où tu étais. Le serveur
+       tient un journal de ce qu'il fait : la plupart des « ça n'a pas marché »
+       s'y retrouvent, à condition de savoir quoi chercher.</p>
+  </section>
+</div>
+</body>
+</html>

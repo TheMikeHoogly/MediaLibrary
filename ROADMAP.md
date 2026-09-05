@@ -537,8 +537,18 @@ les deux migrent en même temps).
 rétroactive, vue filtrée par utilisateur, comptes, écriture restreinte,
 corbeille à 6 mois. Les six décisions de Mike sont EXÉCUTÉES, pas
 seulement spécifiées ; `QUESTIONS_MIKE.md` est vide, plus rien ne bloque.
-**Reste la seule étape 7 : l'onboarding rédigé** — le chantier se termine,
-il ne se relance pas.
+**Étape 7, l'onboarding rédigé — POSÉE (05/09), à LIRE par Mike.** Page
+`/aide` (« Comment ça marche »), `ui/pages/aide.html`, atteignable depuis le
+menu de compte. Sept points, écrits depuis les règles DÉJÀ TRANCHÉES et
+vérifiés dans le code, pas inventés : ce que chacun voit (`PRIVE` compris), ce
+qu'il peut changer et où le garde d'écriture refuse, le 🔒 qui DÉPLACE au lieu
+de marquer, la corbeille à six mois, la recherche par le sens et son
+élargissement FR→EN, les noms écrits dans les fichiers eux-mêmes, et l'IA qui
+tourne à la maison — aucune photo envoyée en ligne. Surface PAPIER sur fond
+`--salle`, `components.css` adopté, `verifier_controles --page aide` et
+`verifier_cibles` verts, page vue en réel. **Ce qui reste est un jugement de
+Mike, pas une tâche** : c'est sa famille qui lira ce texte, le ton et ce qu'on
+tait lui appartiennent. Le chantier se termine, il ne se relance pas.
 
 **3 bis. Le garde-fou de la confidentialité (chantier 18) — EN COURS
 (session 68, 30/08 soir).** Catégories TRANCHÉES : **sept** — les six de la spec

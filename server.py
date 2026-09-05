@@ -11073,6 +11073,11 @@ class Handler(BaseHTTPRequestHandler):
             self._send_html(ui_page('tranche'))
         elif path == '/api/tranche/list':
             self._serve_tranche_list()
+        elif path == '/aide':
+            # Onboarding rédigé (chantier 17, étape 7). Page statique, lue une
+            # fois puis retrouvée depuis le menu de compte : aucune donnée, donc
+            # aucune raison de la construire côté serveur.
+            self._send_html(ui_page('aide'))
         elif path == '/residu':
             self._send_html(ui_page('residu'))
         elif path == '/api/residu/list':
