@@ -377,20 +377,80 @@ CASSÉ sur cette machine (`cublasLt64_13.dll` manquante) — sans effet sur la
 décision ci-dessus (le CPU suffit largement), mais à réparer un jour pour
 gagner encore un peu de marge.
 
-**Ordre d'implémentation proposé (rien de tout ça n'est encore codé) :**
-1. `tagging_meta.py` : FR seul (retirer `keywords_en` du schéma JSON), +
-   consigne anti-répétition explicite.
-2. `server.py` : `MODEL` bascule vers `qwen3.5:4b` **via `modele.txt`**, pas
-   une ligne de code — aucun redémarrage-preuve requis par `git_agent`
-   puisque ce fichier n'est pas dans le graphe d'import. `TAGGING_PIPELINE_VERSION`
-   bumpée en même temps que le prompt (ex. `"qwen3.5:4b|v3fr|kb1"`) —
-   bumper seul ne déclenche rien (voir (a)), donc sans risque avant le reste.
+**Ordre d'implémentation — étapes 1, 2 et 4 LIVRÉES (05/09, session 72) ;
+3, 5 et 6 restent.** Deux écarts assumés par rapport au croquis ci-dessus, tous
+deux dans le sens de la prudence, tous deux tenus par des tests :
+
+- **L'index n'est PAS vidé à mesure.** Le croquis reprenait le geste du bloc
+  « fichiers modifiés » (`STORE.remove_many` + `enqueue`) : sur ~40 000 photos
+  et cinq jours, il ferait fondre la photothèque sous les yeux de Mike. Le
+  retag n'enlève donc rien — la photo reste visible, nommée et cherchable
+  jusqu'à la seconde où sa nouvelle entrée remplace l'ancienne. Bénéfice
+  collatéral : la progression vit dans le `pipe` de l'entrée (durable, sur
+  disque) au lieu d'une file mémoire, ce que le croquis voulait déjà.
+- **Un retag raté ne coûte pas la photo.** `_marquer_echec` remplace l'entrée
+  par `{failed: True}` : sur une photo DÉJÀ taguée — le cas de toute la
+  campagne — un simple timeout d'Ollama lui aurait fait perdre ses mots-clés,
+  sa description, sa date et son GPS. Les trois sorties d'échec du worker
+  passent maintenant par `_echec_retag`, qui CONSERVE l'entrée et y pose une
+  marque d'abandon (`retag_fail`), laquelle sert aussi de garde anti-boucle.
+  Et un retag RÉUSSI complète l'entrée au lieu de la remplacer : ce que la
+  passe n'a pas recalculé (date, GPS, import) survit à un hoquet d'ExifTool.
+
+**Conséquence NON prévue, à trancher par Mike avant l'étape 6** : le
+dictionnaire FR→EN de la recherche (1 nonies, +0,075 de rappel mesuré) est
+RÉAPPRIS toutes les 6 h sur les entrées BILINGUES de l'index. Le FR seul les
+fait disparaître une à une — à la fin de la campagne le dictionnaire serait
+vide et l'élargissement mourrait en silence, ramenant le rappel de 0,658 à
+0,583. Recommandation : le GELER (le construire une fois maintenant, l'écrire
+sur disque, le relire ensuite) plutôt que de le réapprendre sur un index qui
+n'a plus d'anglais. Question ouverte dans `QUESTIONS_MIKE.md`.
+
+Ordre initial (rien n'était encore codé au moment de l'écrire) :
+1. **FAIT.** `tagging_meta.py` : FR seul (`keywords_en` retiré du schéma), +
+   exigence de vrai français et consigne anti-répétition (mots-clés distincts,
+   description ≠ liste recopiée) — chacune sur un défaut OBSERVÉ dans
+   `docs/comparaison_modeles_vision*.json`. 11 tests dans `test_tagging_meta.py`.
+   **Le prompt a TOURNÉ en réel** avant d'être livré, deux fois, sur les 8
+   mêmes photos et le même modèle (`docs/comparaison_v3fr.json` puis
+   `docs/comparaison_v3fr2.json`, celui-ci = le prompt livré). Ce que ça a
+   changé, et que seul le fait de tourner pouvait dire : la 1ʳᵉ formulation de
+   l'anti-répétition (« ne réutilise pas un mot déjà présent dans un autre
+   mot-clé ») était TROP stricte — le modèle contournait le mot juste plutôt
+   que de le répéter (« code qr » devenu « code-barres ») et collait ses
+   mots-clés par des traits d'union (« carte-visite », « image-floue »).
+   Formulation corrigée (deux formulations d'une même chose interdites, traits
+   d'union et soulignés interdits) : « code qr » et « carte de visite »
+   reviennent, plus aucun trait d'union, `kw_en` vide partout, plus un seul
+   anglicisme, et les descriptions disent la scène au lieu de recopier la
+   liste. **Deux défauts SURVIVENT, du modèle et non du prompt, à surveiller
+   aux spot-checks de l'étape 6** : l'étiquette de la bouteille de vin est
+   encore transcrite (« château du grand », « année 1986 ») malgré la règle
+   explicite — qwen3-vl et v2ctx le faisaient déjà ; et le lac de
+   `20220918_103631.jpg` est appelé « mer » aux DEUX tirages FR seul, alors que
+   le tirage bilingue disait « eau lac » — or corriger lac/océan était l'un des
+   deux arguments qui ont fait choisir ce modèle. Huit photos difficiles et
+   deux tirages ne tranchent rien : c'est un point à REGARDER pendant la
+   campagne, pas une conclusion.
+2. **FAIT.** `modele.txt` → `qwen3.5:4b` (pas une ligne de code) et
+   `TAGGING_PIPELINE_VERSION` = `"qwen3.5:4b|v3fr|kb1"`, bumpée en même temps
+   que le prompt. Bumper seul ne déclenche rien (voir (a)) tant que le levier
+   de l'étape 4 n'est pas posé.
 3. `enrichir_lieux.py` tourne une fois (geste (c)), avant ou pendant la
    préparation du reste — indépendant, sans urgence particulière.
-4. `server.py` : le levier `retag_actif.txt` + le bloc de scan pipe-aware
-   (point a) + le pipeline de retag dédié qui détecte visages/animaux avant
-   de tagger (point b) — livré et testé, mais **PAS activé** (fichier absent
-   = rien ne bouge, et `tagger_worker` standard reste inchangé).
+4. **FAIT, PAS ACTIVÉ.** `retag_actif.txt` (levier externe, relu à chaque
+   scan — le poser démarre, le retirer arrête au lot suivant), sélection pure
+   `tagging_meta.cles_a_retaguer` (saute `failed`, vidéos, déjà à la version,
+   déjà en file, déjà abandonnées), enfilement par lots de `RETAG_LOT` = 500
+   dans le scan approfondi, et `_detecter_avant_retag` qui complète les
+   détections MANQUANTES sous l'ordonnanceur existant (`creneau`, jamais une
+   5ᵉ politique GPU). Tests : `test_retag_campagne.py` (16, sur le code de
+   prod, sans importer `server.py`) + `test_tagging_meta.py`.
+   **Portée honnête de la détection** : côté ANIMAUX le gain est immédiat
+   (l'espèce entre dans les assertions par `ANIMAL_STORE`) ; côté VISAGES il
+   est DIFFÉRÉ — `_assertions_pour` lit les noms du XMP, pas de `FACE_STORE` :
+   détecter met la photo en état d'être nommée, ce qui profitera au passage
+   SUIVANT, pas à celui-ci.
 5. Test d'endurance thermique sur une fenêtre longue (heures, pas minutes)
    avant la bascule finale.
 6. `retag_actif.txt` posé → la campagne démarre, observée (`/sante`, boucle

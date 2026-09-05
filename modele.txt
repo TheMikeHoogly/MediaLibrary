@@ -1,6 +1,12 @@
 # Modèle Ollama utilisé pour le tagging (première ligne non commentée).
 # Changer puis redémarrer le serveur. N'oublie pas : ollama pull <modele>
 #
-# qwen3-vl:2b  → rapide, tient 100% dans les 4 Go de VRAM (recommandé pour le gros volume)
-# qwen3-vl:4b  → tags un peu plus fins, mais ~3x plus lent (déborde en RAM)
-qwen3-vl:2b
+# qwen3.5:4b   → RETENU le 05/09 (chantier 2 quater) : 3,4 Go de VRAM, MÊME
+#                gabarit que qwen3-vl:4b mais ~3x plus rapide (11,3 s/photo,
+#                soit la vitesse de qwen3-vl:2b) ; corrige le chat calico et
+#                le lac pris pour l'océan, ne fuit pas les noms.
+# qwen3-vl:2b  → ancien modèle de prod, rapide, 100% dans les 4 Go de VRAM.
+# qwen3-vl:4b  → tags un peu plus fins, mais ~3x plus lent (déborde en RAM).
+# qwen3.5:2b   → ÉCARTÉ : plus rapide encore, mais casse le format demandé
+#                (une phrase entière au lieu de 6-10 mots-clés courts).
+qwen3.5:4b

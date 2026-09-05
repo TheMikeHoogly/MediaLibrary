@@ -202,12 +202,31 @@ def bloc_assertions(a):
     return '\n'.join(L)
 
 
+# FR SEUL depuis le 05/09 (chantier 2 quater, ROADMAP) : plus de `keywords_en`
+# dans le schema demande au modele. Le bilingue coutait un demi-jeu de mots-cles
+# par photo pour une valeur que l'elargissement FR->EN de la recherche
+# (`elargissement_fr_en.py`, 30/08) rend deja sans passer par le tagueur.
+# Deux consignes s'ajoutent, chacune sur un defaut OBSERVE dans la comparaison
+# de modeles du 05/09 (`docs/comparaison_modeles_vision*.json`) :
+# - le vrai francais, parce que sans la case anglaise le modele deverse ses
+#   anglicismes dans la case francaise (« inflatable », « bouncy », « gruppe »
+#   vus chez qwen3-vl:2b ; « castle gonflable » chez qwen3.5:4b) ;
+# - l'anti-repetition, parce que les mots-cles se doublonnent entre eux
+#   (« course d obstacles gonflables » + « cours gonflables rouge bleu ») et que
+#   la description se contente souvent de recopier la liste en phrase.
 REGLES_JSON = (
     'Retourne UNIQUEMENT du JSON strict, rien d autre :\n'
-    '{"keywords_en": ["..."], "keywords_fr": ["..."], "description_fr": "..."}\n'
-    'Regles : 6-10 mots-cles par langue, minuscules, 1-2 mots chacun ; '
-    'espaces entre les mots, jamais de soulignes ; keywords_fr en vrai '
-    'francais ; description_fr = une phrase courte en francais. '
+    '{"keywords_fr": ["..."], "description_fr": "..."}\n'
+    'Regles : 6-10 mots-cles, minuscules, 1-2 mots chacun ; espaces entre les '
+    'mots, jamais de soulignes. Tout doit etre en FRANCAIS : aucun mot anglais, '
+    'meme si le mot anglais te vient en premier (ecris "groupe" et non "group", '
+    '"gonflable" et non "inflatable"). '
+    'Chaque mot-cle designe une chose DIFFERENTE : pas deux formulations d une '
+    'meme chose ("chat" et "chat qui dort" = un seul mot-cle). Ne colle jamais '
+    'deux mots par un trait d union ni par un souligne : ecris "code qr" et '
+    '"carte de visite", pas "code-qr" ni "carte_visite". '
+    'description_fr = une phrase courte, en francais, qui dit la scene -- pas '
+    'la liste des mots-cles recopiee. '
     'Ne transcris jamais un texte, prix, recu ou panneau visible ; '
     'pour un document/recu/capture, utilise des mots generiques '
     '("document", "recu", "capture").'
@@ -225,6 +244,62 @@ def prompt_tagging(a):
             'faits ci-dessous : traite-les comme la verite (noms, especes, '
             'lieu, date) et complete avec ce que tu VOIS en plus.\n\n'
             + bloc_assertions(a) + '\n\n' + REGLES_JSON)
+
+
+# ────────────── Campagne de RETAG de masse (chantier 2 quater) ─────────────
+
+def version_retag(texte, defaut):
+    """Version de pipeline visee par une campagne de retag, lue dans le
+    contenu de `retag_actif.txt`. Meme convention que `modele.txt` : la
+    premiere ligne non vide et non commentee gagne. `None` en entree (fichier
+    ABSENT) = pas de campagne ; fichier present mais vide ou tout en
+    commentaires = la version courante, passee en `defaut`.
+
+    Pure : le fichier est lu par l'appelant, pas ici."""
+    if texte is None:
+        return None
+    for ligne in str(texte).splitlines():
+        ligne = ligne.strip()
+        if ligne and not ligne.startswith('#'):
+            return ligne
+    return defaut
+
+
+def cles_a_retaguer(entrees, cible, exclues=(), lot=500):
+    """Quelles cles une campagne de retag doit-elle enfiler MAINTENANT ?
+
+    `entrees` : iterable de (cle, entree d'index). `cible` : version de pipeline
+    visee. `exclues` : cles deja en file (le dedoublonnage vit dans le serveur).
+    `lot` : plafond, parce que la file est en MEMOIRE et que le fonds fait des
+    dizaines de milliers de photos -- tout enfiler d'un coup ferait une file
+    qu'un redemarrage perdrait en entier. La progression, elle, vit dans le
+    `pipe` de chaque entree : ce qui n'est pas fait sera re-selectionne au scan
+    suivant, sans etat a tenir nulle part.
+
+    Sont sautees : les entrees en echec (`failed`), les VIDEOS (jamais taguees
+    par le VLM), celles deja a la version visee, celles deja en file, et celles
+    qu'un retag vers CETTE cible a deja abandonnees (`retag_fail`) -- sans quoi
+    une photo qu'Ollama n'arrive pas a traiter reviendrait a chaque scan, pour
+    l'eternite. Un bump de version la rend candidate a nouveau : c'est voulu.
+    L'ordre d'entree est conserve : le scan presente ses cles dans un ordre
+    stable, deux passes successives reprennent donc au meme endroit tant que
+    rien n'a avance -- et ce qui a avance porte desormais `cible`.
+    """
+    out = []
+    if not cible:
+        return out
+    exclues = set(exclues or ())
+    for cle, e in entrees:
+        if len(out) >= lot:
+            break
+        if not isinstance(e, dict) or e.get('failed') or e.get('video'):
+            continue
+        if cle in exclues or e.get('pipe') == cible:
+            continue
+        if e.get('retag_fail') == cible:
+            continue
+        out.append(cle)
+    return out
 
 
 # ────────────────── Knowledge Builder — aval (provenance) ──────────────────

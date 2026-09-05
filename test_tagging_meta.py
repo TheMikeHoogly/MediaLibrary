@@ -118,7 +118,16 @@ def test_prompt():
     ok &= _check('Bremblens' in pr and '11 decembre 2018' in pr, "lieu et date")
     ok &= _check('(EXIF)' in pr and '(chemin du dossier)' in pr,
                  "libelles par defaut = ceux de l'eval")
-    ok &= _check('keywords_en' in pr and 'description_fr' in pr, "regles JSON")
+    # FR SEUL (05/09, chantier 2 quater) : la case anglaise a disparu du schema
+    ok &= _check('keywords_fr' in pr and 'description_fr' in pr, "regles JSON")
+    ok &= _check('keywords_en' not in pr,
+                 "plus de keywords_en demande au modele (FR seul)")
+    ok &= _check('aucun mot anglais' in pr,
+                 "exigence de vrai francais explicite")
+    ok &= _check('chose DIFFERENTE' in pr,
+                 "consigne anti-repetition entre mots-cles")
+    ok &= _check('pas la liste des mots-cles recopiee' in pr,
+                 "description : pas la liste des mots-cles recopiee")
 
     # Provenance honnete : la source affichee suit date_src/lieu_src
     a2 = dict(a, date="2016", date_src='annee du dossier',
@@ -245,6 +254,50 @@ def test_champs_dates_item():
     return ok
 
 
+def test_retag():
+    """Campagne de retag (chantier 2 quater) : le levier et la selection."""
+    ok = True
+    # Le levier : fichier ABSENT = pas de campagne, et c'est le defaut du projet
+    ok &= _check(tm.version_retag(None, "vX") is None,
+                 "fichier absent -> aucune campagne")
+    ok &= _check(tm.version_retag("", "vX") == "vX",
+                 "fichier vide -> version courante")
+    ok &= _check(tm.version_retag("# rien\n#  \n", "vX") == "vX",
+                 "tout en commentaires -> version courante")
+    ok &= _check(tm.version_retag("# c\n\n  qwen3.5:4b|v3fr|kb1 \n autre\n",
+                                  "vX") == "qwen3.5:4b|v3fr|kb1",
+                 "premiere ligne utile gagne, espaces retires")
+
+    E = [('a', {'pipe': 'v1'}), ('b', {'pipe': 'v0'}), ('c', {'failed': True}),
+         ('d', {'video': True}), ('e', {}), ('f', {'pipe': 'v0'}),
+         ('g', "pas un dict")]
+    ok &= _check(tm.cles_a_retaguer(E, 'v1') == ['b', 'e', 'f'],
+                 "a jour, echec, video et non-dict sautes")
+    ok &= _check(tm.cles_a_retaguer(E, 'v1', exclues={'b', 'e'}) == ['f'],
+                 "cles deja en file sautees")
+    ok &= _check(tm.cles_a_retaguer(E, 'v1', lot=2) == ['b', 'e'],
+                 "plafond du lot respecte (la file est en memoire)")
+    ok &= _check(tm.cles_a_retaguer(E, None) == [],
+                 "aucune cible -> rien, jamais (fichier absent = statu quo)")
+    ok &= _check(tm.cles_a_retaguer(E, 'v1', lot=0) == [],
+                 "lot nul -> rien")
+    # Une entree SANS `pipe` (les « v0 » d'avant l'estampillage) est candidate
+    ok &= _check('e' in tm.cles_a_retaguer(E, 'v1'),
+                 "entree sans pipe = v0, candidate au retag")
+    # Anti-boucle : une cle abandonnee pour CETTE cible ne revient pas...
+    Ef = [('a', {'pipe': 'v0', 'retag_fail': 'v1'}), ('b', {'pipe': 'v0'})]
+    ok &= _check(tm.cles_a_retaguer(Ef, 'v1') == ['b'],
+                 "abandon de retag (retag_fail) pas represente a chaque scan")
+    # ...mais un bump de version la rend candidate a nouveau
+    ok &= _check(tm.cles_a_retaguer(Ef, 'v2') == ['a', 'b'],
+                 "nouvelle cible -> l'abandon precedent ne compte plus")
+    # Idempotence : ce qui vient d'etre retague ne revient pas
+    E2 = [(k, dict(v, pipe='v1') if isinstance(v, dict) else v) for k, v in E]
+    ok &= _check(tm.cles_a_retaguer(E2, 'v1') == [],
+                 "campagne terminee -> plus rien a enfiler")
+    return ok
+
+
 if __name__ == "__main__":
     print("== parse_meta_gps_item ==")
     a = test_parse()
@@ -264,8 +317,10 @@ if __name__ == "__main__":
     i = test_champs_dates_item()
     print("== date_fiable (garde-fou des photos scannees) ==")
     jj = test_date_fiable()
+    print("== retag de masse (levier + selection) ==")
+    kk = test_retag()
     print()
-    if all([a, b, d, e, f, g, h, i, jj]):
+    if all([a, b, d, e, f, g, h, i, jj, kk]):
         print("TOUS LES TESTS PASSENT")
         raise SystemExit(0)
     print("DES TESTS ONT ECHOUE")

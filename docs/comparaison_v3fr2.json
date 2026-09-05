@@ -1,0 +1,252 @@
+{
+ "genere_le": "2026-09-05 13:19:13",
+ "modeles": [
+  "qwen3.5:4b"
+ ],
+ "resultats": {
+  "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2017\\05 Mai\\MGM Menerga\\20170522_184758.jpg": {
+   "ancien_kw": [
+    "inflatable",
+    "structure",
+    "group",
+    "people",
+    "collaboration",
+    "teamwork",
+    "activity",
+    "indoor",
+    "red",
+    "blue",
+    "dark",
+    "background"
+   ],
+   "qwen3.5:4b": {
+    "kw_fr": [
+     "groupe",
+     "homme",
+     "femme",
+     "gonflable",
+     "jeu",
+     "interieur"
+    ],
+    "kw_en": [],
+    "desc": "Un groupe d'hommes et de femmes jouent ensemble sur un grand gonflable rouge et bleu dans une salle fermée.",
+    "duree_s": 8.8
+   }
+  },
+  "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2025\\20250410_212009.jpg": {
+   "ancien_kw": [
+    "code",
+    "chiffre",
+    "qr"
+   ],
+   "qwen3.5:4b": {
+    "kw_fr": [
+     "code qr",
+     "carte de visite",
+     "groupe",
+     "texte blanc",
+     "surface brillante",
+     "reflet lumineux"
+    ],
+    "kw_en": [],
+    "desc": "Une carte de visite avec un code QR et du texte visible sur une surface brillante.",
+    "duree_s": 9.1
+   }
+  },
+  "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Floufline\\20190530_bouteille-de-vin-en-main.jpg": {
+   "ancien_kw": [
+    "vin",
+    "bouteille",
+    "main",
+    "table",
+    "wine",
+    "bottle",
+    "hand",
+    "table"
+   ],
+   "qwen3.5:4b": {
+    "kw_fr": [
+     "vin rouge",
+     "bouteille vintage",
+     "château du grand",
+     "année 1986",
+     "table de repas",
+     "mains tenues"
+    ],
+    "kw_en": [],
+    "desc": "Une personne tient une bouteille de vin rouge ancien, Château du Grand 1986, au-dessus d'une table dressée pour un repas.",
+    "duree_s": 10.2
+   }
+  },
+  "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Luna & Inti\\20230918_135836.jpg": {
+   "ancien_kw": [
+    "deux chats",
+    "lit",
+    "coussins",
+    "commode",
+    "jeu",
+    "chambre",
+    "two cats",
+    "bed",
+    "pillows",
+    "nightstand",
+    "toys",
+    "bedroom"
+   ],
+   "qwen3.5:4b": {
+    "kw_fr": [
+     "deux chats",
+     "lit blanc",
+     "coussins bleus",
+     "commode bois",
+     "lampe ronde",
+     "jouet en peluche"
+    ],
+    "kw_en": [],
+    "desc": "Deux chats gris reposent sur un lit avec des coussins et une commode à côté.",
+    "duree_s": 9.9
+   }
+  },
+  "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\20180428_231429.jpg": {
+   "ancien_kw": [
+    "homme",
+    "femme",
+    "chambre",
+    "bois",
+    "chaises",
+    "table",
+    "bouteilles",
+    "alimentation",
+    "meubles",
+    "chaise",
+    "bouteille",
+    "boisson",
+    "man",
+    "woman",
+    "room",
+    "wooden",
+    "chairs",
+    "table",
+    "bottles",
+    "food",
+    "furniture",
+    "chair",
+    "bottle",
+    "drink"
+   ],
+   "qwen3.5:4b": {
+    "kw_fr": [
+     "homme chauve",
+     "femme souriante",
+     "salle bois",
+     "chaises empilees",
+     "boissons sur table",
+     "ambiance conviviale"
+    ],
+    "kw_en": [],
+    "desc": "Une photo d'une salle en bois où un homme chauve et une femme souriante se tiennent près de chaises empilées et de boissons.",
+    "duree_s": 10.2
+   }
+  },
+  "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\Caline\\20201113_101014.jpg": {
+   "ancien_kw": [
+    "chat",
+    "sommeil",
+    "lit",
+    "soleil",
+    "poussière",
+    "calico",
+    "cat",
+    "sleeping",
+    "bed",
+    "sunlight"
+   ],
+   "qwen3.5:4b": {
+    "kw_fr": [
+     "chat tricolore",
+     "sommeil paisible",
+     "jambes jean",
+     "lumiere douce",
+     "couche blanche",
+     "repos tranquille"
+    ],
+    "kw_en": [],
+    "desc": "Un chat tricolore dort tranquillement sur les jambes d'une personne habillée en jeans, baigné dans la lumière du jour.",
+    "duree_s": 11.3
+   }
+  },
+  "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2021\\20210218_124554.jpg": {
+   "ancien_kw": [
+    "gruppe",
+    "personnes",
+    "social",
+    "cuisine",
+    "salle",
+    "chaise",
+    "table",
+    "ballons",
+    "joyeux",
+    "fête",
+    "group",
+    "people",
+    "social",
+    "dining",
+    "living",
+    "room",
+    "chair",
+    "table",
+    "balloons",
+    "happy",
+    "birthday"
+   ],
+   "qwen3.5:4b": {
+    "kw_fr": [
+     "fete",
+     "cuisine",
+     "ballons",
+     "cadeaux",
+     "groupe",
+     "joyeux"
+    ],
+    "kw_en": [],
+    "desc": "Un groupe de personnes fêtent joyeusement autour d'une table avec des cadeaux et des ballons dans un salon lumineux.",
+    "duree_s": 7.9
+   }
+  },
+  "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2022\\20220918_103631.jpg": {
+   "ancien_kw": [
+    "mer",
+    "bateau",
+    "homme",
+    "montagnes",
+    "océan",
+    "ciel",
+    "bleu",
+    "calme",
+    "vent",
+    "water",
+    "surfboard",
+    "person",
+    "mountains",
+    "ocean",
+    "sky",
+    "blue",
+    "calm",
+    "wind"
+   ],
+   "qwen3.5:4b": {
+    "kw_fr": [
+     "homme",
+     "planche",
+     "mer",
+     "montagnes",
+     "bateau",
+     "ciel"
+    ],
+    "kw_en": [],
+    "desc": "Un homme sur planche glisse au-dessus de l'eau tiré par un bateau avec des montagnes en arrière-plan.",
+    "duree_s": 8.8
+   }
+  }
+ }
+}

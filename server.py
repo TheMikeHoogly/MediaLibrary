@@ -310,14 +310,21 @@ MEDIA_EXT = IMAGE_EXT | (VIDEO_EXT if VIDEOS_DANS_L_INDEX else set())
 # Changer l'un des trois OBLIGE à bumper la chaîne — sinon des descriptions issues
 # de prompts différents cohabitent silencieusement dans l'index. Chaque nouvelle
 # entrée est estampillée ('pipe') ; les entrées antérieures comptent comme « v0 »
-# (visible dans /reglages). PAS de re-tagging automatique au bump : ~43 000
-# entrées × 4,3 s ≈ 51 h GPU — c'est une décision explicite (ROADMAP), contrairement
-# aux embeddings animaux où le mélange de versions serait mathématiquement faux.
+# (visible dans /reglages). PAS de re-tagging automatique au bump — décision
+# explicite, contrairement aux embeddings animaux où le mélange de versions
+# serait mathématiquement faux. Depuis le 05/09 une CAMPAGNE de retag existe,
+# mais elle reste un geste séparé et volontaire : voir `retag_actif.txt` et
+# `retag_cible()` plus bas. Bumper la version ci-dessous ne déclenche donc
+# toujours rien tant que ce fichier n'est pas posé.
 # - v2ctx = « assertions en contexte, sans impératif de noms », ADOPTÉE 12/08
 #   (aveugle A/B 25-15 vs V0 — eval/DECISIONS.md). Prompt : tagging_meta.prompt_tagging.
 # - kb1   = Knowledge Builder : faits noms/date/lieu structurés et sourcés en
 #   post-traitement déterministe (tagging_meta.faits_structures), jamais via le prompt.
-TAGGING_PIPELINE_VERSION = "qwen3-vl:2b|v2ctx|kb1"
+# - v3fr  = FR SEUL + anti-répétition, DÉCIDÉ le 05/09 (chantier 2 quater) :
+#   le schéma demandé au modèle n'a plus de `keywords_en`, et le prompt exige
+#   du vrai français et des mots-clés distincts entre eux (tagging_meta.
+#   REGLES_JSON). Le modèle passe à qwen3.5:4b par `modele.txt`, pas par le code.
+TAGGING_PIPELINE_VERSION = "qwen3.5:4b|v3fr|kb1"
 
 # PROMPT V0 (image seule, anglais) : n'est PLUS le prompt de production depuis la
 # version v2ctx ci-dessus. Conservé comme référence du banc d'éval (eval_tagging.py
@@ -1190,6 +1197,83 @@ def enqueue(name):
 def pending_done(name):
     with PENDING_LOCK:
         PENDING.discard(name)
+        RETAG_PENDING.discard(name)
+
+
+# ── Campagne de RETAG de masse (chantier 2 quater, 05/09) ────────────────────
+# Levier volontairement EXTERNE au code : tant que `retag_actif.txt` est ABSENT,
+# rien de ce qui suit ne s'exécute et `tagger_worker` garde exactement sa logique
+# d'avant — « PAS de re-tagging automatique au bump », la décision historique,
+# qui tient toujours pour le flux quotidien des uploads. Le fichier posé, le
+# scan approfondi enfile PAR LOTS les entrées dont le `pipe` n'est pas la
+# version visée. Le retirer arrête la campagne au lot suivant.
+#
+# Un écart assumé par rapport au croquis de la ROADMAP, dans le sens de la
+# prudence : on ne RETIRE PAS l'entrée de l'index avant de la re-taguer (le
+# geste du bloc « fichiers modifiés »). Sur ~40 000 photos et cinq jours de
+# campagne, ce geste viderait la photothèque à mesure ; ici la photo reste
+# visible, cherchable et nommée jusqu'à la seconde où sa nouvelle entrée
+# remplace l'ancienne. Conséquence heureuse : la progression vit dans le `pipe`
+# de l'entrée elle-même (durable, sur disque) — un redémarrage, que la livraison
+# de tout autre changement impose de toute façon, redécouvre au scan suivant ce
+# qui reste, sans rien perdre et sans état à tenir ailleurs.
+RETAG_FICHIER = SCRIPT_DIR / "retag_actif.txt"
+RETAG_LOT = 500            # clés enfilées au plus, par racine et par scan
+RETAG_PENDING = set()      # clés en file POUR retag (sous PENDING_LOCK)
+
+
+def retag_cible():
+    """Version de pipeline visée par la campagne, ou None si `retag_actif.txt`
+    est absent (= comportement d'avant). Relu à chaque scan : poser ou retirer
+    le fichier suffit, aucun redémarrage. Règle pure : tagging_meta."""
+    import tagging_meta
+    try:
+        txt = RETAG_FICHIER.read_text(encoding='utf-8')
+    except OSError:
+        txt = None
+    return tagging_meta.version_retag(txt, TAGGING_PIPELINE_VERSION)
+
+
+def _retag_etat():
+    """État de la campagne pour /api/serveur : la cible, ce qui reste, ce qui
+    est en file, ce qui a été abandonné. Une campagne qui n'avance plus doit se
+    VOIR — c'est la leçon des backfills morts en silence pendant des mois."""
+    cible = retag_cible()
+    if not cible:
+        return {'actif': False}
+    reste = abandons = 0
+    for e in list(STORE.data.values()):
+        if not isinstance(e, dict) or e.get('failed') or e.get('video'):
+            continue
+        if e.get('retag_fail') == cible:
+            abandons += 1
+        elif e.get('pipe') != cible:
+            reste += 1
+    with PENDING_LOCK:
+        en_file = len(RETAG_PENDING)
+    return {'actif': True, 'cible': cible, 'reste': reste, 'en_file': en_file,
+            'abandons': abandons, 'lot': RETAG_LOT}
+
+
+def enqueue_retag(name):
+    """Enfile une photo DÉJÀ taguée pour un re-tagging complet, sans la retirer
+    de l'index. False si elle est déjà en file (même dédoublonnage que
+    `enqueue`)."""
+    with PENDING_LOCK:
+        if name in PENDING:
+            return False
+        PENDING.add(name)
+        RETAG_PENDING.add(name)
+    TAG_QUEUE.put(name)
+    return True
+
+
+def est_retag(name):
+    """Cette clé a-t-elle été enfilée par la campagne ? C'est la SEULE chose qui
+    distingue un retag d'un tagging normal dans le worker — pas une file, pas un
+    second worker (invariant n° 4 : aucune nouvelle politique GPU)."""
+    with PENDING_LOCK:
+        return name in RETAG_PENDING
 
 
 # ────────────────────────── ExifTool ──────────────────────────
@@ -2274,6 +2358,79 @@ def _marquer_echec(name, raison):
         return False
 
 
+def _echec_retag(name, raison):
+    """Un retag qui échoue ne doit pas COÛTER la photo.
+
+    `_marquer_echec` écrase l'entrée par `{failed: True}` : sur une photo déjà
+    taguée — le cas de TOUTE la campagne — ce serait perdre ses mots-clés, sa
+    description, sa date, son GPS et ses faits pour un simple timeout d'Ollama.
+    On garde donc l'entrée telle quelle et on y pose une marque d'abandon, qui
+    sert aussi de garde ANTI-BOUCLE : `tagging_meta.cles_a_retaguer` ne
+    représente plus une clé abandonnée POUR CETTE cible — un bump de version la
+    rendra candidate à nouveau, et c'est voulu.
+
+    Renvoie False si l'entrée a disparu entre-temps : l'appelant retombe alors
+    sur `_marquer_echec`. Ne relance jamais (règle du 27/08 : un rattrapage ne
+    dépend pas de la ressource qui vient de tomber)."""
+    try:
+        e = STORE.data.get(name)
+        if not isinstance(e, dict) or e.get('failed'):
+            return False
+        e = dict(e)
+        e['retag_fail'] = retag_cible() or TAGGING_PIPELINE_VERSION
+        e['retag_error'] = str(raison)[:200]
+        e['retag_at'] = time.time()
+        STORE.set(name, e)
+        print(f"  ✗ Retag {name} abandonné ({str(raison)[:80]}) — "
+              f"l'entrée précédente est CONSERVÉE")
+    except Exception as ex:
+        print(f"  ⚠ {name}: abandon de retag impossible à noter ({ex})")
+    return True
+
+
+def _detecter_avant_retag(key, path):
+    """Campagne de retag : complète les détections MANQUANTES juste avant l'appel
+    au VLM, photo par photo. Schéma retenu le 05/09 sur mesure réelle
+    (`mesure_detection_cpu.py` : ~1 s en moyenne, pic ~6 s, contre 11,3 s de
+    tagage) et préféré à une passe préalable en deux phases : 100 % de couverture
+    au lieu de « ce qu'une pré-passe a eu le temps de rattraper ».
+
+    Ne re-détecte JAMAIS une entrée déjà présente : un cluster déjà nommé ne doit
+    pas être rompu (invariant n° 1). Passe par l'ordonnanceur EXISTANT
+    (`creneau`), jamais par une 5e politique GPU (invariant n° 4) ; un créneau
+    refusé fait simplement sauter la détection — les balayages de fond la
+    reprendront. N'échoue jamais vers l'appelant : le tagging prime.
+
+    Portée honnête, à ne pas surestimer : côté ANIMAUX le gain est immédiat
+    (l'espèce détectée entre dans les assertions via ANIMAL_STORE, cf.
+    `_assertions_pour`). Côté VISAGES il est DIFFÉRÉ — les assertions lisent les
+    noms du XMP, pas FACE_STORE : détecter ici met la photo en état d'être
+    nommée (cluster, puis réconciliation), ce qui profitera au prochain passage,
+    pas à celui-ci."""
+    if path.suffix.lower() not in IMAGE_EXT:
+        return
+    try:
+        fe = FACE_STORE.get(key)
+        if (fe is None or _is_transient_io_fail(fe)) and get_face_app() is not None:
+            with creneau('visages', timeout=30) as ok:
+                if ok:
+                    faces = detect_faces(path)
+                    FACE_STORE.set(key, {"faces": faces, "n": len(faces),
+                                         "at": time.time()})
+    except Exception as e:
+        print(f"  ⚠ Retag {key} : détection visages sautée ({str(e)[:80]})")
+    try:
+        ae = ANIMAL_STORE.get(key)
+        if (ae is None or _is_transient_io_fail(ae)) and get_yolo() is not None:
+            with creneau('animaux', timeout=30) as ok:
+                if ok:
+                    animals = detect_animals(path)
+                    ANIMAL_STORE.set(key, {"animals": animals,
+                                           "n": len(animals), "at": time.time()})
+    except Exception as e:
+        print(f"  ⚠ Retag {key} : détection animaux sautée ({str(e)[:80]})")
+
+
 def tagger_worker():
     fails = {}
     downs = {}
@@ -2288,12 +2445,21 @@ def tagger_worker():
     REGISTRE.motif_du_thread('tagging')
     while True:
         name = TAG_QUEUE.get()
+        retag = False           # défini AVANT le try : les gestionnaires le lisent
         try:
+            # Campagne de retag (2 quater) : TOUTE la différence avec un tagging
+            # normal tient en trois gestes — passer outre `STORE.has` (l'entrée
+            # est là, c'est justement elle qu'on refait), compléter les
+            # détections manquantes avant les assertions, et ne pas écraser
+            # l'entrée par un `failed` si l'appel échoue.
+            retag = est_retag(name)
             path = _resolve_key(name)
-            if not path.exists() or STORE.has(name) or _is_hidden_path(path):
+            if (not path.exists() or _is_hidden_path(path)
+                    or (STORE.has(name) and not retag)):
                 pending_done(name)
                 continue
-            print(f"  🏷  Analyse IA : {name}")
+            print(f"  ♻ Re-tagging IA : {name}" if retag
+                  else f"  🏷  Analyse IA : {name}")
             t0 = time.time()
             b64 = image_to_b64(path)
             # Knowledge Builder AMONT : la lecture exiftool (mots-clés existants
@@ -2308,6 +2474,8 @@ def tagger_worker():
                     path, cle=name)
             except Exception:
                 pass
+            if retag:
+                _detecter_avant_retag(name, path)
             faits = _assertions_pour(name, existing_kw, taken)
             raw = ollama_generate(b64, tagging_meta.prompt_tagging(faits))
             kw_fr, kw_en, desc = parse_tags(raw)
@@ -2344,6 +2512,19 @@ def tagger_worker():
                 entry["faits"] = fs
             if not in_file:
                 entry["write_fails"] = 1
+            if retag:
+                # Un retag REMPLACE le texte IA, pas l'ENTRÉE. Tout ce que
+                # l'entrée savait par ailleurs et que cette passe n'a pas
+                # recalculé lui reste : sans ça, un simple hoquet d'ExifTool
+                # (`meta_ok` faux) coûterait à la photo sa date et son GPS —
+                # anodin sur une photo neuve, que les backfills reprendront,
+                # mais c'est une PERTE sur une photo qui les avait déjà.
+                base = dict(STORE.data.get(name) or {})
+                for _k in ('failed', 'error', 'faits', 'write_fails',
+                           'retag_fail', 'retag_error', 'retag_at'):
+                    base.pop(_k, None)
+                base.update(entry)
+                entry = base
             STORE.set(name, entry)
             pending_done(name)
             fails.pop(name, None)
@@ -2355,7 +2536,8 @@ def tagger_worker():
             if n >= 5:
                 # 5 timeouts sur le MÊME fichier : c'est lui le problème
                 print(f"  ✗ {name}: 5 timeouts Ollama — abandonné, listé sur /sante")
-                _marquer_echec(name, f"timeout Ollama x{n}")
+                if not (retag and _echec_retag(name, f"timeout Ollama x{n}")):
+                    _marquer_echec(name, f"timeout Ollama x{n}")
                 pending_done(name)
             else:
                 print(f"  ⚠ Ollama injoignable ({e}) — nouvel essai dans 30 s "
@@ -2370,11 +2552,13 @@ def tagger_worker():
                 TAG_QUEUE.put(name)
             else:
                 print(f"  ✗ Abandon du tagging de {name}: {e} — listé sur /sante")
-                _marquer_echec(name, e)
+                if not (retag and _echec_retag(name, e)):
+                    _marquer_echec(name, e)
                 pending_done(name)
         except Exception as e:
             print(f"  ✗ Erreur tagging {name}: {e} — listé sur /sante")
-            _marquer_echec(name, e)
+            if not (retag and _echec_retag(name, e)):
+                _marquer_echec(name, e)
             pending_done(name)
         finally:
             TAG_QUEUE.task_done()
@@ -3291,6 +3475,29 @@ def _sync_dir(label, cur, own_keys, first=False, deep=False):
             for k in changed:
                 enqueue(k)
             print(f"  ♻ {label} : {len(changed)} fichier(s) modifié(s) → re-tagging")
+
+    # 3 bis) campagne de RETAG (chantier 2 quater) : tant que `retag_actif.txt`
+    # est posé, le scan approfondi enfile AUSSI les entrées dont le `pipe` n'est
+    # pas la version visée. Par LOTS, et seulement quand la file a de la place :
+    # la file est en MÉMOIRE, l'enfiler entière (~40 000 clés) ferait un état
+    # qu'un redémarrage perdrait — la progression, elle, vit dans le `pipe` de
+    # chaque entrée, sur disque. Rien n'est retiré de l'index : la photothèque
+    # reste entière, nommée et cherchable pendant les jours que dure la campagne.
+    if deep and TAG_QUEUE.qsize() < RETAG_LOT:
+        import tagging_meta as _tm
+        cible = retag_cible()
+        if cible:
+            with PENDING_LOCK:
+                deja = set(PENDING)
+            n_retag = 0
+            for k in _tm.cles_a_retaguer(
+                    ((c, STORE.data.get(c)) for c in cur), cible,
+                    exclues=deja, lot=RETAG_LOT):
+                if enqueue_retag(k):
+                    n_retag += 1
+            if n_retag:
+                print(f"  ♻ {label} : {n_retag} photo(s) en file de RE-TAGGING"
+                      f" (campagne « {cible} »)")
 
     # 4) fichiers disparus : nettoyage (la racine vient d'être listée, donc joignable)
     #    forget_everywhere purge en cascade tags + détections visages/animaux +
@@ -12994,6 +13201,7 @@ class Handler(BaseHTTPRequestHandler):
             'config': {'MODEL': MODEL, 'ANIMAL_PIPELINE_VERSION': ANIMAL_PIPELINE_VERSION,
                        'TAGGING_PIPELINE_VERSION': TAGGING_PIPELINE_VERSION,
                        'tagging_pipe': _tagging_pipe_counts(),
+                       'retag': _retag_etat(),
                        'UPLOAD_DIR': str(UPLOAD_DIR),
                        'racines': [[label, str(r)] for label, r in media_roots()],
                        'FACE_MATCH_SIM': FACE_MATCH_SIM, 'PET_MATCH_SIM': PET_MATCH_SIM},

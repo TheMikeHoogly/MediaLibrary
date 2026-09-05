@@ -9,106 +9,86 @@ FUSIONNÉ — ce document, non. Puis `ROADMAP.md`, `eval/DECISIONS.md`,
 `eval/METHODE.md` — et `docs/DECISIONS_OUTILLAGE.md` si le sujet touche aux
 canaux, à la livraison ou au MCP. Débrief en 2–3 lignes, puis on attaque.
 
-## Où on en est (05/09/2026 — chantier 2 quater décidé, GO de Mike reçu)
+## Où on en est (05/09/2026 soir — chantier 2 quater : étapes 1, 2 et 4 LIVRÉES)
 
-**Git** : dernier commit fusionné dans `main` = `b99d1ed` (vérifier
-`.git/logs/refs/heads/main`). Chaîne de la session qui vient de finir :
-`4a5dab4` (qwen3-vl 2b vs 4b, 8 photos) → `bb4cfb7` (+ qwen3.5 2b/4b,
-`--sortie` configurable sur `mesure_modele_vision.py`) → `ba529e8` (chantier
-**2 quater** créé, `ROADMAP.md` dégonflée 91 ko → 42 ko) → `dd3de22` (2 quater
-RÉVISÉ : passe unique coordonnée au lieu d'une pré-passe en 2 phases, mesurée
-par `mesure_detection_cpu.py`) → `b99d1ed` (clarification : préservation des
-identités humaines pendant le retag, vérifiée dans le code). **Serveur : PAS
-redémarré pendant cette suite** — aucun `server.py` touché, uniquement
-`ROADMAP.md`/`eval/DECISIONS.md` et deux bancs de mesure. Il tourne donc
-toujours sur le code observé le 03/09 ~19:16 (session 71). **`QUESTIONS_MIKE.md`
-: vide.**
+**Git** : dernier commit fusionné dans `main` = celui de cette session
+(vérifier `.git/logs/refs/heads/main`, jamais ce document). Avant elle :
+`32cb83b` (préparation de la session d'implémentation). **Le serveur a été
+REDÉMARRÉ et observé** — c'était exigé, `server.py` a changé.
 
-**DÉCISION : re-tagger le fonds ENTIER, FR seul, avec `qwen3.5:4b` — Mike a
-donné le GO pour l'implémentation (05/09 soir).** Résumé, le détail complet
-(mesures, raisonnement, invariants vérifiés) vit dans `ROADMAP.md` chantier
-**2 quater** et dans `eval/DECISIONS.md` section « Tagging / description » :
+**Ce qui est codé et livré (rien n'est ACTIVÉ) :**
 
-- Passage au FR seul (fin du bilingue) → tout le fonds redevient candidat au
-  retag, pas seulement les 22 196 entrées « v0 » du 2 bis.
-- `qwen3.5:4b` (MÊME gabarit VRAM que `qwen3-vl:4b`, 3,4 Go) bat `qwen3-vl:4b`
-  sur les corrections concrètes (chat calico, lac/océan, fuite de noms) et
-  tourne **~3× plus vite** (11,3 s/photo contre 35,2 s), quasi la vitesse
-  actuelle de `qwen3-vl:2b` en prod.
-- **Une seule passe coordonnée** (détecter visages + animaux JUSTE AVANT
-  chaque appel Ollama, dans le pipeline de retag lui-même) bat la première
-  idée d'une pré-passe séparée en 2 phases — mesuré (`mesure_detection_cpu.py`) :
-  ~10 % de surcoût pour 100 % de couverture, contre une pré-passe qui n'aurait
-  rattrapé qu'une partie du travail.
-- **Mike voit ce retag complet, UNIQUE, comme la « première passe officielle »
-  de MediaLibrary** — un soin d'initialisation, PAS un changement de la
-  logique standard de `tagger_worker` (qui reste inchangée pour les uploads
-  du quotidien : pas de re-tagging automatique d'une photo déjà taguée).
-- **Garde-fou vérifié dans le code, pas supposé** : les noms `personne:Nom` /
-  `animal:Nom` ne vivent PAS dans les mots-clés Ollama mais dans les fiches
-  durables `PEOPLE_STORE`/`PETS_STORE` ; `_noms_attendus()` les réinjecte à
-  CHAQUE écriture du worker de tagging (commentaire du code : « PÉRENNITÉ : ne
-  jamais perdre les tags nommés »). La détection visages/animaux du retag ne
-  se déclenche QUE si l'entrée manque encore dans `FACE_STORE`/`ANIMAL_STORE`
-  — jamais de re-détection qui romprait un cluster déjà nommé. **Le pipeline
-  de retag à écrire DOIT réutiliser cette même logique de fusion
-  (`_merge_named_tags`, `_noms_attendus`), pas la contourner.**
+1. **`tagging_meta.py` en FR seul.** `REGLES_JSON` ne demande plus
+   `keywords_en` ; s'y ajoutent une exigence de vrai français (sans la case
+   anglaise, le modèle déverse ses anglicismes dans la case française —
+   « inflatable », « gruppe », « castle gonflable » observés) et une consigne
+   anti-répétition (mots-clés distincts entre eux, description qui dit la
+   scène au lieu de recopier la liste). Chaque consigne répond à un défaut
+   VU dans `docs/comparaison_modeles_vision*.json`, pas à une intuition.
+2. **`modele.txt` → `qwen3.5:4b`** et `TAGGING_PIPELINE_VERSION` =
+   `"qwen3.5:4b|v3fr|kb1"`. Depuis le redémarrage, les uploads du quotidien
+   sont donc tagués par le nouveau modèle avec le nouveau prompt.
+3. **Le levier de campagne, livré INERTE.** `retag_actif.txt` est ABSENT : tant
+   qu'il l'est, rien ne bouge et `tagger_worker` se comporte comme avant. Posé,
+   le scan approfondi enfile par lots de 500 les entrées dont le `pipe` n'est
+   pas la cible ; le retirer arrête la campagne au lot suivant.
+
+**Deux écarts assumés par rapport au croquis de la ROADMAP** (détail dans
+`ROADMAP.md` 2 quater et `eval/DECISIONS.md`) : la campagne ne RETIRE rien de
+l'index (le geste `remove_many` du bloc « fichiers modifiés » viderait la
+photothèque sur cinq jours), et un retag raté CONSERVE l'entrée
+(`_echec_retag`, marque `retag_fail` qui sert aussi de garde anti-boucle) au
+lieu de l'écraser par un `failed` — un timeout d'Ollama aurait sinon coûté à la
+photo ses mots-clés, sa date et son GPS.
+
+**Tests** : `test_tagging_meta.py` (logique pure : prompt FR seul, levier,
+sélection des clés) et `test_retag_campagne.py` (16, cablage lu sur le code de
+prod par `ast`, sans importer `server.py`).
 
 ## Prochain pas
 
-**1. Attaquer l'implémentation, chantier 2 quater, DANS L'ORDRE (`ROADMAP.md`
-en a le détail) — rien de tout ça n'est encore codé :**
-1. `tagging_meta.py` : FR seul (retirer `keywords_en` du schéma JSON envoyé à
-   Ollama) + consigne anti-répétition explicite. Étendre/vérifier ses tests
-   avant livraison.
-2. `server.py` : `MODEL` bascule vers `qwen3.5:4b` **via `modele.txt`** (pas
-   une ligne de code — aucun redémarrage-preuve requis par `git_agent`,
-   ce fichier n'est pas dans le graphe d'import). `TAGGING_PIPELINE_VERSION`
-   bumpée en même temps que le prompt (ex. `"qwen3.5:4b|v3fr|kb1"`) — bumper
-   seul ne déclenche rien tant que le levier de l'étape 4 n'existe pas.
-3. `enrichir_lieux.py` tourne une fois (rafraîchit `gps_places.json`,
-   indépendant, sans urgence particulière).
-4. `server.py` : le levier `retag_actif.txt` + le bloc de scan pipe-aware
-   (piggyback sur le bloc existant de `_sync_dir`, « fichiers modifiés ») +
-   le pipeline de retag dédié qui détecte visages/animaux AVANT de tagger
-   (si l'entrée manque encore dans `FACE_STORE`/`ANIMAL_STORE`) — livré et
-   testé, mais **PAS activé** (fichier absent = rien ne bouge, `tagger_worker`
-   standard inchangé).
-5. Test d'endurance thermique sur une fenêtre LONGUE (heures, pas minutes) —
-   l'endurance n'a été prouvée que par rafales de ~450 s (chantier
-   confidentialité, 04/09).
-6. `retag_actif.txt` posé → la campagne démarre, observée (`/sante`, boucle
-   thermique, spot-checks < 10 photos de temps en temps sur le format ET les
-   hallucinations type « lgbtq »).
+**1. RÉPONDRE À LA QUESTION DU DICTIONNAIRE — avant tout le reste.**
+`QUESTIONS_MIKE.md` porte une entrée, la seule : l'élargissement FR→EN de la
+recherche (+0,075 de rappel, mesuré le 30/08) réapprend sa traduction toutes
+les 6 h sur les entrées BILINGUES de l'index. Le FR seul les efface une à une :
+à la fin de la campagne le dictionnaire serait vide et l'élargissement mourrait
+SANS ERREUR. Recommandation écrite : le geler sur disque avant de poser
+`retag_actif.txt`. Ne pas lancer la campagne avant d'avoir tranché.
 
-**Pendant la campagne (une fois l'étape 6 lancée), ce qui reste sûr à faire
-avancer** : 1 bis (`.btn` canonique), l'étape 7 du chantier 17 (onboarding),
-le reste de l'audit, toute doc/UI/CSS. **À éviter ou reporter** : la phase 2
-vidéo (1 octies), tout nouveau banc `mesure_`/`eval_` GPU, tout chantier qui
-bumperait une AUTRE version de pipeline en même temps (confusion de
-diagnostic).
+**2. Ce qui reste du chantier 2 quater, dans l'ordre :**
+- **Étape 3** : `enrichir_lieux.py` une passe (rafraîchit `gps_places.json`,
+  hors ligne, hors GPU). **Ne tourne PAS depuis la VM** : il lit `photos.db`,
+  que la VM ne sait pas ouvrir par-dessus le montage. Geste de Mike, ou banc.
+- **Étape 5** : endurance thermique sur une fenêtre LONGUE (heures) —
+  l'endurance n'est prouvée que par rafales de ~450 s (04/09).
+- **Étape 6** : poser `retag_actif.txt` (vide = la version courante) → la
+  campagne démarre, observée : `/api/serveur` → `config.retag`
+  (`reste`, `en_file`, `abandons`), boucle thermique, et des spot-checks de
+  moins de 10 photos de temps en temps sur le FORMAT (6-10 mots-clés courts,
+  pas une phrase) ET les hallucinations type « lgbtq ».
 
-**2. Chantier 18 (confidentialité) : la mesure est FINIE, la liste ATTEND
+**Pendant la campagne, ce qui reste sûr à faire avancer** : 1 bis (`.btn`
+canonique), l'étape 7 du chantier 17 (onboarding), le reste de l'audit, toute
+doc/UI/CSS. **À éviter** : la phase 2 vidéo (1 octies), tout nouveau banc
+`mesure_`/`eval_` qui appelle Ollama avec un AUTRE modèle, tout chantier qui
+bumperait une autre version de pipeline en même temps.
+
+**3. Chantier 18 (confidentialité) : la mesure est FINIE, la liste ATTEND
 Mike.** `docs/sensibles_echantillon.json` (90/90, 04/09 soir) : 66 « non »,
-19 illisibles, 1 facture, 1 banque, 3 administratif — à JUGER photo par
-photo, rien n'a bougé.
+19 illisibles, 1 facture, 1 banque, 3 administratif — à JUGER photo par photo,
+rien n'a bougé.
 
-**3. Items non touchés depuis session 71 (03/09), statut À REVÉRIFIER — le
+**4. Items non touchés depuis la session 71 (03/09), statut À REVÉRIFIER — le
 journal git ne dit rien de ces sujets, ils ne se prouvent qu'en réel :**
-- Bat 42 (strip Motion Photo, ~8,6 Go à rendre) était EN COURS le 03/09 soir
-  — demander à Mike où ça en est avant de supposer que bat 43 (purge des
-  `_original`) a suivi.
+- Bat 42 (strip Motion Photo, ~8,6 Go à rendre) était EN COURS le 03/09 soir —
+  demander à Mike où ça en est avant de supposer que bat 43 a suivi.
 - Ventilation dégagée mais pas nettoyée en profondeur : feu vert PARTIEL de
-  Mike pour tester quand même, prudence thermique (voir aussi le test
-  d'endurance de l'étape 5 ci-dessus, qui répond au même besoin pour 2 quater).
-- La Carte a deux champs (barre commune + « Rechercher (noms, lieux, sens) »)
-  : à trancher avec Mike — garder les deux ou fondre.
+  Mike pour tester quand même, prudence thermique.
+- La Carte a deux champs de recherche (barre commune + le sien) : à trancher.
 - 9 septembre au matin : Windows a-t-il demandé le redémarrage du Patch
-  Tuesday ? (`Get-WinEvent -FilterHashtable @{LogName='System'; Id=1074}`,
-  ne pas confondre avec la coupure thermique brutale du 29/08 — Id 41).
-- UNIFIER le re-clé (`server.rekey_everywhere`,
-  `deplacer_dossiers.recle_une_cle`, `appliquer_plan.rekey_stores` : trois
-  copies d'une même règle, déjà divergentes une fois).
+  Tuesday ? (`Get-WinEvent … Id=1074` ; ne pas confondre avec Id 41, thermique).
+- UNIFIER le re-clé (`server.rekey_everywhere`, `deplacer_dossiers.recle_une_cle`,
+  `appliquer_plan.rekey_stores` : trois copies d'une même règle).
 
 ## En fin de projet
 

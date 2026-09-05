@@ -1,0 +1,251 @@
+{
+ "genere_le": "2026-09-05 13:17:03",
+ "modeles": [
+  "qwen3.5:4b"
+ ],
+ "resultats": {
+  "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2017\\05 Mai\\MGM Menerga\\20170522_184758.jpg": {
+   "ancien_kw": [
+    "inflatable",
+    "structure",
+    "group",
+    "people",
+    "collaboration",
+    "teamwork",
+    "activity",
+    "indoor",
+    "red",
+    "blue",
+    "dark",
+    "background"
+   ],
+   "qwen3.5:4b": {
+    "kw_fr": [
+     "jeux collectifs",
+     "gonflables rouges et bleus",
+     "marche d'entreprise",
+     "salle de conférence",
+     "équipe en action"
+    ],
+    "kw_en": [],
+    "desc": "Une équipe participe à un jeu sur gonflable rouge et bleu dans une salle de conférence.",
+    "duree_s": 22.7
+   }
+  },
+  "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2025\\20250410_212009.jpg": {
+   "ancien_kw": [
+    "code",
+    "chiffre",
+    "qr"
+   ],
+   "qwen3.5:4b": {
+    "kw_fr": [
+     "code-barres",
+     "scansion",
+     "carte-visite",
+     "lgbtq",
+     "image-floue",
+     "surface-bruyante"
+    ],
+    "kw_en": [],
+    "desc": "Une carte avec un code-barres flou sur une surface texturée et colorée.",
+    "duree_s": 9.7
+   }
+  },
+  "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Floufline\\20190530_bouteille-de-vin-en-main.jpg": {
+   "ancien_kw": [
+    "vin",
+    "bouteille",
+    "main",
+    "table",
+    "wine",
+    "bottle",
+    "hand",
+    "table"
+   ],
+   "qwen3.5:4b": {
+    "kw_fr": [
+     "vin rouge",
+     "bouteille verte",
+     "main tenant",
+     "table sombre",
+     "cuisine",
+     "manger"
+    ],
+    "kw_en": [],
+    "desc": "Une main tient une bouteille de vin rouge sur une table sombre où l'on aperçoit des restes d'un repas et un verre.",
+    "duree_s": 8.6
+   }
+  },
+  "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Luna & Inti\\20230918_135836.jpg": {
+   "ancien_kw": [
+    "deux chats",
+    "lit",
+    "coussins",
+    "commode",
+    "jeu",
+    "chambre",
+    "two cats",
+    "bed",
+    "pillows",
+    "nightstand",
+    "toys",
+    "bedroom"
+   ],
+   "qwen3.5:4b": {
+    "kw_fr": [
+     "deux chats",
+     "coussins bleus",
+     "lit blanc",
+     "commode bois",
+     "lampe ronde",
+     "jouet animalier"
+    ],
+    "kw_en": [],
+    "desc": "Deux chats gris reposent sur un lit avec des coussins, près d'une commode et d'un jouet.",
+    "duree_s": 11.6
+   }
+  },
+  "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\20180428_231429.jpg": {
+   "ancien_kw": [
+    "homme",
+    "femme",
+    "chambre",
+    "bois",
+    "chaises",
+    "table",
+    "bouteilles",
+    "alimentation",
+    "meubles",
+    "chaise",
+    "bouteille",
+    "boisson",
+    "man",
+    "woman",
+    "room",
+    "wooden",
+    "chairs",
+    "table",
+    "bottles",
+    "food",
+    "furniture",
+    "chair",
+    "bottle",
+    "drink"
+   ],
+   "qwen3.5:4b": {
+    "kw_fr": [
+     "homme",
+     "femme",
+     "bois",
+     "chaise",
+     "table",
+     "groupe"
+    ],
+    "kw_en": [],
+    "desc": "Un homme et une femme se tiennent dans un intérieur en bois avec des chaises empilées et de la nourriture sur une table.",
+    "duree_s": 13.1
+   }
+  },
+  "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\Caline\\20201113_101014.jpg": {
+   "ancien_kw": [
+    "chat",
+    "sommeil",
+    "lit",
+    "soleil",
+    "poussière",
+    "calico",
+    "cat",
+    "sleeping",
+    "bed",
+    "sunlight"
+   ],
+   "qwen3.5:4b": {
+    "kw_fr": [
+     "chat tricolore",
+     "sommeil paisible",
+     "jambes en jean",
+     "lumiere du matin",
+     "couette blanche",
+     "détail domestique"
+    ],
+    "kw_en": [],
+    "desc": "Un chat tricolore dort tranquillement sur les genoux d'une personne habillée de jeans, baigné dans la lumière douce du matin.",
+    "duree_s": 15.2
+   }
+  },
+  "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2021\\20210218_124554.jpg": {
+   "ancien_kw": [
+    "gruppe",
+    "personnes",
+    "social",
+    "cuisine",
+    "salle",
+    "chaise",
+    "table",
+    "ballons",
+    "joyeux",
+    "fête",
+    "group",
+    "people",
+    "social",
+    "dining",
+    "living",
+    "room",
+    "chair",
+    "table",
+    "balloons",
+    "happy",
+    "birthday"
+   ],
+   "qwen3.5:4b": {
+    "kw_fr": [
+     "fete",
+     "cuisine",
+     "salle",
+     "groupe",
+     "ballons",
+     "joyeux"
+    ],
+    "kw_en": [],
+    "desc": "Un groupe de personnes fêtent joyeusement dans une cuisine et salle avec des ballons décoratifs.",
+    "duree_s": 9.5
+   }
+  },
+  "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2022\\20220918_103631.jpg": {
+   "ancien_kw": [
+    "mer",
+    "bateau",
+    "homme",
+    "montagnes",
+    "océan",
+    "ciel",
+    "bleu",
+    "calme",
+    "vent",
+    "water",
+    "surfboard",
+    "person",
+    "mountains",
+    "ocean",
+    "sky",
+    "blue",
+    "calm",
+    "wind"
+   ],
+   "qwen3.5:4b": {
+    "kw_fr": [
+     "homme",
+     "planche",
+     "mer",
+     "montagnes",
+     "bateau",
+     "vent"
+    ],
+    "kw_en": [],
+    "desc": "Un homme glisse sur une planche à voile derrière un bateau, avec des montagnes en arrière-plan sous un ciel bleu.",
+    "duree_s": 7.4
+   }
+  }
+ }
+}
