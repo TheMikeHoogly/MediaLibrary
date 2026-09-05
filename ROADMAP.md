@@ -242,52 +242,56 @@ Observé : densité 96 → 86 → 210 px sur la planche, Échap ferme, cible 44 
 `--encre` a été retiré du « Se déconnecter » — mesuré à 3,50:1 sur
 `--salle-2`, sous le plancher AA, et se déconnecter ne détruit rien.
 
-**2 quater. RE-TAGGER en FR seul, modèle qwen3.5:4b — DÉCIDÉ (05/09), plan avant lancement.**
-Suite du 2 bis : Mike tranche deux choses le 05/09 — (i) plus de bilingue
-FR/EN, FR seul pour l'avenir (le retag devient donc inévitable pour TOUT le
-fonds, pas seulement les 22 196 « v0 » du 2 bis) ; (ii) « meilleur, pas
-plus gros » — chercher un modèle qui batte `qwen3-vl:4b` sans dépasser
-son gabarit, plutôt que d'accepter la lenteur mesurée le 04/09.
+**2 quater. RE-TAGGER en FR seul, modèle qwen3.5:4b, EN UNE SEULE PASSE
+coordonnée par photo — DÉCIDÉ (05/09), révisé le même jour sur mesure
+réelle.** Suite du 2 bis : Mike tranche deux choses le 05/09 — (i) plus de
+bilingue FR/EN, FR seul pour l'avenir (le retag devient donc inévitable
+pour TOUT le fonds, pas seulement les 22 196 « v0 » du 2 bis) ; (ii)
+« meilleur, pas plus gros » — chercher un modèle qui batte `qwen3-vl:4b`
+sans dépasser son gabarit, plutôt que d'accepter la lenteur mesurée le
+04/09. **Et Mike précise, toujours le 05/09** : ce retag complet, unique,
+compte comme la PREMIÈRE PASSE OFFICIELLE de MediaLibrary (tout le fonds a
+été tagué jusqu'ici par un pipeline qu'on juge nous-mêmes médiocre) — ça
+justifie d'y mettre le soin qu'une initialisation mérite, UNE fois, sans
+toucher à la logique de l'agent de tagging standard (le flux rapide des
+nouveaux uploads au jour le jour reste tel quel).
 
 **Le modèle — qwen3.5:4b, sur 8 photos (mêmes que le 2 bis), sans dépasser
 le budget VRAM.** `qwen3.5:2b`/`qwen3.5:4b` tirés (déjà en local pour zéro
 coût, `diagnostic_tirer_modele.py`), comparés à `qwen3-vl:2b`/`qwen3-vl:4b`
 par `mesure_modele_vision.py` (`--sortie` ajouté pour ne pas écraser une
-comparaison précédente). Résultat : `qwen3.5:4b` (4,7B, Q4_K_M, 3,4 Go —
-MÊME gabarit que `qwen3-vl:4b`) corrige le chat calico (« tricolore »/
-« calico », plus « tigré ») et le lac confondu avec l'océan, ne répète
-pas la fuite de noms Inti/Luna — et tourne à **11,3 s/photo en régime
-établi contre 35,2 s pour `qwen3-vl:4b`, soit ~3× plus vite, pour une
-vitesse quasi identique à `qwen3-vl:2b` actuellement en prod (11,2 s/photo)**.
-Un défaut trouvé, à surveiller : une hallucination isolée (« lgbtq » sur
+comparaison précédente). Résultat : `qwen3.5:4b` (4,7B, Q4_K_M, 3,4 Go —
+MÊME gabarit que `qwen3-vl:4b`) corrige le chat calico (« tricolore »/
+« calico », plus « tigré ») et le lac confondu avec l'océan, ne répète
+pas la fuite de noms Inti/Luna — et tourne à **11,3 s/photo en régime
+établi contre 35,2 s pour `qwen3-vl:4b`, soit ~3× plus vite, pour une
+vitesse quasi identique à `qwen3-vl:2b` actuellement en prod (11,2 s/photo)**.
+Un défaut trouvé, à surveiller : une hallucination isolée (« lgbtq » sur
 une photo de QR code, aucun rapport). `qwen3.5:2b` est écarté tel quel :
-plus rapide encore (3,6 s/photo) mais casse le format demandé (parfois UNE
+plus rapide encore (3,6 s/photo) mais casse le format demandé (parfois UNE
 phrase entière au lieu de 6-10 mots-clés courts — romprait l'affichage des
 puces).
 
-**Le chiffre à corriger : le « 9+ jours » annoncé le 04/09 mélangeait
+**Le chiffre à corriger : le « 9+ jours » annoncé le 04/09 mélangeait
 deux mesures.** Sur les mêmes 8 photos, dans les mêmes conditions :
-`qwen3-vl:4b` ≈ 16 jours pour re-tagger les ~39 783 entrées déjà taguées
-(FR seul rend tout le fonds candidat, pas les 22 196 « v0 » seules) ;
+`qwen3-vl:4b` ≈ 16 jours pour re-tagger les ~39 783 entrées déjà taguées
+(FR seul rend tout le fonds candidat, pas les 22 196 « v0 » seules) ;
 `qwen3.5:4b` ≈ **5 jours**, comparable au débit actuel de `qwen3-vl:2b`.
 **Attention** : ces 8 photos sont les cas difficiles du 04/09, pas un
 tirage aléatoire — le débit réel en production sera vraisemblablement
 meilleur ; le chiffre solide est le ratio (~3×), pas le nombre de jours
 absolu.
 
-**Ce qui bloque un lancement immédiat, trouvé en lisant `server.py` (pas
-supposé) :**
-
 (a) **Aucun mécanisme de retag en masse n'existe — par construction, et
 c'est voulu** (commentaire à la ligne de `TAGGING_PIPELINE_VERSION` :
-« PAS de re-tagging automatique au bump ... c'est une décision explicite
-(ROADMAP) »). `tagger_worker` saute toute clé où `STORE.has(name)` est
+« PAS de re-tagging automatique au bump ... c'est une décision explicite
+(ROADMAP) »). `tagger_worker` saute toute clé où `STORE.has(name)` est
 vrai, quel que soit son `pipe`. **Mais la mécanique existe déjà pour un cas
-voisin** : le scan approfondi (`_sync_dir`, bloc « fichiers modifiés »)
+voisin** : le scan approfondi (`_sync_dir`, bloc « fichiers modifiés »)
 retire déjà une entrée du `STORE` et la remet dans `TAG_QUEUE` quand le
 fichier a changé — le même geste (`STORE.remove_many` + `enqueue`),
 simplement déclenché par le `pipe` au lieu du `mtime`, donne un retag de
-masse SANS nouvelle politique GPU (invariant `monolith-surgery` n° 4
+masse SANS nouvelle politique GPU (invariant `monolith-surgery` n° 4
 respecté) ni nouvelle file. **Piste concrète, pas encore codée** : un fichier
 bascule `retag_actif.txt` (même idée que `modele.txt`, lu par le scan, absent
 = comportement actuel inchangé) portant la version cible ; tant qu'il est
@@ -300,34 +304,54 @@ déjà pour tout `server.py` modifié) redécouvre tout seul, au prochain scan,
 ce qui reste à re-tagger. Rien à écrire de spécial dans le protocole de
 livraison : `STORE.set` n'écrit qu'APRÈS la réponse d'Ollama, donc une photo
 interrompue en cours de génération repart proprement au tour suivant (aucune
-écriture partielle, invariant n° 2).
+écriture partielle, invariant n° 2).
 
-(b) **Le conflit trouvé, à trancher avant de lancer :** Ollama (le tagage)
-est « hors bail » — priorité absolue de fait sur le GPU, contrat
-historique délibéré, à NE PAS toucher (invariant n° 4 : pas de 5ᵉ politique
-GPU). Une campagne de plusieurs jours en continu va donc AFFAMER
-`visages`/`animaux`/`semantique` (l'arbitre à tour de rôle pondéré ne peut
-leur donner un tour que si de la VRAM se libère, et un modèle de 3,4 Go sur
-4 Go n'en laisse quasiment pas). **Ça contredit directement la demande n° 2
-de Mike** (visages + GPS AVANT le tagage, pour nourrir son contexte) SI le
-rattrapage devait se faire EN DIRECT pendant la campagne — il ne pourra pas.
-**Compromis proposé, dans l'esprit mesuré du projet** : une PASSE
-PRÉALABLE, bornée et chiffrée par un banc (`comptes_` ou `mesure_`), qui
-laisse `visages`/`animaux`/le rattrapage GPS tourner à plein AVANT de
-basculer `retag_actif.txt` — pas pendant. Combien de temps cette passe
-doit-elle durer ? À chiffrer (combien de photos candidates au retag
-manquent encore de visages/GPS résolus) avant de fixer une date de
-lancement.
+(b) **RÉVISÉ (05/09, sur mesure réelle) — un seul passage, coordonné par
+photo, bat la passe préalable en deux phases envisagée d'abord.** Première
+idée (abandonnée) : geler la campagne, laisser `visages`/`animaux`/GPS
+rattraper leur retard en une passe séparée, PUIS lancer le retag — parce
+qu'Ollama garde une priorité GPU de fait (« hors bail », contrat historique,
+non touché). Mike a demandé de ne pas s'y figer et de chercher mieux : la
+mesure (`mesure_detection_cpu.py`, 8 photos, sur la machine réelle) montre
+que la question ne se pose quasiment pas. **Les visages tournent déjà 100%
+CPU** (`FACE_USE_GPU = False`, volontaire, VRAM prise par Ollama) : 0,34 s
+en moyenne, pic à 1,4 s sur la photo la plus chargée (10 visages). **Les
+animaux (YOLO) tournent CPU ou GPU selon la VRAM libre** : 0,17-0,34 s
+typique, un pic isolé à 4,9 s CPU (1,8 s GPU) sur la même photo chargée.
+**Le lieu (GPS → nom de lieu) n'est même pas une question de GPU** :
+`gps_places.json` est produit HORS LIGNE par `enrichir_lieux.py`, la lecture
+serveur ne fait qu'un accès cache mémoire, zéro coût, zéro réseau au moment
+du tagage. Conclusion : détecter visages + animaux JUSTE AVANT d'appeler
+Ollama, photo par photo, dans le pipeline de retag lui-même (pas dans une
+phase séparée), coûte en moyenne ~1 s de plus par photo (pire cas ~6-7 s sur
+une photo de groupe) contre les 11,3 s de l'appel au modèle — un surcoût de
+l'ordre de 10 %, pour une couverture de contexte de 100 % au lieu de
+« ce qu'une passe préalable a eu le temps de rattraper ». **C'est ce
+schéma qui est retenu**, PAS un chantier séparé : le pipeline de retag
+(distinct de `tagger_worker`, qui garde sa logique standard pour les
+nouveaux uploads du quotidien) appelle `detect_faces()` et `detect_animals()`
+pour la clé si l'entrée manque encore de l'un des deux AVANT de construire
+les assertions et d'appeler `ollama_generate` — les deux fonctions existent
+déjà, gèrent déjà seules le choix CPU/GPU, rien à réinventer côté
+arbitrage.
 
-(c) **Deux gardes-fous opérationnels, pas encore vérifiés :** l'endurance
-thermique n'a été mesurée que par rafales de ~450 s (chantier
+(c) **Un seul geste préalable reste utile, et il est hors GPU** : lancer
+`enrichir_lieux.py` une fois avant la campagne pour rafraîchir
+`gps_places.json` sur le plus de photos possible (script existant,
+hors ligne, aucun rapport avec Ollama ni la VRAM).
+
+(d) **Deux gardes-fous opérationnels, pas encore vérifiés :** l'endurance
+thermique n'a été mesurée que par rafales de ~450 s (chantier
 confidentialité, 04/09) — jamais sur plusieurs jours en continu ;
 `mesure_thermique.py` (chantier clos, sessions 57-63) doit tourner et
 alerter PENDANT toute la campagne, à confirmer actif avant de lancer. Et
 pendant la campagne, ne PAS lancer de banc `mesure_`/`eval_` qui appelle
 Ollama avec un AUTRE modèle en parallèle (un second modèle chargé ferait
-swapper le premier sur une carte à 4 Go presque pleine, ralentissant les
-deux).
+swapper le premier sur une carte à 4 Go presque pleine, ralentissant les
+deux). **Note à part, non bloquante** : le GPU d'InsightFace (CUDA) est
+CASSÉ sur cette machine (`cublasLt64_13.dll` manquante) — sans effet sur la
+décision ci-dessus (le CPU suffit largement), mais à réparer un jour pour
+gagner encore un peu de marge.
 
 **Ordre d'implémentation proposé (rien de tout ça n'est encore codé) :**
 1. `tagging_meta.py` : FR seul (retirer `keywords_en` du schéma JSON), +
@@ -337,17 +361,17 @@ deux).
    puisque ce fichier n'est pas dans le graphe d'import. `TAGGING_PIPELINE_VERSION`
    bumpée en même temps que le prompt (ex. `"qwen3.5:4b|v3fr|kb1"`) —
    bumper seul ne déclenche rien (voir (a)), donc sans risque avant le reste.
-3. `server.py` : le levier `retag_actif.txt` + le bloc de scan pipe-aware
-   (point a), livré et testé, mais **PAS activé** (fichier absent = rien ne
-   bouge).
-4. Un banc chiffre le retard visages/animaux/GPS sur les candidats au retag
-   → décide la durée de la passe préalable (point b).
-5. La passe préalable tourne, mesurée.
-6. Test d'endurance thermique sur une fenêtre longue (heures, pas minutes)
+3. `enrichir_lieux.py` tourne une fois (geste (c)), avant ou pendant la
+   préparation du reste — indépendant, sans urgence particulière.
+4. `server.py` : le levier `retag_actif.txt` + le bloc de scan pipe-aware
+   (point a) + le pipeline de retag dédié qui détecte visages/animaux avant
+   de tagger (point b) — livré et testé, mais **PAS activé** (fichier absent
+   = rien ne bouge, et `tagger_worker` standard reste inchangé).
+5. Test d'endurance thermique sur une fenêtre longue (heures, pas minutes)
    avant la bascule finale.
-7. `retag_actif.txt` posé → la campagne démarre, observée (`/sante`, boucle
+6. `retag_actif.txt` posé → la campagne démarre, observée (`/sante`, boucle
    thermique, spot-checks < 10 photos de temps en temps sur le format ET les
-   hallucinations type « lgbtq »).
+   hallucinations type « lgbtq »).
 
 **Pendant la campagne, ce qui reste sûr à faire avancer** (aucune contention
 GPU) : 1 bis (`.btn` canonique), l'étape 7 du chantier 17 (onboarding), le

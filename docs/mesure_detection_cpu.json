@@ -1,0 +1,87 @@
+{
+ "genere_le": "2026-09-05 11:34:00",
+ "visages": {
+  "20170522_184758.jpg": {
+   "cpu_s": 1.37,
+   "n_visages_cpu": 10
+  },
+  "20250410_212009.jpg": {
+   "cpu_s": 0.12,
+   "n_visages_cpu": 0
+  },
+  "20190530_bouteille-de-vin-en-main.jpg": {
+   "cpu_s": 0.12,
+   "n_visages_cpu": 0
+  },
+  "20230918_135836.jpg": {
+   "cpu_s": 0.12,
+   "n_visages_cpu": 0
+  },
+  "20180428_231429.jpg": {
+   "cpu_s": 0.33,
+   "n_visages_cpu": 2
+  },
+  "20201113_101014.jpg": {
+   "cpu_s": 0.12,
+   "n_visages_cpu": 0
+  },
+  "20210218_124554.jpg": {
+   "cpu_s": 0.42,
+   "n_visages_cpu": 3
+  },
+  "20220918_103631.jpg": {
+   "cpu_s": 0.15,
+   "n_visages_cpu": 0
+  }
+ },
+ "animaux": {
+  "20170522_184758.jpg": {
+   "cpu_s": 4.94,
+   "n_animaux_cpu": 0,
+   "gpu_s": 1.84,
+   "n_animaux_gpu": 0
+  },
+  "20250410_212009.jpg": {
+   "cpu_s": 0.34,
+   "n_animaux_cpu": 0,
+   "gpu_s": 0.24,
+   "n_animaux_gpu": 0
+  },
+  "20190530_bouteille-de-vin-en-main.jpg": {
+   "cpu_s": 0.27,
+   "n_animaux_cpu": 0,
+   "gpu_s": 0.08,
+   "n_animaux_gpu": 0
+  },
+  "20230918_135836.jpg": {
+   "cpu_s": 0.23,
+   "n_animaux_cpu": 2,
+   "gpu_s": 0.24,
+   "n_animaux_gpu": 2
+  },
+  "20180428_231429.jpg": {
+   "cpu_s": 0.24,
+   "n_animaux_cpu": 0,
+   "gpu_s": 0.09,
+   "n_animaux_gpu": 0
+  },
+  "20201113_101014.jpg": {
+   "cpu_s": 0.19,
+   "n_animaux_cpu": 1,
+   "gpu_s": 0.19,
+   "n_animaux_gpu": 1
+  },
+  "20210218_124554.jpg": {
+   "cpu_s": 0.22,
+   "n_animaux_cpu": 0,
+   "gpu_s": 0.29,
+   "n_animaux_gpu": 0
+  },
+  "20220918_103631.jpg": {
+   "cpu_s": 0.17,
+   "n_animaux_cpu": 0,
+   "gpu_s": 0.23,
+   "n_animaux_gpu": 0
+  }
+ }
+}
