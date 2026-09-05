@@ -6283,7 +6283,13 @@ def maintenance_loop():
         # redémarrage. On journalise, on affiche dans /reglages, on continue.
         try:
             # scan approfondi ~1x/heure : détecte aussi les fichiers modifiés
-            deep = (cycle % 12 == 6)
+            # ET, pendant une campagne de retag, enfile le lot suivant.
+            # Le PREMIER cycle est approfondi lui aussi quand la campagne est
+            # active : sinon chaque redémarrage — et le protocole en impose un
+            # pour livrer le moindre changement de `server.py` — laissait le GPU
+            # inoccupé une demi-heure avant de reprendre le travail. Sur une
+            # campagne de cinq jours, c'est une journée perdue en attente.
+            deep = (cycle % 12 == 6) or (cycle == 0 and retag_cible() is not None)
             # Réconciliation du cycle (chantier 10a) : on encadre le scan par la
             # TAILLE de l'index et on compare à ce que les mutations déclarées
             # prédisent. Le `finally` est essentiel : un cycle laissé OUVERT

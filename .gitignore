@@ -29,6 +29,12 @@ copie.db
 copie.db-wal
 copie.db-shm
 
+# ─── Le levier de la campagne de retag (chantier 2 quater) ───────────────────
+# `retag_actif.txt` est de l'ETAT MACHINE, pas de la source : sa seule presence
+# DEMARRE le re-tagging de tout le fonds. Le livrer dans le depot le poserait
+# sur toute machine qui clone -- exactement le geste qu'on veut explicite.
+retag_actif.txt
+
 # Vignettes et découpes : dérivées, volumineuses (22 000 fichiers)
 animal_thumbs/
 face_thumbs/

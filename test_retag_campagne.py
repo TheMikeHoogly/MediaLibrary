@@ -45,11 +45,18 @@ class LevierAbsentNeFaitRien(unittest.TestCase):
     def test_fichier_bascule_declare(self):
         self.assertIn('RETAG_FICHIER = SCRIPT_DIR / "retag_actif.txt"', SOURCE)
 
-    def test_fichier_absent_dans_le_depot(self):
-        # Le levier ne se livre PAS pose : le code arrive inerte.
-        self.assertFalse((HERE / "retag_actif.txt").exists(),
-                         "retag_actif.txt ne doit pas etre livre : "
-                         "sa presence DEMARRE la campagne")
+    def test_levier_jamais_livre_dans_le_depot(self):
+        # Le levier ne se livre PAS : sa seule presence DEMARRE le re-tagging
+        # de tout le fonds. Premiere version de ce test : elle verifiait que le
+        # fichier n'existe pas sur le disque -- mais le dossier de travail EST
+        # l'installation vivante, et le test est devenu rouge la seconde ou
+        # Mike a lance la campagne, pour une raison qui n'etait pas un defaut.
+        # Ce qu'il faut prouver, c'est que git ne le prendra jamais.
+        ignore = (HERE / ".gitignore").read_text(encoding="utf-8")
+        lignes = [l.strip() for l in ignore.splitlines()]
+        self.assertIn("retag_actif.txt", lignes,
+                      "retag_actif.txt doit etre dans .gitignore : c'est de "
+                      "l'etat machine, jamais de la source")
 
     def test_cible_none_si_fichier_absent(self):
         s = _src("retag_cible")
@@ -154,6 +161,17 @@ class LaDetectionNeRompsPasUnCluster(unittest.TestCase):
         i_oll = w.index("ollama_generate(")
         self.assertLess(i_det, i_ass)
         self.assertLess(i_ass, i_oll)
+
+
+class LaCampagneNeJeunePasApresUnRedemarrage(unittest.TestCase):
+    def test_premier_cycle_approfondi_si_campagne_active(self):
+        # Le protocole impose un redemarrage pour livrer tout changement de
+        # server.py. Si le premier cycle n etait pas approfondi, chaque
+        # livraison couterait une demi-heure de GPU inoccupe -- environ une
+        # journee sur une campagne de cinq jours.
+        self.assertIn(
+            "(cycle % 12 == 6) or (cycle == 0 and retag_cible() is not None)",
+            SOURCE)
 
 
 if __name__ == "__main__":
