@@ -154,7 +154,7 @@ def main(argv=None):
           % (n_vign, __import__('tagging_meta').VIGNETTE_MAX_PX))
     print('     Ce sont les seules qu une regle de taille peut ecarter, et')
     print('     elle doit se prononcer sur les PIXELS, pas sur les octets.')
-    print('  %d fichier(s) au contenu PERDU (recuperee, creuse, tronquee).' % n_perdu)
+    print('  %d fichier(s) au contenu PERDU (perdu-texte, perdu-vide, tronquee).' % n_perdu)
     print('     Poids normal, pixels absents : AUCUN seuil de taille ne les')
     print('     attrape. Les ecarter est une autre decision -- ils ne sont pas')
     print('     « pas des photos », ils sont des photos CASSEES, et c est a')
