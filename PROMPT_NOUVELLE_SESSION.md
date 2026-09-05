@@ -64,16 +64,19 @@ JSON, tolérance à un fichier abîmé, « le plus riche gagne »).
 
 **1. Ce qui reste du chantier 2 quater, dans l'ordre.** `QUESTIONS_MIKE.md`
 est VIDE : plus rien n'attend Mike.
-- **Étape 3** : lancer le **bat 44** (aperçu, puis écriture sur confirmation).
-  Geste de Mike : le script ouvre `photos.db` et il ÉCRIT — ni la VM ni l'agent
-  banc ne peuvent le lancer.
-- **Étape 5** : endurance thermique sur une fenêtre LONGUE (heures) —
-  l'endurance n'est prouvée que par rafales de ~450 s (04/09).
-- **Étape 6** : poser `retag_actif.txt` (vide = la version courante) → la
-  campagne démarre, observée : `/api/maint/status` → `config.retag`
-  (`reste`, `en_file`, `abandons`), boucle thermique, et des spot-checks de
-  moins de 10 photos de temps en temps sur le FORMAT (6-10 mots-clés courts,
-  pas une phrase) ET les hallucinations type « lgbtq ».
+- **Étapes 3 et 5 : FAITES le 05/09.** Bat 44 lancé par Mike (lieux écrits) ;
+  endurance thermique mesurée — 371 photos, 0,95 h de charge, max 75 °C, aucun
+  bridage avoué sur 237 relevés, débit plat. **8,9 s/photo en médiane → ~4,5
+  jours pour les 44 135 entrées.**
+- **Étape 6, le SEUL pas qui reste, et il est à Mike** : poser `retag_actif.txt`
+  (vide = la version courante) → la campagne démarre, observée :
+  `/api/maint/status` → `config.retag` (`reste`, `en_file`, `abandons`), boucle
+  thermique au journal, et des spot-checks de moins de 10 photos de temps en
+  temps sur le FORMAT (6-10 mots-clés courts, pas une phrase) ET les
+  hallucinations type « lgbtq ». **Irréversible, à dire avant la première
+  photo** : le retag réécrit le XMP en FR seul, les mots-clés anglais des
+  fichiers sont perdus. Retirer le fichier arrête au lot suivant, sans rien
+  perdre.
 
 **Pendant la campagne, ce qui reste sûr à faire avancer** : 1 bis (`.btn`
 canonique), l'étape 7 du chantier 17 (onboarding), le reste de l'audit, toute

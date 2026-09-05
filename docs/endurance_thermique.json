@@ -1,0 +1,4292 @@
+{
+ "version": 1,
+ "debut": "2026-09-05 15:07:11",
+ "modele": "qwen3.5:4b",
+ "tranches": [
+  {
+   "quand": "2026-09-05 15:14:44",
+   "budget_s": 450,
+   "photos": 47,
+   "echecs": 0,
+   "duree_s": 451.9
+  },
+  {
+   "quand": "2026-09-05 15:23:56",
+   "budget_s": 450,
+   "photos": 49,
+   "echecs": 0,
+   "duree_s": 457.0
+  },
+  {
+   "quand": "2026-09-05 15:31:36",
+   "budget_s": 450,
+   "photos": 43,
+   "echecs": 0,
+   "duree_s": 451.8
+  },
+  {
+   "quand": "2026-09-05 15:39:20",
+   "budget_s": 450,
+   "photos": 42,
+   "echecs": 0,
+   "duree_s": 457.9
+  },
+  {
+   "quand": "2026-09-05 15:46:59",
+   "budget_s": 450,
+   "photos": 47,
+   "echecs": 0,
+   "duree_s": 451.5
+  },
+  {
+   "quand": "2026-09-05 15:54:42",
+   "budget_s": 450,
+   "photos": 47,
+   "echecs": 0,
+   "duree_s": 458.2
+  },
+  {
+   "quand": "2026-09-05 16:02:28",
+   "budget_s": 450,
+   "photos": 47,
+   "echecs": 0,
+   "duree_s": 458.3
+  },
+  {
+   "quand": "2026-09-05 16:10:13",
+   "budget_s": 450,
+   "photos": 49,
+   "echecs": 0,
+   "duree_s": 457.4
+  }
+ ],
+ "photos": [
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20241102_164231.jpg",
+   "s": 8.07,
+   "quand": 1788613642.5
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2025\\20250922_151920.jpg",
+   "s": 8.47,
+   "quand": 1788613651.6
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2017\\05 Mai\\Weekend Vallée d'Aoste\\20170520_105308_012.jpg",
+   "s": 8.87,
+   "quand": 1788613661.5
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2021\\20210123_211220.jpg",
+   "s": 7.93,
+   "quand": 1788613669.8
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\201007\\201007A0\\21072010057.jpg",
+   "s": 10.32,
+   "quand": 1788613680.4
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Papa\\2004\\20041027 CBB_Oct04\\03_Sacabamba\\20041022-111906_groupe-de-personnes-se-rassemble.jpg",
+   "s": 8.93,
+   "quand": 1788613689.6
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Sista\\40 ans Val et Thierry\\Boîte Val\\20210219_Val.jpg",
+   "s": 8.27,
+   "quand": 1788613698.1
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2009\\04 Avril\\France & Belgique\\DSC00868.JPG",
+   "s": 9.0,
+   "quand": 1788613707.7
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20240307_145243.jpg",
+   "s": 11.06,
+   "quand": 1788613719.3
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20241127_162306.jpg",
+   "s": 11.28,
+   "quand": 1788613731.6
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\2010 Turienzo\\DSCN1458.JPG",
+   "s": 8.69,
+   "quand": 1788613740.6
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\260531_Samsung_MHU\\Camera\\20260510_143100.jpg",
+   "s": 8.64,
+   "quand": 1788613750.0
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Papa\\1986\\Carnaval\\René_Mic_Eli.jpg",
+   "s": 6.6,
+   "quand": 1788613756.7
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2023\\20231230_171222.jpg",
+   "s": 9.68,
+   "quand": 1788613767.3
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\20180504_233849.jpg",
+   "s": 9.02,
+   "quand": 1788613777.2
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2023\\20230210_100048.jpg",
+   "s": 7.43,
+   "quand": 1788613784.9
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Appartement Bremblens\\Salle_11.png",
+   "s": 11.0,
+   "quand": 1788613796.4
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\20180620_122347.jpg",
+   "s": 7.64,
+   "quand": 1788613805.2
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2008\\08 Aout\\Bruxelles\\DSC00589.JPG",
+   "s": 9.92,
+   "quand": 1788613815.6
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Famille\\20200715_Christine.jpg",
+   "s": 9.83,
+   "quand": 1788613825.7
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Laurent Petit Gastronomique\\20201025_133540.jpg",
+   "s": 8.08,
+   "quand": 1788613834.4
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Papa\\2004\\20040425 SanBorjaTriniSRZ\\040_Pantanal.jpg",
+   "s": 8.2,
+   "quand": 1788613842.8
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\Caline\\20201114_141533.jpg",
+   "s": 8.61,
+   "quand": 1788613852.0
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2025\\20250927_163351.jpg",
+   "s": 7.97,
+   "quand": 1788613860.5
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\04 Avril\\Weekend Ju-Jitsu Chateau d'Oex\\146.png",
+   "s": 9.78,
+   "quand": 1788613871.7
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20240302_163146.jpg",
+   "s": 9.78,
+   "quand": 1788613882.2
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Famille\\20180602_Bea-et-Mike-et-Val.jpg",
+   "s": 7.86,
+   "quand": 1788613890.2
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Papa\\2002\\20020812 Markus diversos\\020428_2.JPG",
+   "s": 8.16,
+   "quand": 1788613898.6
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2020\\20200531_174358.jpg",
+   "s": 8.15,
+   "quand": 1788613907.5
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Photos Nokia 2010\\20100000_chat-blanc-et-gris-est.jpg",
+   "s": 7.48,
+   "quand": 1788613915.6
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2025\\20250419_135806.jpg",
+   "s": 9.56,
+   "quand": 1788613927.1
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Friends 2\\20200401_arrangement-de-tulipes-colorees.jpg",
+   "s": 10.73,
+   "quand": 1788613939.0
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2008\\05 Mai\\Exposition Armes\\Upload\\DSC00394.JPG",
+   "s": 11.01,
+   "quand": 1788613950.2
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2021\\20210930_184111.jpg",
+   "s": 8.05,
+   "quand": 1788613958.9
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Floufline\\20190722_125814.jpg",
+   "s": 9.29,
+   "quand": 1788613969.1
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20240518_202613.jpg",
+   "s": 10.46,
+   "quand": 1788613980.6
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Appartement Bremblens\\20241225_bremblens_Flo-2.jpg",
+   "s": 8.67,
+   "quand": 1788613989.5
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Papa\\2004\\20040320 Cuzco_Yucay_04\\Pachamanca\\Pobres animalitos.jpg",
+   "s": 7.48,
+   "quand": 1788613997.3
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2023\\20230603_164207.jpg",
+   "s": 9.31,
+   "quand": 1788614007.4
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\FUN\\Friends\\Deif\\The Boat - Google Dream 01.jpg",
+   "s": 9.78,
+   "quand": 1788614017.4
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2015\\06 EVG Nounours\\EVG Nounours (79).JPG",
+   "s": 13.4,
+   "quand": 1788614031.3
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2022\\20220508_133936.jpg",
+   "s": 7.94,
+   "quand": 1788614040.2
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Papa\\2004\\20040831 Rehaciendo Foto de 1990\\ca1990EliMarkusMic.JPG",
+   "s": 7.94,
+   "quand": 1788614048.4
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\40 ans du Mike\\Photos de Tagliani\\Full\\20220612-P1031994.jpg",
+   "s": 7.51,
+   "quand": 1788614056.5
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Papa\\2004\\20041102 Copacabana Nov04\\92 Se prepara una tormenta.JPG",
+   "s": 8.4,
+   "quand": 1788614065.2
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\40 ans du Mike\\Photos de Tagliani\\Full\\20220612-P1031556.jpg",
+   "s": 8.01,
+   "quand": 1788614073.7
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Appartement Bremblens\\20190419_192413.jpg",
+   "s": 8.88,
+   "quand": 1788614084.8
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\Calinous\\20120416-123318_chat-blanc-et-orange-dormant.jpg",
+   "s": 10.62,
+   "quand": 1788614191.1
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\08 Août\\20180805_204815.jpg",
+   "s": 9.14,
+   "quand": 1788614201.8
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2022\\Nikola\\Nikola (38).jpg",
+   "s": 6.93,
+   "quand": 1788614208.9
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Famille\\20250801_232041.jpg",
+   "s": 8.69,
+   "quand": 1788614218.2
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Sud de la France 2010\\DSC01238.JPG",
+   "s": 9.94,
+   "quand": 1788614228.9
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2021\\20210328_144314.jpg",
+   "s": 8.65,
+   "quand": 1788614238.9
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\Didier (41).jpg",
+   "s": 8.74,
+   "quand": 1788614247.8
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Papa\\1986\\Zongo\\Wegweiser Chacaltaya Milluni 2.jpg",
+   "s": 9.3,
+   "quand": 1788614257.6
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20241216_202718.jpg",
+   "s": 8.73,
+   "quand": 1788614267.0
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\04 Avril\\Weekend Ju-Jitsu Chateau d'Oex\\023.png",
+   "s": 8.35,
+   "quand": 1788614280.4
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Love\\20180531_Flo-et-Mike.jpg",
+   "s": 7.55,
+   "quand": 1788614288.1
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Famille\\20181229_Thierry-et-Val-2.jpg",
+   "s": 10.37,
+   "quand": 1788614298.7
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20241116_135748.jpg",
+   "s": 7.19,
+   "quand": 1788614306.6
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Appartement Bremblens\\20190403_113050.jpg",
+   "s": 8.89,
+   "quand": 1788614316.3
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Mickinou\\20190801_141739.jpg",
+   "s": 7.13,
+   "quand": 1788614324.4
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2007\\02\\Bäume_pflanzen_im_Regen.jpg",
+   "s": 8.02,
+   "quand": 1788614332.6
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\2019 Berlin week-end amies\\20190922_Alba-et-Flo-et-Flora-et-al-2.jpg",
+   "s": 7.85,
+   "quand": 1788614340.7
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Papa\\2002\\TischFuchs\\FotosFuchs\\IM000006.jpg",
+   "s": 9.79,
+   "quand": 1788614350.6
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\FUN\\Friends\\Deif\\The Boat - Google Dream 06.jpg",
+   "s": 9.23,
+   "quand": 1788614360.1
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2025\\20250422_111119.jpg",
+   "s": 8.33,
+   "quand": 1788614369.4
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2017\\12 Décembre\\Noel chez Béa\\20171225_163106.jpg",
+   "s": 8.36,
+   "quand": 1788614378.3
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\2025 Seychelles\\20250418_seychelles_statue-de-tortue.jpg",
+   "s": 12.25,
+   "quand": 1788614391.0
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2007\\Cousins&Cousines\\100NIKON\\DSCN0161.JPG",
+   "s": 7.4,
+   "quand": 1788614398.9
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\FUN\\Friends\\Deif\\The Boat - Google Dream 07.jpg",
+   "s": 8.87,
+   "quand": 1788614407.9
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Laurent Petit Gastronomique\\ Ellie et sa marraine\\Mathilde enceinte + Ellie\\20170602_222303.jpg",
+   "s": 9.34,
+   "quand": 1788614417.9
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Papa\\1983\\1983_Bümpliz Oct\\02_La famille Oct 83.jpg",
+   "s": 7.98,
+   "quand": 1788614426.1
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Papa\\2004\\20040815 VisitaMic_Eli\\Cumbre\\28FuegoChalla.jpg",
+   "s": 7.96,
+   "quand": 1788614434.3
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Famille\\20200104_paysage-de-riviere-avec-bateaux.jpg",
+   "s": 9.23,
+   "quand": 1788614443.7
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\2025 Seychelles\\20250422_seychelles_plage-idyllique-avec-eau-turquoise.jpg",
+   "s": 8.53,
+   "quand": 1788614452.4
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2016\\05 Anni Silas\\20160505_182854.jpg",
+   "s": 11.22,
+   "quand": 1788614464.7
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2015\\06 Ballade à vélo avec Floufline\\20150606_163120.jpg",
+   "s": 9.54,
+   "quand": 1788614475.5
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Alba\\20180825_Flo.jpg",
+   "s": 8.56,
+   "quand": 1788614484.2
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2021\\20210206_012352.jpg",
+   "s": 8.63,
+   "quand": 1788614493.3
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Appartement Bremblens\\20190428_192044.jpg",
+   "s": 8.16,
+   "quand": 1788614502.3
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20240205_174928.jpg",
+   "s": 9.29,
+   "quand": 1788614512.1
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\Caline\\20210102_192454.jpg",
+   "s": 7.75,
+   "quand": 1788614520.3
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2021\\20211230_141855.jpg",
+   "s": 8.5,
+   "quand": 1788614529.3
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Sista\\40 ans Val et Thierry\\20210425_Bea-et-Didier-et-Flo-et-al-4.jpg",
+   "s": 8.88,
+   "quand": 1788614538.3
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2025\\20251128-073527_ecran-de-telephone-avec-horloge.jpg",
+   "s": 6.55,
+   "quand": 1788614545.1
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Mickinou\\20180907_195041.jpg",
+   "s": 10.04,
+   "quand": 1788614555.8
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Mickinou\\20150101_174946.jpg",
+   "s": 8.35,
+   "quand": 1788614564.5
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\40 ans du Mike\\Photos de Tagliani\\Full\\20220612-P1031791.jpg",
+   "s": 11.09,
+   "quand": 1788614576.2
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20241230_170410.jpg",
+   "s": 7.42,
+   "quand": 1788614584.2
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Papa\\1998\\1998 Bern Rundgang Altstadt\\B+CH zBern_73.JPG",
+   "s": 7.13,
+   "quand": 1788614591.4
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2007\\10\\CoRo et Manifestation Birmanie à Genève\\Upload\\DSC00026.JPG",
+   "s": 10.45,
+   "quand": 1788614602.0
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2021\\20210425_121848.jpg",
+   "s": 7.27,
+   "quand": 1788614609.8
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2015\\07 Bolivie 2015 MicFlo\\20150809_143107.jpg",
+   "s": 9.52,
+   "quand": 1788614620.1
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2025\\20250628_022953.jpg",
+   "s": 7.3,
+   "quand": 1788614627.9
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Mathilde et Ellie\\20250716_143521.jpg",
+   "s": 8.53,
+   "quand": 1788614636.9
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2021\\20210415_160913.jpg",
+   "s": 10.78,
+   "quand": 1788614656.7
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Yoyo & Co\\20210301_Yoyo.jpg",
+   "s": 7.83,
+   "quand": 1788614664.7
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Floufline\\20151004_Flo-2.jpg",
+   "s": 8.83,
+   "quand": 1788614673.8
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2021\\20210813_234146.jpg",
+   "s": 7.03,
+   "quand": 1788614681.3
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Papa\\1995\\19950630 bei Jeff\\Mic_1.jpg",
+   "s": 9.53,
+   "quand": 1788614691.1
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2008\\02 Février\\Verbier chez Charlie\\DSC00254.JPG",
+   "s": 12.52,
+   "quand": 1788614704.5
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2025\\20250608_133828.jpg",
+   "s": 11.89,
+   "quand": 1788614717.4
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2016\\11 Luzarches\\Luzarches 2016 (38).jpg",
+   "s": 7.78,
+   "quand": 1788614726.0
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\40 ans Mickinou\\40 ans Miki\\20220306_115611.jpg",
+   "s": 9.43,
+   "quand": 1788614736.1
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Papa\\1984\\1984_12-2\\05_David Eli Matthias.jpg",
+   "s": 9.77,
+   "quand": 1788614746.0
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2019\\02 Février\\Concert Zaz\\20190214-224201_Flo-et-Lola.jpg",
+   "s": 9.03,
+   "quand": 1788614755.8
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Papa\\2001\\20010720 CumpleLeila\\Pinata3.JPG",
+   "s": 9.37,
+   "quand": 1788614765.5
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2019\\05 Mai\\20190518-125409_Nounours.jpg",
+   "s": 10.13,
+   "quand": 1788614777.6
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2023\\Screenshot_20230413-141103.jpg",
+   "s": 8.05,
+   "quand": 1788614785.7
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Papa\\2004\\20041102 Copacabana Nov04\\35 Rosario.JPG",
+   "s": 9.92,
+   "quand": 1788614795.9
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Friends 3\\20250201_actualite-publication-affiche.jpeg",
+   "s": 6.9,
+   "quand": 1788614803.2
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2015\\07 Bolivie 2015 MicFlo\\20150805_114816.jpg",
+   "s": 7.64,
+   "quand": 1788614812.0
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\20180419_132620.jpg",
+   "s": 10.67,
+   "quand": 1788614823.5
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2020\\20200717_081447.jpg",
+   "s": 10.02,
+   "quand": 1788614834.3
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Mathilde et Ellie\\20260209_deux-femmes-nagent.jpg",
+   "s": 12.7,
+   "quand": 1788614847.2
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2017\\07 Juillet\\Danemark\\20170729_161253.jpg",
+   "s": 7.92,
+   "quand": 1788614856.2
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Papa\\1986\\Achumani_Wespis\\Mic auf Dreirad.jpg",
+   "s": 8.15,
+   "quand": 1788614864.6
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2025\\20250531_173448.jpg",
+   "s": 10.39,
+   "quand": 1788614875.7
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2015\\06 EVG Nounours\\20150515_113709.jpg",
+   "s": 8.9,
+   "quand": 1788614886.2
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Papa\\2003\\20030501 Yani2003\\22 Banda 2.JPG",
+   "s": 7.77,
+   "quand": 1788614894.3
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\2022 Bolivia\\20220802_Flo-et-Mike-5.jpg",
+   "s": 8.14,
+   "quand": 1788614902.7
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Appartement Bremblens\\20190306_bremblens_dessin-technique-de-plan.jpg",
+   "s": 7.79,
+   "quand": 1788614910.7
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\20180607_200140.jpg",
+   "s": 9.95,
+   "quand": 1788614921.4
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Papa\\2004\\20041027 CBB_Oct04\\Blumen für Export.JPG",
+   "s": 9.7,
+   "quand": 1788614931.2
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20240510_200546.jpg",
+   "s": 11.13,
+   "quand": 1788614943.8
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Sandra\\20211121_Sandra.jpg",
+   "s": 8.38,
+   "quand": 1788614952.4
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2020\\20200608_104913.jpg",
+   "s": 11.42,
+   "quand": 1788614964.8
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Papa\\2003\\20030819 Vac_CH_2003\\05_Engadin\\60_Ro StMoritz.JPG",
+   "s": 10.36,
+   "quand": 1788614975.4
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2020\\20200802_171724.jpg",
+   "s": 15.41,
+   "quand": 1788614991.6
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2022\\20220811_215926.jpg",
+   "s": 11.58,
+   "quand": 1788615003.7
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2025\\20250912_210057.jpg",
+   "s": 11.87,
+   "quand": 1788615016.8
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2017\\07 Juillet\\Danemark\\20170725_150016.jpg",
+   "s": 9.82,
+   "quand": 1788615027.6
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2009\\39.jpg",
+   "s": 13.27,
+   "quand": 1788615041.3
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2020\\20200821_170655.jpg",
+   "s": 9.89,
+   "quand": 1788615051.9
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20240419_103552.jpg",
+   "s": 8.31,
+   "quand": 1788615061.0
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2020\\20200823_160100_01.jpg",
+   "s": 9.71,
+   "quand": 1788615074.0
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Fête de La Plannaz 2010\\54.jpg",
+   "s": 9.52,
+   "quand": 1788615084.1
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\France avec Mams\\DSC01492.JPG",
+   "s": 12.17,
+   "quand": 1788615096.7
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Papa\\2002\\TischFuchs\\FotosFuchs\\IM000003.jpg",
+   "s": 11.9,
+   "quand": 1788615114.7
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Luna & Inti\\20220616_153911.jpg",
+   "s": 12.01,
+   "quand": 1788615133.8
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Papa\\1997\\1997 1230 London\\Bridge 2.jpg",
+   "s": 10.83,
+   "quand": 1788615145.6
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\Calinous\\20200815_112232.jpg",
+   "s": 9.08,
+   "quand": 1788615160.0
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\20180705_174244.jpg",
+   "s": 12.89,
+   "quand": 1788615174.9
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Papa\\2001\\20010609 Ajuankhota\\Cascada.JPG",
+   "s": 10.21,
+   "quand": 1788615185.6
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Papa\\2004\\20041211 Fiesta Dic 04\\20041211-190307_Papitin.jpg",
+   "s": 14.71,
+   "quand": 1788615200.5
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\14082010112.jpg",
+   "s": 9.97,
+   "quand": 1788615210.9
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\40 ans du Mike\\Photos de Tagliani\\Full\\20220612-P1031560.jpg",
+   "s": 10.63,
+   "quand": 1788615222.3
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Nics in Lausanne\\Suiza 2010\\IMGP8190.JPG",
+   "s": 11.54,
+   "quand": 1788615235.0
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Papa\\2003\\20030511 Cosude Huajchilla\\04CA_TSP_HRU_Soriano_Eli_Giancarlo.jpg",
+   "s": 10.28,
+   "quand": 1788615245.5
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2021\\20210605_214644.jpg",
+   "s": 13.26,
+   "quand": 1788615259.2
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2020\\20200622_084833.jpg",
+   "s": 9.61,
+   "quand": 1788615269.4
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2023\\20230311_125526.jpg",
+   "s": 8.53,
+   "quand": 1788615278.5
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Friends 2\\20180408_Flo-et-Flora-et-Sandra.jpg",
+   "s": 10.77,
+   "quand": 1788615289.4
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20240727_113154.jpg",
+   "s": 10.35,
+   "quand": 1788615300.5
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Friends 3\\20240602_Clemence-et-Flo.jpg",
+   "s": 10.4,
+   "quand": 1788615311.1
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2007\\07\\25 ans leila 038.jpg",
+   "s": 7.92,
+   "quand": 1788615319.1
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2016\\05 Anni Floufline\\DSCN0312.JPG",
+   "s": 9.01,
+   "quand": 1788615329.2
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2015\\09 Mariage Charles & Martine\\20150913_015705.jpg",
+   "s": 8.68,
+   "quand": 1788615338.7
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Friends\\20120324-210825_enfant-assise-sur-un-canape.jpg",
+   "s": 11.57,
+   "quand": 1788615350.6
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2021\\20210122_204903.jpg",
+   "s": 10.72,
+   "quand": 1788615361.7
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\35 ans Flo chez Val et à Bâle\\20210605_bale_Flo-2.jpg",
+   "s": 8.42,
+   "quand": 1788615370.3
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2008\\02 Février\\Verbier chez Charlie\\DSC00279.JPG",
+   "s": 8.24,
+   "quand": 1788615379.1
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\201009\\201009A0\\12092010214.jpg",
+   "s": 7.9,
+   "quand": 1788615387.2
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\09 Septembre\\20180928_172859.jpg",
+   "s": 11.47,
+   "quand": 1788615399.5
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2025\\Seychelles 2025\\Plongée\\Plongée_assets\\thumbnail\\8GFONOU9YS.png",
+   "s": 11.84,
+   "quand": 1788615411.4
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\Syneco\\20181220-183101_grande-foule-se-rassemble-autour.jpg",
+   "s": 9.81,
+   "quand": 1788615421.9
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\260531_Samsung_MHU\\Camera\\20260314_013609.jpg",
+   "s": 8.66,
+   "quand": 1788615431.2
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2025\\20250518_144710.jpg",
+   "s": 11.16,
+   "quand": 1788615442.8
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\20260627_141607.jpg",
+   "s": 8.6,
+   "quand": 1788615452.3
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2019\\08 Août\\20190803-214631_Mike.jpg",
+   "s": 8.44,
+   "quand": 1788615461.4
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2022\\20220725_134546.jpg",
+   "s": 8.71,
+   "quand": 1788615470.6
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\Véronique\\Véoue - Friends (28).jpg",
+   "s": 6.78,
+   "quand": 1788615477.6
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Mickinou\\20210417_170816.jpg",
+   "s": 8.57,
+   "quand": 1788615486.6
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Papa\\2004\\20040220 StaCruzFeb04\\23_Hotel Urbari.jpg",
+   "s": 11.71,
+   "quand": 1788615498.6
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Sista\\40 ans Val et Thierry\\20210426_Flo-et-Mike-2.jpg",
+   "s": 7.39,
+   "quand": 1788615506.2
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\20260710_170044.jpg",
+   "s": 8.7,
+   "quand": 1788615516.0
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2009\\01 Janvier\\Photo_soirees_deguisees.jpg",
+   "s": 10.32,
+   "quand": 1788615526.4
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2022\\20220703_120417.jpg",
+   "s": 8.93,
+   "quand": 1788615535.9
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Appartement Bremblens\\20190313_145048.jpg",
+   "s": 12.16,
+   "quand": 1788615549.2
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\Caline\\20160130_184128.jpg",
+   "s": 10.4,
+   "quand": 1788615560.5
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\2022 Bolivia\\20220724_145648.jpg",
+   "s": 10.22,
+   "quand": 1788615579.3
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2025\\20250705_155050.jpg",
+   "s": 7.92,
+   "quand": 1788615588.1
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2016\\07 Voyage en Indonésie\\Voyage Indonésie (3).jpg",
+   "s": 11.63,
+   "quand": 1788615600.7
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\40 ans du Mike\\Photos de Tagliani\\Full\\20220612-P1031627.jpg",
+   "s": 7.52,
+   "quand": 1788615608.7
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2017\\07 Juillet\\Danemark\\20170726_130538.jpg",
+   "s": 10.77,
+   "quand": 1788615620.4
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Mickinou\\20151102_Mike.jpg",
+   "s": 9.45,
+   "quand": 1788615630.0
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2025\\20250518_212459.jpg",
+   "s": 8.96,
+   "quand": 1788615639.7
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2016\\12 Noel\\20161224_211352.jpg",
+   "s": 8.47,
+   "quand": 1788615649.3
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Luna & Inti\\20230105_153023.jpg",
+   "s": 10.64,
+   "quand": 1788615660.4
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Sandra\\DSC_0500.JPG",
+   "s": 8.69,
+   "quand": 1788615670.0
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\20260123-160907_page-d-inscription.jpg",
+   "s": 9.2,
+   "quand": 1788615679.4
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2022\\20220707_110849.jpg",
+   "s": 8.9,
+   "quand": 1788615688.9
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Alba\\20220819_dessin-d-un-enfant-assis.jpg",
+   "s": 11.1,
+   "quand": 1788615700.2
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2017\\07 Juillet\\Danemark\\20170728_161532.jpg",
+   "s": 8.84,
+   "quand": 1788615711.0
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2015\\07 Bolivie 2015 MicFlo\\20150722_115426.jpg",
+   "s": 8.43,
+   "quand": 1788615720.8
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2009\\Photo145.jpg",
+   "s": 8.11,
+   "quand": 1788615729.1
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Mickinou\\20211229_Mike-2.jpg",
+   "s": 11.72,
+   "quand": 1788615740.9
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\2022 Bolivia\\20220723_paysage-urbain-avec-des-immeubles.jpg",
+   "s": 10.65,
+   "quand": 1788615751.8
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\09 Septembre\\20180901_155414.jpg",
+   "s": 9.47,
+   "quand": 1788615761.9
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Sista\\20200303_chambre-avec-un-lit.jpg",
+   "s": 10.58,
+   "quand": 1788615772.8
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\20260601_152520.jpg",
+   "s": 8.17,
+   "quand": 1788615781.5
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2021\\20210804_134922.jpg",
+   "s": 7.76,
+   "quand": 1788615789.7
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Papa\\1999\\1999 im Haus Bo134\\MicPC1.jpg",
+   "s": 8.86,
+   "quand": 1788615798.6
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Papa\\1998\\1998 PlanBO134.jpg",
+   "s": 7.07,
+   "quand": 1788615805.9
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2021\\20211223_161902.jpg",
+   "s": 7.21,
+   "quand": 1788615813.7
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2017\\07 Juillet\\Danemark\\20170725_143538.jpg",
+   "s": 9.95,
+   "quand": 1788615824.3
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2025\\20250601_152417.jpg",
+   "s": 9.27,
+   "quand": 1788615834.2
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2007\\Noel 2007\\DSC00152.JPG",
+   "s": 8.97,
+   "quand": 1788615844.1
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2008\\Nokia\\20080000_Nadette-et-Zab.jpg",
+   "s": 7.35,
+   "quand": 1788615851.6
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\20180421_145438.jpg",
+   "s": 9.74,
+   "quand": 1788615862.2
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2016\\06 RBI Record du monde\\20160514_152235.jpg",
+   "s": 9.36,
+   "quand": 1788615872.4
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Sista\\20260126_chambre-de-soins.jpg",
+   "s": 10.49,
+   "quand": 1788615883.1
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\2023 Lyon week-end amies\\20230429_Alba-et-Flo-et-Flora-et-al-2.jpg",
+   "s": 8.77,
+   "quand": 1788615892.0
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\2022 Bolivia\\20220802_bateau-dragon-avec-reflet.jpg",
+   "s": 8.54,
+   "quand": 1788615900.7
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Sud de la France 2010\\DSC01380.JPG",
+   "s": 8.77,
+   "quand": 1788615910.2
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\40 ans du Mike\\Photos de Tagliani\\Full\\20220612-P1031942.jpg",
+   "s": 9.53,
+   "quand": 1788615920.3
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2021\\20210726_144112.jpg",
+   "s": 8.48,
+   "quand": 1788615929.4
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2016\\07 Voyage en Indonésie\\Voyage Indonésie (458).jpg",
+   "s": 7.61,
+   "quand": 1788615938.3
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\2022 Bolivia\\20220724_151024.jpg",
+   "s": 9.78,
+   "quand": 1788615948.9
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\2018 Norvège\\20180731_161009.jpg",
+   "s": 8.28,
+   "quand": 1788615957.7
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2025\\20250114-070007_affichage-d-heure-avec-alarme.jpg",
+   "s": 9.28,
+   "quand": 1788615967.2
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Mathilde et Ellie\\Mathilde mariage\\EVJF Mathilde\\20180616_164212.jpg",
+   "s": 8.54,
+   "quand": 1788615976.4
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2023\\20230719_155511.jpg",
+   "s": 6.93,
+   "quand": 1788615984.0
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Famille\\20200121_modele-de-bateau-a-vapeur.jpg",
+   "s": 9.0,
+   "quand": 1788615993.2
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\40 ans Flo\\20260524_Flo-et-Sandra.jpg",
+   "s": 8.02,
+   "quand": 1788616001.4
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2025\\20250619_210855.jpg",
+   "s": 10.16,
+   "quand": 1788616012.2
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Famille\\20210404_gateau-de-fete.jpg",
+   "s": 7.13,
+   "quand": 1788616019.5
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Mariage Mams & Silvio\\DSC01058.JPG",
+   "s": 11.6,
+   "quand": 1788616036.4
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\2011 Barcelona\\DSC01678.JPG",
+   "s": 9.51,
+   "quand": 1788616048.7
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Papa\\1986\\Jura Basel Zoo\\Mic Eli tracteur.jpg",
+   "s": 9.45,
+   "quand": 1788616058.4
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Friends 2\\20171217_concert-sur-scene.jpg",
+   "s": 8.57,
+   "quand": 1788616067.1
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\40 ans du Mike\\Photos de Tagliani\\Full\\20220612-P1031700.jpg",
+   "s": 8.52,
+   "quand": 1788616076.3
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Sista\\40 ans Val et Thierry\\20210425_Bea-et-Didier-2.jpg",
+   "s": 8.04,
+   "quand": 1788616084.5
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2017\\07 Juillet\\Danemark\\20170725_153033.jpg",
+   "s": 11.66,
+   "quand": 1788616097.3
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Papa\\2001\\20001010 Irpavi\\Dia de la Madre 2001\\2.JPG",
+   "s": 7.95,
+   "quand": 1788616105.5
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\Calinous\\20170808_134752.jpg",
+   "s": 12.62,
+   "quand": 1788616118.7
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Appartement Bremblens\\20210612_104944.jpg",
+   "s": 8.21,
+   "quand": 1788616127.7
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Alba\\20240510_Amaya-Fernandez-et-Jamie-Fernandez-et-Miguel.jpg",
+   "s": 9.56,
+   "quand": 1788616137.5
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2021\\20211224_185728.jpg",
+   "s": 9.38,
+   "quand": 1788616147.6
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2021\\20210804_154030.jpg",
+   "s": 8.53,
+   "quand": 1788616157.1
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\EVJF Mathilde\\20180616_082116.jpg",
+   "s": 7.14,
+   "quand": 1788616164.8
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2020\\20200821_161323.jpg",
+   "s": 8.65,
+   "quand": 1788616174.6
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Luna & Inti\\20260430_065225.jpg",
+   "s": 11.34,
+   "quand": 1788616186.2
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Papa\\1983\\19830101 - 2000 Michael\\19990307 Mic Cumple con amigos.JPG",
+   "s": 8.05,
+   "quand": 1788616194.6
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2025\\20250622_181821(0).jpg",
+   "s": 9.05,
+   "quand": 1788616204.5
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Sylvie\\20220308_lune-soleil-nuit.jpg",
+   "s": 8.38,
+   "quand": 1788616213.0
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\marionnettes et Steiner\\20120508-121153_poupee-en-tissu.jpg",
+   "s": 9.06,
+   "quand": 1788616222.3
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Papa\\2002\\20020803 CumpleCarlos\\119-1913_IMG.JPG",
+   "s": 8.62,
+   "quand": 1788616231.1
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Sista\\20231030_Val.jpg",
+   "s": 8.59,
+   "quand": 1788616239.9
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Baignades-Randos\\20250622_141602.jpg",
+   "s": 10.43,
+   "quand": 1788616250.8
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Mariage Mams & Silvio\\DSC01064.JPG",
+   "s": 7.62,
+   "quand": 1788616259.0
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2009\\Photos mams\\DSC00593.JPG",
+   "s": 11.4,
+   "quand": 1788616271.0
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2022\\20220205_171742_02.jpg",
+   "s": 7.23,
+   "quand": 1788616279.0
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Papa\\2001\\20011021 Taller Quito\\Golf2.JPG",
+   "s": 10.56,
+   "quand": 1788616289.8
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2021\\20210401_195955.jpg",
+   "s": 7.03,
+   "quand": 1788616297.5
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\20180609_202011.jpg",
+   "s": 9.23,
+   "quand": 1788616308.0
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\Calinous\\20111215-211921_chat-calico-doux-et-fluffu.jpg",
+   "s": 11.59,
+   "quand": 1788616319.9
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\2017 Copenhague et Malmö\\2017-07-30 20.25.33.jpg",
+   "s": 7.49,
+   "quand": 1788616328.0
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Papa\\2004\\20040320 Cuzco_Yucay_04\\Ollantaytambo\\133-3324_IMG.JPG",
+   "s": 8.96,
+   "quand": 1788616337.2
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Baignades-Randos\\Lac Taney\\20170807_180510.jpg",
+   "s": 7.0,
+   "quand": 1788616344.9
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2023\\20230625_142528.jpg",
+   "s": 6.57,
+   "quand": 1788616352.5
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\Caline\\20210403_214058.jpg",
+   "s": 8.6,
+   "quand": 1788616361.6
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2023\\20230806_151828.jpg",
+   "s": 8.53,
+   "quand": 1788616370.6
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Papa\\2003\\20031224 Navidad_Guetzli_2003\\Zimtsterne2.jpg",
+   "s": 12.4,
+   "quand": 1788616383.3
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2025\\20250727_205920.jpg",
+   "s": 8.54,
+   "quand": 1788616392.7
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2021\\20210530_120022.jpg",
+   "s": 9.92,
+   "quand": 1788616403.3
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2023\\20230402_165903.jpg",
+   "s": 10.78,
+   "quand": 1788616414.4
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\09 Septembre\\20180920_181212.jpg",
+   "s": 7.59,
+   "quand": 1788616422.5
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Papa\\1997\\1997 Garten Bo134 Sommer\\Ro mit Tulpen.jpg",
+   "s": 7.92,
+   "quand": 1788616430.7
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Papa\\2002\\20020505 Yani\\Bailarines_Banda.JPG",
+   "s": 11.72,
+   "quand": 1788616442.5
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2022\\20221002_202458.jpg",
+   "s": 9.41,
+   "quand": 1788616452.3
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Photos mams\\DSC00867.JPG",
+   "s": 9.35,
+   "quand": 1788616462.3
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2007\\Cousins&Cousines\\102NIKON\\DSCN0372.JPG",
+   "s": 7.85,
+   "quand": 1788616470.5
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2016\\08 Escapade a Rolle\\20160828_123022.jpg",
+   "s": 10.8,
+   "quand": 1788616482.2
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20240403_121346.jpg",
+   "s": 8.58,
+   "quand": 1788616499.7
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\2026 Annecy amies\\20260320_195155.jpg",
+   "s": 8.27,
+   "quand": 1788616508.5
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\2010 Turienzo\\DSC02168.JPG",
+   "s": 10.07,
+   "quand": 1788616519.2
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2006\\Dad\\Yani Bild.jpg",
+   "s": 9.9,
+   "quand": 1788616529.6
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\2016 Indonésie\\Voyage Indonésie\\Voyage Indonésie (277).jpg",
+   "s": 9.83,
+   "quand": 1788616540.2
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2022\\20220724_174225.jpg",
+   "s": 7.57,
+   "quand": 1788616548.3
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2008\\Nokia\\20080000_Christine-et-Jacqueline-et-Lili-et-al.jpg",
+   "s": 10.02,
+   "quand": 1788616558.5
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2023\\20230715_203539.jpg",
+   "s": 7.02,
+   "quand": 1788616565.9
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Appartement Bremblens\\20190327_124308.jpg",
+   "s": 8.81,
+   "quand": 1788616575.5
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Alba\\20180826_Alba-et-Flo-et-Flora-et-al-2.jpg",
+   "s": 6.79,
+   "quand": 1788616582.4
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\20180519_211236.jpg",
+   "s": 7.58,
+   "quand": 1788616590.7
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2015\\06 Ballade à vélo avec Floufline\\20150606_135316.jpg",
+   "s": 7.48,
+   "quand": 1788616598.9
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Luna & Inti\\20240130_Inti.jpg",
+   "s": 8.46,
+   "quand": 1788616607.6
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2023\\20231130_160252.jpg",
+   "s": 10.03,
+   "quand": 1788616618.5
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2022\\20220806_121503.jpg",
+   "s": 8.86,
+   "quand": 1788616627.9
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Appartement Bremblens\\20230423_bremblens_Bea-et-Mike-et-Thierry.jpg",
+   "s": 8.3,
+   "quand": 1788616636.4
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Sista\\20260614_Fabien-et-Val.jpg",
+   "s": 9.19,
+   "quand": 1788616645.8
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Sista\\20200728_Thierry-et-Val.jpg",
+   "s": 13.41,
+   "quand": 1788616659.5
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\40 ans Flo\\20260602_Flo-16.jpg",
+   "s": 9.71,
+   "quand": 1788616669.4
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20240726_122004.jpg",
+   "s": 9.66,
+   "quand": 1788616680.3
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Papa\\2004\\20040425 SanBorjaTriniSRZ\\024_VacasCebu.jpg",
+   "s": 8.83,
+   "quand": 1788616689.3
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\20180426_103344.jpg",
+   "s": 10.52,
+   "quand": 1788616700.7
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Baignades-Randos\\20190929_134752.jpg",
+   "s": 8.36,
+   "quand": 1788616709.8
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\2023 Seychelles\\20230305_105945.jpg",
+   "s": 11.69,
+   "quand": 1788616722.4
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Papa\\1983\\19830101 - 2000 Michael\\1999 im Anzug.jpg",
+   "s": 8.86,
+   "quand": 1788616731.4
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20240912_135053.jpg",
+   "s": 11.53,
+   "quand": 1788616744.0
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2017\\08 Août\\Mariage Leugz & Irene\\20170827_115409.jpg",
+   "s": 9.63,
+   "quand": 1788616754.5
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Papa\\2003\\20030819 Vac_CH_2003\\05_Engadin\\45_RO im Spiegel.JPG",
+   "s": 8.77,
+   "quand": 1788616763.5
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\Calinous\\Photo du 3433543-07- à 00.57.jpg",
+   "s": 10.67,
+   "quand": 1788616774.3
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2022\\20220815_194842.jpg",
+   "s": 8.11,
+   "quand": 1788616783.0
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2025\\Seychelles 2025\\Plongée\\Plongée_assets\\thumbnail\\TM1ZKE2EYI.png",
+   "s": 6.29,
+   "quand": 1788616789.4
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\Appart Bremblens\\20200308-193409_bremblens_plan-d-un-appartement.jpg",
+   "s": 8.07,
+   "quand": 1788616798.4
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Sista\\20260411_Val-11.jpg",
+   "s": 8.35,
+   "quand": 1788616806.9
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2020\\20200904_195654.jpg",
+   "s": 9.28,
+   "quand": 1788616816.9
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2020\\20200711_211351.jpg",
+   "s": 9.93,
+   "quand": 1788616827.6
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20240324_150454.jpg",
+   "s": 10.13,
+   "quand": 1788616838.9
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Papa\\2004\\20040815 VisitaMic_Eli\\Cumbre\\09Wasserfall.jpg",
+   "s": 10.22,
+   "quand": 1788616849.3
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2023\\20230719_202036.jpg",
+   "s": 12.63,
+   "quand": 1788616862.6
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Annick\\20200826_bebe-souriant-sur-un-terrain.jpg",
+   "s": 8.57,
+   "quand": 1788616871.4
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Appartement Bremblens\\20190809_bremblens_Flo.jpg",
+   "s": 10.71,
+   "quand": 1788616882.4
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20241129_213340.jpg",
+   "s": 9.06,
+   "quand": 1788616892.3
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Papa\\1997\\1997 Garten Bo134 Winter\\Alls voll Schnee1.jpg",
+   "s": 7.59,
+   "quand": 1788616900.0
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Sista\\20230925_Val.jpg",
+   "s": 8.76,
+   "quand": 1788616909.0
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Mumi\\20200913_Sissi.jpg",
+   "s": 10.07,
+   "quand": 1788616919.4
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Hélico Zermatt et visite pompiers\\20180924_zermatt_vallee-alpine-avec-glacier.jpg",
+   "s": 8.55,
+   "quand": 1788616928.2
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Fête de La Plannaz 2010\\121.JPG",
+   "s": 9.69,
+   "quand": 1788616938.9
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Calinous\\20210730_194151.jpg",
+   "s": 9.03,
+   "quand": 1788616948.5
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Mickinou\\20250716_210145.jpg",
+   "s": 8.89,
+   "quand": 1788616965.8
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Luna & Inti\\20220828_personne-allongee-sur-un-lit.jpg",
+   "s": 8.67,
+   "quand": 1788616974.6
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2025\\20250628_022452.jpg",
+   "s": 9.13,
+   "quand": 1788616984.1
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\2014 Guadeloupe\\20131229_132153.jpg",
+   "s": 9.69,
+   "quand": 1788616994.7
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Mickinou\\20141101_140433.jpg",
+   "s": 10.15,
+   "quand": 1788617005.5
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2022\\20220725_113126.jpg",
+   "s": 8.75,
+   "quand": 1788617014.6
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Papa\\2001\\20010101 - 2002 Buero\\Proyectos\\Prosuko\\Dia del Campo\\02 Los Mallkus 1.JPG",
+   "s": 9.56,
+   "quand": 1788617024.4
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2025\\20251129_145738.jpg",
+   "s": 8.0,
+   "quand": 1788617033.6
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2020\\20201224_195508.jpg",
+   "s": 7.02,
+   "quand": 1788617041.3
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\Didier (6).jpg",
+   "s": 6.19,
+   "quand": 1788617047.6
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2025\\Seychelles 2025\\Plongée\\Plongée_assets\\thumbnail\\BQFS7EH97J-2102.png",
+   "s": 7.83,
+   "quand": 1788617055.5
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\2021 Fribourg week-end amies\\20210523_fribourg_Alba-et-Flo-et-Flora-et-al-3.jpg",
+   "s": 8.92,
+   "quand": 1788617064.6
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Mickinou\\20120414-153909_Mike.jpg",
+   "s": 9.36,
+   "quand": 1788617074.2
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Papa\\1997\\1997 1230 London\\Casas.JPG",
+   "s": 7.48,
+   "quand": 1788617081.8
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\Nics in Lausanne\\Suiza 2010\\IMGP8197.JPG",
+   "s": 10.73,
+   "quand": 1788617093.0
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Papa\\2004\\20040903 VueltaporlaCasa\\14Pasto.jpg",
+   "s": 10.89,
+   "quand": 1788617104.6
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Appartement Bremblens\\20200628_170650.jpg",
+   "s": 9.0,
+   "quand": 1788617114.6
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Papa\\2004\\20040703 Riberalta_Julio04\\El_Naranjal\\Baile con Toro2.JPG",
+   "s": 10.86,
+   "quand": 1788617125.7
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Famille\\20230626_Bea-et-Thierry-et-Val.jpg",
+   "s": 7.66,
+   "quand": 1788617133.6
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\EVJF Mathilde\\20180617_Flo-et-Mathilde.jpg",
+   "s": 9.83,
+   "quand": 1788617143.6
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Papa\\2003\\20031224 Navidad_Guetzli_2003\\Pesebre3.jpg",
+   "s": 12.78,
+   "quand": 1788617156.9
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2025\\20250912_201232.jpg",
+   "s": 9.17,
+   "quand": 1788617166.6
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2015\\07 Mariage DaniNours\\20150228_161655.jpg",
+   "s": 7.8,
+   "quand": 1788617175.8
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2022\\20220801_155803.jpg",
+   "s": 6.87,
+   "quand": 1788617183.2
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20241216_200041.jpg",
+   "s": 8.71,
+   "quand": 1788617192.4
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2015\\07 Bolivie 2015 MicFlo\\20150803_155315.jpg",
+   "s": 6.98,
+   "quand": 1788617200.4
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2015\\07 Bolivie 2015 MicFlo\\20150804_104024.jpg",
+   "s": 9.95,
+   "quand": 1788617211.2
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2017\\07 Juillet\\Danemark\\20170728_135055.jpg",
+   "s": 10.61,
+   "quand": 1788617222.7
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2020\\20200821_161120.jpg",
+   "s": 9.15,
+   "quand": 1788617232.6
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Baignades-Randos\\Lac Taney\\20180603_paysage-naturel-avec-une-montagne-2.jpg",
+   "s": 7.72,
+   "quand": 1788617240.5
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Papa\\2001\\20001010 Irpavi\\RO ru bailando.JPG",
+   "s": 9.86,
+   "quand": 1788617250.6
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2023\\20230717_113443.jpg",
+   "s": 6.51,
+   "quand": 1788617257.6
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2025\\Seychelles 2025\\Plongée\\Plongée_assets\\thumbnail\\81DENOHIWM-1845.png",
+   "s": 8.48,
+   "quand": 1788617266.2
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Papa\\2003\\20030501 Yani2003\\75 Osos polares.JPG",
+   "s": 8.05,
+   "quand": 1788617274.5
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Love\\20231230_paysage-de-coucher-de-soleil.jpg",
+   "s": 8.91,
+   "quand": 1788617283.6
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Love\\20220518_Flo-et-Mike.jpg",
+   "s": 8.79,
+   "quand": 1788617292.7
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2022\\20220514_193622.jpg",
+   "s": 6.74,
+   "quand": 1788617299.9
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\2025 Seychelles\\20250414_seychelles_femme-assise-sur-le-sable-3.jpg",
+   "s": 7.87,
+   "quand": 1788617308.0
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Friends\\20120630-114205_scene-en-exterieur.jpg",
+   "s": 7.77,
+   "quand": 1788617316.3
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2021\\20210726_140201.jpg",
+   "s": 9.27,
+   "quand": 1788617326.1
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2020\\20201025_121727.jpg",
+   "s": 8.84,
+   "quand": 1788617335.8
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2022\\20220307_080949.jpg",
+   "s": 11.27,
+   "quand": 1788617347.7
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Luna & Inti\\20230218_112247.jpg",
+   "s": 12.04,
+   "quand": 1788617360.1
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\09 Septembre\\20180902_131824.jpg",
+   "s": 8.86,
+   "quand": 1788617369.9
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2017\\07 Juillet\\Danemark\\20170725_150729.jpg",
+   "s": 7.26,
+   "quand": 1788617377.7
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Appartement Bremblens\\20190414_162100.jpg",
+   "s": 7.5,
+   "quand": 1788617386.1
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Papa\\2001\\20010609 Ajuankhota\\Laguna_Espejo.JPG",
+   "s": 8.95,
+   "quand": 1788617395.3
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\40 ans du Mike\\Photos Mike\\20220611_231404.jpg",
+   "s": 8.73,
+   "quand": 1788617404.5
+  },
+  {
+   "cle": "\\\\NAS-Bremblens\\home\\Photos\\Photos Papa\\1986\\PalcaCanon\\MicEliPicnic3.jpg",
+   "s": 8.73,
+   "quand": 1788617413.4
+  }
+ ],
+ "releves": [
+  {
+   "util": 19,
+   "temp_c": 58,
+   "mhz": 855,
+   "mhz_max": 2100,
+   "watts": 17.9,
+   "bride": false,
+   "charge_s": 15.1,
+   "quand": 1788613648.1
+  },
+  {
+   "util": 92,
+   "temp_c": 62,
+   "mhz": 1755,
+   "mhz_max": 2100,
+   "watts": 19.7,
+   "bride": false,
+   "charge_s": 30.2,
+   "quand": 1788613663.2
+  },
+  {
+   "util": 27,
+   "temp_c": 61,
+   "mhz": 600,
+   "mhz_max": 2100,
+   "watts": 13.5,
+   "bride": false,
+   "charge_s": 45.3,
+   "quand": 1788613678.3
+  },
+  {
+   "util": 35,
+   "temp_c": 68,
+   "mhz": 1747,
+   "mhz_max": 2100,
+   "watts": 27.9,
+   "bride": false,
+   "charge_s": 60.4,
+   "quand": 1788613693.3
+  },
+  {
+   "util": 0,
+   "temp_c": 62,
+   "mhz": 435,
+   "mhz_max": 2100,
+   "watts": 12.5,
+   "bride": false,
+   "charge_s": 75.4,
+   "quand": 1788613708.4
+  },
+  {
+   "util": 96,
+   "temp_c": 69,
+   "mhz": 1387,
+   "mhz_max": 2100,
+   "watts": 26.8,
+   "bride": false,
+   "charge_s": 90.5,
+   "quand": 1788613723.5
+  },
+  {
+   "util": 25,
+   "temp_c": 63,
+   "mhz": 697,
+   "mhz_max": 2100,
+   "watts": 13.9,
+   "bride": false,
+   "charge_s": 105.6,
+   "quand": 1788613738.6
+  },
+  {
+   "util": 14,
+   "temp_c": 67,
+   "mhz": 1747,
+   "mhz_max": 2100,
+   "watts": 24.1,
+   "bride": false,
+   "charge_s": 120.7,
+   "quand": 1788613753.7
+  },
+  {
+   "util": 3,
+   "temp_c": 61,
+   "mhz": 322,
+   "mhz_max": 2100,
+   "watts": 10.0,
+   "bride": false,
+   "charge_s": 135.8,
+   "quand": 1788613768.7
+  },
+  {
+   "util": 27,
+   "temp_c": 63,
+   "mhz": 705,
+   "mhz_max": 2100,
+   "watts": 14.0,
+   "bride": false,
+   "charge_s": 150.9,
+   "quand": 1788613783.8
+  },
+  {
+   "util": 100,
+   "temp_c": 66,
+   "mhz": 1755,
+   "mhz_max": 2100,
+   "watts": 16.7,
+   "bride": false,
+   "charge_s": 166.0,
+   "quand": 1788613798.9
+  },
+  {
+   "util": 28,
+   "temp_c": 62,
+   "mhz": 607,
+   "mhz_max": 2100,
+   "watts": 13.7,
+   "bride": false,
+   "charge_s": 181.0,
+   "quand": 1788613814.0
+  },
+  {
+   "util": 15,
+   "temp_c": 67,
+   "mhz": 1747,
+   "mhz_max": 2100,
+   "watts": 27.4,
+   "bride": false,
+   "charge_s": 196.1,
+   "quand": 1788613829.1
+  },
+  {
+   "util": 100,
+   "temp_c": 63,
+   "mhz": 1057,
+   "mhz_max": 2100,
+   "watts": 12.7,
+   "bride": false,
+   "charge_s": 211.2,
+   "quand": 1788613844.1
+  },
+  {
+   "util": 25,
+   "temp_c": 64,
+   "mhz": 720,
+   "mhz_max": 2100,
+   "watts": 14.0,
+   "bride": false,
+   "charge_s": 226.3,
+   "quand": 1788613859.2
+  },
+  {
+   "util": 96,
+   "temp_c": 67,
+   "mhz": 1357,
+   "mhz_max": 2100,
+   "watts": 31.1,
+   "bride": false,
+   "charge_s": 241.4,
+   "quand": 1788613874.3
+  },
+  {
+   "util": 28,
+   "temp_c": 63,
+   "mhz": 705,
+   "mhz_max": 2100,
+   "watts": 14.1,
+   "bride": false,
+   "charge_s": 256.4,
+   "quand": 1788613889.4
+  },
+  {
+   "util": 12,
+   "temp_c": 67,
+   "mhz": 1747,
+   "mhz_max": 2100,
+   "watts": 23.5,
+   "bride": false,
+   "charge_s": 271.5,
+   "quand": 1788613904.5
+  },
+  {
+   "util": 90,
+   "temp_c": 68,
+   "mhz": 1747,
+   "mhz_max": 2100,
+   "watts": 31.0,
+   "bride": false,
+   "charge_s": 286.6,
+   "quand": 1788613919.6
+  },
+  {
+   "util": 26,
+   "temp_c": 63,
+   "mhz": 667,
+   "mhz_max": 2100,
+   "watts": 13.8,
+   "bride": false,
+   "charge_s": 301.7,
+   "quand": 1788613934.7
+  },
+  {
+   "util": 33,
+   "temp_c": 63,
+   "mhz": 472,
+   "mhz_max": 2100,
+   "watts": 13.6,
+   "bride": false,
+   "charge_s": 316.8,
+   "quand": 1788613949.8
+  },
+  {
+   "util": 18,
+   "temp_c": 65,
+   "mhz": 870,
+   "mhz_max": 2100,
+   "watts": 20.7,
+   "bride": false,
+   "charge_s": 331.9,
+   "quand": 1788613964.9
+  },
+  {
+   "util": 31,
+   "temp_c": 63,
+   "mhz": 510,
+   "mhz_max": 2100,
+   "watts": 13.7,
+   "bride": false,
+   "charge_s": 347.0,
+   "quand": 1788613980.0
+  },
+  {
+   "util": 18,
+   "temp_c": 65,
+   "mhz": 892,
+   "mhz_max": 2100,
+   "watts": 21.5,
+   "bride": false,
+   "charge_s": 362.1,
+   "quand": 1788613995.1
+  },
+  {
+   "util": 1,
+   "temp_c": 65,
+   "mhz": 1717,
+   "mhz_max": 2100,
+   "watts": 24.5,
+   "bride": false,
+   "charge_s": 377.2,
+   "quand": 1788614010.1
+  },
+  {
+   "util": 27,
+   "temp_c": 64,
+   "mhz": 607,
+   "mhz_max": 2100,
+   "watts": 13.5,
+   "bride": false,
+   "charge_s": 392.3,
+   "quand": 1788614025.2
+  },
+  {
+   "util": 37,
+   "temp_c": 64,
+   "mhz": 570,
+   "mhz_max": 2100,
+   "watts": 13.9,
+   "bride": false,
+   "charge_s": 407.3,
+   "quand": 1788614040.3
+  },
+  {
+   "util": 27,
+   "temp_c": 64,
+   "mhz": 705,
+   "mhz_max": 2100,
+   "watts": 14.1,
+   "bride": false,
+   "charge_s": 422.4,
+   "quand": 1788614055.4
+  },
+  {
+   "util": 12,
+   "temp_c": 68,
+   "mhz": 1747,
+   "mhz_max": 2100,
+   "watts": 23.9,
+   "bride": false,
+   "charge_s": 437.5,
+   "quand": 1788614070.5
+  },
+  {
+   "util": 96,
+   "temp_c": 61,
+   "mhz": 1425,
+   "mhz_max": 2100,
+   "watts": 31.3,
+   "bride": false,
+   "charge_s": 436.2,
+   "quand": 1788614195.0
+  },
+  {
+   "util": 2,
+   "temp_c": 59,
+   "mhz": 532,
+   "mhz_max": 2100,
+   "watts": 11.3,
+   "bride": false,
+   "charge_s": 451.3,
+   "quand": 1788614210.0
+  },
+  {
+   "util": 20,
+   "temp_c": 62,
+   "mhz": 780,
+   "mhz_max": 2100,
+   "watts": 14.3,
+   "bride": false,
+   "charge_s": 466.4,
+   "quand": 1788614225.1
+  },
+  {
+   "util": 90,
+   "temp_c": 65,
+   "mhz": 1755,
+   "mhz_max": 2100,
+   "watts": 20.3,
+   "bride": false,
+   "charge_s": 481.5,
+   "quand": 1788614240.2
+  },
+  {
+   "util": 25,
+   "temp_c": 63,
+   "mhz": 720,
+   "mhz_max": 2100,
+   "watts": 14.0,
+   "bride": false,
+   "charge_s": 496.6,
+   "quand": 1788614255.3
+  },
+  {
+   "util": 0,
+   "temp_c": 60,
+   "mhz": 210,
+   "mhz_max": 2100,
+   "watts": 8.0,
+   "bride": false,
+   "charge_s": 511.7,
+   "quand": 1788614270.4
+  },
+  {
+   "util": 12,
+   "temp_c": 66,
+   "mhz": 1747,
+   "mhz_max": 2100,
+   "watts": 23.5,
+   "bride": false,
+   "charge_s": 526.7,
+   "quand": 1788614285.5
+  },
+  {
+   "util": 100,
+   "temp_c": 63,
+   "mhz": 1057,
+   "mhz_max": 2100,
+   "watts": 13.2,
+   "bride": false,
+   "charge_s": 541.8,
+   "quand": 1788614300.6
+  },
+  {
+   "util": 29,
+   "temp_c": 62,
+   "mhz": 547,
+   "mhz_max": 2100,
+   "watts": 13.7,
+   "bride": false,
+   "charge_s": 556.9,
+   "quand": 1788614315.7
+  },
+  {
+   "util": 25,
+   "temp_c": 63,
+   "mhz": 675,
+   "mhz_max": 2100,
+   "watts": 14.1,
+   "bride": false,
+   "charge_s": 572.0,
+   "quand": 1788614330.8
+  },
+  {
+   "util": 20,
+   "temp_c": 67,
+   "mhz": 1747,
+   "mhz_max": 2100,
+   "watts": 24.0,
+   "bride": false,
+   "charge_s": 587.1,
+   "quand": 1788614345.9
+  },
+  {
+   "util": 0,
+   "temp_c": 62,
+   "mhz": 427,
+   "mhz_max": 2100,
+   "watts": 12.2,
+   "bride": false,
+   "charge_s": 602.2,
+   "quand": 1788614360.9
+  },
+  {
+   "util": 19,
+   "temp_c": 64,
+   "mhz": 810,
+   "mhz_max": 2100,
+   "watts": 17.1,
+   "bride": false,
+   "charge_s": 617.3,
+   "quand": 1788614376.0
+  },
+  {
+   "util": 38,
+   "temp_c": 63,
+   "mhz": 412,
+   "mhz_max": 2100,
+   "watts": 13.6,
+   "bride": false,
+   "charge_s": 632.4,
+   "quand": 1788614391.1
+  },
+  {
+   "util": 25,
+   "temp_c": 64,
+   "mhz": 675,
+   "mhz_max": 2100,
+   "watts": 14.1,
+   "bride": false,
+   "charge_s": 647.4,
+   "quand": 1788614406.2
+  },
+  {
+   "util": 91,
+   "temp_c": 68,
+   "mhz": 1747,
+   "mhz_max": 2100,
+   "watts": 22.5,
+   "bride": false,
+   "charge_s": 662.5,
+   "quand": 1788614421.3
+  },
+  {
+   "util": 96,
+   "temp_c": 70,
+   "mhz": 1387,
+   "mhz_max": 2100,
+   "watts": 30.2,
+   "bride": false,
+   "charge_s": 677.6,
+   "quand": 1788614436.4
+  },
+  {
+   "util": 26,
+   "temp_c": 64,
+   "mhz": 622,
+   "mhz_max": 2100,
+   "watts": 13.8,
+   "bride": false,
+   "charge_s": 692.7,
+   "quand": 1788614451.5
+  },
+  {
+   "util": 14,
+   "temp_c": 62,
+   "mhz": 232,
+   "mhz_max": 2100,
+   "watts": 9.9,
+   "bride": false,
+   "charge_s": 707.8,
+   "quand": 1788614466.6
+  },
+  {
+   "util": 27,
+   "temp_c": 64,
+   "mhz": 667,
+   "mhz_max": 2100,
+   "watts": 13.6,
+   "bride": false,
+   "charge_s": 722.9,
+   "quand": 1788614481.7
+  },
+  {
+   "util": 90,
+   "temp_c": 68,
+   "mhz": 1747,
+   "mhz_max": 2100,
+   "watts": 28.1,
+   "bride": false,
+   "charge_s": 738.0,
+   "quand": 1788614496.7
+  },
+  {
+   "util": 32,
+   "temp_c": 64,
+   "mhz": 547,
+   "mhz_max": 2100,
+   "watts": 13.7,
+   "bride": false,
+   "charge_s": 753.1,
+   "quand": 1788614511.8
+  },
+  {
+   "util": 20,
+   "temp_c": 65,
+   "mhz": 802,
+   "mhz_max": 2100,
+   "watts": 16.4,
+   "bride": false,
+   "charge_s": 768.2,
+   "quand": 1788614526.9
+  },
+  {
+   "util": 12,
+   "temp_c": 69,
+   "mhz": 1755,
+   "mhz_max": 2100,
+   "watts": 26.0,
+   "bride": false,
+   "charge_s": 783.2,
+   "quand": 1788614542.0
+  },
+  {
+   "util": 99,
+   "temp_c": 64,
+   "mhz": 345,
+   "mhz_max": 2100,
+   "watts": 11.8,
+   "bride": false,
+   "charge_s": 798.3,
+   "quand": 1788614557.1
+  },
+  {
+   "util": 27,
+   "temp_c": 64,
+   "mhz": 585,
+   "mhz_max": 2100,
+   "watts": 13.6,
+   "bride": false,
+   "charge_s": 813.4,
+   "quand": 1788614572.2
+  },
+  {
+   "util": 21,
+   "temp_c": 69,
+   "mhz": 1747,
+   "mhz_max": 2100,
+   "watts": 27.3,
+   "bride": false,
+   "charge_s": 828.5,
+   "quand": 1788614587.3
+  },
+  {
+   "util": 32,
+   "temp_c": 64,
+   "mhz": 465,
+   "mhz_max": 2100,
+   "watts": 13.8,
+   "bride": false,
+   "charge_s": 843.6,
+   "quand": 1788614602.4
+  },
+  {
+   "util": 26,
+   "temp_c": 65,
+   "mhz": 652,
+   "mhz_max": 2100,
+   "watts": 14.2,
+   "bride": false,
+   "charge_s": 858.7,
+   "quand": 1788614617.4
+  },
+  {
+   "util": 11,
+   "temp_c": 68,
+   "mhz": 1672,
+   "mhz_max": 2100,
+   "watts": 22.6,
+   "bride": false,
+   "charge_s": 873.8,
+   "quand": 1788614632.5
+  },
+  {
+   "util": 91,
+   "temp_c": 68,
+   "mhz": 1747,
+   "mhz_max": 2100,
+   "watts": 26.1,
+   "bride": false,
+   "charge_s": 863.8,
+   "quand": 1788614660.0
+  },
+  {
+   "util": 74,
+   "temp_c": 63,
+   "mhz": 412,
+   "mhz_max": 2100,
+   "watts": 11.6,
+   "bride": false,
+   "charge_s": 878.9,
+   "quand": 1788614675.1
+  },
+  {
+   "util": 32,
+   "temp_c": 64,
+   "mhz": 487,
+   "mhz_max": 2100,
+   "watts": 13.0,
+   "bride": false,
+   "charge_s": 894.0,
+   "quand": 1788614690.3
+  },
+  {
+   "util": 0,
+   "temp_c": 63,
+   "mhz": 330,
+   "mhz_max": 2100,
+   "watts": 11.8,
+   "bride": false,
+   "charge_s": 909.1,
+   "quand": 1788614705.3
+  },
+  {
+   "util": 91,
+   "temp_c": 69,
+   "mhz": 1747,
+   "mhz_max": 2100,
+   "watts": 32.4,
+   "bride": false,
+   "charge_s": 924.2,
+   "quand": 1788614720.4
+  },
+  {
+   "util": 30,
+   "temp_c": 64,
+   "mhz": 547,
+   "mhz_max": 2100,
+   "watts": 13.6,
+   "bride": false,
+   "charge_s": 939.3,
+   "quand": 1788614735.5
+  },
+  {
+   "util": 0,
+   "temp_c": 68,
+   "mhz": 1747,
+   "mhz_max": 2100,
+   "watts": 28.5,
+   "bride": false,
+   "charge_s": 954.4,
+   "quand": 1788614750.6
+  },
+  {
+   "util": 31,
+   "temp_c": 64,
+   "mhz": 525,
+   "mhz_max": 2100,
+   "watts": 13.8,
+   "bride": false,
+   "charge_s": 969.4,
+   "quand": 1788614765.7
+  },
+  {
+   "util": 91,
+   "temp_c": 70,
+   "mhz": 1747,
+   "mhz_max": 2100,
+   "watts": 26.7,
+   "bride": false,
+   "charge_s": 984.5,
+   "quand": 1788614780.8
+  },
+  {
+   "util": 32,
+   "temp_c": 65,
+   "mhz": 495,
+   "mhz_max": 2100,
+   "watts": 13.7,
+   "bride": false,
+   "charge_s": 999.6,
+   "quand": 1788614795.8
+  },
+  {
+   "util": 25,
+   "temp_c": 65,
+   "mhz": 652,
+   "mhz_max": 2100,
+   "watts": 14.1,
+   "bride": false,
+   "charge_s": 1014.7,
+   "quand": 1788614811.0
+  },
+  {
+   "util": 90,
+   "temp_c": 69,
+   "mhz": 1755,
+   "mhz_max": 2100,
+   "watts": 24.6,
+   "bride": false,
+   "charge_s": 1029.9,
+   "quand": 1788614826.1
+  },
+  {
+   "util": 25,
+   "temp_c": 66,
+   "mhz": 615,
+   "mhz_max": 2100,
+   "watts": 15.0,
+   "bride": false,
+   "charge_s": 1045.1,
+   "quand": 1788614841.3
+  },
+  {
+   "util": 27,
+   "temp_c": 66,
+   "mhz": 600,
+   "mhz_max": 2100,
+   "watts": 14.2,
+   "bride": false,
+   "charge_s": 1060.2,
+   "quand": 1788614856.4
+  },
+  {
+   "util": 21,
+   "temp_c": 66,
+   "mhz": 705,
+   "mhz_max": 2100,
+   "watts": 14.5,
+   "bride": false,
+   "charge_s": 1075.3,
+   "quand": 1788614871.5
+  },
+  {
+   "util": 31,
+   "temp_c": 65,
+   "mhz": 510,
+   "mhz_max": 2100,
+   "watts": 14.1,
+   "bride": false,
+   "charge_s": 1090.3,
+   "quand": 1788614886.6
+  },
+  {
+   "util": 7,
+   "temp_c": 66,
+   "mhz": 517,
+   "mhz_max": 2100,
+   "watts": 13.2,
+   "bride": false,
+   "charge_s": 1105.5,
+   "quand": 1788614901.7
+  },
+  {
+   "util": 18,
+   "temp_c": 69,
+   "mhz": 892,
+   "mhz_max": 2100,
+   "watts": 22.2,
+   "bride": false,
+   "charge_s": 1120.6,
+   "quand": 1788614916.8
+  },
+  {
+   "util": 0,
+   "temp_c": 65,
+   "mhz": 322,
+   "mhz_max": 2100,
+   "watts": 12.1,
+   "bride": false,
+   "charge_s": 1135.9,
+   "quand": 1788614932.1
+  },
+  {
+   "util": 11,
+   "temp_c": 70,
+   "mhz": 1740,
+   "mhz_max": 2100,
+   "watts": 25.2,
+   "bride": false,
+   "charge_s": 1151.4,
+   "quand": 1788614947.6
+  },
+  {
+   "util": 22,
+   "temp_c": 67,
+   "mhz": 390,
+   "mhz_max": 2100,
+   "watts": 13.5,
+   "bride": false,
+   "charge_s": 1166.5,
+   "quand": 1788614962.7
+  },
+  {
+   "util": 92,
+   "temp_c": 73,
+   "mhz": 1357,
+   "mhz_max": 2100,
+   "watts": 26.1,
+   "bride": false,
+   "charge_s": 1181.7,
+   "quand": 1788614977.9
+  },
+  {
+   "util": 100,
+   "temp_c": 66,
+   "mhz": 382,
+   "mhz_max": 2100,
+   "watts": 11.3,
+   "bride": false,
+   "charge_s": 1196.7,
+   "quand": 1788614993.0
+  },
+  {
+   "util": 0,
+   "temp_c": 71,
+   "mhz": 1740,
+   "mhz_max": 2100,
+   "watts": 31.2,
+   "bride": false,
+   "charge_s": 1211.9,
+   "quand": 1788615008.1
+  },
+  {
+   "util": 19,
+   "temp_c": 69,
+   "mhz": 840,
+   "mhz_max": 2100,
+   "watts": 20.8,
+   "bride": false,
+   "charge_s": 1227.0,
+   "quand": 1788615023.2
+  },
+  {
+   "util": 31,
+   "temp_c": 66,
+   "mhz": 382,
+   "mhz_max": 2100,
+   "watts": 13.2,
+   "bride": false,
+   "charge_s": 1242.1,
+   "quand": 1788615038.3
+  },
+  {
+   "util": 100,
+   "temp_c": 66,
+   "mhz": 352,
+   "mhz_max": 2100,
+   "watts": 11.4,
+   "bride": false,
+   "charge_s": 1257.2,
+   "quand": 1788615053.4
+  },
+  {
+   "util": 12,
+   "temp_c": 71,
+   "mhz": 1687,
+   "mhz_max": 2100,
+   "watts": 26.5,
+   "bride": false,
+   "charge_s": 1272.5,
+   "quand": 1788615068.7
+  },
+  {
+   "util": 34,
+   "temp_c": 67,
+   "mhz": 450,
+   "mhz_max": 2100,
+   "watts": 13.7,
+   "bride": false,
+   "charge_s": 1287.7,
+   "quand": 1788615083.9
+  },
+  {
+   "util": 0,
+   "temp_c": 64,
+   "mhz": 210,
+   "mhz_max": 2100,
+   "watts": 7.8,
+   "bride": false,
+   "charge_s": 1285.1,
+   "quand": 1788615117.6
+  },
+  {
+   "util": 33,
+   "temp_c": 65,
+   "mhz": 292,
+   "mhz_max": 2100,
+   "watts": 12.7,
+   "bride": false,
+   "charge_s": 1300.3,
+   "quand": 1788615132.8
+  },
+  {
+   "util": 0,
+   "temp_c": 64,
+   "mhz": 210,
+   "mhz_max": 2100,
+   "watts": 6.9,
+   "bride": false,
+   "charge_s": 1315.4,
+   "quand": 1788615147.9
+  },
+  {
+   "util": 100,
+   "temp_c": 65,
+   "mhz": 1057,
+   "mhz_max": 2100,
+   "watts": 9.0,
+   "bride": false,
+   "charge_s": 1330.5,
+   "quand": 1788615163.0
+  },
+  {
+   "util": 88,
+   "temp_c": 71,
+   "mhz": 1507,
+   "mhz_max": 2100,
+   "watts": 28.5,
+   "bride": false,
+   "charge_s": 1345.6,
+   "quand": 1788615178.1
+  },
+  {
+   "util": 14,
+   "temp_c": 67,
+   "mhz": 480,
+   "mhz_max": 2100,
+   "watts": 13.0,
+   "bride": false,
+   "charge_s": 1360.9,
+   "quand": 1788615193.4
+  },
+  {
+   "util": 32,
+   "temp_c": 67,
+   "mhz": 495,
+   "mhz_max": 2100,
+   "watts": 13.3,
+   "bride": false,
+   "charge_s": 1376.0,
+   "quand": 1788615208.5
+  },
+  {
+   "util": 0,
+   "temp_c": 65,
+   "mhz": 255,
+   "mhz_max": 2100,
+   "watts": 10.8,
+   "bride": false,
+   "charge_s": 1391.2,
+   "quand": 1788615223.6
+  },
+  {
+   "util": 16,
+   "temp_c": 71,
+   "mhz": 1717,
+   "mhz_max": 2100,
+   "watts": 28.4,
+   "bride": false,
+   "charge_s": 1406.4,
+   "quand": 1788615238.9
+  },
+  {
+   "util": 33,
+   "temp_c": 67,
+   "mhz": 472,
+   "mhz_max": 2100,
+   "watts": 13.5,
+   "bride": false,
+   "charge_s": 1421.6,
+   "quand": 1788615254.1
+  },
+  {
+   "util": 32,
+   "temp_c": 67,
+   "mhz": 495,
+   "mhz_max": 2100,
+   "watts": 14.0,
+   "bride": false,
+   "charge_s": 1436.7,
+   "quand": 1788615269.2
+  },
+  {
+   "util": 18,
+   "temp_c": 69,
+   "mhz": 855,
+   "mhz_max": 2100,
+   "watts": 20.9,
+   "bride": false,
+   "charge_s": 1451.8,
+   "quand": 1788615284.3
+  },
+  {
+   "util": 26,
+   "temp_c": 67,
+   "mhz": 480,
+   "mhz_max": 2100,
+   "watts": 13.8,
+   "bride": false,
+   "charge_s": 1466.9,
+   "quand": 1788615299.4
+  },
+  {
+   "util": 12,
+   "temp_c": 72,
+   "mhz": 1740,
+   "mhz_max": 2100,
+   "watts": 26.2,
+   "bride": false,
+   "charge_s": 1482.0,
+   "quand": 1788615314.5
+  },
+  {
+   "util": 28,
+   "temp_c": 67,
+   "mhz": 480,
+   "mhz_max": 2100,
+   "watts": 13.9,
+   "bride": false,
+   "charge_s": 1497.1,
+   "quand": 1788615329.6
+  },
+  {
+   "util": 27,
+   "temp_c": 70,
+   "mhz": 847,
+   "mhz_max": 2100,
+   "watts": 22.1,
+   "bride": false,
+   "charge_s": 1512.2,
+   "quand": 1788615344.7
+  },
+  {
+   "util": 30,
+   "temp_c": 68,
+   "mhz": 532,
+   "mhz_max": 2100,
+   "watts": 13.7,
+   "bride": false,
+   "charge_s": 1527.3,
+   "quand": 1788615359.8
+  },
+  {
+   "util": 12,
+   "temp_c": 73,
+   "mhz": 1740,
+   "mhz_max": 2100,
+   "watts": 26.6,
+   "bride": false,
+   "charge_s": 1542.4,
+   "quand": 1788615374.9
+  },
+  {
+   "util": 96,
+   "temp_c": 75,
+   "mhz": 1357,
+   "mhz_max": 2100,
+   "watts": 31.9,
+   "bride": false,
+   "charge_s": 1557.5,
+   "quand": 1788615390.0
+  },
+  {
+   "util": 6,
+   "temp_c": 70,
+   "mhz": 1747,
+   "mhz_max": 2100,
+   "watts": 23.9,
+   "bride": false,
+   "charge_s": 1572.6,
+   "quand": 1788615405.1
+  },
+  {
+   "util": 28,
+   "temp_c": 67,
+   "mhz": 600,
+   "mhz_max": 2100,
+   "watts": 14.2,
+   "bride": false,
+   "charge_s": 1587.7,
+   "quand": 1788615420.2
+  },
+  {
+   "util": 23,
+   "temp_c": 72,
+   "mhz": 1747,
+   "mhz_max": 2100,
+   "watts": 27.0,
+   "bride": false,
+   "charge_s": 1602.8,
+   "quand": 1788615435.3
+  },
+  {
+   "util": 19,
+   "temp_c": 67,
+   "mhz": 697,
+   "mhz_max": 2100,
+   "watts": 14.1,
+   "bride": false,
+   "charge_s": 1617.9,
+   "quand": 1788615450.4
+  },
+  {
+   "util": 12,
+   "temp_c": 71,
+   "mhz": 1747,
+   "mhz_max": 2100,
+   "watts": 22.3,
+   "bride": false,
+   "charge_s": 1633.0,
+   "quand": 1788615465.5
+  },
+  {
+   "util": 91,
+   "temp_c": 73,
+   "mhz": 1747,
+   "mhz_max": 2100,
+   "watts": 32.0,
+   "bride": false,
+   "charge_s": 1648.1,
+   "quand": 1788615480.6
+  },
+  {
+   "util": 31,
+   "temp_c": 67,
+   "mhz": 525,
+   "mhz_max": 2100,
+   "watts": 13.9,
+   "bride": false,
+   "charge_s": 1663.2,
+   "quand": 1788615495.7
+  },
+  {
+   "util": 92,
+   "temp_c": 73,
+   "mhz": 1470,
+   "mhz_max": 2100,
+   "watts": 28.1,
+   "bride": false,
+   "charge_s": 1678.2,
+   "quand": 1788615510.7
+  },
+  {
+   "util": 37,
+   "temp_c": 66,
+   "mhz": 420,
+   "mhz_max": 2100,
+   "watts": 13.8,
+   "bride": false,
+   "charge_s": 1693.3,
+   "quand": 1788615525.8
+  },
+  {
+   "util": 12,
+   "temp_c": 72,
+   "mhz": 1657,
+   "mhz_max": 2100,
+   "watts": 26.9,
+   "bride": false,
+   "charge_s": 1708.4,
+   "quand": 1788615540.9
+  },
+  {
+   "util": 21,
+   "temp_c": 67,
+   "mhz": 697,
+   "mhz_max": 2100,
+   "watts": 13.9,
+   "bride": false,
+   "charge_s": 1723.6,
+   "quand": 1788615556.1
+  },
+  {
+   "util": 34,
+   "temp_c": 71,
+   "mhz": 1747,
+   "mhz_max": 2100,
+   "watts": 32.8,
+   "bride": false,
+   "charge_s": 1708.2,
+   "quand": 1788615583.1
+  },
+  {
+   "util": 30,
+   "temp_c": 66,
+   "mhz": 480,
+   "mhz_max": 2100,
+   "watts": 13.6,
+   "bride": false,
+   "charge_s": 1723.3,
+   "quand": 1788615598.2
+  },
+  {
+   "util": 91,
+   "temp_c": 73,
+   "mhz": 1357,
+   "mhz_max": 2100,
+   "watts": 26.6,
+   "bride": false,
+   "charge_s": 1738.4,
+   "quand": 1788615613.3
+  },
+  {
+   "util": 28,
+   "temp_c": 67,
+   "mhz": 592,
+   "mhz_max": 2100,
+   "watts": 14.1,
+   "bride": false,
+   "charge_s": 1753.5,
+   "quand": 1788615628.4
+  },
+  {
+   "util": 90,
+   "temp_c": 71,
+   "mhz": 1747,
+   "mhz_max": 2100,
+   "watts": 28.7,
+   "bride": false,
+   "charge_s": 1768.6,
+   "quand": 1788615643.4
+  },
+  {
+   "util": 33,
+   "temp_c": 66,
+   "mhz": 480,
+   "mhz_max": 2100,
+   "watts": 13.7,
+   "bride": false,
+   "charge_s": 1783.7,
+   "quand": 1788615658.5
+  },
+  {
+   "util": 12,
+   "temp_c": 71,
+   "mhz": 1747,
+   "mhz_max": 2100,
+   "watts": 25.9,
+   "bride": false,
+   "charge_s": 1798.9,
+   "quand": 1788615673.7
+  },
+  {
+   "util": 35,
+   "temp_c": 66,
+   "mhz": 502,
+   "mhz_max": 2100,
+   "watts": 13.9,
+   "bride": false,
+   "charge_s": 1814.0,
+   "quand": 1788615688.8
+  },
+  {
+   "util": 92,
+   "temp_c": 71,
+   "mhz": 1747,
+   "mhz_max": 2100,
+   "watts": 30.6,
+   "bride": false,
+   "charge_s": 1829.0,
+   "quand": 1788615703.9
+  },
+  {
+   "util": 28,
+   "temp_c": 67,
+   "mhz": 652,
+   "mhz_max": 2100,
+   "watts": 13.9,
+   "bride": false,
+   "charge_s": 1844.1,
+   "quand": 1788615719.0
+  },
+  {
+   "util": 21,
+   "temp_c": 72,
+   "mhz": 1747,
+   "mhz_max": 2100,
+   "watts": 23.9,
+   "bride": false,
+   "charge_s": 1859.2,
+   "quand": 1788615734.1
+  },
+  {
+   "util": 16,
+   "temp_c": 66,
+   "mhz": 442,
+   "mhz_max": 2100,
+   "watts": 12.8,
+   "bride": false,
+   "charge_s": 1874.3,
+   "quand": 1788615749.1
+  },
+  {
+   "util": 100,
+   "temp_c": 73,
+   "mhz": 1515,
+   "mhz_max": 2100,
+   "watts": 29.6,
+   "bride": false,
+   "charge_s": 1889.4,
+   "quand": 1788615764.2
+  },
+  {
+   "util": 28,
+   "temp_c": 68,
+   "mhz": 765,
+   "mhz_max": 2100,
+   "watts": 14.7,
+   "bride": false,
+   "charge_s": 1904.5,
+   "quand": 1788615779.3
+  },
+  {
+   "util": 26,
+   "temp_c": 69,
+   "mhz": 855,
+   "mhz_max": 2100,
+   "watts": 21.5,
+   "bride": false,
+   "charge_s": 1919.6,
+   "quand": 1788615794.4
+  },
+  {
+   "util": 15,
+   "temp_c": 71,
+   "mhz": 1747,
+   "mhz_max": 2100,
+   "watts": 27.7,
+   "bride": false,
+   "charge_s": 1934.7,
+   "quand": 1788615809.5
+  },
+  {
+   "util": 34,
+   "temp_c": 67,
+   "mhz": 465,
+   "mhz_max": 2100,
+   "watts": 14.0,
+   "bride": false,
+   "charge_s": 1949.7,
+   "quand": 1788615824.6
+  },
+  {
+   "util": 12,
+   "temp_c": 72,
+   "mhz": 1747,
+   "mhz_max": 2100,
+   "watts": 26.3,
+   "bride": false,
+   "charge_s": 1964.8,
+   "quand": 1788615839.7
+  },
+  {
+   "util": 91,
+   "temp_c": 72,
+   "mhz": 1747,
+   "mhz_max": 2100,
+   "watts": 31.4,
+   "bride": false,
+   "charge_s": 1979.9,
+   "quand": 1788615854.8
+  },
+  {
+   "util": 25,
+   "temp_c": 67,
+   "mhz": 682,
+   "mhz_max": 2100,
+   "watts": 14.5,
+   "bride": false,
+   "charge_s": 1995.0,
+   "quand": 1788615869.9
+  },
+  {
+   "util": 97,
+   "temp_c": 71,
+   "mhz": 1342,
+   "mhz_max": 2100,
+   "watts": 32.2,
+   "bride": false,
+   "charge_s": 2010.1,
+   "quand": 1788615885.0
+  },
+  {
+   "util": 30,
+   "temp_c": 66,
+   "mhz": 525,
+   "mhz_max": 2100,
+   "watts": 13.8,
+   "bride": false,
+   "charge_s": 2025.2,
+   "quand": 1788615900.1
+  },
+  {
+   "util": 23,
+   "temp_c": 71,
+   "mhz": 1657,
+   "mhz_max": 2100,
+   "watts": 23.9,
+   "bride": false,
+   "charge_s": 2040.3,
+   "quand": 1788615915.2
+  },
+  {
+   "util": 0,
+   "temp_c": 64,
+   "mhz": 405,
+   "mhz_max": 2100,
+   "watts": 12.5,
+   "bride": false,
+   "charge_s": 2055.4,
+   "quand": 1788615930.2
+  },
+  {
+   "util": 22,
+   "temp_c": 67,
+   "mhz": 772,
+   "mhz_max": 2100,
+   "watts": 17.1,
+   "bride": false,
+   "charge_s": 2070.5,
+   "quand": 1788615945.3
+  },
+  {
+   "util": 1,
+   "temp_c": 69,
+   "mhz": 1747,
+   "mhz_max": 2100,
+   "watts": 30.5,
+   "bride": false,
+   "charge_s": 2085.6,
+   "quand": 1788615960.4
+  },
+  {
+   "util": 29,
+   "temp_c": 65,
+   "mhz": 562,
+   "mhz_max": 2100,
+   "watts": 13.7,
+   "bride": false,
+   "charge_s": 2100.6,
+   "quand": 1788615975.5
+  },
+  {
+   "util": 21,
+   "temp_c": 66,
+   "mhz": 735,
+   "mhz_max": 2100,
+   "watts": 14.6,
+   "bride": false,
+   "charge_s": 2115.7,
+   "quand": 1788615990.6
+  },
+  {
+   "util": 23,
+   "temp_c": 69,
+   "mhz": 1747,
+   "mhz_max": 2100,
+   "watts": 26.2,
+   "bride": false,
+   "charge_s": 2130.8,
+   "quand": 1788616005.7
+  },
+  {
+   "util": 0,
+   "temp_c": 62,
+   "mhz": 210,
+   "mhz_max": 2100,
+   "watts": 8.2,
+   "bride": false,
+   "charge_s": 2132.5,
+   "quand": 1788616039.1
+  },
+  {
+   "util": 12,
+   "temp_c": 69,
+   "mhz": 1747,
+   "mhz_max": 2100,
+   "watts": 23.1,
+   "bride": false,
+   "charge_s": 2147.6,
+   "quand": 1788616054.2
+  },
+  {
+   "util": 88,
+   "temp_c": 69,
+   "mhz": 1747,
+   "mhz_max": 2100,
+   "watts": 20.0,
+   "bride": false,
+   "charge_s": 2162.7,
+   "quand": 1788616069.3
+  },
+  {
+   "util": 30,
+   "temp_c": 65,
+   "mhz": 540,
+   "mhz_max": 2100,
+   "watts": 13.7,
+   "bride": false,
+   "charge_s": 2177.8,
+   "quand": 1788616084.4
+  },
+  {
+   "util": 96,
+   "temp_c": 72,
+   "mhz": 1747,
+   "mhz_max": 2100,
+   "watts": 32.2,
+   "bride": false,
+   "charge_s": 2192.9,
+   "quand": 1788616099.5
+  },
+  {
+   "util": 34,
+   "temp_c": 65,
+   "mhz": 465,
+   "mhz_max": 2100,
+   "watts": 13.6,
+   "bride": false,
+   "charge_s": 2208.0,
+   "quand": 1788616114.6
+  },
+  {
+   "util": 90,
+   "temp_c": 70,
+   "mhz": 1747,
+   "mhz_max": 2100,
+   "watts": 27.7,
+   "bride": false,
+   "charge_s": 2223.1,
+   "quand": 1788616129.7
+  },
+  {
+   "util": 26,
+   "temp_c": 66,
+   "mhz": 630,
+   "mhz_max": 2100,
+   "watts": 14.2,
+   "bride": false,
+   "charge_s": 2238.2,
+   "quand": 1788616144.8
+  },
+  {
+   "util": 89,
+   "temp_c": 71,
+   "mhz": 1747,
+   "mhz_max": 2100,
+   "watts": 31.1,
+   "bride": false,
+   "charge_s": 2253.3,
+   "quand": 1788616159.9
+  },
+  {
+   "util": 0,
+   "temp_c": 65,
+   "mhz": 487,
+   "mhz_max": 2100,
+   "watts": 13.2,
+   "bride": false,
+   "charge_s": 2268.3,
+   "quand": 1788616174.9
+  },
+  {
+   "util": 96,
+   "temp_c": 73,
+   "mhz": 1372,
+   "mhz_max": 2100,
+   "watts": 26.2,
+   "bride": false,
+   "charge_s": 2283.5,
+   "quand": 1788616190.0
+  },
+  {
+   "util": 13,
+   "temp_c": 65,
+   "mhz": 435,
+   "mhz_max": 2100,
+   "watts": 12.8,
+   "bride": false,
+   "charge_s": 2298.5,
+   "quand": 1788616205.1
+  },
+  {
+   "util": 29,
+   "temp_c": 66,
+   "mhz": 690,
+   "mhz_max": 2100,
+   "watts": 14.2,
+   "bride": false,
+   "charge_s": 2313.6,
+   "quand": 1788616220.2
+  },
+  {
+   "util": 23,
+   "temp_c": 70,
+   "mhz": 1740,
+   "mhz_max": 2100,
+   "watts": 27.3,
+   "bride": false,
+   "charge_s": 2328.7,
+   "quand": 1788616235.3
+  },
+  {
+   "util": 34,
+   "temp_c": 65,
+   "mhz": 472,
+   "mhz_max": 2100,
+   "watts": 13.9,
+   "bride": false,
+   "charge_s": 2343.8,
+   "quand": 1788616250.4
+  },
+  {
+   "util": 20,
+   "temp_c": 67,
+   "mhz": 802,
+   "mhz_max": 2100,
+   "watts": 16.9,
+   "bride": false,
+   "charge_s": 2358.9,
+   "quand": 1788616265.5
+  },
+  {
+   "util": 92,
+   "temp_c": 70,
+   "mhz": 1747,
+   "mhz_max": 2100,
+   "watts": 24.4,
+   "bride": false,
+   "charge_s": 2374.0,
+   "quand": 1788616280.6
+  },
+  {
+   "util": 32,
+   "temp_c": 67,
+   "mhz": 795,
+   "mhz_max": 2100,
+   "watts": 16.6,
+   "bride": false,
+   "charge_s": 2389.1,
+   "quand": 1788616295.7
+  },
+  {
+   "util": 89,
+   "temp_c": 70,
+   "mhz": 1747,
+   "mhz_max": 2100,
+   "watts": 29.1,
+   "bride": false,
+   "charge_s": 2404.2,
+   "quand": 1788616310.8
+  },
+  {
+   "util": 19,
+   "temp_c": 67,
+   "mhz": 832,
+   "mhz_max": 2100,
+   "watts": 18.3,
+   "bride": false,
+   "charge_s": 2419.2,
+   "quand": 1788616325.8
+  },
+  {
+   "util": 62,
+   "temp_c": 73,
+   "mhz": 1747,
+   "mhz_max": 2100,
+   "watts": 32.4,
+   "bride": false,
+   "charge_s": 2434.3,
+   "quand": 1788616340.9
+  },
+  {
+   "util": 13,
+   "temp_c": 70,
+   "mhz": 1747,
+   "mhz_max": 2100,
+   "watts": 26.3,
+   "bride": false,
+   "charge_s": 2449.5,
+   "quand": 1788616356.1
+  },
+  {
+   "util": 0,
+   "temp_c": 65,
+   "mhz": 450,
+   "mhz_max": 2100,
+   "watts": 13.1,
+   "bride": false,
+   "charge_s": 2464.6,
+   "quand": 1788616371.1
+  },
+  {
+   "util": 100,
+   "temp_c": 72,
+   "mhz": 1567,
+   "mhz_max": 2100,
+   "watts": 32.9,
+   "bride": false,
+   "charge_s": 2479.6,
+   "quand": 1788616386.2
+  },
+  {
+   "util": 28,
+   "temp_c": 65,
+   "mhz": 577,
+   "mhz_max": 2100,
+   "watts": 14.1,
+   "bride": false,
+   "charge_s": 2494.7,
+   "quand": 1788616401.3
+  },
+  {
+   "util": 87,
+   "temp_c": 69,
+   "mhz": 1747,
+   "mhz_max": 2100,
+   "watts": 19.0,
+   "bride": false,
+   "charge_s": 2509.8,
+   "quand": 1788616416.4
+  },
+  {
+   "util": 100,
+   "temp_c": 68,
+   "mhz": 1140,
+   "mhz_max": 2100,
+   "watts": 14.9,
+   "bride": false,
+   "charge_s": 2524.9,
+   "quand": 1788616431.5
+  },
+  {
+   "util": 12,
+   "temp_c": 70,
+   "mhz": 1747,
+   "mhz_max": 2100,
+   "watts": 23.6,
+   "bride": false,
+   "charge_s": 2540.0,
+   "quand": 1788616446.6
+  },
+  {
+   "util": 30,
+   "temp_c": 65,
+   "mhz": 547,
+   "mhz_max": 2100,
+   "watts": 14.0,
+   "bride": false,
+   "charge_s": 2555.1,
+   "quand": 1788616461.7
+  },
+  {
+   "util": 19,
+   "temp_c": 67,
+   "mhz": 832,
+   "mhz_max": 2100,
+   "watts": 17.2,
+   "bride": false,
+   "charge_s": 2570.2,
+   "quand": 1788616476.8
+  },
+  {
+   "util": 22,
+   "temp_c": 66,
+   "mhz": 825,
+   "mhz_max": 2100,
+   "watts": 17.8,
+   "bride": false,
+   "charge_s": 2563.5,
+   "quand": 1788616505.3
+  },
+  {
+   "util": 14,
+   "temp_c": 63,
+   "mhz": 360,
+   "mhz_max": 2100,
+   "watts": 11.5,
+   "bride": false,
+   "charge_s": 2578.6,
+   "quand": 1788616520.4
+  },
+  {
+   "util": 12,
+   "temp_c": 69,
+   "mhz": 1747,
+   "mhz_max": 2100,
+   "watts": 23.9,
+   "bride": false,
+   "charge_s": 2593.7,
+   "quand": 1788616535.4
+  },
+  {
+   "util": 88,
+   "temp_c": 70,
+   "mhz": 1747,
+   "mhz_max": 2100,
+   "watts": 30.7,
+   "bride": false,
+   "charge_s": 2608.8,
+   "quand": 1788616550.5
+  },
+  {
+   "util": 34,
+   "temp_c": 65,
+   "mhz": 622,
+   "mhz_max": 2100,
+   "watts": 14.1,
+   "bride": false,
+   "charge_s": 2623.9,
+   "quand": 1788616565.6
+  },
+  {
+   "util": 34,
+   "temp_c": 67,
+   "mhz": 862,
+   "mhz_max": 2100,
+   "watts": 19.6,
+   "bride": false,
+   "charge_s": 2639.0,
+   "quand": 1788616580.7
+  },
+  {
+   "util": 23,
+   "temp_c": 69,
+   "mhz": 1747,
+   "mhz_max": 2100,
+   "watts": 24.8,
+   "bride": false,
+   "charge_s": 2654.0,
+   "quand": 1788616595.8
+  },
+  {
+   "util": 88,
+   "temp_c": 69,
+   "mhz": 1747,
+   "mhz_max": 2100,
+   "watts": 31.0,
+   "bride": false,
+   "charge_s": 2669.2,
+   "quand": 1788616610.9
+  },
+  {
+   "util": 27,
+   "temp_c": 65,
+   "mhz": 607,
+   "mhz_max": 2100,
+   "watts": 13.7,
+   "bride": false,
+   "charge_s": 2684.3,
+   "quand": 1788616626.0
+  },
+  {
+   "util": 12,
+   "temp_c": 70,
+   "mhz": 1747,
+   "mhz_max": 2100,
+   "watts": 23.5,
+   "bride": false,
+   "charge_s": 2699.3,
+   "quand": 1788616641.1
+  },
+  {
+   "util": 34,
+   "temp_c": 65,
+   "mhz": 465,
+   "mhz_max": 2100,
+   "watts": 13.5,
+   "bride": false,
+   "charge_s": 2714.4,
+   "quand": 1788616656.2
+  },
+  {
+   "util": 61,
+   "temp_c": 63,
+   "mhz": 255,
+   "mhz_max": 2100,
+   "watts": 10.4,
+   "bride": false,
+   "charge_s": 2729.5,
+   "quand": 1788616671.3
+  },
+  {
+   "util": 19,
+   "temp_c": 66,
+   "mhz": 862,
+   "mhz_max": 2100,
+   "watts": 18.6,
+   "bride": false,
+   "charge_s": 2744.6,
+   "quand": 1788616686.4
+  },
+  {
+   "util": 0,
+   "temp_c": 64,
+   "mhz": 420,
+   "mhz_max": 2100,
+   "watts": 12.8,
+   "bride": false,
+   "charge_s": 2759.7,
+   "quand": 1788616701.5
+  },
+  {
+   "util": 25,
+   "temp_c": 65,
+   "mhz": 675,
+   "mhz_max": 2100,
+   "watts": 14.1,
+   "bride": false,
+   "charge_s": 2774.8,
+   "quand": 1788616716.5
+  },
+  {
+   "util": 30,
+   "temp_c": 65,
+   "mhz": 510,
+   "mhz_max": 2100,
+   "watts": 13.7,
+   "bride": false,
+   "charge_s": 2789.9,
+   "quand": 1788616731.6
+  },
+  {
+   "util": 92,
+   "temp_c": 69,
+   "mhz": 1447,
+   "mhz_max": 2100,
+   "watts": 30.6,
+   "bride": false,
+   "charge_s": 2804.9,
+   "quand": 1788616746.7
+  },
+  {
+   "util": 25,
+   "temp_c": 65,
+   "mhz": 690,
+   "mhz_max": 2100,
+   "watts": 14.1,
+   "bride": false,
+   "charge_s": 2820.0,
+   "quand": 1788616761.8
+  },
+  {
+   "util": 90,
+   "temp_c": 69,
+   "mhz": 1747,
+   "mhz_max": 2100,
+   "watts": 29.1,
+   "bride": false,
+   "charge_s": 2835.1,
+   "quand": 1788616776.9
+  },
+  {
+   "util": 91,
+   "temp_c": 68,
+   "mhz": 1755,
+   "mhz_max": 2100,
+   "watts": 21.0,
+   "bride": false,
+   "charge_s": 2850.2,
+   "quand": 1788616792.0
+  },
+  {
+   "util": 30,
+   "temp_c": 64,
+   "mhz": 487,
+   "mhz_max": 2100,
+   "watts": 13.7,
+   "bride": false,
+   "charge_s": 2865.3,
+   "quand": 1788616807.1
+  },
+  {
+   "util": 17,
+   "temp_c": 69,
+   "mhz": 1747,
+   "mhz_max": 2100,
+   "watts": 23.4,
+   "bride": false,
+   "charge_s": 2880.4,
+   "quand": 1788616822.2
+  },
+  {
+   "util": 29,
+   "temp_c": 64,
+   "mhz": 532,
+   "mhz_max": 2100,
+   "watts": 13.7,
+   "bride": false,
+   "charge_s": 2895.5,
+   "quand": 1788616837.2
+  },
+  {
+   "util": 91,
+   "temp_c": 69,
+   "mhz": 1755,
+   "mhz_max": 2100,
+   "watts": 29.4,
+   "bride": false,
+   "charge_s": 2910.6,
+   "quand": 1788616852.3
+  },
+  {
+   "util": 23,
+   "temp_c": 69,
+   "mhz": 1747,
+   "mhz_max": 2100,
+   "watts": 22.5,
+   "bride": false,
+   "charge_s": 2925.7,
+   "quand": 1788616867.4
+  },
+  {
+   "util": 36,
+   "temp_c": 64,
+   "mhz": 427,
+   "mhz_max": 2100,
+   "watts": 13.6,
+   "bride": false,
+   "charge_s": 2940.8,
+   "quand": 1788616882.5
+  },
+  {
+   "util": 20,
+   "temp_c": 69,
+   "mhz": 1747,
+   "mhz_max": 2100,
+   "watts": 23.5,
+   "bride": false,
+   "charge_s": 2955.8,
+   "quand": 1788616897.6
+  },
+  {
+   "util": 91,
+   "temp_c": 70,
+   "mhz": 1747,
+   "mhz_max": 2100,
+   "watts": 28.0,
+   "bride": false,
+   "charge_s": 2970.9,
+   "quand": 1788616912.7
+  },
+  {
+   "util": 28,
+   "temp_c": 65,
+   "mhz": 570,
+   "mhz_max": 2100,
+   "watts": 14.0,
+   "bride": false,
+   "charge_s": 2986.0,
+   "quand": 1788616927.8
+  },
+  {
+   "util": 12,
+   "temp_c": 69,
+   "mhz": 1747,
+   "mhz_max": 2100,
+   "watts": 26.7,
+   "bride": false,
+   "charge_s": 3001.1,
+   "quand": 1788616942.9
+  },
+  {
+   "util": 20,
+   "temp_c": 65,
+   "mhz": 787,
+   "mhz_max": 2100,
+   "watts": 16.1,
+   "bride": false,
+   "charge_s": 2997.0,
+   "quand": 1788616971.2
+  },
+  {
+   "util": 92,
+   "temp_c": 68,
+   "mhz": 1747,
+   "mhz_max": 2100,
+   "watts": 20.4,
+   "bride": false,
+   "charge_s": 3012.1,
+   "quand": 1788616986.3
+  },
+  {
+   "util": 19,
+   "temp_c": 65,
+   "mhz": 825,
+   "mhz_max": 2100,
+   "watts": 17.7,
+   "bride": false,
+   "charge_s": 3027.2,
+   "quand": 1788617001.3
+  },
+  {
+   "util": 92,
+   "temp_c": 68,
+   "mhz": 1747,
+   "mhz_max": 2100,
+   "watts": 23.3,
+   "bride": false,
+   "charge_s": 3042.2,
+   "quand": 1788617016.4
+  },
+  {
+   "util": 30,
+   "temp_c": 64,
+   "mhz": 735,
+   "mhz_max": 2100,
+   "watts": 14.2,
+   "bride": false,
+   "charge_s": 3057.3,
+   "quand": 1788617031.5
+  },
+  {
+   "util": 29,
+   "temp_c": 66,
+   "mhz": 780,
+   "mhz_max": 2100,
+   "watts": 17.1,
+   "bride": false,
+   "charge_s": 3072.4,
+   "quand": 1788617046.6
+  },
+  {
+   "util": 19,
+   "temp_c": 65,
+   "mhz": 787,
+   "mhz_max": 2100,
+   "watts": 17.0,
+   "bride": false,
+   "charge_s": 3087.5,
+   "quand": 1788617061.7
+  },
+  {
+   "util": 91,
+   "temp_c": 70,
+   "mhz": 1350,
+   "mhz_max": 2100,
+   "watts": 31.3,
+   "bride": false,
+   "charge_s": 3102.6,
+   "quand": 1788617076.8
+  },
+  {
+   "util": 30,
+   "temp_c": 64,
+   "mhz": 465,
+   "mhz_max": 2100,
+   "watts": 13.3,
+   "bride": false,
+   "charge_s": 3117.7,
+   "quand": 1788617091.8
+  },
+  {
+   "util": 92,
+   "temp_c": 67,
+   "mhz": 1747,
+   "mhz_max": 2100,
+   "watts": 19.1,
+   "bride": false,
+   "charge_s": 3132.7,
+   "quand": 1788617106.9
+  },
+  {
+   "util": 25,
+   "temp_c": 65,
+   "mhz": 690,
+   "mhz_max": 2100,
+   "watts": 14.0,
+   "bride": false,
+   "charge_s": 3147.9,
+   "quand": 1788617122.1
+  },
+  {
+   "util": 1,
+   "temp_c": 69,
+   "mhz": 1747,
+   "mhz_max": 2100,
+   "watts": 28.4,
+   "bride": false,
+   "charge_s": 3163.0,
+   "quand": 1788617137.2
+  },
+  {
+   "util": 23,
+   "temp_c": 65,
+   "mhz": 577,
+   "mhz_max": 2100,
+   "watts": 13.8,
+   "bride": false,
+   "charge_s": 3178.1,
+   "quand": 1788617152.3
+  },
+  {
+   "util": 0,
+   "temp_c": 63,
+   "mhz": 390,
+   "mhz_max": 2100,
+   "watts": 12.4,
+   "bride": false,
+   "charge_s": 3193.2,
+   "quand": 1788617167.3
+  },
+  {
+   "util": 19,
+   "temp_c": 65,
+   "mhz": 787,
+   "mhz_max": 2100,
+   "watts": 17.2,
+   "bride": false,
+   "charge_s": 3208.2,
+   "quand": 1788617182.4
+  },
+  {
+   "util": 12,
+   "temp_c": 68,
+   "mhz": 1680,
+   "mhz_max": 2100,
+   "watts": 23.4,
+   "bride": false,
+   "charge_s": 3223.3,
+   "quand": 1788617197.5
+  },
+  {
+   "util": 0,
+   "temp_c": 63,
+   "mhz": 315,
+   "mhz_max": 2100,
+   "watts": 11.2,
+   "bride": false,
+   "charge_s": 3238.4,
+   "quand": 1788617212.6
+  },
+  {
+   "util": 12,
+   "temp_c": 68,
+   "mhz": 1747,
+   "mhz_max": 2100,
+   "watts": 25.6,
+   "bride": false,
+   "charge_s": 3253.5,
+   "quand": 1788617227.7
+  },
+  {
+   "util": 95,
+   "temp_c": 69,
+   "mhz": 1755,
+   "mhz_max": 2100,
+   "watts": 33.2,
+   "bride": false,
+   "charge_s": 3268.7,
+   "quand": 1788617242.9
+  },
+  {
+   "util": 27,
+   "temp_c": 64,
+   "mhz": 630,
+   "mhz_max": 2100,
+   "watts": 13.7,
+   "bride": false,
+   "charge_s": 3283.8,
+   "quand": 1788617257.9
+  },
+  {
+   "util": 22,
+   "temp_c": 65,
+   "mhz": 772,
+   "mhz_max": 2100,
+   "watts": 14.8,
+   "bride": false,
+   "charge_s": 3298.8,
+   "quand": 1788617273.0
+  },
+  {
+   "util": 12,
+   "temp_c": 68,
+   "mhz": 1747,
+   "mhz_max": 2100,
+   "watts": 26.7,
+   "bride": false,
+   "charge_s": 3313.9,
+   "quand": 1788617288.1
+  },
+  {
+   "util": 98,
+   "temp_c": 71,
+   "mhz": 1372,
+   "mhz_max": 2100,
+   "watts": 27.9,
+   "bride": false,
+   "charge_s": 3329.0,
+   "quand": 1788617303.2
+  },
+  {
+   "util": 91,
+   "temp_c": 68,
+   "mhz": 1755,
+   "mhz_max": 2100,
+   "watts": 22.4,
+   "bride": false,
+   "charge_s": 3344.1,
+   "quand": 1788617318.3
+  },
+  {
+   "util": 40,
+   "temp_c": 65,
+   "mhz": 742,
+   "mhz_max": 2100,
+   "watts": 14.7,
+   "bride": false,
+   "charge_s": 3359.2,
+   "quand": 1788617333.4
+  },
+  {
+   "util": 0,
+   "temp_c": 62,
+   "mhz": 472,
+   "mhz_max": 2100,
+   "watts": 12.4,
+   "bride": false,
+   "charge_s": 3374.2,
+   "quand": 1788617348.4
+  },
+  {
+   "util": 90,
+   "temp_c": 68,
+   "mhz": 1755,
+   "mhz_max": 2100,
+   "watts": 30.3,
+   "bride": false,
+   "charge_s": 3389.3,
+   "quand": 1788617363.5
+  },
+  {
+   "util": 0,
+   "temp_c": 63,
+   "mhz": 577,
+   "mhz_max": 2100,
+   "watts": 12.9,
+   "bride": false,
+   "charge_s": 3404.4,
+   "quand": 1788617378.6
+  },
+  {
+   "util": 36,
+   "temp_c": 64,
+   "mhz": 637,
+   "mhz_max": 2100,
+   "watts": 14.2,
+   "bride": false,
+   "charge_s": 3419.5,
+   "quand": 1788617393.7
+  },
+  {
+   "util": 23,
+   "temp_c": 68,
+   "mhz": 1755,
+   "mhz_max": 2100,
+   "watts": 26.6,
+   "bride": false,
+   "charge_s": 3434.6,
+   "quand": 1788617408.8
+  }
+ ]
+}

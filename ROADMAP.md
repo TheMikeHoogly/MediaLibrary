@@ -473,11 +473,28 @@ Ordre initial (rien n'était encore codé au moment de l'écrire) :
    est DIFFÉRÉ — `_assertions_pour` lit les noms du XMP, pas de `FACE_STORE` :
    détecter met la photo en état d'être nommée, ce qui profitera au passage
    SUIVANT, pas à celui-ci.
-5. Test d'endurance thermique sur une fenêtre longue (heures, pas minutes)
-   avant la bascule finale.
-6. `retag_actif.txt` posé → la campagne démarre, observée (`/sante`, boucle
-   thermique, spot-checks < 10 photos de temps en temps sur le format ET les
-   hallucinations type « lgbtq »).
+5. **FAIT (05/09), et le verdict est OUI.** `mesure_endurance_thermique.py`
+   (banc neuf) rejoue le tagage de PRODUCTION et jette la réponse : il ne
+   produit que de la chaleur. **8 tranches, 371 photos, 3 415 s (0,95 h) de
+   charge : max 75 °C, médiane 67 °C, `clocks_throttle_reasons` JAMAIS actif
+   sur 237 relevés, débit plat (×1,02 du premier au dernier quart).** Rapport
+   cumulé : `docs/endurance_thermique.json`. **Le chiffre qui change le plan :
+   8,9 s/photo en médiane sur 371 photos tirées au hasard**, contre les 11,3 s
+   des 8 photos difficiles — le fonds (44 135 entrées) se re-tague en **~4,5
+   jours**. Deux limites dites : ~85 % de service (tranches de 450 s séparées
+   d'une pause, plafond du canal) alors que la campagne tournera à 100 %, et
+   une heure n'est pas cinq jours. Le garde des cinq jours reste
+   `thermique_loop`, qui écrit au journal dès 85 °C ou au premier aveu.
+6. **Le seul pas qui reste, et il est à Mike** : poser `retag_actif.txt`
+   (vide = la version courante) → la campagne démarre, observée
+   (`/api/maint/status` → `config.retag`, boucle thermique au journal,
+   spot-checks < 10 photos de temps en temps sur le FORMAT et sur les
+   hallucinations type « lgbtq »). **Ce qui est irréversible et doit être dit
+   avant la première photo** : le retag RÉÉCRIT le XMP en français seul — les
+   mots-clés anglais des fichiers sont perdus, il n'y a pas d'annulation. C'est
+   la décision « FR seul » assumée, et le dictionnaire gelé garde la traduction
+   ; mais ça se dit avant, pas après. Retirer le fichier arrête la campagne au
+   lot suivant, et rien n'est perdu : la progression vit dans le `pipe`.
 
 **Pendant la campagne, ce qui reste sûr à faire avancer** (aucune contention
 GPU) : 1 bis (`.btn` canonique), l'étape 7 du chantier 17 (onboarding), le
