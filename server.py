@@ -347,8 +347,22 @@ PROMPT = (
 
 PIL_OK = False
 try:
-    from PIL import Image, ImageOps
+    from PIL import Image, ImageOps, ImageFile
     PIL_OK = True
+    # Les images TRONQUÉES sont décodées jusqu'où elles vont (tranché par Mike,
+    # 06/09). Mesuré la veille (`verifier_images_illisibles.py`) : 39 photos de
+    # l'index sont de VRAIES photos — 2560×1920, 3072×2304 — auxquelles il ne
+    # manque que le marqueur de fin, séquelle de la récupération du disque de
+    # Mike. Sans ce réglage, Pillow refuse le fichier ENTIER pour une fin
+    # absente : 39 photos invisibles, jamais taguées, pour quelques octets
+    # manquants au bout. Avec, on obtient l'image jusqu'à la coupure — le bas
+    # peut être gris, et c'est infiniment mieux que rien.
+    # Ce que ça NE fait pas : inventer des pixels, ni masquer une vraie
+    # corruption — un fichier sans début reste illisible et garde sa classe
+    # `perdu-*`. Le seul risque assumé est qu'une troncature passe désormais
+    # inaperçue au lieu de lever ; c'est pour ça que la classe `tronquee`
+    # existe et qu'elle est écrite dans l'entrée.
+    ImageFile.LOAD_TRUNCATED_IMAGES = True
     try:
         import pillow_heif
         pillow_heif.register_heif_opener()
@@ -2380,6 +2394,13 @@ def classer_echecs():
     a_faire = [k for k, e in list(STORE.data.items())
                if isinstance(e, dict) and e.get('failed') and not e.get('classe')]
     if not a_faire:
+        # Plus rien à classer ne veut pas dire plus rien à faire : la passe des
+        # tronquées, elle, a son propre jeton. Elle était en aval du `return`
+        # et n'a donc jamais tourné au premier essai (06/09) — un `return`
+        # anticipé qui emporte le travail SUIVANT est le genre de bug qu'aucun
+        # test structurel ne voit et que seule l'absence de la ligne au journal
+        # a révélé.
+        retenter_tronquees()
         return
     print(f"  🔎 Classement des {len(a_faire)} échec(s) sans classe…")
     comptes, n = {}, 0
@@ -2400,6 +2421,46 @@ def classer_echecs():
     detail = ", ".join(f"{c} : {v}" for c, v in
                        sorted(comptes.items(), key=lambda x: -x[1]))
     print(f"  🔎 {n} échec(s) classé(s) — {detail}")
+    retenter_tronquees()
+
+
+TRONQUEES_JETON = SCRIPT_DIR / "_tronquees_retentees.txt"
+
+
+def retenter_tronquees():
+    """UNE fois : redonne leur chance aux images tronquées, maintenant que
+    Pillow accepte de les décoder (`LOAD_TRUNCATED_IMAGES`, 06/09).
+
+    Elles portent `failed`, donc ni le tagueur ni la campagne ne les
+    reprendraient jamais : le réglage seul ne les aurait pas sauvées. Elles sont
+    donc remises en file par le chemin du retag, qui est le seul à passer outre
+    `STORE.has`.
+
+    UNE SEULE FOIS, et le garde est un JETON SUR DISQUE, pas un champ de
+    l'entrée : en cas d'échec, l'entrée est réécrite de zéro et un champ y
+    aurait disparu — la photo serait retentée à chaque démarrage, pour
+    l'éternité. Retirer le jeton relance la passe, ce qui est exactement ce
+    qu'on veut le jour où le décodage changera encore."""
+    import tagging_meta as _tm
+    if TRONQUEES_JETON.exists():
+        return
+    cles = [k for k, e in list(STORE.data.items())
+            if isinstance(e, dict) and e.get('failed')
+            and e.get('classe') == 'tronquee']
+    try:
+        TRONQUEES_JETON.write_text(
+            f"{time.strftime('%Y-%m-%d %H:%M:%S')} — {len(cles)} image(s) "
+            f"tronquée(s) remises en file après LOAD_TRUNCATED_IMAGES.\n"
+            f"Retirer ce fichier relance la passe.\n", encoding='utf-8')
+    except OSError as e:
+        print(f"  ⚠ jeton des tronquées non écrit ({e}) — passe ANNULÉE pour "
+              f"ne pas risquer de la rejouer sans fin")
+        return
+    if not cles:
+        return
+    n = sum(1 for k in cles if enqueue_retag(k))
+    print(f"  ♻ {n} image(s) tronquée(s) remise(s) en file : Pillow sait "
+          f"maintenant les décoder jusqu'à la coupure")
 
 
 def _classe_fichier(path):

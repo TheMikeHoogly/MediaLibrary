@@ -336,3 +336,6 @@ _corbeille_deplacements/
 # journal ecrit par un TEST s'est retrouve committe. Une quarantaine est un
 # etat de machine : jamais versionnee.
 _corbeille_*/
+
+# Jeton de passe unique : les tronquees ont ete remises en file (06/09).
+_tronquees_retentees.txt
