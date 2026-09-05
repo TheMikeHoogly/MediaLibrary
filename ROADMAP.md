@@ -242,6 +242,121 @@ Observé : densité 96 → 86 → 210 px sur la planche, Échap ferme, cible 44 
 `--encre` a été retiré du « Se déconnecter » — mesuré à 3,50:1 sur
 `--salle-2`, sous le plancher AA, et se déconnecter ne détruit rien.
 
+**2 quater. RE-TAGGER en FR seul, modèle qwen3.5:4b — DÉCIDÉ (05/09), plan avant lancement.**
+Suite du 2 bis : Mike tranche deux choses le 05/09 — (i) plus de bilingue
+FR/EN, FR seul pour l'avenir (le retag devient donc inévitable pour TOUT le
+fonds, pas seulement les 22 196 « v0 » du 2 bis) ; (ii) « meilleur, pas
+plus gros » — chercher un modèle qui batte `qwen3-vl:4b` sans dépasser
+son gabarit, plutôt que d'accepter la lenteur mesurée le 04/09.
+
+**Le modèle — qwen3.5:4b, sur 8 photos (mêmes que le 2 bis), sans dépasser
+le budget VRAM.** `qwen3.5:2b`/`qwen3.5:4b` tirés (déjà en local pour zéro
+coût, `diagnostic_tirer_modele.py`), comparés à `qwen3-vl:2b`/`qwen3-vl:4b`
+par `mesure_modele_vision.py` (`--sortie` ajouté pour ne pas écraser une
+comparaison précédente). Résultat : `qwen3.5:4b` (4,7B, Q4_K_M, 3,4 Go —
+MÊME gabarit que `qwen3-vl:4b`) corrige le chat calico (« tricolore »/
+« calico », plus « tigré ») et le lac confondu avec l'océan, ne répète
+pas la fuite de noms Inti/Luna — et tourne à **11,3 s/photo en régime
+établi contre 35,2 s pour `qwen3-vl:4b`, soit ~3× plus vite, pour une
+vitesse quasi identique à `qwen3-vl:2b` actuellement en prod (11,2 s/photo)**.
+Un défaut trouvé, à surveiller : une hallucination isolée (« lgbtq » sur
+une photo de QR code, aucun rapport). `qwen3.5:2b` est écarté tel quel :
+plus rapide encore (3,6 s/photo) mais casse le format demandé (parfois UNE
+phrase entière au lieu de 6-10 mots-clés courts — romprait l'affichage des
+puces).
+
+**Le chiffre à corriger : le « 9+ jours » annoncé le 04/09 mélangeait
+deux mesures.** Sur les mêmes 8 photos, dans les mêmes conditions :
+`qwen3-vl:4b` ≈ 16 jours pour re-tagger les ~39 783 entrées déjà taguées
+(FR seul rend tout le fonds candidat, pas les 22 196 « v0 » seules) ;
+`qwen3.5:4b` ≈ **5 jours**, comparable au débit actuel de `qwen3-vl:2b`.
+**Attention** : ces 8 photos sont les cas difficiles du 04/09, pas un
+tirage aléatoire — le débit réel en production sera vraisemblablement
+meilleur ; le chiffre solide est le ratio (~3×), pas le nombre de jours
+absolu.
+
+**Ce qui bloque un lancement immédiat, trouvé en lisant `server.py` (pas
+supposé) :**
+
+(a) **Aucun mécanisme de retag en masse n'existe — par construction, et
+c'est voulu** (commentaire à la ligne de `TAGGING_PIPELINE_VERSION` :
+« PAS de re-tagging automatique au bump ... c'est une décision explicite
+(ROADMAP) »). `tagger_worker` saute toute clé où `STORE.has(name)` est
+vrai, quel que soit son `pipe`. **Mais la mécanique existe déjà pour un cas
+voisin** : le scan approfondi (`_sync_dir`, bloc « fichiers modifiés »)
+retire déjà une entrée du `STORE` et la remet dans `TAG_QUEUE` quand le
+fichier a changé — le même geste (`STORE.remove_many` + `enqueue`),
+simplement déclenché par le `pipe` au lieu du `mtime`, donne un retag de
+masse SANS nouvelle politique GPU (invariant `monolith-surgery` n° 4
+respecté) ni nouvelle file. **Piste concrète, pas encore codée** : un fichier
+bascule `retag_actif.txt` (même idée que `modele.txt`, lu par le scan, absent
+= comportement actuel inchangé) portant la version cible ; tant qu'il est
+présent, le scan approfondi enfile aussi les entrées dont le `pipe` ≠ cible.
+**Ça répond DIRECTEMENT à la demande de Mike de continuer à faire évoluer le
+projet pendant la campagne** : la progression vit dans `STORE` (durable, sur
+disque), pas dans `TAG_QUEUE` (mémoire, perdue à un redémarrage) — un
+redémarrage pour livrer un AUTRE changement (le geste `git_agent` l'exige
+déjà pour tout `server.py` modifié) redécouvre tout seul, au prochain scan,
+ce qui reste à re-tagger. Rien à écrire de spécial dans le protocole de
+livraison : `STORE.set` n'écrit qu'APRÈS la réponse d'Ollama, donc une photo
+interrompue en cours de génération repart proprement au tour suivant (aucune
+écriture partielle, invariant n° 2).
+
+(b) **Le conflit trouvé, à trancher avant de lancer :** Ollama (le tagage)
+est « hors bail » — priorité absolue de fait sur le GPU, contrat
+historique délibéré, à NE PAS toucher (invariant n° 4 : pas de 5ᵉ politique
+GPU). Une campagne de plusieurs jours en continu va donc AFFAMER
+`visages`/`animaux`/`semantique` (l'arbitre à tour de rôle pondéré ne peut
+leur donner un tour que si de la VRAM se libère, et un modèle de 3,4 Go sur
+4 Go n'en laisse quasiment pas). **Ça contredit directement la demande n° 2
+de Mike** (visages + GPS AVANT le tagage, pour nourrir son contexte) SI le
+rattrapage devait se faire EN DIRECT pendant la campagne — il ne pourra pas.
+**Compromis proposé, dans l'esprit mesuré du projet** : une PASSE
+PRÉALABLE, bornée et chiffrée par un banc (`comptes_` ou `mesure_`), qui
+laisse `visages`/`animaux`/le rattrapage GPS tourner à plein AVANT de
+basculer `retag_actif.txt` — pas pendant. Combien de temps cette passe
+doit-elle durer ? À chiffrer (combien de photos candidates au retag
+manquent encore de visages/GPS résolus) avant de fixer une date de
+lancement.
+
+(c) **Deux gardes-fous opérationnels, pas encore vérifiés :** l'endurance
+thermique n'a été mesurée que par rafales de ~450 s (chantier
+confidentialité, 04/09) — jamais sur plusieurs jours en continu ;
+`mesure_thermique.py` (chantier clos, sessions 57-63) doit tourner et
+alerter PENDANT toute la campagne, à confirmer actif avant de lancer. Et
+pendant la campagne, ne PAS lancer de banc `mesure_`/`eval_` qui appelle
+Ollama avec un AUTRE modèle en parallèle (un second modèle chargé ferait
+swapper le premier sur une carte à 4 Go presque pleine, ralentissant les
+deux).
+
+**Ordre d'implémentation proposé (rien de tout ça n'est encore codé) :**
+1. `tagging_meta.py` : FR seul (retirer `keywords_en` du schéma JSON), +
+   consigne anti-répétition explicite.
+2. `server.py` : `MODEL` bascule vers `qwen3.5:4b` **via `modele.txt`**, pas
+   une ligne de code — aucun redémarrage-preuve requis par `git_agent`
+   puisque ce fichier n'est pas dans le graphe d'import. `TAGGING_PIPELINE_VERSION`
+   bumpée en même temps que le prompt (ex. `"qwen3.5:4b|v3fr|kb1"`) —
+   bumper seul ne déclenche rien (voir (a)), donc sans risque avant le reste.
+3. `server.py` : le levier `retag_actif.txt` + le bloc de scan pipe-aware
+   (point a), livré et testé, mais **PAS activé** (fichier absent = rien ne
+   bouge).
+4. Un banc chiffre le retard visages/animaux/GPS sur les candidats au retag
+   → décide la durée de la passe préalable (point b).
+5. La passe préalable tourne, mesurée.
+6. Test d'endurance thermique sur une fenêtre longue (heures, pas minutes)
+   avant la bascule finale.
+7. `retag_actif.txt` posé → la campagne démarre, observée (`/sante`, boucle
+   thermique, spot-checks < 10 photos de temps en temps sur le format ET les
+   hallucinations type « lgbtq »).
+
+**Pendant la campagne, ce qui reste sûr à faire avancer** (aucune contention
+GPU) : 1 bis (`.btn` canonique), l'étape 7 du chantier 17 (onboarding), le
+reste de l'audit (point 5), toute doc/UI/CSS. **À éviter ou reporter** : la
+phase 2 vidéo (1 octies, tagging d'images-clés — même GPU, même file), tout
+nouveau banc `mesure_`/`eval_` GPU, tout chantier qui bumperait une AUTRE
+version de pipeline pendant que celui-ci tourne (confusion de diagnostic si
+les deux migrent en même temps).
+
 **3. La suite du chantier 17 (multi-utilisateurs) — PRESQUE FINI.** Étapes 1
 à 6 sur 7 POSÉES ET OBSERVÉES (sessions 65-66) : propriétaire + attribution
 rétroactive, vue filtrée par utilisateur, comptes, écriture restreinte,
@@ -318,891 +433,30 @@ finition, à faire au fil de l'eau.
 **Le Takeout Google : CLOS** (27→29/08) — les 3 776 absentes sont rapatriées,
 ABSENT = 0, les paires indéterminées tranchées (`eval/DECISIONS.md`).
 
-## Ce qu'il faut garder des sessions 57 → 63 (le récit vit dans git)
-
-- **Le GPU se surveille lui-même** (63) : `mesure_thermique.py` +
-  `thermique_loop` journalisent temp/horloges/watts/bridage toutes les
-  10 min, et à chaque relevé anormal ou bascule. A expliqué la coupure
-  nette du 29/08 (`Kernel-Power 41`, pas une MAJ Windows) : le signal était
-  ENTRE les sessions (tagging 2à 3 fois plus lent juste avant), pas dedans
-  — mauvaise échelle, mauvaise conclusion au premier essai. Piège NVML :
-  `power.limit` et `temperature.memory` rendent `[N/A]` sur cette RTX 3050,
-  et un seul champ refusé fait échouer TOUTE la requête groupée. 9 tests.
-- **Second cas Google rapatrié, dossier rangé** (62) : `copier_absentes.py
-  --verdict`/`--nas-plus-petit-de` (100 fichiers, 1,26 Go, bat 33) ; un test a
-  trouvé que le seuil de taille s'appliquait à tort aux ABSENTES (les aurait
-  fait disparaître en silence). 8 corbeilles et 53 journaux (43 Mo)
-  déplacés en `_to_delete/`, filets de sécurité actifs gardés.
-  `QUESTIONS_MIKE.md` 15 000 → 3 500 octets. Œil posé sur `/files?dir=` et
-  la bande « même jour » : zéro `.fchip` restant dans le DOM rendu.
-- **Les vingt fils ont un filet** (61) : un fil mort SE RELANCE (attente
-  doublante), cinq morts CONSÉCUTIVES alertent, `/sante` affiche les fils
-  avant les fichiers. 20 fils classés par AST (15 bouclent, 5 rendent
-  légitimement — les relancer leur ferait refaire leur travail sans le
-  savoir). `.fchip` remplacé par `.btn btn--nav` / `.fetiquette`. Google
-  reconfirmé après rapatriement : 0 ABSENT sur 13 905 médias ; ~106
-  fichiers (photos + 10 vidéos) où le NAS est nettement PLUS PETIT que
-  Google restent à rapatrier avant tout effacement chez Google. 10 tests.
-- **Le tagueur mourait en notant sa propre mort** (60) : `database is
-  locked` en journalisant son échec — un rattrapage ne dépend jamais de la
-  ressource qui vient de tomber. Corrigé ; le superviseur de fils (61) en
-  est la suite.
-- **La visionneuse débordait sur téléphone** (59) : une iframe de 390 px
-  a permis de VOIR le rendu mobile réel (le zoom du navigateur masquait le
-  défaut au redimensionnement de fenêtre). `#lb-bar` en `nowrap` faisait
-  sortir « Fermer » entièrement de l'écran, sans défilement pour
-  l'atteindre. Corrigé par deux déclarations (`flex-wrap`/`nowrap`), 0
-  restart nécessaire. La piste « trailer Samsung corrompu par notre écriture
-  XMP » a été MESURÉE sur échantillon (3 000/72 584, hors plafond du banc
-  sur le fonds entier) : les intervalles de confiance se recouvrent, rien
-  n'accuse notre écriture.
-- **Les boutons de `gallery` : CLOS** (58) — cinq familles maison au `.btn`
-  canonique, verdicts dans `eval/DECISIONS.md` (Interface).
-- **Le rangement par année décrochait encore des décisions** (57) :
-  `appliquer_plan.rekey_stores` prétendait miroiter `rekey_everywhere` mais
-  ratait `people`/`pets` (keyés par NOM, pas par chemin) — **928 décisions
-  sur 3 364** décrochaient en silence sur 804 clés. Corrigé
-  (`recle_decisions.recler_fiche`, branché dans `server.py` depuis le 22/08
-  mais nulle part ailleurs), et l'applicateur PROUVE désormais par DEUX voies
-  que le serveur est arrêté (WAL + `GET /api/serveur`) avant d'écrire.
-  Observé en réel le soir même : 27 décisions re-clées sur le lot rangé.
-  18 tests.
-
-## Ce qu'il faut garder des sessions 54 → 56 (le récit vit dans git)
-
-- **Le rapatriement Google est OUTILLÉ** (56) : `copier_absentes.py` +
-  `32 - Copier les absentes de Google.bat`. Rien n'est jamais écrasé, la cible
-  doit être sous `_A TRIER`, chaque copie est RELUE, journal d'annulation dans
-  `_corbeille_copies/`.
-- **Le soupçon sur le trailer Samsung a eu son banc** (56) —
-  `verifier_trailer_samsung.py`, qui refuse de conclure quand rien n'a été
-  nommé plutôt que de rendre vert. Verdict tombé le 27/08 : **rien n'accuse
-  notre écriture XMP**.
-
-## État (27/08/2026, session 54) — 3 776 PHOTOS N'EXISTENT QUE CHEZ GOOGLE
-
-**L'export est ouvert, prouvé, et confronté au NAS.** 45 lots, 89,2 Go,
-**25 864 fichiers** — `verifier_takeout_ouvert.py` : **0 absent, 0 tronqué,
-0 refusé**, aucun trou dans la numérotation. Le bat de Mike et le banc
-arrivent au même compte par les deux bouts.
-
-`verifier_photos_google.py` sur **13 905 médias** de l'export :
-
-| verdict | n | quoi |
-|---|---|---|
-| CERTAIN | 1 112 | 44,0 Go — et **1 087 sont des `.mp4`** |
-| PROBABLE | 9 017 | même nom, taille différente — **8 996 `.jpg`** |
-| AMBIGU | 0 | |
-| **ABSENT** | **3 776** | **12,6 Go, dont 2 017 vidéos** |
-
-### Ce que la mesure a renversé
-
-La documentation de l'instrument posait que PROBABLE = « Google a
-probablement ré-encodé en mode économiseur de stockage ». **C'est faux, et
-d'un facteur qui saute aux yeux** : le NAS est plus gros **8 741 fois sur
-9 017**, ratio médian **1,001** — quelques kilo-octets, toujours du même
-côté, et **uniquement sur les JPEG** ; les vidéos tombent exactes au bit près.
-Or ce projet écrit ses noms dans les **XMP des fichiers**, à l'exiftool, et
-seulement dans les images.
-
-`verifier_google_pixels.py` (neuf) transforme l'hypothèse en compte. Il
-compare ce qui fait l'IMAGE — tables de quantification, tables de Huffman,
-cadre, en-tête de balayage, longueur du flux compressé — en SAUTANT les
-segments `APPn`/`COM`, là où vivent EXIF, XMP et IPTC. Sur les 9 017 :
-
-| | n |
-|---|---|
-| **MÊME IMAGE** (écart médian **+4,2 Ko**, de la métadonnée) | **8 802** |
-| même image, mais un TRAILER d'un seul côté | 99 |
-| flux non départageable par la voie rapide | 74 |
-| image vraiment différente (ré-encodage) | 21 |
-| hors portée (`.gif`, `.mp4`, `.png` — pas un JPEG des deux côtés) | 21 |
-
-### L'instrument s'est trompé une fois, et le chiffre l'a dit
-
-Première version : **173 paires en « flux différent »** — j'ai écrit dans ce
-fichier qu'il s'agissait probablement de deux photos DIFFÉRENTES de même nom.
-Le chiffre disait le contraire et je ne l'avais pas écouté : l'écart était
-**toujours du même signe** (le NAS plus court, médiane −2 046). Contrôle
-direct sur les 173 : **toutes portent, côté Google, des octets APRÈS le
-`EOI`** — médiane 2 046, exactement l'écart. L'instrument rangeait le TRAILER
-dans l'image. Corrigé : le trailer est mesuré à part, et 99 des 173 sont la
-même image. Les 74 restantes ont un trailer qui contient lui-même un `FF D9`
-(médiane 52 Ko au-delà) : la recherche à reculons y tombe, le verdict sort
-ROUGE — **l'erreur possible va du côté prudent, et c'est écrit dans le code.**
-
-**Portée déclarée** : la preuve comparée est la LONGUEUR du flux, pas ses
-octets. `--octets` les hache — ~32 Go à lire côté NAS, trois ou quatre
-tranches de banc. À faire AVANT d'effacer 75 Go chez un tiers, pas après.
-
-### Ce qui se déduit, et ce qui ne se déduit pas
-
-**Se déduit** : le NAS couvre **9 914 des 13 905** médias de l'export
-(1 112 CERTAIN + 8 802 même image). **Ne se déduit pas** : que le reste soit
-négligeable — 3 776 ABSENTES, 99 dont le NAS a perdu le trailer (une « photo
-animée » vit là), 95 indéterminées, 21 vraiment différentes. Toutes listées
-NOMMÉMENT dans `_google.json` et `_pix_reprise.json`.
-
-**Le geste qui suit n'appartient pas à un instrument** : copier les ABSENTES
-sur le NAS. Rien ne s'efface chez Google avant, et le rapport le dit lui-même
-(code de sortie 1, « NE RIEN EFFACER »).
-
-## Ce qu'il faut garder des sessions 50 → 53 (le récit vit dans git)
-
-- **Un filtre qui ment ne ment plus (53).** Un jeton `<axe>:<valeur>`
-  insatisfaisable rend RIEN et le DIT, sur les cinq axes ; la barre comprend ce
-  que les pastilles écrivent. Contrôle NÉGATIF outillé :
-  `verifier_filtre_negatif.py`, 15 contrôles, deux canaux. **Le banc a payé son
-  écriture à sa première exécution.**
-- **Le Takeout a de quoi s'ouvrir (53 bis).** `dezipper_takeout.py` +
-  `31 - Dezipper le Takeout Google.bat`.
-- **Le déplacement `Photos Mike` est FAIT et VÉRIFIÉ (51–52).** Contrôle par
-  comparaison de la base d'AVANT et d'APRÈS, pas par relecture du code. Le
-  défaut trouvé au passage aurait coûté **983 décisions humaines** :
-  `deplacer_dossiers` re-cléait des magasins keyés par NOM, où
-  `store.rekey(chemin)` ne trouve jamais rien. Même faute retrouvée dans
-  `appliquer_plan` cinq jours plus tard (session 57) — d'où le point 4 :
-  **UNIFIER le re-clé**, la primitive existe TROIS fois.
-- **Caline, et le filtre qui n'en était pas un (50).** Deux noms posés par Mike
-  ont fait tomber les groupes d'animaux de **189 à 99** et les apparitions non
-  nommées à **442** : ce n'est plus un chantier, c'est une finition au fil de
-  l'eau. Et ma propre erreur ce jour-là : une requête maison contre
-  l'instrument du projet — **mesurer avec l'instrument du PROJET**, trois fois
-  vérifié le 26/08.
-
-## Ce qu'il faut garder des sessions 47 → 49 (le récit vit dans git)
-
-- **Le plancher tactile était un VŒU, il a un instrument.** `verifier_cibles.py`
-  (65 tests, huit rouges observés gravés) lit le HTML statique, les chaînes JS
-  **et** ce que `document.createElement` bâtit — **31 cibles lui étaient
-  invisibles**. Verdict : **221 cibles, 0 manquement prouvé**, 66 dont la
-  hauteur n'est pas déclarée. Ne pas voir une cible ne la rend pas conforme :
-  ça retire seulement le dénominateur.
-- **Un contrôle qui n'en était pas un (47).** Deux instruments lisaient les
-  `<button>` cités dans les COMMENTAIRES d'un `<style>` comme des éléments
-  réels. Un commentaire est de la prose, CSS compris — règle de lecture unique
-  et partagée : `verifier_controles.sans_le_css`. L'exception est une
-  DÉCLARATION (`/* cible: hors-portee -- … */`), qui se lit AVANT le retrait et
-  se ferme sur `*/`, pas sur la fin de ligne.
-- **Le chip est FINI (49).** `.chip` vit dans `components.css` seul, `font:`
-  compris ; `.pchip` supprimé ; **7 pages sur 11** reçoivent la feuille
-  commune. La cascade a QUATRE étages, et c'est la moitié de toute preuve CSS :
-  `components.css` (au marqueur) → la page → `tokens.css` → `base.css` (à
-  `</head>`, il gagne les égalités). Une feuille qui ne change pas doit figurer
-  **des deux côtés** de `--avant`/`--apres`.
-- **Changer une BALISE change son style par défaut** : `<span>` → `<button>`
-  change police, alignement et surtout `display` — ce qui **réveille** un
-  `min-height` qui dormait. Un `<button>` n'admet que du contenu de PHRASE ;
-  sinon `tabindex` + `role` + `keydown` Entrée **et** Espace avec
-  `preventDefault` — les trois.
-- **Un verdict tiré à pile ou face est pire qu'un aveu d'ignorance.** « La
-  dernière règle écrite gagne » n'est vrai que **si les deux s'appliquent** ; et
-  une règle non prouvable AFFIRMÉE disait « trop petit » là où il fallait lire
-  « pas de plancher ». Ce qui doit s'accorder, c'est le VERDICT, pas la valeur :
-  `44px` et `var(--touch)` sont la même hauteur.
-
-## Ce qu'il faut garder de la session 46 (le récit vit dans git)
-
-- **Le CSS commun ne valait pas le chantier, et c'est sa PREUVE qui l'a tué** :
-  200 déclarations hissables sur 1 754, dont 171 partagées par deux pages
-  seulement — **6,2 Ko sur 67**. Ne pas reproposer l'extraction.
-- **Le vrai sujet était la DIVERGENCE** : `.btn` ne voulait pas dire la même
-  chose selon la page. `components.css` existe pour ça, en **opt-in** page par
-  page (`<!--UI:components-->`, placé AVANT le `<style>` de la page pour
-  qu'elle garde le dernier mot). **6 pages sur 11 ont adopté ; le `.btn` est
-  FINI** — les cinq restantes n'en ont pas. Trois l'écrivaient sous d'autres
-  noms (`.prim`/`.warn`, `.primary`/`.danger`).
-- **Les trois universelles** (`body{background|color|font-family}`) vivent dans
-  `base.css` seul — elles étaient trois, pas six : le reset `*` ne vit que dans
-  NEUF pages, et neuf sur onze ne se hisse pas sans preuve page par page.
-- **L'ordre de la cascade a QUATRE étages** : `components.css` → la page →
-  `tokens.css` → `base.css`. `--apres` prend la feuille commune EN PREMIER,
-  sinon elle gagne une cascade qu'elle ne gagne pas en vrai.
-- **Le plancher AA est devenu une mesure** : trois échecs trouvés au premier
-  lancement, `--fixateur` assombri `#4A8C7B` → `#448172`, destructif passé au
-  plein (5,34:1 sans toucher au token). `--salle-4`, `--fixateur-p`,
-  `--encre-p`, l'état pressé hors du garde `hover` et `.hors-ecran` sont
-  canoniques (approuvés par Mike).
-- **Niveau A, déjà corrigé le 25/08** : les deux `<input type="file">` de `/`
-  étaient en `display:none` derrière des `<label for>`.
-- **Le chantier XMP est clos** : 0 écart sur 1 614 couples (Wilson 0,0–0,2 %).
-
-## État (25/08/2026, session 46) — libérer Google sans rien perdre : CLOS
-
-Le banc `verifier_photos_google.py` (quatre verdicts, un seul ABSENT interdit
-tout) a fait son office : les 3 776 absentes sont rapatriées, ABSENT = 0, les
-paires indéterminées sont tranchées (`eval/DECISIONS.md`, 29/08). Le récit
-du banc vit dans git et dans `docs/`.
-
-## État (25/08/2026, session 45 quater) — la copie hors site est SPÉCIFIÉE
-
-**Le point 12 bis n'attend plus qu'un geste.** Tout ce qui manquait est mesuré
-ou vérifié :
-
-| | |
-|---|---|
-| à sauvegarder | **290,9 Go** (109 photos + 180 vidéo) + ~300 Mo de décisions |
-| source | NAS **Synology DS224+**, DSM 7.3.2 (7.4.1 en attente) |
-| cible | **Infomaniak Swiss Backup**, Hyper Backup/Swift, ~**CHF 6 TTC/mois** pour 1 To, données en Suisse ×3 |
-| ligne, mesurée | **22,4 / 13,8 Mbit/s** — premier envoi **~50 h** |
-| ligne, CAPACITÉ à l'adresse | **425 / 100 Mbit/s** (fibre seulement entre déc. 2027 et mars 2028) |
-| ligne, offre à +CHF 1/mois | **100 Mbit/s** — premier envoi **~8 h**, une nuit |
-
-**Le débit décide, pas l'hébergeur.** La ligne peut déjà donner sept fois plus
-en montée que ce qu'elle donne : ce n'est pas une limite physique, c'est le
-plafond de l'abonnement. Un franc par mois achète un facteur 7 sur le seul
-chiffre qui rend cette sauvegarde faisable ou non.
-
-**Le débit n'est PAS un préalable.** À 13,8 Mbit/s le premier envoi tient en
-**~8 nuits** (photos ~3, vidéos ~5), avec une limite de débit pour ne pas
-étrangler la ligne ; ensuite les deltas quotidiens sont de quelques minutes.
-Passer à 100 Mbit/s ramène le premier envoi à une nuit — c'est du confort, pas
-une condition. **Ne pas attendre l'abonnement pour commencer la sauvegarde.**
-
-**Et un compte Google à 96 % — 3,8 Go de la panne.** `one.google.com` :
-**96,23 Go sur 100**, dont **Google Photos 75,03**, Gmail 12,82, Drive 1,13,
-divers 7,2. Quand le quota est plein, **Gmail cesse de RECEVOIR**. Deux
-conséquences : (1) résilier Google One est impossible en l'état — hors Photos
-le compte pèse déjà **21,2 Go**, contre 15 Go gratuits ; (2) les 75 Go de
-Google Photos sont un DOUBLON de ce que le NAS reçoit déjà par
-`_Uploads` — les libérer ramène le compte à ~21 % pour le même CHF 2/mois.
-Ordre impératif : vérifier que le NAS a bien les photos AVANT d'effacer quoi
-que ce soit chez Google (l'app Photos efface aussi du téléphone quand la
-synchro est active).
-
-## État (25/08/2026, session 45 ter)
-
-**La copie hors site a une cible, un prix et un obstacle chiffré.** NAS
-**Synology DS224+** → **Infomaniak Swiss Backup** par **Hyper Backup/Swift**,
-~**CHF 6 TTC/mois** pour 1 To (CHF 4,18/To + CHF 1,84/appareil, −10 % annuel),
-données en Suisse. L'obstacle n'est pas le prix : c'est le **lien montant
-mesuré à 13,8 Mbit/s** — 291 Go = **~50 h de ligne saturée** au premier envoi.
-L'offre du même opérateur à **+CHF 1/mois donne 100 Mbit/s symétriques** et
-ramène l'envoi à **~8 h**. Le débit, pas l'hébergeur, est ce qui décide de la
-faisabilité — et c'est le seul point où un franc par mois achète un facteur 7.
-
-## État (25/08/2026, session 45 bis)
-
-**Le fonds est MESURÉ, et la copie hors site cesse d'être une opinion.**
-`inventaire_fonds.py` (neuf, famille `inventaire_`, lecture seule, 14
-vérifications) : **76 947 fichiers, 290,9 Go** — **109 Go de photos** (73 079
-fichiers) et **180 Go de vidéos** (2 453 fichiers). **62 % du poids dans 3 %
-des fichiers.** Le tiers des décisions humaines pèse ~300 Mo.
-
-**Et la première version de l'instrument s'est fait tuer par le plafond du
-banc** : `os.walk` + `os.path.getsize` demande un aller-retour SMB PAR FICHIER
-pour une réponse que l'énumération du dossier portait déjà — plus de 600 s.
-`os.scandir` rend la même mesure en **193 s**. Sur un disque local la
-différence ne se verrait pas ; c'est le réseau qui la fait.
-
-## État (24/08/2026, session 45)
-
-Condensé le 29/08 — le récit vit dans git (commits du 24/08, session 45).
-
-
-## État (24/08/2026, session 44)
-
-Condensé le 29/08 — le récit vit dans git. À retenir : la réparation du fonds
-est FINIE (18 828 balayées, 3 128 réécrites, 0,2 % d'écart contre 18,7 %) ;
-un nom qui n'a pas atterri ne se note pas atterri ; un `_exiftool_tmp`
-fantôme bloque sa photo pour toujours — fuite chronique, comptée et dite.
-
-
-## Ce qu'il faut garder des sessions 36 → 43 (le récit vit dans git)
-
-Condensé le 26/08 : ces huit sessions sont CLOSES, leurs acquis vivent dans
-« Acquis », leurs rejets dans `eval/DECISIONS.md`, leur détail dans git. Ce
-qui reste utile à qui reprend :
-
-- **Le MCP en lecture seule est livré et observé** (23/08) — `mcp_serveur.py`,
-  sept outils, 48 vérifications, mesuré contre le serveur vivant. L'écriture
-  n'est pas faite et ne se fera pas sans décision.
-- **Le chantier XMP est clos** : 0 écart sur 1 614 couples. Les noms attribués
-  vivent dans les fichiers ; ils survivent à la base. C'est l'invariant 2.
-- **Flo → Florine et le groupe de Stéphane Plouvin sont appliqués et vérifiés
-  sur le DISQUE** (200/200 et 58/58).
-- **La répétition de restauration a réussi** (22/08) : six tables identiques,
-  363 noms des deux côtés, aucun écart de décision. Elle a trouvé au passage
-  trois défauts que rien d'autre n'aurait vus — dont un garde-fou qui testait
-  le NOM du fichier et refusait donc la base restaurée.
-- **Les rattachements, le résidu et le recalage sont clos et mesurés** : ne
-  pas rouvrir sans chiffre neuf.
-- **`ui/` : les onze gabarits sont sortis de `server.py`** (17 200 → 11 986
-  lignes), les onze pages identiques au caractère près.
-
-
-## Ce qu'il faut garder des sessions 28 → 35 (le récit vit dans git)
-
-**Rattachements (31 → 35).** `rekey_everywhere` ne transportait pas les
-décisions humaines : `PEOPLE`/`PETS` sont keyés par NOM, leurs chemins vivent
-DANS la fiche — chaque rangement décrochait des jugements en silence. Corrigé
-(préventif `recle_decisions.py`) puis réparé : **787 décisions re-clées sur 685
-clés**, et l'audit de quarantaine — **788 sorties, 734 appariées, 54 fusions, 0
-sans contrepartie** — est ce qui distingue « déplacé » de « perdu » ; un total
-ne l'aurait jamais dit. Vérité terrain : **3 310** décisions.
-Puis la CIBLE : `reembed_one_batch` remplace `e['faces']`, l'ordre change, le
-couple `[photo, index]` survit et désigne quelqu'un d'autre **de la même
-photo** — **42 décalés (3,5 %)**, 41 sur des photos re-détectées. Recalage
-appliqué : **33 sur 17 fiches**, décalés **→ 9 (0,8 %)**, 1 194 couples avant
-comme après. Résidu jugé par Mike : **2 retirés, 45 confirmés** (1 194 → 1 192).
-
-**Trois leçons de méthode, payées cher.** (1) *Un fichier n'est pas une scène* :
-une page d'album photographiée porte cinq tirages, un test géométrique la
-déclarait impossible et rendait 0,0 sur 15 cas sur 15. (2) *« Décalé » nomme un
-ÉCART DE SCORE, pas une identité fausse* — sur 13 couples scorant 0,06–0,295,
-Mike en a confirmé **12** : cette colonne mesure la cécité de l'empreinte.
-(3) *Un drapeau que tout le monde porte ne croise rien* (`reemb` rendait 100 %).
-
-**Seuils et jugements (33).** Tranche 0,35–0,40 : 30 jugements, **92,6 %**
-justes, **Wilson 76,6 %–97,9 %** → file « À vérifier », **jamais** l'auto-ajout ;
-`CUR_ADD_SIM` ne bouge pas. La planche de référence servait l'état d'AVANT le
-recalage (3 planches sur 30 périmées) — elle se relit désormais à l'affichage.
-Et le résidu est CONCENTRÉ : 43 cas sur **10 fiches**, Didier en portant 4 —
-**compter par FICHE, pas seulement sur le fonds**.
-
-**Purge et propagation (30).** La purge du 17/08 n'avait traité qu'un magasin
-sur deux (la cascade suit l'index, aveugle à une clé déjà oubliée) : `visages`
-**44 450 → 42 196**, hors index **2 374 → 120**, quarantaine réversible.
-Chantier 16(a) clos par la mesure : la propagation a convergé (14 rattachements
-auto, 33 photos).
-
-**Noms, espèce, outillage (28).** Le filtre des noms partage l'AUTORITÉ de
-l'affichage (`_autorite_des_noms`) : la fiche fait foi, un nom retiré ne sort
-plus d'une recherche. Portée du filtre : **92,74 %** des photos à fait non-date.
-`det_score` **ne dit pas l'espèce** — c'est la CONCORDANCE de deux regards
-(YOLO ∧ tagueur) qui fait le 5ᵉ axe. Trois canaux (serveur, git, bancs) et un
-seul `canal.py` ; livraison `commit` (branche) / `livrer` (fusion), et l'ordre
-qui en découle : éditer → redémarrer → **observer** → livrer.
-
-## À faire — par ordre de valeur
-
-0ter. **La file XMP : réparable (fait), durable (fait), rapide (à moitié).**
-   **(a)** `verifier_xmp_personnes.py` recompte depuis le disque ce qu'elle
-   doit, `appliquer_xmp_personnes.py` le refait. **Le vérificateur a tourné à
-   17:47, file à 0, et il n'y a RIEN à réparer** : sur 200 fichiers tirés à
-   graine fixe, **200 portent `personne:Florine`, 0 portent encore `Flo`, 0
-   manquent, 0 illisibles.** Le même échantillon donnait 19 et 119 à 10:37 :
-   la file a fait le travail en entier. `appliquer_xmp_personnes.py` reste donc
-   livré et JAMAIS passé en réel — faute d'emploi, et c'est la bonne nouvelle. **(b1)** Les deux gestes d'une photo en UNE invocation : **fait** (÷2).
-   **(b2)** Le journal qui la fait survivre à un arrêt : **fait**. **(b3)**
-   `-stay_open` : mesuré à **25 %** de mieux sur une écriture, pas 12× — un
-   processus qui vit longtemps et tient le NAS pour ce prix-là, **après le
-   reste**. (b1), (b2) touchent `server.py` : livrables après redémarrage.
-
-0. **Chantier des rattachements : CLOS (22/08).** Recalage appliqué (33, dont
-   29 vraies réparations), résidu jugé (28 cas), retrait appliqué (2). Couples
-   1 194 → 1 192, aucune décision perdue. Ce qui reste est mesuré et sain.
-   **Ne pas rouvrir sans chiffre neuf** — et surtout ne pas relire les 13
-   « faux positifs » comme des défauts : ils sont jugés JUSTES à 12 sur 13.
-   **`PETS` est mesuré à son tour (22/08) et son index est SAIN** : 0 hors
-   bornes, 2 vrais décalés sur 330. Le recalage n'y sera pas porté. Ce qui
-   **Les 21 couples « à trancher » sont TRANCHÉS (22/08, `--a-juger`) et ne
-   demandent aucun geste** : les 6 « espèce » sont justes 6 sur 6 (chats
-   étiquetés `dog` — H4 réfutée), les 15 clés mortes n'ont aucune contrepartie
-   (journaux, même nom, disque : 115 entrées ARZOPA, 0 présente) et sont
-   GARDÉES. Ce qui reste ouvert côté animaux : le plafond de l'empreinte
-   DINOv2 — 37 % des rattachements confirmés sous le seuil — et **l'étiquette
-   d'espèce de YOLO, fausse au moins 6 fois sur 351, jamais mesurée sur le
-   fonds entier**.
-
-0bis. **Le résidu « ambigu » : CLOS (22/08).** Instrument et page livrés,
-   15 cas jugés par Mike, **34 confirmés, 0 à retirer**. `mesure_rattachements.py --residu` écrit
-   **15 cas sur 9 fiches, 34 couples cités** — Didier 4 cas, Res Jordi 4, puis
-   Céline Gauchat, Flo, Jenny, Maryline Baudère, Rosario, Sylvie Chatelain,
-   Val. Le rapport NOMME ce qu'il écarte (autres motifs de refus : aucun
-   aujourd'hui). La page **`/residu`** (18 tests) montre les visages candidats
-   côte à côte avec la planche de référence — **planche VIVANTE, et la photo en
-   cause en est retirée** : le visage qu'on juge ne peut pas servir de référence
-   à son propre jugement. Elle **n'attribue rien et ne retire rien** ; un
-   verdict ne peut désigner qu'un visage MONTRÉ (refusé en 400 sinon). « Aucun
-   n'est X » est un verdict à part entière, et le bouton le DIT avant le clic.
-   Observé en réel (`code_a_jour` vrai) : 15 cas servis, planches vivantes,
-   bascule sans écriture (0 verdict écrit après sélection). Ensuite :
-   `--bilan-residu` sépare **à retirer** / **confirmé** / **à AJOUTER** (une
-   attribution, autre geste, hors plan de retrait), et le retrait revient dans
-   `/reglages`, geste de Mike. Et **`PETS` n'a jamais été mesuré** : son
-   magasin porte des empreintes DINOv2 et `assigned_keys` ne le lit pas.
-
-1. **Vérité terrain — PARQUÉE pour l'algo, mais 141 décisions sont EN DANGER
-   (21/08).** Sur les 2 374 clés que l'index a oubliées et que le magasin de
-   visages garde, **141 décisions humaines** (118 rattachements, 13 exclusions,
-   10 confirmations) réparties sur **120 clés** (Alix Baudère, Luna…). **L'ordre est imposé par la
-   règle 2** : d'abord un instrument qui, pour chacune, cherche si la photo vit
-   sous une AUTRE clé (les doublons `ARZOPA/x` ↔ `…\_Uploads\ARZOPA\x` le
-   suggèrent) et nomme celles qui n'ont pas de jumeau ; le report des noms et
-   la purge — quarantaine réversible, comme le 17/08 — viennent après. Choix de
-   Mike, 21/08. **Et la CAUSE reste à trouver** : pourquoi le scan retire une
-   clé de l'index sans retirer sa fiche de visages ? Purger sans le savoir
-   reconduit l'incident, comme le 17/08 l'a fait sans que ça se voie.
-   **Le correctif est LIVRÉ et OBSERVÉ (21/08)** : la purge de démarrage
-   cascade enfin, et un balayage retire au démarrage ce que `_sync_dir` ne peut
-   plus voir — sans jamais toucher une clé jugée par un humain, et seulement
-   quand l'index ne la reprendra jamais. **4 511 détections purgées** (quarantaine
-   réversible `_corbeille_detections/`), `visages` 44 450 → **42 196**, hors index
-   2 374 → **120** — exactement les protégées. Reste à faire : **reporter la
-   décision de Luna** (la seule qui se sauve) et décider du sort des 120.
-   **Le sauvetage a été REMESURÉ (22/08), et le compte du 21/08 était faux** :
-   « 13 jumeaux, une seule décision à reporter, 787 déjà perdues » venait d'une
-   recherche restreinte à 141 clés et à deux preuves faibles. En suivant les
-   **journaux d'annulation** (19 331 déplacements connus), **698** des **804**
-   clés mortes retrouvent leur photo et **748** décisions se re-clent (462
-   rattachements, 230 exclusions, 56 confirmations), 56 y sont déjà, **124**
-   sont perdues. La CAUSE est structurelle et corrigée : `rekey_everywhere` ne
-   transportait pas les décisions, `PEOPLE` et `PETS` étant keyés par NOM.
-   **Correctif préventif + réparation rétroactive LIVRÉS (22/08)** ; l'aperçu à
-   blanc annonçait 685 clés à re-clé. **LE SAUVETAGE A EU LIEU — vérifié le
-   26/08 sur le serveur vivant** : l'aperçu à blanc rend désormais
-   « **0 clé(s) à re-clé sur 119 orpheline(s) ; 119 sans destination connue,
-   0 hors bornes** ». Le clic qui manquait a donc été fait ; il ne reste que
-   les clés dont aucun journal ne dit où le fichier est parti — l'ordre de
-   grandeur des 124 annoncées perdues. **La doc annonçait une action en
-   attente qui ne l'était plus.**
-   La vérité terrain réelle est de **3 364** décisions (1 576
-   rattachements — 1 196 comptait des CLÉS —, 1 496 exclusions, 292
-   confirmations).
-   **Le reste du point est parqué, et son chiffre avait déjà été corrigé la
-   veille : deux mesures portaient le même nom.** Ce dont le PRODUIT a
-   besoin — « qui est sur cette photo » — est à **18 863 photos nommées**
-   (44,8 % du fonds vivant, 352 noms, Flo 5 919, Mike 5 566) : les gens qu'on
-   connaît sont couverts. Ce dont un ALGORITHME a besoin — « CE visage est
-   Flo » — est à **1 196 visages rattachés sur 71 868** (1,66 %). Seul le
-   chantier 9 en dépend, pas le produit. Et le compte à rouvrir n'est pas
-   1 196 : les **1 496 exclusions** sont des étiquettes humaines elles aussi —
-   « ce visage n'est PAS Flo » évalue un clustering aussi bien qu'un
-   rattachement. **Vérité terrain réelle : 3 364 décisions** — 1 576
-   rattachements (le « 1 196 » comptait des CLÉS, or un rattachement est
-   `[clé, index]`), 1 496 exclusions, 292 confirmations. Sous-comptée TROIS
-   fois : d'abord sans les négatifs, puis sans les confirmations, puis en
-   confondant clés et visages.
-2. **Observer en réel ce qui est livré** — **fait ✔**. Reste : re-upload = une
-   entrée, seek vidéo mobile, test du Z.
-3. **Chaîne « noms → descriptions → recherche » — 3a, 3b, 3c CLOS le 16/08.**
-   La re-passe ne se fera pas. Reste ouvert : **le prompt de PRODUCTION est celui
-   qui hallucine le plus** (adopté sur un 25-15 ; toute photo taguée le paie).
-   **Pas de retour à V0 sans protocole.**
-4. **Gestes Mike** : `gps_place` ✔ ; renommage appliqué ✔ (7 058) ; **Flo →
-   Florine ✔ (23/08 — 11 heures de file, 5 909 photos, vérifié 200/200 sur le
-   DISQUE)** ; **groupe de Stéphane Plouvin ✔ (23/08 — 58/58 sur le DISQUE)** ;
-   **re-rejeter Caline : SANS OBJET (vérifié le 26/08 sur le serveur vivant)**
-   — « Caline » n'existe nulle part : ni fiche personne, ni fiche animal (les
-   12 nommés sont Inti, Luna, Mutz, Pticon, Ava, Pins, Puma, Kevin, Wilbur,
-   Dolly, Yuri, Le chat de Bremblens), ni résultat de recherche, ni
-   proposition en file. **Troisième ligne de cette doc qui annonçait un geste
-   sans objet.** L'outil cross-pipeline (point 8) reste là si un nom d'animal
-   ressort un jour en `personne:`.
-5. **Correctifs d'audit** : **I4, I5, I6, I7 et I8 CLOS (22/08)**, tous
-   observés en réel, 32 tests neufs. I7 — règle unique `parse_tag_nomme`,
-   mesurée avant (3 tags en casse divergente sur 37 707 : défaut latent) et
-   observée après (Luna 207 → 210 dans `/api/names`). I5/I6 — le moteur des
-   visages se DIT au lieu de s'affirmer, et l'arbitre VRAM est enfin visible
-   dans `/reglages` (baux, refus, évictions). I4 — 57 lignes mortes retirées de
-   `classifier.py`, et l'en-tête cesse de décrire une correction rejetée le
-   30/07. I8 — deux routes orphelines retirées (404 vérifiés). Restent
-   O7–O9, O11–O15. O1 clos ; O15 (purge de
-   `photo_thumbs/`) gagne en poids. **Ce que I7 a laissé ouvert** :
-   `personne:Florine`, 153 photos sans fiche — **CLOS** : Mike a répondu « c'est
-   Flo », la fusion a été faite le 23/08 et **vérifiée le 26/08 sur le serveur
-   vivant** (`/api/names` : `Florine` porte une fiche de **5 907** photos,
-   `Flo` n'existe plus, 364 noms au total). La ligne annonçait une question
-   déjà répondue.
-6. **Navigation par similarité et par date** : « Semblables » et « même jour »
-   livrés et observés. Reste : doublons proches bridés (>0,98 + même journée →
-   quarantaine réversible, 50 paires jugées avant geste).
-7. **Extraction `ui/` : COMMENCÉE (22/08), et la mécanique est faite.**
-   `ui_page(nom)` lit `ui/pages/<nom>.html` (relu à chaud quand le fichier
-   change), se replie sur le gabarit CUIT par `bundle.py` quand `ui/` est
-   absent, et **DIT quel fichier manque** si les deux manquent — une page
-   blanche enverrait chercher le défaut dans les données. `bundle.py` cuit
-   désormais les gabarits en plus du CSS : le mono-fichier reste déployable
-   seul. **Première page sortie : `browse` (141 lignes)**, et la preuve est au
-   caractère près — `/browse` rend **19 103 caractères, mêmes empreintes**
-   avant et après ; `/sante` et `/browse/0`, qui partagent le gabarit, servent
-   aussi. 13 tests neufs tiennent les trois pannes muettes (fichier non
-   déployé, gabarit non cuit, marqueur `__ROWS__` perdu).
-   **LES ONZE GABARITS SONT SORTIS (22/08)** : `server.py` passe de **~17 200
-   à 11 986 lignes**, et **les onze pages sont identiques au caractère près** —
-   `/`, `/files`, `/browse`, `/reglages`, `/map`, `/pets`, `/faces`,
-   `/tranche`, `/residu`, `/sujets`, `/people`, mêmes longueurs et mêmes
-   empreintes avant et après. Le geste, pour mémoire : extraire la VALEUR de la
-   constante (jamais son source — les `\\u00e0` du JavaScript y sont échappés
-   deux fois), écrire `ui/pages/<nom>.html`, remplacer les usages par
-   `ui_page('<nom>')`, comparer l'empreinte de la page servie.
-   **Ce que ça a déplacé, et qu'il fallait rattraper** : quatre bancs lisaient
-   les gabarits DANS le source du serveur (`test_gallery_placeholders`,
-   `test_tranche_jugements`, `test_residu_jugements`, `test_faits_affichage`).
-   Ils passent par `ui_gabarits.py`, qui **lève** quand un gabarit manque au
-   lieu de se replier : un test qui se rabat en silence sur une copie périmée
-   ne mesure plus rien, il rassure. Les quatre sont verts (78 cas).
-   **Reste** : le CSS commun (chaque page porte encore son `<style>`), et le
-   redesign — deux chantiers SÉPARÉS de celui-ci, exprès.
-8. **Cross-pipeline (Mutz/Caline)** : outil livré, réversible. Fix auto REJETÉ
-   (18 % faux rejets). Relancer si un nom d'animal sort en `personne:`.
-9. **Reconnaissance — algo. PARQUÉ (21/08, choix de Mike).** *Chiffre neuf
-   (22/08) : 3,5 % des rattachements désignaient le mauvais visage — une
-   vérité terrain bruitée à ce point aurait faussé toute évaluation de
-   clustering. À relire si le point se rouvre.* HDBSCAN /
-   Chinese Whispers / AdaFace restent inévaluables — 3 364 décisions humaines
-   sur 71 868 visages. Ce n'est pas une dette : le produit n'en dépend pas, et
-   la couverture des noms au niveau PHOTO est déjà là (point 1). À rouvrir si
-   quelqu'un veut nommer des visages en série, pas avant.
-10. **Données / finitions**, dans cet ordre :
-    (a) **Compter ce que le scan OUBLIE — CLOS (18/08), et le carnet SURVIT
-    désormais au redémarrage (22/08, observé).** `_comptes_index.json`, écrit
-    atomiquement dès le démarrage puis à chaque cycle ; `cycles_vus` ne plafonne
-    plus à 10. Deux constats mineurs restent : un ajout vu PAR LE SCAN est
-    étiqueté `tagging` ; `dict.__ior__` non redéfini dans `TrackedDict`.
-    (b) **Garde-fou du repli sur le NOM + noms périmés — CLOS (19/08), observé.**
-    **`taken` en base : REJETÉ (19/08)** — le garde-fou est passé à la LECTURE
-    (voir l'État). Rien n'est écrit.
-    (c) Réglages éditables depuis `/reglages` ; 2ᵉ passe des 945 illisibles +
-    `recuperees/` → NAS ; purge des undo > 30 j (I12) ; deux images TRONQUÉES
-    visibles dans `erreurs_images` à chaque démarrage.
-11. **UI — harmonisation des vues (12/08, skill `photo-ui`)** : (a) clic sur
-    l'image d'une personne → sa démo aléatoire ; (b) lieux : texte sous l'image
-    en tooltip ; (c) harmoniser visages/lieux/animaux — mêmes fonctions partout,
-    **sauf** l'effacement, réservé à Classification ; (d) zoom pinch + molette —
-    `maximum-scale=1` retiré ✔ ; (e) **boutons de tri : CLOS (19/08), observé** — l'ordre du serveur
-    s'appelle « Pertinence », un seul ordre allumé, le clic n'est plus avalé.
-    **(f) Les trois derniers écarts sont CLOS (22/08), observés** : le bandeau
-    `#pending` s'annonce (`role="status"`) et ne se tait plus définitivement —
-    il ne se re-programmait QUE tant que la file n'était pas vide, donc un envoi
-    depuis le téléphone n'allumait plus rien ; `/pets` parle d'ANIMAUX partout
-    (le pipeline reconnaît six espèces, la page disait « chat ») ; et
-    « Même jour (30 juillet) » porte ses accents, le tableau des mois venant
-    désormais du serveur (`meme_jour.MOIS_FR`) au lieu d'être recopié.
-12. **Assurance-vie : CHANTIER CLOS (22/08, 22:51). La répétition a eu lieu,
-    et elle est RÉUSSIE.** Base restaurée depuis le NAS sur un dossier neuf,
-    puis comparée au vivant : **intégrité ok**, les **six tables identiques**
-    (tags 43 065, faces 42 195, animals 42 195, vectors 123 294, people 351,
-    pets 12), **363 noms des deux côtés**, et **AUCUN écart de décision, nom
-    par nom**. « On a une sauvegarde » a cessé d'être une promesse.
-    Coût mesuré : **60 s** pour les 250 Mo de la base, quelques secondes pour
-    les artefacts, hors clone et hors modèles re-téléchargeables. Les 6
-    artefacts absents du dossier restauré sont tous *recalculables* ou
-    *re-téléchargeables* — **tous les IRRÉCUPÉRABLES sont revenus.**
-    **Un écart qui n'en est pas un, et que le rapport EXPLIQUE désormais** :
-    la base restaurée pèse 249,5 Mo contre 276,5 vivants. C'est `VACUUM INTO`
-    (la sauvegarde est compactée) face à une base vivante qui porte son espace
-    libre et son WAL. Sans cette ligne, 27 Mo d'écart se lisent comme une perte.
-    **Ce que la répétition a trouvé en chemin — c'est pour ça qu'elle existe.**
-    (1) L'inventaire ne regardait que **3 quarantaines sur 6** : deux nées le
-    matin même n'étaient sauvegardées nulle part, et il annonçait quand même
-    « Total exposé : 0 o ». Les deux côtés découvrent par motif désormais.
-    (2) Le garde-fou « ne jamais ouvrir `photos.db` » testait le NOM du
-    fichier : il refusait donc la base RESTAURÉE — **la comparaison nom par
-    nom n'avait jamais pu tourner une seule fois**. (3) Sur un dossier vide, le
-    rapport disait « 0 o exposé » au lieu de « rien n'a été restauré ».
-    (4) `robocopy` meurt en `ERREUR 59` après ~72 s sur les 250 Mo, quatre fois
-    de suite, serveur arrêté ou non, avec `/J` comme sans — et il RECOMMENCE à
-    chaque essai. `copier_reprise.py` (11 tests) passe en 60 s, zéro reprise,
-    et REPREND à l'octet si le partage lâche. (5) Trois défauts de lanceur
-    `.bat`, dont une parenthèse dans un `echo` au sein d'un bloc — que
-    `verifier_bat.py` sait maintenant voir (15 tests).
-    **Ce qui reste ouvert, et c'est un choix de Mike** : la copie **hors site**.
-    Un sinistre qui emporte le PC ET le NAS emporte tout.
-
-13. **Serveur exposé en MCP, lecture seule : LIVRÉ et OBSERVÉ (23/08).**
-    `mcp_serveur.py` — JSON-RPC 2.0 sur stdio, stdlib pure, six outils
-    (`ml_chercher`, `ml_semblables`, `ml_meme_jour`, `ml_sujets`,
-    `ml_photos_de`, `ml_etat`). **41 vérifications + 15 pour le banc**, et
-    **13 mutations vues sur 13** — un module neuf n'a pas d'ancien code à
-    rougir, la mutation est ce qui en tient lieu. Observé contre le serveur
-    vivant par `mesure_mcp.py` (12 étapes, 0 rouge) : une VRAIE poignée de main
-    sur un VRAI tuyau, 0,09 s, 351 personnes, `espece:chat` filtré.
-    **Et `faits` a sa route (23/08).** La ligne de faits n'existait que dans
-    `_serve_browse` : rien d'autre que le HTML ne pouvait la lire — ni un banc,
-    ni le MCP. `/api/faits?key=…` (répétable, 200 au plus) la rend pour un LOT,
-    contexte bâti UNE fois ; **16 vérifications, 8 mutations vues sur 8**, et
-    l'outil `ml_faits` s'y branche (48 vérifications au total côté MCP).
-    **Trois états qui ne se confondent pas** : les faits ; `null` pour une photo
-    connue qui ne porte ni date, ni lieu, ni nom ; la clé citée dans
-    `inconnues` quand l'index l'ignore. **C'est la seule route NEUVE du lot** —
-    elle attend le redémarrage, et le banc le dit au lieu de le taire (« la
-    route existe-t-elle dans le code qui TOURNE ? »).
-    **Reste** : l'écriture, plus tard, et pas sans décision. Briques de 14a.
-14. **Recherche IA locale contextuelle.**
-    (a) **Déterministe — CLOS et OBSERVÉ.** (i)–(iii) le 19/08 : `faits` est une
-    VUE, la règle de LIEU est unifiée, la vue s'affiche. (iv) le 20/08 : le
-    FILTRE partage l'autorité des noms avec l'affichage.
-    **Le 5ᵉ axe `espece:` : LIVRÉ et OBSERVÉ (21/08)** — jeton explicite
-    (forme A), filtrant sur la CONCORDANCE YOLO ∧ tagueur, règle partagée par
-    le serveur et le banc (`faits_vue.dit_l_espece`). Le gain mesuré n'est pas
-    celui qu'on attendait : **1 018** photos qu'aucun des six mots ne rend, mais
-    surtout la PRÉCISION — `q=mouton` rend 1 500 photos dont 28 moutons,
-    `espece:mouton` en rend 32, tous confirmés. **Puces livrées et observées** :
-    six sous la barre, elles INSÈRENT le jeton (il se compose avec les autres
-    axes) et relancent la requête côté serveur. **Le plafond de page se DÉCLARE (22/08, observé)** :
-    `espece:chat` affiche « 1500 photo(s) … 886 de plus non affichées (sur 2386
-    au total) ». Le filtre déterministe connaît son total avant de couper ; un
-    plafond silencieux se lisait comme une exhaustivité.
-    La barre de recherche ne ment plus sur une page de résultats : elle attend
-    **Entrée** et relance côté serveur (choix de Mike, 21/08).
-    (b) ensuite seulement, **escalade ponctuelle** vers un modèle chargé à la
-    demande (bail GpuArbiter, déchargé après) — `vision-eval`, jamais câblé
-    sans mesure.
-15. **À évaluer (`vision-eval`)** : Florence-2 léger. **Parqué** faute
-    d'hypothèse (banc 3b).
-16. **« La médiathèque s'améliore à chaque information humaine »
-    (Mike, 21/08) — TROIS COUCHES, une seule a besoin d'un LLM.**
-    Le cas : une photo porte Florine et Caline ; quand Flora devient
-    identifiable, sa PRÉSENCE s'ajoute, et peut-être son RÔLE dans la
-    description. **6 287 photos** sont dans ce cas — un nom posé et au moins
-    un visage non couvert, sur 25 020 photos à visage (4 338 n'ont aucun nom,
-    12 565 sont couvertes ; 29 898 visages sans nom, borne haute).
-    (a) **PRÉSENCE — CLOS par la mesure (21/08), et il n'y avait rien dedans.**
-    Le mécanisme existait et il a convergé : **14 rattachements automatiques et
-    24 cartes en file, 33 photos, 38 noms** — et **17** photos dans le cas
-    exact du chantier, sur 18 745 qui y ressemblent. Rien à écrire ni dans le
-    modèle ni dans l'UI. Le réservoir sous le seuil (28 684 visages, meilleur
-    voisin médian **0,21**) n'est pas un gisement de noms : ce sont des gens
-    sans fiche. **Seule suite ouverte** : juger 30 propositions de la tranche
-    0,35–0,40 (1 328 visages, 1 106 photos vivantes) avant de toucher un seuil
-    — choix de Mike, 21/08 ; sans ce jugement, abaisser `CUR_ADD_SIM` est un
-    pari sur des noms, et le plafond de 400 n'en montrerait que 386.
-    **CLOS PAR LA MESURE (22/08, session 33)** : 30 propositions jugées par
-    Mike — **92,6 %** justes, **Wilson 76,6 %–97,9 %**. La tranche va dans la
-    file « À vérifier », **jamais dans l'auto-ajout** ; `CUR_ADD_SIM` ne bouge
-    pas. Et le jugement a révélé deux défauts d'instrument, tous deux traités
-    ou nommés : la planche de référence était FIGÉE dans le tirage (corrigé et
-    observé), et le résidu du recalage est CONCENTRÉ sur 10 fiches (point 1bis,
-    ci-dessous).
-    (b) **FAITS — déjà acquis.** `faits` étant une VUE, `personne:Flora`
-    apparaît instantanément dans la ligne de faits, le filtre et `/sujets`.
-    (c) **RÔLE dans la description — le seul étage LLM, et une hypothèse
-    NEUVE.** Injecter les noms a été rejeté le 31/07 (ignoré 84 %, ×2,6) —
-    mais c'était une LISTE PLATE : le modèle n'avait aucun moyen de savoir qui
-    est qui, donc il ignorait ou inventait. Chaque visage rattaché porte
-    désormais sa `bbox` : « le visage en [x,y,w,h] est Flora » est une autre
-    expérience, jamais tentée. L'hypothèse n'est plus « re-décrire avec plus de
-    faits » (direction mesurée dangereuse : hallucinations doublées) mais
-    **« décrire avec des noms ANCRÉS à des positions »**.
-    Conditions inchangées pour (c) : banc en aveugle sur un ET (apport **et**
-    hallucination), FRONTIÈRE DE PROVENANCE, journal avant/après.
-
-    Le socle reste : agent INCRÉMENTAL sur événement de connaissance — Non pas la re-passe en LOT —
-    celle-là reste close (50 h GPU, 147 paires, hallucinations doublées) —
-    mais un agent qui re-décrit **les seules photos dont la connaissance a
-    changé** : un nom attribué, un lieu corrigé, une espèce confirmée. Le
-    goutte-à-goutte résout l'obstacle des 4 Go de VRAM que le lot ne résolvait
-    pas. **Ce que ça n'a PAS besoin de faire** : la médiathèque apprend déjà
-    sans LLM — `faits` est une VUE recalculée à la lecture, un nom attribué
-    change instantanément la ligne de faits de toutes les photos concernées.
-    Ce que le LLM ajouterait, c'est la seule **prose de la description**.
-    Trois conditions, dans cet ordre :
-    (a) **un banc AVANT tout code** : N photos dont la connaissance a changé,
-    re-décrites, jugées en aveugle sur un ET — apport réel **et** hallucination
-    (la leçon du 16/08 : un critère non appliqué est une intention) ;
-    (b) **une frontière de provenance, non négociable** : ce que le modèle a VU
-    ne se mélange jamais à ce qu'on lui a DIT. Sinon l'agent détruit le 5ᵉ axe
-    en silence — la concordance cesserait d'être deux regards indépendants et
-    mesurerait son propre écho (les 82 photos qui RÉCITENT, 20/08) ;
-    (c) **un journal avant/après** à chaque re-tag — sans l'AVANT, on ne saura
-    jamais si l'agent améliore ou dérive.
-
-17. **Gestion multi-utilisateurs — SPÉCIFIÉ par Mike le 26/08. Dernier
-    chantier avant la copie hors site.** ~20 comptes, médiathèque familiale.
-    Les six questions ouvertes sont TRANCHÉES ; ce qui suit fait foi.
-
-    **(a) Le partage se fait par DOSSIER.** Chaque utilisateur a un dossier à
-    lui sous `\\NAS-Bremblens\home\Photos`, où il dépose ses photos. Tout
-    y est PARTAGÉ avec tous, **sauf un sous-dossier `PRIVE`** qui n'est visible
-    que de lui. Pas de marquage photo par photo : rendre une photo privée, c'est
-    la déplacer. Simple à comprendre, impossible à contourner par erreur.
-    **Contrainte qui en découle** : l'onboarding d'un nouvel utilisateur doit
-    l'expliquer NOIR SUR BLANC, avant son premier envoi. Une règle de
-    confidentialité qu'on découvre après coup est une fuite.
-
-    **(b) Le privé ne se trahit PAS, y compris par un compteur.** Si Florine
-    est identifiée sur une photo du `PRIVE` de Mike, la fiche de Florine ne
-    doit pas la compter **pour les autres**. Chacun voit les compteurs de ce
-    qu'il a le droit de voir. C'est la contrainte la plus structurante du
-    chantier : `faits` est une VUE recalculée à la lecture, donc elle devient
-    une vue **par utilisateur** — et tout ce qui agrège (fiches, `/api/names`,
-    chips de filtre, `/sujets`, la carte) hérite du même filtre. **Un compteur
-    qui fuit est un défaut de niveau A de ce chantier.**
-
-    **(c) Le fonds existant appartient à Mike.** 43 065 photos. Deux dossiers
-    sont DÉJÀ ceux de leur propriétaire : `Photos Flo` (Florine) et
-    `Photos Papa` (le père de Mike). **Tout le reste part dans un
-    `Photos Mike` à créer** — et ce déplacement est une opération à préparer
-    avec soin : c'est un `rekey` massif de l'index, exactement ce qui a coûté
-    748 décisions humaines le 22/08. **Le déplacement se fait par l'outillage
-    du projet (plan à blanc, journal, quarantaine réversible), jamais à la
-    main dans l'explorateur.** Mike a demandé de l'aide pour ce geste : c'est
-    une tâche à part entière, à faire AVANT le code des comptes.
-
-    **(d) Effacer, c'est effacer du NAS — via une corbeille de 6 MOIS.**
-    Chacun n'efface que ses propres photos. La corbeille actuelle est
-    réversible mais sans rétention définie : il faut une purge datée, et un
-    endroit où l'admin voit ce qui va expirer.
-
-    **(e) Les 3 364 décisions humaines existantes sont attribuées à Mike.**
-    Rétroactivement, en une migration. Les nouvelles portent leur auteur.
-
-    **(f) HTTPS : FAIT par Tailscale** (`tailscale serve --bg --https=443
-    localhost:8080`, certificat Let's Encrypt renouvelé seul, le serveur
-    Python n'a pas changé d'une ligne) — `https://msi-mike.goat-draco.ts.net/`.
-    Le récit du choix (MagicDNS, Certificate Transparency, l'alternative
-    reverse proxy DSM) vit dans git.
-
-    **Ce que ça change dans les invariants du projet.** La règle 2 (« les noms
-    humains ne se perdent jamais ») devient « les noms de QUI ». Un conflit
-    entre deux jugements contradictoires n'a aujourd'hui **aucune règle** —
-    à trancher avant d'ouvrir l'écriture à d'autres que Mike.
-
-    **Le coût.** C'est le premier chantier qui touche TOUTES les routes du
-    serveur : chacune devient un point de contrôle. `monolith-surgery`
-    s'applique. Et il n'y a **aucun test d'autorisation** aujourd'hui : le
-    plancher de ce chantier, c'est un banc qui prouve qu'un utilisateur B ne
-    voit RIEN du `PRIVE` de A — ni photo, ni vignette, ni compteur, ni
-    suggestion.
-
-    **Ordre de travail proposé** :
-    1. le déplacement `Photos Mike` (avant tout code) — FAIT (session 52) ;
-    2. la notion de propriétaire + l'attribution rétroactive à Mike —
-       **CODÉ le 29/08 (session 65), à observer au redémarrage** : `auteurs.py`
-       (règle pure : `proprietaire_de`, `reconcilier`, `arbitre`, `recler`,
-       `garnir` ; 22 tests) branché au goulot `PEOPLE_STORE.set`/`PETS_STORE.set`
-       — les trente écritures de décisions sont couvertes sans être touchées ;
-       `utilisateur_courant()` (thread-local, admin tant que l'étape 4 n'existe
-       pas) ; `migrer_auteurs()` au démarrage (idempotent, journal
-       `docs/migration_auteurs.json`) ; le re-clé transporte `auteurs` par
-       `recle_decisions` (serveur ET applicateur hors-ligne, 3 tests).
-       **`#contesté` VISIBLE (session 66)** : `auteurs.contestations` (règle
-       pure, 5 tests : qui a perdu, qui l'emporte, le MOTIF recalculé —
-       propriétaire / admin / antériorité — et un gagnant annulé reste listé),
-       `/api/people/contestes?name=`, compte `contestes` dans `/api/people/list`,
-       badge « ⚖ N contesté(s) » sur la carte et bouton dans la fiche qui liste
-       vignette + « Flo a retiré · **Mike** a confirmé et l'emporte (propriétaire
-       de la photo) ». Observé à vide (aucun contesté tant qu'il n'y a que Mike
-       — le premier vrai s'observera à l'étape 4). Reste : un conflit de
-       `faces` ENTRE fiches n'a pas de règle (hors `exclude`↔`confirmed`) ;
-    3. la VUE par utilisateur — **MÉCANISME POSÉ (session 66)** : `visibilite.py`
-       (règle pure : `visible(chemin, utilisateur)` — tout est partagé sauf le
-       `PRIVE` d'un autre, le `PRIVE` sans propriétaire est à l'admin, un fil
-       de fond voit tout ; `VueFiltree` / `VueFiches` en lecture seule ;
-       `brancher(store, utilisateur)` pose la vue sur `.data`, `get`, `has` ;
-       14 tests dont le vrai `SqliteStore`), branchée aux CINQ magasins dans
-       `server.py` via `utilisateur_vu()` (None tant que le routeur ne pose pas
-       de compte — étape 4 — donc DORMANT, observé : mêmes compteurs), plus le
-       garde `chemin_visible` sur `/media`, `/uploads`, `/api/thumb` (404,
-       jamais 403). **Reste** : le banc de non-fuite SUR LES ROUTES (vignette,
-       fichier, recherche, chips, carte) — il exige de dire QUI regarde, donc
-       l'étape 4 ; et l'écriture sous vue (`STORE.data[k] = …` en direct
-       tomberait sur la lecture seule : passer par `store.set`) — étape 5 ;
-    4. les comptes — **POSÉS (session 66, choix de Mike : un mot de passe par
-       compte)** : `comptes.py` (PBKDF2 300 000 tours + sel, jeton signé HMAC
-       30 j, frein 5 échecs/5 min, porte `ouvert`/`ok`/`connexion`/`refus`,
-       relecture du fichier à chaud ; 15 tests), `comptes.json` HORS git,
-       `creer_compte.py` (amorçage sur le PC), page `/connexion`, routes
-       `/api/connexion`, `/api/deconnexion`, `/api/moi`, `/api/comptes*`
-       (admin ; chacun son mot de passe), section « Comptes » de Réglages.
-       Le routeur ouvre CHAQUE requête (`_ouvrir`) : cookie → `_UTILISATEUR.nom`
-       → la vue de l'étape 3 s'arme et les décisions portent leur auteur.
-       **Sans compte, rien ne change** (observé : `🔓 comptes : aucun`,
-       `/api/moi` → `porte: false`, Réglages rend la section). **À faire par
-       Mike** : `creer_compte.py Mike` (ferme la porte), puis un compte `Flo`,
-       une photo dans `Photos Mike\PRIVE`, et **`verifier_non_fuite.py`**
-       (7 contrôles : thumb, faits, /media, compteur, fiche, recherche, porte)
-       — le plancher du chantier, enfin prouvable ;
-    5. l'écriture restreinte — **POSÉE (session 66, soir ; choix de Mike :
-       fiche entière et maintenance à l'admin seul)** : `visibilite.peut_ecrire`
-       / `refus_ecriture` (propriétaire ou admin là où il voit ; hors dossier
-       propriétaire, admin seul ; invisible → 404, partagé → 403 ; 7 tests),
-       injecté dans `fichiers.FileOps(garde=…)` — UN goulot consulté avant le
-       disque sur source ET destination, et sur le journal AVANT de dépiler
-       un `undo` (11 tests) ; `_exige_admin` sur `people|pets/rename|delete`
-       et `/api/maint/*`. Les décisions sur photo restent arbitrées par
-       `auteurs`. Banc : `verifier_non_fuite.py` contrôles 8–9 — **OBSERVÉ
-       12 verts, 0 fuite** (29/08 21:50) ; reste le 403 sur une photo partagée
-       (`--cle-partagee`) ;
-    6. la corbeille à 6 mois — **POSÉE ET OBSERVÉE (session 66, soir)** :
-       le journal `fichiers_undo.json` dit QUI (`par`) et QUAND ça expire
-       (`expire` = +180 j, `fichiers.RETENTION_JOURS`) ; `FileOps.corbeille()`,
-       `restaurer(ts)` (UN effacement précis, sous le garde de l'étape 5),
-       `purger(appliquer)` (à blanc par défaut, seulement un panier que le
-       journal connaît ET qui est sous `.corbeille-rangement` — 12 tests) ;
-       `/api/corbeille` (admin), `/api/corbeille/restaurer|purger`, section
-       « Corbeille » de Réglages. **La purge vit dans le serveur, pas dans un
-       bat** : le journal n'a qu'un écrivain. Observé : effacer `Mike-test.jpg`
-       → une entrée (Mike, +180 j, 2,9 Mo) → restaurée, vignette 200. **Déplacée sur le NAS** (choix de
-       Mike, 29/08 soir) : `\\NAS…\Photos\.corbeille-effacements` — cachée
-       au scan par le point, sauvegardée par le snapshot, nom distinct de
-       `.corbeille-rangement` (dédoublonnage). **Reste** : personne ne purge
-       automatiquement — un bouton, ou le cycle de maintenance (autonomie) ;
-    7. l'onboarding rédigé.
-
-18. **Le garde-fou de la confidentialité — DEMANDÉ par Mike le 27/08.**
-    Un agent repère les photos qui portent des **données personnelles**
-    (factures, fiches de paie, pièces d'identité, relevés bancaires,
-    ordonnances, captures de messages) et **prévient celui qui les envoie**,
-    au moment où il les envoie, pour qu'il les déplace dans son dossier
-    `PRIVE` ou les efface.
-
-    **Pourquoi c'est un chantier et pas une finition.** Une fiche de paie
-    photographiée pour la transmettre au comptable finit dans la pellicule,
-    la pellicule se synchronise, et la photo se retrouve dans un dossier que
-    ~20 personnes voient. Personne ne l'a décidé ; personne ne le sait. C'est
-    la seule fuite de ce projet qui ne demande AUCUNE erreur de manipulation
-    — juste l'oubli d'un geste.
-
-    **(a) Le détecteur se greffe sur la passe qui existe déjà.** Le tagueur
-    (`qwen3-vl:2b`) regarde DÉJÀ chaque photo, modèle chargé et image
-    décodée. Une question de plus dans la même invocation ne coûte ni un
-    deuxième pipeline, ni une seconde de GPU sur les 4 Go de VRAM. **Ne pas
-    écrire un cinquième pipeline** : c'est l'invariant n° 4 de
-    `monolith-surgery`.
-
-    **(b) Le verdict est un AXE, pas un mot-clé.** `sensible:facture`,
-    `sensible:paie`, `sensible:identite`… — comme `espece:`, donc couvert par
-    le garde-fou du 26/08 : une valeur inventée rend zéro et le dit. Un tag
-    libre se noierait dans les 43 000 autres.
-
-    **(c) Le verdict NE VA PAS dans le XMP du fichier.** C'est l'exception à
-    la règle du projet, et elle est délibérée : un fichier qui porte
-    `sensible:fiche_de_paie` dans ses métadonnées ANNONCE son contenu à qui
-    le reçoit — l'étiquette devient elle-même la fuite. Elle vit dans la base
-    seulement. Corollaire : elle ne survit pas à la base, et c'est accepté.
-
-    **(d) Ce que l'utilisateur voit.** À la fin d'un envoi : « 3 photos
-    ressemblent à des documents personnels », les vignettes, et **deux
-    gestes** — « déplacer dans mon dossier PRIVE » (dépend de 17a) et
-    « supprimer » (par la corbeille réversible, jamais en dur). Plus un
-    troisième, indispensable : **« non, ce n'en est pas un »**, mémorisé, qui
-    ne repose plus jamais la question sur cette photo. Une alerte qu'on ne
-    peut pas faire taire finit par être ignorée en bloc.
-
-    **(e) Les deux erreurs ne coûtent PAS le même prix.** Un faux négatif est
-    une fiche de paie visible par vingt personnes ; un faux positif est une
-    photo de vacances signalée à tort, que l'on écarte d'un clic. Le seuil
-    penche donc vers le signalement — **et c'est une décision, donc elle se
-    mesure** : jeu étiqueté et banc `vision-eval` avant tout réglage. Sans
-    banc, le seuil est une opinion ; et un score parfait serait une alarme.
-
-    **(f) La passe rétroactive.** Les 43 000 photos déjà là n'ont jamais été
-    regardées sous cet angle. La passe est longue mais sans risque (lecture
-    seule + écriture en base) ; son résultat est une LISTE à trancher par
-    Mike, jamais un déplacement automatique. Rien ne bouge sans un humain.
-
-    **Ce qui dépend de 17** : le geste « déplacer dans PRIVE » et la notion de
-    propriétaire. **Ce qui n'en dépend pas** : le détecteur, l'axe
-    `sensible:`, le banc, et l'écran d'envoi — livrables avant 17, pour Mike
-    seul d'abord.
-
-    **Questions ouvertes** (à instruire, pas à trancher ici) : (1) quelle
-    liste de catégories, et qui la fixe ? (2) que fait-on des photos DÉJÀ
-    partagées quand la passe rétroactive en trouve une — on prévient les
-    autres, ou on la retire en silence ? (3) le signalement doit-il bloquer
-    l'envoi ou seulement l'accompagner ?
-
-### Résiduels faible valeur (ne pas prioriser)
-**MESURÉ le 15/08, et c'est pourquoi on n'y touche pas** : les deux planchers
-1990 (`_fname_time`, `meme_jour.ANNEE_MIN`) coûtent **7** photos et **0**, et ils
-sont **couplés** ; il subsiste aussi dans `plan_rangement.py`,
-`recensement_doublons.py`, `diagnostic_dates.py`, sans effet tant qu'aucun
-dossier d'avant 1990 n'y passe. Le **plafond 2100** (`22082010141.jpg` → 2082) :
-72 en base, coût 0. Enfin `/files?dir=1&rec=1` (racine NAS) ne répond pas en
-6 min, cause non cherchée.
+## Historique détaillé (sessions ≤ 63, pré-05/09) — archivé dans git
+
+Les comptes-rendus session par session (57→63, 54→56, 50→53, 47→49, 46,
+45 bis/ter/quater, 44, 36→43, 28→35) sont retirés d'ici : ce fichier
+grossissait vers le seuil de 100 000 octets (`nettoyer_session.py
+--lint-only`), et leur contenu — chiffres, dates, décisions — est déjà dans
+l'historique git de CE fichier (`git log -- ROADMAP.md`) ainsi que dans les
+commits des chantiers eux-mêmes. Rien n'y était encore ouvert : tout ce qui
+restait actionnable en a été extrait vers « Priorité » (ci-dessus) avant ce
+nettoyage (05/09). Ne pas reproposer une mesure déjà faite sans motif neuf
+— voir « Acquis » plus bas.
+
+## Détail historique des chantiers 0–18 (pré-26/08) — archivé dans git
+
+Le détail complet (specs, mesures, sous-étapes) des chantiers listés ici
+entre le 12/08 et le 26/08 — rattachements, résidu ambigu, vérité terrain,
+extraction `ui/`, cross-pipeline Mutz/Caline, reconnaissance (parquée), UI
+onze pages, assurance-vie, MCP lecture seule, recherche IA contextuelle,
+chantier 17 (multi-utilisateurs) et 18 (confidentialité) — vit dans
+l'historique git de ce fichier, pas ici. Leur état COURANT (ce qui reste
+vraiment ouvert) est dans « Priorité » en tête de fichier : chantier 17 →
+point 3, chantier 18 → point 3 bis, les autres sont CLOS ou PARQUÉS et
+listés dans « Acquis » ci-dessous. Retiré le 05/09 pour la même raison de
+taille que l'historique par session.
 
 ## Acquis — ne pas reproposer (détail : git + `eval/DECISIONS.md`)
 
@@ -1308,6 +562,17 @@ dossier d'avant 1990 n'y passe. Le **plafond 2100** (`22082010141.jpg` → 2082)
   et les trois conditions du point 16(c)). Le prompt de PRODUCTION double déjà
   les hallucinations, adopté sur un 25-15 : ce chantier-là commence par une
   mesure, pas par un modèle.
+
+  **Mise à jour (05/09)** : chantier ouvert par la décision FR-only
+  (2 quater) — modèles « petits parus depuis » enfin exploré :
+  `qwen3.5:4b` trouvé et retenu (voir 2 quater). **La condition non
+  négociable ci-dessus n'est qu'à MOITIÉ remplie** : la comparaison a
+  mesuré l'apport réel (calico, lac, pas de fuite de noms) mais PAS en
+  aveugle (le nom du modèle était connu en lisant le rapport) et sur un
+  tirage CIBLÉ (8 photos difficiles), pas un vrai A/B comme celui qui a
+  adopté v2ctx (25-15). À instruire si Mike veut la rigueur complète avant
+  de lancer la campagne, ou à accepter tel quel — son choix, pas le mien à
+  trancher seul.
 
 - **Ouvrir la médiathèque à TOUTE LA FAMILLE, avec la vie privée au centre.**
   Aujourd'hui l'outil est pour Mike et Flo. La cible : chacun a son **dossier
