@@ -1,0 +1,542 @@
+{
+ "genere_le": "2026-09-05 08:18:54",
+ "modeles": [
+  "qwen3-vl:2b",
+  "qwen3-vl:4b"
+ ],
+ "resultats": {
+  "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2017\\05 Mai\\MGM Menerga\\20170522_184758.jpg": {
+   "ancien_kw": [
+    "inflatable",
+    "structure",
+    "group",
+    "people",
+    "collaboration",
+    "teamwork",
+    "activity",
+    "indoor",
+    "red",
+    "blue",
+    "dark",
+    "background"
+   ],
+   "qwen3-vl:2b": {
+    "kw_fr": [
+     "inflatable",
+     "équipe",
+     "défi",
+     "gruppe",
+     "bouncy",
+     "structure",
+     "rouge",
+     "bleu",
+     "personnes"
+    ],
+    "kw_en": [
+     "inflatable",
+     "team",
+     "challenge",
+     "group",
+     "bouncy",
+     "inflatable",
+     "structure",
+     "red",
+     "blue",
+     "people"
+    ],
+    "desc": "Un groupe de personnes se prépare à un défi avec des structures en mousse gonflable rouge et bleue",
+    "duree_s": 13.2
+   },
+   "qwen3-vl:4b": {
+    "kw_fr": [
+     "course d'obstacles gonflables",
+     "activité de team building",
+     "cours gonflables rouge bleu",
+     "exercice de groupe",
+     "événement intérieur",
+     "participants",
+     "jeu collaboratif",
+     "atelier"
+    ],
+    "kw_en": [
+     "inflatable obstacle course",
+     "team building activity",
+     "red blue inflatable",
+     "group exercise",
+     "indoor event",
+     "participants",
+     "collaborative game",
+     "workshop"
+    ],
+    "desc": "Groupe de personnes participant à un jeu collaboratif sur une course d'obstacles gonflables",
+    "duree_s": 68.8
+   }
+  },
+  "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2025\\20250410_212009.jpg": {
+   "ancien_kw": [
+    "code",
+    "chiffre",
+    "qr"
+   ],
+   "qwen3-vl:2b": {
+    "kw_fr": [
+     "code QR",
+     "chiffre",
+     "texte"
+    ],
+    "kw_en": [
+     "QR code",
+     "barcode",
+     "text"
+    ],
+    "desc": "Un code QR et un chiffre visible sur un document avec des éléments graphiques",
+    "duree_s": 10.6
+   },
+   "qwen3-vl:4b": {
+    "kw_fr": [
+     "code qr",
+     "scanné",
+     "surface",
+     "texte",
+     "code",
+     "numérique",
+     "marque",
+     "image",
+     "scan",
+     "motif"
+    ],
+    "kw_en": [
+     "qr code",
+     "scanned",
+     "surface",
+     "text",
+     "code",
+     "digital",
+     "mark",
+     "image",
+     "scan",
+     "pattern"
+    ],
+    "desc": "capture de code qr sur surface texturée avec éléments graphiques",
+    "duree_s": 31.8
+   }
+  },
+  "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Floufline\\20190530_bouteille-de-vin-en-main.jpg": {
+   "ancien_kw": [
+    "vin",
+    "bouteille",
+    "main",
+    "table",
+    "wine",
+    "bottle",
+    "hand",
+    "table"
+   ],
+   "qwen3-vl:2b": {
+    "kw_fr": [
+     "vin",
+     "bouteille",
+     "main",
+     "table",
+     "plat",
+     "aliment",
+     "verre"
+    ],
+    "kw_en": [
+     "wine",
+     "bottle",
+     "hand",
+     "table",
+     "plate",
+     "food",
+     "glass"
+    ],
+    "desc": "Une bouteille de vin Château du Gira 1986 avec étiquette déchirée, présentée par une main sur une table avec plat et aliments",
+    "duree_s": 11.0
+   },
+   "qwen3-vl:4b": {
+    "kw_fr": [
+     "vin",
+     "bouteille",
+     "main",
+     "table",
+     "château",
+     "1986",
+     "bordeaux",
+     "côte",
+     "aliment",
+     "assiette"
+    ],
+    "kw_en": [
+     "wine",
+     "bottle",
+     "hand",
+     "table",
+     "chateau",
+     "1986",
+     "bordeaux",
+     "cote",
+     "food",
+     "plate"
+    ],
+    "desc": "Main tient bouteille de vin bordeaux 1986",
+    "duree_s": 34.5
+   }
+  },
+  "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Luna & Inti\\20230918_135836.jpg": {
+   "ancien_kw": [
+    "deux chats",
+    "lit",
+    "coussins",
+    "commode",
+    "jeu",
+    "chambre",
+    "two cats",
+    "bed",
+    "pillows",
+    "nightstand",
+    "toys",
+    "bedroom"
+   ],
+   "qwen3-vl:2b": {
+    "kw_fr": [
+     "chat",
+     "lit",
+     "coussins",
+     "commode",
+     "mobilier",
+     "chambre",
+     "meuble"
+    ],
+    "kw_en": [
+     "cat",
+     "bed",
+     "pillows",
+     "nightstand",
+     "wooden",
+     "furniture",
+     "bedroom"
+    ],
+    "desc": "Deux chats se reposent sur une lit avec des coussins et une commode en bois",
+    "duree_s": 12.6
+   },
+   "qwen3-vl:4b": {
+    "kw_fr": [
+     "chats",
+     "lit",
+     "coussins",
+     "commode",
+     "jeu",
+     "chambre",
+     "Inti",
+     "Luna",
+     "sommeil",
+     "félins"
+    ],
+    "kw_en": [
+     "cats",
+     "bed",
+     "pillows",
+     "nightstand",
+     "toy",
+     "room",
+     "Inti",
+     "Luna",
+     "sleeping",
+     "feline"
+    ],
+    "desc": "Deux chats Inti et Luna reposent sur un lit dans une chambre.",
+    "duree_s": 34.1
+   }
+  },
+  "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2018\\20180428_231429.jpg": {
+   "ancien_kw": [
+    "homme",
+    "femme",
+    "chambre",
+    "bois",
+    "chaises",
+    "table",
+    "bouteilles",
+    "alimentation",
+    "meubles",
+    "chaise",
+    "bouteille",
+    "boisson",
+    "man",
+    "woman",
+    "room",
+    "wooden",
+    "chairs",
+    "table",
+    "bottles",
+    "food",
+    "furniture",
+    "chair",
+    "bottle",
+    "drink"
+   ],
+   "qwen3-vl:2b": {
+    "kw_fr": [
+     "chambre en bois",
+     "gym",
+     "chaise",
+     "table",
+     "bouteilles",
+     "alimentation",
+     "personnes"
+    ],
+    "kw_en": [
+     "wooden room",
+     "gym",
+     "chair",
+     "table",
+     "bottles",
+     "food",
+     "people"
+    ],
+    "desc": "Un espace intérieur avec murs en bois, des chaises empilées et une table, où deux personnes sont debout, tenant des bouteilles et des aliments",
+    "duree_s": 11.1
+   },
+   "qwen3-vl:4b": {
+    "kw_fr": [
+     "pièce en bois",
+     "chaises empilées",
+     "bouteilles",
+     "aliments",
+     "table",
+     "personnes",
+     "intérieur",
+     "boisson",
+     "meubles",
+     "salle"
+    ],
+    "kw_en": [
+     "wooden room",
+     "chairs stack",
+     "bottles",
+     "food items",
+     "table",
+     "people",
+     "interior",
+     "drink",
+     "furniture",
+     "room"
+    ],
+    "desc": "Deux personnes dans une pièce en bois avec chaises et bouteilles",
+    "duree_s": 35.1
+   }
+  },
+  "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\Caline\\20201113_101014.jpg": {
+   "ancien_kw": [
+    "chat",
+    "sommeil",
+    "lit",
+    "soleil",
+    "poussière",
+    "calico",
+    "cat",
+    "sleeping",
+    "bed",
+    "sunlight"
+   ],
+   "qwen3-vl:2b": {
+    "kw_fr": [
+     "chat calico",
+     "jeans bleus",
+     "soleil",
+     "lit",
+     "endormi"
+    ],
+    "kw_en": [
+     "calico cat",
+     "blue jeans",
+     "sunlight",
+     "bed",
+     "sleeping"
+    ],
+    "desc": "Un chat calico endormi sur des jeans bleus, sous une lumière du soleil.",
+    "duree_s": 10.7
+   },
+   "qwen3-vl:4b": {
+    "kw_fr": [
+     "tigré",
+     "sommeil",
+     "jeans",
+     "soleil",
+     "lit",
+     "poussière",
+     "chat",
+     "confortable",
+     "moelleux",
+     "relaxé"
+    ],
+    "kw_en": [
+     "calico",
+     "sleeping",
+     "jeans",
+     "sunlight",
+     "bed",
+     "dust",
+     "cat",
+     "comfortable",
+     "soft",
+     "relaxed"
+    ],
+    "desc": "Chat tigré dormant sur un jean et un lit ensoleillé",
+    "duree_s": 34.0
+   }
+  },
+  "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2021\\20210218_124554.jpg": {
+   "ancien_kw": [
+    "gruppe",
+    "personnes",
+    "social",
+    "cuisine",
+    "salle",
+    "chaise",
+    "table",
+    "ballons",
+    "joyeux",
+    "fête",
+    "group",
+    "people",
+    "social",
+    "dining",
+    "living",
+    "room",
+    "chair",
+    "table",
+    "balloons",
+    "happy",
+    "birthday"
+   ],
+   "qwen3-vl:2b": {
+    "kw_fr": [
+     "fête",
+     "célébration",
+     "gruppe",
+     "salle_de_vie",
+     "chaise",
+     "table",
+     "ballons",
+     "alimentation",
+     "personnes"
+    ],
+    "kw_en": [
+     "birthday",
+     "celebration",
+     "group",
+     "living_room",
+     "chair",
+     "table",
+     "balloons",
+     "food",
+     "people"
+    ],
+    "desc": "Un groupe de personnes se réunit dans une salle de vie pour célébrer un anniversaire, avec des ballons et des plats de nourriture sur la table.",
+    "duree_s": 11.6
+   },
+   "qwen3-vl:4b": {
+    "kw_fr": [
+     "anniversaire",
+     "amis",
+     "fête",
+     "maison",
+     "ballons",
+     "cadeaux",
+     "social",
+     "cuisine",
+     "table",
+     "chaises"
+    ],
+    "kw_en": [
+     "birthday",
+     "friends",
+     "party",
+     "home",
+     "balloons",
+     "gifts",
+     "social",
+     "cuisine",
+     "table",
+     "chairs"
+    ],
+    "desc": "Groupe de personnes célébrant un anniversaire à la maison",
+    "duree_s": 42.8
+   }
+  },
+  "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2022\\20220918_103631.jpg": {
+   "ancien_kw": [
+    "mer",
+    "bateau",
+    "homme",
+    "montagnes",
+    "océan",
+    "ciel",
+    "bleu",
+    "calme",
+    "vent",
+    "water",
+    "surfboard",
+    "person",
+    "mountains",
+    "ocean",
+    "sky",
+    "blue",
+    "calm",
+    "wind"
+   ],
+   "qwen3-vl:2b": {
+    "kw_fr": [
+     "surfage",
+     "mer",
+     "montagnes",
+     "clair",
+     "bleu",
+     "calme",
+     "eau"
+    ],
+    "kw_en": [
+     "surfing",
+     "ocean",
+     "mountains",
+     "clear",
+     "blue",
+     "calm",
+     "water"
+    ],
+    "desc": "Un homme pratique le surfage sur une mer calme avec des montagnes en arrière-plan sous un ciel bleu clair",
+    "duree_s": 10.9
+   },
+   "qwen3-vl:4b": {
+    "kw_fr": [
+     "sport d'eau",
+     "surfeur",
+     "lac",
+     "montagnes",
+     "ciel bleu",
+     "eau calme",
+     "corde",
+     "lumière",
+     "reflet",
+     "silhouette"
+    ],
+    "kw_en": [
+     "water sport",
+     "surfer",
+     "lake",
+     "mountains",
+     "blue sky",
+     "calm water",
+     "rope",
+     "sunlight",
+     "reflection",
+     "silhouette"
+    ],
+    "desc": "Homme sur planche de surf dans lac avec montagnes en arrière-plan",
+    "duree_s": 34.4
+   }
+  }
+ }
+}
