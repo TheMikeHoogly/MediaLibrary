@@ -14048,6 +14048,14 @@ class Handler(BaseHTTPRequestHandler):
         # classes) ; seule la mise en page change. /api/thumb rend 512 px
         # (image OU image-cle d'une video) et REDIRIGE vers l'original quand
         # il ne sait pas — le client n'a aucun cas particulier.
+        #
+        # `data-src` et PAS `src` (06/09) : c'est `ui/global.js` qui decide
+        # quand charger, et surtout COMBIEN a la fois. `loading="lazy"` etait
+        # deja la et n'a pas suffi — il ne borne pas le nombre de requetes en
+        # vol. Sur `Photos Mike/2022` (2 139 fichiers) les six connexions du
+        # navigateur sont restees prises une seconde par vignette pendant des
+        # dizaines de minutes, au point qu'un AUTRE onglet vers ce serveur
+        # n'obtenait plus de connexion du tout.
         tuiles = []
         for e in files:
             relf = (sub + '/' if sub else '') + e.name
@@ -14068,7 +14076,7 @@ class Handler(BaseHTTPRequestHandler):
                     f'<div class="row tuile" data-idx="{idx}" data-rel="{html.escape(relf, quote=True)}" data-name="{nm_a}">'
                     f'<input type="checkbox" class="sel" aria-label="Selectionner {nm_a}">'
                     f'<a class="lk" href="{href}" target="_blank">'
-                    f'<img class="th" loading="lazy" src="{thumb}" alt="">{badge}'
+                    f'<img class="th" data-src="{thumb}" alt="">{badge}'
                     f'<span class="nm">{html.escape(e.name)}</span></a>'
                     f'<span class="sz">{sz}</span></div>')
             else:

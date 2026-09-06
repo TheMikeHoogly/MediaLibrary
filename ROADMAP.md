@@ -45,14 +45,27 @@ un qui refuse `rglob`/`cur`/`Path(` dans son corps).
 photothèque, le tagueur s'efface — c'est l'invariant « l'UI cède la priorité
 au NAS », et c'est voulu. Le défaut, c'est l'arrêt de 11h34 à 12h48, sans
 aucune activité UI.
-**Ce qui reste ouvert** : (a) la passe de maintenance et l'énumération
-profonde peuvent parcourir le NAS EN MÊME TEMPS — la maintenance se reporte
-quand « UI active », pas quand un scan tourne ; (b) une page de dossier
-demande une vignette 512 px pour CHAQUE fichier, sans plafond : 2 139 lectures
-NAS à froid pour `Photos Mike/2022`, une par seconde, et les six connexions
-de Chrome bloquées — au point qu'un autre onglet vers le même serveur
-n'obtient jamais de connexion (observé et mesuré : la requête n'apparaît pas
-du tout dans le journal).
+**(a) RESTE OUVERT** : la passe de maintenance et l'énumération profonde
+peuvent parcourir le NAS EN MÊME TEMPS — la maintenance se reporte quand
+« UI active », pas quand un scan tourne. Deux balayages SMB concurrents, c'est
+la cause directe des 85 minutes.
+
+**(b) VIGNETTES — écrit et vérifié statiquement, PAS ENCORE OBSERVÉ EN RÉEL.**
+Une page de dossier demandait une vignette 512 px pour CHAQUE fichier : 2 139
+lectures NAS à froid pour `Photos Mike/2022`, une par seconde. Les tuiles
+portaient pourtant `loading="lazy"` — **l'attribut natif ne borne rien** : une
+fois qu'il décide de charger N images, il pose N requêtes, et un navigateur
+n'ouvre que six connexions par hôte. Les six sont restées prises pendant des
+dizaines de minutes, au point qu'un AUTRE onglet vers le même serveur
+n'obtenait plus de connexion — sa requête n'apparaît même pas dans le journal.
+→ `window.Vignettes` dans `ui/global.js` : un IntersectionObserver à marge
+choisie (400 px) **et** une file unique qui plafonne à `EN_VOL_MAX = 4`
+requêtes en vol, pour qu'il reste deux connexions pour naviguer. La vue
+Dossiers passe à `data-src` (plus aucun `src` en dur, plus de `lazy` natif) ;
+la galerie garde son observateur mais passe par la même file. Banc :
+`verifier_vignettes.py` (vert). **Ce qui manque** : compter les requêtes
+simultanées dans un vrai navigateur sur `Photos Mike/2022` — les trois
+fenêtres du bat 0 se sont arrêtées à 13h17 avant la mesure.
 
 **Trois mesures du 06/09 après-midi, à ne pas refaire** :
 1. **La corbeille de rangement ne se purgeait pas** parce que le rangement par
@@ -433,8 +446,21 @@ mort, elle tient peut-être la DERNIÈRE copie d'une quinzaine de photos.
 `reancrer_corbeille.py` (+ **bat 46**, 9 bancs verts) réécrit le champ
 `canonique` **uniquement sur preuve d'empreinte**, jamais sur le nom ;
 réversible (`canonique_avant`, journal `docs/undo_reancrage_*.json`,
-`--annuler`). ~40 min de relecture NAS. Ensuite seulement, le bat 24 purge.
-Ce qui reste « à regarder » après le bat 46 est court et se juge à la main.
+`--annuler`).
+
+**FAIT le 06/09 à 17:12 : 325 groupes réancrés** (journal
+`docs/undo_reancrage_20260906_171214.json`), sur 374 dont la canonique manquait.
+Restent ~49 groupes non prouvés — nom pris par une autre photo, ou aucun
+candidat : **ceux-là tiennent peut-être la dernière copie**, ils se jugent à la
+main, pas en lot. Le bat 24 peut maintenant purger les 325.
+
+**Leçon d'outillage, payée cash** : le bat 46 n'affichait RIEN pendant ses
+~40 minutes de relecture NAS, et Mike a dû demander « est-ce ok ? ». Mesurer
+son avancement de l'extérieur a coûté 479 s à une sonde (relire 389 manifestes
+sur un NAS occupé) — presque autant que ce qu'elle mesurait. La règle du projet
+(« un travail de fond qui ne rend pas de comptes finit par ne plus travailler »)
+vaut aussi pour les outils lancés à la main : `reancrer_corbeille.py` compte
+désormais une ligne toutes les 25 groupes, avec le temps restant estimé.
 
 **2 quater. RE-TAGGER en FR seul, modèle qwen3.5:4b, EN UNE SEULE PASSE
 coordonnée par photo — DÉCIDÉ (05/09), révisé le même jour sur mesure

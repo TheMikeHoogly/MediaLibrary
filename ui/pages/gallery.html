@@ -1004,7 +1004,6 @@ __FOLDERS__
         if (e.isIntersecting) {
           var img = e.target.querySelector('img');
           if (img && img.dataset.src) {
-            img.src = img.dataset.src;
             img.onload = function() { img.classList.add('loaded'); };
             img.onerror = function() {
               // vignette serveur KO (clé qui ne résout pas, cas rares) :
@@ -1017,7 +1016,13 @@ __FOLDERS__
               var c = img.closest('.cell');
               if (c) c.style.display = 'none';
             };
-            delete img.dataset.src;
+            // La file COMMUNE (ui/global.js) borne le nombre de requetes en
+            // vol : les six connexions du navigateur ne sont jamais toutes
+            // prises, donc la page repond encore pendant qu'elle se remplit.
+            // Les handlers ci-dessus restent ceux de la galerie -- la file
+            // compte, elle ne decide pas.
+            if (window.Vignettes) window.Vignettes.charger(img);
+            else { img.src = img.dataset.src; delete img.dataset.src; }
             observer.unobserve(e.target);
           }
         }

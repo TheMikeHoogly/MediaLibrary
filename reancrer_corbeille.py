@@ -189,8 +189,26 @@ def main(argv=None):
     groupes = sorted(p for p in corbeille.iterdir() if p.is_dir())
     if a.limite:
         groupes = groupes[:a.limite]
+    # DIRE OU ON EN EST. Ce passage relit chaque canonique sur le NAS : ~40
+    # minutes pendant lesquelles la version muette n'affichait rien du tout.
+    # Mike a du demander « est-ce ok ? » -- et il avait raison de demander :
+    # rien a l'ecran ne distinguait le travail en cours d'un blocage. La regle
+    # du projet vaut aussi pour les outils a la main : un travail qui ne rend
+    # pas de comptes finit par ne plus travailler sans que personne le voie.
+    # Mesurer l'avancement de l'exterieur coute cher (une sonde a mis 479 s a
+    # relire les 389 manifestes sur un NAS occupe) : c'est au travail lui-meme
+    # de parler.
+    t_debut = time.time()
+    n_vus = 0
+    total = len(groupes)
 
     for groupe in groupes:
+        n_vus += 1
+        if n_vus % 25 == 0:
+            ecoule = time.time() - t_debut
+            reste = (ecoule / n_vus) * (total - n_vus)
+            print(f'  … {n_vus}/{total} groupes — {stats["reancres"]} reancre(s)'
+                  f' — encore ~{reste / 60:.0f} min', flush=True)
         mani_p = groupe / 'manifeste.json'
         mani = lire_json(mani_p)
         if not mani:

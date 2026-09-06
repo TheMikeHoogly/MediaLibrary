@@ -340,3 +340,95 @@
   if (document.querySelector('.appnav') || document.readyState !== 'loading') demarrer();
   else document.addEventListener('DOMContentLoaded', demarrer);
 })();
+
+/* ──────────────────────────────────────────────────────────────────────────
+   VIGNETTES — chargement paresseux, et surtout BORNE (Mike, 06/09)
+
+   Ce qu'on a mesuré ce jour-là. La vue Dossiers d'un dossier de 2 139 photos
+   demandait une vignette 512 px pour CHAQUE fichier. Les images portaient
+   pourtant `loading="lazy"` : l'attribut natif ne suffit pas, pour deux
+   raisons distinctes.
+
+   1. Sa marge est décidée par le navigateur, pas par nous. Sur une liaison
+      rapide, Chrome charge en pratique presque tout d'un coup.
+   2. Et surtout, `loading="lazy"` ne borne RIEN. Une fois qu'il a décidé de
+      charger N images, il pose N requêtes. Or un navigateur n'ouvre que six
+      connexions vers un même hôte : les six sont restées prises une seconde
+      par vignette (lecture NAS à froid), pendant des dizaines de minutes.
+      Conséquence observée : un AUTRE onglet vers le même serveur n'a jamais
+      obtenu de connexion — sa requête n'apparaît même pas dans le journal du
+      serveur. La photothèque entière semblait plantée.
+
+   D'où les deux mécanismes ci-dessous, et il en faut deux :
+     • un IntersectionObserver, avec une marge à NOUS (400 px, soit un peu
+       d'avance au défilement) — déterministe, pas au gré du navigateur ;
+     • une file d'attente qui ne laisse QUE `EN_VOL_MAX` requêtes en l'air.
+       Quatre sur six : il en reste deux pour naviguer, c'est-à-dire pour que
+       l'interface réponde encore pendant qu'une planche se remplit.
+
+   La file est UNIQUE pour la page : c'est la contrainte du navigateur qui est
+   globale, une file par planche ne bornerait rien. */
+window.Vignettes = (function () {
+  'use strict';
+  var EN_VOL_MAX = 4;        // sur les six connexions du navigateur
+  var MARGE = '400px';       // un peu d'avance, pas toute la page
+  var file = [], enVol = 0;
+
+  function libere(img) {
+    if (img._vEnVol) { img._vEnVol = false; enVol--; servir(); }
+  }
+  function servir() {
+    while (enVol < EN_VOL_MAX && file.length) {
+      var img = file.shift();
+      if (!img || !img.dataset.src) continue;
+      enVol++;
+      img._vEnVol = true;
+      // `addEventListener` et pas `onload` : la page garde SES propres
+      // handlers (classe « loaded », repli sur l'original quand la vignette
+      // serveur ne sait pas rendre). On compte, on ne décide pas.
+      img.addEventListener('load', function () { libere(this); }, { once: true });
+      img.addEventListener('error', function () { libere(this); }, { once: true });
+      img.src = img.dataset.src;
+      delete img.dataset.src;
+    }
+  }
+
+  /* Mettre une image en file. Rend `false` si elle n'a rien à charger. */
+  function charger(img) {
+    if (!img || !img.dataset || !img.dataset.src) return false;
+    file.push(img);
+    servir();
+    return true;
+  }
+
+  /* Un observateur prêt à l'emploi : il met en file l'image de l'entrée qui
+     entre en vue, puis cesse de la surveiller. */
+  function observateur(marge) {
+    return new IntersectionObserver(function (entrees) {
+      entrees.forEach(function (e) {
+        if (!e.isIntersecting) return;
+        var img = e.target.tagName === 'IMG' ? e.target
+                                             : e.target.querySelector('img');
+        if (img) charger(img);
+        this.unobserve(e.target);
+      }, this);
+    }, { rootMargin: marge || MARGE });
+  }
+
+  /* Brancher toutes les `img[data-src]` d'une racine. Sans
+     IntersectionObserver (navigateur ancien), on charge tout de suite : mieux
+     vaut une page lente qu'une page vide. */
+  function brancher(racine, marge) {
+    var imgs = (racine || document).querySelectorAll('img[data-src]');
+    if (!('IntersectionObserver' in window)) {
+      for (var i = 0; i < imgs.length; i++) charger(imgs[i]);
+      return null;
+    }
+    var obs = observateur(marge);
+    for (var j = 0; j < imgs.length; j++) obs.observe(imgs[j]);
+    return obs;
+  }
+
+  return { charger: charger, observateur: observateur, brancher: brancher,
+           enVolMax: EN_VOL_MAX };
+})();

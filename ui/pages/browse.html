@@ -35,6 +35,11 @@ body { min-height: 100vh; }
 .tuile .lk { flex-direction: column; align-items: stretch; gap: var(--e-1); }
 .tuile .th { width: 100%; aspect-ratio: 1; object-fit: cover; display: block;
              border-radius: var(--r-sm); background: var(--salle-3); }
+/* La tuile garde sa place avant d'avoir son image : sans hauteur reservee, la
+   planche saute au defilement et l'observateur declenche sur des positions
+   perimees. `content-visibility` epargne au navigateur la mise en page des
+   milliers de tuiles hors ecran -- le systeme le prescrit au-dela de ~2 000. */
+.planche .row.tuile { content-visibility: auto; contain-intrinsic-size: auto 200px; }
 .tuile .nm { font-size: var(--t-xs); color: var(--graphite); text-align: center; }
 .tuile .sz { text-align: center; }
 .tuile .sel { position: absolute; top: var(--e-2); left: var(--e-2); z-index: 2; }
@@ -161,6 +166,10 @@ __ROWS__
       if(r.ok){ flash('Dossier cr\u00e9\u00e9.'); location.reload(); } else toast(r.error||'Echec.', false); }); });
   bind('fx-undo', function(){ api('undo',{}).then(function(r){ if(r.ok){ flash('Annul\u00e9.'); location.reload(); } else toast(r.error||'Rien \u00e0 annuler.', false); }); });
   refresh();
+  // Vignettes : chargement paresseux ET borne (ui/global.js). Sans cela, un
+  // dossier de 2 000 photos prend les six connexions du navigateur et rend la
+  // photothèque entière injoignable -- y compris dans les autres onglets.
+  if (window.Vignettes) window.Vignettes.brancher(document);
   // Arrivee depuis la visionneuse (lien << dossier >>, #voir=<nom>) : on fait
   // defiler la liste jusqu'au fichier et on le surligne -- on venait voir
   // CETTE photo dans son contexte, pas une liste anonyme.
