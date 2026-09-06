@@ -122,6 +122,10 @@ def restaurer(perdues, exterieurs, appliquer):
     print('%d photo(s) a rapatrier depuis un reservoir exterieur :' % len(exterieurs))
     ops = []
     for cle, source in sorted(exterieurs.items()):
+        if not Path(cle).exists():
+            # Meme raison que pour la corbeille : deja fait n est pas un echec.
+            print('  %s : deja rapatriee ou deplacee, sautee' % Path(cle).name)
+            continue
         ok = vraie_image(source)
         print('  %s' % Path(cle).name)
         print('      <- %s%s' % (source, '' if ok else '   [SOURCE ILLISIBLE - SAUTEE]'))
@@ -155,11 +159,21 @@ def corbeille(perdues, exterieurs, appliquer, limite=0):
     d abord ferait perdre l endroit ou remettre la photo."""
     cibles = [p for p in perdues if p['cle'] not in exterieurs]
     saute = len(perdues) - len(cibles)
+    # DEJA FAITES : un essai sur 20 puis la passe complete, c est le mode
+    # d emploi du bat -- et la passe complete retrouvait les 20 premieres
+    # absentes et criait vingt fois « ECHEC ... No such file or directory ».
+    # Aucune donnee perdue, mais un faux echec est pire qu un silence : il
+    # fait chercher une panne qui n existe pas, et il noie les vrais.
+    deja = [p for p in cibles if not Path(p['cle']).exists()]
+    if deja:
+        cibles = [p for p in cibles if Path(p['cle']).exists()]
     if limite:
         cibles = cibles[:limite]
     octets = sum(p.get('octets') or 0 for p in cibles)
     print('%d coquille(s) a mettre en quarantaine, %.2f Go'
           % (len(cibles), octets / 1e9))
+    if deja:
+        print('%d deja en quarantaine (rien a faire).' % len(deja))
     if saute:
         print('%d sautee(s) : elles attendent un rapatriement (--restaurer '
               'd abord).' % saute)

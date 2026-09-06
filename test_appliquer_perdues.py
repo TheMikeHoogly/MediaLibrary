@@ -113,6 +113,18 @@ class Arbre(unittest.TestCase):
         A.undo(str(A.DERNIER_JOURNAL), appliquer=True)
 
 
+    # 8 --------------------------------------------------------------
+    def test_deja_faites_ne_sont_pas_des_echecs(self):
+        """Un essai sur un petit lot PUIS la passe complete : c est le mode
+        d emploi du bat. La passe complete ne doit pas crier « ECHEC » sur ce
+        que l essai a deja fait -- un faux echec fait chercher une panne qui
+        n existe pas, et il noie les vrais."""
+        A.corbeille(self.perdues, self.ext, appliquer=True, limite=1)
+        faits = A.corbeille(self.perdues, self.ext, appliquer=True)
+        self.assertEqual(len(faits), 1, "il ne restait qu une coquille a bouger")
+        for f in faits:
+            self.assertTrue(Path(f['dst']).exists())
+
     # 7 --------------------------------------------------------------
     def test_deux_journaux_dans_la_meme_seconde(self):
         a = A.journal('essai', [{'x': 1}])
