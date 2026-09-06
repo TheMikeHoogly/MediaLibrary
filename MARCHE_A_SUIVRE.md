@@ -45,6 +45,16 @@ et il est annulable.
 - [ ] **Supprimer le dossier `_planches\`** quand c'est fini : il contient des
       copies basse définition de ces six documents.
 
+**Nouveau (06/09 soir) : tu peux en faire plusieurs d'un coup.** Dans
+l'onglet **Dossiers**, coche les photos, puis **🔒 Rendre privées** dans la
+barre du bas. Utile pour un dossier entier de relevés et d'attestations comme
+ton `Camera`. Chaque déplacement reste annulable un par un.
+
+**Et ce n'est qu'un pansement** : l'onglet **Sensibles** que tu as demandé —
+l'application qui te DIT ce qu'elle a détecté, photo masquée par défaut en
+attendant ton verdict — est spécifié (`eval/DECISIONS.md`, 06/09) et c'est le
+prochain vrai chantier.
+
 ---
 
 ## C. Motion Photos — le bat 43
@@ -69,16 +79,20 @@ Le 06/09 : 325 groupes réancrés (bat 46), 364 fichiers purgés (bat 24),
   prochain bat 24.
 - 44 refusent la purge parce que leur copie gardée est introuvable.
 
-Pour ces 44, la question n'est PAS « cette photo compte-t-elle ? » (elles
-comptent toutes — ce sont des chats, des mariages, le Léman) mais « existe-t-elle
-encore ailleurs dans le fonds ? ». Ça se prouve, ça ne se juge pas à l'œil.
+La question n'était PAS « cette photo compte-t-elle ? » (elles comptent
+toutes) mais « existe-t-elle encore ailleurs ? ». **C'est mesuré**
+(`verifier_corbeille_dernieres_copies.py`, rapport
+`docs/corbeille_dernieres_copies.json`) :
 
-- [ ] Lire le verdict de `verifier_corbeille_dernieres_copies.py` — voir
-      `docs/corbeille_dernieres_copies.json`. Deux tas : **dernière copie**
-      (à restaurer) et **doublon confirmé** (purgeable).
-- [ ] Les planches-contact sont dans `_planches_corbeille\` si tu veux voir de
-      quoi il s'agit — mais elles ne tranchent pas la question.
-- [ ] **Supprimer `_planches_corbeille\`** ensuite.
+- **37 groupes sont la DERNIÈRE copie** (165 Mo) → à **RESTAURER**, surtout pas
+  à purger.
+- **6 sont des doublons confirmés** (4 Mo) → purgeables sans risque.
+- **4 illisibles** → à regarder.
+
+- [ ] Décider quoi faire des 37 : les remettre dans le fonds. **Dis-le-moi**,
+      je fais l'outil de restauration (le manifeste garde leur chemin d'origine).
+- [ ] **Supprimer `_planches_corbeille\`** — les planches ont servi, mais elles
+      ne répondaient pas à la question.
 
 ---
 

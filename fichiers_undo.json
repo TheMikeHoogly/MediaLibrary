@@ -13,5 +13,155 @@
   "ts": 1788647256.8398154,
   "expire": 1804199256.8398154,
   "par": "Mike"
+ },
+ {
+  "op": "delete",
+  "src": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\260531_Samsung_MHU\\Camera\\20260408_151012.jpg",
+  "dst": "\\\\NAS-Bremblens\\home\\Photos\\.corbeille-effacements\\20260906-214553-717\\20260408_151012.jpg",
+  "idx": 1,
+  "keys": [
+   [
+    "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\260531_Samsung_MHU\\Camera\\20260408_151012.jpg",
+    "\\\\NAS-Bremblens\\home\\Photos\\.corbeille-effacements\\20260906-214553-717\\20260408_151012.jpg"
+   ]
+  ],
+  "ts": 1788723959.036072,
+  "expire": 1804275959.036072,
+  "par": "Mike"
+ },
+ {
+  "op": "delete",
+  "src": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\260531_Samsung_MHU\\Camera\\20260411_160642.jpg",
+  "dst": "\\\\NAS-Bremblens\\home\\Photos\\.corbeille-effacements\\20260906-214559-122\\20260411_160642.jpg",
+  "idx": 1,
+  "keys": [
+   [
+    "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\260531_Samsung_MHU\\Camera\\20260411_160642.jpg",
+    "\\\\NAS-Bremblens\\home\\Photos\\.corbeille-effacements\\20260906-214559-122\\20260411_160642.jpg"
+   ]
+  ],
+  "ts": 1788723962.498569,
+  "expire": 1804275962.498569,
+  "par": "Mike"
+ },
+ {
+  "op": "delete",
+  "src": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\260531_Samsung_MHU\\Camera\\20260411_160740.jpg",
+  "dst": "\\\\NAS-Bremblens\\home\\Photos\\.corbeille-effacements\\20260906-214602-556\\20260411_160740.jpg",
+  "idx": 1,
+  "keys": [
+   [
+    "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\260531_Samsung_MHU\\Camera\\20260411_160740.jpg",
+    "\\\\NAS-Bremblens\\home\\Photos\\.corbeille-effacements\\20260906-214602-556\\20260411_160740.jpg"
+   ]
+  ],
+  "ts": 1788723966.6294208,
+  "expire": 1804275966.6294208,
+  "par": "Mike"
+ },
+ {
+  "op": "delete",
+  "src": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\260531_Samsung_MHU\\Camera\\20260411_160804.jpg",
+  "dst": "\\\\NAS-Bremblens\\home\\Photos\\.corbeille-effacements\\20260906-214606-707\\20260411_160804.jpg",
+  "idx": 1,
+  "keys": [
+   [
+    "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\260531_Samsung_MHU\\Camera\\20260411_160804.jpg",
+    "\\\\NAS-Bremblens\\home\\Photos\\.corbeille-effacements\\20260906-214606-707\\20260411_160804.jpg"
+   ]
+  ],
+  "ts": 1788723970.4268386,
+  "expire": 1804275970.4268386,
+  "par": "Mike"
+ },
+ {
+  "op": "delete",
+  "src": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\260531_Samsung_MHU\\Camera\\20260411_160820.jpg",
+  "dst": "\\\\NAS-Bremblens\\home\\Photos\\.corbeille-effacements\\20260906-214610-519\\20260411_160820.jpg",
+  "idx": 1,
+  "keys": [
+   [
+    "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\260531_Samsung_MHU\\Camera\\20260411_160820.jpg",
+    "\\\\NAS-Bremblens\\home\\Photos\\.corbeille-effacements\\20260906-214610-519\\20260411_160820.jpg"
+   ]
+  ],
+  "ts": 1788723975.862374,
+  "expire": 1804275975.862374,
+  "par": "Mike"
+ },
+ {
+  "op": "delete",
+  "src": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\260531_Samsung_MHU\\Camera\\20260411_160839.jpg",
+  "dst": "\\\\NAS-Bremblens\\home\\Photos\\.corbeille-effacements\\20260906-214617-177\\20260411_160839.jpg",
+  "idx": 1,
+  "keys": [
+   [
+    "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\260531_Samsung_MHU\\Camera\\20260411_160839.jpg",
+    "\\\\NAS-Bremblens\\home\\Photos\\.corbeille-effacements\\20260906-214617-177\\20260411_160839.jpg"
+   ]
+  ],
+  "ts": 1788723984.5071478,
+  "expire": 1804275984.5071478,
+  "par": "Mike"
+ },
+ {
+  "op": "delete",
+  "src": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\260531_Samsung_MHU\\Camera\\20260411_160856.jpg",
+  "dst": "\\\\NAS-Bremblens\\home\\Photos\\.corbeille-effacements\\20260906-214628-600\\20260411_160856.jpg",
+  "idx": 1,
+  "keys": [
+   [
+    "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\260531_Samsung_MHU\\Camera\\20260411_160856.jpg",
+    "\\\\NAS-Bremblens\\home\\Photos\\.corbeille-effacements\\20260906-214628-600\\20260411_160856.jpg"
+   ]
+  ],
+  "ts": 1788723994.555581,
+  "expire": 1804275994.555581,
+  "par": "Mike"
+ },
+ {
+  "op": "delete",
+  "src": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\260531_Samsung_MHU\\Camera\\20260411_162946.jpg",
+  "dst": "\\\\NAS-Bremblens\\home\\Photos\\.corbeille-effacements\\20260906-214634-639\\20260411_162946.jpg",
+  "idx": 1,
+  "keys": [
+   [
+    "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\260531_Samsung_MHU\\Camera\\20260411_162946.jpg",
+    "\\\\NAS-Bremblens\\home\\Photos\\.corbeille-effacements\\20260906-214634-639\\20260411_162946.jpg"
+   ]
+  ],
+  "ts": 1788723997.7130933,
+  "expire": 1804275997.7130933,
+  "par": "Mike"
+ },
+ {
+  "op": "delete",
+  "src": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\260531_Samsung_MHU\\Camera\\20260411_190912.jpg",
+  "dst": "\\\\NAS-Bremblens\\home\\Photos\\.corbeille-effacements\\20260906-214637-768\\20260411_190912.jpg",
+  "idx": 1,
+  "keys": [
+   [
+    "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\260531_Samsung_MHU\\Camera\\20260411_190912.jpg",
+    "\\\\NAS-Bremblens\\home\\Photos\\.corbeille-effacements\\20260906-214637-768\\20260411_190912.jpg"
+   ]
+  ],
+  "ts": 1788724001.7836382,
+  "expire": 1804276001.7836382,
+  "par": "Mike"
+ },
+ {
+  "op": "delete",
+  "src": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\260531_Samsung_MHU\\Camera\\20260413_141442.jpg",
+  "dst": "\\\\NAS-Bremblens\\home\\Photos\\.corbeille-effacements\\20260906-214641-846\\20260413_141442.jpg",
+  "idx": 1,
+  "keys": [
+   [
+    "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\260531_Samsung_MHU\\Camera\\20260413_141442.jpg",
+    "\\\\NAS-Bremblens\\home\\Photos\\.corbeille-effacements\\20260906-214641-846\\20260413_141442.jpg"
+   ]
+  ],
+  "ts": 1788724005.919361,
+  "expire": 1804276005.919361,
+  "par": "Mike"
  }
 ]

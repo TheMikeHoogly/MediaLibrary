@@ -101,6 +101,7 @@ __ROWS__
   <button class="b" id="fx-rename" disabled>Renommer</button>
   <button class="b" id="fx-cut" disabled>Couper</button>
   <button class="b prim" id="fx-paste" style="display:none">Coller ici</button>
+  <button class="b" id="fx-prive" disabled title="D&eacute;placer dans le dossier PRIVE de leur propri&eacute;taire">&#128274; Rendre priv&eacute;es</button>
   <button class="b del" id="fx-del" disabled>Supprimer</button>
   <button class="b" id="fx-mkdir">Nouveau dossier</button>
   <button class="b" id="fx-undo" title="Annuler la derni&egrave;re op&eacute;ration">Annuler</button>
@@ -137,15 +138,17 @@ __ROWS__
       : (cut.length ? (cut.length+' \u00e0 coller') : 'Aucune s\u00e9lection');
     document.getElementById('fx-rename').disabled = sel.length!==1;
     document.getElementById('fx-cut').disabled = sel.length===0;
+    document.getElementById('fx-prive').disabled = sel.length===0;
     document.getElementById('fx-del').disabled = sel.length===0;
     var p=document.getElementById('fx-paste'); p.style.display = cut.length?'inline-block':'none';
     p.textContent = 'Coller ici ('+cut.length+')';
   }
   document.addEventListener('change', function(e){ if(e.target.classList&&e.target.classList.contains('sel')) refresh(); });
   // controle: natif -- l'identifiant arrive en parametre, donc aucune
-  // lecture statique ne dit quelle balise est visee. Les six appels
-  // ci-dessous visent fx-rename, fx-cut, fx-paste, fx-del, fx-mkdir et
-  // fx-undo : les six sont des <button class="b"> ecrits dans cette page.
+  // lecture statique ne dit quelle balise est visee. Les sept appels
+  // ci-dessous visent fx-rename, fx-cut, fx-paste, fx-prive, fx-del,
+  // fx-mkdir et fx-undo : les sept sont des <button class="b"> ecrits
+  // dans cette page.
   function bind(id, fn){ var el=document.getElementById(id); if(el) el.onclick=fn; }
   bind('fx-rename', function(){ var s=selected(); if(s.length!==1) return;
     var nn=prompt('Nouveau nom :', s[0].name); if(!nn||!nn.trim()||nn===s[0].name) return;
@@ -161,6 +164,24 @@ __ROWS__
     if(!confirm('Envoyer '+s.length+' \u00e9l\u00e9ment(s) \u00e0 la corbeille ? (r\u00e9versible)')) return;
     var n=s.length, i=0; (function next(){ if(i>=s.length){ flash(n+' envoy\u00e9(s) \u00e0 la corbeille.'); location.reload(); return; }
       var it=s[i++]; api('delete',{idx:it.idx, rel:it.rel}).then(function(r){ if(!r.ok){ toast(r.error||'Echec.', false); return; } next(); }); })(); });
+  // « Rendre privees » SUR UNE SELECTION (Mike, 06/09). Le geste existait
+  // depuis le 30/08, mais UNE photo a la fois, et seulement dans la
+  // visionneuse : pour un dossier entier de releves bancaires et
+  // d'attestations fiscales, il fallait ouvrir chaque photo. Le meme
+  // POST /api/files/prive, boucle sur la selection, avec le meme « Annuler ».
+  // Une par une et non en lot cote serveur : chaque deplacement est journalise
+  // separement, donc chacun reste annulable, et un refus (photo d'un autre,
+  // dossier sans proprietaire) arrete la serie en le DISANT au lieu de
+  // l'avaler.
+  bind('fx-prive', function(){ var s=selected(); if(!s.length) return;
+    if(!confirm('Rendre ' + s.length + ' photo(s) privee(s) ? Elles partent dans le dossier PRIVE de leur proprietaire, et seul lui les verra. Reversible.')) return;
+    var n=s.length, i=0, faits=0;
+    (function next(){
+      if(i>=s.length){ flash(faits + ' photo(s) rendue(s) privee(s).'); location.reload(); return; }
+      var it=s[i++];
+      api('prive',{idx:it.idx, rel:it.rel}).then(function(r){
+        if(!r.ok){ toast((r.error||'Echec.') + ' — ' + faits + ' sur ' + n + ' faite(s).', false); return; }
+        faits++; next(); }); })(); });
   bind('fx-mkdir', function(){ if(!CTX) return; var nm=prompt('Nom du nouveau dossier :'); if(!nm||!nm.trim()) return;
     api('mkdir',{idx:CTX.idx, rel:CTX.sub, name:nm.trim()}).then(function(r){
       if(r.ok){ flash('Dossier cr\u00e9\u00e9.'); location.reload(); } else toast(r.error||'Echec.', false); }); });

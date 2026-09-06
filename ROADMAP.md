@@ -50,7 +50,9 @@ peuvent parcourir le NAS EN MÊME TEMPS — la maintenance se reporte quand
 « UI active », pas quand un scan tourne. Deux balayages SMB concurrents, c'est
 la cause directe des 85 minutes.
 
-**(b) VIGNETTES — écrit et vérifié statiquement, PAS ENCORE OBSERVÉ EN RÉEL.**
+**(b) VIGNETTES — OBSERVÉ EN RÉEL le 06/09 au soir.** Sur
+`2026/260531_Samsung_MHU/Camera` : **585 tuiles, 30 chargées, 555 encore en
+attente**, plafond à 4 requêtes en vol. Avant, les 585 partaient d'un coup.**
 Une page de dossier demandait une vignette 512 px pour CHAQUE fichier : 2 139
 lectures NAS à froid pour `Photos Mike/2022`, une par seconde. Les tuiles
 portaient pourtant `loading="lazy"` — **l'attribut natif ne borne rien** : une
@@ -63,9 +65,7 @@ choisie (400 px) **et** une file unique qui plafonne à `EN_VOL_MAX = 4`
 requêtes en vol, pour qu'il reste deux connexions pour naviguer. La vue
 Dossiers passe à `data-src` (plus aucun `src` en dur, plus de `lazy` natif) ;
 la galerie garde son observateur mais passe par la même file. Banc :
-`verifier_vignettes.py` (vert). **Ce qui manque** : compter les requêtes
-simultanées dans un vrai navigateur sur `Photos Mike/2022` — les trois
-fenêtres du bat 0 se sont arrêtées à 13h17 avant la mesure.
+`verifier_vignettes.py` (vert). Mesuré au navigateur, pas déduit.
 
 **Trois mesures du 06/09 après-midi, à ne pas refaire** :
 1. **La corbeille de rangement ne se purgeait pas** parce que le rangement par
@@ -765,8 +765,42 @@ tourne à la maison — aucune photo envoyée en ligne. Surface PAPIER sur fond
 Mike, pas une tâche** : c'est sa famille qui lira ce texte, le ton et ce qu'on
 tait lui appartiennent. Le chantier se termine, il ne se relance pas.
 
-**3 bis. Le garde-fou de la confidentialité (chantier 18) — LA LISTE EST
-COURTE, ELLE ATTEND MIKE (06/09).** Les 24 photos que le banc n'avait pas
+**3 bis. LE CHANTIER 18 CHANGE DE FORME — décidé par Mike le 06/09 au soir.**
+En voyant un dossier `Camera` entier de relevés bancaires, d'attestations
+fiscales et de reçus de dons, Mike a posé la bonne question : « pourquoi
+dois-je faire cela ainsi ? ». Il avait raison. Le geste 🔒 existait depuis le
+30/08 mais **une photo à la fois, et seulement dans la visionneuse** ; je lui
+collais des liens à ouvrir un par un. Ce n'est pas un produit, c'est une
+béquille.
+
+**Ce qu'il veut, et qui devient la spec** : l'application DIT ce qu'elle a
+détecté, dans un onglet **Sensibles** ; la photo y est en quarantaine et
+protégée par défaut, en attendant qu'il valide ou efface.
+
+**La décision qui lui appartenait, et qu'il a tranchée** : que se passe-t-il
+À LA DÉTECTION, sachant que la mesure du 06/09 a vu le modèle manquer 4 des
+6 vrais documents et en inventer 2 ? → **masquer SANS déplacer**. Un troisième
+état, distinct du public et du PRIVE :
+  • axe `sensible: en_attente` **en base seulement, jamais dans le XMP** (18c) ;
+  • la photo sort de Galerie et de Dossiers pour tout le monde SAUF son
+    propriétaire — l'effet du privé — mais **le fichier ne bouge pas** ;
+  • elle apparaît dans l'onglet **Sensibles** avec les trois gestes de la spec :
+    **Rendre privée** (là seulement le fichier se déplace), **Corbeille**,
+    **« non, pas sensible »** (mémorisé, pour que la passe rétroactive ne la
+    re-signale pas).
+**Pourquoi masquer plutôt que déplacer** : un faux positif sur trois. Déplacer
+sur la foi d'un modèle qui se trompe autant, c'est muter l'archive — re-clé de
+l'index comprise — sans preuve. Masquer se défait d'un clic et ne touche à
+rien. Et masquer plutôt que « signaler seulement » parce qu'un vrai relevé
+bancaire ne doit pas rester visible de toute la famille en attendant que Mike
+ouvre l'onglet.
+
+**Posé le 06/09 en attendant l'onglet** : « 🔒 Rendre privées » dans la barre
+d'actions de la vue Dossiers, **sur une sélection**. Même `POST
+/api/files/prive`, bouclé, chaque déplacement journalisé séparément donc chacun
+annulable, et un refus arrête la série en le DISANT.
+
+**3 bis (état de la mesure). La liste courte du 06/09.** Les 24 photos que le banc n'avait pas
 classées « non » ont été REGARDÉES (planches-contact basse définition,
 `verifier_planches_sensibles.py` ; la basse définition est volontaire — on
 reconnaît la NATURE d'une image, on ne lit pas ce qu'elle raconte). Résultat :
