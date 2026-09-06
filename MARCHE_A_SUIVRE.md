@@ -83,19 +83,25 @@ Le 06/09 : 325 groupes réancrés (bat 46), 364 fichiers purgés (bat 24),
 - 44 refusent la purge parce que leur copie gardée est introuvable.
 
 La question n'était PAS « cette photo compte-t-elle ? » (elles comptent
-toutes) mais « existe-t-elle encore ailleurs ? ». **C'est mesuré**
-(`verifier_corbeille_dernieres_copies.py`, rapport
-`docs/corbeille_dernieres_copies.json`) :
+toutes) mais « existe-t-elle encore ailleurs ? ». **Tranché le 06/09 au soir**,
+après une première réponse fausse de ma part (voir ROADMAP : le bat 40
+dédoublonne par les PIXELS, pas par les octets — mon premier banc cherchait
+par empreinte de fichier et rendait 37 « dernières copies » dont 30 n'en
+étaient pas) :
 
-- **37 groupes sont la DERNIÈRE copie** (165 Mo) → à **RESTAURER**, surtout pas
-  à purger.
-- **6 sont des doublons confirmés** (4 Mo) → purgeables sans risque.
-- **4 illisibles** → à regarder.
+- **36 sont des doublons réels** → purgeables sans risque.
+- **4 sont des coquilles « Read error in the sector ! »** de la vieille
+  récupération de disque, même famille que les 942 → à jeter, elles ne
+  contiennent rien.
+- **3 seulement sont de vraies photos sans jumeau connu** → à **RESTAURER** :
+  Florine à un mariage, un paysage de Bolivie avec un hérisson en peluche, et
+  trois personnes sous un arbre en fleurs. Tu les vois dans
+  `_planches_corbeille\les_7_a_juger.jpg`.
 
-- [ ] Décider quoi faire des 37 : les remettre dans le fonds. **Dis-le-moi**,
-      je fais l'outil de restauration (le manifeste garde leur chemin d'origine).
-- [ ] **Supprimer `_planches_corbeille\`** — les planches ont servi, mais elles
-      ne répondaient pas à la question.
+- [ ] **Rien à décider si tu es d'accord** : je restaure les 3 et je purge le
+      reste à la prochaine session. Dis « non » seulement si tu veux garder
+      autre chose.
+- [ ] **Supprimer `_planches_corbeille\`** et `_planches\` quand tu les as vus.
 
 ---
 
@@ -130,12 +136,13 @@ poser une question et fait gagner du temps :
 
 - [ ] **Les trois fenêtres du bat 0 tournent** (section A). C'est le seul
       point vraiment nécessaire : sans elles je ne peux ni mesurer, ni livrer.
-- [ ] **Les 6 photos sensibles sont traitées** (section B) — ou dis-moi que tu
-      les laisses pour plus tard. Tant qu'elles y sont, je ne peux pas prendre
-      leur cas comme référence pour l'onglet Sensibles.
-- [ ] **Tu m'as dit quoi faire des 37 dernières copies** de la corbeille
-      (section D) : les restaurer, ou les laisser dormir. C'est un jugement,
-      pas une tâche.
+- [ ] **Les 6 photos sensibles sont traitées** (section B). Au 06/09 22h30,
+      deux sont déjà à la corbeille (le relevé Migros et la carte
+      d'assurance-maladie) ; les quatre autres sont encore en place. Le
+      collage est dans `_planches\les_6_sensibles.jpg`.
+- [ ] **Tu as jeté un œil aux 3 photos à restaurer** (section D,
+      `_planches_corbeille\les_7_a_juger.jpg`). Si elles te vont, tu n'as rien
+      à dire : je les restaure et je purge le reste.
 
 Et une chose à me dire seulement si elle a changé : **as-tu touché à
 `retag_actif.txt`** ou arrêté la campagne ? Si oui, dis-le en une ligne avec le

@@ -40,10 +40,12 @@ silencieuses, toutes trouvées par la mesure et pas par la relecture :
 
 **La corbeille de rangement : CLOSE.** Bat 46 (325 réancrages sur preuve
 d'empreinte) puis bat 24 : **25,36 Go rendus**, à 0,2 Go de la prévision.
-Restent 77 groupes — 33 récents qui partiront seuls, et **37 qui sont la
-DERNIÈRE copie d'une photo** (165 Mo) plus 6 doublons confirmés et 4 illisibles
-(`docs/corbeille_dernieres_copies.json`). Le garde-fou avait raison depuis le
-début.
+Restent 77 groupes — 33 récents qui partiront seuls, et 44 tranchés le soir
+même : **36 sont des doublons réels** (dont 30 que le sha256 déclarait à tort
+« dernière copie » — voir ROADMAP, le bat 40 dédoublonne par les PIXELS, pas
+par les octets), **4 sont des coquilles « Read error in the sector ! »**, et
+**3 seulement sont de vraies photos sans jumeau connu**, à restaurer.
+(`docs/corbeille_par_pixels.json`)
 
 **Le chantier 18 a changé de forme, décidé par Mike.** Il ne veut pas cliquer
 photo par photo sur des liens que je lui colle : il veut que l'application DISE
@@ -73,8 +75,8 @@ fonds à moitié masqué sans écran pour le démasquer.
     redémarrage ;
   - la maintenance se met en retrait quand l'UI est active, **pas quand un scan
     tourne** — deux balayages SMB simultanés, c'est la panne n° 1 ci-dessus ;
-  - restaurer les 37 dernières copies de la corbeille (l'outil reste à écrire ;
-    le manifeste garde leur chemin d'origine).
+  - restaurer les **3** vraies dernières copies de la corbeille (l'outil reste
+    à écrire ; le manifeste garde leur chemin d'origine), puis purger le reste.
 
 **3. Reprendre la mesure des sensibles sur `qwen3.5:4b`** (l'ancienne portait
 sur `qwen3-vl:2b`, l'ancien modèle de prod), avec les 24 verdicts humains du
@@ -99,6 +101,13 @@ place sur la vue Dossiers et n'a rien empêché : sa marge appartient au
 navigateur, et surtout il ne BORNE pas le nombre de requêtes en vol. Il avait
 l'air de faire le travail — c'est ce qui a rendu la panne invisible pendant des
 semaines. Ce qui protège, c'est ce qu'on écrit soi-même et qu'on peut mesurer.
+
+**Un instrument juste sur le principe peut mesurer la mauvaise grandeur.** Le
+banc de la corbeille cherchait par sha256 dans un fonds dédoublonné par les
+PIXELS : 37 « dernières copies » dont 30 étaient de vrais doublons. Rien
+n'était faux dans le code — il répondait exactement à la question qu'on lui
+posait, et ce n'était pas la bonne. Avant d'écrire un banc, demander par quel
+critère la donnée qu'on interroge a été produite.
 
 **Regarder n'est pas toujours le bon instrument.** Pour les 54 groupes de
 corbeille, les planches-contact montraient des chats et des mariages : elles

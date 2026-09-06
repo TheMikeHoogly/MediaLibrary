@@ -457,7 +457,33 @@ manquait, 25,56 Go concernés. Bat 24 dans la foulée : **364 fichiers purgés,
 **Ce qui reste dans la corbeille** : 77 groupes — 33 de moins de 30 jours
 (ils partiront d'eux-mêmes au prochain passage) et **44 dont la copie gardée
 reste introuvable**.
-**Et REGARDER n'est pas le bon instrument ici.** Les planches-contact
+**LE VERDICT DES 37 ÉTAIT FAUX — corrigé le 06/09 au soir, à lire avant de
+toucher à la corbeille.** `verifier_corbeille_dernieres_copies.py` cherche le
+contenu quarantiné par son **sha256** et conclut « dernière copie » quand il ne
+le trouve pas. Or une partie de ces groupes vient du **bat 40 —
+« dédoublonner par l'IMAGE (mêmes pixels) »** : deux fichiers y sont déclarés
+doublons quand leurs PIXELS sont identiques, **même si leurs octets diffèrent**
+— un EXIF réécrit, une vignette incorporée, un JPEG resauvé suffisent. Le
+sha256 ne les reconnaît donc pas comme jumeaux. Signature du défaut, visible
+dans les manifestes : la canonique notée porte souvent un **NOM DIFFÉRENT** de
+la quarantinée (`IMG-20180527-WA0008` gardée sous `…WA0007`, `Florine.jpg`
+sous `Flo.jpg`).
+**Contre-mesure** : `verifier_corbeille_par_pixels.py` compare ce que le bat 40
+comparait — l'image DÉCODÉE. Résultat sur les 37 : **30 ont les mêmes pixels
+ailleurs** (vrais doublons), **3 n'ont aucun jumeau** (vraies photos de
+famille : Florine à un mariage, un paysage de Bolivie, trois personnes sous un
+arbre en fleurs), **4 sont des coquilles « Read error in the sector ! »** de
+l'ancienne récupération de disque — même famille que les 942, contenu nul.
+**Ce que ça coûtait** : dire à Mike de restaurer 37 photos dont 34 n'avaient
+pas lieu de l'être. **La leçon** : trente-sept verdicts nets d'un coup, sur un
+fonds dont on SAIT qu'il a été dédoublonné par les pixels — c'est le genre de
+score qui doit alarmer, et il ne m'a alarmé qu'après l'avoir annoncé.
+**Réserve honnête sur les 3** : la recherche par pixels s'est faite sur les
+homonymes de la canonique ; un jumeau sous un TROISIÈME nom échapperait
+encore. On restaure quand même — le pire cas est une copie en trop, contre une
+perte irréversible dans l'autre sens.
+
+**Et REGARDER n'était pas le bon instrument non plus.** Les planches-contact
 (`verifier_planches_corbeille.py`) montrent des chats, des mariages, le
 Léman — de vraies photos de famille : elles répondent « oui, ça compte » à
 une question qu'on ne posait pas. La vraie question est « cette photo
