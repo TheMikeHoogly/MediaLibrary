@@ -24,9 +24,28 @@ interne, l'adoption de `components.css` par `browse`/`faces`/`reglages`
 autre version de pipeline, et l'unification du re-clé (chemin de mutation de
 l'index ; les trois copies ont été comparées le 05/09 et sont cohérentes).
 
-**Ce qui attend un geste de Mike** : juger les 90 photos du chantier 18, purger
-la corbeille (bat 24, 3,03 Go de coquilles y dorment), relire `/aide`.
-`QUESTIONS_MIKE.md` est vide.
+**Ce qui attend un geste de Mike (06/09, après-midi)** : lancer le **bat 46**
+puis le bat 24 (voir 1 septies ter), et trancher les **6 photos sensibles**
+que le regard direct a sorties du chantier 18 (voir 3 bis). `QUESTIONS_MIKE.md`
+est vide.
+
+**Trois mesures du 06/09 après-midi, à ne pas refaire** :
+1. **La corbeille de rangement ne se purgeait pas** parce que le rangement par
+   année a déplacé les canoniques : 389 groupes, **15** seulement avec leur
+   canonique au chemin noté, **27,6 Go** bloqués. 357 canoniques retrouvées
+   vivantes ailleurs — mais sur 40 vérifiées au sha256, **3 étaient une AUTRE
+   photo** portant le même nom. Le nom se trompe à ~7 % : à cette échelle, une
+   purge sur le nom détruirait la seule copie d'une vingtaine de photos.
+   → `verifier_corbeille_canoniques.py`, `docs/corbeille_canoniques.json`.
+2. **Le banc « sensibles » a mesuré `qwen3-vl:2b`**, l'ANCIEN modèle de prod —
+   `modele.txt` dit `qwen3.5:4b` depuis le 05/09. La mesure du 04/09 ne dit
+   donc rien du modèle qui tourne. Et son verdict `illisible` (19/90) n'est
+   pas « fichier illisible » mais « le modèle n'a pas répondu » : les 24
+   photos ont toutes été ouvertes sans erreur par `verifier_planches_sensibles.py`.
+3. **La barre de filtres était DÉJÀ repliée par défaut** ; ce qui mangeait le
+   haut de l'écran, c'était l'EMPILEMENT (nav + barre + attente + dossiers +
+   filtres + personnes). Une bascule commande désormais les deux barres de
+   filtre — une ligne de moins avant la première vignette.
 
 ## Priorité (26/08/2026, refixée session 53)
 
@@ -378,6 +397,20 @@ Observé : densité 96 → 86 → 210 px sur la planche, Échap ferme, cible 44 
 `--encre` a été retiré du « Se déconnecter » — mesuré à 3,50:1 sur
 `--salle-2`, sous le plancher AA, et se déconnecter ne détruit rien.
 
+**1 septies ter. La corbeille de rangement : 27,6 Go qui ne se purgent pas —
+OUTILLÉ, ATTEND LE BAT (06/09).** Le bat 24 refusait tout : le manifeste de
+chaque groupe note le chemin ABSOLU de la copie gardée, et le rangement par
+année l'a déplacée. Le garde-fou avait raison — sans canonique vivante, purger
+le doublon détruit la dernière trace. Mesure : 389 groupes, 15 en place, 357
+retrouvées par le nom, **3 faux sur 40 vérifiés au sha256**, 14 vraiment
+disparues (0,02 Go). **Ce que ça veut dire** : la corbeille n'est pas du poids
+mort, elle tient peut-être la DERNIÈRE copie d'une quinzaine de photos.
+`reancrer_corbeille.py` (+ **bat 46**, 9 bancs verts) réécrit le champ
+`canonique` **uniquement sur preuve d'empreinte**, jamais sur le nom ;
+réversible (`canonique_avant`, journal `docs/undo_reancrage_*.json`,
+`--annuler`). ~40 min de relecture NAS. Ensuite seulement, le bat 24 purge.
+Ce qui reste « à regarder » après le bat 46 est court et se juge à la main.
+
 **2 quater. RE-TAGGER en FR seul, modèle qwen3.5:4b, EN UNE SEULE PASSE
 coordonnée par photo — DÉCIDÉ (05/09), révisé le même jour sur mesure
 réelle. **GO de Mike pour l'implémentation, reçu le 05/09 au soir** : passage au code, dans l'ordre des 6 étapes ci-dessous.** Suite du 2 bis : Mike tranche deux choses le 05/09 — (i) plus de
@@ -657,7 +690,27 @@ tourne à la maison — aucune photo envoyée en ligne. Surface PAPIER sur fond
 Mike, pas une tâche** : c'est sa famille qui lira ce texte, le ton et ce qu'on
 tait lui appartiennent. Le chantier se termine, il ne se relance pas.
 
-**3 bis. Le garde-fou de la confidentialité (chantier 18) — EN COURS
+**3 bis. Le garde-fou de la confidentialité (chantier 18) — LA LISTE EST
+COURTE, ELLE ATTEND MIKE (06/09).** Les 24 photos que le banc n'avait pas
+classées « non » ont été REGARDÉES (planches-contact basse définition,
+`verifier_planches_sensibles.py` ; la basse définition est volontaire — on
+reconnaît la NATURE d'une image, on ne lit pas ce qu'elle raconte). Résultat :
+**6 vraiment sensibles**, 18 sans objet. Les 6 : deux relevés bancaires, une
+facture de charges avec bulletin de versement, une carte d'assurance-maladie
+(numéro AVS, date de naissance), un extrait de casier judiciaire, un
+certificat médical d'incapacité de travail. **Le banc en avait manqué QUATRE**
+— toutes rendues `illisible`, c'est-à-dire « le modèle n'a pas répondu », et
+`illisible` était traité comme un non-événement. Et il en avait inventé deux
+(des photos de remise de diplômes et un tout-ménage communal classés
+`administratif`). **Deux corrections de méthode qui en découlent** : (a)
+`illisible` doit compter comme À REVOIR, pas comme rien — c'est le seau où se
+cachaient les pièces les plus sensibles de l'échantillon ; (b) la mesure du
+04/09 porte sur `qwen3-vl:2b`, l'ANCIEN modèle : elle est à refaire sur
+`qwen3.5:4b` une fois la campagne finie, avec ces 24 verdicts humains comme
+vérité terrain. Le geste « rendre privée » est posé et observé : les 6 se
+traitent à la main, dans la visionneuse, dès que Mike les a jugées.
+
+**3 bis (historique). Le chantier 18 — EN COURS
 (session 68, 30/08 soir).** Catégories TRANCHÉES : **sept** — les six de la spec
 plus `administratif` (Mike, 31/08, après la lettre de Lausanne que le banc
 laissait passer ; `eval/DECISIONS.md`). Le cache du banc porte l'empreinte du

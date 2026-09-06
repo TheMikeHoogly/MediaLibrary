@@ -37,7 +37,31 @@ retrouvés dont 299 déjà sur le NAS, **4 photos de 2019 rapatriées du Takeout
 **3,03 Go rendus**. L'index se purge tout seul, scan après scan : 942 → 752 au
 moment d'écrire, il finira seul. `/sante` : 53 vrais problèmes.
 
-**`QUESTIONS_MIKE.md` est VIDE.** Rien n'attend de décision.
+**L'après-midi du 06/09 a répondu aux quatre questions de Mike** :
+
+1. **Chantier 18, les 24 photos non-« non » ont été REGARDÉES** (planches-contact
+   basse définition, `verifier_planches_sensibles.py`). **6 sont vraiment
+   sensibles**, 18 sans objet. Le banc en avait manqué 4 — toutes rangées sous
+   `illisible`, qui ne veut pas dire « fichier illisible » mais « le modèle n'a
+   pas répondu ». **Et il a mesuré `qwen3-vl:2b`, l'ancien modèle** : la mesure
+   du 04/09 est à refaire sur `qwen3.5:4b` après la campagne, avec ces 24
+   verdicts humains comme vérité terrain.
+2. **La corbeille : 27,6 Go bloqués, pas 3 Go.** Le rangement par année a
+   déplacé les canoniques ; 15 groupes sur 389 ont encore la leur au chemin
+   noté. `reancrer_corbeille.py` + **bat 46** les retrouvent **par l'empreinte,
+   jamais par le nom** (3 faux sur 40 vérifiés). Le bat 24 ne sert qu'après.
+3. **`/aide` : le FR/EN est retiré** (le fonds passe en français seul) et les
+   pages nommées sont devenues des liens. L'élargissement FR→EN reste ACTIF
+   dans le moteur — utile tant que 35 000 photos portent encore des mots
+   anglais ; ce n'est plus une promesse faite au lecteur, c'est une mécanique.
+4. **Galerie** : une seule bascule replie les DEUX barres de filtre (mots-clés
+   et personnes) ; un filtre actif la force à ressortir, avec son compte.
+   Nouveau tri **Dossier** (groupe par répertoire, chronologique dedans) —
+   vérifié en réel : 248 photos, 2 dossiers, 2 blocs contigus.
+
+**`QUESTIONS_MIKE.md` est VIDE.** Rien n'attend de décision — mais deux gestes
+attendent la main de Mike : le **bat 46 puis le bat 24**, et le jugement des
+**6 photos sensibles** (liste dans `ROADMAP.md`, section 3 bis).
 
 ## Prochain pas
 
@@ -88,6 +112,28 @@ puisqu'il ne fait qu'un aller-retour vers la corbeille).
 ## Réflexes
 
 ### Mesurer
+
+**Le seau « je n'ai pas compris » n'est pas un seau vide.** Le banc sensibles
+rendait `illisible` quand le modèle ne répondait pas — 19 fois sur 90 — et
+personne ne regardait dedans : c'est là que dormaient un extrait de casier
+judiciaire, une carte d'assurance-maladie et deux relevés bancaires. Le
+non-verdict doit compter comme À REVOIR, jamais comme rien.
+
+**Un banc mesure le modèle qu'il NOMME, pas celui qui tourne.** `mesure_sensibles.py`
+porte `qwen3-vl:2b` en dur ; `modele.txt` dit `qwen3.5:4b` depuis le 05/09.
+La doc annonçait « le modèle de PROD » : elle avait raison la veille du
+changement, et faux le lendemain. Relire `modele.txt` avant de citer une mesure.
+
+**Un zéro parfait est une alarme au même titre qu'un cent.** Le premier passage
+du banc corbeille a rendu « 374 disparues, 0 retrouvée » : il lisait
+`tags_index.json`, un fichier que le passage à SQLite avait laissé mort. Un
+index vide fait une réponse fausse qui a l'air d'une réponse — désormais le
+banc refuse de conclure quand l'index est vide.
+
+**Une mesure prise dans une fenêtre minimisée ne vaut rien** : Chrome rendait
+`innerWidth = 0`, et les hauteurs lues (grille à 1 292 px) étaient l'effet du
+repli, pas du design. Vérifier le viewport avant de croire un pixel.
+
 
 **Un marqueur n'est pas la chose.** `SEFT` en queue ≠ Motion Photo : 16 519
 JPEG portent un trailer SEF de MÉTADONNÉES sans vidéo. Et un `ftyp` nu dans

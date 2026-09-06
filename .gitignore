@@ -341,3 +341,6 @@ _corbeille_*/
 
 # Jeton de passe unique : les tronquees ont ete remises en file (06/09).
 _tronquees_retentees.txt
+_planches/
+docs/corbeille_canoniques.json
+docs/undo_reancrage_*.json

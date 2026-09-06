@@ -96,6 +96,13 @@ body { min-height: 100vh; }
 .tagbar-label { color: var(--graphite); font-size: var(--t-xs); margin-right: var(--e-1); }
 .tagchips { display: flex; flex-wrap: wrap; gap: var(--e-2); width: 100%; margin-top: var(--e-2); }
 .tagchips.hidden { display: none; }
+/* Replie par defaut (Mike, 06/09) : au chargement on vient VOIR des photos,
+   pas regler des filtres. Les deux barres qui posent la meme question --
+   « quoi montrer ? », mots-cles d'un cote, personnes de l'autre -- obeissent
+   desormais a UNE seule bascule ; deux lignes de reglages en moins avant la
+   premiere vignette. Le compte des filtres actifs reste ecrit SUR la bascule :
+   un filtre replie qui ne se voit plus se lirait comme un accord. */
+.selbar.replie { display: none; }
 
 /* -- barre de dossiers -- */
 .folders { display: flex; flex-wrap: wrap; gap: var(--e-2); padding: var(--e-3) var(--e-4);
@@ -323,6 +330,7 @@ body { min-height: 100vh; }
   <div class="btn-group">
     <button class="btn tb active" id="btn-date" aria-pressed="true">Date</button>
     <button class="btn tb" id="btn-name" aria-pressed="false">Nom A-Z</button>
+    <button class="btn tb" id="btn-dir" aria-pressed="false">Dossier</button>
     <button class="btn tb" id="btn-rel" aria-pressed="false" style="display:none">Pertinence</button>
   </div>
   <div class="btn-group">
@@ -686,9 +694,18 @@ __FOLDERS__
   // l'ordre venait de /api/search, et cliquer sur « Date » ne changeait rien
   // (applyFilter re-triait par pertinence derriere). Un bouton qui ment est
   // pire qu'un bouton absent.
+  // Le dossier d'une photo : la partie du chemin AVANT le dernier separateur.
+  // En vue recursive `name` porte deja le sous-chemin ; sinon c'est `key` qui
+  // sait ou vit le fichier. Une photo sans dossier connu rend '' et tombe donc
+  // en tete en ordre croissant -- elle n'est pas rangee ailleurs par surprise.
+  function dossierDe(f) {
+    var s = (f.name && f.name.indexOf('/') >= 0) ? f.name : (f.key || f.name || '');
+    var i = Math.max(s.lastIndexOf('/'), s.lastIndexOf('\\'));
+    return i < 0 ? '' : s.slice(0, i).toLowerCase();
+  }
   function updateSortButtons() {
     var d = document.getElementById('btn-date'), n = document.getElementById('btn-name'),
-        p = document.getElementById('btn-rel');
+        p = document.getElementById('btn-rel'), r = document.getElementById('btn-dir');
     // « Pertinence » n'existe que quand un classement a ete rendu : proposer un
     // ordre qu'on ne saurait pas produire serait un troisieme mensonge.
     p.style.display = iaResultats ? '' : 'none';
@@ -705,6 +722,12 @@ __FOLDERS__
       ? 'Chronologique — ' + (sortAsc ? 'du plus ancien au plus recent' : 'du plus recent au plus ancien') + ' (reclic pour inverser)'
       : 'Trier par date de prise';
     n.title = 'Trier par nom' + (currentSort==='name' ? ' (reclic pour inverser)' : '');
+    r.className = 'btn tb' + (currentSort==='dir' ? ' active' : '');
+    r.setAttribute('aria-pressed', currentSort==='dir' ? 'true' : 'false');
+    r.textContent = currentSort==='dir' ? ('Dossier ' + (sortAsc ? 'A\u2192Z' : 'Z\u2192A')) : 'Dossier';
+    r.title = currentSort==='dir'
+      ? 'Regroupe par dossier, puis chronologique dans chacun (reclic pour inverser les dossiers)'
+      : 'Regrouper par dossier';
   }
   function sortBy(m) {
     if (m === 'pertinence') {          // l'ordre vient du serveur : rien a trier
@@ -729,6 +752,16 @@ __FOLDERS__
       if (!sortAsc) datees.reverse();
       muettes.sort(function(a,b){ return a.name.localeCompare(b.name); });
       s = datees.concat(muettes);
+    } else if (m === 'dir') {
+      // Deux cles, et le sens ne s'applique qu'a la PREMIERE : inverser les
+      // dossiers ne doit pas retourner l'interieur de chacun. On veut relire
+      // un dossier dans son ordre, pas a l'envers.
+      var sens = sortAsc ? 1 : -1;
+      s.sort(function(a, b) {
+        var da = dossierDe(a), db = dossierDe(b);
+        if (da !== db) return da < db ? -sens : sens;
+        return photoTime(a) - photoTime(b);
+      });
     } else {
       s.sort(function(a,b){ return a.name.localeCompare(b.name); });
       if (!sortAsc) s.reverse();
@@ -781,18 +814,43 @@ __FOLDERS__
     var wrap = document.createElement('div');
     wrap.className = 'tagchips' + (collapsed ? ' hidden' : '');
 
+    // Une seule bascule pour les DEUX barres de filtre : mots-cles et
+    // personnes posent la meme question, elles n'ont pas a couter deux lignes.
+    // La barre des personnes ne se replie que si personne n'y est selectionne :
+    // cacher un filtre ACTIF ferait mentir la grille en silence.
+    var selbar = document.getElementById('selbar');
+    var toggleId = 'affiner-panneau';
+    wrap.id = toggleId;
+    toggle.setAttribute('aria-controls', toggleId);
+    function replierSelbar() {
+      if (!selbar) return;
+      var force = (typeof selPersons !== 'undefined' && selPersons.length)
+                  || (typeof geoFilter !== 'undefined' && geoFilter);
+      selbar.className = 'selbar' + ((collapsed && !force) ? ' replie' : '');
+    }
+
     function updToggle() {
+      var actifs = selTags.length
+                 + ((typeof selPersons !== 'undefined') ? selPersons.length : 0);
       toggle.textContent = (collapsed ? '▸' : '▾') + ' Filtres'
-        + (selTags.length ? ' — ' + selTags.length + ' actif' + (selTags.length > 1 ? 's' : '') : '')
+        + (actifs ? ' — ' + actifs + ' actif' + (actifs > 1 ? 's' : '') : '')
         + ' (' + tagsArr.length + ' tags)';
+      toggle.title = collapsed
+        ? 'Afficher les mots-cles et les personnes'
+        : 'Replier — la galerie remonte d\'autant';
     }
     toggle.onclick = function() {
       collapsed = !collapsed;
       wrap.className = 'tagchips' + (collapsed ? ' hidden' : '');
       toggle.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
       try { localStorage.setItem('tagbarOpen', collapsed ? '0' : '1'); } catch (e) {}
+      replierSelbar();
       updToggle();
     };
+    // Le reste de la page change selPersons sans passer par ici : la barre doit
+    // ressortir des qu'un filtre y devient actif.
+    window.majBarreFiltres = function() { replierSelbar(); updToggle(); };
+    replierSelbar();
     bar.appendChild(toggle);
 
     var modeBtn = document.createElement('button');
@@ -1570,6 +1628,7 @@ __FOLDERS__
   // ── init ──
   document.getElementById('btn-date').onclick = function() { sortBy('date'); };
   document.getElementById('btn-name').onclick = function() { sortBy('name'); };
+  document.getElementById('btn-dir').onclick  = function() { sortBy('dir'); };
   document.getElementById('btn-rel').onclick  = function() { sortBy('pertinence'); };
   document.getElementById('btn-seq').onclick  = function() { startSlideshow('seq'); };
   document.getElementById('btn-rnd').onclick  = function() { startSlideshow('rnd'); };
@@ -1721,6 +1780,9 @@ __FOLDERS__
     if (selPersons.length) parts.push(selPersons.length + ' personne(s)');
     if (geoFilter) parts.push('zone ' + geoFilter.km + ' km');
     document.getElementById('selinfo').textContent = parts.length ? ('· sélection : ' + parts.join(' + ')) : '';
+    // Un filtre ACTIF ne se replie pas : la bascule reprend la main ici, au
+    // seul endroit par lequel passent tous les changements de selection.
+    if (window.majBarreFiltres) window.majBarreFiltres();
   }
   var PERSONS = (function() {
     var s = {};

@@ -19,6 +19,22 @@
 .chapo { color: var(--graphite); margin-bottom: var(--e-3); line-height: 1.5; }
 .cle { font-family: var(--f-donnees); font-size: var(--t-sm);
        background: var(--papier-2); padding: 1px var(--e-1); border-radius: var(--r-sm); }
+/* Un lien vers un onglet : c'est un panneau indicateur, pas une alerte. Il
+   garde l'encre du texte et se signale par le trait — les accents du systeme
+   (--veilleuse, --encre) ont un SENS, ils ne servent pas a decorer. La cible
+   reste confortable au doigt sans casser le fil du paragraphe. */
+.enveloppe a { text-decoration: underline; text-underline-offset: 3px;
+               padding: 2px 0; }
+.feuille a { color: var(--texte-papier); text-decoration-color: var(--graphite-p); }
+.chapo a   { color: var(--texte);        text-decoration-color: var(--graphite); }
+@media (hover: hover) {
+  .feuille a:hover { text-decoration-color: var(--texte-papier);
+                     text-decoration-thickness: 2px; }
+  .chapo a:hover   { text-decoration-color: var(--texte);
+                     text-decoration-thickness: 2px; }
+}
+.feuille a:active { text-decoration-color: var(--texte-papier); }
+.chapo a:active   { text-decoration-color: var(--texte); }
 </style>
 </head>
 <body>
@@ -27,13 +43,15 @@
   <h1 class="titre">Comment ça marche</h1>
   <p class="chapo">La photothèque de la maison, en sept points. Rien à installer,
      rien à configurer : tout se passe dans cette page-ci et les quatre onglets
-     en haut.</p>
+     en haut — <a href="/files">Galerie</a>, <a href="/browse">Dossiers</a>,
+     <a href="/map">Carte</a>, <a href="/sujets">Sujets</a>.</p>
 
   <section class="feuille">
     <h3>1. Ce que tu vois</h3>
-    <p>Chaque personne a son dossier, <span class="cle">Photos Prénom</span>. Tu
-       vois le tien, et tu vois ce que les autres partagent — c'est une
-       photothèque de famille, pas un coffre-fort à cloisons.</p>
+    <p>Chaque personne a son dossier, <span class="cle">Photos Prénom</span> —
+       ils sont tous dans <a href="/browse">Dossiers</a>. Tu vois le tien, et tu
+       vois ce que les autres partagent : c'est une photothèque de famille, pas
+       un coffre-fort à cloisons.</p>
     <p>La seule exception est le dossier <span class="cle">PRIVE</span> à
        l'intérieur de chaque dossier personnel : celui-là n'est visible que par
        son propriétaire. Ne pas voir, c'est ne pas toucher — une photo privée
@@ -42,14 +60,17 @@
 
   <section class="feuille">
     <h3>2. Ce que tu peux changer</h3>
-    <p>Dans <strong>ton</strong> dossier : renommer, déplacer, mettre à la
-       corbeille, créer un dossier. C'est chez toi.</p>
+    <p>Dans <strong>ton</strong> dossier — <a href="/browse">Dossiers</a> —
+       tu peux renommer, déplacer, mettre à la corbeille, créer un dossier.
+       C'est chez toi.</p>
     <p>Ailleurs — la racine, <span class="cle">_A TRIER</span>,
        <span class="cle">_Uploads</span> — seul Mike peut écrire. Si un bouton
        refuse, ce n'est pas une panne : c'est cette règle.</p>
     <p>En revanche, <strong>juger</strong> une photo est permis partout où tu la
-       vois : nommer un visage, confirmer, écarter une erreur. Corriger le nom
-       d'une photo partagée est utile à tout le monde ; la détruire ne l'est pas.</p>
+       vois : nommer un visage, confirmer, écarter une erreur. C'est l'onglet
+       <a href="/sujets">Sujets</a> qui rassemble ce travail. Corriger le nom
+       d'une photo partagée est utile à tout le monde ; la détruire ne l'est
+       pas.</p>
   </section>
 
   <section class="feuille">
@@ -76,10 +97,14 @@
        fichier : décris ce que tu veux voir, en français — « ours en peluche »,
        « chat qui dort », « bord de mer ». La touche <span class="cle">/</span>
        t'y amène depuis n'importe quel onglet.</p>
-    <p>La recherche traduit toute seule vers l'anglais quand ça aide, et te le
-       dit : « ours en peluche <em>(+ teddy bear)</em> ». Tu peux aussi chercher
-       une personne (<span class="cle">personne:Florine</span>), un animal, un
-       lieu, ou une journée.</p>
+    <p>Tout est en français : les mots-clés, les descriptions, la recherche.
+       Écris comme tu parles, sans deviner le mot exact — c'est le sens qui est
+       cherché, pas l'orthographe d'une étiquette.</p>
+    <p>Tu peux aussi viser précis : une personne
+       (<span class="cle">personne:Florine</span>), un animal, un lieu ou une
+       journée. Les personnes et les animaux ont leur onglet,
+       <a href="/sujets">Sujets</a> ; les lieux, l'onglet
+       <a href="/map">Carte</a>.</p>
   </section>
 
   <section class="feuille">
@@ -99,14 +124,18 @@
        reconnue, ni pour être située.</p>
     <p>Une photo qui vient d'arriver n'a donc pas encore ses mots-clés : ils
        apparaissent quand la machine y arrive, parfois quelques minutes plus
-       tard. Ce n'est pas perdu, c'est en attente.</p>
+       tard. Ce n'est pas perdu, c'est en attente — <a href="/reglages">Réglages</a>
+       dit en une ligne où en est le travail.</p>
   </section>
 
   <section class="feuille">
     <h3>Si quelque chose cloche</h3>
     <p>Dis-le à Mike, avec le nom du fichier ou l'endroit où tu étais. Le serveur
        tient un journal de ce qu'il fait : la plupart des « ça n'a pas marché »
-       s'y retrouvent, à condition de savoir quoi chercher.</p>
+       s'y retrouvent, à condition de savoir quoi chercher. L'état de la machine
+       se lit dans <a href="/reglages">Réglages</a>, et la touche
+       <span class="cle">?</span> rappelle les raccourcis depuis n'importe quel
+       onglet.</p>
   </section>
 </div>
 </body>
