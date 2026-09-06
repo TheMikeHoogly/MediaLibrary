@@ -41,6 +41,17 @@ def _src(nom):
     return ast.get_source_segment(SOURCE, _noeud(nom)) or ""
 
 
+def _corps(nom):
+    """La fonction SANS sa docstring. Un banc juge du code, pas une prose :
+    la docstring de `remplir_file_retag` raconte la panne qu elle corrige et
+    y cite forcement `rglob` et `cur`."""
+    n = _noeud(nom)
+    corps = n.body[1:] if (n.body and isinstance(n.body[0], ast.Expr)
+                           and isinstance(n.body[0].value, ast.Constant)
+                           and isinstance(n.body[0].value.value, str)) else n.body
+    return "\n".join(ast.get_source_segment(SOURCE, x) or "" for x in corps)
+
+
 class LevierAbsentNeFaitRien(unittest.TestCase):
     def test_fichier_bascule_declare(self):
         self.assertIn('RETAG_FICHIER = SCRIPT_DIR / "retag_actif.txt"', SOURCE)
@@ -76,36 +87,23 @@ class LevierAbsentNeFaitRien(unittest.TestCase):
         self.assertIn("_RETAG_REFUS_DIT", s)
         self.assertIn("'refus'", s)
 
-    def test_selection_sous_scan_approfondi_et_cible(self):
-        s = _src("_sync_dir")
-        self.assertIn("if TAG_QUEUE.qsize() < RETAG_LOT:", s)
+    def test_selection_sous_cible_et_bornee(self):
+        s = _src("remplir_file_retag")
+        self.assertIn("TAG_QUEUE.qsize() >= RETAG_LOT", s)
         self.assertIn("cles_a_retaguer", s)
         # borne du lot : la file est en memoire
         self.assertIn("lot=RETAG_LOT", s)
 
     def test_index_jamais_vide_par_la_campagne(self):
-        # Le bloc de retag n'appelle PAS remove_many : la photo reste visible.
-        s = _src("_sync_dir")
-        bloc = s.split("# 2 bis)")[1].split("# 3)")[0]
-        self.assertNotIn("remove_many", bloc)
+        # Le remplissage n'appelle PAS remove_many : la photo reste visible,
+        # nommee et cherchable pendant les jours que dure la campagne.
+        self.assertNotIn("remove_many", _src("remplir_file_retag"))
 
     def test_le_lot_ne_depend_pas_du_scan_approfondi(self):
         # Il en dependait : un cycle sur douze, ~90 min, alors qu un lot de 500
         # se consomme en ~2 h. Nuit du 05 au 06/09 : trois lots entre 20:00 et
         # 00:17, file VIDE a 00:47, GPU au repos en pleine campagne.
-        s = _src("_sync_dir")
-        bloc = s.split("# 2 bis)")[1].split("# 3)")[0]
-        self.assertNotIn("if deep and TAG_QUEUE", bloc)
-        self.assertIn("if TAG_QUEUE.qsize() < RETAG_LOT:", bloc)
-
-    def test_retag_enfile_avant_la_passe_des_modifies(self):
-        # La passe des « fichiers modifies » fait un stat sur CHAQUE fichier de
-        # la racine (44 876 sur le NAS, plusieurs minutes). Le bloc de retag ne
-        # touche QUE la memoire : le faire attendre derriere, c'est laisser le
-        # GPU vider sa file et s'arreter. Observe le 05/09.
-        s = _src("_sync_dir")
-        self.assertLess(s.index("# 2 bis)"), s.index("# 3) fichiers modifi"),
-                        "le retag doit enfiler AVANT la passe des modifies")
+        self.assertNotIn("deep", _corps("remplir_file_retag"))
 
 
 class UnEchecNeCoutePasLaPhoto(unittest.TestCase):
@@ -225,6 +223,46 @@ class LaCampagneNeJeunePasApresUnRedemarrage(unittest.TestCase):
         self.assertIn(
             "(cycle % 12 == 6) or (cycle == 0 and retag_cible() is not None)",
             SOURCE)
+
+
+class LaFileNeDependPasDuNas(unittest.TestCase):
+    """Le defaut du 06/09 : file videe a 11h34, GPU a 0 % jusqu a 13h.
+
+    Le remplissage vivait dans `_sync_dir`, appelee APRES un `rglob` de 44 000
+    fichiers sur SMB (632 s a 1 473 s selon la charge ; plus de 85 minutes le
+    jour ou une passe de maintenance et 2 139 vignettes sont tombees dessus).
+    Rien ne cassait : le GPU attendait, simplement. C est le pire genre de
+    panne -- celle qui ressemble a du calme.
+    """
+
+    def test_le_remplissage_est_une_fonction_a_lui(self):
+        self.assertTrue(_src("remplir_file_retag"))
+
+    def test_il_ne_lit_jamais_le_disque(self):
+        s = _corps("remplir_file_retag")
+        for interdit in ("rglob", "iterdir", "glob(", "Path(", "stat(",
+                         "exists()", "_stat_of", "cur"):
+            self.assertNotIn(interdit, s,
+                             f"« {interdit} » remet le disque dans le chemin "
+                             "du remplissage : c est la panne du 06/09.")
+
+    def test_il_lit_l_index_en_memoire(self):
+        self.assertIn("STORE.data.items()", _corps("remplir_file_retag"))
+
+    def test_appele_avant_toute_enumeration(self):
+        s = _corps("scan_uploads")
+        self.assertIn("remplir_file_retag()", s)
+        self.assertLess(s.index("remplir_file_retag()"), s.index("rglob"),
+                        "Le remplissage doit passer AVANT le premier rglob.")
+
+    def test_le_bloc_a_quitte_sync_dir(self):
+        # Deux endroits qui enfilent, c est deux regles qui divergeront.
+        self.assertNotIn("cles_a_retaguer", _src("_sync_dir"))
+
+    def test_plafond_de_file_conserve(self):
+        # Enfiler les 40 000 cles ferait un etat qu un redemarrage perdrait.
+        self.assertIn("TAG_QUEUE.qsize() >= RETAG_LOT",
+                      _corps("remplir_file_retag"))
 
 
 if __name__ == "__main__":

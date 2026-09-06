@@ -3645,45 +3645,6 @@ def _sync_dir(label, cur, own_keys, first=False, deep=False):
     elif first and not moved:
         print(f"  🏷  {label} : rien de nouveau à taguer")
 
-    # 2 bis) campagne de RETAG (chantier 2 quater) : tant que `retag_actif.txt`
-    # est posé, le scan approfondi enfile AUSSI les entrées dont le `pipe` n'est
-    # pas la version visée.
-    #
-    # AVANT la passe des « fichiers modifiés », et ce n'est pas cosmétique :
-    # celle-ci fait un `stat` sur CHAQUE fichier de la racine — 44 876 appels
-    # sur le NAS, plusieurs minutes. Placé après, le bloc de retag attendait
-    # tout ce temps avant d'enfiler quoi que ce soit, pendant que le GPU vidait
-    # sa file et finissait par ne plus rien avoir à faire. Observé le 05/09 au
-    # premier vrai cycle : « rien de nouveau à taguer » à 17:00:44, et toujours
-    # aucune photo enfilée quatre minutes plus tard. Ce bloc-ci ne touche QUE
-    # la mémoire (`STORE.data`) : il n'a aucune raison d'attendre le disque. Par LOTS, et seulement quand la file a de la place :
-    # la file est en MÉMOIRE, l'enfiler entière (~40 000 clés) ferait un état
-    # qu'un redémarrage perdrait — la progression, elle, vit dans le `pipe` de
-    # chaque entrée, sur disque. Rien n'est retiré de l'index : la photothèque
-    # reste entière, nommée et cherchable pendant les jours que dure la campagne.
-    # PAS sous `deep` (corrigé le 06/09) : le lot ne dépendait que du scan
-    # approfondi, soit un cycle sur douze — environ 90 minutes — alors qu'un lot
-    # de 500 se consomme en ~2 h. Observé sur la nuit : trois lots seulement
-    # entre 20:00 et 00:17, file VIDE à 00:47, GPU au repos en pleine campagne.
-    # Ce bloc ne lit que la mémoire ; la seule chose qu'il attend, c'est la
-    # liste des fichiers de la racine — donc il a sa place à CHAQUE scan de
-    # cette racine, et le plafond de file suffit à le borner.
-    if TAG_QUEUE.qsize() < RETAG_LOT:
-        import tagging_meta as _tm
-        cible = retag_cible()
-        if cible:
-            with PENDING_LOCK:
-                deja = set(PENDING)
-            n_retag = 0
-            for k in _tm.cles_a_retaguer(
-                    ((c, STORE.data.get(c)) for c in cur), cible,
-                    exclues=deja, lot=RETAG_LOT):
-                if enqueue_retag(k):
-                    n_retag += 1
-            if n_retag:
-                print(f"  ♻ {label} : {n_retag} photo(s) en file de RE-TAGGING"
-                      f" (campagne « {cible} »)")
-
     # 3) fichiers modifiés (scan approfondi ~1x/heure) : re-tagging
     if deep:
         changed = []
@@ -3740,11 +3701,63 @@ def _sync_dir(label, cur, own_keys, first=False, deep=False):
               + (f" — {ecart} déjà absente(s) de l'index" if ecart else ""))
 
 
+def remplir_file_retag(label='campagne'):
+    """Recharge la file du tagueur depuis l'INDEX. Ne touche pas le NAS.
+
+    Chantier 2 quater. Ce remplissage vivait dans `_sync_dir`, et `_sync_dir`
+    n'est appelée qu'APRES l'énumération de la racine — un `rglob` de 44 000
+    fichiers sur SMB, mesuré entre 632 s et 1 473 s selon la charge. Le
+    06/09 à 11h38, cette énumération est entrée en concurrence avec la passe
+    de maintenance (recensement) puis avec 2 139 vignettes demandées par la
+    galerie : elle a mis plus de 85 minutes, et pendant tout ce temps le GPU
+    n'avait plus rien à faire — file vidée à 11h34, 0 % d'utilisation jusqu'à
+    13h. La campagne s'arrêtait sans que rien ne casse.
+
+    La correction du 05/09 avait déjà détaché ce bloc du scan APPROFONDI ; il
+    restait attaché à l'énumération elle-même, par `cur`. Or `cur` ne servait
+    ici qu'à fournir des CLÉS, et l'index les a toutes, en mémoire. Le
+    remplissage devient donc indépendant du disque : il tourne en tête de
+    chaque cycle, en quelques millisecondes, quoi que fasse le NAS.
+
+    Ce que ça coûte : une clé dont le fichier a disparu depuis peut être
+    enfilée. Le tagueur la marque en échec proprement (`_echec_retag`) et le
+    scan suivant la purge — un incident sans conséquence, contre un GPU au
+    repos pendant une heure et demie.
+
+    Par LOTS, et seulement quand la file a de la place : la file est en
+    MÉMOIRE, l'enfiler entière (~40 000 clés) ferait un état qu'un
+    redémarrage perdrait. La progression, elle, vit dans le `pipe` de chaque
+    entrée, sur disque. Rien n'est retiré de l'index : la photothèque reste
+    entière, nommée et cherchable pendant les jours que dure la campagne.
+    """
+    if TAG_QUEUE.qsize() >= RETAG_LOT:
+        return 0
+    cible = retag_cible()
+    if not cible:
+        return 0
+    import tagging_meta as _tm
+    with PENDING_LOCK:
+        deja = set(PENDING)
+    n = 0
+    for k in _tm.cles_a_retaguer(list(STORE.data.items()), cible,
+                                 exclues=deja, lot=RETAG_LOT):
+        if enqueue_retag(k):
+            n += 1
+    if n:
+        print(f"  ♻ {label} : {n} photo(s) en file de RE-TAGGING"
+              f" (campagne « {cible} »)")
+    return n
+
+
 def scan_uploads(first=False, deep=False, nas=True):
     """Scan des racines : Uploads (plat) + dossiers à taguer (récursif).
 
     `nas=False` saute les racines NAS pour ce tour — voir `NAS_SCAN_CYCLES`.
     Uploads, lui, est local et court : il reste à chaque cycle."""
+    # AVANT toute lecture de disque : la file du tagueur d'abord. Elle se
+    # remplit depuis l'index, en mémoire — rien ici n'a de raison d'attendre
+    # le NAS, et tout ce qui attend le NAS a déjà affamé le GPU une fois.
+    remplir_file_retag()
     # ── racine Uploads, RECURSIF : fichier a plat -> clé = nom ; fichier en
     #    sous-dossier -> clé = chemin relatif posix (MEME convention que l'upload
     #    de dossier, cf. _do_post ~« dest.relative_to(UPLOAD_DIR).as_posix() »).

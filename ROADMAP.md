@@ -29,6 +29,31 @@ puis le bat 24 (voir 1 septies ter), et trancher les **6 photos sensibles**
 que le regard direct a sorties du chantier 18 (voir 3 bis). `QUESTIONS_MIKE.md`
 est vide.
 
+**LA PANNE DU 06/09 MIDI — corrigée, à comprendre avant de retoucher le scan.**
+La campagne s'est arrêtée seule à 11h34, GPU à 0 % pendant deux heures, sans
+rien casser. Cause : le remplissage de la file de retag vivait dans
+`_sync_dir`, appelée APRÈS l'énumération de la racine — un `rglob` de 44 000
+fichiers sur SMB, **mesuré entre 632 s et 1 473 s** selon la charge, et **plus
+de 85 minutes** ce jour-là quand la passe de maintenance puis 2 139 vignettes
+de galerie sont tombées dessus. La correction du 05/09 avait détaché ce bloc
+du scan APPROFONDI ; il restait attaché à l'énumération elle-même, par `cur`.
+Or `cur` ne servait qu'à fournir des CLÉS, et l'index les a toutes, en
+mémoire. → `remplir_file_retag()`, appelée EN TÊTE de `scan_uploads`, avant
+tout contact avec le disque (6 bancs neufs dans `test_retag_campagne.py`, dont
+un qui refuse `rglob`/`cur`/`Path(` dans son corps).
+**Ne pas confondre avec le comportement NORMAL** : quand Mike navigue dans la
+photothèque, le tagueur s'efface — c'est l'invariant « l'UI cède la priorité
+au NAS », et c'est voulu. Le défaut, c'est l'arrêt de 11h34 à 12h48, sans
+aucune activité UI.
+**Ce qui reste ouvert** : (a) la passe de maintenance et l'énumération
+profonde peuvent parcourir le NAS EN MÊME TEMPS — la maintenance se reporte
+quand « UI active », pas quand un scan tourne ; (b) une page de dossier
+demande une vignette 512 px pour CHAQUE fichier, sans plafond : 2 139 lectures
+NAS à froid pour `Photos Mike/2022`, une par seconde, et les six connexions
+de Chrome bloquées — au point qu'un autre onglet vers le même serveur
+n'obtient jamais de connexion (observé et mesuré : la requête n'apparaît pas
+du tout dans le journal).
+
 **Trois mesures du 06/09 après-midi, à ne pas refaire** :
 1. **La corbeille de rangement ne se purgeait pas** parce que le rangement par
    année a déplacé les canoniques : 389 groupes, **15** seulement avec leur
