@@ -9,6 +9,25 @@ dans **git** ; les rejets dans `eval/DECISIONS.md` (photothèque) et
 > **`N:\\Photos` se connecte à chaque session** — règle dans `CLAUDE.md`
 > (« Tester en réel »), depuis le 29/08.
 
+## Où on en est — 06/09/2026 (à lire en premier)
+
+**LA CAMPAGNE DE RETAG TOURNE** (chantier 2 quater, lancée le 05/09 à 16:50).
+C'est le fait qui commande tout le reste : `retag_actif.txt` est posé, ~4 200
+photos sur 40 000 sont re-taguées en `qwen3.5:4b|v3fr|kb1`, 0 abandon, débit
+médian **14 s/photo** → encore **~6 jours**. Retirer le fichier l'arrête au lot
+suivant sans rien perdre (la progression vit dans le `pipe` de chaque entrée).
+
+**Ce qui est SÛR pendant qu'elle tourne** : doc, UI, CSS, le reste de l'audit
+interne, l'adoption de `components.css` par `browse`/`faces`/`reglages`
+(`/map` est le témoin, on n'y touche pas). **À ÉVITER** : la phase 2 vidéo
+(1 octies), tout banc qui appelle Ollama avec un AUTRE modèle, tout bump d'une
+autre version de pipeline, et l'unification du re-clé (chemin de mutation de
+l'index ; les trois copies ont été comparées le 05/09 et sont cohérentes).
+
+**Ce qui attend un geste de Mike** : juger les 90 photos du chantier 18, purger
+la corbeille (bat 24, 3,03 Go de coquilles y dorment), relire `/aide`.
+`QUESTIONS_MIKE.md` est vide.
+
 ## Priorité (26/08/2026, refixée session 53)
 
 Le garde-fou du filtre est posé (jeton insatisfaisable → RIEN, dit, banc

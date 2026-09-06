@@ -9,102 +9,74 @@ FUSIONNÉ — ce document, non. Puis `ROADMAP.md`, `eval/DECISIONS.md`,
 `eval/METHODE.md` — et `docs/DECISIONS_OUTILLAGE.md` si le sujet touche aux
 canaux, à la livraison ou au MCP. Débrief en 2–3 lignes, puis on attaque.
 
-## Où on en est (05/09/2026 soir — chantier 2 quater : étapes 1, 2 et 4 LIVRÉES)
+## Où on en est (06/09/2026 matin — LA CAMPAGNE TOURNE)
 
-**Git** : dernier commit fusionné dans `main` = celui de cette session
-(vérifier `.git/logs/refs/heads/main`, jamais ce document). Avant elle :
-`32cb83b` (préparation de la session d'implémentation). **Le serveur a été
-REDÉMARRÉ et observé** — c'était exigé, `server.py` a changé.
+**Git** : dernier commit fusionné dans `main` = celui de la fin de session
+(vérifier `.git/logs/refs/heads/main`, jamais ce document). La session des 05
+et 06/09 a livré, dans l'ordre : le chantier 2 quater (étapes 1, 2, 4), le gel
+du dictionnaire FR→EN, le banc d'endurance, le bat 44, l'onboarding `/aide`,
+la cadence NAS, le classement des échecs, les images tronquées, le registre des
+photos perdues et le bat 45.
 
-**Ce qui est codé et livré (rien n'est ACTIVÉ) :**
+**La campagne de retag est EN COURS depuis le 05/09 16:50** — `retag_actif.txt`
+posé (fichier VIDE, la forme sûre). Au moment d'écrire : ~4 200 photos
+re-taguées, ~35 800 restantes, **0 abandon**, GPU à 54 °C, aucun bridage.
+**Débit médian 14 s/photo** sur plus de 4 500 mesures → **encore ~6 jours**.
+Le journal est l'instrument : `grep 'tagué en' _journal_serveur.log`.
 
-1. **`tagging_meta.py` en FR seul.** `REGLES_JSON` ne demande plus
-   `keywords_en` ; s'y ajoutent une exigence de vrai français (sans la case
-   anglaise, le modèle déverse ses anglicismes dans la case française —
-   « inflatable », « gruppe », « castle gonflable » observés) et une consigne
-   anti-répétition (mots-clés distincts entre eux, description qui dit la
-   scène au lieu de recopier la liste). Chaque consigne répond à un défaut
-   VU dans `docs/comparaison_modeles_vision*.json`, pas à une intuition.
-2. **`modele.txt` → `qwen3.5:4b`** et `TAGGING_PIPELINE_VERSION` =
-   `"qwen3.5:4b|v3fr|kb1"`. Depuis le redémarrage, les uploads du quotidien
-   sont donc tagués par le nouveau modèle avec le nouveau prompt.
-3. **Le levier de campagne, livré INERTE.** `retag_actif.txt` est ABSENT : tant
-   qu'il l'est, rien ne bouge et `tagger_worker` se comporte comme avant. Posé,
-   le scan approfondi enfile par lots de 500 les entrées dont le `pipe` n'est
-   pas la cible ; le retirer arrête la campagne au lot suivant.
+**Ce qui a été appris et qui change les chiffres annoncés** : le banc
+d'endurance mesurait l'appel au modèle SEUL (8,9 s) ; la production paie en
+plus deux passages d'ExifTool sur le NAS et les détections. 14 s est le vrai
+chiffre, mesuré sur des milliers de photos, pas sur huit.
 
-**Deux écarts assumés par rapport au croquis de la ROADMAP** (détail dans
-`ROADMAP.md` 2 quater et `eval/DECISIONS.md`) : la campagne ne RETIRE rien de
-l'index (le geste `remove_many` du bloc « fichiers modifiés » viderait la
-photothèque sur cinq jours), et un retag raté CONSERVE l'entrée
-(`_echec_retag`, marque `retag_fail` qui sert aussi de garde anti-boucle) au
-lieu de l'écraser par un `failed` — un timeout d'Ollama aurait sinon coûté à la
-photo ses mots-clés, sa date et son GPS.
+**Les photos perdues — RÉGLÉ.** 942 fichiers étaient des coquilles de 2 à 3 Mo
+remplies de « Read error in the sector ! » (récupération d'un vieux disque).
+Registre dans git (`docs/photos_perdues.md`, 1983→2021), 309 homonymes intacts
+retrouvés dont 299 déjà sur le NAS, **4 photos de 2019 rapatriées du Takeout**,
+**938 coquilles en quarantaine** (`.corbeille-rangement\perdues_2026090610*`),
+**3,03 Go rendus**. L'index se purge tout seul, scan après scan : 942 → 752 au
+moment d'écrire, il finira seul. `/sante` : 53 vrais problèmes.
 
-4. **Le dictionnaire FR→EN est GELÉ sur disque** (`dico_fr_en.json`, tranché
-   par Mike le 05/09). Il s'apprenait toutes les 6 h sur les entrées BILINGUES
-   de l'index : le FR seul les efface une à une, l'élargissement (+0,075 de
-   rappel) serait mort SANS ERREUR à la fin de la campagne. Règle : le plus
-   riche gagne, et le plus riche est gelé. **Observé en réel** : 3 862 paires
-   sur 39 710 photos bilingues, fichier écrit et rechargé (« chaise → chair »,
-   « ours en peluche → teddy bear »). Le fichier est versionné exprès — c'est
-   la seule copie d'un savoir que l'index ne saura plus refaire.
-5. **Bat 44** — « Enrichir les lieux (geocodage hors ligne) » : l'étape 3 du
-   chantier est OUTILLÉE, le geste reste à Mike (le script ouvre `photos.db` et
-   il ÉCRIT : ni la VM ni l'agent banc ne peuvent le lancer). Serveur allumé
-   accepté, pas de redémarrage : `gps_places.json` est relu au changement de
-   `mtime`.
-
-**Tests** : `test_tagging_meta.py` (prompt FR seul, levier, sélection des
-clés), `test_retag_campagne.py` (16, câblage lu sur le code de prod par `ast`,
-sans importer `server.py`), `test_elargissement_fr_en.py` (gel : aller-retour
-JSON, tolérance à un fichier abîmé, « le plus riche gagne »).
+**`QUESTIONS_MIKE.md` est VIDE.** Rien n'attend de décision.
 
 ## Prochain pas
 
-**1. Ce qui reste du chantier 2 quater, dans l'ordre.** `QUESTIONS_MIKE.md`
-est VIDE : plus rien n'attend Mike.
-- **Étapes 3 et 5 : FAITES le 05/09.** Bat 44 lancé par Mike (lieux écrits) ;
-  endurance thermique mesurée — 371 photos, 0,95 h de charge, max 75 °C, aucun
-  bridage avoué sur 237 relevés, débit plat. **8,9 s/photo en médiane → ~4,5
-  jours pour les 44 135 entrées.**
-- **Étape 6, le SEUL pas qui reste, et il est à Mike** : créer
-  `retag_actif.txt` à la racine du projet, **VIDE** (une version cible y est
-  acceptée, mais seulement si elle est EXACTEMENT celle du code : toute autre
-  est refusée et dite dans `/api/maint/status` → `config.retag.refus`, sinon
-  elle re-taguerait le fonds sans fin). La campagne démarre, observée :
-  `/api/maint/status` → `config.retag` (`reste`, `en_file`, `abandons`), boucle
-  thermique au journal, et des spot-checks de moins de 10 photos de temps en
-  temps sur le FORMAT (6-10 mots-clés courts, pas une phrase) ET les
-  hallucinations type « lgbtq ». **Irréversible, à dire avant la première
-  photo** : le retag réécrit le XMP en FR seul, les mots-clés anglais des
-  fichiers sont perdus. Retirer le fichier arrête au lot suivant, sans rien
-  perdre.
+**0. D'ABORD : la campagne va-t-elle bien ?** `/api/maint/status` →
+`config.retag` (`reste`, `en_file`, `abandons`) ; `en_file` à 0 pendant
+longtemps = le GPU jeûne, c'est le défaut à traquer. Puis le débit
+(`tagué en`), puis la température au journal (`🌡`, `🔥 CHAUD` ≥ 85 °C).
+`abandons` > 0 : lire `retag_fail` dans les entrées concernées.
 
-**Pendant la campagne, ce qui reste sûr à faire avancer** : 1 bis (`.btn`
-canonique), l'étape 7 du chantier 17 (onboarding), le reste de l'audit, toute
-doc/UI/CSS. **À éviter** : la phase 2 vidéo (1 octies), tout nouveau banc
-`mesure_`/`eval_` qui appelle Ollama avec un AUTRE modèle, tout chantier qui
-bumperait une autre version de pipeline en même temps.
+**1. Ce qui est SÛR à faire avancer pendant la campagne** : l'onboarding
+`/aide` si Mike l'a relu et veut le retoucher (c'est SON texte, sa famille le
+lira), le reste de l'audit interne, toute doc/UI/CSS, l'adoption de
+`components.css` par `browse`, `faces` et `reglages` — `/map` est le TÉMOIN,
+on n'y touche pas.
 
-**2. Chantier 18 (confidentialité) : la mesure est FINIE, la liste ATTEND
-Mike.** `docs/sensibles_echantillon.json` (90/90, 04/09 soir) : 66 « non »,
-19 illisibles, 1 facture, 1 banque, 3 administratif — à JUGER photo par photo,
-rien n'a bougé.
+**2. À ÉVITER tant que la campagne tourne** : la phase 2 vidéo (1 octies), tout
+banc `mesure_`/`eval_` qui appelle Ollama avec un AUTRE modèle (il ferait
+swapper le premier sur une carte à 4 Go), tout chantier qui bumperait une autre
+version de pipeline, et l'unification du re-clé — elle touche le chemin de
+mutation de l'index (les trois copies ont été comparées le 05/09 : elles sont
+COHÉRENTES aujourd'hui, `appliquer_plan` se passe légitimement du 7e magasin
+puisqu'il ne fait qu'un aller-retour vers la corbeille).
 
-**3. Items non touchés depuis la session 71 (03/09), statut À REVÉRIFIER — le
-journal git ne dit rien de ces sujets, ils ne se prouvent qu'en réel :**
-- **Bat 42 : RÉGLÉ le 05/09** — le manifeste (03/09 23:30) dit 2 409 strippées,
-  32 ratées, 9,27 Go retirés, et aucun `_exiftool_tmp` ne traîne. Reste **bat
-  43** : les 2 409 `*.jpg_original` sont toujours sur le NAS, ce sont eux les
-  9,27 Go. Geste de Mike. Ne PAS relancer bat 42.
-- Ventilation dégagée mais pas nettoyée en profondeur : feu vert PARTIEL de
-  Mike pour tester quand même, prudence thermique.
-- La Carte a deux champs de recherche (barre commune + le sien) : à trancher.
-- 9 septembre au matin : Windows a-t-il demandé le redémarrage du Patch
-  Tuesday ? (`Get-WinEvent … Id=1074` ; ne pas confondre avec Id 41, thermique).
-- UNIFIER le re-clé (`server.rekey_everywhere`, `deplacer_dossiers.recle_une_cle`,
-  `appliquer_plan.rekey_stores` : trois copies d'une même règle).
+**3. Ce qui attend un geste de MIKE**, rien d'urgent :
+- **Chantier 18 (confidentialité)** : `docs/sensibles_echantillon.json`
+  (90/90, 04/09) — 66 « non », 19 illisibles, 1 facture, 1 banque,
+  3 administratif, **à juger photo par photo**. Rien n'a bougé.
+- **Bat 24** pour purger la corbeille quand il voudra les 3,03 Go pour de bon
+  (les 938 coquilles y sont, avec leurs manifestes).
+- **`/aide`** : relire les sept points et dire si le ton convient.
+
+**4. À REVÉRIFIER, ça ne se prouve qu'en réel** :
+- **9 septembre au matin** : Windows a-t-il demandé le redémarrage du Patch
+  Tuesday ? (`Get-WinEvent -FilterHashtable @{LogName='System'; Id=1074}` — ne
+  pas confondre avec Id 41, la coupure thermique).
+- La Carte garde son propre champ de recherche en plus de celui de la barre :
+  à trancher avec Mike (garder les deux, ou fondre).
+- Ventilation dégagée mais pas nettoyée en profondeur ; l'endurance est prouvée
+  sur ~1 h de charge (75 °C, aucun bridage), pas sur cinq jours.
 
 ## En fin de projet
 
@@ -164,6 +136,18 @@ la taille cumulée (`wc -c`) ET le `sha256sum` des deux côtés — CLOUD et
 Windows — avant de décoder et d'exécuter. Repéré et contourné le 05/09
 (transfert de `patch_roadmap2.py`, `patch_roadmap3.py`).
 
+**Un banc mesure CE QU'IL MESURE, pas ce qu'on croit.** Le banc d'endurance
+rendait 8,9 s/photo — l'appel au modèle SEUL. La production paie en plus deux
+passages d'ExifTool sur le NAS et les détections : **14 s**, mesurés sur des
+milliers de photos. Avant d'extrapoler un banc à une campagne, demander ce que
+le banc n'exécute PAS.
+
+**Le POIDS d'un fichier ne dit rien de son contenu.** 941 fichiers de 2 à 3 Mo
+étaient entièrement remplis du texte « Read error in the sector ! ». Un seuil
+de taille minimale — l'hypothèse de départ — n'en aurait écarté aucun, et
+aurait eu l'air de marcher. Une vignette se juge sur ses PIXELS
+(`tagging_meta.classe_contenu`), et un fichier se juge sur ses OCTETS DE TÊTE.
+
 ### Lire
 
 **Le journal du serveur d'abord**, depuis la dernière bannière :
@@ -204,6 +188,23 @@ count == 1` avant.**
 
 **Un banc vert n'est pas un regard.**
 
+**Un instrument ne condamne JAMAIS ce qu'il n'a pas vu — et ne passe jamais au
+vert dessus.** `verifier_pages_composants` rendait « 10 griefs » sans avoir lu
+une ligne (la porte était fermée). Corrigé — puis ses propres tests ont attrapé
+la correction inverse : classer une redirection en « non regardée » l'avait
+rendu VERT dessus, ce qui était l'incident du témoin `/faces`. Il faut les deux
+règles : **pas de faute sans lecture, pas de vert sans preuve.**
+
+**« Déjà fait » n'est pas un échec.** La passe complète du bat 45 criait vingt
+« ECHEC » sur les vingt fichiers de l'essai, déjà déplacés. Aucune donnée en
+jeu, mais un faux échec fait chercher une panne qui n'existe pas et noie les
+vrais.
+
+**Un `return` anticipé emporte le travail qui SUIT.** `classer_echecs` sortait
+avant `retenter_tronquees()` quand il n'y avait rien à classer : la passe des
+tronquées n'a jamais tourné au premier essai, et aucun test structurel ne l'a
+vu — seule l'absence de la ligne au journal.
+
 ### Toucher
 
 **`ui/pages/` et `ui/*.css` sont relus À CHAUD** ; seul `server.py` exige un
@@ -234,3 +235,9 @@ strip le VÉRIFIE fichier par fichier.
 > `historique`) et les fichiers `.git/logs/*` lus en texte suffisent toujours.
 >
 > **Piège d'horloge** : `device_bash` est en **UTC** (−2 h chez Mike).
+>
+> **Le NAS est monté dans `device_bash`** (`$HOME/mnt/Photos`) — la doc a
+> longtemps dit le contraire. Le listage est rapide, la lecture fichier par
+> fichier plafonne à **~5 fichiers/s** : un coup d'œil oui, un script sur tout
+> le fonds non (agent banc). `copie.db` s'ouvre en `mode=ro` depuis la VM ;
+> `photos.db`, jamais.
