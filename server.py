@@ -3689,7 +3689,21 @@ def _sync_dir(label, cur, own_keys, first=False, deep=False):
         changed = []
         for k, p in cur.items():
             e = STORE.data.get(k)
-            if not e or e.get('failed') or k in pending_now:
+            if not e or k in pending_now:
+                continue
+            if e.get('failed'):
+                # Une photo REMPLACÉE mérite une nouvelle chance (06/09). Une
+                # entrée en échec ne porte pas de `mtime` — `_marquer_echec`
+                # remplace l'entrée entière — donc ce bloc la sautait, et un
+                # fichier cassé restait cassé dans l'index même après que Mike
+                # ait remis la bonne photo à sa place. C'est exactement ce qui
+                # allait arriver aux quatre photos de 2019 rapatriées du
+                # Takeout. Repère : le fichier a été écrit APRÈS l'instant où
+                # l'échec a été noté.
+                echoue_a = e.get('at')
+                _sz, mtime = _stat_of(p)
+                if echoue_a and mtime and mtime > echoue_a + 2:
+                    changed.append(k)
                 continue
             old_m = e.get('mtime')
             if old_m is None:

@@ -147,9 +147,22 @@ au Takeout** (1 quinquies). Solidité : 187 des 309 ont leur candidat dans la
 MÊME année, les autres relèvent d'un classement flottant (`2009\Photos mams`
 contre `2010\Photos mams`, même appareil, même série). **Restent 633 photos
 sans aucune copie connue** : le registre est leur seule trace.
-**Décision qui attend Mike** : mettre les 942 coquilles à la corbeille. Le
-registre étant dans git, plus rien ne se perd à le faire — mais la purge à
-180 jours ne se rattrape pas, donc les 4 du Takeout d'abord.
+**OUTILLÉ (06/09), le geste est à Mike : bat 45.** `appliquer_perdues.py`,
+aperçu par défaut, deux gestes DANS L'ORDRE — `--restaurer` rapatrie d'abord
+les 4 photos qui n'existent que dans le Takeout (après la corbeille, la
+coquille n'est plus là pour dire OÙ remettre la photo), puis `--corbeille`
+déplace les coquilles restantes sous `.corbeille-rangement\perdues_<date>\`,
+arborescence gardée, manifeste, `--undo` ; rien n'est supprimé, le bat 24
+purgera. **Le serveur peut rester allumé** : le script ne touche pas à la base
+— un fichier disparu sort de l'index au scan suivant (`scan:disparus`), et un
+fichier RESTAURÉ est repris par la passe des modifiés, corrigée le même jour
+(une entrée en échec dont le fichier a été réécrit après coup redevient
+candidate ; sans ça les 4 rapatriées seraient restées « illisibles » à jamais).
+8 tests sur un arbre jouet (`test_appliquer_perdues.py`) : l'aperçu ne touche à
+rien, une coquille qui attend son rapatriement n'est jamais mise en corbeille
+avant, la coquille part de côté AVANT la copie, une source illisible est
+sautée, `--undo` remet tout, l'arborescence est gardée, et deux gestes dans la
+même seconde n'écrasent pas le journal d'annulation du premier.
 
 **1 octies. Les VIDÉOS — phases 0 et 1 CLOSES (30/08).**
 - **Phase 0, rangement par année** : `inventaire_videos.py` date par le NOM

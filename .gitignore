@@ -124,6 +124,8 @@ docs/undo_rangement_*.json
 docs/plan_rangement_annee.json
 docs/plan_rangement_annee.md
 docs/undo_annee_*.json
+# Journaux d'annulation des photos perdues (etat machine, pas source).
+docs/undo_perdues_*.json
 # Le compte Motion Photo (mesure_motion_photos) : rapport + cache des 40 000
 # sondes, 5,7 Mo, REGENERABLE par le banc — trop gros pour l'agent git, comme
 # copie.db. Le manifeste du strip est un undo local, comme les undo_*.
