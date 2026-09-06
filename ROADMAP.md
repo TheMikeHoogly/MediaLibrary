@@ -448,11 +448,35 @@ mort, elle tient peut-être la DERNIÈRE copie d'une quinzaine de photos.
 réversible (`canonique_avant`, journal `docs/undo_reancrage_*.json`,
 `--annuler`).
 
-**FAIT le 06/09 à 17:12 : 325 groupes réancrés** (journal
-`docs/undo_reancrage_20260906_171214.json`), sur 374 dont la canonique manquait.
-Restent ~49 groupes non prouvés — nom pris par une autre photo, ou aucun
-candidat : **ceux-là tiennent peut-être la dernière copie**, ils se jugent à la
-main, pas en lot. Le bat 24 peut maintenant purger les 325.
+**CLOS le 06/09.** Bat 46 à 17:12 : **325 groupes réancrés** (journal
+`docs/undo_reancrage_20260906_171214.json`) sur les 374 dont la canonique
+manquait, 25,56 Go concernés. Bat 24 dans la foulée : **364 fichiers purgés,
+25,36 Go rendus** — l'écart de 0,2 Go avec la prévision, ce sont les groupes
+« trop récents ». La prévision et la mesure se rejoignent : la méthode
+(réancrer sur l'empreinte, jamais sur le nom) tient.
+**Ce qui reste dans la corbeille** : 77 groupes — 33 de moins de 30 jours
+(ils partiront d'eux-mêmes au prochain passage) et **44 dont la copie gardée
+reste introuvable**.
+**Et REGARDER n'est pas le bon instrument ici.** Les planches-contact
+(`verifier_planches_corbeille.py`) montrent des chats, des mariages, le
+Léman — de vraies photos de famille : elles répondent « oui, ça compte » à
+une question qu'on ne posait pas. La vraie question est « cette photo
+existe-t-elle encore ailleurs dans le fonds ? », et c'est une question de
+machine. → `verifier_corbeille_dernieres_copies.py` : empreinte du fichier
+quarantiné, candidats de l'index à taille EXACTEMENT égale (la taille est
+gratuite, le hash ne l'est pas), sha256 sur ceux-là seulement. Deux tas :
+**dernière copie** (à RESTAURER) et **doublon confirmé** (purgeable).
+Rapport : `docs/corbeille_dernieres_copies.json`.
+
+**1 septies (suite). Bat 42 : « déjà fait » criait ENCORE « ECHEC ».**
+Passage du 06/09 : « 0 faits, 20 ratés », code 1, bandeau ECHEC — sur un fonds
+parfaitement propre depuis le 03/09. Le grief « pas de `_original` : exiftool
+n'a rien changé » veut dire « cette photo n'a plus de vidéo », c'est-à-dire
+RIEN À FAIRE. Même faute que le bat 45 la semaine passée : la leçon était dans
+les Réflexes, elle n'avait été appliquée qu'à un seul outil. `verifier_apres`
+rend désormais `fait | deja_propre | rate`, et ne conclut `deja_propre` que si
+exiftool a rendu la main SANS erreur — sinon on absoudrait un vrai échec.
+7 bancs (`test_strip_deja_propre.py`).
 
 **Leçon d'outillage, payée cash** : le bat 46 n'affichait RIEN pendant ses
 ~40 minutes de relecture NAS, et Mike a dû demander « est-ce ok ? ». Mesurer

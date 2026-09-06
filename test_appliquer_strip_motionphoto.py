@@ -55,31 +55,55 @@ class VerifierApres(unittest.TestCase):
     def test_strip_reussi(self):
         with tempfile.TemporaryDirectory() as d:
             p = self._cas(d, STILL)
-            self.assertIsNone(S.verifier_apres(p, len(STILL + MP4)))
+            self.assertEqual(S.verifier_apres(p, len(STILL + MP4)),
+                             ('fait', None))
 
-    def test_pas_d_original(self):
+    def test_pas_d_original_avec_taille_changee_reste_un_rate(self):
+        """Le fichier a retreci mais rien ne le sauvegarde : c est un rate."""
         with tempfile.TemporaryDirectory() as d:
             p = self._cas(d, STILL, original=False)
-            self.assertIn('_original', S.verifier_apres(p, len(STILL + MP4)))
+            etat, grief = S.verifier_apres(p, len(STILL + MP4))
+            self.assertEqual(etat, 'rate')
+            self.assertIn('_original', grief)
+
+    def test_pas_d_original_et_taille_inchangee_n_est_pas_un_rate(self):
+        """06/09 : le bat 42 criait ECHEC sur un fonds deja propre. Une photo
+        sans video ne donne pas de `_original` -- il n y avait rien a retirer."""
+        with tempfile.TemporaryDirectory() as d:
+            p = self._cas(d, STILL, original=False)
+            etat, grief = S.verifier_apres(p, len(STILL), exiftool_ok=True)
+            self.assertEqual(etat, 'deja_propre')
+            self.assertIn('aucune video', grief)
+
+    def test_mais_pas_si_exiftool_a_echoue(self):
+        """On n absout que sur PREUVE : exiftool en erreur laisse aussi le
+        fichier intact, et la c est bien un rate."""
+        with tempfile.TemporaryDirectory() as d:
+            p = self._cas(d, STILL, original=False)
+            etat, _ = S.verifier_apres(p, len(STILL), exiftool_ok=False)
+            self.assertEqual(etat, 'rate')
 
     def test_pas_plus_petit(self):
         with tempfile.TemporaryDirectory() as d:
             p = self._cas(d, STILL + MP4)
-            self.assertIn('pas plus petit', S.verifier_apres(p, len(STILL + MP4)))
+            self.assertIn('pas plus petit',
+                          S.verifier_apres(p, len(STILL + MP4))[1])
 
     def test_jpeg_invalide(self):
         with tempfile.TemporaryDirectory() as d:
             p = self._cas(d, STILL[:-2] + b'\x00\x00')
-            self.assertIn('FF D9', S.verifier_apres(p, len(STILL + MP4)))
+            self.assertIn('FF D9', S.verifier_apres(p, len(STILL + MP4))[1])
 
     def test_exiftool_tmp_condamne(self):
         with tempfile.TemporaryDirectory() as d:
             p = self._cas(d, STILL)
             (Path(d) / 'x.jpg_exiftool_tmp').write_bytes(b'')
-            self.assertIn('_exiftool_tmp', S.verifier_apres(p, len(STILL + MP4)))
+            self.assertIn('_exiftool_tmp',
+                          S.verifier_apres(p, len(STILL + MP4))[1])
 
     def test_disparu(self):
-        self.assertEqual(S.verifier_apres('nulle/part/x.jpg', 10), 'DISPARU')
+        self.assertEqual(S.verifier_apres('nulle/part/x.jpg', 10),
+                         ('rate', 'DISPARU'))
 
 
 class Purge(unittest.TestCase):

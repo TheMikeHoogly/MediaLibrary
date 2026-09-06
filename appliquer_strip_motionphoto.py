@@ -106,24 +106,39 @@ def strip_exiftool(exe, chemins):
                 pass
 
 
-def verifier_apres(chemin, avant):
-    """None si tout va bien, sinon le grief. Ne repare rien."""
+def verifier_apres(chemin, avant, exiftool_ok=True):
+    """('fait'|'deja_propre'|'rate', grief). Ne repare rien.
+
+    << DEJA FAIT >> N EST PAS UN ECHEC (06/09). Une photo qui ne porte plus de
+    video ne donne pas de `_original` : exiftool n a rien a retirer. L ancienne
+    version comptait cela comme un RATE et sortait en code 1 -- le bat affichait
+    donc << ECHEC >> sur un fonds parfaitement propre. Mike l a vu le 06/09 :
+    << 0 faits, 20 rates >> alors que le strip avait ete fait le 03/09 et que
+    la ROADMAP le disait. Meme faute que le bat 45 la semaine passee ; la lecon
+    etait ecrite, elle n avait ete appliquee qu a un seul outil.
+
+    La distinction ne se devine pas, elle se PROUVE : on ne conclut << deja
+    propre >> que si exiftool a rendu la main SANS erreur. S il a echoue, pas
+    de `_original` non plus -- et la, c est bien un rate.
+    """
     try:
         apres = os.path.getsize(chemin)
     except OSError:
-        return 'DISPARU'
+        return 'rate', 'DISPARU'
     if os.path.exists(str(chemin) + '_exiftool_tmp'):
-        return '_exiftool_tmp reste (fichier condamne sans intervention)'
+        return 'rate', '_exiftool_tmp reste (fichier condamne sans intervention)'
     if not os.path.exists(str(chemin) + '_original'):
-        return 'pas de _original : exiftool n a rien change'
+        if exiftool_ok and apres == avant:
+            return 'deja_propre', 'aucune video a retirer'
+        return 'rate', 'pas de _original : exiftool n a rien change'
     if apres >= avant:
-        return 'pas plus petit (%d -> %d)' % (avant, apres)
+        return 'rate', 'pas plus petit (%d -> %d)' % (avant, apres)
     with open(chemin, 'rb') as f:
         f.seek(max(0, apres - 2))
         fin = f.read()
     if fin[-2:] != b'\xff\xd9':
-        return 'ne finit pas par FF D9'
-    return None
+        return 'rate', 'ne finit pas par FF D9'
+    return 'fait', None
 
 
 def charger_manifeste():
@@ -195,7 +210,7 @@ def main(argv=None):
         print('exiftool ABSENT')
         return 2
 
-    faits, rates, recuperes = 0, 0, 0
+    faits, rates, propres, recuperes = 0, 0, 0, 0
     for i in range(0, len(a_faire), LOT):
         lot = a_faire[i:i + LOT]
         presents = [(k, e) for k, e in lot if os.path.exists(k)]
@@ -210,8 +225,11 @@ def main(argv=None):
                 print('  exiftool (code %d) : %s' % (code, asc(err)), flush=True)
             for k, ent in presents:
                 avant = ent.get('t', 0)
-                grief = verifier_apres(k, avant)
-                if grief:
+                etat, grief = verifier_apres(k, avant, exiftool_ok=(code == 0))
+                if etat == 'deja_propre':
+                    manifeste.setdefault('deja_propres', {})[k] = grief
+                    propres += 1
+                elif etat == 'rate':
                     manifeste['rates'][k] = grief
                     rates += 1
                     print('  RATE %s : %s' % (asc(Path(k).name), asc(grief)), flush=True)
@@ -222,12 +240,16 @@ def main(argv=None):
                     faits += 1
                     recuperes += avant - apres
         ecrire_manifeste(manifeste)
-        print('  ... %d strippes, %d rates, %.2f Go rendus'
-              % (faits, rates, recuperes / 1073741824.0), flush=True)
+        print('  ... %d strippes, %d deja propres, %d rates, %.2f Go rendus'
+              % (faits, propres, rates, recuperes / 1073741824.0), flush=True)
 
     print('=' * 74)
-    print('STRIP : %d faits, %d rates, %.2f Go rendus (les _original restent)'
-          % (faits, rates, recuperes / 1073741824.0))
+    print('STRIP : %d faits, %d deja propres (rien a retirer), %d rates, '
+          '%.2f Go rendus (les _original restent)'
+          % (faits, propres, rates, recuperes / 1073741824.0))
+    if propres and not faits and not rates:
+        print('Le fonds est DEJA propre : ce passage n avait rien a faire. '
+              'Ce n est pas un echec.')
     print('manifeste : docs/strip_motionphoto_manifeste.json')
     print('la purge des _original est le bat 43, APRES verification des stills')
     return 0 if rates == 0 else 1
