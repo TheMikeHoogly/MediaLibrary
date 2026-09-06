@@ -1,4 +1,7 @@
-# Marche à suivre — Mike, 06/09/2026 au soir
+# Marche à suivre — Mike
+
+> Mis à jour le 06/09/2026 au soir. Ce qui est coché ici est ce que la
+> prochaine session n'aura pas à te redemander.
 
 > Tout ce que j'attends de toi, dans l'ordre, avec le résultat à voir à chaque
 > étape. Coche au fur et à mesure. Rien ici n'est urgent ; rien ici ne se perd
@@ -119,21 +122,44 @@ Ce qu'il faut savoir sur son rythme, pour ne pas t'inquiéter à tort :
 
 ---
 
+## E bis. Avant de dire « go ! » à la prochaine session
+
+Rien de tout ceci n'est bloquant — tu peux dire « go » sans, je reprendrai
+l'état réel de toute façon. Mais chacun de ces trois points m'évite de te
+poser une question et fait gagner du temps :
+
+- [ ] **Les trois fenêtres du bat 0 tournent** (section A). C'est le seul
+      point vraiment nécessaire : sans elles je ne peux ni mesurer, ni livrer.
+- [ ] **Les 6 photos sensibles sont traitées** (section B) — ou dis-moi que tu
+      les laisses pour plus tard. Tant qu'elles y sont, je ne peux pas prendre
+      leur cas comme référence pour l'onglet Sensibles.
+- [ ] **Tu m'as dit quoi faire des 37 dernières copies** de la corbeille
+      (section D) : les restaurer, ou les laisser dormir. C'est un jugement,
+      pas une tâche.
+
+Et une chose à me dire seulement si elle a changé : **as-tu touché à
+`retag_actif.txt`** ou arrêté la campagne ? Si oui, dis-le en une ligne avec le
+« go » — c'est le fait qui commande tout le reste.
+
 ## F. Ce que je te dois encore
 
 Rien de tout ceci n'attend un geste de ta part — c'est ma liste, pas la tienne.
 Elle est là pour que tu saches où on en est.
 
-1. **Remplir la file de retag AVANT le travail de démarrage** — pour supprimer
+1. **L'ONGLET SENSIBLES** — celui que tu as demandé, et le gros morceau de la
+   prochaine session. L'application te dit ce qu'elle a trouvé ; la photo est
+   masquée sans bouger en attendant ton verdict.
+2. **Remplir la file de retag AVANT le travail de démarrage** — pour supprimer
    les 15 min de GPU perdu à chaque redémarrage.
-2. **Mesurer en réel le chargement paresseux des vignettes** sur
-   `Photos Mike/2022`, le dossier qui avait tout bloqué. Le code est écrit et
-   vérifié, mais pas encore observé.
 3. **Empêcher deux balayages NAS simultanés** — la maintenance se met en retrait
    quand tu navigues, mais pas quand un scan tourne. C'est la cause directe des
    85 minutes du 06/09 à midi.
-4. **Reprendre la mesure des photos sensibles sur `qwen3.5:4b`** (l'ancienne
+4. **L'outil qui restaure les 37 dernières copies** de la corbeille.
+5. **Reprendre la mesure des photos sensibles sur `qwen3.5:4b`** (l'ancienne
    portait sur `qwen3-vl:2b`), avec les 24 verdicts humains comme vérité terrain.
+
+*(Le chargement paresseux des vignettes est fait ET observé : 585 tuiles,
+30 chargées, 555 en attente, plafond à 4.)*
 
 ---
 

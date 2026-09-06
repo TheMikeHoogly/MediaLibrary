@@ -9,98 +9,79 @@ FUSIONNÉ — ce document, non. Puis `ROADMAP.md`, `eval/DECISIONS.md`,
 `eval/METHODE.md` — et `docs/DECISIONS_OUTILLAGE.md` si le sujet touche aux
 canaux, à la livraison ou au MCP. Débrief en 2–3 lignes, puis on attaque.
 
-## Où on en est (06/09/2026 matin — LA CAMPAGNE TOURNE)
+## Où on en est (06/09/2026 soir)
 
-**Git** : dernier commit fusionné dans `main` = celui de la fin de session
-(vérifier `.git/logs/refs/heads/main`, jamais ce document). La session des 05
-et 06/09 a livré, dans l'ordre : le chantier 2 quater (étapes 1, 2, 4), le gel
-du dictionnaire FR→EN, le banc d'endurance, le bat 44, l'onboarding `/aide`,
-la cadence NAS, le classement des échecs, les images tronquées, le registre des
-photos perdues et le bat 45.
+**Git** : dernier commit fusionné dans `main` — le vérifier dans
+`.git/logs/refs/heads/main`, jamais ici. Six livraisons le 06/09.
 
-**La campagne de retag est EN COURS depuis le 05/09 16:50** — `retag_actif.txt`
-posé (fichier VIDE, la forme sûre). Au moment d'écrire : ~4 200 photos
-re-taguées, ~35 800 restantes, **0 abandon**, GPU à 54 °C, aucun bridage.
-**Débit médian 14 s/photo** sur plus de 4 500 mesures → **encore ~6 jours**.
-Le journal est l'instrument : `grep 'tagué en' _journal_serveur.log`.
+**LA CAMPAGNE DE RETAG TOURNE, et elle est en forme.** 11–16 s/photo, GPU à
+81 % et 57 °C, la file se recharge toutes les ~18 minutes (500 par lot). Levier :
+`retag_actif.txt`, fichier VIDE — ne pas l'effacer. Instruments :
+`/reglages` → `config.retag`, et `grep 'en file de RE-TAGGING' _journal_serveur.log`.
 
-**Ce qui a été appris et qui change les chiffres annoncés** : le banc
-d'endurance mesurait l'appel au modèle SEUL (8,9 s) ; la production paie en
-plus deux passages d'ExifTool sur le NAS et les détections. 14 s est le vrai
-chiffre, mesuré sur des milliers de photos, pas sur huit.
+**La journée a été une journée de PANNES, pas de fonctionnalités.** Trois, toutes
+silencieuses, toutes trouvées par la mesure et pas par la relecture :
 
-**Les photos perdues — RÉGLÉ.** 942 fichiers étaient des coquilles de 2 à 3 Mo
-remplies de « Read error in the sector ! » (récupération d'un vieux disque).
-Registre dans git (`docs/photos_perdues.md`, 1983→2021), 309 homonymes intacts
-retrouvés dont 299 déjà sur le NAS, **4 photos de 2019 rapatriées du Takeout**,
-**938 coquilles en quarantaine** (`.corbeille-rangement\perdues_2026090610*`),
-**3,03 Go rendus**. L'index se purge tout seul, scan après scan : 942 → 752 au
-moment d'écrire, il finira seul. `/sante` : 53 vrais problèmes.
+1. **La file de retag jeûnait derrière le NAS.** Elle se remplissait dans
+   `_sync_dir`, appelée APRÈS un `rglob` de 44 000 fichiers sur SMB — 632 s à
+   1 473 s d'ordinaire, **plus de 85 minutes** le jour où une passe de
+   maintenance et 2 139 vignettes sont tombées dessus. GPU à 0 % pendant deux
+   heures sans que rien ne casse. → `remplir_file_retag()` en tête de
+   `scan_uploads`, avant tout contact avec le disque.
+2. **`loading="lazy"` ne borne rien.** Une planche de 2 139 tuiles prenait les
+   six connexions de Chrome pendant des dizaines de minutes — au point qu'un
+   AUTRE onglet vers le serveur n'obtenait jamais de connexion (sa requête
+   n'apparaît même pas dans le journal). → `window.Vignettes` : observateur à
+   marge choisie + file plafonnée à 4 en vol. **Observé** : 585 tuiles,
+   30 chargées, 555 en attente.
+3. **« Déjà fait » criait ENCORE « ECHEC »** — bat 42 cette fois, après le
+   bat 45 la semaine passée. La leçon était écrite ; elle n'avait été appliquée
+   qu'à un seul outil.
 
-**L'après-midi du 06/09 a répondu aux quatre questions de Mike** :
+**La corbeille de rangement : CLOSE.** Bat 46 (325 réancrages sur preuve
+d'empreinte) puis bat 24 : **25,36 Go rendus**, à 0,2 Go de la prévision.
+Restent 77 groupes — 33 récents qui partiront seuls, et **37 qui sont la
+DERNIÈRE copie d'une photo** (165 Mo) plus 6 doublons confirmés et 4 illisibles
+(`docs/corbeille_dernieres_copies.json`). Le garde-fou avait raison depuis le
+début.
 
-1. **Chantier 18, les 24 photos non-« non » ont été REGARDÉES** (planches-contact
-   basse définition, `verifier_planches_sensibles.py`). **6 sont vraiment
-   sensibles**, 18 sans objet. Le banc en avait manqué 4 — toutes rangées sous
-   `illisible`, qui ne veut pas dire « fichier illisible » mais « le modèle n'a
-   pas répondu ». **Et il a mesuré `qwen3-vl:2b`, l'ancien modèle** : la mesure
-   du 04/09 est à refaire sur `qwen3.5:4b` après la campagne, avec ces 24
-   verdicts humains comme vérité terrain.
-2. **La corbeille : 27,6 Go bloqués, pas 3 Go.** Le rangement par année a
-   déplacé les canoniques ; 15 groupes sur 389 ont encore la leur au chemin
-   noté. `reancrer_corbeille.py` + **bat 46** les retrouvent **par l'empreinte,
-   jamais par le nom** (3 faux sur 40 vérifiés). Le bat 24 ne sert qu'après.
-3. **`/aide` : le FR/EN est retiré** (le fonds passe en français seul) et les
-   pages nommées sont devenues des liens. L'élargissement FR→EN reste ACTIF
-   dans le moteur — utile tant que 35 000 photos portent encore des mots
-   anglais ; ce n'est plus une promesse faite au lecteur, c'est une mécanique.
-4. **Galerie** : une seule bascule replie les DEUX barres de filtre (mots-clés
-   et personnes) ; un filtre actif la force à ressortir, avec son compte.
-   Nouveau tri **Dossier** (groupe par répertoire, chronologique dedans) —
-   vérifié en réel : 248 photos, 2 dossiers, 2 blocs contigus.
-
-**`QUESTIONS_MIKE.md` est VIDE.** Rien n'attend de décision — mais deux gestes
-attendent la main de Mike : le **bat 46 puis le bat 24**, et le jugement des
-**6 photos sensibles** (liste dans `ROADMAP.md`, section 3 bis).
+**Le chantier 18 a changé de forme, décidé par Mike.** Il ne veut pas cliquer
+photo par photo sur des liens que je lui colle : il veut que l'application DISE
+ce qu'elle a trouvé. Spec dans `eval/DECISIONS.md` (06/09) et ROADMAP § 3 bis.
 
 ## Prochain pas
 
-**0. D'ABORD : la campagne va-t-elle bien ?** `/api/maint/status` →
-`config.retag` (`reste`, `en_file`, `abandons`) ; `en_file` à 0 pendant
-longtemps = le GPU jeûne, c'est le défaut à traquer. Puis le débit
-(`tagué en`), puis la température au journal (`🌡`, `🔥 CHAUD` ≥ 85 °C).
-`abandons` > 0 : lire `retag_fail` dans les entrées concernées.
+**0. D'ABORD : la campagne va-t-elle bien ?** `/reglages` → `config.retag`
+(`reste`, `en_file`, `abandons`). `en_file` à 0 longtemps = le GPU jeûne.
+Puis le débit (`tagué en`) et la température (`🌡`, `🔥 CHAUD` ≥ 85 °C).
 
-**1. Ce qui est SÛR à faire avancer pendant la campagne** : l'onboarding
-`/aide` si Mike l'a relu et veut le retoucher (c'est SON texte, sa famille le
-lira), le reste de l'audit interne, toute doc/UI/CSS, l'adoption de
-`components.css` par `browse`, `faces` et `reglages` — `/map` est le TÉMOIN,
-on n'y touche pas.
+**1. L'ONGLET SENSIBLES — le chantier que Mike attend.** Spec complète dans
+`eval/DECISIONS.md`. Trois morceaux, dans cet ordre :
+  a. l'axe `sensible` dans l'index (jamais le XMP) + le filtre au magasin qui
+     lit un ÉTAT en plus du CHEMIN — c'est le vrai changement : `visibilite`
+     ne décidait jusqu'ici que sur le chemin ;
+  b. la route `/sensibles` et sa page, aux trois gestes (Rendre privée /
+     Corbeille / « non » mémorisé) ;
+  c. la question posée dans la MÊME invocation du tagueur (pas de cinquième
+     pipeline), puis la passe rétroactive.
+**Ne pas commencer par (c)** : détecter avant de savoir montrer produirait un
+fonds à moitié masqué sans écran pour le démasquer.
 
-**2. À ÉVITER tant que la campagne tourne** : la phase 2 vidéo (1 octies), tout
-banc `mesure_`/`eval_` qui appelle Ollama avec un AUTRE modèle (il ferait
-swapper le premier sur une carte à 4 Go), tout chantier qui bumperait une autre
-version de pipeline, et l'unification du re-clé — elle touche le chemin de
-mutation de l'index (les trois copies ont été comparées le 05/09 : elles sont
-COHÉRENTES aujourd'hui, `appliquer_plan` se passe légitimement du 7e magasin
-puisqu'il ne fait qu'un aller-retour vers la corbeille).
+**2. Trois dettes de la journée, courtes** :
+  - le remplissage de la file passe encore APRÈS le travail de démarrage du
+    serveur (résolution des 45 000 clés) : ~15 min de GPU perdu à chaque
+    redémarrage ;
+  - la maintenance se met en retrait quand l'UI est active, **pas quand un scan
+    tourne** — deux balayages SMB simultanés, c'est la panne n° 1 ci-dessus ;
+  - restaurer les 37 dernières copies de la corbeille (l'outil reste à écrire ;
+    le manifeste garde leur chemin d'origine).
 
-**3. Ce qui attend un geste de MIKE**, rien d'urgent :
-- **Chantier 18 (confidentialité)** : `docs/sensibles_echantillon.json`
-  (90/90, 04/09) — 66 « non », 19 illisibles, 1 facture, 1 banque,
-  3 administratif, **à juger photo par photo**. Rien n'a bougé.
-- **Bat 24** pour purger la corbeille quand il voudra les 3,03 Go pour de bon
-  (les 938 coquilles y sont, avec leurs manifestes).
-- **`/aide`** : relire les sept points et dire si le ton convient.
+**3. Reprendre la mesure des sensibles sur `qwen3.5:4b`** (l'ancienne portait
+sur `qwen3-vl:2b`, l'ancien modèle de prod), avec les 24 verdicts humains du
+06/09 comme vérité terrain.
 
-**4. À REVÉRIFIER, ça ne se prouve qu'en réel** :
-- **9 septembre au matin** : Windows a-t-il demandé le redémarrage du Patch
-  Tuesday ? (`Get-WinEvent -FilterHashtable @{LogName='System'; Id=1074}` — ne
-  pas confondre avec Id 41, la coupure thermique).
-- La Carte garde son propre champ de recherche en plus de celui de la barre :
-  à trancher avec Mike (garder les deux, ou fondre).
-- Ventilation dégagée mais pas nettoyée en profondeur ; l'endurance est prouvée
-  sur ~1 h de charge (75 °C, aucun bridage), pas sur cinq jours.
+**Ce qui attend la main de Mike** : `MARCHE_A_SUIVRE.md` à la racine — six
+sections à cocher.
 
 ## En fin de projet
 
@@ -112,6 +93,28 @@ puisqu'il ne fait qu'un aller-retour vers la corbeille).
 ## Réflexes
 
 ### Mesurer
+
+**Un attribut du navigateur n'est pas une garantie.** `loading="lazy"` était en
+place sur la vue Dossiers et n'a rien empêché : sa marge appartient au
+navigateur, et surtout il ne BORNE pas le nombre de requêtes en vol. Il avait
+l'air de faire le travail — c'est ce qui a rendu la panne invisible pendant des
+semaines. Ce qui protège, c'est ce qu'on écrit soi-même et qu'on peut mesurer.
+
+**Regarder n'est pas toujours le bon instrument.** Pour les 54 groupes de
+corbeille, les planches-contact montraient des chats et des mariages : elles
+répondaient « oui, ça compte » à une question qu'on ne posait pas. La vraie
+question — « cette photo existe-t-elle encore ailleurs ? » — était une question
+de machine. Choisir l'instrument AVANT de le fabriquer.
+
+**Une sonde qui coûte autant que ce qu'elle mesure est un échec de conception.**
+479 s pour relire 389 manifestes et savoir où en était le bat 46 — parce que
+l'outil, lui, ne disait rien. C'est au travail de rendre des comptes, pas à
+l'observateur de le deviner.
+
+**Chercher le banc AVANT d'éditer.** J'ai changé la signature de
+`verifier_apres` sans voir `test_appliquer_strip_motionphoto.py` : six bancs
+rouges, deux refus de l'agent Git. Le refus est une bonne nouvelle ; l'avoir
+mérité n'en est pas une.
 
 **Le seau « je n'ai pas compris » n'est pas un seau vide.** Le banc sensibles
 rendait `illisible` quand le modèle ne répondait pas — 19 fois sur 90 — et
