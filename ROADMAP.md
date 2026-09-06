@@ -158,11 +158,25 @@ purgera. **Le serveur peut rester allumé** : le script ne touche pas à la base
 fichier RESTAURÉ est repris par la passe des modifiés, corrigée le même jour
 (une entrée en échec dont le fichier a été réécrit après coup redevient
 candidate ; sans ça les 4 rapatriées seraient restées « illisibles » à jamais).
-8 tests sur un arbre jouet (`test_appliquer_perdues.py`) : l'aperçu ne touche à
+9 tests sur un arbre jouet (`test_appliquer_perdues.py`) : l'aperçu ne touche à
 rien, une coquille qui attend son rapatriement n'est jamais mise en corbeille
 avant, la coquille part de côté AVANT la copie, une source illisible est
-sautée, `--undo` remet tout, l'arborescence est gardée, et deux gestes dans la
-même seconde n'écrasent pas le journal d'annulation du premier.
+sautée, `--undo` remet tout, l'arborescence est gardée, deux gestes dans la
+même seconde n'écrasent pas le journal d'annulation du premier, et une coquille
+DÉJÀ en quarantaine est sautée au lieu d'être criée en ECHEC.
+
+**FAIT PAR MIKE le 06/09.** Les 4 photos de 2019 sont **rapatriées** (vérifié
+octet par octet : les quatre commencent par `FF D8`, 2,1 à 5,6 Mo — de vraies
+photos là où il y avait des coquilles). Les coquilles sont en quarantaine en
+deux passes, **20 + 918 = 938**, manifestes dans
+`.corbeille-rangement\perdues_20260906_100004\` et `…_100206\` — le compte
+tombe juste, les 4 restaurées étant à jamais protégées de la corbeille (elles
+restent dans la liste « attend un rapatriement », donc sautées). **3,03 Go
+rendus.** L'index se nettoie tout seul au scan suivant (`scan:disparus`), et
+les 4 restaurées repassent au tagage par la passe des modifiés. Un seul défaut
+au passage, corrigé dans la foulée : la passe complète criait vingt « ECHEC »
+sur les vingt fichiers de l'essai, déjà déplacés — aucune donnée en jeu, mais
+un faux échec fait chercher une panne qui n'existe pas et noie les vrais.
 
 **1 octies. Les VIDÉOS — phases 0 et 1 CLOSES (30/08).**
 - **Phase 0, rangement par année** : `inventaire_videos.py` date par le NOM
