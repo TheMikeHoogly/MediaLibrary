@@ -117,9 +117,39 @@ chaque démarrage, et `/sante` les résume en UNE ligne dépliable avec leur
 poids au lieu de 941 : **« 92 fichier(s) à problème, 942 au contenu perdu »**
 là où on lisait « 1 034 fichier(s) à problème ». Une passe unique
 (`classer_echecs`) a rattrapé les entrées marquées avant que la classe existe.
-**Piste non prise, à proposer à Mike** : `LOAD_TRUNCATED_IMAGES` rendrait les
-39 tronquées lisibles, donc taguables et affichables — c'est un changement de
-comportement du décodage, il mérite d'être décidé, pas glissé.
+**Les 39 tronquées : RÉCUPÉRÉES (06/09, tranché par Mike).**
+`LOAD_TRUNCATED_IMAGES` décode jusqu'à la coupure ; comme elles portaient
+`failed`, ni le tagueur ni la campagne ne les auraient reprises — une passe
+unique (`retenter_tronquees`, jeton sur disque) les a remises en file par le
+chemin du retag, le seul qui passe outre `STORE.has`. Observé : environ trois
+sur quatre reviennent avec une vraie description (`DSCN0278.JPG`, photos de la
+maman de Mike, 2009 : « couple, femme, homme, sourire, embrassement, photo de
+famille ») ; la quatrième revient en « bandes colorées, fond gris » — coupée
+trop tôt, il ne restait que la bande grise. Le tag dit lui-même laquelle.
+
+**Le REGISTRE et la RECHERCHE AILLEURS — FAITS (06/09).**
+`inventaire_photos_perdues.py` écrit `docs/photos_perdues.md` (dans git : il
+survit à la corbeille, au NAS et au disque) — **942 photos, 1983 à 2021**, et
+non « 2008-2015 » comme je l'avais dit d'après les premiers échantillons :
+2010 : 210 · 2018 : 163 · 2019 : 105 · 2015 : 98 · 2017 : 95 · 2009 : 86.
+Aucune date ne survivait dans l'index (une entrée `failed` remplace l'entrée
+entière) : elle est relue du CHEMIN, seul témoin restant.
+`verifier_perdues_ailleurs.py` a ensuite cherché un homonyme portant de VRAIS
+pixels, dans deux réservoirs — l'index du NAS (gratuit, exhaustif) et le
+Takeout Google. **309 sur 942 retrouvées**, et la répartition est le résultat :
+**299 sont déjà sur le NAS**, sous un autre dossier (`2009\04 Avril\France &
+Belgique\DSC00802.JPG` a son jumeau intact dans `2009\Photos mams\`) — pour
+celles-là la photo n'a jamais quitté la photothèque, seule une copie était sur
+le disque tombé. 6 sont dans les deux, et **4 n'existent QUE dans le Takeout**
+(2019, Appart Bremblens : `IMG_20190424_195717`, `IMG_20190807_120626`,
+`IMG_20190808_175606`, `IMG_20190809_145046`) — **à rapatrier AVANT de toucher
+au Takeout** (1 quinquies). Solidité : 187 des 309 ont leur candidat dans la
+MÊME année, les autres relèvent d'un classement flottant (`2009\Photos mams`
+contre `2010\Photos mams`, même appareil, même série). **Restent 633 photos
+sans aucune copie connue** : le registre est leur seule trace.
+**Décision qui attend Mike** : mettre les 942 coquilles à la corbeille. Le
+registre étant dans git, plus rien ne se perd à le faire — mais la purge à
+180 jours ne se rattrape pas, donc les 4 du Takeout d'abord.
 
 **1 octies. Les VIDÉOS — phases 0 et 1 CLOSES (30/08).**
 - **Phase 0, rangement par année** : `inventaire_videos.py` date par le NOM
