@@ -203,6 +203,12 @@ TRACKING_MD = {
     # livraison git. Qui travaille la recherche n'a jamais besoin de savoir
     # pourquoi `taskkill` a échoué.
     "docs/DECISIONS_OUTILLAGE.md": 100000,
+    # Sorti de DECISIONS.md le 07/09, meme geste et meme raison : le carnet
+    # avait atteint son budget et ne pouvait plus recevoir un verdict. Ici
+    # l'ECRAN -- composants, cibles, contraste, ce qu'une grille compte. La
+    # regle de VISIBILITE, elle, est restee dans DECISIONS.md : elle decide
+    # qui voit quoi, pas de quoi l'ecran a l'air.
+    "eval/DECISIONS_UI.md": 100000,
     # Sorti de DECISIONS.md le 16/08 : « ce qui a ete tranche » d'un cote,
     # « comment on tranche » de l'autre.
     "eval/METHODE.md": 100000,

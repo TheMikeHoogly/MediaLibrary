@@ -156,3 +156,23 @@
   défaut du fonds, se demander s'il n'est pas un aveu de l'instrument.
 - **Fragilité du corpus** : clés corrompues et mutations concurrentes ont invalidé des runs ;
   `--mesurer` alerte au-delà de 15 % de clés mortes.
+
+## Une garantie d'instrument se MESURE, elle ne se décrète pas (07/09)
+
+`verifier_planches_sensibles.py` réduit chaque case à 620 px, et son en-tête
+annonce le pourquoi : « on veut reconnaître la NATURE d'une image, pas lire ce
+qu'elle raconte ». Sur une PHOTO, c'est vrai. Sur un DOCUMENT cadré de près,
+non : sur `_planches/les_6_sensibles.jpg` se lisent un IBAN complet, un numéro
+de carte d'assurance, une date de naissance et une adresse. Le texte imprimé
+d'un document occupe une part du cadre bien plus grande qu'un visage dans une
+photo de famille — la réduction qui anonymise l'une ne masque pas l'autre.
+
+La garantie n'avait jamais été mesurée : elle avait été écrite. Trois suites :
+la planche EST elle-même une pièce sensible (gitignorée et absente de
+`.git/index` — vérifié en lisant l'index en binaire, sans invoquer git), elle
+s'efface dès qu'elle a servi, et la page `/sensibles` ne pourra pas compter sur
+« trop petit pour être lu » : c'est le MASQUAGE qui protège, pas la taille.
+
+**La règle générale** : quand un outil promet de CACHER quelque chose, la
+promesse se vérifie en regardant sa sortie avec l'œil de celui à qui on cache —
+pas en relisant le paramètre qui était censé la tenir.

@@ -1,0 +1,24 @@
+{
+ "genere_le": "2026-09-07 08:16:38",
+ "outil": "restaurer_corbeille",
+ "gestes": [
+  {
+   "groupe": "2f926b19",
+   "de": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Floufline\\IMG-20180527-WA0008.jpg",
+   "vers": "\\\\NAS-Bremblens\\home\\Photos\\.corbeille-rangement\\2f926b19\\9e01_IMG-20180527-WA0008.jpg",
+   "manifeste": "\\\\NAS-Bremblens\\home\\Photos\\.corbeille-rangement\\2f926b19\\manifeste.json"
+  },
+  {
+   "groupe": "32abb7ff",
+   "de": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\2015 Bolivie\\IMG-20150729-WA0018.jpg",
+   "vers": "\\\\NAS-Bremblens\\home\\Photos\\.corbeille-rangement\\32abb7ff\\48fe_IMG-20150729-WA0018.jpg",
+   "manifeste": "\\\\NAS-Bremblens\\home\\Photos\\.corbeille-rangement\\32abb7ff\\manifeste.json"
+  },
+  {
+   "groupe": "60bc605f",
+   "de": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Sista\\40 ans Val et Thierry\\IMG-20210426-WA0002.jpg",
+   "vers": "\\\\NAS-Bremblens\\home\\Photos\\.corbeille-rangement\\60bc605f\\6693_IMG-20210426-WA0002.jpg",
+   "manifeste": "\\\\NAS-Bremblens\\home\\Photos\\.corbeille-rangement\\60bc605f\\manifeste.json"
+  }
+ ]
+}

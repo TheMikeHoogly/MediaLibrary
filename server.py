@@ -690,11 +690,37 @@ def utilisateur_vu():
 def chemin_visible(chemin):
     """Le garde des routes qui servent des OCTETS par chemin (fichier,
     vignette) : la vue des magasins ne les couvre pas. Refus = 404, jamais
-    403 — dire « interdit » dirait « ça existe »."""
-    return _visibilite.visible(str(chemin), utilisateur_vu())
+    403 — dire « interdit » dirait « ça existe ».
+
+    Depuis le chantier 18 il consulte AUSSI l'axe `sensible` : une photo
+    masquée qui continuerait à rendre ses octets ne serait pas masquée du
+    tout — la galerie ne la citerait plus, et l'URL de sa vignette la
+    servirait quand même."""
+    u = utilisateur_vu()
+    if u is None:
+        return True
+    return _visibilite.visible(str(chemin), u, sensible_du_chemin(chemin))
+
+
+def sensible_du_chemin(chemin):
+    """L'axe `sensible` d'un fichier du DISQUE — via la carte chemin → clé.
+
+    Lit l'index BRUT. Le lire à travers la vue serait doublement faux : la
+    vue appelle ce prédicat pour décider (elle tournerait en rond), et une
+    photo DÉJÀ masquée y serait introuvable, donc jugée « pas sensible » et
+    servie. Le trou se serait refermé sur lui-même."""
+    try:
+        cle = _key_index().get(_pkey(chemin))
+    except Exception:                                        # noqa: BLE001
+        return False
+    return _visibilite.en_attente(INDEX_BRUT.get(cle)) if cle else False
 
 
 PRIVE_NOM = _visibilite.PRIVE      # « PRIVE » : une seule source, cote regle
+# Les trois valeurs de l'axe du chantier 18. La chaîne vide LÈVE l'axe : c'est
+# ce que fait « rendre à la galerie » après un faux positif, et il en faut un
+# sur trois d'après la mesure du 06/09.
+SENSIBLE_ETATS = ('', _visibilite.SENSIBLE_EN_ATTENTE, _visibilite.SENSIBLE_NON)
 
 # Le dossier PRIVE de quelqu'un, en URL de la vue Dossiers — pour le menu de
 # compte (31/08). MIS EN CACHE 60 s : `/api/moi` est appele par la brique
@@ -733,10 +759,28 @@ def refus_ecriture(chemin):
     return _visibilite.refus_ecriture(str(chemin), utilisateur_vu())
 
 
+# L'index RÉEL, capturé AVANT que la vue ne soit posée dessus. `STORE.data`
+# devient ensuite une propriété qui rend la VUE : la relire ici ferait appeler
+# le prédicat par lui-même. `SqliteStore.data` rend son dictionnaire vivant,
+# donc cette référence reste juste pour toute la vie du processus.
+INDEX_BRUT = STORE.data
+
+
+def sensible_en_attente(cle):
+    """Cette clé d'index est-elle masquée par son ÉTAT (chantier 18) ?
+    Sur l'index BRUT — voir `sensible_du_chemin` pour le pourquoi."""
+    return _visibilite.en_attente(INDEX_BRUT.get(cle))
+
+
+# Les cinq magasins reçoivent le MÊME prédicat d'état : les visages et les
+# animaux sont keyés par le chemin de la photo, et les fiches PEOPLE/PETS
+# citent des chemins (avatar, faces, confirmed) — un avatar pris sur une
+# photo masquée serait une vignette qui fuit, exactement le point 17b.
 for _st in (STORE, FACE_STORE, ANIMAL_STORE):
-    _visibilite.brancher(_st, utilisateur_vu)
+    _visibilite.brancher(_st, utilisateur_vu, sensible=sensible_en_attente)
 for _st in (PEOPLE_STORE, PETS_STORE):
-    _visibilite.brancher(_st, utilisateur_vu, par_nom=True)
+    _visibilite.brancher(_st, utilisateur_vu, par_nom=True,
+                         sensible=sensible_en_attente)
 
 # ─── Les COMPTES (chantier 17, étape 4 — 29/08/2026, choix de Mike : un mot de
 # passe par compte). Règle dans `comptes.py` ; fichier `comptes.json` HORS git.
@@ -3340,13 +3384,23 @@ KEY_IDX_TTL = 60.0
 
 
 def _key_index():
-    """{chemin normalisé (_pkey) : clé d'index exacte}, en cache."""
+    """{chemin normalisé (_pkey) : clé d'index exacte}, en cache.
+
+    Bâtie sur l'index BRUT, jamais sur la vue, pour deux raisons. (1) Le cache
+    est PARTAGÉ par tous les fils : bâtie sous les yeux d'un utilisateur, elle
+    servait ensuite à tout le monde — un filtre par accident n'est pas un
+    filtre, et son contenu dépendait de qui avait navigué en premier. (2)
+    Depuis le chantier 18 une photo peut être masquée par son ÉTAT : si la
+    carte ne la contenait plus, `sensible_du_chemin` ne saurait pas qu'elle
+    est masquée et `chemin_visible` servirait ses octets. Le filtrage n'est
+    pas perdu pour autant — il reste là où il doit être : `_index_key_for_path`
+    relit `STORE.data` (la vue) avant de rendre la clé."""
     with _KEY_IDX_LOCK:
-        n, now = len(STORE.data), time.time()
+        n, now = len(INDEX_BRUT), time.time()
         if (_KEY_IDX["map"] is None or _KEY_IDX["n"] != n
                 or now - _KEY_IDX["at"] > KEY_IDX_TTL):
             _KEY_IDX["map"] = fichiers.build_key_index(
-                list(STORE.data.keys()), _resolve_key)
+                list(INDEX_BRUT.keys()), _resolve_key)
             _KEY_IDX["n"], _KEY_IDX["at"] = n, now
         return _KEY_IDX["map"]
 
@@ -11389,6 +11443,9 @@ class Handler(BaseHTTPRequestHandler):
         elif path == '/api/maint/status':
             self._serve_maint_status()
 
+        elif path == '/api/sensibles':
+            self._serve_sensibles()
+
         elif path == '/eval':
             self._serve_eval_page()
 
@@ -11569,6 +11626,87 @@ class Handler(BaseHTTPRequestHandler):
         dup = _upload_dup_by_hash(taille, empreinte.lower())
         self._send(200, b'SKIP' if dup is not None else b'OK', 'text/plain')
 
+    def _serve_sensibles(self):
+        """Ce que la machine a mis de côté, et qui attend un verdict humain.
+
+        La liste se bâtit sur l'index BRUT — sinon elle serait vide par
+        construction : ces photos sont précisément celles que la vue cache.
+        Chacun ne voit QUE les siennes : c'est la même règle que le masquage,
+        lue à l'endroit."""
+        u = utilisateur_vu()
+        photos = []
+        for cle, e in list(INDEX_BRUT.items()):
+            if not _visibilite.en_attente(e):
+                continue
+            if u is not None and not _visibilite.peut_juger(cle, u):
+                continue
+            photos.append({'key': cle, 'nom': Path(cle).name,
+                           'motif': (e.get('sensible_motif') or ''),
+                           'le': e.get('sensible_le') or '',
+                           'par': e.get('sensible_par') or ''})
+        photos.sort(key=lambda p: (p['le'], p['key']))
+        self._send(200, json.dumps({'ok': True, 'n': len(photos),
+                                    'photos': photos},
+                                   ensure_ascii=False, default=str).encode(),
+                   'application/json')
+
+    def _do_sensibles_post(self, path):
+        """Poser ou lever l'axe `sensible` — en BASE, jamais dans le XMP (18c).
+
+        C'est le geste « non, pas sensible » de la spec (mémorisé, pour que la
+        passe rétroactive ne re-signale pas la photo), et son inverse. Les deux
+        autres gestes — Rendre privée, Corbeille — existent déjà et gardent
+        leurs routes : `/api/files/prive` DÉPLACE, `/api/corbeille/*` efface.
+        Ici rien ne bouge sur le disque.
+
+        Le droit de juger est le droit de VOIR une photo masquée : `chez_soi`,
+        la même règle que le masquage. Un refus est NOMMÉ par clé — un lot qui
+        échoue à moitié en silence est pire qu'un lot qui échoue."""
+        if path != '/api/sensibles/etat':
+            self._send(404, b'Not found', 'text/plain')
+            return
+        d = self._read_json_body() or {}
+        etat = d.get('etat', '')
+        if etat not in SENSIBLE_ETATS:
+            self._send(400, json.dumps(
+                {'ok': False, 'error': "etat attendu : %s" %
+                 ', '.join(repr(x) for x in SENSIBLE_ETATS)},
+                ensure_ascii=False).encode(), 'application/json')
+            return
+        cles = d.get('cles') or ([d['key']] if d.get('key') else [])
+        u = utilisateur_vu()
+        faits, refuses = [], []
+        for cle in cles:
+            e = INDEX_BRUT.get(cle)
+            if e is None:
+                refuses.append({'key': cle, 'pourquoi': 'inconnue de l index'})
+                continue
+            if u is not None and not _visibilite.peut_juger(cle, u):
+                refuses.append({'key': cle,
+                                'pourquoi': "cette photo n est pas a vous"})
+                continue
+            neuf = dict(e)
+            if etat:
+                neuf['sensible'] = etat
+                neuf['sensible_le'] = time.strftime('%Y-%m-%d %H:%M:%S')
+                neuf['sensible_par'] = u or ''
+                if d.get('motif'):
+                    neuf['sensible_motif'] = str(d['motif'])[:200]
+            else:
+                for champ in ('sensible', 'sensible_le', 'sensible_par',
+                              'sensible_motif'):
+                    neuf.pop(champ, None)
+            STORE.set(cle, neuf, save=False)
+            faits.append(cle)
+        if faits:
+            STORE.save()
+            print(f"  🔒 {u or 'fil de fond'} : axe sensible "
+                  f"« {etat or 'levé'} » sur {len(faits)} photo(s)")
+        self._send(200, json.dumps({'ok': not refuses, 'faits': faits,
+                                    'refuses': refuses, 'etat': etat},
+                                   ensure_ascii=False).encode(),
+                   'application/json')
+
     def _do_post(self):
         path = urllib.parse.urlparse(self.path).path
         if path == '/api/connexion':
@@ -11598,6 +11736,9 @@ class Handler(BaseHTTPRequestHandler):
             return
         if path.startswith('/api/maint/'):
             self._do_maint_post(path)
+            return
+        if path.startswith('/api/sensibles/'):
+            self._do_sensibles_post(path)
             return
         if path.startswith('/api/people/'):
             self._do_people_post(path)

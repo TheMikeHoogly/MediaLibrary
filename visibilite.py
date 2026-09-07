@@ -53,6 +53,28 @@ from auteurs import ADMIN, proprietaire_de
 
 PRIVE = 'PRIVE'
 
+# Chantier 18 (spec tranchée par Mike le 06/09, `eval/DECISIONS.md`). Une photo
+# que le tagueur soupçonne de porter un document sensible est MASQUÉE sans être
+# DÉPLACÉE : le modèle a manqué 4 des 6 vrais documents de l'échantillon et en a
+# inventé 2, et muter l'archive une fois sur trois sur la foi d'un tel verdict
+# n'est pas un geste qu'on rattrape. L'état vit en BASE et jamais dans le XMP
+# (18c) : un verdict de machine ne se grave pas dans le fichier de quelqu'un.
+SENSIBLE_EN_ATTENTE = 'en_attente'   # détecté, masqué, attend le verdict humain
+SENSIBLE_NON = 'non'                 # jugé « pas sensible » — mémorisé, plus jamais
+
+
+def sensible_de(entree):
+    """L'axe `sensible` d'une entrée d'index, ou '' — règle PURE (pas de I/O)."""
+    if not isinstance(entree, dict):
+        return ''
+    v = entree.get('sensible')
+    return v if isinstance(v, str) else ''
+
+
+def en_attente(entree):
+    """Cette entrée est-elle masquée en attendant un verdict humain ?"""
+    return sensible_de(entree) == SENSIBLE_EN_ATTENTE
+
 
 def _segments(chemin):
     return [s for s in str(chemin or '').replace('\\', '/').split('/') if s]
@@ -93,26 +115,66 @@ def cible_prive(rel):
                   "la ranger d'abord chez son proprietaire.")
 
 
-def visible(chemin, utilisateur):
-    """`utilisateur` peut-il voir cette photo ? None (fil de fond) voit tout.
-    Chacun voit tout ce qui n'est pas le PRIVE d'un autre ; l'admin voit EN
-    PLUS le PRIVE sans propriétaire (racine). Le PRIVE de Flo reste à Flo :
-    l'admin n'est un passe-partout que là où personne n'est chez soi."""
-    if not est_prive(chemin):
-        return True
-    if utilisateur is None:
-        return True
+def chez_soi(chemin, utilisateur):
+    """Cette photo est-elle chez CET utilisateur ? Là où personne n'est chez
+    soi (racine, `_A TRIER`, `_Uploads`), c'est l'admin — et lui seul."""
     proprietaire = proprietaire_de(chemin)
     if proprietaire is None:
         return utilisateur == ADMIN
     return utilisateur == proprietaire
 
 
-def filtre(utilisateur):
-    """Le prédicat `clé -> bool` d'un utilisateur, ou None s'il voit tout."""
+def peut_juger(chemin, utilisateur):
+    """Qui VOIT — et donc peut lever — une photo masquée par son ÉTAT ?
+    Son propriétaire, ET l'admin. TRANCHÉ PAR MIKE le 07/09.
+
+    C'est la seule différence avec le PRIVE, et elle a une raison. Le PRIVE
+    est un choix HUMAIN, un rangement qu'on a voulu : l'admin n'a rien à y
+    faire, et la règle le dit depuis le chantier 17. Le masquage sensible est
+    un verdict de MACHINE, et la mesure du 06/09 dit qu'il se trompe une fois
+    sur trois. Sans passe-partout, un faux positif sur une photo d'un dossier
+    sans compte — `Photos Papa`, `_A TRIER`, la racine — serait invisible ET
+    injugeable : masquée pour toujours, par erreur, sans personne pour la
+    rendre. Le prix, assumé : un vrai document de Florine reste visible pour
+    l'admin tant qu'elle n'a pas tranché — il l'était déjà avant le masquage,
+    le masque ne fait que le retirer aux AUTRES."""
+    return utilisateur == ADMIN or chez_soi(chemin, utilisateur)
+
+
+def visible(chemin, utilisateur, sensible=False):
+    """`utilisateur` peut-il voir cette photo ? None (fil de fond) voit tout.
+
+    DEUX causes de masquage, une seule règle. Le CHEMIN : chacun voit tout ce
+    qui n'est pas le PRIVE d'un autre ; l'admin voit EN PLUS le PRIVE sans
+    propriétaire (racine). Le PRIVE de Flo reste à Flo — l'admin n'est un
+    passe-partout que là où personne n'est chez soi. Et, depuis le
+    chantier 18, l'ÉTAT : `sensible=True` (l'entrée porte `en_attente`)
+    masque la photo pour tout le monde SAUF son propriétaire et l'admin
+    (`peut_juger` — la différence avec le PRIVE y est expliquée), sans que le
+    fichier bouge.
+
+    C'est le vrai changement du 07/09 : jusque-là la visibilité ne se
+    décidait QUE sur le chemin, et masquer sans déplacer était impossible.
+    L'appelant fournit `sensible` — la règle reste pure, elle ne lit pas
+    l'index elle-même."""
+    if utilisateur is None:
+        return True
+    if est_prive(chemin) and not chez_soi(chemin, utilisateur):
+        return False
+    if sensible and not peut_juger(chemin, utilisateur):
+        return False
+    return True
+
+
+def filtre(utilisateur, sensible=None):
+    """Le prédicat `clé -> bool` d'un utilisateur, ou None s'il voit tout.
+    `sensible` : un appelable `clé -> bool` qui dit si l'entrée est masquée
+    par son ÉTAT. Absent, seul le chemin décide (le comportement d'avant)."""
     if utilisateur is None:
         return None
-    return lambda cle: visible(cle, utilisateur)
+    if sensible is None:
+        return lambda cle: visible(cle, utilisateur)
+    return lambda cle: visible(cle, utilisateur, sensible(cle))
 
 
 # ─── L'ÉCRITURE restreinte (chantier 17, étape 5 — 29/08/2026, choix de Mike :
@@ -251,10 +313,14 @@ class VueFiches(VueFiltree):
         return filtrer_fiche(self._d[k], self._ok)
 
 
-def brancher(store, utilisateur, par_nom=False):
+def brancher(store, utilisateur, par_nom=False, sensible=None):
     """Fait de `store.data` une VUE dès qu'il y a un utilisateur courant
     (l'admin compris : il ne voit pas le PRIVE des autres). `utilisateur` est
     un appelable (thread-local côté serveur) ; None = fil de fond, tout.
+    `sensible` est un appelable `clé -> bool` qui lit l'axe du chantier 18
+    dans l'index BRUT. Il doit lire le dictionnaire RÉEL et jamais `.data`
+    d'un magasin branché : la vue l'appelle pour décider, et il tournerait
+    en rond.
     Le magasin garde sa classe d'origine sous une sous-classe dynamique : les
     écritures (`set`, `remove_many`, `data = {}`) passent par le dictionnaire
     réel, comme avant — la vue n'est posée que sur la LECTURE de `.data`."""
@@ -272,7 +338,7 @@ def brancher(store, utilisateur, par_nom=False):
         u = utilisateur()
         if u is None:
             return d
-        return Vue(d, lambda cle: visible(cle, u))
+        return Vue(d, filtre(u, sensible))
 
     def ecrire(self, valeur):
         if isinstance(desc, property) and desc.fset:

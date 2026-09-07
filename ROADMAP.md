@@ -19,6 +19,23 @@ la machine le 07/09 à 07:30** (`/api/maint/status` → `config.retag`) :
 fichier l'arrête au lot suivant sans rien perdre (la progression vit dans le
 `pipe` de chaque entrée).
 
+**DÉFAUT TROUVÉ LE 07/09 AU SOIR, EN COURS, ET IL GROSSIT — décision à
+Mike (`QUESTIONS_MIKE.md`).** Quand l'écriture XMP dépasse le délai
+(`_run_exiftool`, 180 s), Python TUE ExifTool — mais le
+`<photo>.jpg_exiftool_tmp` qu'il avait déjà créé sur le NAS reste, et le
+`finally` ne ramasse que l'argfile. **Toute écriture ultérieure sur cette photo
+échoue alors pour toujours** (« Temporary file already exists »), réparation de
+dernier recours comprise, et la photo est abandonnée. **Compté ce soir : 13
+photos depuis 14:05, 29 échecs**, dans trois dossiers de `Photos Flo` — un
+toutes les 30 à 60 min, ~0,5 % des re-tags. Sur les 5 jours qui restent :
+60 à 80 photos. **Aucune n'est abîmée** — vérifié fichier par fichier : la
+photo d'origine est là, plus grosse que le tmp (qui est une copie tronquée), et
+sa date remonte à août. Ce qui manque, c'est le XMP du FICHIER ; les mots-clés,
+eux, sont bien dans l'index. Deux gestes, tous deux à Mike : effacer les 13 tmp
+sur preuve, et ramasser le tmp dans le `except TimeoutExpired` — un nettoyage
+derrière notre propre processus tué, sur un chemin connu, pas le « balayage »
+que `CLAUDE.md` interdit.
+
 **Deux dettes du 06/09 sont fermées, MESURÉES en réel le 07/09 au matin.**
 
 1. **Le GPU ne jeûne plus au redémarrage.** `remplir_file_retag()` était en
@@ -832,6 +849,33 @@ tourne à la maison — aucune photo envoyée en ligne. Surface PAPIER sur fond
 `verifier_cibles` verts, page vue en réel. **Ce qui reste est un jugement de
 Mike, pas une tâche** : c'est sa famille qui lira ce texte, le ton et ce qu'on
 tait lui appartiennent. Le chantier se termine, il ne se relance pas.
+
+**3 bis (a). L'AXE `sensible` EST POSÉ — 07/09, observé en réel.** La
+visibilité ne se décide plus sur le seul CHEMIN : `visibilite.visible` prend un
+second terme, l'ÉTAT, et les cinq magasins reçoivent le prédicat (les visages et
+les animaux sont keyés par le chemin de la photo ; une fiche PEOPLE cite des
+chemins — un avatar pris sur une photo masquée serait une vignette qui fuit,
+point 17b). `chemin_visible` le consulte aussi : une photo que la galerie ne
+cite plus mais dont l'URL de vignette rend les pixels ne serait pas masquée du
+tout. **Trois pièges nommés et gardés par des bancs** : le prédicat lit l'index
+BRUT (à travers la vue il tournerait en rond, et une photo DÉJÀ masquée y
+serait introuvable donc jugée « pas sensible » et servie — le trou se refermait
+sur lui-même) ; la carte chemin → clé se bâtit désormais sur le brut (son cache
+est PARTAGÉ par tous les fils : bâtie sous les yeux d'un utilisateur elle
+servait à tout le monde) ; et l'axe ne part JAMAIS dans le XMP (18c).
+**Qui lève un masque : le propriétaire ET l'admin** — tranché par Mike le 07/09,
+raison dans `eval/DECISIONS.md`. Routes : `GET /api/sensibles` (la liste, bâtie
+sur le brut — sur la vue elle serait vide par construction) et
+`POST /api/sensibles/etat` (poser / lever, c'est le geste « non, pas sensible »
+mémorisé ; les deux autres gestes gardent leurs routes existantes).
+**Observé le 07/09 à 08:23** sur une vraie photo : liste vide → axe posé →
+listée avec son motif, sa date et son auteur → vignette et faits toujours à 200
+pour l'admin (il ne perd rien, c'est la règle choisie) → axe levé → liste vide.
+Journal : deux lignes, zéro erreur. 52 bancs (`test_visibilite`,
+`test_sensibles`). **Ce qui RESTE** : (b) la page aux trois gestes, puis (c) la
+question dans la même invocation du tagueur et la passe rétroactive. Et le
+masquage POUR LES AUTRES n'est prouvé que par banc — l'admin voit tout par
+construction, la preuve à deux comptes appartient à (b).
 
 **3 bis. LE CHANTIER 18 CHANGE DE FORME — décidé par Mike le 06/09 au soir.**
 En voyant un dossier `Camera` entier de relevés bancaires, d'attestations

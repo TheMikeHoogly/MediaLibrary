@@ -74,6 +74,7 @@ décisions techniques. `FACE_USE_GPU=False` **volontaire** (VRAM prise par Ollam
 | `ROADMAP.md` | Priorités — à relire en début de session |
 | `PROMPT_NOUVELLE_SESSION.md` | Éphémère : état + prochain pas, réécrit chaque session |
 | `eval/DECISIONS.md` | Adopté / rejeté / parké sur la PHOTOTHÈQUE — ne rien reproposer sans le relire |
+| `eval/DECISIONS_UI.md` | Idem pour l'ÉCRAN (07/09) : composants, cibles, contraste, ce qu'une grille compte |
 | `docs/DECISIONS_OUTILLAGE.md` | Idem pour l'OUTILLAGE : les trois canaux, le pilotage, la livraison git |
 | `docs/` | Audits, rangement, `GIT_WORKFLOW.md` (circulation sandbox ↔ machine ↔ GitHub) |
 

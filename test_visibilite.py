@@ -11,6 +11,7 @@ import visibilite as V
 MIKE_PUB = r'\\NAS\home\Photos\Photos Mike\2021\a.jpg'
 MIKE_PRIV = r'\\NAS\home\Photos\Photos Mike\PRIVE\2021\b.jpg'
 FLO_PRIV = r'\\NAS\home\Photos\Photos Flo\prive\c.jpg'
+FLO_PUB = r'\\NAS\home\Photos\Photos Flo\2021\z.jpg'
 RACINE_PRIV = r'\\NAS\home\Photos\_A TRIER\PRIVE\d.jpg'
 RACINE = r'\\NAS\home\Photos\_Uploads\e.jpg'
 
@@ -43,6 +44,107 @@ class Regle(unittest.TestCase):
         for c in (MIKE_PRIV, FLO_PRIV, RACINE_PRIV):
             self.assertTrue(V.visible(c, None))
         self.assertIsNone(V.filtre(None))
+
+
+class LAxeSensible(unittest.TestCase):
+    """Chantier 18 : masquer SANS deplacer.
+
+    Jusqu'au 07/09 la visibilite ne se jouait que sur le CHEMIN -- un dossier
+    PRIVE. Rendre une photo invisible voulait donc dire la DEPLACER. Or le
+    modele a manque 4 des 6 vrais documents de l'echantillon du 06/09 et en a
+    invente 2 : muter l'archive une fois sur trois sur ce verdict-la n'est pas
+    un geste qu'on rattrape. D'ou un troisieme etat, en BASE seulement.
+    """
+
+    def test_l_axe_se_lit_dans_l_entree_pas_dans_le_chemin(self):
+        self.assertTrue(V.en_attente({'sensible': V.SENSIBLE_EN_ATTENTE}))
+        self.assertFalse(V.en_attente({'sensible': V.SENSIBLE_NON}))
+        self.assertFalse(V.en_attente({}))
+        self.assertFalse(V.en_attente(None))
+        # une valeur qui n'est pas une chaine ne fabrique pas un etat
+        self.assertEqual(V.sensible_de({'sensible': 1}), '')
+        self.assertEqual(V.sensible_de('pas un dict'), '')
+
+    def test_masquee_pour_les_autres_visible_pour_son_proprietaire(self):
+        # MIKE_PUB est une photo PARTAGEE : sans l'axe, tout le monde la voit.
+        for u in ('Mike', 'Flo', 'Papa'):
+            self.assertTrue(V.visible(MIKE_PUB, u))
+        # avec l'axe : le proprietaire, et personne d'autre -- sauf l'admin.
+        self.assertTrue(V.visible(MIKE_PUB, 'Mike', sensible=True))
+        self.assertFalse(V.visible(MIKE_PUB, 'Flo', sensible=True))
+        self.assertFalse(V.visible(MIKE_PUB, 'Papa', sensible=True))
+        self.assertTrue(V.visible(FLO_PUB, 'Flo', sensible=True))
+        self.assertFalse(V.visible(FLO_PUB, 'Papa', sensible=True))
+
+    def test_l_admin_peut_lever_un_masque_contrairement_au_prive(self):
+        # TRANCHE PAR MIKE (07/09). Le PRIVE est un choix HUMAIN : l'admin
+        # n'y entre pas. Le masquage sensible est un verdict de MACHINE qui
+        # se trompe une fois sur trois : sans passe-partout, un faux positif
+        # sur `Photos Papa` (pas de compte) serait invisible ET injugeable.
+        self.assertFalse(V.visible(FLO_PRIV, 'Mike'))                # PRIVE : non
+        self.assertTrue(V.visible(FLO_PUB, 'Mike', sensible=True))   # sensible : oui
+        papa = r'\\NAS\home\Photos\Photos Papa\1998\p.jpg'
+        self.assertTrue(V.visible(papa, 'Mike', sensible=True))
+        self.assertFalse(V.visible(papa, 'Flo', sensible=True))
+        # ... mais le PRIVE d'un autre reste ferme, meme masque en plus.
+        self.assertFalse(V.visible(FLO_PRIV, 'Mike', sensible=True))
+
+    def test_hors_dossier_proprietaire_l_admin_seul(self):
+        self.assertTrue(V.visible(RACINE, 'Mike', sensible=True))
+        self.assertFalse(V.visible(RACINE, 'Flo', sensible=True))
+
+    def test_les_fils_de_fond_voient_meme_les_sensibles(self):
+        # Sinon le tagueur, le scan et la sauvegarde perdraient la photo de
+        # vue -- un masquage qui casse le travail de fond serait une perte.
+        self.assertTrue(V.visible(MIKE_PUB, None, sensible=True))
+        self.assertTrue(V.visible(FLO_PRIV, None, sensible=True))
+
+    def test_les_deux_causes_se_cumulent(self):
+        # Une photo sensible DANS le PRIVE de Mike reste a Mike, pas plus --
+        # et le passe-partout de l'admin ne franchit PAS le PRIVE : les deux
+        # causes s'additionnent, elles ne s'annulent pas.
+        self.assertTrue(V.visible(MIKE_PRIV, 'Mike', sensible=True))
+        self.assertFalse(V.visible(MIKE_PRIV, 'Flo', sensible=True))
+        self.assertFalse(V.visible(FLO_PRIV, 'Mike', sensible=True))
+
+    def test_le_filtre_transporte_l_etat(self):
+        etats = {MIKE_PUB: True, RACINE: False}
+        ok = V.filtre('Flo', lambda cle: etats.get(cle, False))
+        self.assertFalse(ok(MIKE_PUB))
+        self.assertTrue(ok(RACINE))
+        # sans predicat d'etat : le comportement d'avant, mot pour mot
+        self.assertTrue(V.filtre('Flo')(MIKE_PUB))
+
+
+class LaVueMasqueParLEtat(unittest.TestCase):
+    def test_le_magasin_cache_une_photo_sensible(self):
+        courant = threading.local()
+        etats = {MIKE_PUB: True}
+        st = V.brancher(Magasin({MIKE_PUB: {'sensible': 'en_attente'},
+                                 RACINE: {}}),
+                        lambda: getattr(courant, 'nom', None),
+                        sensible=lambda cle: etats.get(cle, False))
+        courant.nom = None
+        self.assertEqual(len(st.data), 2)      # fil de fond : tout
+        courant.nom = 'Mike'
+        self.assertEqual(len(st.data), 2)      # chez lui
+        courant.nom = 'Flo'
+        self.assertEqual(set(st.data), {RACINE})
+        self.assertIsNone(st.get(MIKE_PUB))
+        self.assertFalse(st.has(MIKE_PUB))
+
+    def test_le_compteur_ne_trahit_pas_la_photo_masquee(self):
+        # C'est le point 17b, applique au nouvel etat : une photo qu'on ne
+        # montre pas ne doit pas se deviner dans un total.
+        courant = threading.local()
+        etats = {MIKE_PUB: True}
+        st = V.brancher(Magasin({MIKE_PUB: {}, RACINE: {}}),
+                        lambda: getattr(courant, 'nom', None),
+                        sensible=lambda cle: etats.get(cle, False))
+        courant.nom = 'Flo'
+        self.assertEqual(len(st.data), 1)
+        self.assertEqual(len(st.data.keys()), 1)
+        self.assertEqual(len(st.data.items()), 1)
 
 
 class Ecriture(unittest.TestCase):
