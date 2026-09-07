@@ -47,6 +47,16 @@ fichier l'arrête au lot suivant sans rien perdre (la progression vit dans le
    or …` porte un garde-fou voulu (banc
    `test_un_cycle_approfondi_implique_le_nas`) et ce n'est pas une correction
    à faire sans l'avoir mesurée.
+3. **L'outil qui rend au fonds les photos sans jumeau connu est ÉCRIT**
+   (`restaurer_corbeille.py`, `47 - Restaurer les photos sans jumeau
+   connu.bat`, 10 bancs sur un faux fonds). Il ne supprime rien, refuse une
+   origine déjà occupée, refuse un sha256 qui ne colle plus au manifeste,
+   s'annule par journal, et compte « déjà fait » comme un succès. **Les trois
+   cas vérifiés en vrai le 07/09** : fichiers présents, empreintes conformes,
+   dossiers d'origine existants et LIBRES (`Photos Flo\Floufline`,
+   `Photos Flo\2015 Bolivie`, `Photos Flo\Sista\40 ans Val et Thierry`).
+   **Pas lancé** : déplacer des fichiers de l'archive est un geste de bat, et
+   l'agent banc n'accepte que les familles qui MESURENT.
 
 **Ce qui est SÛR pendant qu'elle tourne** : doc, UI, CSS, le reste de l'audit
 interne, l'adoption de `components.css` par `browse`/`faces`/`reglages`

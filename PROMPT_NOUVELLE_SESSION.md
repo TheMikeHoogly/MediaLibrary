@@ -39,8 +39,9 @@ ROADMAP, § « Où on en est ») :
 **La corbeille de rangement : CLOSE côté purge** (25,36 Go rendus le 06/09).
 Restent 77 groupes — 33 récents qui partiront seuls, 36 doublons réels, 4
 coquilles « Read error in the sector ! », et **3 vraies photos sans jumeau
-connu, à RESTAURER** (`docs/corbeille_par_pixels.json` ; l'outil reste à
-écrire, le manifeste garde leur chemin d'origine).
+connu, à RESTAURER** (`docs/corbeille_par_pixels.json`). **L'outil est écrit
+et vérifié** (`restaurer_corbeille.py` + bat 47) — il attend la main de Mike,
+déplacer des fichiers de l'archive n'étant pas un geste d'agent.
 
 **Le chantier 18 a changé de forme, décidé par Mike.** Il ne veut pas cliquer
 photo par photo sur des liens que je lui colle : il veut que l'application DISE
@@ -65,8 +66,9 @@ Puis le débit (`tagué en`) et la température (`🌡`, `🔥 CHAUD` ≥ 85 °C
 fonds à moitié masqué sans écran pour le démasquer.
 
 **2. Deux dettes courtes** :
-  - **restaurer les 3 vraies dernières copies** de la corbeille (l'outil reste
-    à écrire), puis purger le reste ;
+  - les 3 vraies dernières copies : **l'outil est prêt**, c'est le bat 47 qui
+    attend Mike — vérifier au retour que le geste a été fait (le manifeste du
+    groupe porte alors `restaure_le`), puis le bat 24 ;
   - la seconde moitié du garde-fou NAS : un scan qui arrive sur une étape
     lourde de maintenance DÉJÀ partie. Attention, la ligne `nas = first or
     deep or (cycle % NAS_SCAN_CYCLES == 0)` porte un garde-fou voulu, avec son

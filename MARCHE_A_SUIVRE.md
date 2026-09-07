@@ -100,10 +100,28 @@ par empreinte de fichier et rendait 37 « dernières copies » dont 30 n'en
   trois personnes sous un arbre en fleurs. Tu les vois dans
   `_planches_corbeille\les_7_a_juger.jpg`.
 
-- [ ] **Rien à décider si tu es d'accord** : je restaure les 3 et je purge le
-      reste à la prochaine session. Dis « non » seulement si tu veux garder
-      autre chose.
-- [ ] **Supprimer `_planches_corbeille\`** et `_planches\` quand tu les as vus.
+**L'outil existe depuis le 07/09 : `47 - Restaurer les photos sans jumeau
+connu.bat`.** Il ne supprime rien, il n'écrase jamais un fichier existant, et
+il s'annule (journal dans `docs/`). Il commence par un aperçu ; tu peux
+répondre **N** et rien ne bouge. Je ne l'ai pas lancé moi-même : déplacer des
+photos dans ton archive passe par un bat, comme tous les outils qui touchent
+aux fichiers.
+
+**Vérifié pour toi le 07/09 avant de te le donner** — les trois photos sont
+présentes en quarantaine, leur empreinte correspond à leur manifeste, et leur
+dossier d'origine existe et est LIBRE :
+
+| Photo | Retourne dans |
+|---|---|
+| `IMG-20180527-WA0008.jpg` | `Photos Flo\Floufline\` |
+| `IMG-20150729-WA0018.jpg` | `Photos Flo\2015 Bolivie\` |
+| `IMG-20210426-WA0002.jpg` | `Photos Flo\Sista\40 ans Val et Thierry\` |
+
+- [ ] **Lancer le bat 47** (aperçu, puis O pour restaurer).
+- [ ] Puis le **bat 24** pour purger ce qui reste.
+- [ ] **Supprimer `_planches_corbeille\`** et `_planches\` quand tu les as vus
+      — dis-le-moi et je peux le faire, tu m'as donné le droit d'effacer dans
+      `C:\Prog\Claude\MediaLibrary` ce matin.
 
 ---
 
@@ -168,7 +186,10 @@ Elle est là pour que tu saches où on en est.
    inverse** (une maintenance déjà partie, puis le scan qui arrive dessus) ;
    je ne l'ai pas touché parce que la ligne concernée porte un garde-fou posé
    exprès, et que je n'ai pas de mesure pour le remplacer sans risque.
-4. **L'outil qui restaure les 3 dernières copies** de la corbeille (section D).
+4. ~~L'outil qui restaure les 3 dernières copies de la corbeille.~~ **ÉCRIT le
+   07/09** : `restaurer_corbeille.py` + `47 - …bat`, 10 bancs sur un faux
+   fonds (jamais sur le NAS), et les trois cas vérifiés en vrai. Il reste à le
+   LANCER — section D.
 5. **Reprendre la mesure des photos sensibles sur `qwen3.5:4b`** (l'ancienne
    portait sur `qwen3-vl:2b`), avec les 24 verdicts humains comme vérité
    terrain. **Après la campagne** : un banc qui interroge le modèle pendant
