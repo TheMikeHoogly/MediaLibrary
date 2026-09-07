@@ -9,7 +9,7 @@ FUSIONNÉ — ce document, non. Puis `ROADMAP.md`, `eval/DECISIONS.md`,
 `eval/METHODE.md` — et `docs/DECISIONS_OUTILLAGE.md` si le sujet touche aux
 canaux, à la livraison ou au MCP. Débrief en 2–3 lignes, puis on attaque.
 
-## Où on en est (07/09/2026, matin)
+## Où on en est (07/09/2026, soir)
 
 **Git** : dernier commit fusionné dans `main` — le vérifier dans
 `.git/logs/refs/heads/main`, jamais ici.
@@ -19,6 +19,16 @@ canaux, à la livraison ou au MCP. Débrief en 2–3 lignes, puis on attaque.
 31 629, 0 abandon**, 12–16 s/photo → **~5 jours**. Levier : `retag_actif.txt`,
 fichier VIDE — ne pas l'effacer. Instruments : `/reglages` → `config.retag`, et
 `grep 'en file de RE-TAGGING' _journal_serveur.log`.
+
+**Un défaut trouvé ET fermé le 07/09 au soir : le `_exiftool_tmp` orphelin.**
+Quand une écriture XMP dépassait son délai, Python tuait ExifTool mais son
+fichier de travail restait sur le NAS — et **toute écriture ultérieure sur
+cette photo échouait pour toujours**, réparation comprise, photo abandonnée.
+13 en huit heures, 60 à 80 attendues sur la fin de campagne. Corrigé :
+`write_metadata` ramasse SUR PREUVE (photo présente et plus grosse que le tmp)
+puis réessaie une fois, le `except` du timeout ramasse ce qu'il vient
+d'orpheliner, et une passe unique à jeton a rouvert les 22 photos déjà fermées
+— 0 tmp restant. Deux leçons payées en chemin, dans les réflexes ci-dessous.
 
 **Deux dettes du 06/09 fermées le 07/09, MESURÉES en réel** (récit complet dans
 ROADMAP, § « Où on en est ») :
@@ -43,9 +53,15 @@ connu, à RESTAURER** (`docs/corbeille_par_pixels.json`). **L'outil est écrit
 et vérifié** (`restaurer_corbeille.py` + bat 47) — il attend la main de Mike,
 déplacer des fichiers de l'archive n'étant pas un geste d'agent.
 
-**Le chantier 18 a changé de forme, décidé par Mike.** Il ne veut pas cliquer
-photo par photo sur des liens que je lui colle : il veut que l'application DISE
-ce qu'elle a trouvé. Spec dans `eval/DECISIONS.md` (06/09) et ROADMAP § 3 bis.
+**Le chantier 18 : l'étape (a) est FAITE, et la spec a changé deux fois.**
+L'axe `sensible` est posé et observé (voir ROADMAP § 3 bis (a)) : la visibilité
+ne se décide plus sur le seul CHEMIN. **Deux amendements de Mike le 07/09** :
+qui lève un masque — le propriétaire ET l'admin, sinon une photo d'un dossier
+sans compte serait masquée à tort pour toujours ; et surtout **le geste par
+défaut de l'onglet devient la CORBEILLE, pas « Rendre privée »** — « la
+médiathèque est censée conserver des photos et vidéos de souvenirs, et non des
+documents ». Les six pièces de l'échantillon sont traitées, les planches
+supprimées. Spec et raisons : `eval/DECISIONS.md`, ROADMAP § 3 bis.
 
 ## Prochain pas
 
@@ -53,22 +69,25 @@ ce qu'elle a trouvé. Spec dans `eval/DECISIONS.md` (06/09) et ROADMAP § 3 bis.
 (`reste`, `en_file`, `abandons`). `en_file` à 0 longtemps = le GPU jeûne.
 Puis le débit (`tagué en`) et la température (`🌡`, `🔥 CHAUD` ≥ 85 °C).
 
-**1. L'ONGLET SENSIBLES — le chantier que Mike attend.** Spec complète dans
-`eval/DECISIONS.md`. Trois morceaux, dans cet ordre :
-  a. l'axe `sensible` dans l'index (jamais le XMP) + le filtre au magasin qui
-     lit un ÉTAT en plus du CHEMIN — c'est le vrai changement : `visibilite`
-     ne décidait jusqu'ici que sur le chemin ;
-  b. la route `/sensibles` et sa page, aux trois gestes (Rendre privée /
-     Corbeille / « non » mémorisé) ;
+**1. L'ONGLET SENSIBLES — (a) est FAIT, reste (b) puis (c).**
+  a. ~~l'axe `sensible` + le filtre au magasin sur un ÉTAT~~ — fait, observé,
+     52 bancs. Routes `GET /api/sensibles` et `POST /api/sensibles/etat`.
+  b. **la PAGE `/sensibles`, aux trois gestes** — et depuis le 07/09 au soir
+     le défaut est la **Corbeille** (`/api/corbeille`, 180 j), *Rendre privée*
+     (`/api/files/prive`) pour le document qu'on garde, *« non, pas sensible »*
+     (`/api/sensibles/etat` avec `etat: 'non'`) pour le faux positif. Deux
+     contraintes déjà connues : la vignette d'un document se LIT (voir
+     `eval/METHODE.md`), donc ce n'est pas sa taille qui protège ; et le
+     masquage pour LES AUTRES n'est prouvé que par banc — l'admin voit tout par
+     construction, la preuve à deux comptes se fait ici.
   c. la question posée dans la MÊME invocation du tagueur (pas de cinquième
      pipeline), puis la passe rétroactive.
 **Ne pas commencer par (c)** : détecter avant de savoir montrer produirait un
 fonds à moitié masqué sans écran pour le démasquer.
 
 **2. Deux dettes courtes** :
-  - les 3 vraies dernières copies : **l'outil est prêt**, c'est le bat 47 qui
-    attend Mike — vérifier au retour que le geste a été fait (le manifeste du
-    groupe porte alors `restaure_le`), puis le bat 24 ;
+  - ~~les 3 vraies dernières copies~~ : **fait le 07/09**, Mike a lancé le
+    bat 47 et le bat 24 ;
   - la seconde moitié du garde-fou NAS : un scan qui arrive sur une étape
     lourde de maintenance DÉJÀ partie. Attention, la ligne `nas = first or
     deep or (cycle % NAS_SCAN_CYCLES == 0)` porte un garde-fou voulu, avec son
@@ -104,6 +123,30 @@ redémarrages du 06/09 : 69 s, 99 s, 51 min, 81 min. Ce n'était pas un coût, m
 une DÉPENDANCE — au NAS — et une moyenne la faisait passer pour un coût fixe,
 donc pour quelque chose de supportable. Avant de citer une durée, regarder sa
 dispersion : c'est elle qui dit s'il y a une panne dessous.
+
+**Un instrument qui interroge le mauvais CHAMP répond parfaitement à la
+question qu'on lui pose.** La passe des tmp orphelins cherchait `retag_fail`,
+la marque du TAGUEUR — mais ces photos-là sont fermées par
+`retro_write_metadata`, qui compte `write_fails` et pose `file_error`. Résultat :
+« 0 photo » sur quatorze tmp bien présents, banc vert à l'appui. Deux chemins
+d'abandon coexistaient, et j'en connaissais un seul. Avant d'écrire une passe de
+rattrapage, chercher TOUS les endroits qui posent la marque qu'on veut lever.
+
+**Un banc VERT sur la VM peut être ROUGE chez Mike : la console est en
+cp1252.** `test_tmp_exiftool` imprimait le `⚠` des messages de refus ; sous
+UTF-8 il passait, sous cp1252 les trois cas de refus tombaient sur
+`UnicodeEncodeError`. Le serveur est protégé depuis le 22/08
+(`journal_serveur`) ; un banc lancé à la main ne l'est pas. **Le refus de
+l'agent Git est la bonne nouvelle** — c'est exactement ce qu'il existe pour
+attraper. La parade : capturer la sortie (`redirect_stdout`), ce qui rend le
+banc indépendant de la console ET permet d'exiger que le refus soit NOMMÉ.
+Contrôle avant de livrer : `PYTHONIOENCODING=cp1252 python3 -m unittest …`.
+
+**« Rien à faire » n'est pas « échec ».** `ramasser_tmp_exiftool` rend False
+quand il REFUSE d'effacer et quand il n'y a RIEN à effacer ; la passe lisait les
+deux comme un refus et laissait 9 photos fermées alors que plus rien ne les
+fermait. Même famille que le seau « illisible » : un non-événement compté comme
+un refus fabrique une perte silencieuse. Trois cas, pas deux.
 
 **Un instrument juste sur le principe peut mesurer la mauvaise grandeur.** Le
 banc de la corbeille cherchait par sha256 dans un fonds dédoublonné par les

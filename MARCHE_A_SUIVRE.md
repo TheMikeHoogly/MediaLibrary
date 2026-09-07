@@ -29,36 +29,32 @@ dise.
 
 ---
 
-## B. Les 6 photos sensibles (chantier 18)
+## B. Les 6 photos sensibles — FAIT
 
-Ce sont les seules de l'échantillon qui méritent d'être privées. La liste
-détaillée est dans `ROADMAP.md`, section « 3 bis ».
+Les six sont traitées. Deux étaient déjà à la corbeille le 06/09 (le relevé
+Migros et la carte d'assurance-maladie) ; **j'ai effacé les quatre autres le
+07/09 au soir**, sur ta consigne — « la médiathèque est censée conserver des
+photos et vidéos de souvenirs, et non des documents » :
 
-Pour chacune : colle le lien, clique la vignette, puis **🔒 Rendre privée** dans
-la visionneuse. Le geste déplace la photo dans le `PRIVE` de son propriétaire,
-et il est annulable.
+| Effacé | Ce que c'était |
+|---|---|
+| `Photos Mike\2023\20230326_190923.jpg` | décompte de charges + bulletin de versement (IBAN) |
+| `Photos Mike\2022\20220805_200910.jpg` | courrier bancaire avec IBAN — au nom d'un tiers, en Bolivie |
+| `Photos Flo\Floufline\20240226_223732.jpg` | document officiel au nom de Florine |
+| `Photos Mike\2026\20260201_202623.jpg` | certificat médical d'incapacité de travail |
 
-- [ ] `…/browse/1/Photos%20Mike/2026/260531_Samsung_MHU/Camera#voir=20260411_160856.jpg` — relevé bancaire
-- [ ] `…/browse/1/Photos%20Mike/2023#voir=20230326_190923.jpg` — décompte de charges + IBAN
-- [ ] `…/browse/1/Photos%20Mike/2022#voir=20220805_200910.jpg` — courrier bancaire + IBAN
-- [ ] `…/browse/1/Photos%20Mike/2026/260531_Samsung_MHU/Camera#voir=20260502_093501.jpg` — carte d'assurance-maladie
-- [ ] `…/browse/1/Photos%20Flo/Floufline#voir=20240226_223732.jpg` — document officiel au nom de Florine → part dans **son** PRIVE
-- [ ] `…/browse/1/Photos%20Mike/2026#voir=20260201_202623.jpg` — certificat médical
+**Rien n'est perdu** : elles sont dans `Photos\.corbeille-effacements\`, une
+par seau horodaté, et la purge automatique les garde **180 jours**. Le décompte
+de charges concerne la PPE — si tu en as besoin pour tes comptes, il est encore
+là.
 
-(Préfixe complet : `http://192.168.0.13:8080`)
+- [x] **`_planches\` et `_planches_corbeille\` supprimés** — ils contenaient
+      des copies lisibles de ces documents. Note au passage : la « basse
+      définition » ne protégeait rien (un IBAN et une date de naissance s'y
+      lisaient), c'est écrit dans `eval/METHODE.md`.
 
-- [ ] **Supprimer le dossier `_planches\`** quand c'est fini : il contient des
-      copies basse définition de ces six documents.
-
-**Nouveau (06/09 soir) : tu peux en faire plusieurs d'un coup.** Dans
-l'onglet **Dossiers**, coche les photos, puis **🔒 Rendre privées** dans la
-barre du bas. Utile pour un dossier entier de relevés et d'attestations comme
-ton `Camera`. Chaque déplacement reste annulable un par un.
-
-**Et ce n'est qu'un pansement** : l'onglet **Sensibles** que tu as demandé —
-l'application qui te DIT ce qu'elle a détecté, photo masquée par défaut en
-attendant ton verdict — est spécifié (`eval/DECISIONS.md`, 06/09) et c'est le
-prochain vrai chantier.
+Ta consigne change aussi la spec de l'onglet Sensibles : le geste par défaut
+devient **Corbeille**, pas « Rendre privée ». Voir `ROADMAP.md` § 3 bis.
 
 ---
 
@@ -186,10 +182,15 @@ Elle est là pour que tu saches où on en est.
    inverse** (une maintenance déjà partie, puis le scan qui arrive dessus) ;
    je ne l'ai pas touché parce que la ligne concernée porte un garde-fou posé
    exprès, et que je n'ai pas de mesure pour le remplacer sans risque.
-4. ~~L'outil qui restaure les 3 dernières copies de la corbeille.~~ **ÉCRIT le
-   07/09** : `restaurer_corbeille.py` + `47 - …bat`, 10 bancs sur un faux
-   fonds (jamais sur le NAS), et les trois cas vérifiés en vrai. Il reste à le
-   LANCER — section D.
+4. ~~L'outil qui restaure les 3 dernières copies de la corbeille.~~ **FAIT
+   le 07/09**, et **tu l'as lancé** : les trois photos sont revenues à leur
+   dossier d'origine à 08:16.
+6. ~~Le `_exiftool_tmp` orphelin qui ferme une photo pour toujours.~~ **TROUVÉ
+   ET CORRIGÉ le 07/09 au soir.** Quand une écriture dépassait son délai, le
+   fichier de travail d'ExifTool restait sur le NAS et toutes les écritures
+   suivantes sur cette photo échouaient — 13 photos en huit heures, et ça
+   grossissait. Le serveur le ramasse maintenant sur preuve, et une passe
+   unique a rouvert les 22 photos déjà touchées. Zéro tmp restant.
 5. **Reprendre la mesure des photos sensibles sur `qwen3.5:4b`** (l'ancienne
    portait sur `qwen3-vl:2b`), avec les 24 verdicts humains comme vérité
    terrain. **Après la campagne** : un banc qui interroge le modèle pendant

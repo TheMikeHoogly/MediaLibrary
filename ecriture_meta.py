@@ -24,6 +24,9 @@ import re
 # Le refus qui signe un EXIF qu'ExifTool ne sait pas RELIRE pour le réécrire.
 # D'autres formes existent (« Bad IFD0 directory », « Error reading ... ») ;
 # toutes disent la même chose : ne pas réécrire l'EXIF, écrire à côté.
+# « Error: Temporary file already exists: …_exiftool_tmp » — le fichier de
+# travail d'un appel précédent, tué avant d'avoir fini.
+TMP_ORPHELIN = re.compile(r'Temporary file already exists', re.I)
 EXIF_ILLISIBLE = re.compile(
     r'Error reading .* in IFD\d|Bad (?:IFD|ExifIFD|MakerNotes)|'
     r'Error reading ExifIFD|Invalid .* offset', re.I)
@@ -68,3 +71,14 @@ def exif_illisible(stderr):
     """Vrai si le refus d'ExifTool est un EXIF qu'il ne sait pas relire — le cas
     où la voie sans EXIF est la bonne réponse, pas `-all=`."""
     return bool(EXIF_ILLISIBLE.search(str(stderr or '')))
+
+
+def tmp_orphelin(stderr):
+    """Vrai si ExifTool refuse parce que son fichier de travail est DÉJÀ là.
+
+    Ce refus ne parle pas de la photo : il parle d'un appel PRÉCÉDENT tué en
+    route, qui a laissé son `<photo>_exiftool_tmp` derrière lui. Tant que ce
+    tmp est là, toute écriture sur cette photo échoue — y compris la
+    réparation de dernier recours — et la photo est abandonnée pour de bon.
+    Mesuré le 07/09 : 13 photos en huit heures, une toutes les 30 à 60 min."""
+    return bool(TMP_ORPHELIN.search(str(stderr or '')))

@@ -19,8 +19,7 @@ la machine le 07/09 à 07:30** (`/api/maint/status` → `config.retag`) :
 fichier l'arrête au lot suivant sans rien perdre (la progression vit dans le
 `pipe` de chaque entrée).
 
-**DÉFAUT TROUVÉ LE 07/09 AU SOIR, EN COURS, ET IL GROSSIT — décision à
-Mike (`QUESTIONS_MIKE.md`).** Quand l'écriture XMP dépasse le délai
+**DÉFAUT DU 07/09 AU SOIR — FERMÉ LE SOIR MÊME, OBSERVÉ.** Quand l'écriture XMP dépasse le délai
 (`_run_exiftool`, 180 s), Python TUE ExifTool — mais le
 `<photo>.jpg_exiftool_tmp` qu'il avait déjà créé sur le NAS reste, et le
 `finally` ne ramasse que l'argfile. **Toute écriture ultérieure sur cette photo
@@ -35,6 +34,19 @@ eux, sont bien dans l'index. Deux gestes, tous deux à Mike : effacer les 13 tmp
 sur preuve, et ramasser le tmp dans le `except TimeoutExpired` — un nettoyage
 derrière notre propre processus tué, sur un chemin connu, pas le « balayage »
 que `CLAUDE.md` interdit.
+
+**LE CORRECTIF, posé et observé le soir même** (`ecriture_meta.tmp_orphelin`,
+`server.ramasser_tmp_exiftool`, `retenter_tmp_orphelins`, 13 bancs) : la règle
+pure reconnaît CE refus et pas un autre ; `write_metadata` ramasse sur preuve
+puis réessaie UNE fois ; et le `except` du timeout ramasse ce qu'il vient
+d'orpheliner — c'est là que le défaut naissait. Une passe unique à jeton rouvre
+ce qui était déjà fermé. **Deux corrections de méthode payées en chemin** : la
+passe cherchait `retag_fail`, la marque du TAGUEUR, alors que ces photos-là
+sont fermées par `retro_write_metadata` (`write_fails` + `file_error`) — elle a
+rendu « 0 photo » sur quatorze tmp bien présents, banc vert à l'appui ; et
+« pas de tmp » n'est pas « échec », 9 photos restaient fermées alors que plus
+rien ne les fermait. **Observé** : 22 entrées examinées, 13 tmp retirés, 9
+marques devenues sans objet, **0 tmp restant, 0 gardée faute de preuve**.
 
 **Deux dettes du 06/09 sont fermées, MESURÉES en réel le 07/09 au matin.**
 
@@ -888,6 +900,17 @@ béquille.
 **Ce qu'il veut, et qui devient la spec** : l'application DIT ce qu'elle a
 détecté, dans un onglet **Sensibles** ; la photo y est en quarantaine et
 protégée par défaut, en attendant qu'il valide ou efface.
+
+**AMENDÉ LE 07/09 AU SOIR, et ça change l'écran (b)** : « la médiathèque est
+censée conserver des photos et vidéos de SOUVENIRS, et non des documents »
+(Mike). Le geste par défaut de l'onglet n'est donc pas *Rendre privée* mais
+**Corbeille** — ranger un relevé bancaire dans un `PRIVE` ne fait que déplacer
+le problème et le garde indexé, cherchable et sauvegardé pour toujours.
+*Rendre privée* reste offert pour le document qu'on veut garder, *« non, pas
+sensible »* pour le faux positif. Rien n'est perdu : la corbeille garde
+180 jours. Les six pièces de l'échantillon sont traitées — **les quatre
+dernières effacées le 07/09 au soir**, et les deux dossiers de planches basse
+définition supprimés avec elles.
 
 **La décision qui lui appartenait, et qu'il a tranchée** : que se passe-t-il
 À LA DÉTECTION, sachant que la mesure du 06/09 a vu le modèle manquer 4 des

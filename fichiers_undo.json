@@ -928,5 +928,65 @@
   "ts": 1788726753.274647,
   "expire": 1804278753.274647,
   "par": "Mike"
+ },
+ {
+  "op": "delete",
+  "src": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2023\\20230326_190923.jpg",
+  "dst": "\\\\NAS-Bremblens\\home\\Photos\\.corbeille-effacements\\20260907-230347-355\\20230326_190923.jpg",
+  "idx": 1,
+  "keys": [
+   [
+    "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2023\\20230326_190923.jpg",
+    "\\\\NAS-Bremblens\\home\\Photos\\.corbeille-effacements\\20260907-230347-355\\20230326_190923.jpg"
+   ]
+  ],
+  "ts": 1788815031.7694943,
+  "expire": 1804367031.7694943,
+  "par": "Mike"
+ },
+ {
+  "op": "delete",
+  "src": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2022\\20220805_200910.jpg",
+  "dst": "\\\\NAS-Bremblens\\home\\Photos\\.corbeille-effacements\\20260907-230357-635\\20220805_200910.jpg",
+  "idx": 1,
+  "keys": [
+   [
+    "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2022\\20220805_200910.jpg",
+    "\\\\NAS-Bremblens\\home\\Photos\\.corbeille-effacements\\20260907-230357-635\\20220805_200910.jpg"
+   ]
+  ],
+  "ts": 1788815042.2069085,
+  "expire": 1804367042.2069085,
+  "par": "Mike"
+ },
+ {
+  "op": "delete",
+  "src": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Floufline\\20240226_223732.jpg",
+  "dst": "\\\\NAS-Bremblens\\home\\Photos\\.corbeille-effacements\\20260907-230409-612\\20240226_223732.jpg",
+  "idx": 1,
+  "keys": [
+   [
+    "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Floufline\\20240226_223732.jpg",
+    "\\\\NAS-Bremblens\\home\\Photos\\.corbeille-effacements\\20260907-230409-612\\20240226_223732.jpg"
+   ]
+  ],
+  "ts": 1788815053.150188,
+  "expire": 1804367053.150188,
+  "par": "Mike"
+ },
+ {
+  "op": "delete",
+  "src": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\20260201_202623.jpg",
+  "dst": "\\\\NAS-Bremblens\\home\\Photos\\.corbeille-effacements\\20260907-230418-780\\20260201_202623.jpg",
+  "idx": 1,
+  "keys": [
+   [
+    "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\20260201_202623.jpg",
+    "\\\\NAS-Bremblens\\home\\Photos\\.corbeille-effacements\\20260907-230418-780\\20260201_202623.jpg"
+   ]
+  ],
+  "ts": 1788815063.325133,
+  "expire": 1804367063.325133,
+  "par": "Mike"
  }
 ]

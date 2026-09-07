@@ -1560,6 +1560,41 @@ def _run_exiftool(args, timeout=180):
 LAST_WRITE_ERROR = ""
 
 
+def ramasser_tmp_exiftool(path):
+    """Retirer le `<photo>_exiftool_tmp` qu'un appel tué a laissé derrière lui.
+
+    Ce n'est PAS le « balayage » que `CLAUDE.md` interdit : on ne parcourt
+    rien, le chemin est celui de la photo qu'on est en train d'écrire, et on
+    vérifie fichier par fichier — le modèle du strip Motion Photo.
+
+    **Deux preuves avant d'effacer, dans cet ordre.** (1) La photo d'origine
+    EXISTE : sans elle, le tmp est peut-être tout ce qui reste, et l'effacer
+    serait exactement la perte qu'on prétend éviter. (2) Elle est plus GROSSE
+    que le tmp — le tmp est une copie tronquée, arrêtée en cours d'écriture ;
+    les treize cas du 07/09 le vérifiaient tous, et leur photo n'avait pas été
+    touchée depuis août. Si l'une des deux manque, on ne touche à rien et on
+    le DIT : une photo abandonnée qui se voit vaut mieux qu'un fichier effacé
+    en silence.
+
+    Rend True si le tmp a été retiré."""
+    tmp = Path(str(path) + '_exiftool_tmp')
+    try:
+        if not tmp.exists():
+            return False
+        if not path.exists():
+            print(f"  ⚠ tmp ExifTool gardé (la photo d origine manque) : {tmp.name}")
+            return False
+        if path.stat().st_size <= tmp.stat().st_size:
+            print(f"  ⚠ tmp ExifTool gardé (il n est pas plus petit que la "
+                  f"photo) : {tmp.name}")
+            return False
+        tmp.unlink()
+        return True
+    except OSError as e:                                      # noqa: BLE001
+        print(f"  ⚠ tmp ExifTool : {e}")
+        return False
+
+
 def repair_file(path):
     """DERNIER RECOURS : reconstruit les métadonnées (`-all=` puis recopie).
 
@@ -1602,6 +1637,17 @@ def write_metadata(path, keywords, desc):
         if r.returncode == 0:
             return True
         err = r.stderr.strip()
+        # Un tmp orphelin ne parle pas de CETTE écriture : il parle d'un appel
+        # précédent tué en route. Le ramasser sur preuve et réessayer UNE fois
+        # — sans quoi la photo reste fermée à toute écriture, pour toujours.
+        if ecriture_meta.tmp_orphelin(err) and ramasser_tmp_exiftool(path):
+            r = _run_exiftool(ecriture_meta.args_ecriture(keywords, desc, jpeg)
+                              + [str(path)])
+            if r.returncode == 0:
+                print(f"  🧹 tmp ExifTool orphelin retiré, écriture reprise : "
+                      f"{path.name}")
+                return True
+            err = r.stderr.strip() or err
         if ecriture_meta.exif_illisible(err):
             print(f"  ⚠ EXIF illisible pour ExifTool ({err[:80]}) → "
                   f"XMP + IPTC seulement, EXIF et trailer conservés : {path.name}")
@@ -1616,6 +1662,13 @@ def write_metadata(path, keywords, desc):
     except Exception as e:
         LAST_WRITE_ERROR = str(e)[:200]
         print(f"  ⚠ ExifTool: {e}")
+        # C'est ICI que naissait le défaut : `subprocess.run` tue le processus
+        # au timeout et relance l'exception ; son `finally` ne ramasse que
+        # l'argfile, et le tmp restait sur le NAS. Ramasser tout de suite coûte
+        # un `stat` et évite d'y revenir dans une demi-heure.
+        if ramasser_tmp_exiftool(path):
+            print(f"  🧹 tmp ExifTool laissé par l appel interrompu, retiré : "
+                  f"{path.name}")
         return False
 
 
@@ -2469,6 +2522,7 @@ def classer_echecs():
 
 
 TRONQUEES_JETON = SCRIPT_DIR / "_tronquees_retentees.txt"
+TMP_ORPHELINS_JETON = SCRIPT_DIR / "_tmp_orphelins_retentes.txt"
 
 
 def retenter_tronquees():
@@ -2505,6 +2559,91 @@ def retenter_tronquees():
     n = sum(1 for k in cles if enqueue_retag(k))
     print(f"  ♻ {n} image(s) tronquée(s) remise(s) en file : Pillow sait "
           f"maintenant les décoder jusqu'à la coupure")
+
+
+def retenter_tmp_orphelins():
+    """UNE fois : rouvrir les photos qu'un `_exiftool_tmp` orphelin avait
+    fermées, maintenant que `write_metadata` le ramasse (07/09 au soir).
+
+    Le correctif protège les PROCHAINES écritures ; celles qui portent déjà
+    `retag_fail` ne seraient jamais représentées — c'est le rôle de la garde
+    anti-boucle, et il est juste. Sans cette passe, les treize photos du 07/09
+    resteraient abandonnées pour toujours : on n'aurait réparé que l'avenir.
+
+    **DEUX chemins d'abandon, pas un.** Le premier passage de cette passe a
+    rendu « 0 photo » sur quatorze tmp bien présents : elle interrogeait
+    `retag_fail`, la marque du TAGUEUR. Or ces photos-là sont fermées par
+    l'écriture RÉTROACTIVE des XMP (`retro_write_metadata`) : elle compte
+    `write_fails`, pose `file_error` à la troisième, puis saute pour toujours
+    tout ce qui porte `write_fails >= 3` ET `repair_tried`. Les deux champs
+    sont donc examinés — un instrument qui interroge le mauvais champ répond
+    parfaitement à la question qu'on lui pose, et ce n'est pas la bonne.
+
+    **« Pas de tmp » n'est pas « échec ».** `ramasser_tmp_exiftool` rend False
+    aussi bien quand il REFUSE d'effacer que quand il n'y a RIEN à effacer ; le
+    premier passage lisait les deux comme un refus et laissait 9 photos fermées
+    alors que plus rien ne les fermait. Trois cas, donc, et ils sont comptés
+    séparément : réparé, résidu, refus. Seul le refus — le tmp est là et la
+    preuve manque — garde la photo fermée, parce que la rouvrir la ferait
+    échouer en boucle sur la même cause.
+
+    Même garde que `retenter_tronquees` : un JETON SUR DISQUE, pas un champ de
+    l'entrée. En cas d'échec l'entrée est réécrite de zéro, un champ y
+    disparaîtrait, et la passe se rejouerait à chaque démarrage. Retirer le
+    jeton relance la passe."""
+    import ecriture_meta as _em
+    if TMP_ORPHELINS_JETON.exists():
+        return
+    def ferme_par_un_tmp(e):
+        return isinstance(e, dict) and (
+            _em.tmp_orphelin(e.get('file_error') or '')       # écriture rétroactive
+            or _em.tmp_orphelin(e.get('retag_error') or ''))  # tagueur
+    cles = [k for k, e in list(STORE.data.items()) if ferme_par_un_tmp(e)]
+    try:
+        TMP_ORPHELINS_JETON.write_text(
+            f"{time.strftime('%Y-%m-%d %H:%M:%S')} — {len(cles)} photo(s) "
+            f"fermée(s) par un _exiftool_tmp orphelin, examinée(s).\n"
+            f"Retirer ce fichier relance la passe.\n", encoding='utf-8')
+    except OSError as e:
+        print(f"  ⚠ jeton des tmp orphelins non écrit ({e}) — passe ANNULÉE "
+              f"pour ne pas risquer de la rejouer sans fin")
+        return
+    if not cles:
+        return
+    rendues, residus, gardees = 0, 0, 0
+    for k in cles:
+        p = _resolve_key(k)
+        tmp = Path(str(p) + '_exiftool_tmp')
+        # TROIS cas, et ils ne se confondent pas. Le tmp est là et part : on a
+        # réparé. Il n'est PLUS là : plus rien ne bloque, la marque est un
+        # RÉSIDU — 9 cas au 07/09, et le premier passage les comptait comme des
+        # échecs, donc les laissait fermées pour rien. Il est là et la preuve
+        # manque : on n'y touche pas, et c'est le seul vrai refus.
+        if tmp.exists():
+            if not ramasser_tmp_exiftool(p):
+                gardees += 1
+                continue
+            rendues += 1
+        else:
+            residus += 1
+        e = STORE.data.get(k)
+        if not isinstance(e, dict):
+            continue
+        e = dict(e)
+        # `write_fails` et `repair_tried` ensemble sont la porte fermée de
+        # `retro_write_metadata` ; `retag_fail` est celle du tagueur. On les
+        # retire toutes, et la photo repart par le chemin qui l'avait perdue —
+        # le scan suivant réécrit son XMP sans qu'on l'enfile nulle part.
+        for champ in ('file_error', 'write_fails', 'repair_tried',
+                      'retag_fail', 'retag_error', 'retag_at'):
+            e.pop(champ, None)
+        STORE.set(k, e, save=False)
+    if rendues or residus or gardees:
+        STORE.save()
+        print(f"  🧹 tmp ExifTool orphelins : {rendues} tmp retiré(s), "
+              f"{residus} marque(s) devenue(s) sans objet, "
+              f"{rendues + residus} photo(s) rouverte(s) à l écriture, "
+              f"{gardees} gardée(s) faute de preuve")
 
 
 def _classe_fichier(path):
@@ -14747,6 +14886,7 @@ if __name__ == '__main__':
                   args=('dates', backfill_dates))
     fil_surveille(reconcile_named_tags, boucle=False)
     fil_surveille(classer_echecs, boucle=False)
+    fil_surveille(retenter_tmp_orphelins, boucle=False)
     fil_surveille(_backfill, nom='backfill:noms', boucle=False,
                   args=('noms', reimport_name_tags))
     # Le plan de rangement par année se RECALCULE à chaque démarrage. Le 29/08,
