@@ -84,6 +84,17 @@ def _save_state(path, state):
         pass
 
 
+def _raison(sv):
+    """POURQUOI on cede la main. `is_busy` dit QUE la machine est prise, pas
+    par quoi -- et le journal disait « UI active » quoi qu il arrive. Il aurait
+    donc nomme l UI le 06/09 alors que c etait un balayage NAS concurrent :
+    un instrument qui nomme la mauvaise cause fait chercher au mauvais endroit.
+    `getattr` et non `sv.raison_busy()` : StandaloneSv n en a pas besoin (le
+    serveur est arrete), et un pont sans la methode doit continuer de tourner."""
+    f = getattr(sv, 'raison_busy', None)
+    return (f() if f else '') or 'occupee'
+
+
 def due(step, state, now, intervals):
     last = state.get(step, 0)
     return (now - last) >= intervals.get(step, JOUR)
@@ -132,7 +143,8 @@ def apply_pending_dedup(sv):
             c['absent'] += 1                      # deja quarantine lors d'un run precedent
             continue
         if sv.is_busy():
-            sv.log("dedup : UI active, on s'arrete la (repris au prochain tour)")
+            sv.log(f"dedup : {_raison(sv)}, on s'arrete la"
+                   " (repris au prochain tour)")
             break
         if not canon.exists() or dst.exists():
             c['skip'] += 1
@@ -210,7 +222,7 @@ def run_cycle(sv, now=None):
         if not due(step, state, now, intervals):
             continue
         if step in LOURDES and sv.is_busy():
-            sv.log(f"{step} : UI active, reporte")
+            sv.log(f"{step} : {_raison(sv)}, reporte")
             continue
 
         if step == 'recensement':

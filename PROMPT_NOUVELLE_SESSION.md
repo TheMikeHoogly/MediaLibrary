@@ -9,43 +9,38 @@ FUSIONNÉ — ce document, non. Puis `ROADMAP.md`, `eval/DECISIONS.md`,
 `eval/METHODE.md` — et `docs/DECISIONS_OUTILLAGE.md` si le sujet touche aux
 canaux, à la livraison ou au MCP. Débrief en 2–3 lignes, puis on attaque.
 
-## Où on en est (06/09/2026 soir)
+## Où on en est (07/09/2026, matin)
 
 **Git** : dernier commit fusionné dans `main` — le vérifier dans
-`.git/logs/refs/heads/main`, jamais ici. Six livraisons le 06/09.
+`.git/logs/refs/heads/main`, jamais ici.
 
-**LA CAMPAGNE DE RETAG TOURNE, et elle est en forme.** 11–16 s/photo, GPU à
-81 % et 57 °C, la file se recharge toutes les ~18 minutes (500 par lot). Levier :
-`retag_actif.txt`, fichier VIDE — ne pas l'effacer. Instruments :
-`/reglages` → `config.retag`, et `grep 'en file de RE-TAGGING' _journal_serveur.log`.
+**LA CAMPAGNE DE RETAG TOURNE, et elle est en forme.** Lu sur la machine le
+07/09 à 07:30 (`/api/maint/status` → `config.retag`) : **8 368 faites, reste
+31 629, 0 abandon**, 12–16 s/photo → **~5 jours**. Levier : `retag_actif.txt`,
+fichier VIDE — ne pas l'effacer. Instruments : `/reglages` → `config.retag`, et
+`grep 'en file de RE-TAGGING' _journal_serveur.log`.
 
-**La journée a été une journée de PANNES, pas de fonctionnalités.** Trois, toutes
-silencieuses, toutes trouvées par la mesure et pas par la relecture :
+**Deux dettes du 06/09 fermées le 07/09, MESURÉES en réel** (récit complet dans
+ROADMAP, § « Où on en est ») :
 
-1. **La file de retag jeûnait derrière le NAS.** Elle se remplissait dans
-   `_sync_dir`, appelée APRÈS un `rglob` de 44 000 fichiers sur SMB — 632 s à
-   1 473 s d'ordinaire, **plus de 85 minutes** le jour où une passe de
-   maintenance et 2 139 vignettes sont tombées dessus. GPU à 0 % pendant deux
-   heures sans que rien ne casse. → `remplir_file_retag()` en tête de
-   `scan_uploads`, avant tout contact avec le disque.
-2. **`loading="lazy"` ne borne rien.** Une planche de 2 139 tuiles prenait les
-   six connexions de Chrome pendant des dizaines de minutes — au point qu'un
-   AUTRE onglet vers le serveur n'obtenait jamais de connexion (sa requête
-   n'apparaît même pas dans le journal). → `window.Vignettes` : observateur à
-   marge choisie + file plafonnée à 4 en vol. **Observé** : 585 tuiles,
-   30 chargées, 555 en attente.
-3. **« Déjà fait » criait ENCORE « ECHEC »** — bat 42 cette fois, après le
-   bat 45 la semaine passée. La leçon était écrite ; elle n'avait été appliquée
-   qu'à un seul outil.
+1. **Le GPU ne jeûne plus au redémarrage.** `remplir_file_retag()` passe en
+   TÊTE de `maintenance_loop`, avant ExifTool et les trois passes de purge —
+   il ne lit que l'index en mémoire. Le délai bannière → premier lot valait
+   **69 s à 81 min selon l'humeur du NAS** (relevé sur les quatre redémarrages
+   du 06/09) ; il vaut **9 s**, deux fois observé, et ces 9 s sont le
+   chargement des magasins SQLite.
+2. **La maintenance cède à un balayage NAS en cours** (`SCAN_NAS_EN_COURS`,
+   posé avant le `try` du scan, levé dans son `finally`). Observé :
+   `boucle.scan_nas` à `true` pendant l'énumération initiale. Et le journal
+   nomme désormais la vraie cause (`raison_busy()`) au lieu de crier « UI
+   active » quoi qu'il arrive. **L'autre moitié reste ouverte** : l'ordre
+   INVERSE (étape lourde déjà partie, puis le scan qui arrive dessus).
 
-**La corbeille de rangement : CLOSE.** Bat 46 (325 réancrages sur preuve
-d'empreinte) puis bat 24 : **25,36 Go rendus**, à 0,2 Go de la prévision.
-Restent 77 groupes — 33 récents qui partiront seuls, et 44 tranchés le soir
-même : **36 sont des doublons réels** (dont 30 que le sha256 déclarait à tort
-« dernière copie » — voir ROADMAP, le bat 40 dédoublonne par les PIXELS, pas
-par les octets), **4 sont des coquilles « Read error in the sector ! »**, et
-**3 seulement sont de vraies photos sans jumeau connu**, à restaurer.
-(`docs/corbeille_par_pixels.json`)
+**La corbeille de rangement : CLOSE côté purge** (25,36 Go rendus le 06/09).
+Restent 77 groupes — 33 récents qui partiront seuls, 36 doublons réels, 4
+coquilles « Read error in the sector ! », et **3 vraies photos sans jumeau
+connu, à RESTAURER** (`docs/corbeille_par_pixels.json` ; l'outil reste à
+écrire, le manifeste garde leur chemin d'origine).
 
 **Le chantier 18 a changé de forme, décidé par Mike.** Il ne veut pas cliquer
 photo par photo sur des liens que je lui colle : il veut que l'application DISE
@@ -69,21 +64,20 @@ Puis le débit (`tagué en`) et la température (`🌡`, `🔥 CHAUD` ≥ 85 °C
 **Ne pas commencer par (c)** : détecter avant de savoir montrer produirait un
 fonds à moitié masqué sans écran pour le démasquer.
 
-**2. Trois dettes de la journée, courtes** :
-  - le remplissage de la file passe encore APRÈS le travail de démarrage du
-    serveur (résolution des 45 000 clés) : ~15 min de GPU perdu à chaque
-    redémarrage ;
-  - la maintenance se met en retrait quand l'UI est active, **pas quand un scan
-    tourne** — deux balayages SMB simultanés, c'est la panne n° 1 ci-dessus ;
-  - restaurer les **3** vraies dernières copies de la corbeille (l'outil reste
-    à écrire ; le manifeste garde leur chemin d'origine), puis purger le reste.
+**2. Deux dettes courtes** :
+  - **restaurer les 3 vraies dernières copies** de la corbeille (l'outil reste
+    à écrire), puis purger le reste ;
+  - la seconde moitié du garde-fou NAS : un scan qui arrive sur une étape
+    lourde de maintenance DÉJÀ partie. Attention, la ligne `nas = first or
+    deep or (cycle % NAS_SCAN_CYCLES == 0)` porte un garde-fou voulu, avec son
+    banc — ne pas la changer sans mesure.
 
 **3. Reprendre la mesure des sensibles sur `qwen3.5:4b`** (l'ancienne portait
 sur `qwen3-vl:2b`, l'ancien modèle de prod), avec les 24 verdicts humains du
-06/09 comme vérité terrain.
+06/09 comme vérité terrain. **Après la campagne** : un banc qui appelle Ollama
+pendant qu'elle tourne dispute au tagueur la seule ressource dont il a besoin.
 
-**Ce qui attend la main de Mike** : `MARCHE_A_SUIVRE.md` à la racine — six
-sections à cocher.
+**Ce qui attend la main de Mike** : `MARCHE_A_SUIVRE.md` à la racine.
 
 ## En fin de projet
 
@@ -102,6 +96,13 @@ navigateur, et surtout il ne BORNE pas le nombre de requêtes en vol. Il avait
 l'air de faire le travail — c'est ce qui a rendu la panne invisible pendant des
 semaines. Ce qui protège, c'est ce qu'on écrit soi-même et qu'on peut mesurer.
 
+**Un chiffre moyen peut cacher qu'il n'y a pas de chiffre.** La doc annonçait
+« ~15 min de GPU perdu à chaque redémarrage ». Mesuré sur les quatre
+redémarrages du 06/09 : 69 s, 99 s, 51 min, 81 min. Ce n'était pas un coût, mais
+une DÉPENDANCE — au NAS — et une moyenne la faisait passer pour un coût fixe,
+donc pour quelque chose de supportable. Avant de citer une durée, regarder sa
+dispersion : c'est elle qui dit s'il y a une panne dessous.
+
 **Un instrument juste sur le principe peut mesurer la mauvaise grandeur.** Le
 banc de la corbeille cherchait par sha256 dans un fonds dédoublonné par les
 PIXELS : 37 « dernières copies » dont 30 étaient de vrais doublons. Rien
@@ -114,6 +115,14 @@ corbeille, les planches-contact montraient des chats et des mariages : elles
 répondaient « oui, ça compte » à une question qu'on ne posait pas. La vraie
 question — « cette photo existe-t-elle encore ailleurs ? » — était une question
 de machine. Choisir l'instrument AVANT de le fabriquer.
+
+**Un drapeau qu'on ne voit pas ne se prouve pas.** `SCAN_NAS_EN_COURS` ne fait
+céder la maintenance que quand une étape est DUE — c'est-à-dire une fois par
+jour. Un banc vert et rien à observer avant 19h : la correction serait partie
+sans preuve. Une ligne dans `/api/maint/status` (`boucle.scan_nas`) a suffi à
+la voir en réel à 88 s d'uptime. Quand une correction n'est visible que
+rarement, c'est le drapeau qu'il faut exposer, pas la preuve qu'il faut
+attendre.
 
 **Une sonde qui coûte autant que ce qu'elle mesure est un échec de conception.**
 479 s pour relire 389 manifestes et savoir où en était le bat 46 — parce que
@@ -145,7 +154,6 @@ banc refuse de conclure quand l'index est vide.
 **Une mesure prise dans une fenêtre minimisée ne vaut rien** : Chrome rendait
 `innerWidth = 0`, et les hauteurs lues (grille à 1 292 px) étaient l'effet du
 repli, pas du design. Vérifier le viewport avant de croire un pixel.
-
 
 **Un marqueur n'est pas la chose.** `SEFT` en queue ≠ Motion Photo : 16 519
 JPEG portent un trailer SEF de MÉTADONNÉES sans vidéo. Et un `ftyp` nu dans
@@ -179,20 +187,21 @@ importent `server.py`, qui ouvre `photos.db` — la VM ne sait même pas
 l'ouvrir en LECTURE par-dessus le montage (`disk I/O error` immédiat,
 observé le 03/09, rien écrit). Un test qui a besoin du code de `server.py`
 le lit par `ast` (voir `test_ui_global.py`, `test_upload_precontrole.py`),
-il ne l'importe pas.
+il ne l'importe pas — et ceux-là tournent très bien depuis la VM, un par un
+(`python3 -m unittest test_x`, ~20 s chacun).
 
 **ExifTool sous Windows perd les accents des arguments** : argfile UTF-8 BOM
 (`server._run_exiftool`, repris par `appliquer_strip_motionphoto`).
 
-**`device_bash` tronque une commande trop longue SANS le dire (~4 Ko).** Un
-`cat > fichier << 'EOF'` dont le payload dépasse ce seuil part amputé — le
-heredoc échoue (« here-document … delimited by end-of-file ») ou pire, écrit
-un fichier tronqué sans erreur visible. Pour transférer un script Python avec
-des accents (non ASCII, donc en base64) : découper le `.b64` en morceaux
-d'environ 1200 octets, les concaténer par `cat >>` successifs, puis vérifier
-la taille cumulée (`wc -c`) ET le `sha256sum` des deux côtés — CLOUD et
-Windows — avant de décoder et d'exécuter. Repéré et contourné le 05/09
-(transfert de `patch_roadmap2.py`, `patch_roadmap3.py`).
+**Pour transférer un script accentué vers la machine : `device_commit_files`,
+pas un heredoc.** `device_bash` tronque une commande trop longue SANS le dire
+(~4 Ko) : un `cat > f << 'EOF'` amputé écrit un fichier tronqué sans erreur
+visible, et le découpage du base64 en morceaux se recopie mal (une seule espace
+glissée dans un morceau et le sha256 ne tombe plus). Écrire le fichier dans le
+bac du conteneur, puis `device_commit_files` vers un `_tmp_*.py` à la racine :
+l'UTF-8 passe intact, en un appel, sans vérification à faire. Ensuite `rm` —
+et ne JAMAIS laisser traîner un fichier de travail non gitignoré à la racine,
+l'agent Git le prendrait.
 
 **Un banc mesure CE QU'IL MESURE, pas ce qu'on croit.** Le banc d'endurance
 rendait 8,9 s/photo — l'appel au modèle SEUL. La production paie en plus deux
@@ -212,6 +221,9 @@ aurait eu l'air de marcher. Une vignette se juge sur ses PIXELS
 
     L=$(grep -n "===== DEMARRAGE" _journal_serveur.log | tail -1 | cut -d: -f1)
     tail -n +$L _journal_serveur.log | grep -n "FIL MORT\|THREAD MORT\|Traceback"
+
+**Un grep large attrape des innocents** : `grep -i "echec"` sur le journal
+sortait une photo taguée « jeu d'echecs ». Lire la ligne, pas le compte.
 
 **Savoir d'où vient un chiffre.** `verifier_photos_google` lit le DISQUE ;
 `generer_plan_annee` lit l'index en mémoire — les confondre a coûté des heures.
@@ -242,7 +254,10 @@ question différente.
 **Un rattrapage ne doit jamais dépendre de la ressource qui vient de tomber.**
 
 **Un `replace` sur un motif présent DEUX fois touche le mauvais — `assert
-count == 1` avant.**
+count == 1` avant.** Et une assertion d'ORDRE se trompe de la même façon :
+`corps.index('try:')` prenait le PREMIER `try:` de la fonction, très loin du
+geste jugé — le banc criait rouge sur du code juste. Juger la FENÊTRE qui suit
+le geste, pas le fichier entier.
 
 **Un banc vert n'est pas un regard.**
 
@@ -266,7 +281,8 @@ vu — seule l'absence de la ligne au journal.
 ### Toucher
 
 **`ui/pages/` et `ui/*.css` sont relus À CHAUD** ; seul `server.py` exige un
-redémarrage — qui interrompt tagging et scan.
+redémarrage — qui interrompt tagging et scan (9 s de GPU perdu depuis le 07/09,
+plus 1 à 25 minutes d'énumération pendant lesquelles le GPU, lui, travaille).
 
 **Jamais deux écrivains sur `photos.db`.** Le serveur est l'écrivain unique ;
 les applicateurs le PROUVENT (`refus_d_ecriture` : HTTP + verrou).
@@ -276,13 +292,12 @@ strip le VÉRIFIE fichier par fichier.
 
 > **`N:\Photos` se CONNECTE à chaque session** (picker « Add folder », non
 > persistant) : demander à Mike au « Go ». Connecté : `device_list_dir` /
-> `device_stage_files` / `device_commit_files` — **et, CONTRAIREMENT à ce que
-> ce document a dit jusqu'au 05/09, il EST monté dans `device_bash`**
-> (`$HOME/mnt/Photos`) et il se lit. Mesuré : le listage est rapide (2 140
-> fichiers d'un dossier en 1 s) mais la lecture fichier par fichier plafonne à
-> **~5 fichiers/s** — donc un coup d'œil ou une poignée de photos, oui ; un
-> script sur TOUT le fonds, non, il passe toujours par l'agent banc (Windows,
-> UNC, natif).
+> `device_stage_files` / `device_commit_files` — **et il EST monté dans
+> `device_bash`** (`$HOME/mnt/Photos`). Mesuré : le listage est rapide (une
+> racine en 0,1 s, 2 140 fichiers d'un dossier en 1 s) mais la lecture fichier
+> par fichier plafonne à **~5 fichiers/s** — donc un coup d'œil ou une poignée
+> de photos, oui ; un script sur TOUT le fonds, non, il passe toujours par
+> l'agent banc (Windows, UNC, natif).
 >
 > **Piège git via `device_bash`** : jamais de git d'ici (`.git/index.lock`
 > résiduel indélébile) — même un `rev-parse` en lecture seule est à éviter,
@@ -292,10 +307,12 @@ strip le VÉRIFIE fichier par fichier.
 > erreur le 05/09, noté ici pour ne pas recommencer) : `_etat_git.json` (champ
 > `historique`) et les fichiers `.git/logs/*` lus en texte suffisent toujours.
 >
+> **`device_bash` ne peut ni effacer ni déplacer** dans les dossiers montés
+> (`rm`, `mv` → « Operation not permitted ») tant que Mike n'a pas approuvé la
+> demande de suppression. Un fichier de travail écrit à la racine y reste
+> donc — et l'agent Git le prendrait. Écrire ses brouillons HORS de `mnt/`
+> (`$HOME`), et ne rien poser à la racine du dépôt qu'on ne sache pas retirer.
+>
 > **Piège d'horloge** : `device_bash` est en **UTC** (−2 h chez Mike).
 >
-> **Le NAS est monté dans `device_bash`** (`$HOME/mnt/Photos`) — la doc a
-> longtemps dit le contraire. Le listage est rapide, la lecture fichier par
-> fichier plafonne à **~5 fichiers/s** : un coup d'œil oui, un script sur tout
-> le fonds non (agent banc). `copie.db` s'ouvre en `mode=ro` depuis la VM ;
-> `photos.db`, jamais.
+> `copie.db` s'ouvre en `mode=ro` depuis la VM ; `photos.db`, jamais.

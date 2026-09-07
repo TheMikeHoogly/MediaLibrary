@@ -1,6 +1,6 @@
 # Marche à suivre — Mike
 
-> Mis à jour le 06/09/2026 au soir. Ce qui est coché ici est ce que la
+> Mis à jour le 07/09/2026 au matin. Ce qui est coché ici est ce que la
 > prochaine session n'aura pas à te redemander.
 
 > Tout ce que j'attends de toi, dans l'ordre, avec le résultat à voir à chaque
@@ -20,8 +20,10 @@ Le 06/09 à 13h17 les trois fenêtres du bat 0 se sont arrêtées ensemble, sans
 prévenir. Le serveur photo était éteint pendant 25 minutes sans que rien ne le
 dise.
 
-- [ ] **Les trois fenêtres du `0 - Démarrer le serveur.bat` sont ouvertes**
-      (Serveur, Git, Bancs). Si l'une manque, relance le bat 0 : il les rouvre
+- [x] **Les trois fenêtres du `0 - Démarrer le serveur.bat` sont ouvertes**
+      (Serveur, Git, Bancs). **Vérifié le 07/09 à 07:12** : les deux agents
+      avaient vu le canal depuis moins de 5 s, et le serveur écrivait au
+      journal. Si l'une manque un jour, relance le bat 0 : il les rouvre
       toutes.
 - [ ] Doute ? `http://192.168.0.13:8080/reglages` répond → le serveur vit.
 
@@ -122,9 +124,11 @@ Ce qu'il faut savoir sur son rythme, pour ne pas t'inquiéter à tort :
 - **Quand tu navigues dans la photothèque, le tagueur s'efface.** C'est voulu :
   l'interface a la priorité sur le NAS. Une campagne qui ralentit pendant que tu
   regardes des photos n'est pas en panne.
-- Un **redémarrage du serveur** coûte encore ~15 min de GPU inoccupé (le travail
-  de démarrage lit le NAS avant que la file se remplisse). C'est le prochain
-  correctif sur ma liste.
+- Un **redémarrage du serveur** ne coûte plus que **9 secondes** de GPU
+  inoccupé (corrigé le 07/09 au matin, observé deux fois). Avant, c'était
+  entre 1 minute et 81 minutes selon l'humeur du NAS — je disais « ~15 min »,
+  c'était une moyenne qui cachait le vrai problème : ça ne dépendait pas du
+  code, mais du disque.
 
 ---
 
@@ -156,14 +160,19 @@ Elle est là pour que tu saches où on en est.
 1. **L'ONGLET SENSIBLES** — celui que tu as demandé, et le gros morceau de la
    prochaine session. L'application te dit ce qu'elle a trouvé ; la photo est
    masquée sans bouger en attendant ton verdict.
-2. **Remplir la file de retag AVANT le travail de démarrage** — pour supprimer
-   les 15 min de GPU perdu à chaque redémarrage.
-3. **Empêcher deux balayages NAS simultanés** — la maintenance se met en retrait
-   quand tu navigues, mais pas quand un scan tourne. C'est la cause directe des
-   85 minutes du 06/09 à midi.
-4. **L'outil qui restaure les 37 dernières copies** de la corbeille.
+2. ~~Remplir la file de retag AVANT le travail de démarrage.~~ **FAIT le
+   07/09**, et mesuré : 9 secondes au lieu de 1 à 81 minutes.
+3. ~~Empêcher deux balayages NAS simultanés.~~ **FAIT À MOITIÉ le 07/09** : la
+   maintenance se met maintenant en retrait quand un scan tourne — c'est
+   l'ordre qui a coûté les 85 minutes du 06/09 à midi. **Reste l'ordre
+   inverse** (une maintenance déjà partie, puis le scan qui arrive dessus) ;
+   je ne l'ai pas touché parce que la ligne concernée porte un garde-fou posé
+   exprès, et que je n'ai pas de mesure pour le remplacer sans risque.
+4. **L'outil qui restaure les 3 dernières copies** de la corbeille (section D).
 5. **Reprendre la mesure des photos sensibles sur `qwen3.5:4b`** (l'ancienne
-   portait sur `qwen3-vl:2b`), avec les 24 verdicts humains comme vérité terrain.
+   portait sur `qwen3-vl:2b`), avec les 24 verdicts humains comme vérité
+   terrain. **Après la campagne** : un banc qui interroge le modèle pendant
+   qu'elle tourne lui prend le GPU.
 
 *(Le chargement paresseux des vignettes est fait ET observé : 585 tuiles,
 30 chargées, 555 en attente, plafond à 4.)*

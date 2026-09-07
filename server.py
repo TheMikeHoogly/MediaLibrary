@@ -6453,6 +6453,36 @@ MAINT_LOOP_STATE = {"dernier_scan": 0.0, "derniere_erreur": "", "erreur_at": 0.0
                     # debut/fin/ajouts/retraits/inexplique. Vide tant qu'aucun
                     # cycle n'a tourné.
                     "dernier_cycle": {}}
+# Un balayage NAS EN COURS. La maintenance cédait la priorité à l'UI
+# (`ui_recent`) et à la charge machine (`system_busy`) — jamais au SCAN. Or le
+# 06/09 à 11h38 c'est exactement l'ordre observé : l'énumération de la racine
+# (un `rglob` de 44 000 fichiers sur SMB) tournait DÉJÀ quand la passe de
+# maintenance est tombée dessus. Deux balayages SMB concurrents : plus de
+# 85 minutes au lieu des 632 s d'ordinaire, et deux heures de GPU au repos
+# derrière. Un COMPTEUR, pas un booléen : deux scans concurrents ne doivent
+# pas se relâcher l'un l'autre.
+SCAN_NAS_LOCK = threading.Lock()
+SCAN_NAS_EN_COURS = 0
+
+
+def scan_nas_debut():
+    global SCAN_NAS_EN_COURS
+    with SCAN_NAS_LOCK:
+        SCAN_NAS_EN_COURS += 1
+
+
+def scan_nas_fin():
+    global SCAN_NAS_EN_COURS
+    with SCAN_NAS_LOCK:
+        SCAN_NAS_EN_COURS = max(0, SCAN_NAS_EN_COURS - 1)
+
+
+def scan_nas_en_cours():
+    """Vrai si un balayage des racines NAS tourne en ce moment."""
+    with SCAN_NAS_LOCK:
+        return SCAN_NAS_EN_COURS > 0
+
+
 # Vérification de la sauvegarde (audit A, « assurance-vie ») : résultat de la
 # dernière restauration à blanc du snapshot NAS. Voir backup_verify().
 BACKUP_VERIFY_STATE = {"at": 0.0, "ok": None, "integrity": "", "detail": "",
@@ -6463,6 +6493,18 @@ BACKUP_VERIFY_STATE = {"at": 0.0, "ok": None, "integrity": "", "detail": "",
 def maintenance_loop():
     """ExifTool + scan initial, puis re-scan toutes les 5 minutes."""
     global EXIFTOOL
+    # LA FILE D'ABORD — avant tout travail de démarrage. Les trois
+    # passes de purge ci-dessous résolvent une clé par entrée d'index
+    # (~45 000 `_resolve_key`) : une quinzaine de minutes pendant
+    # lesquelles le tagueur n'avait rien à faire, à CHAQUE
+    # redémarrage — et le protocole en impose un pour livrer le
+    # moindre changement de `server.py`. Le remplissage, lui, ne lit
+    # que l'index EN MÉMOIRE : il ne dépend ni de ces passes, ni
+    # d'ExifTool, ni du NAS. Même panne que le 06/09 (voir
+    # `remplir_file_retag`), autre endroit : ce qui affame le GPU,
+    # c'est toujours un travail de DISQUE placé devant un
+    # remplissage qui n'en a pas besoin.
+    remplir_file_retag('demarrage')
     EXIFTOOL = ensure_exiftool()
     # purge des entrées de dossiers cachés (.thumbs, @eaDir…) déjà indexées.
     # `forget_everywhere` et NON `STORE.remove_many` : retirer l'entrée d'index
@@ -6528,10 +6570,17 @@ def maintenance_loop():
             # Ordre de verrous : STORE.lock -> registre (jamais l'inverse).
             with STORE.lock:
                 REGISTRE.debut_cycle(len(STORE.data))
+            # Le drapeau se pose AVANT le try et se lève DANS le
+            # finally : un scan qui meurt en route ne doit pas
+            # laisser la maintenance en retrait pour toujours.
+            if nas:
+                scan_nas_debut()
             try:
                 scan_uploads(first, deep, nas=nas)
                 retro_write_metadata()
             finally:
+                if nas:
+                    scan_nas_fin()
                 with STORE.lock:
                     _res = REGISTRE.fin_cycle(len(STORE.data))
                 MAINT_LOOP_STATE["dernier_cycle"] = _res or {}
@@ -6615,7 +6664,20 @@ class _MaintSv:
         STORE.save()
 
     def is_busy(self):
-        return system_busy() or ui_recent()
+        return system_busy() or ui_recent() or scan_nas_en_cours()
+
+    def raison_busy(self):
+        """Ce qui occupe la machine, en clair. `is_busy` dit QUE la machine est
+        prise ; le journal, lui, disait « UI active » quoi qu'il arrive — il
+        aurait donc nommé l'UI le 06/09 alors que c'était un balayage NAS, et
+        fait chercher la panne au mauvais endroit."""
+        if scan_nas_en_cours():
+            return "scan NAS en cours"
+        if ui_recent():
+            return "UI active"
+        if system_busy():
+            return "machine chargée"
+        return ""
 
     def log(self, m):
         print(f"  🧹 maintenance : {m}")
@@ -13514,7 +13576,13 @@ class Handler(BaseHTTPRequestHandler):
                         'visages_gpu_pret': FACE_APP_GPU is not None,
                         'visages_gpu_erreur': FACE_GPU_ERROR or '',
                         'visages_gpu_voulu': FACE_USE_GPU},
-            'boucle': dict(MAINT_LOOP_STATE),
+            'boucle': dict(MAINT_LOOP_STATE,
+                           # Un drapeau qu'on ne voit pas ne se prouve
+                           # pas : c'est LUI qui fait maintenant céder
+                           # la maintenance (is_busy), et sans lui le
+                           # journal ne dirait rien tant qu'aucune étape
+                           # n'est due.
+                           scan_nas=scan_nas_en_cours()),
             # Comptes de l'index (chantier 10a) : qui retire des cles, combien,
             # et ce que personne n'explique. Toutes les listes sont bornees par
             # le registre lui-meme.

@@ -265,5 +265,44 @@ class LaFileNeDependPasDuNas(unittest.TestCase):
                       _corps("remplir_file_retag"))
 
 
+class LaFileSeRemplitAvantLeTravailDeDemarrage(unittest.TestCase):
+    """Le remplissage etait en tete de `scan_uploads` -- mais `scan_uploads`
+    n'est appelee qu'APRES le travail de demarrage de `maintenance_loop` :
+    trois passes qui resolvent une cle par entree d'index (~45 000
+    `_resolve_key`), une quinzaine de minutes pendant lesquelles le GPU
+    n'avait rien a faire. A CHAQUE redemarrage -- et le protocole en impose
+    un pour livrer le moindre changement de `server.py`.
+
+    Meme forme de panne que le 06/09, autre endroit : un travail de DISQUE
+    place devant un remplissage qui ne lit que l'index en memoire.
+    """
+
+    ORDRE = ("ensure_exiftool(", "_resolve_key", "purge_cles_fantomes",
+             "purge_detections_hors_index", "while True:")
+
+    def test_appele_en_tete_de_maintenance_loop(self):
+        self.assertIn("remplir_file_retag('demarrage')",
+                      _corps("maintenance_loop"))
+
+    def test_avant_exiftool_et_avant_toute_resolution_de_cle(self):
+        s = _corps("maintenance_loop")
+        i = s.index("remplir_file_retag('demarrage')")
+        for apres in self.ORDRE:
+            self.assertLess(
+                i, s.index(apres),
+                f"« {apres} » passe AVANT le remplissage : le GPU jeune "
+                "pendant tout le travail de demarrage.")
+
+    def test_le_remplissage_du_scan_reste(self):
+        # Deux appels, deux roles : celui-ci recharge les cycles SUIVANTS.
+        # Les supprimer l'un pour l'autre arreterait la campagne au premier
+        # lot, ou la ferait attendre le premier scan.
+        self.assertIn("remplir_file_retag()", _corps("scan_uploads"))
+
+    def test_le_remplissage_ne_depend_pas_d_exiftool(self):
+        # Il enfile des CLES ; ExifTool ne sert qu'a lire les metadonnees.
+        self.assertNotIn("EXIFTOOL", _corps("remplir_file_retag"))
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

@@ -146,7 +146,76 @@ def check_gps_standalone():
         shutil.rmtree(tmp, ignore_errors=True)
 
 
+def check_scan_nas_fait_ceder_la_maintenance():
+    """06/09, 11h38 : le scan enumerait DEJA la racine (rglob de 44 000
+    fichiers sur SMB) quand la passe de maintenance est tombee dessus. Deux
+    balayages SMB concurrents -- plus de 85 minutes au lieu de 632 s, et deux
+    heures de GPU au repos derriere. `is_busy` cedait a l'UI et a la charge
+    machine, jamais au SCAN : la seule des trois qui tenait le disque."""
+    print("0 quater) la maintenance cede a un balayage NAS en cours")
+    src = Path(__file__).resolve().parent.joinpath('server.py') \
+        .read_text(encoding='utf-8')
+    tree = ast.parse(src)
+
+    def corps(nom):
+        n = next((x for x in ast.walk(tree)
+                  if isinstance(x, ast.FunctionDef) and x.name == nom), None)
+        check(n is not None, nom + " trouvable dans server.py")
+        return (ast.get_source_segment(src, n) or '') if n else ''
+
+    ib = corps('is_busy')
+    check('scan_nas_en_cours()' in ib,
+          "is_busy() compte le balayage NAS, pas seulement l'UI et la charge")
+    check('ui_recent()' in ib and 'system_busy()' in ib,
+          "les deux gardes d'origine sont conservees")
+
+    ml = corps('maintenance_loop')
+    check('scan_nas_debut()' in ml and 'scan_nas_fin()' in ml,
+          "le drapeau est pose et leve autour du scan")
+    apres = ml[ml.index('scan_nas_debut()'):]
+    check('finally:' in apres
+          and apres.index('finally:') < apres.index('scan_nas_fin()'),
+          "leve DANS le finally qui suit la pose : un scan qui meurt ne "
+          "laisse pas la maintenance en retrait pour toujours")
+    check(apres.index('scan_uploads(') < apres.index('scan_nas_fin()'),
+          "le drapeau couvre bien le scan lui-meme")
+    check(ml.count('if nas:') >= 2,
+          "seul un tour QUI TOUCHE LE NAS pose le drapeau (Uploads est local)")
+
+    # Un drapeau qu'on ne voit pas ne se prouve pas : tant qu'aucune etape
+    # n'est due, le journal reste muet et rien ne dit si le drapeau est pose.
+    check("scan_nas=scan_nas_en_cours()" in src,
+          "l'etat du balayage NAS est LISIBLE (/api/maint/status -> boucle)")
+
+    # Le compteur, pas le booleen : deux scans ne se relachent pas l'un l'autre.
+    check('max(0, SCAN_NAS_EN_COURS - 1)' in src,
+          "le compteur ne descend jamais sous zero")
+
+    # Et le journal doit nommer LA BONNE cause : il disait « UI active » quoi
+    # qu'il arrive -- il aurait donc envoye chercher la panne du 06/09 du
+    # mauvais cote.
+    class SvScan:
+        dry = False
+        autonomy = dict(M.AUTONOMY)
+        intervals = dict(M.INTERVALS)
+        paths = {}
+        def is_busy(self):
+            return True
+        def raison_busy(self):
+            return "scan NAS en cours"
+    dit = M._raison(SvScan())
+    check(dit == "scan NAS en cours",
+          "le journal nomme le scan NAS, pas l'UI")
+
+    class SvMuet:
+        pass
+    check(M._raison(SvMuet()) == "occupee",
+          "un pont sans raison_busy (StandaloneSv) continue de tourner")
+
+
 def main():
+    check_scan_nas_fait_ceder_la_maintenance()
+    print()
     check_cablage_refus_standalone()
     print()
     check_gps_standalone()

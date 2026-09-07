@@ -9,13 +9,44 @@ dans **git** ; les rejets dans `eval/DECISIONS.md` (photothèque) et
 > **`N:\\Photos` se connecte à chaque session** — règle dans `CLAUDE.md`
 > (« Tester en réel »), depuis le 29/08.
 
-## Où on en est — 06/09/2026 (à lire en premier)
+## Où on en est — 07/09/2026 (à lire en premier)
 
 **LA CAMPAGNE DE RETAG TOURNE** (chantier 2 quater, lancée le 05/09 à 16:50).
-C'est le fait qui commande tout le reste : `retag_actif.txt` est posé, ~4 200
-photos sur 40 000 sont re-taguées en `qwen3.5:4b|v3fr|kb1`, 0 abandon, débit
-médian **14 s/photo** → encore **~6 jours**. Retirer le fichier l'arrête au lot
-suivant sans rien perdre (la progression vit dans le `pipe` de chaque entrée).
+C'est le fait qui commande tout le reste : `retag_actif.txt` est posé. **Lu sur
+la machine le 07/09 à 07:30** (`/api/maint/status` → `config.retag`) :
+**8 368 photos re-taguées** en `qwen3.5:4b|v3fr|kb1`, **reste 31 629**,
+**0 abandon**, débit instantané 12–16 s/photo → encore **~5 jours**. Retirer le
+fichier l'arrête au lot suivant sans rien perdre (la progression vit dans le
+`pipe` de chaque entrée).
+
+**Deux dettes du 06/09 sont fermées, MESURÉES en réel le 07/09 au matin.**
+
+1. **Le GPU ne jeûne plus au redémarrage.** `remplir_file_retag()` était en
+   tête de `scan_uploads` — mais `scan_uploads` n'est appelée qu'APRÈS le
+   travail de démarrage de `maintenance_loop`. Le délai entre la bannière
+   `DEMARRAGE` et le premier lot enfilé, relevé sur les quatre redémarrages du
+   06/09 : **69 s, 99 s, 51 min, 81 min** — il ne dépendait pas du code mais de
+   l'humeur du NAS, ce qui est pire qu'un coût fixe : rien ne le prédisait.
+   Le remplissage passe désormais en TÊTE de `maintenance_loop`, avant
+   ExifTool et avant les trois passes de purge. **Observé deux fois** :
+   bannière 07:25:51 → lot enfilé **07:26:00** (9 s), puis à 07:28 un
+   `/api/serveur` à **9,4 s d'uptime** montrait déjà `en_file: 500`. Les 9 s
+   sont le chargement des cinq magasins SQLite, rien d'autre.
+2. **La maintenance cède maintenant à un balayage NAS en cours.** `is_busy()`
+   comptait l'UI (`ui_recent`) et la charge machine (`system_busy`), jamais le
+   SCAN — la seule des trois qui tient le disque, et exactement l'ordre observé
+   le 06/09 à 11h38. Un compteur `SCAN_NAS_EN_COURS` posé avant le `try` du
+   scan et levé dans son `finally` (un scan qui meurt ne doit pas laisser la
+   maintenance en retrait pour toujours). **Observé** : `boucle.scan_nas` à
+   `true` à 88 s d'uptime, pendant l'énumération initiale. Et le journal ne
+   ment plus : il disait « UI active, reporte » quoi qu'il arrive — il aurait
+   donc nommé l'UI le 06/09 ; `raison_busy()` nomme la vraie cause.
+   **Ce qui RESTE ouvert, et c'est l'autre moitié** : dans l'ordre INVERSE
+   (une étape lourde de maintenance déjà partie, puis le scan qui arrive
+   dessus), rien n'arrête le scan. Pas touché : la ligne `nas = first or deep
+   or …` porte un garde-fou voulu (banc
+   `test_un_cycle_approfondi_implique_le_nas`) et ce n'est pas une correction
+   à faire sans l'avoir mesurée.
 
 **Ce qui est SÛR pendant qu'elle tourne** : doc, UI, CSS, le reste de l'audit
 interne, l'adoption de `components.css` par `browse`/`faces`/`reglages`
@@ -45,10 +76,11 @@ un qui refuse `rglob`/`cur`/`Path(` dans son corps).
 photothèque, le tagueur s'efface — c'est l'invariant « l'UI cède la priorité
 au NAS », et c'est voulu. Le défaut, c'est l'arrêt de 11h34 à 12h48, sans
 aucune activité UI.
-**(a) RESTE OUVERT** : la passe de maintenance et l'énumération profonde
-peuvent parcourir le NAS EN MÊME TEMPS — la maintenance se reporte quand
-« UI active », pas quand un scan tourne. Deux balayages SMB concurrents, c'est
-la cause directe des 85 minutes.
+**(a) À MOITIÉ FERMÉ le 07/09** : la maintenance ne se reporte plus seulement
+sur « UI active » — elle se reporte aussi quand un balayage NAS tourne
+(`SCAN_NAS_EN_COURS`, observé à `true` pendant l'énumération initiale). C'est
+l'ordre du 06/09, donc la cause directe des 85 minutes. **Reste l'ordre
+inverse** : une étape lourde déjà partie, puis le scan qui arrive dessus.
 
 **(b) VIGNETTES — OBSERVÉ EN RÉEL le 06/09 au soir.** Sur
 `2026/260531_Samsung_MHU/Camera` : **585 tuiles, 30 chargées, 555 encore en
