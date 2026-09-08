@@ -208,6 +208,38 @@ sur la carte (rendu identique, la carte n'ayant pas adopté la feuille commune).
 **1 ter. La résilience des fils de travail : FAIT (session 61)** — superviseur,
 relance à attente doublante, cinq morts consécutives alertent (`/sante` + journal).
 
+**1 septies. L'ESPACE DISQUE — MESURÉ le 08/09, et la surprise est où il
+n'est pas.** Mike demandait un ménage des fichiers « undo » du projet.
+`mesure_espace_disque.py` (instrument neuf, lancé par l'agent des bancs pour
+avoir la vitesse native de Windows — le pont lit 110 fichiers/s, un `du` y
+prendrait des heures) donne les chiffres :
+
+| Où | Quoi | Poids | Verdict |
+|---|---|---|---|
+| **C:** | les **45 `.zip` du Takeout** | **95,8 Go** | **à effacer** — l'extrait est prouvé complet |
+| C: | `GOOGLE PHOTOS\extrait` | 95,8 Go | **à garder** : la sauvegarde, et la source des 942 « contenu perdu » |
+| NAS | `.corbeille-rangement` | 35,5 Go | sans urgence : le NAS est vide à 78 % |
+| C: | `.venv` | 4,2 Go | régénérable, mais il faut le serveur qui tourne |
+| C: | vignettes + visages + animaux | 0,8 Go | caches, refaits à la demande |
+| C: | quarantaines et rapports du dépôt | 0,4 Go | déplacés dans `_to_delete\` |
+
+**Le ménage demandé ne rendait pas 100 Go, il en rendait 0,4** — les « undo »
+du dépôt pèsent 366 Mo. **Le vrai gisement est une DUPLICATION** : le Takeout
+occupe 191 Go sur C:, deux fois le même contenu, et C: n'a plus que 75,5 Go
+libres sur 1 To. Le NAS, lui, a **2 980 Go libres** : les 35,5 Go de corbeille
+de rangement n'y gênent personne, et la question « mon Takeout est-il aussi sur
+le NAS ? » a une réponse — **non**, il n'y est pas.
+
+**Ce qui rend l'effacement des `.zip` légitime, et c'est une PREUVE, pas un
+avis** : `verifier_takeout_ouvert.py` relit le sommaire des 45 lots et demande
+au disque si chaque membre est là, à la bonne taille. Verdict du 08/09 :
+**45 lots, aucun trou du 1 au 45, 25 864 fichiers, 0 ABSENT, 0 TRONQUÉ — «
+L'EXPORT EST OUVERT EN ENTIER »**. Et l'extrait est la bonne copie à garder :
+il est LISIBLE tel quel, là où rouvrir les `.zip` demanderait 96 Go libres
+qu'on n'a plus. **`48 - Effacer les archives ZIP du Takeout (95 Go).bat`**
+refait cette preuve avant de proposer quoi que ce soit, et demande OUI en
+toutes lettres. Après : **~171 Go libres sur C:**.
+
 **1 quinquies. Google — CLOS pour l'essentiel (29/08).** Mike efface chez
 Google ; les 297 « Google porte mieux » sont rapatriés, ABSENT 0, les 199
 « NAS plus petit » sont nos propres copies, zéro tag perdu. **Reste un

@@ -6,9 +6,12 @@
 Tu reprends **MediaLibrary**. **VÉRIFIE avant de lire** : `.git/HEAD`,
 `.git/logs/HEAD` et `.git/logs/refs/heads/main` disent ce qui a été commité et
 FUSIONNÉ — ce document, non. Puis `ROADMAP.md`, `eval/DECISIONS.md`,
-`eval/METHODE.md` — `eval/DECISIONS_UI.md` si le sujet touche à l'écran
-(sorti du carnet le 07/09), `docs/DECISIONS_OUTILLAGE.md` s'il touche aux
-canaux, à la livraison ou au MCP. Débrief en 2–3 lignes, puis on attaque.
+`eval/METHODE.md`. **QUATRE carnets, découpés par domaine** :
+`eval/DECISIONS.md` (la photothèque : reconnaissance, visibilité, recherche),
+`eval/DECISIONS_TAGGING.md` (ce que le MODÈLE écrit — sorti le 08/09),
+`eval/DECISIONS_UI.md` (l'écran — 07/09), `docs/DECISIONS_OUTILLAGE.md` (les
+canaux, la livraison, le pont — 20/08). Budget de chacun : **125 000 octets**
+depuis le 08/09. Débrief en 2–3 lignes, puis on attaque.
 
 ## Où on en est (08/09/2026, fin de journée)
 
@@ -90,9 +93,23 @@ Tout ce qui reste sous 44 est un `<a>` DANS un `<p>`, exempté par WCAG 2.5.8, o
 un contrôle Leaflet. **L'exemption est désormais ÉCRITE** : c'est son absence
 qui avait laissé les onglets à 32 px pendant treize jours.
 
-**CE QUI ATTEND MIKE** : `QUESTIONS_MIKE.md` — `eval/DECISIONS.md` est à **96 %**
-de son budget (et `ROADMAP.md` à 89 %) ; le découpage du 07/09 a été consommé en
-vingt-quatre heures. Et `MARCHE_A_SUIVRE.md` pour le reste.
+**L'ESPACE DISQUE : mesuré le 08/09, et ce n'est pas où on le cherchait.**
+C: n'a que **75,5 Go libres sur 1 To**. Le ménage du dépôt (les « undo », les
+rapports, les quarantaines) rend **0,4 Go**, pas cent — c'est déplacé dans
+`_to_delete\`, à vider à la main. Le vrai gisement est une DUPLICATION :
+`C:\GOOGLE PHOTOS` pèse **191 Go**, deux fois le même contenu (45 `.zip` +
+leur extrait). `verifier_takeout_ouvert.py` a prouvé l'extrait complet
+(45 lots, 0 absent, 0 tronqué) : **`48 - Effacer les archives ZIP du Takeout
+(95 Go).bat`** refait la preuve puis efface, sur un OUI. Le NAS, lui, a
+**2 980 Go libres** — ses 35,5 Go de `.corbeille-rangement` ne gênent
+personne, et le Takeout n'y est PAS. Détail chiffré : ROADMAP § 1 septies.
+L'instrument : `mesure_espace_disque.py --ou depot|takeout|nas|corbeilles`,
+lancé par l'agent des bancs (le pont lit 110 fichiers/s, un `du` y prend
+des heures — 22 s côté Windows contre un dépassement de délai côté VM).
+
+**CE QUI ATTEND MIKE** : rien à décider — `QUESTIONS_MIKE.md` est vide. Trois
+GESTES l'attendent : lancer le bat 48, vider `_to_delete\`, et trier les 213
+photos sensibles. Et `MARCHE_A_SUIVRE.md` pour le reste.
 
 ## Prochain pas
 
@@ -102,11 +119,11 @@ Puis le débit (`tagué en`) et la température (`🌡`, `🔥 CHAUD` ≥ 85 °C
 Et : `grep "Temporary file" _journal_serveur.log` doit rendre **zéro** — c'est
 le défaut du 07/09, corrigé ; s'il revient, la correction a lâché.
 
-**1. La réponse de Mike sur le budget de `eval/DECISIONS.md`**
-(`QUESTIONS_MIKE.md`) — 96 %, il reste deux ou trois verdicts. Ma recommandation :
-un second découpage par domaine (visibilité / tagging) **et** une condensation
-des entrées anciennes appliquées depuis plus d'un mois. Les nouveaux verdicts UI
-partent déjà dans `eval/DECISIONS_UI.md`, qui est large (14 %).
+**1. Les carnets vont bien, ne pas y revenir tout de suite.** Budget 125 000,
+`eval/DECISIONS.md` à **53 %** après la sortie du TAGGING. La troisième voie —
+condenser les verdicts anciens — reste disponible et n'a PAS été utilisée :
+elle demande de relire pour décider quoi perdre, et ça ne se fait pas au
+chausse-pied. C'est le levier du jour où le seuil redevient proche.
 
 **2. REGARDER LES PIXELS — c'est acquis, et voilà comment.** Deux navigateurs, et
 la différence compte :

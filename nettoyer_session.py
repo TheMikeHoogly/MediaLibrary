@@ -189,29 +189,42 @@ def apply_quarantine(cands):
 #   · `ROADMAP.md` porte les priorités ; les récits terminés vivent dans git.
 #   · Les DECISIONS sont un tableau : une ligne par verdict, un chiffre ou
 #     une réfutation dans chaque raison. C'est la FORME qui interdit le récit.
-# Un fichier qui approche 100 000 sans avoir trahi son rôle n'a pas de
+# Un fichier qui approche le budget sans avoir trahi son rôle n'a pas de
 # problème de taille ; celui qui devient bavard à 9 000 en a un, et le lint
 # ne le dira pas. C'est au lecteur de le voir.
+#
+# BUDGET 125 000 depuis le 08/09 (Mike : « augmente le budget de +25 % »).
+# C'est le CINQUIÈME relèvement, et il faut le dire honnêtement : les quatre
+# précédents ont tous été consommés avant d'avoir servi. Celui-ci n'arrive
+# donc PAS seul — il est demandé le même jour qu'un second découpage par
+# domaine et qu'une condensation des verdicts anciens. Un seuil qui monte
+# sans que rien d'autre ne bouge ne fait que déplacer la date du problème.
 TRACKING_MD = {
-    "CLAUDE.md": 100000,
-    "ROADMAP.md": 100000,
-    "PROMPT_NOUVELLE_SESSION.md": 100000,
-    "eval/DECISIONS.md": 100000,
+    "CLAUDE.md": 125000,
+    "ROADMAP.md": 125000,
+    "PROMPT_NOUVELLE_SESSION.md": 125000,
+    "eval/DECISIONS.md": 125000,
     # Sorti de DECISIONS.md le 20/08 : découpage par DOMAINE, non par statut
     # (l'archive par âge avait été rejetée la veille — elle obligeait à relire
     # les deux fichiers). Ici l'outillage : les trois canaux, le pilotage, la
     # livraison git. Qui travaille la recherche n'a jamais besoin de savoir
     # pourquoi `taskkill` a échoué.
-    "docs/DECISIONS_OUTILLAGE.md": 100000,
+    "docs/DECISIONS_OUTILLAGE.md": 125000,
     # Sorti de DECISIONS.md le 07/09, meme geste et meme raison : le carnet
     # avait atteint son budget et ne pouvait plus recevoir un verdict. Ici
     # l'ECRAN -- composants, cibles, contraste, ce qu'une grille compte. La
     # regle de VISIBILITE, elle, est restee dans DECISIONS.md : elle decide
     # qui voit quoi, pas de quoi l'ecran a l'air.
-    "eval/DECISIONS_UI.md": 100000,
+    "eval/DECISIONS_UI.md": 125000,
+    # Sorti de DECISIONS.md le 08/09, meme geste et meme raison -- et le meme
+    # jour que le relevement du budget, parce qu'un seuil qui monte seul n'a
+    # jamais rien regle. Ici ce que le MODELE ecrit : prompts, vocabulaire,
+    # campagnes de retag, dictionnaire FR->EN. Ce que la photothèque FAIT des
+    # tags (recherche, filtres, axes) est reste dans DECISIONS.md.
+    "eval/DECISIONS_TAGGING.md": 125000,
     # Sorti de DECISIONS.md le 16/08 : « ce qui a ete tranche » d'un cote,
     # « comment on tranche » de l'autre.
-    "eval/METHODE.md": 100000,
+    "eval/METHODE.md": 125000,
     "README.md": None,
     "INSTALLATION.md": None,
 }
