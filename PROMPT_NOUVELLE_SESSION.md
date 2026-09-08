@@ -6,104 +6,78 @@
 Tu reprends **MediaLibrary**. **VÉRIFIE avant de lire** : `.git/HEAD`,
 `.git/logs/HEAD` et `.git/logs/refs/heads/main` disent ce qui a été commité et
 FUSIONNÉ — ce document, non. Puis `ROADMAP.md`, `eval/DECISIONS.md`,
-`eval/METHODE.md` — et `docs/DECISIONS_OUTILLAGE.md` si le sujet touche aux
+`eval/METHODE.md` — `eval/DECISIONS_UI.md` si le sujet touche à l'écran
+(sorti du carnet le 07/09), `docs/DECISIONS_OUTILLAGE.md` s'il touche aux
 canaux, à la livraison ou au MCP. Débrief en 2–3 lignes, puis on attaque.
 
 ## Où on en est (08/09/2026, matin)
 
 **Git** : dernier commit fusionné dans `main` — le vérifier dans
-`.git/logs/refs/heads/main`, jamais ici.
+`.git/logs/refs/heads/main`, jamais ici. Six livraisons les 07 et 08/09.
 
-**LA CAMPAGNE DE RETAG TOURNE, et elle est en forme.** Lu sur la machine le
-07/09 à 07:30 (`/api/maint/status` → `config.retag`) : **8 368 faites, reste
-31 629, 0 abandon**, 12–16 s/photo → **~5 jours**. Levier : `retag_actif.txt`,
-fichier VIDE — ne pas l'effacer. Instruments : `/reglages` → `config.retag`, et
-`grep 'en file de RE-TAGGING' _journal_serveur.log`.
+**LA CAMPAGNE DE RETAG TOURNE.** Levier : `retag_actif.txt`, fichier VIDE —
+ne pas l'effacer. Au 08/09 07:00 : **~12 200 faites, reste ~27 800, 0 abandon**,
+14 s/photo médian → **~4 jours**. Instruments : `/reglages` → `config.retag`,
+et `grep 'en file de RE-TAGGING' _journal_serveur.log`.
 
-**L'onglet Sensibles est LÀ** (étape b, 08/09) : `/sensibles`, trois gestes,
-Corbeille en premier. Reste (c), la détection — aujourd'hui rien ne pose l'axe
-tout seul, donc la page est vide et son onglet reste caché.
+**LE CHANTIER 18 : (a) ET (b) SONT FAITS.**
+- **(a) l'axe `sensible`** — la visibilité ne se décide plus sur le seul
+  CHEMIN. Les cinq magasins et le garde des octets consultent l'ÉTAT ; l'axe
+  vit en base, jamais dans le XMP. Qui lève un masque : le propriétaire ET
+  l'admin (tranché par Mike le 07/09 — sinon une photo d'un dossier sans compte
+  serait masquée à tort pour toujours).
+- **(b) la page `/sensibles`** — trois gestes, **Corbeille en premier**
+  (« la médiathèque conserve des souvenirs, pas des documents », Mike, 07/09),
+  puis Rendre privée, puis Pas sensible. Chaque geste passe par la route qui
+  existait déjà. L'onglet de nav reste **caché tant qu'il n'y a rien**.
 
-**Un défaut trouvé ET fermé le 07/09 au soir : le `_exiftool_tmp` orphelin.**
-Quand une écriture XMP dépassait son délai, Python tuait ExifTool mais son
-fichier de travail restait sur le NAS — et **toute écriture ultérieure sur
-cette photo échouait pour toujours**, réparation comprise, photo abandonnée.
-13 en huit heures, 60 à 80 attendues sur la fin de campagne. Corrigé :
-`write_metadata` ramasse SUR PREUVE (photo présente et plus grosse que le tmp)
-puis réessaie une fois, le `except` du timeout ramasse ce qu'il vient
-d'orpheliner, et une passe unique à jeton a rouvert les 22 photos déjà fermées
-— 0 tmp restant. Deux leçons payées en chemin, dans les réflexes ci-dessous.
+**(c) EST EMPÊCHÉE PAR LA CAMPAGNE, et c'est le fait neuf du 08/09.** La spec
+veut la question « dans la MÊME invocation du tagueur ». Or le prompt EST la
+version du pipeline (`v3fr`) : y ajouter une phrase rendrait candidates les
+12 000 photos déjà refaites. Rien n'a été touché.
 
-**Deux dettes du 06/09 fermées le 07/09, MESURÉES en réel** (récit complet dans
-ROADMAP, § « Où on en est ») :
+**À la place : un FILET, disponible aujourd'hui.** Le prompt exige déjà des
+mots génériques pour un document, donc le signal est DANS l'index.
+`tagging_meta.candidat_sensible` est une règle pure (aucun modèle, aucun GPU,
+aucun NAS) et `GET /api/sensibles/candidats` la mesure en lecture seule.
+**560 → 278 → 214** après deux resserrages sur le vrai fonds. Il s'améliore
+tout seul : 7 des 214 seulement portent déjà le nouveau vocabulaire.
 
-1. **Le GPU ne jeûne plus au redémarrage.** `remplir_file_retag()` passe en
-   TÊTE de `maintenance_loop`, avant ExifTool et les trois passes de purge —
-   il ne lit que l'index en mémoire. Le délai bannière → premier lot valait
-   **69 s à 81 min selon l'humeur du NAS** (relevé sur les quatre redémarrages
-   du 06/09) ; il vaut **9 s**, deux fois observé, et ces 9 s sont le
-   chargement des magasins SQLite.
-2. **La maintenance cède à un balayage NAS en cours** (`SCAN_NAS_EN_COURS`,
-   posé avant le `try` du scan, levé dans son `finally`). Observé :
-   `boucle.scan_nas` à `true` pendant l'énumération initiale. Et le journal
-   nomme désormais la vraie cause (`raison_busy()`) au lieu de crier « UI
-   active » quoi qu'il arrive. **L'autre moitié reste ouverte** : l'ordre
-   INVERSE (étape lourde déjà partie, puis le scan qui arrive dessus).
-
-**La corbeille de rangement : CLOSE côté purge** (25,36 Go rendus le 06/09).
-Restent 77 groupes — 33 récents qui partiront seuls, 36 doublons réels, 4
-coquilles « Read error in the sector ! », et **3 vraies photos sans jumeau
-connu, à RESTAURER** (`docs/corbeille_par_pixels.json`). **L'outil est écrit
-et vérifié** (`restaurer_corbeille.py` + bat 47) — il attend la main de Mike,
-déplacer des fichiers de l'archive n'étant pas un geste d'agent.
-
-**Le chantier 18 : l'étape (a) est FAITE, et la spec a changé deux fois.**
-L'axe `sensible` est posé et observé (voir ROADMAP § 3 bis (a)) : la visibilité
-ne se décide plus sur le seul CHEMIN. **Deux amendements de Mike le 07/09** :
-qui lève un masque — le propriétaire ET l'admin, sinon une photo d'un dossier
-sans compte serait masquée à tort pour toujours ; et surtout **le geste par
-défaut de l'onglet devient la CORBEILLE, pas « Rendre privée »** — « la
-médiathèque est censée conserver des photos et vidéos de souvenirs, et non des
-documents ». Les six pièces de l'échantillon sont traitées, les planches
-supprimées. Spec et raisons : `eval/DECISIONS.md`, ROADMAP § 3 bis.
+**CE QUI ATTEND MIKE** : `QUESTIONS_MIKE.md` — masquer les 214, ou seulement
+les plus sûrs, ou lui montrer une planche d'abord. Et `MARCHE_A_SUIVRE.md`
+pour le reste.
 
 ## Prochain pas
 
 **0. D'ABORD : la campagne va-t-elle bien ?** `/reglages` → `config.retag`
 (`reste`, `en_file`, `abandons`). `en_file` à 0 longtemps = le GPU jeûne.
 Puis le débit (`tagué en`) et la température (`🌡`, `🔥 CHAUD` ≥ 85 °C).
+Et : `grep "Temporary file" _journal_serveur.log` doit rendre **zéro** — c'est
+le défaut du 07/09, corrigé ; s'il revient, la correction a lâché.
 
-**1. L'ONGLET SENSIBLES — (a) est FAIT, reste (b) puis (c).**
-  a. ~~l'axe `sensible` + le filtre au magasin sur un ÉTAT~~ — fait, observé,
-     52 bancs. Routes `GET /api/sensibles` et `POST /api/sensibles/etat`.
-  b. ~~la PAGE `/sensibles`, aux trois gestes~~ — **faite le 08/09, observée**
-     (`ui/pages/sensibles.html`, route `/sensibles`, onglet de nav caché tant
-     qu'il n'y a rien). Corbeille en premier, Rendre privée, Pas sensible ;
-     chaque geste passe par la route qui existait déjà.
-  c. **la question posée dans la MÊME invocation du tagueur** (pas de cinquième
-     pipeline), puis la passe rétroactive. **C'est le prochain morceau**, et
-     c'est lui qui remplira la page — aujourd'hui rien ne pose l'axe
-     automatiquement.
+**1. La réponse de Mike sur les 214** (`QUESTIONS_MIKE.md`). S'il dit oui, le
+geste est un `POST /api/sensibles/etat` par lot avec `etat: 'en_attente'` et un
+motif — la route existe, elle refuse nommément ce qui n'est pas à lui.
 
-**Deux choses à regarder avant (c)** : les PIXELS de la page (la fenêtre Chrome
-de Mike était minimisée le 08/09, `innerWidth = 0`, et une mesure prise là ne
-vaut rien) ; et le masquage POUR LES AUTRES, qui n'est prouvé que par banc —
-l'admin voit tout par construction, la preuve demande deux comptes.
+**2. Ce qui reste à REGARDER sur la page `/sensibles`** :
+  - les **PIXELS** : le 08/09 la fenêtre Chrome de Mike était minimisée
+    (`innerWidth = 0`) et une mesure prise là ne vaut rien ;
+  - le masquage **POUR LES AUTRES**, prouvé par banc seulement — l'admin voit
+    tout par construction, la preuve demande deux comptes (Mike et Flo).
 
-**2. Deux dettes courtes** :
-  - ~~les 3 vraies dernières copies~~ : **fait le 07/09**, Mike a lancé le
-    bat 47 et le bat 24 ;
-  - la seconde moitié du garde-fou NAS : un scan qui arrive sur une étape
-    lourde de maintenance DÉJÀ partie. Attention, la ligne `nas = first or
-    deep or (cycle % NAS_SCAN_CYCLES == 0)` porte un garde-fou voulu, avec son
-    banc — ne pas la changer sans mesure.
+**3. La seconde moitié du garde-fou NAS** : un scan qui arrive sur une étape
+lourde de maintenance DÉJÀ partie. Attention, la ligne `nas = first or deep or
+(cycle % NAS_SCAN_CYCLES == 0)` porte un garde-fou voulu, avec son banc — ne
+pas la changer sans mesure.
 
-**3. Reprendre la mesure des sensibles sur `qwen3.5:4b`** (l'ancienne portait
-sur `qwen3-vl:2b`, l'ancien modèle de prod), avec les 24 verdicts humains du
-06/09 comme vérité terrain. **Après la campagne** : un banc qui appelle Ollama
-pendant qu'elle tourne dispute au tagueur la seule ressource dont il a besoin.
+**4. Reprendre la mesure des sensibles sur `qwen3.5:4b`**, avec les 24 verdicts
+humains du 06/09 comme vérité terrain — **après la campagne** : un banc qui
+interroge le modèle maintenant lui prend le GPU.
 
-**Ce qui attend la main de Mike** : `MARCHE_A_SUIVRE.md` à la racine.
+**5. (c), quand la campagne sera finie.** Deux voies, aucune tranchée :
+bumper une fois le fonds à jour, ou sortir la question du prompt de tagging —
+ce que la spec refusait (« pas de cinquième pipeline »). C'est une question
+pour Mike, pas une évidence technique.
 
 ## En fin de projet
 
@@ -111,6 +85,14 @@ pendant qu'elle tourne dispute au tagueur la seule ressource dont il a besoin.
   Infomaniak Swiss Backup, ~CHF 6/mois pour 1 To, clé imprimée, restauration
   d'épreuve. Ne PAS toucher au Takeout `C:\GOOGLE PHOTOS\extrait` avant.
 - **HTTPS : FAIT** — `https://msi-mike.goat-draco.ts.net/`.
+- **Deux brouillons sont DANS l'index** : `_collage6.py` et `_collage7.py`,
+  les scripts d'un soir qui ont fabriqué les planches du 06/09. Le motif
+  `_collage*.py` est entré dans `.gitignore` le 08/09, mais un `.gitignore` ne
+  détache rien : `git rm --cached _collage6.py _collage7.py`, geste de Mike.
+- **Le 9 septembre au matin** : le Patch Tuesday est tombé le 8. Vérifier que
+  Windows a DEMANDÉ avant de redémarrer (trois réglages posés le 28/08, aucun
+  prouvé) — et si la machine a redémarré, relancer le bat 0, sinon rien ne
+  repart.
 
 ## Réflexes
 
@@ -118,159 +100,118 @@ pendant qu'elle tourne dispute au tagueur la seule ressource dont il a besoin.
 
 **Un attribut du navigateur n'est pas une garantie.** `loading="lazy"` était en
 place sur la vue Dossiers et n'a rien empêché : sa marge appartient au
-navigateur, et surtout il ne BORNE pas le nombre de requêtes en vol. Il avait
-l'air de faire le travail — c'est ce qui a rendu la panne invisible pendant des
-semaines. Ce qui protège, c'est ce qu'on écrit soi-même et qu'on peut mesurer.
+navigateur, et surtout il ne BORNE pas le nombre de requêtes en vol. Ce qui
+protège, c'est ce qu'on écrit soi-même et qu'on peut mesurer.
 
 **Un chiffre moyen peut cacher qu'il n'y a pas de chiffre.** La doc annonçait
 « ~15 min de GPU perdu à chaque redémarrage ». Mesuré sur les quatre
-redémarrages du 06/09 : 69 s, 99 s, 51 min, 81 min. Ce n'était pas un coût, mais
-une DÉPENDANCE — au NAS — et une moyenne la faisait passer pour un coût fixe,
-donc pour quelque chose de supportable. Avant de citer une durée, regarder sa
-dispersion : c'est elle qui dit s'il y a une panne dessous.
+redémarrages du 06/09 : 69 s, 99 s, 51 min, 81 min. Ce n'était pas un coût mais
+une DÉPENDANCE — au NAS — et la moyenne la faisait passer pour supportable.
+Avant de citer une durée, regarder sa dispersion.
 
 **Un instrument qui interroge le mauvais CHAMP répond parfaitement à la
 question qu'on lui pose.** La passe des tmp orphelins cherchait `retag_fail`,
 la marque du TAGUEUR — mais ces photos-là sont fermées par
-`retro_write_metadata`, qui compte `write_fails` et pose `file_error`. Résultat :
-« 0 photo » sur quatorze tmp bien présents, banc vert à l'appui. Deux chemins
-d'abandon coexistaient, et j'en connaissais un seul. Avant d'écrire une passe de
-rattrapage, chercher TOUS les endroits qui posent la marque qu'on veut lever.
-
-**Un banc VERT sur la VM peut être ROUGE chez Mike : la console est en
-cp1252.** `test_tmp_exiftool` imprimait le `⚠` des messages de refus ; sous
-UTF-8 il passait, sous cp1252 les trois cas de refus tombaient sur
-`UnicodeEncodeError`. Le serveur est protégé depuis le 22/08
-(`journal_serveur`) ; un banc lancé à la main ne l'est pas. **Le refus de
-l'agent Git est la bonne nouvelle** — c'est exactement ce qu'il existe pour
-attraper. La parade : capturer la sortie (`redirect_stdout`), ce qui rend le
-banc indépendant de la console ET permet d'exiger que le refus soit NOMMÉ.
-Contrôle avant de livrer : `PYTHONIOENCODING=cp1252 python3 -m unittest …`.
+`retro_write_metadata` (`write_fails` + `file_error`). Elle a rendu « 0 photo »
+sur quatorze tmp bien présents, banc vert à l'appui. Avant d'écrire une passe
+de rattrapage, chercher TOUS les endroits qui posent la marque qu'on veut lever.
 
 **« Rien à faire » n'est pas « échec ».** `ramasser_tmp_exiftool` rend False
-quand il REFUSE d'effacer et quand il n'y a RIEN à effacer ; la passe lisait les
-deux comme un refus et laissait 9 photos fermées alors que plus rien ne les
-fermait. Même famille que le seau « illisible » : un non-événement compté comme
-un refus fabrique une perte silencieuse. Trois cas, pas deux.
+quand il REFUSE d'effacer et quand il n'y a RIEN à effacer ; la passe lisait
+les deux comme un refus et laissait 9 photos fermées alors que plus rien ne les
+fermait. Même famille que le seau « illisible ».
+
+**Un mot français d'un seul terme décrit une SCÈNE au moins aussi souvent
+qu'une pièce.** Le filet des candidats proposait 560 photos : `relevé` (cheveux
+relevés), `lettre` (les lettres d'une citation), `message` et `conversation`
+(deux personnes qui se parlent). Puis, après avoir OUVERT les photos,
+`passeport` (une vieille photo de famille numérisée) et `code qr` (un panneau
+publicitaire). 214 restent. **Ce qui est fiable, c'est ce que le PROMPT impose**
+(`document`, `recu`, `capture`) — un contrat, pas une devinette sur le
+vocabulaire du modèle.
 
 **Un instrument juste sur le principe peut mesurer la mauvaise grandeur.** Le
 banc de la corbeille cherchait par sha256 dans un fonds dédoublonné par les
-PIXELS : 37 « dernières copies » dont 30 étaient de vrais doublons. Rien
-n'était faux dans le code — il répondait exactement à la question qu'on lui
-posait, et ce n'était pas la bonne. Avant d'écrire un banc, demander par quel
-critère la donnée qu'on interroge a été produite.
-
-**Regarder n'est pas toujours le bon instrument.** Pour les 54 groupes de
-corbeille, les planches-contact montraient des chats et des mariages : elles
-répondaient « oui, ça compte » à une question qu'on ne posait pas. La vraie
-question — « cette photo existe-t-elle encore ailleurs ? » — était une question
-de machine. Choisir l'instrument AVANT de le fabriquer.
+PIXELS : 37 « dernières copies » dont 30 étaient de vrais doublons. Avant
+d'écrire un banc, demander par quel critère la donnée interrogée a été produite.
 
 **Un drapeau qu'on ne voit pas ne se prouve pas.** `SCAN_NAS_EN_COURS` ne fait
-céder la maintenance que quand une étape est DUE — c'est-à-dire une fois par
-jour. Un banc vert et rien à observer avant 19h : la correction serait partie
-sans preuve. Une ligne dans `/api/maint/status` (`boucle.scan_nas`) a suffi à
-la voir en réel à 88 s d'uptime. Quand une correction n'est visible que
-rarement, c'est le drapeau qu'il faut exposer, pas la preuve qu'il faut
-attendre.
+céder la maintenance que quand une étape est DUE — une fois par jour. Une ligne
+dans `/api/maint/status` (`boucle.scan_nas`) a suffi à le voir en réel à 88 s
+d'uptime. Quand une correction n'est visible que rarement, c'est le drapeau
+qu'il faut exposer, pas la preuve qu'il faut attendre.
+
+**Un banc VERT sur la VM peut être ROUGE chez Mike : la console est en
+cp1252.** `test_tmp_exiftool` imprimait un `⚠` ; sous UTF-8 il passait, sous
+cp1252 les trois cas de refus tombaient sur `UnicodeEncodeError`. Le serveur
+est protégé (`journal_serveur`), un banc lancé à la main ne l'est pas. Parade :
+capturer la sortie (`redirect_stdout`), ce qui permet en plus d'exiger que le
+refus soit NOMMÉ. Contrôle : `PYTHONIOENCODING=cp1252 python3 -m unittest …`.
 
 **Une sonde qui coûte autant que ce qu'elle mesure est un échec de conception.**
 479 s pour relire 389 manifestes et savoir où en était le bat 46 — parce que
-l'outil, lui, ne disait rien. C'est au travail de rendre des comptes, pas à
-l'observateur de le deviner.
+l'outil ne disait rien. C'est au travail de rendre des comptes.
 
-**Chercher le banc AVANT d'éditer.** J'ai changé la signature de
-`verifier_apres` sans voir `test_appliquer_strip_motionphoto.py` : six bancs
-rouges, deux refus de l'agent Git. Le refus est une bonne nouvelle ; l'avoir
-mérité n'en est pas une.
+**Chercher le banc AVANT d'éditer.** Signature changée sans voir
+`test_appliquer_strip_motionphoto.py` : six bancs rouges, deux refus de l'agent
+Git. Le refus est une bonne nouvelle ; l'avoir mérité n'en est pas une.
 
 **Le seau « je n'ai pas compris » n'est pas un seau vide.** Le banc sensibles
 rendait `illisible` quand le modèle ne répondait pas — 19 fois sur 90 — et
-personne ne regardait dedans : c'est là que dormaient un extrait de casier
-judiciaire, une carte d'assurance-maladie et deux relevés bancaires. Le
-non-verdict doit compter comme À REVOIR, jamais comme rien.
+c'est là que dormaient les pièces les plus sensibles de l'échantillon.
 
-**Un banc mesure le modèle qu'il NOMME, pas celui qui tourne.** `mesure_sensibles.py`
-porte `qwen3-vl:2b` en dur ; `modele.txt` dit `qwen3.5:4b` depuis le 05/09.
-La doc annonçait « le modèle de PROD » : elle avait raison la veille du
-changement, et faux le lendemain. Relire `modele.txt` avant de citer une mesure.
+**Un banc mesure le modèle qu'il NOMME, pas celui qui tourne.** Relire
+`modele.txt` avant de citer une mesure.
 
-**Un zéro parfait est une alarme au même titre qu'un cent.** Le premier passage
-du banc corbeille a rendu « 374 disparues, 0 retrouvée » : il lisait
-`tags_index.json`, un fichier que le passage à SQLite avait laissé mort. Un
-index vide fait une réponse fausse qui a l'air d'une réponse — désormais le
-banc refuse de conclure quand l'index est vide.
+**Un zéro parfait est une alarme au même titre qu'un cent.** « 374 disparues,
+0 retrouvée » : le banc lisait un `tags_index.json` que le passage à SQLite
+avait laissé mort.
 
-**Une mesure prise dans une fenêtre minimisée ne vaut rien** : Chrome rendait
-`innerWidth = 0`, et les hauteurs lues (grille à 1 292 px) étaient l'effet du
-repli, pas du design. Vérifier le viewport avant de croire un pixel.
+**Une mesure prise dans une fenêtre minimisée ne vaut rien** : Chrome rend
+`innerWidth = 0`. Vérifier le viewport avant de croire un pixel — et avant de
+juger une page, la redimensionner (`resize_window`) ne suffit pas si la fenêtre
+est réduite.
 
 **Un marqueur n'est pas la chose.** `SEFT` en queue ≠ Motion Photo : 16 519
-JPEG portent un trailer SEF de MÉTADONNÉES sans vidéo. Et un `ftyp` nu dans
-l'entropie JPEG ment — 3 « Motion » sur 3 avaient une vidéo estimée à 100 %
-du fichier avant que la boîte soit validée (taille big-endian + brand
-lisible). L'annuaire `SEFH` en queue DIT s'il y a un bloc `MotionPhoto_Data` —
-sans lecture pleine.
+JPEG portent un trailer SEF de MÉTADONNÉES sans vidéo.
 
 **Les fils n'accélèrent pas un partage SMB déjà saturé** : 8 lecteurs ont fait
-MOINS que 1 (2,6 contre 4,5 fichiers/s) et semé 21 `EINVAL` muets. Mesurer
-avant de paralléliser — et une erreur non nommée et non cachée rend
-« TERMINÉ » inatteignable.
-
-**La bonne ÉCHELLE, sinon la bonne conclusion sur les mauvaises données.**
-Dérive par rapport à QUOI — le signal thermique du 29/08 était ENTRE les
-sessions, pas dedans (`ROADMAP.md`, sessions 57→63).
+MOINS que 1 (2,6 contre 4,5 fichiers/s).
 
 **Ne JAMAIS supposer un chiffre gagné avant de l'avoir mesuré en réel sur la
-machine cible.** Le « 9+ jours » du 04/09 pour le retag qwen3-vl:4b mélangeait
-deux mesures ; corrigé en « ~16 jours » après re-calcul propre — et le passage
-à qwen3.5:4b l'a ramené à ~5 jours, comparable au débit actuel. Trois chiffres
-différents pour la même question en une semaine : le chiffre solide était le
-RATIO (~3×), jamais le nombre de jours absolu tiré de 8 photos difficiles.
+machine cible.** Trois chiffres différents pour la même question en une
+semaine ; le solide était le RATIO (~3×), jamais le nombre de jours absolu.
 
 **Le canal du banc n'admet que `[A-Za-z0-9_.:/=-]`** (espaces via jeton
-`b64:`), plafond **600 s** : un banc long est REPRENABLE (cache écrit à
-chaque passe) et se lance avec `--budget-s 450`.
+`b64:`), plafond **600 s** : un banc long est REPRENABLE et se lance avec
+`--budget-s 450`.
 
 **Ne JAMAIS lancer `unittest discover` depuis la VM** : plusieurs tests
-importent `server.py`, qui ouvre `photos.db` — la VM ne sait même pas
-l'ouvrir en LECTURE par-dessus le montage (`disk I/O error` immédiat,
-observé le 03/09, rien écrit). Un test qui a besoin du code de `server.py`
-le lit par `ast` (voir `test_ui_global.py`, `test_upload_precontrole.py`),
-il ne l'importe pas — et ceux-là tournent très bien depuis la VM, un par un
-(`python3 -m unittest test_x`, ~20 s chacun).
+importent `server.py`, qui ouvre `photos.db` — la VM ne sait pas l'ouvrir
+par-dessus le montage. Un test qui a besoin du code de `server.py` le lit par
+`ast` ; ceux-là tournent très bien depuis la VM, un par un (~20 s chacun).
 
-**ExifTool sous Windows perd les accents des arguments** : argfile UTF-8 BOM
-(`server._run_exiftool`, repris par `appliquer_strip_motionphoto`).
+**ExifTool sous Windows perd les accents des arguments** : argfile UTF-8 BOM.
 
-**`device_commit_files` peut écrire la version PRÉCÉDENTE du fichier.** Deux
-fois en deux jours, un fichier édité puis committé sous le MÊME `devicePath`
-est arrivé dans son état d'AVANT l'édition, sans que rien le dise (l'appel
-répond `written`). Parade : committer sous un nom NEUF puis `mv` en place, ou
-vérifier après coup par un `grep` d'une ligne de l'édition. Les deux fois, ce
-qui l'a attrapé est un banc ou une assertion d'ancre — pas une relecture.
+**Pour transférer un script accentué : `device_commit_files`, pas un heredoc**
+(`device_bash` tronque à ~4 Ko sans le dire). **Mais** `device_commit_files`
+peut écrire la version PRÉCÉDENTE du fichier : deux fois en deux jours, un
+fichier édité puis committé sous le MÊME `devicePath` est arrivé dans son état
+d'avant, sans que rien le dise. Parade : committer sous un nom NEUF puis `mv`
+en place, ou vérifier après coup par un `grep`. Les deux fois, c'est un banc
+qui l'a vu.
 
-**Pour transférer un script accentué vers la machine : `device_commit_files`,
-pas un heredoc.** `device_bash` tronque une commande trop longue SANS le dire
-(~4 Ko) : un `cat > f << 'EOF'` amputé écrit un fichier tronqué sans erreur
-visible, et le découpage du base64 en morceaux se recopie mal (une seule espace
-glissée dans un morceau et le sha256 ne tombe plus). Écrire le fichier dans le
-bac du conteneur, puis `device_commit_files` vers un `_tmp_*.py` à la racine :
-l'UTF-8 passe intact, en un appel, sans vérification à faire. Ensuite `rm` —
-et ne JAMAIS laisser traîner un fichier de travail non gitignoré à la racine,
-l'agent Git le prendrait.
+**`device_stage_files` échoue sur `N:\Photos`** (« Could not stat ») alors que
+`device_bash` y accède : pour REGARDER une photo, la copier d'abord dans
+`C:\Prog\Claude\MediaLibrary` (`cp` depuis `$HOME/mnt/Photos/…`), la stager de
+là, puis l'effacer.
 
-**Un banc mesure CE QU'IL MESURE, pas ce qu'on croit.** Le banc d'endurance
-rendait 8,9 s/photo — l'appel au modèle SEUL. La production paie en plus deux
-passages d'ExifTool sur le NAS et les détections : **14 s**, mesurés sur des
-milliers de photos. Avant d'extrapoler un banc à une campagne, demander ce que
-le banc n'exécute PAS.
+**Un banc mesure CE QU'IL MESURE.** Le banc d'endurance rendait 8,9 s/photo —
+l'appel au modèle SEUL ; la production paie deux passages d'ExifTool en plus :
+**14 s**. Demander ce que le banc n'exécute PAS.
 
 **Le POIDS d'un fichier ne dit rien de son contenu.** 941 fichiers de 2 à 3 Mo
-étaient entièrement remplis du texte « Read error in the sector ! ». Un seuil
-de taille minimale — l'hypothèse de départ — n'en aurait écarté aucun, et
-aurait eu l'air de marcher. Une vignette se juge sur ses PIXELS
-(`tagging_meta.classe_contenu`), et un fichier se juge sur ses OCTETS DE TÊTE.
+étaient remplis du texte « Read error in the sector ! ».
 
 ### Lire
 
@@ -279,96 +220,81 @@ aurait eu l'air de marcher. Une vignette se juge sur ses PIXELS
     L=$(grep -n "===== DEMARRAGE" _journal_serveur.log | tail -1 | cut -d: -f1)
     tail -n +$L _journal_serveur.log | grep -n "FIL MORT\|THREAD MORT\|Traceback"
 
-**Un grep large attrape des innocents** : `grep -i "echec"` sur le journal
-sortait une photo taguée « jeu d'echecs ». Lire la ligne, pas le compte.
+Le journal est **borné à 4 Mo + une archive** : après une nuit de campagne, la
+dernière bannière peut avoir quitté `_journal_serveur.log` (elle est dans
+`_journal_serveur.log.1`). Un `max()` sur une liste vide, c'est ça.
+
+**Un grep large attrape des innocents** : `grep -i "echec"` sortait une photo
+taguée « jeu d'echecs ». Lire la ligne, pas le compte.
 
 **Savoir d'où vient un chiffre.** `verifier_photos_google` lit le DISQUE ;
-`generer_plan_annee` lit l'index en mémoire — les confondre a coûté des heures.
+`generer_plan_annee` lit l'index en mémoire.
 
-**Le plan n'est régénéré QUE par le bouton Réglages / `POST
-/api/maint/plan-annee`.** `plan_vise_la_racine` et `plan_perime` gardent.
-
-**`.git/logs/refs/heads/main` se lit en texte, sans `git`.** Chaque ligne
-donne l'ancien et le nouveau hash, l'auteur, l'horodatage UNIX (`+0200`, donc
-UTC+2 chez Mike) et l'action (`fetch … fast-forward` pour une fusion de
-`git_agent`). `_etat_git.json` a un tableau `historique` (pas seulement
-`dernier`) qui garde titre + commit + branche des dix dernières livraisons —
-plus rapide qu'un `git log` pour retrouver CE QUI a été livré et QUAND, sans
-jamais invoquer `git`.
+**`.git/logs/refs/heads/main` se lit en texte, sans `git`.** `_etat_git.json`
+a un tableau `historique` : plus rapide qu'un `git log`, sans jamais invoquer
+git.
 
 ### Juger
 
 **Avant de RECOMMANDER une règle, relire `eval/DECISIONS.md` en entier sur le
-sujet.** Le carnet des décisions n'est pas un journal — c'est la contrainte.
-**Une clôture n'est pas éternelle** : la re-passe de tagging en lot avait été
-CLOSE le 16/08 (gain net non prouvé) ; le 05/09 elle est redevenue une
-décision active — pas parce que l'ancienne mesure était fausse, mais parce
-que deux faits nouveaux (FR seul rend le statu quo intenable, un modèle
-mesurablement meilleur existe) changent la question posée. La clôture du
-16/08 reste vraie SUR CE QU'ELLE MESURAIT ; elle ne s'applique plus à une
-question différente.
+sujet.** Le carnet n'est pas un journal — c'est la contrainte. **Une clôture
+n'est pas éternelle** : elle reste vraie SUR CE QU'ELLE MESURAIT.
+
+**Le carnet des décisions se DÉCOUPE quand il déborde** (choix de Mike, 20/08
+puis 07/09) : l'outillage dans `docs/DECISIONS_OUTILLAGE.md`, l'écran dans
+`eval/DECISIONS_UI.md`. Condenser les verdicts de Mike ou relever le seuil sont
+les deux mauvaises réponses.
 
 **Un rattrapage ne doit jamais dépendre de la ressource qui vient de tomber.**
 
 **Un `replace` sur un motif présent DEUX fois touche le mauvais — `assert
-count == 1` avant.** Et une assertion d'ORDRE se trompe de la même façon :
-`corps.index('try:')` prenait le PREMIER `try:` de la fonction, très loin du
-geste jugé — le banc criait rouge sur du code juste. Juger la FENÊTRE qui suit
-le geste, pas le fichier entier.
+count == 1` avant.** Et une assertion d'ORDRE se trompe pareil :
+`corps.index('try:')` prenait le PREMIER `try:` de la fonction. Juger la
+FENÊTRE qui suit le geste, pas le fichier entier.
 
-**Un banc vert n'est pas un regard.**
+**Un banc juge du CODE, pas d'une prose** : `_corps()` retire la docstring,
+sinon un banc tombe sur l'explication de ce qu'il vérifie.
+
+**Un banc vert n'est pas un regard.** Deux mots du filet n'ont été retirés
+qu'après avoir OUVERT les photos.
 
 **Un instrument ne condamne JAMAIS ce qu'il n'a pas vu — et ne passe jamais au
-vert dessus.** `verifier_pages_composants` rendait « 10 griefs » sans avoir lu
-une ligne (la porte était fermée). Corrigé — puis ses propres tests ont attrapé
-la correction inverse : classer une redirection en « non regardée » l'avait
-rendu VERT dessus, ce qui était l'incident du témoin `/faces`. Il faut les deux
-règles : **pas de faute sans lecture, pas de vert sans preuve.**
+vert dessus.** Pas de faute sans lecture, pas de vert sans preuve.
 
-**« Déjà fait » n'est pas un échec.** La passe complète du bat 45 criait vingt
-« ECHEC » sur les vingt fichiers de l'essai, déjà déplacés. Aucune donnée en
-jeu, mais un faux échec fait chercher une panne qui n'existe pas et noie les
-vrais.
+**« Déjà fait » n'est pas un échec.** Deux bats l'ont crié à tort (45 puis 42).
 
-**Un `return` anticipé emporte le travail qui SUIT.** `classer_echecs` sortait
-avant `retenter_tronquees()` quand il n'y avait rien à classer : la passe des
-tronquées n'a jamais tourné au premier essai, et aucun test structurel ne l'a
-vu — seule l'absence de la ligne au journal.
+**Un `return` anticipé emporte le travail qui SUIT.**
 
 ### Toucher
 
 **`ui/pages/` et `ui/*.css` sont relus À CHAUD** ; seul `server.py` exige un
-redémarrage — qui interrompt tagging et scan (9 s de GPU perdu depuis le 07/09,
-plus 1 à 25 minutes d'énumération pendant lesquelles le GPU, lui, travaille).
+redémarrage — qui coûte 9 s de GPU depuis le 07/09, plus l'énumération pendant
+laquelle le GPU, lui, travaille.
 
-**Jamais deux écrivains sur `photos.db`.** Le serveur est l'écrivain unique ;
-les applicateurs le PROUVENT (`refus_d_ecriture` : HTTP + verrou).
+**Le prompt EST la version du pipeline.** Toucher à `REGLES_JSON` ou à
+`prompt_tagging` oblige à bumper `TAGGING_PIPELINE_VERSION`, et un bump rend
+candidat tout le fonds. Pendant une campagne, c'est interdit.
 
-**Un `_exiftool_tmp` condamne sa photo** — balayage jamais par défaut ; le
-strip le VÉRIFIE fichier par fichier.
+**Jamais deux écrivains sur `photos.db`.** Le serveur est l'écrivain unique.
+
+**Un `_exiftool_tmp` orphelin fermait la photo pour toujours** — corrigé le
+07/09 : `write_metadata` le ramasse SUR PREUVE (photo présente et plus grosse
+que le tmp) puis réessaie une fois, et le `except` du timeout ramasse ce qu'il
+vient d'orpheliner. Le balayage du disque reste interdit.
 
 > **`N:\Photos` se CONNECTE à chaque session** (picker « Add folder », non
-> persistant) : demander à Mike au « Go ». Connecté : `device_list_dir` /
-> `device_stage_files` / `device_commit_files` — **et il EST monté dans
-> `device_bash`** (`$HOME/mnt/Photos`). Mesuré : le listage est rapide (une
-> racine en 0,1 s, 2 140 fichiers d'un dossier en 1 s) mais la lecture fichier
-> par fichier plafonne à **~5 fichiers/s** — donc un coup d'œil ou une poignée
-> de photos, oui ; un script sur TOUT le fonds, non, il passe toujours par
-> l'agent banc (Windows, UNC, natif).
+> persistant) : demander à Mike au « Go ». Il EST monté dans `device_bash`
+> (`$HOME/mnt/Photos`) : listage rapide, lecture à ~5 fichiers/s — un coup
+> d'œil oui, un script sur tout le fonds non (agent banc).
 >
 > **Piège git via `device_bash`** : jamais de git d'ici (`.git/index.lock`
-> résiduel indélébile) — même un `rev-parse` en lecture seule est à éviter,
-> la règle est catégorique, pas seulement pour les écritures ; un lock qui
-> traîne se renomme (`mv`), ne s'efface pas. Un `git status` de simple
-> curiosité EST une violation, même si son verdict était juste (commis par
-> erreur le 05/09, noté ici pour ne pas recommencer) : `_etat_git.json` (champ
-> `historique`) et les fichiers `.git/logs/*` lus en texte suffisent toujours.
+> résiduel indélébile), même en lecture seule. `_etat_git.json` et les
+> `.git/logs/*` lus en texte suffisent toujours.
 >
 > **`device_bash` ne peut ni effacer ni déplacer** dans les dossiers montés
-> (`rm`, `mv` → « Operation not permitted ») tant que Mike n'a pas approuvé la
-> demande de suppression. Un fichier de travail écrit à la racine y reste
-> donc — et l'agent Git le prendrait. Écrire ses brouillons HORS de `mnt/`
-> (`$HOME`), et ne rien poser à la racine du dépôt qu'on ne sache pas retirer.
+> tant que Mike n'a pas approuvé la demande de suppression. Écrire ses
+> brouillons HORS de `mnt/` (`$HOME`), et ne rien poser à la racine du dépôt
+> qu'on ne sache pas retirer — l'agent Git le prendrait.
 >
 > **Piège d'horloge** : `device_bash` est en **UTC** (−2 h chez Mike).
 >

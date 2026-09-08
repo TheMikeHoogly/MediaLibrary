@@ -347,3 +347,13 @@ docs/corbeille_canoniques.json
 docs/undo_reancrage_*.json
 _sonde_pont.txt
 _planches_corbeille/
+
+# --- Les scripts d'echafaudage ecrits a la RACINE (08/09) -------------------
+# `_collage6.py` et `_collage7.py` fabriquaient les planches contact du 06/09 :
+# des outils d'un soir, pas de la source. Ils sont deja DANS l'index (commites
+# le 06/09 avant cette ligne) — un .gitignore ne detache rien tout seul, le
+# retrait est un geste de Mike :
+#     git rm --cached _collage6.py _collage7.py
+# Le motif, pas l'enumeration : tout brouillon pose a la racine par une session
+# porte ce prefixe, et l'agent Git prend TOUT ce qui traine.
+_collage*.py

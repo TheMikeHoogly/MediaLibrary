@@ -246,6 +246,92 @@ def prompt_tagging(a):
             + bloc_assertions(a) + '\n\n' + REGLES_JSON)
 
 
+# ───────────── Chantier 18 : le CANDIDAT sensible, sans modele ─────────────
+#
+# Le prompt de prod interdit deja de transcrire un document et EXIGE des
+# mots-cles generiques ("document", "recu", "capture" -- voir REGLES_JSON).
+# Le signal est donc DEJA dans l'index : reperer les candidats ne demande ni
+# GPU, ni appel au modele, ni changement de prompt -- donc pas de bump de
+# version, donc pas de campagne a refaire.
+#
+# Ce n'est PAS un verdict : c'est un FILET. Il dit « regarde celle-la », jamais
+# « celle-la est sensible ». Le verdict reste humain, dans l'onglet Sensibles.
+# Un mot-cle generique est volontairement large : mieux vaut proposer une
+# affiche de concert que manquer un releve bancaire.
+
+# CE QUE LE PROMPT IMPOSE — le contrat, pas une devinette. `REGLES_JSON` dit :
+# « pour un document/recu/capture, utilise des mots generiques ». Ces trois
+# mots sont donc ECRITS EXPRES pour ce cas, et c'est le seul endroit du
+# vocabulaire ou l'on sait ce qu'ils veulent dire.
+KW_IMPOSES = ('document', 'recu', 'reçu', 'capture')
+
+# CE QUI RESTE SUR — des expressions de PLUSIEURS mots. Un mot francais courant
+# (« releve », « lettre », « message », « identite ») decrit une scene au moins
+# aussi souvent qu'une piece : mesure du 08/09, ils ont propose un groupe de
+# gens qui se detend, une citation et un couple en Bolivie. Une expression
+# entiere, elle, n'arrive pas par hasard dans une photo de famille.
+KW_EXPRESSIONS = (
+    'carte d identite', "carte d'identite", 'carte d identité',
+    'permis de conduire', 'permis de circulation',
+    'releve bancaire', 'relevé bancaire', 'carte bancaire',
+    'bulletin de versement', 'fiche de paie', 'bulletin de salaire',
+    'certificat medical', 'certificat médical', 'ordonnance medicale',
+    'assurance maladie', "carte d assurance",
+    'capture d ecran', "capture d'ecran", 'capture d écran',
+    # Deux mots d'UN terme admis par EXCEPTION, et pour une raison chacun :
+    # « facture » n'a pas d'autre sens dans une photo de famille (verifie : il
+    # a propose un permis de circulation nominatif), et « iban » n'existe que
+    # sur une piece bancaire.
+    'facture', 'iban',
+)
+# RETIRES SUR PREUVE le 08/09, apres avoir OUVERT les photos :
+#   `passeport`  -> 42 propositions, dont une vieille photo de famille
+#                   numerisee (une femme devant une voiture, un enfant, un
+#                   chien). Le modele ecrit ce mot pour l'ALLURE d'une photo
+#                   d'identite ancienne.
+#   `code qr`    -> 35, dont un panneau publicitaire sur une pelouse. Un QR sur
+#                   une affiche n'est pas une piece — et ce mot n'etait dans
+#                   AUCUNE des sept categories de Mike : je l'avais ajoute.
+# La regle qui reste : un mot francais d'un SEUL terme decrit une scene au
+# moins aussi souvent qu'une piece, sauf s'il est impose par le prompt ou
+# qu'il n'existe pas dans une scene.
+
+
+def candidat_sensible(entree):
+    """(candidat, motif) — cette entree merite-t-elle un REGARD humain ?
+
+    Lit les mots-cles DEJA stockes ; aucune I/O, aucun modele, aucun GPU.
+
+    Le motif rendu est le MOT-CLE lui-meme, pas une categorie : sur l'ecran,
+    « le tagueur a ecrit "document" » se verifie d'un coup d'oeil, tandis que
+    « administratif » demande de croire l'outil sur parole. Un filet qui ne se
+    justifie pas ne se corrige pas.
+
+    Ce n'est PAS un verdict : c'est un filet. Il dit « regarde celle-la »,
+    jamais « celle-la est sensible ». Le verdict reste humain, dans l'onglet.
+
+    Ne propose jamais ce qui a deja ete juge : `sensible` porte alors 'non'
+    (memorise) ou 'en_attente' (deja dans l'onglet).
+    """
+    if not isinstance(entree, dict):
+        return False, ''
+    if entree.get('sensible'):
+        return False, ''
+    vus = []
+    for k in (entree.get('kw_fr') or []):
+        if not isinstance(k, str):
+            continue
+        k = ' '.join(k.strip().lower().replace('-', ' ').split())
+        if not k:
+            continue
+        if k in KW_IMPOSES or k in KW_EXPRESSIONS:
+            if k not in vus:
+                vus.append(k)
+    if not vus:
+        return False, ''
+    return True, ', '.join(vus)
+
+
 # ─────────── Ce qu'un fichier EST, quand le decodeur dit seulement non ──────
 
 VIGNETTE_MAX_PX = 320       # cote max sous lequel une image VALIDE est une vignette

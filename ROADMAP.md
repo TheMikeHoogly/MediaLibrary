@@ -905,8 +905,27 @@ Instruments : `verifier_cibles` (0 manquement prouvé), `verifier_controles`
 fenêtre Chrome de Mike était minimisée (`innerWidth = 0`), et une mesure prise
 là ne vaut rien — c'est la seule chose qui reste à regarder.
 
-**Ce qui RESTE** : (c) la question dans la même invocation du tagueur
-et la passe rétroactive. Et le
+**3 bis (c). LA QUESTION AU TAGUEUR EST EMPÊCHÉE PAR LA CAMPAGNE — constaté
+le 08/09.** Le prompt EST la version du pipeline (`v3fr`) et `cles_a_retaguer`
+re-présente tout ce qui ne porte pas la cible : ajouter une phrase au prompt
+rendrait candidates les **12 000 photos déjà refaites**. (c) n'est donc pas
+« après la campagne » par prudence — elle en est empêchée. Rien n'a été touché.
+
+**À la place, et disponible AUJOURD'HUI : un FILET, lu dans l'index.** Le
+prompt exige déjà des mots génériques pour un document ; le signal est donc
+déjà là. `tagging_meta.candidat_sensible` est une règle pure sur les mots-clés
+stockés — aucun modèle, aucun GPU, aucun NAS — et
+`GET /api/sensibles/candidats` la mesure en LECTURE SEULE (elle compte et
+échantillonne, elle ne masque rien : poser un masque sur des centaines de
+photos est un geste de Mike). **Mesuré et resserré deux fois sur le vrai
+index : 560 → 278 → 214**, dont 144 « document », 94 « facture », 10 « reçu »,
+9 « capture », 4 pièces d'identité. Ce qui a été retiré, et pourquoi, est dans
+`eval/DECISIONS.md` — dont deux mots retirés après avoir OUVERT les photos.
+Le filet s'améliore tout seul : seules 7 des 214 sont déjà re-taguées par le
+nouveau modèle.
+
+**Ce qui RESTE** : le geste de Mike sur les 214 (voir `QUESTIONS_MIKE.md`),
+puis (c) quand la campagne sera finie. Et le
 masquage POUR LES AUTRES n'est prouvé que par banc — l'admin voit tout par
 construction, la preuve à deux comptes appartient à (b).
 

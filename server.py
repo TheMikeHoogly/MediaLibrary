@@ -11594,6 +11594,9 @@ class Handler(BaseHTTPRequestHandler):
         elif path == '/api/sensibles':
             self._serve_sensibles()
 
+        elif path == '/api/sensibles/candidats':
+            self._serve_sensibles_candidats()
+
         elif path == '/sensibles':
             self._send_html(ui_page('sensibles'))
 
@@ -11804,6 +11807,57 @@ class Handler(BaseHTTPRequestHandler):
                                     'photos': photos},
                                    ensure_ascii=False, default=str).encode(),
                    'application/json')
+
+    def _serve_sensibles_candidats(self):
+        """Ce que l'index CONTIENT déjà et qui mériterait un regard.
+
+        LECTURE SEULE : elle compte, elle échantillonne, elle ne pose aucun
+        axe. Poser un masque sur des milliers de photos d'un coup est un geste
+        de Mike, pas une conséquence d'une requête GET.
+
+        Aucun appel au modèle, aucun accès NAS : le prompt de production exige
+        déjà des mots-clés génériques pour un document (`REGLES_JSON`), donc
+        le signal est dans l'index. C'est ce qui rend cette passe utilisable
+        PENDANT la campagne — la question posée au tagueur, elle, changerait
+        le prompt, donc la version du pipeline, donc rendrait candidates les
+        12 000 photos déjà refaites.
+
+        `?n=` borne l'échantillon rendu ; `total` est le compte COMPLET —
+        confondre les deux ferait lire un plafond comme un résultat, la panne
+        que ce projet a déjà payée deux fois."""
+        import tagging_meta as _tm
+        try:
+            n = max(0, min(200, int(urllib.parse.parse_qs(
+                urllib.parse.urlparse(self.path).query).get('n', ['24'])[0])))
+        except ValueError:
+            n = 24
+        u = utilisateur_vu()
+        total, par_motif, echantillon, retagues = 0, {}, [], 0
+        for cle, e in list(INDEX_BRUT.items()):
+            if u is not None and not _visibilite.peut_juger(cle, u):
+                continue
+            oui, motif = _tm.candidat_sensible(e)
+            if not oui:
+                continue
+            total += 1
+            if (e.get('pipe') or '') == TAGGING_PIPELINE_VERSION:
+                retagues += 1
+            for m in motif.split(', '):
+                par_motif[m] = par_motif.get(m, 0) + 1
+            if len(echantillon) < n:
+                echantillon.append({'key': cle, 'nom': Path(cle).name,
+                                    'url': _url_for_key(cle) or '',
+                                    'motif': motif,
+                                    'pipe': e.get('pipe') or ''})
+        self._send(200, json.dumps(
+            {'ok': True, 'total': total, 'montres': len(echantillon),
+             # `deja_retaguees` dit sur COMBIEN le filet est a jour : les
+             # autres portent encore les mots-cles de l'ancien modele, et le
+             # compte montera tout seul a mesure que la campagne avance.
+             'deja_retaguees': retagues,
+             'par_motif': dict(sorted(par_motif.items(), key=lambda x: -x[1])),
+             'photos': echantillon}, ensure_ascii=False, default=str).encode(),
+            'application/json')
 
     def _do_sensibles_post(self, path):
         """Poser ou lever l'axe `sensible` — en BASE, jamais dans le XMP (18c).

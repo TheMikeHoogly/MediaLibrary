@@ -260,5 +260,112 @@ class LaPageEtSesTroisGestes(unittest.TestCase):
         self.assertEqual(durs, [], durs)
 
 
+class LeFiletDesCandidats(unittest.TestCase):
+    """La regle PURE qui propose un regard, sans modele ni GPU.
+
+    CE QUI LA REND POSSIBLE : le prompt de production INTERDIT deja de
+    transcrire un document et EXIGE des mots generiques
+    (`tagging_meta.REGLES_JSON`). Le signal est donc DEJA dans l'index.
+
+    CE QU'ELLE EVITE : la spec (c) demande la question « dans la MEME
+    invocation du tagueur ». Or le prompt EST la version du pipeline
+    (`v3fr` dans `qwen3.5:4b|v3fr|kb1`) : y toucher rend candidates les
+    12 000 photos deja refaites. Cette regle-ci ne touche a rien.
+    """
+
+    def test_ce_que_le_prompt_impose_est_le_socle(self):
+        import tagging_meta as T
+        # Le prompt promet ces mots-la pour un document : c'est un CONTRAT,
+        # pas une devinette sur le vocabulaire du modele.
+        for mot in ('document', 'recu', 'capture'):
+            self.assertIn(mot, T.KW_IMPOSES, mot)
+            self.assertTrue(T.candidat_sensible({'kw_fr': [mot]})[0], mot)
+        self.assertIn('document/recu/capture', T.REGLES_JSON)
+
+    def test_un_mot_courant_d_un_seul_terme_est_REFUSE(self):
+        import tagging_meta as T
+        # Mesure du 08/09 : « releve » (cheveux releves), « lettre » (les
+        # lettres d'une citation), « message »/« conversation » (deux
+        # personnes qui se parlent) et « identite » proposaient des
+        # souvenirs. 560 candidats -> 278 apres les avoir retires.
+        for mot in ('relevé', 'releve', 'lettre', 'message', 'conversation',
+                    'identite', 'courrier', 'contrat', 'banque'):
+            self.assertFalse(T.candidat_sensible({'kw_fr': [mot]})[0], mot)
+
+    def test_les_deux_retraits_sur_PREUVE(self):
+        import tagging_meta as T
+        # Regardes, pas deduits : `passeport` proposait une vieille photo de
+        # famille numerisee, `code qr` une affiche publicitaire — et « code
+        # qr » n'etait dans aucune des sept categories de Mike.
+        self.assertFalse(T.candidat_sensible({'kw_fr': ['passeport']})[0])
+        self.assertFalse(T.candidat_sensible({'kw_fr': ['code qr']})[0])
+
+    def test_les_expressions_entieres_passent(self):
+        import tagging_meta as T
+        for mot in ('carte d identite', 'permis de conduire', 'fiche de paie',
+                    'certificat medical', 'releve bancaire', 'capture d ecran',
+                    'permis de circulation', 'facture', 'iban'):
+            self.assertTrue(T.candidat_sensible({'kw_fr': [mot]})[0], mot)
+
+    def test_le_motif_est_le_MOT_pas_une_categorie(self):
+        import tagging_meta as T
+        # « le tagueur a ecrit "document" » se verifie d'un coup d'oeil ;
+        # « administratif » demande de croire l'outil sur parole.
+        self.assertEqual(T.candidat_sensible({'kw_fr': ['facture', 'table']})[1],
+                         'facture')
+        self.assertEqual(
+            T.candidat_sensible({'kw_fr': ['document', 'facture']})[1],
+            'document, facture')
+
+    def test_la_casse_les_tirets_et_les_espaces_ne_comptent_pas(self):
+        import tagging_meta as T
+        for ecrit in ('Document', ' DOCUMENT ', 'capture-d-ecran',
+                      'capture  d  ecran'):
+            self.assertTrue(T.candidat_sensible({'kw_fr': [ecrit]})[0], ecrit)
+
+    def test_ce_qui_est_DEJA_juge_n_est_jamais_represente(self):
+        import tagging_meta as T
+        for etat in ('non', 'en_attente'):
+            self.assertFalse(
+                T.candidat_sensible({'kw_fr': ['document'], 'sensible': etat})[0],
+                etat)
+
+    def test_une_entree_abimee_ne_fait_pas_tomber_la_regle(self):
+        import tagging_meta as T
+        for e in (None, 'pas un dict', {}, {'kw_fr': None}, {'kw_fr': [None, 3]}):
+            self.assertEqual(T.candidat_sensible(e), (False, ''))
+
+
+class LaRouteDesCandidatsNeMasqueRIEN(unittest.TestCase):
+    def setUp(self):
+        self.s = _corps("_serve_sensibles_candidats")
+
+    def test_lecture_seule(self):
+        # Poser un masque sur des milliers de photos d'un coup est un geste de
+        # Mike, pas la consequence d'une requete GET.
+        for ecriture in ("STORE.set", "STORE.save", "'sensible'"):
+            self.assertNotIn(ecriture, self.s, ecriture)
+
+    def test_ni_modele_ni_NAS(self):
+        for lourd in ("ollama", "_resolve_key", "open(", "stat("):
+            self.assertNotIn(lourd, self.s, lourd)
+
+    def test_le_total_et_l_echantillon_ne_se_confondent_pas(self):
+        # « Un plafond lu comme un resultat » a deja coute deux fois a ce
+        # projet : le compte est COMPLET, la liste est bornee, et les deux
+        # champs portent des noms differents.
+        self.assertIn("'total': total", self.s)
+        self.assertIn("'montres': len(echantillon)", self.s)
+        self.assertIn("if len(echantillon) < n:", self.s)
+
+    def test_chacun_ne_voit_que_ce_qu_il_peut_juger(self):
+        self.assertIn("_visibilite.peut_juger(cle, u)", self.s)
+
+    def test_il_dit_sur_combien_le_filet_est_a_jour(self):
+        # Les photos pas encore re-taguees portent le vocabulaire de l'ANCIEN
+        # modele : le compte montera tout seul avec la campagne.
+        self.assertIn("'deja_retaguees': retagues", self.s)
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
