@@ -217,7 +217,7 @@ prendrait des heures) donne les chiffres :
 | Où | Quoi | Poids | Verdict |
 |---|---|---|---|
 | **C:** | les **45 `.zip` du Takeout** | **95,8 Go** | **à effacer** — l'extrait est prouvé complet |
-| C: | `GOOGLE PHOTOS\extrait` | 95,8 Go | **à garder** : la sauvegarde, et la source des 942 « contenu perdu » |
+| C: | `GOOGLE PHOTOS\extrait` | 95,8 Go | **à garder** : la sauvegarde hors-fonds — mais plus la source de rien, voir 1 octies |
 | NAS | `.corbeille-rangement` | 35,5 Go | sans urgence : le NAS est vide à 78 % |
 | C: | `.venv` | 4,2 Go | régénérable, mais il faut le serveur qui tourne |
 | C: | vignettes + visages + animaux | 0,8 Go | caches, refaits à la demande |
@@ -251,8 +251,45 @@ le bat 32 passé. Sur les 25 864 fichiers de l'extrait, **11 959 sont des
 campagne de retag, et importerait 9 625 ré-encodages Google PLUS PETITS que
 les originaux du NAS. Ce qui reste vrai : la sauvegarde aurait sa place SUR le
 NAS, mais dans un dossier caché (`.sauvegarde-takeout`, invisible au scan par
-`_is_hidden_path`), pas dans le fonds. Et avant d'y toucher : les **942
-fichiers au contenu perdu** doivent y être cherchés par leur nom.
+`_is_hidden_path`), pas dans le fonds.
+
+**1 octies. « Chercher les 942 dans le Takeout » — C'ÉTAIT DÉJÀ FAIT, et je
+l'avais écrit comme une tâche ouverte. Corrigé le 08/09 au soir.** J'ai lu
+« à rapatrier AVANT de toucher au Takeout » et j'en ai fait un chantier en
+cours, alors que trois lignes plus bas le même document dit **FAIT PAR MIKE le
+06/09** : la recherche avait été menée par `verifier_perdues_ailleurs.py` sur
+DEUX réservoirs, les 4 photos qui n'existaient qu'au Takeout ont été
+rapatriées et vérifiées octet par octet, et les coquilles sont en quarantaine.
+**Une consigne de prudence n'est pas une tâche ouverte** : j'ai relu un
+avertissement comme une liste de courses, et je l'ai recopié deux fois dans ce
+document le même jour.
+
+**La contre-mesure, elle, valait la peine.** `verifier_perdus_dans_takeout.py`
+(neuf) refait la question par un AUTRE chemin — il lit les coquilles sur le
+DISQUE, dans les deux quarantaines du 06/09, et marche l'extrait du Takeout
+lui-même au lieu d'un rapport pré-calculé. Verdict, et il **corrobore** le
+06/09 : **938 coquilles, 932 ABSENTES du Takeout, 6 présentes** — exactement
+les « 6 dans les deux » de la passe précédente, et leur vrai jumeau est déjà au
+NAS (`Photos Mike\2021\` là où la coquille était dans `Photos Mike\Caline\`).
+**Il n'y a RIEN à récupérer dans le Takeout.**
+
+**Et une preuve neuve, qui explique un vieux constat.** Les 6 copies Google
+pèsent **exactement le même nombre d'octets** que les coquilles — et leur
+en-tête est `ff d8 ff e1`, un VRAI JPEG. **L'outil de récupération de disque a
+donc écrit des coquilles de la taille exacte des originaux.** C'est la
+démonstration de ce que le 05/09 avait constaté sans savoir l'expliquer : « une
+règle de taille minimale n'en aurait écarté AUCUN ». Conséquence pour
+l'outillage : trier ces fichiers par la TAILLE est le mauvais axe — mon banc
+classait ces 6 en « douteux » au seul motif que Google ne pesait pas plus
+lourd. Ce sont les **deux premiers octets** qui tranchent, et la sonde le fait
+désormais.
+
+**Le zéro qui a servi.** Le banc a d'abord rendu « 0 fichier au contenu perdu
+dans la base » — un zéro juste et trompeur : le bat 45 les avait sortis de
+l'index le 06/09. Il ne s'en est aperçu que parce qu'un DIAGNOSTIC était
+prévu pour ce cas (8 `failed` en tout, deux classes, aucune « perdu-* »).
+C'est la leçon de `retenter_tmp_orphelins`, re-payée : **un zéro qui ne sait
+pas dire OÙ il a regardé ne vaut rien.**
 
 **1 quinquies. Google — CLOS pour l'essentiel (29/08).** Mike efface chez
 Google ; les 297 « Google porte mieux » sont rapatriés, ABSENT 0, les 199
