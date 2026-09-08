@@ -16,11 +16,13 @@ depuis le 08/09. Débrief en 2–3 lignes, puis on attaque.
 ## Où on en est (08/09/2026, fin de journée)
 
 **Git** : dernier commit fusionné dans `main` — le vérifier dans
-`.git/logs/refs/heads/main`, jamais ici. Six livraisons les 07 et 08/09.
+`.git/logs/refs/heads/main`, jamais ici. **Onze livraisons le 08/09.**
 
 **LA CAMPAGNE DE RETAG TOURNE.** Levier : `retag_actif.txt`, fichier VIDE —
-ne pas l'effacer. Lu sur la machine le 08/09 à 08:50 (`config.retag`) :
-**reste 27 269, en file 966, abandons 0**.
+ne pas l'effacer. Lu sur la machine le **08/09 à 23:54** (`config.retag`) :
+**reste 23 467, en file 817, abandons 0** — soit **~3 800 photos faites dans la
+journée**, malgré cinq redémarrages. Débit des trois dernières heures : 236,
+218, 210 — **~220/h**, donc **~4,5 jours** encore. Zéro `Traceback` au journal.
 
 **Le débit se COMPTE dans le journal, il ne se calcule pas** : **~200 photos par
 heure**, mesuré heure par heure sur une journée (200, 196, 172, 191, 216, 175,
@@ -107,9 +109,25 @@ L'instrument : `mesure_espace_disque.py --ou depot|takeout|nas|corbeilles`,
 lancé par l'agent des bancs (le pont lit 110 fichiers/s, un `du` y prend
 des heures — 22 s côté Windows contre un dépassement de délai côté VM).
 
-**CE QUI ATTEND MIKE** : rien à décider — `QUESTIONS_MIKE.md` est vide. Trois
-GESTES l'attendent : lancer le bat 48, vider `_to_delete\`, et trier les 213
-photos sensibles. Et `MARCHE_A_SUIVRE.md` pour le reste.
+**LE TAKEOUT : où en est la chaîne, au soir du 08/09.** Mike a lancé le bat 48
+(**45 archives `.zip` effacées, C: de 75,5 à 171,2 Go libres**) puis le bat 32
+(**570 médias copiés sous `_A TRIER\Takeout Google\<année>`, 0 grief**, journal
+d'annulation dans `_corbeille_copies\copie_20260908_223100.jsonl`, 570 lignes
+exactement). Il reste `C:\GOOGLE PHOTOS\extrait`, 95,78 Go — la SEULE copie
+désormais.
+
+**LA SUITE, ET L'ORDRE COMPTE** : (1) laisser le serveur SCANNER — il a
+commencé, `📒 index 44121 -> 44136` ; (2) **bat 26** quand elles y sont ;
+(3) **relancer `verifier_photos_google.py`** jusqu'à **ABSENT 0** ; (4) alors
+**bat 49**, qui refait cette preuve tout seul et demande `EFFACER`. Ne pas
+sauter (3) : la copie place les fichiers, c'est le SCAN qui les fait exister
+pour la vérification. Et rappeler à Mike, avant qu'il confirme, que la copie
+hors site (12 bis) n'existe toujours pas.
+
+**CE QUI ATTEND MIKE** : rien à décider — `QUESTIONS_MIKE.md` est vide. Les
+gestes : bat 26 puis bat 49 (dans l'ordre ci-dessus), vider `_to_delete\`
+(366 Mo), et trier les 213 photos sensibles. Et `MARCHE_A_SUIVRE.md` pour le
+reste.
 
 ## Prochain pas
 
@@ -119,8 +137,12 @@ Puis le débit (`tagué en`) et la température (`🌡`, `🔥 CHAUD` ≥ 85 °C
 Et : `grep "Temporary file" _journal_serveur.log` doit rendre **zéro** — c'est
 le défaut du 07/09, corrigé ; s'il revient, la correction a lâché.
 
-**1. Les carnets vont bien, ne pas y revenir tout de suite.** Budget 125 000,
-`eval/DECISIONS.md` à **53 %** après la sortie du TAGGING. La troisième voie —
+**1. LA CHAÎNE DU TAKEOUT, là où Mike l'a laissée** (voir plus haut) : scan →
+bat 26 → vérification → bat 49. C'est le seul fil qui attend un geste ce
+matin-là. Tout le reste peut attendre la fin de la campagne.
+
+**1 bis. Les carnets vont bien, ne pas y revenir.** Budget 125 000,
+`eval/DECISIONS.md` à ~54 % après la sortie du TAGGING. La troisième voie —
 condenser les verdicts anciens — reste disponible et n'a PAS été utilisée :
 elle demande de relire pour décider quoi perdre, et ça ne se fait pas au
 chausse-pied. C'est le levier du jour où le seuil redevient proche.
@@ -148,10 +170,13 @@ la différence compte :
   `faces`, `map`) — aucune ne ment aujourd'hui, mais la première qui écrira
   `class="btn"` mentira.
 
-**3. La seconde moitié du garde-fou NAS** : un scan qui arrive sur une étape
-lourde de maintenance DÉJÀ partie. Attention, la ligne `nas = first or deep or
-(cycle % NAS_SCAN_CYCLES == 0)` porte un garde-fou voulu, avec son banc — ne
-pas la changer sans mesure.
+**3. Le garde-fou NAS est COMPLET depuis le 08/09** — les deux sens. La
+maintenance cède à un scan qui tourne (06/09) ET le scan REPORTE son volet NAS
+quand une étape lourde parcourt déjà le fonds, sans perdre l'échéance et avec
+un plafond de 3 reports. **Ce qui n'est pas prouvé, et il faut le dire** : la
+collision elle-même n'a jamais été observée — le banc tient la mécanique, le
+redémarrage montre la non-régression. Si un jour `⏸ scan NAS reporte` apparaît
+au journal, c'est la première observation réelle : la noter.
 
 **4. Reprendre la mesure des sensibles sur `qwen3.5:4b`**, avec les 24 verdicts
 humains du 06/09 comme vérité terrain — **après la campagne** : un banc qui
@@ -162,11 +187,28 @@ bumper une fois le fonds à jour, ou sortir la question du prompt de tagging —
 ce que la spec refusait (« pas de cinquième pipeline »). C'est une question
 pour Mike, pas une évidence technique.
 
+**6. Les Motion Photos arrivées depuis le 03/09** — le chantier est clos pour
+celles d'alors (bats 42 et 43 faits, vérifiés par deux instruments le 08/09),
+mais `_Uploads` en dépose de nouvelles. `mesure_motion_photos.py` compte ;
+**le bat 42 exige le serveur ARRÊTÉ**, donc après la campagne.
+
+**7. LE FILET DES SENSIBLES SE REMPLIT TOUT SEUL — le vérifier de temps en
+temps.** Au 08/09 23:54, `GET /api/sensibles/candidats` rend **1** : une photo
+re-taguée dans la journée porte un mot-clé du filet. C'est exactement ce qui
+était annoncé le matin (« le compte montera tout seul à mesure que la campagne
+avance »), et c'est la première preuve que ça marche. Les 570 rapatriées du
+Takeout — dont **394 captures d'écran** — vont s'y ajouter dès qu'elles seront
+taguées : Mike les jettera d'un clic depuis l'onglet.
+
 ## En fin de projet
 
 - **La copie hors site (12 bis)** attend la fin du chantier 17 : DS224+ →
   Infomaniak Swiss Backup, ~CHF 6/mois pour 1 To, clé imprimée, restauration
-  d'épreuve. Ne PAS toucher au Takeout `C:\GOOGLE PHOTOS\extrait` avant.
+  d'épreuve. **C'est devenu URGENT le 08/09** : Mike a effacé les 45 `.zip` du
+  Takeout et veut effacer l'extrait. Après ce geste, **le NAS est la seule
+  copie du fonds** — il est chez lui, il ne protège ni du feu, ni du vol, ni
+  d'une fausse manœuvre. Le lui redire avant le bat 49, sans dramatiser : il a
+  tranché en connaissance de cause, la sauvegarde cloud est prévue.
 - **HTTPS : FAIT** — `https://msi-mike.goat-draco.ts.net/`.
 - **Deux brouillons sont DANS l'index** : `_collage6.py` et `_collage7.py`,
   les scripts d'un soir qui ont fabriqué les planches du 06/09. Le motif
