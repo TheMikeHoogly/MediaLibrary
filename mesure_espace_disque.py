@@ -148,6 +148,24 @@ def zone_takeout(t0):
         oo, nn, cc = poids(d, 120, t0)
         ligne(d.name, oo, nn, cc, "")
     print()
+    # DE QUOI est fait l'extrait : un Takeout livre un `.json` par photo. Sans
+    # ce compte, « 25 864 fichiers » se lit comme « 25 864 photos » -- et la
+    # question « faut-il verser ca dans le fonds ? » se pose alors sur un
+    # chiffre faux.
+    exts = {}
+    for f in (base / "extrait").rglob("*"):
+        if f.is_file():
+            e = f.suffix.lower() or "(sans)"
+            o2, n2 = exts.get(e, (0, 0))
+            try:
+                exts[e] = (o2 + f.stat().st_size, n2 + 1)
+            except OSError:
+                exts[e] = (o2, n2 + 1)
+    print("  De quoi l'extrait est fait :")
+    for e, (o2, n2) in sorted(exts.items(), key=lambda x: -x[1][1])[:10]:
+        print("    %-10s %7d fichiers  %8.2f Go" % (e, n2, go(o2)))
+    print()
+
     zips = [p for p in base.rglob("*.zip")]
     if zips:
         oz = sum(p.stat().st_size for p in zips)

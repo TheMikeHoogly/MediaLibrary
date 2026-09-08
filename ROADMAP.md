@@ -238,7 +238,21 @@ L'EXPORT EST OUVERT EN ENTIER »**. Et l'extrait est la bonne copie à garder :
 il est LISIBLE tel quel, là où rouvrir les `.zip` demanderait 96 Go libres
 qu'on n'a plus. **`48 - Effacer les archives ZIP du Takeout (95 Go).bat`**
 refait cette preuve avant de proposer quoi que ce soit, et demande OUI en
-toutes lettres. Après : **~171 Go libres sur C:**.
+toutes lettres. **FAIT par Mike le 08/09, et mesuré après** : `C:\GOOGLE
+PHOTOS` est passé de 191,6 à **95,78 Go**, et C: de 75,5 à **171,2 Go libres**
+— exactement ce qui était annoncé.
+
+**Et NON, le Takeout ne se verse pas dans `_A TRIER`** (question de Mike,
+tranchée le même jour, détail dans `eval/DECISIONS.md`) : les 13 905 médias
+qu'il porte ont déjà été confrontés au fonds et **il n'en manque aucun** — la
+clé `ABSENT` valait 3 776 le 27/08 et a disparu du rapport du 28/08, une fois
+le bat 32 passé. Sur les 25 864 fichiers de l'extrait, **11 959 sont des
+`.json`**. Le verser coûterait 96 Go au NAS, ferait grossir de moitié la
+campagne de retag, et importerait 9 625 ré-encodages Google PLUS PETITS que
+les originaux du NAS. Ce qui reste vrai : la sauvegarde aurait sa place SUR le
+NAS, mais dans un dossier caché (`.sauvegarde-takeout`, invisible au scan par
+`_is_hidden_path`), pas dans le fonds. Et avant d'y toucher : les **942
+fichiers au contenu perdu** doivent y être cherchés par leur nom.
 
 **1 quinquies. Google — CLOS pour l'essentiel (29/08).** Mike efface chez
 Google ; les 297 « Google porte mieux » sont rapatriés, ABSENT 0, les 199
