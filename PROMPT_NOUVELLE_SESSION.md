@@ -16,9 +16,25 @@ canaux, à la livraison ou au MCP. Débrief en 2–3 lignes, puis on attaque.
 `.git/logs/refs/heads/main`, jamais ici. Six livraisons les 07 et 08/09.
 
 **LA CAMPAGNE DE RETAG TOURNE.** Levier : `retag_actif.txt`, fichier VIDE —
-ne pas l'effacer. Au 08/09 07:00 : **~12 200 faites, reste ~27 800, 0 abandon**,
-14 s/photo médian → **~4 jours**. Instruments : `/reglages` → `config.retag`,
-et `grep 'en file de RE-TAGGING' _journal_serveur.log`.
+ne pas l'effacer. Au 08/09 07:00 : **~12 200 faites, reste ~27 800**.
+
+**Le débit RÉEL, compté dans le journal et non calculé** : **~190 photos par
+heure**, stable sur huit heures (200, 196, 172, 191, 216, 175, 178, 230), et
+**16 s médian** sur les 500 dernières (10 s au mieux, 41 s au pire). Reste donc
+**~6 jours, pas 4** : les « 14 s → 4 jours » de la veille supposaient le GPU
+occupé sans interruption, alors que la maintenance et le reste s'intercalent.
+*Un débit se compte sur le journal ; une durée par photo divisée par 24 h ne
+dit que ce qu'on a supposé.*
+
+**13 abandons, et ils vont bien** : tous « listé sur /sante », c'est-à-dire des
+fichiers DÉJÀ connus comme malades que le tagueur refuse d'ouvrir — le
+garde-fou qui fait son travail, pas une fuite. Ils tiennent en trois dossiers
+de `Photos Flo` (Mumi 6, Sandra 5, Sista 2). Le compter à zéro, comme la veille,
+c'était lire le mot « abandon » sans lire ce qui le suit.
+
+Instruments : `/reglages` → `config.retag`, `grep 'tagué en' _journal_serveur.log
+| awk '{print substr($1,1,2)}' | uniq -c` pour le débit horaire, et
+`grep abandon _journal_serveur.log` pour les refus.
 
 **LE CHANTIER 18 : (a) ET (b) SONT FAITS.**
 - **(a) l'axe `sensible`** — la visibilité ne se décide plus sur le seul
@@ -60,8 +76,18 @@ geste est un `POST /api/sensibles/etat` par lot avec `etat: 'en_attente'` et un
 motif — la route existe, elle refuse nommément ce qui n'est pas à lui.
 
 **2. Ce qui reste à REGARDER sur la page `/sensibles`** :
-  - les **PIXELS** : le 08/09 la fenêtre Chrome de Mike était minimisée
-    (`innerWidth = 0`) et une mesure prise là ne vaut rien ;
+  - les **PIXELS**, et l'œil existe désormais : le **volet Navigateur de
+    l'app** tourne sur la machine de Mike et atteint `http://localhost:8080`
+    en **714 × 1080 réels** (mesuré le 08/09 ; le Chrome de Mike, lui, était
+    minimisé à `innerWidth = 0` et une mesure prise là ne vaut rien). Son
+    `javascript_tool` lit la cascade CALCULÉE — ce qu'aucun instrument du
+    dépôt ne sait faire pour les `<style>` des pages. **Il manque une seule
+    chose** : le volet a son propre profil, donc pas de session, et taper un
+    mot de passe n'appartient pas à Claude. **Demander à Mike d'ouvrir une
+    session dans le volet, une fois** — trente secondes, et les pixels de
+    toutes les pages authentifiées deviennent mesurables. La page de
+    connexion, elle, a déjà été mesurée et tient (six couples, deux champs et
+    un bouton à 44 px pile) ;
   - le masquage **POUR LES AUTRES**, prouvé par banc seulement — l'admin voit
     tout par construction, la preuve demande deux comptes (Mike et Flo).
 

@@ -15,9 +15,24 @@ dans **git** ; les rejets dans `eval/DECISIONS.md` (photothèque) et
 C'est le fait qui commande tout le reste : `retag_actif.txt` est posé. **Lu sur
 la machine le 07/09 à 07:30** (`/api/maint/status` → `config.retag`) :
 **8 368 photos re-taguées** en `qwen3.5:4b|v3fr|kb1`, **reste 31 629**,
-**0 abandon**, débit instantané 12–16 s/photo → encore **~5 jours**. Retirer le
+débit instantané 12–16 s/photo → « encore ~5 jours ». Retirer le
 fichier l'arrête au lot suivant sans rien perdre (la progression vit dans le
 `pipe` de chaque entrée).
+
+**Le 08/09 au matin, le débit a été COMPTÉ au lieu d'être calculé** — et il ne
+dit pas la même chose. Huit heures de journal, heure par heure : 200, 196, 172,
+191, 216, 175, 178, 230, soit **~190 photos/heure**, et **16 s médian** sur les
+500 dernières. Reste ~27 800 → **~6 jours**, pas 4 ni 5. L'écart n'est pas une
+dérive du GPU : une durée par photo divisée par 24 h suppose le GPU occupé sans
+interruption, alors que la maintenance et le reste s'intercalent. *Le débit se
+lit dans le journal ; le reste est une hypothèse déguisée en mesure.*
+
+**Et les abandons ne sont pas à zéro : il y en a 13, et ils vont bien.** Tous
+portent le même motif — « listé sur /sante », des fichiers DÉJÀ connus comme
+malades que le tagueur refuse d'ouvrir. C'est le garde-fou qui travaille, pas
+une fuite. Ils tiennent en trois dossiers de `Photos Flo` (Mumi 6, Sandra 5,
+Sista 2). Les avoir comptés à zéro la veille, c'était chercher le mot
+« abandon » sans lire ce qui le suit.
 
 **DÉFAUT DU 07/09 AU SOIR — FERMÉ LE SOIR MÊME, OBSERVÉ.** Quand l'écriture XMP dépasse le délai
 (`_run_exiftool`, 180 s), Python TUE ExifTool — mais le
