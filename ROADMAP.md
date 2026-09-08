@@ -368,8 +368,23 @@ journal ; sinon regarder « Stratégies de mise à jour configurées ». Attenti
 au bruit : depuis le 28/08 la machine a aussi coupé BRUTALEMENT (Id 41) pour
 cause thermique — voir `diagnostic_thermique.py`, ne pas confondre les deux.
 
-**1 septies. RÈGLE Motion Photo — le STRIP est FAIT (bat 42, 03/09 23:30) ;
-reste la purge des originaux (bat 43).** **Constaté le 05/09 dans le manifeste,
+**1 septies. RÈGLE Motion Photo — LES DEUX ÉTAPES SONT FAITES. Clos le
+08/09.** Le bat 43 a tourné le 05/09 à 14:55 : le lot
+`.corbeille-rangement\strip_motionphoto_20260905_145535` existe sur le NAS
+(16,0 Go au moins — la mesure du 08/09 s'est arrêtée sur son budget de temps et
+l'a DIT). **Preuve du jour, pas déduction** : Mike a relancé le bat 43 le 08/09
+et son aperçu rend « originaux au manifeste : 2409 · présents : **0** · poids à
+mettre en quarantaine : **0.00 Go** · rien à purger ». Répondre `O` à l'invite
+qui suit ne déplace donc rien — c'est un geste à vide, pas une erreur.
+**Et non, il ne faut pas relancer le bat 42 avant** : ces photos n'ont plus de
+vidéo, le strip ne trouverait rien. La seule question qui reste ouverte est
+AUTRE : de nouvelles Motion Photos ont-elles été déposées depuis le 03/09 par
+`_Uploads` ? Elle se mesure (`mesure_motion_photos.py`), mais elle coûte une
+sonde sur 40 000 JPEG et le bat 42 exige le **serveur ARRÊTÉ** — donc après la
+campagne, pas pendant.
+
+*Ce qui suit est le récit de l'étape 1, gardé pour la trace.* Le STRIP a été
+fait par le bat 42 le 03/09 à 23:30 ; **Constaté le 05/09 dans le manifeste,
 pas supposé** : `docs/strip_motionphoto_manifeste.json` daté du 03/09 à
 23:30:17 porte **2 409 photos strippées et 32 ratées** (« pas de `_original` :
 exiftool n'a rien changé »), soit exactement les 2 441 comptées — **9,27 Go de
