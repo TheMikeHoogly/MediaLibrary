@@ -939,8 +939,24 @@ index : 560 → 278 → 214**, dont 144 « document », 94 « facture », 10 « 
 Le filet s'améliore tout seul : seules 7 des 214 sont déjà re-taguées par le
 nouveau modèle.
 
-**Ce qui RESTE** : le geste de Mike sur les 214 (voir `QUESTIONS_MIKE.md`),
-puis (c) quand la campagne sera finie. Et le
+**LE GESTE A ÉTÉ FAIT — Mike a répondu (b) le 08/09.** **213 photos masquées**
+(une de moins que la mesure : elle avait été re-taguée entre-temps et avait perdu
+son mot-clé — le filet respire avec la campagne), **0 refus, 0 candidat restant**.
+Chaque photo porte le motif qui l'a proposée, photo par photo : `document` (103),
+`facture` (63), et les combinaisons — pas un motif de lot, pour qu'on sache
+toujours POURQUOI celle-là.
+
+**Et la page a enfin été REGARDÉE, le même jour.** Trois défauts que deux jours de
+relecture n'avaient pas vus, tous dans `eval/DECISIONS_UI.md` : l'onglet `hidden`
+qui s'affichait quand même sur toutes les pages (une classe posant `display` bat
+le `[hidden]` du navigateur — et la parade dormait soixante lignes plus bas dans
+le même fichier) ; la page qui bâtissait ses 213 fiches d'un coup, 63 299 px, le
+moteur de rendu **gelé** — ramenée à 12 159 px par des tranches de 40 et
+`loading="lazy"` (7 requêtes au lieu de 213) ; et le lien « Ouvrir la photo en
+grand » à 18 px quand les boutons de verdict font 44.
+
+**Ce qui RESTE** : trier les 213 dans l'onglet (c'est le travail de Mike, trois
+gestes par photo, tout réversible), puis (c) quand la campagne sera finie. Et le
 masquage POUR LES AUTRES n'est prouvé que par banc — l'admin voit tout par
 construction, la preuve à deux comptes appartient à (b).
 

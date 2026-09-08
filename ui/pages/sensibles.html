@@ -32,6 +32,21 @@
    papier (design system). */
 .piece { display: grid; grid-template-columns: minmax(0, 240px) minmax(0, 1fr);
          gap: var(--e-4); align-items: start; }
+/* UNE seule parade, `loading="lazy"` sur l'image, et elle est MESUREE (08/09,
+   sur les 213 vraies fiches) : **7 requetes `/api/thumb` au chargement au lieu
+   de 213**. Le defaut etait reel -- la page fait 63 299 px de haut, demandait
+   au NAS ses 213 vignettes d'un coup, et une capture d'ecran a expire au bout
+   de 30 s sur un moteur de rendu gele.
+
+   `content-visibility: auto` a ete essaye EN PLUS, puis retire : non pas parce
+   qu'il nuit -- je n'en sais rien -- mais parce que la mesure qui semblait le
+   condamner ne vaut RIEN. Elle disait « zero image demandee » ; l'onglet etait
+   `document.visibilityState === 'hidden'`, et une image `lazy` n'entre jamais
+   dans le champ de vision d'un onglet qui n'est pas rendu. C'est le piege de
+   la fenetre minimisee (`innerWidth === 0`) sous un autre costume. Une seconde
+   parade non mesuree n'a pas sa place a cote d'une parade mesuree : si le
+   besoin revient, la planche contact met `content-visibility` sur `.vue` -- un
+   carre, sans image paresseuse dedans -- et c'est la qu'il faudra le mesurer. */
 @media (max-width: 640px) { .piece { grid-template-columns: 1fr; } }
 .piece .vue { background: var(--salle); border-radius: var(--r-sm);
               line-height: 0; overflow: hidden; }
@@ -44,7 +59,14 @@
 .actes { display: flex; gap: var(--e-2); flex-wrap: wrap; margin-top: var(--e-3); }
 .pied { display: flex; gap: var(--e-3); flex-wrap: wrap; align-items: center;
         margin-top: var(--e-3); font-size: var(--t-sm); }
-.pied a { color: var(--texte-papier); text-decoration: underline; }
+/* 44 px, pas 18 : MESURE le 08/09 sur la page reelle, ce lien faisait
+   `h: 18` quand les trois boutons de verdict faisaient 44. C'est le seul
+   controle de la fiche qui manquait le plancher du design system -- et c'est
+   celui qu'on vise en dernier, apres avoir hesite, souvent au pouce.
+   `inline-flex` + `align-items` pour que la hauteur porte sur la CIBLE et pas
+   seulement sur la ligne de texte. */
+.pied a { color: var(--texte-papier); text-decoration: underline;
+          display: inline-flex; align-items: center; min-height: var(--touch); }
 
 /* Etat VIDE : une invitation, pas un blanc (plancher 7). */
 .vide { margin: var(--e-6) var(--e-4); max-width: 68ch; color: var(--graphite);
@@ -203,6 +225,11 @@
     var vue = document.createElement('div');
     vue.className = 'vue';
     var img = document.createElement('img');
+    // `lazy` AVANT `src` : pose l'attribut apres, et le navigateur a deja
+    // lance le telechargement. Mesure du 08/09 : 213 requetes simultanees vers
+    // le NAS, page de 63 299 px, moteur de rendu gele.
+    img.loading = 'lazy';
+    img.decoding = 'async';
     img.src = '/api/thumb?key=' + encodeURIComponent(p.key);
     img.alt = 'Aperçu de ' + p.nom;
     vue.appendChild(img);
@@ -266,7 +293,31 @@
       + 'bougé.</b> L’analyse se trompe environ une fois sur trois : '
       + 'si ce n’est pas un document, « Pas sensible » la rend à la '
       + 'galerie et elle ne sera plus signalée.';
-    for (var i = 0; i < photos.length; i++) { LISTE.appendChild(feuille(photos[i])); }
+    // PAR TRANCHES, et c'est mesure : bati d'un coup, 213 fiches font une
+    // page de 63 299 px, et le moteur de rendu a gele -- deux captures d'ecran
+    // et deux evaluations JS ont expire dessus le 08/09. Le fonds en portera
+    // des milliers quand la campagne sera finie. Un BOUTON, pas un observateur
+    // d'intersection : il marche aussi dans un onglet qui n'est pas au premier
+    // plan, et il dit combien il reste au lieu de le deviner.
+    poserTranche(photos, 0);
+  }
+
+  var PAR_TRANCHE = 40;
+
+  function poserTranche(photos, depuis) {
+    var fin = Math.min(depuis + PAR_TRANCHE, photos.length);
+    for (var i = depuis; i < fin; i++) { LISTE.appendChild(feuille(photos[i])); }
+    var ancien = document.getElementById('plus');
+    if (ancien) { ancien.remove(); }
+    if (fin >= photos.length) { return; }
+    var b = document.createElement('button');
+    b.id = 'plus';
+    b.className = 'btn';
+    var reste = photos.length - fin;
+    texte(b, 'Voir ' + Math.min(PAR_TRANCHE, reste) + ' photos de plus  ('
+             + reste + ' restantes)');
+    b.addEventListener('click', function () { poserTranche(photos, fin); });
+    LISTE.appendChild(b);
   }
 
   function charger() {

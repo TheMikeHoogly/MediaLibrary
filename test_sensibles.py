@@ -367,5 +367,49 @@ class LaRouteDesCandidatsNeMasqueRIEN(unittest.TestCase):
         self.assertIn("'deja_retaguees': retagues", self.s)
 
 
+class CeQueLesPIXELSOntDit(unittest.TestCase):
+    """Trois defauts trouves le 08/09 en REGARDANT la page servie, jamais en
+    la relisant. Ce banc empeche leur retour ; il ne remplace pas le regard.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        cls.page = (HERE / "ui" / "pages" / "sensibles.html").read_text(
+            encoding="utf-8")
+
+    def test_l_onglet_cache_l_est_VRAIMENT(self):
+        # `.appnav a.tab{display:inline-flex}` (0,1,1, feuille de l'auteur) bat
+        # le `[hidden]{display:none}` de la feuille du navigateur : l'onglet
+        # portait `hidden` ET s'affichait, sur toutes les pages, pour tous.
+        # La parade dormait deja soixante lignes plus bas, pour `.moi-menu`.
+        self.assertIn(".appnav a.tab[hidden]{display:none;}", SOURCE)
+        # Et l'attribut lui-meme n'a pas disparu du gabarit de la nav.
+        self.assertIn('data-p="/sensibles"', SOURCE)
+
+    def test_la_vignette_est_PARESSEUSE(self):
+        # 213 fiches = 213 requetes au NAS d'un coup, moteur de rendu gele.
+        # Mesure : 7 requetes au chargement au lieu de 213.
+        self.assertIn("img.loading = 'lazy';", self.page)
+        # Et l'attribut est pose AVANT `src` : apres, le telechargement est
+        # deja parti.
+        self.assertLess(self.page.index("img.loading = 'lazy';"),
+                        self.page.index("img.src = '/api/thumb"))
+
+    def test_la_liste_se_bâtit_par_TRANCHES(self):
+        # 213 fiches d'un coup : page de 63 299 px. Par tranches de 40 :
+        # 12 159 px, et le bouton DIT combien il reste.
+        self.assertIn("PAR_TRANCHE = 40", self.page)
+        self.assertIn("poserTranche(photos, 0);", self.page)
+        self.assertIn("restantes)", self.page)
+        # Un BOUTON, pas un observateur d'intersection : celui-ci ne se
+        # declenche pas dans un onglet qui n'est pas au premier plan.
+        self.assertNotIn("IntersectionObserver", self.page)
+
+    def test_le_lien_atteint_le_plancher_tactile(self):
+        # 18 px quand les trois boutons de verdict faisaient 44 -- et c'est le
+        # controle qu'on vise en DERNIER, apres avoir hesite.
+        self.assertIn("min-height: var(--touch)", self.page)
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

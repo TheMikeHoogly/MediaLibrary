@@ -7178,6 +7178,16 @@ APP_NAV_CSS = """<style id="appnav-css">
 .appnav a.tab{display:inline-flex;align-items:center;gap:6px;padding:7px 13px;
   border-radius:999px;color:var(--graphite);text-decoration:none;font-size:14px;
   font-weight:500;transition:background .15s,color .15s;white-space:nowrap;}
+/* `hidden` ne suffit PAS ici, et le fichier le savait deja : la regle
+   ci-dessus pose `display:inline-flex` sur `.appnav a.tab` (0,1,1), qui bat le
+   `[hidden]{display:none}` de la feuille du navigateur. L'onglet Sensibles
+   portait donc son attribut `hidden` ET s'affichait -- sur TOUTES les pages,
+   compteur vide, pour tout le monde. Vu le 08/09 en regardant les pixels, un
+   defaut qu'aucun instrument du depot ne pouvait voir (ni `verifier_contraste`
+   ni `verifier_css_cascade` ne lisent les <style> des pages). La parade
+   existait DEJA soixante lignes plus bas, pour `.moi-menu[hidden]` : quelqu'un
+   avait paye ce piege une premiere fois sans le generaliser. */
+.appnav a.tab[hidden]{display:none;}
 .appnav a.tab:hover{color:var(--texte);background:#ffffff10;}
 .appnav a.tab.active{color:var(--texte-papier);background:var(--papier);
   box-shadow:0 2px 10px #0007;}
