@@ -375,7 +375,13 @@ cause thermique — voir `diagnostic_thermique.py`, ne pas confondre les deux.
 l'a DIT). **Preuve du jour, pas déduction** : Mike a relancé le bat 43 le 08/09
 et son aperçu rend « originaux au manifeste : 2409 · présents : **0** · poids à
 mettre en quarantaine : **0.00 Go** · rien à purger ». Répondre `O` à l'invite
-qui suit ne déplace donc rien — c'est un geste à vide, pas une erreur.
+qui suit ne déplace donc rien — c'est un geste à vide, pas une erreur. **Les
+125 `.jpg_original` de `_A TRIER` sont partis aussi** : le bat les compte à 0
+« via --aussi-racine », et un `find` INDÉPENDANT sur le même arbre
+(`_A TRIER`, parcours complet, pas de dépassement de délai) en trouve
+également **zéro**. Deux instruments qui ne partagent pas leur code disent la
+même chose — c'est ce qui distingue « c'est propre » de « j'ai regardé au
+mauvais endroit », et ce doute-là a coûté deux fois dans ce projet.
 **Et non, il ne faut pas relancer le bat 42 avant** : ces photos n'ont plus de
 vidéo, le strip ne trouverait rien. La seule question qui reste ouverte est
 AUTRE : de nouvelles Motion Photos ont-elles été déposées depuis le 03/09 par
