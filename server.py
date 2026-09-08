@@ -7171,11 +7171,28 @@ APP_NAV_CSS = """<style id="appnav-css">
 .appnav{position:sticky;top:0;z-index:50;display:flex;align-items:center;gap:6px;
   padding:10px 14px;background:rgba(12,11,10,.86);backdrop-filter:blur(10px);
   border-bottom:var(--trait);flex-wrap:wrap;font-family:var(--f-texte);}
+/* La marque est un LIEN vers l'accueil, sur les douze pages : mesuree a 20 px
+   le 08/09. Elle vit dans la meme barre que les onglets, elle se vise du meme
+   pouce. La barre fait deja 44 px de haut depuis les onglets : lui donner
+   `--touch` ne change RIEN a l'oeil et rend la cible franche. */
 .appnav .brand{font-weight:700;font-size:15px;color:var(--texte);margin-right:10px;
-  display:flex;align-items:center;gap:7px;text-decoration:none;letter-spacing:.2px;}
+  display:flex;align-items:center;gap:7px;text-decoration:none;letter-spacing:.2px;
+  min-height:var(--touch);}
 .appnav .brand .dot{width:9px;height:9px;border-radius:50%;
   background:var(--veilleuse);box-shadow:0 0 8px var(--veilleuse-d);}
+/* 44 px, TRANCHE PAR MIKE le 08/09 -- et c'est la meme decision que le 26/08
+   (« une seule cible, 44 px, partout »), qui avait atteint le chip de filtre
+   et jamais la barre de navigation. MESURE avant de trancher, dans le
+   navigateur et non dans le CSS : les cinq onglets faisaient 32 px, quand le
+   champ de recherche, son bouton et le bouton « moi » de la MEME barre
+   portaient deja `min-height:var(--touch)` -- le commentaire de `.appnav-q`
+   dit meme « comme tout controle du systeme ». Les onglets etaient la seule
+   exception, et personne ne l'avait ecrite. 32 px passait WCAG 2.5.8 (24 px) :
+   ce n'etait pas une faute, c'etait une regle que le systeme s'ecrivait sans
+   la tenir -- et la barre de navigation est justement ce qu'on vise au pouce.
+   `padding` horizontal et typographie INCHANGES : seule la hauteur bouge. */
 .appnav a.tab{display:inline-flex;align-items:center;gap:6px;padding:7px 13px;
+  min-height:var(--touch);
   border-radius:999px;color:var(--graphite);text-decoration:none;font-size:14px;
   font-weight:500;transition:background .15s,color .15s;white-space:nowrap;}
 /* `hidden` ne suffit PAS ici, et le fichier le savait deja : la regle
@@ -7367,7 +7384,13 @@ SUJETS_NAV_HTML = """<style id="sujetsnav-css">
   background:var(--salle-2);font-family:var(--f-texte);}
 .sujnav .lbl{color:var(--graphite);font-size:var(--t-xs);
   text-transform:uppercase;letter-spacing:.06em;margin-right:var(--e-1);}
-.sujnav a{display:inline-flex;align-items:center;gap:6px;min-height:36px;
+/* 44 px et non 36. Le `min-height:36px` etait ECRIT EN DUR ici, alors que le
+   projet a un jeton pour ca depuis toujours : `--touch`. C'est la meme barre,
+   le meme geste et la meme decision que l'appnav (Mike, 26/08 puis 08/09) --
+   quatre pages, seize liens, mesures a 36 px le 08/09 dans le navigateur. Un
+   nombre en dur est precisement ce qui fait qu'une decision ne se propage
+   pas. */
+.sujnav a{display:inline-flex;align-items:center;gap:6px;min-height:var(--touch);
   padding:0 var(--e-3);border-radius:var(--r-pill);color:var(--graphite);
   text-decoration:none;font:500 var(--t-sm)/1 var(--f-texte);white-space:nowrap;}
 .sujnav a:hover{color:var(--texte);background:#ffffff10;}

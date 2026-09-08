@@ -79,7 +79,12 @@ body { min-height: 100vh; }
 .tb.demo { background: var(--salle-3); border-color: var(--graphite); }
 .tb.demo.on { background: var(--fixateur); border-color: var(--fixateur); color: #fff; }
 .count { color: var(--graphite); font-size: var(--t-sm); font-family: var(--f-donnees); }
-#q { padding: var(--e-2) var(--e-3); border-radius: var(--r-md); border: var(--trait);
+/* 44 px (08/09) : mesure a 33 px, quand le champ de la barre de navigation
+   porte `min-height: var(--touch)` depuis le 30/08 et que son commentaire dit
+   « comme tout controle du systeme ». Deux champs de recherche de la meme
+   application n'ont pas a se viser differemment. */
+#q { min-height: var(--touch);
+     padding: var(--e-2) var(--e-3); border-radius: var(--r-md); border: var(--trait);
      background: var(--salle-3); color: var(--texte); font-size: var(--t-sm); width: 180px; }
 #q:focus { border-color: var(--veilleuse); }
 

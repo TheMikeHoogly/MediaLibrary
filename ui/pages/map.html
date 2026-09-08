@@ -29,9 +29,19 @@ body { height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
 .bar a { color: var(--texte); text-decoration: none; font-size: var(--t-md); }
 .bar .sp { margin-left: auto; }
 .count { color: var(--graphite); font-size: var(--t-sm); }
-.tb { padding: var(--e-2) var(--e-3); border: var(--trait); border-radius: var(--r-md);
+/* 44 px (08/09, tranche par Mike) : mesures a 36 et 34 px. Ce sont des
+   BOUTONS de barre d'outils -- « Definir une zone », « Recentrer » -- pas des
+   liens dans une phrase : le plancher tactile s'applique en plein. Cette page
+   n'a pas encore adopte `components.css` (4 pages sur 14 ne l'ont pas fait au
+   08/09 : browse, faces, map, reglages -- reglages l'a adoptee ce jour-la) ;
+   en attendant, la valeur vient du JETON, jamais d'un nombre en dur. */
+.tb { min-height: var(--touch);
+      display: inline-flex; align-items: center; justify-content: center;
+      padding: 0 var(--e-3); border: var(--trait); border-radius: var(--r-md);
       background: var(--salle-3); color: var(--texte); font-size: var(--t-sm); cursor: pointer; }
-#q { flex: 0 1 240px; min-width: 130px; padding: var(--e-2) var(--e-3); border: var(--trait);
+/* 44 px (08/09) : mesure a 36 px. Voir gallery.html — meme raison. */
+#q { min-height: var(--touch);
+     flex: 0 1 240px; min-width: 130px; padding: var(--e-2) var(--e-3); border: var(--trait);
      border-radius: var(--r-pill); background: var(--salle-3); color: var(--texte);
      font-size: var(--t-sm); font-family: inherit; }
 #q::placeholder { color: var(--graphite); }

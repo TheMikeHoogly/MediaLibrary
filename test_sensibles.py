@@ -411,5 +411,67 @@ class CeQueLesPIXELSOntDit(unittest.TestCase):
         self.assertIn("min-height: var(--touch)", self.page)
 
 
+class QuaranteQuatrePixelsPartout(unittest.TestCase):
+    """La decision du 26/08, rendue vraie le 08/09 apres l'avoir MESUREE.
+
+    Elle n'avait atteint que le chip de filtre. Le balayage des 12 pages
+    servies a trouve les onglets a 32 px, la marque a 20, la sous-navigation
+    Sujets a 36 ECRITS EN DUR, trois champs de recherche a 33-36 et deux
+    boutons de barre d'outils a 34-36. Ce banc empeche le retour de chacun.
+
+    CE QU'IL NE COUVRE PAS, et c'est voulu : un lien DANS une phrase. WCAG
+    2.5.8 l'exempte, le grossir casserait la prose, et l'exception est ecrite
+    dans `eval/DECISIONS_UI.md`. Le plancher vaut pour ce qui SE VISE.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        cls.pages = {n: (HERE / "ui" / "pages" / (n + ".html")).read_text(
+            encoding="utf-8") for n in ("gallery", "map", "people")}
+
+    def test_les_onglets_et_la_marque_de_la_barre(self):
+        for regle in (".appnav a.tab{", ".appnav .brand{"):
+            i = SOURCE.index(regle)
+            bloc = SOURCE[i:i + 400]
+            self.assertIn("min-height:var(--touch)", bloc, regle)
+
+    def test_la_sous_navigation_ne_porte_plus_de_NOMBRE_en_dur(self):
+        # `min-height:36px` ecrit en dur : c'est exactement ce qui empeche une
+        # decision de se propager. Le projet a un jeton pour ca.
+        i = SOURCE.index(".sujnav a{")
+        bloc = SOURCE[i:SOURCE.index("}", i)]
+        self.assertIn("min-height:var(--touch)", bloc)
+        # Le NOMBRE ne doit plus etre dans la REGLE. Chercher "36px" dans tout
+        # `server.py` echouait sur le commentaire qui explique le correctif --
+        # exactement la lecon deja payee deux fois ici : un banc juge le CODE,
+        # jamais la prose qui l'entoure. La regle s'arrete a son accolade.
+        self.assertNotIn("36px", bloc)
+
+    def test_les_champs_de_recherche_des_pages(self):
+        # Celui de la barre porte --touch depuis le 30/08 ; deux champs de
+        # recherche de la meme application n'ont pas a se viser differemment.
+        for nom in ("gallery", "map"):
+            i = self.pages[nom].index("#q {")
+            self.assertIn("min-height: var(--touch)",
+                          self.pages[nom][i:i + 260], nom)
+        self.assertIn("min-height:var(--touch)", self.pages["people"])
+
+    def test_la_barre_d_outils_de_la_carte(self):
+        i = self.pages["map"].index(".tb {")
+        self.assertIn("min-height: var(--touch)", self.pages["map"][i:i + 300])
+
+    def test_une_page_qui_ecrit_btn_ADOPTE_la_feuille_qui_le_definit(self):
+        """Six `class="btn"` sur /reglages sans `components.css` : le nom de la
+        classe du design system, aucun de ses comportements. Un nom qui ne fait
+        rien est pire qu'une classe absente -- il fait croire que la regle
+        s'applique. Le banc lit les 14 gabarits, pas seulement celui du jour."""
+        muettes = []
+        for f in sorted((HERE / "ui" / "pages").glob("*.html")):
+            t = f.read_text(encoding="utf-8")
+            if 'class="btn' in t and "<!--UI:components-->" not in t:
+                muettes.append(f.name)
+        self.assertEqual(muettes, [], "pages qui ecrivent .btn sans la feuille")
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

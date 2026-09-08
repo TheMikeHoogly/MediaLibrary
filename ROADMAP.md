@@ -27,12 +27,18 @@ dérive du GPU : une durée par photo divisée par 24 h suppose le GPU occupé s
 interruption, alors que la maintenance et le reste s'intercalent. *Le débit se
 lit dans le journal ; le reste est une hypothèse déguisée en mesure.*
 
-**Et les abandons ne sont pas à zéro : il y en a 13, et ils vont bien.** Tous
-portent le même motif — « listé sur /sante », des fichiers DÉJÀ connus comme
-malades que le tagueur refuse d'ouvrir. C'est le garde-fou qui travaille, pas
-une fuite. Ils tiennent en trois dossiers de `Photos Flo` (Mumi 6, Sandra 5,
-Sista 2). Les avoir comptés à zéro la veille, c'était chercher le mot
-« abandon » sans lire ce qui le suit.
+**Sur les « abandons », j'ai eu tort deux fois dans la même journée, et la
+seconde fois est instructive.** Le matin j'ai lu 13 lignes « abandon » dans le
+journal et corrigé le « 0 abandon » de la veille. L'après-midi,
+`/api/maint/status` → `config.retag` dit **`abandons: 0`**. Les deux sont VRAIS,
+et ils ne parlent pas de la même chose : le compteur compte les photos que le
+tagueur a PRISES puis lâchées — il n'y en a aucune ; les 13 lignes du journal
+sont des **refus d'entrée**, des fichiers déjà listés sur `/sante` que le
+tagueur ne prend jamais (Mumi 6, Sandra 5, Sista 2, tous dans `Photos Flo`).
+Le mot « abandon » désigne deux gestes différents dans deux instruments
+différents, et j'ai corrigé un compteur juste avec une lecture de journal.
+**Un chiffre ne se corrige pas par un autre instrument sans vérifier qu'ils
+comptent la même chose** — et le journal, ici, était le mauvais.
 
 **DÉFAUT DU 07/09 AU SOIR — FERMÉ LE SOIR MÊME, OBSERVÉ.** Quand l'écriture XMP dépasse le délai
 (`_run_exiftool`, 180 s), Python TUE ExifTool — mais le
@@ -955,8 +961,23 @@ moteur de rendu **gelé** — ramenée à 12 159 px par des tranches de 40 et
 `loading="lazy"` (7 requêtes au lieu de 213) ; et le lien « Ouvrir la photo en
 grand » à 18 px quand les boutons de verdict font 44.
 
+**44 PX PARTOUT — tranché par Mike le 08/09, puis AUDITÉ.** La décision datait
+du 26/08 et n'avait atteint que le chip de filtre. Balayage des **12 pages
+servies**, hauteur réelle de chaque contrôle dans le navigateur. Corrigés : les
+5 onglets d'`appnav` (32 px, 12 pages), la marque « Photos » (20), la
+sous-navigation Sujets (`min-height:36px` écrit EN DUR — un nombre ne suit pas
+une décision, un jeton si), trois champs de recherche (33, 36, 33), deux boutons
+de la barre de la carte (36, 34), et `/reglages` qui a adopté `components.css`.
+**Mesuré après** : `/files`, la page la plus utilisée, **104 contrôles, 0 sous
+44 px**. Ce qui reste sous 44 est un `<a>` dans un `<p>` — exempté par WCAG
+2.5.8, et **l'exception est maintenant écrite** : c'est son absence qui avait
+laissé passer treize jours. Détail dans `eval/DECISIONS_UI.md`, 5 vérifications
+neuves dans `test_sensibles.py` (48 au total).
+
 **Ce qui RESTE** : trier les 213 dans l'onglet (c'est le travail de Mike, trois
-gestes par photo, tout réversible), puis (c) quand la campagne sera finie. Et le
+gestes par photo, tout réversible), puis (c) quand la campagne sera finie. Et
+trois pages n'ont pas adopté `components.css` — `browse`, `faces`, `map` :
+aucune ne ment aujourd'hui, un banc refuse désormais qu'elles le fassent. Et le
 masquage POUR LES AUTRES n'est prouvé que par banc — l'admin voit tout par
 construction, la preuve à deux comptes appartient à (b).
 

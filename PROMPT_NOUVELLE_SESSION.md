@@ -10,31 +10,34 @@ FUSIONNÉ — ce document, non. Puis `ROADMAP.md`, `eval/DECISIONS.md`,
 (sorti du carnet le 07/09), `docs/DECISIONS_OUTILLAGE.md` s'il touche aux
 canaux, à la livraison ou au MCP. Débrief en 2–3 lignes, puis on attaque.
 
-## Où on en est (08/09/2026, matin)
+## Où on en est (08/09/2026, fin de journée)
 
 **Git** : dernier commit fusionné dans `main` — le vérifier dans
 `.git/logs/refs/heads/main`, jamais ici. Six livraisons les 07 et 08/09.
 
 **LA CAMPAGNE DE RETAG TOURNE.** Levier : `retag_actif.txt`, fichier VIDE —
-ne pas l'effacer. Au 08/09 07:00 : **~12 200 faites, reste ~27 800**.
+ne pas l'effacer. Lu sur la machine le 08/09 à 08:50 (`config.retag`) :
+**reste 27 269, en file 966, abandons 0**.
 
-**Le débit RÉEL, compté dans le journal et non calculé** : **~190 photos par
-heure**, stable sur huit heures (200, 196, 172, 191, 216, 175, 178, 230), et
-**16 s médian** sur les 500 dernières (10 s au mieux, 41 s au pire). Reste donc
-**~6 jours, pas 4** : les « 14 s → 4 jours » de la veille supposaient le GPU
-occupé sans interruption, alors que la maintenance et le reste s'intercalent.
-*Un débit se compte sur le journal ; une durée par photo divisée par 24 h ne
-dit que ce qu'on a supposé.*
+**Le débit se COMPTE dans le journal, il ne se calcule pas** : **~200 photos par
+heure**, mesuré heure par heure sur une journée (200, 196, 172, 191, 216, 175,
+178, 239, 265), **14 à 16 s médian**. Reste donc **~5 à 6 jours**. Les
+« 14 s → 4 jours » de la veille divisaient une durée par photo par 24 h, ce qui
+suppose le GPU occupé sans interruption : la maintenance et le reste
+s'intercalent. *Une durée par photo n'est pas un débit.*
 
-**13 abandons, et ils vont bien** : tous « listé sur /sante », c'est-à-dire des
-fichiers DÉJÀ connus comme malades que le tagueur refuse d'ouvrir — le
-garde-fou qui fait son travail, pas une fuite. Ils tiennent en trois dossiers
-de `Photos Flo` (Mumi 6, Sandra 5, Sista 2). Le compter à zéro, comme la veille,
-c'était lire le mot « abandon » sans lire ce qui le suit.
+**Sur les « abandons », deux lectures VRAIES qui ne parlent pas de la même
+chose** — et je me suis trompé en corrigeant l'une par l'autre. Le compteur
+`config.retag.abandons` dit **0** : aucune photo prise puis lâchée. Le journal
+porte **13 lignes « abandon — listé sur /sante »** : des **refus d'entrée**, des
+fichiers déjà connus comme malades que le tagueur ne prend jamais (Mumi 6,
+Sandra 5, Sista 2, tous dans `Photos Flo`). Le même mot pour deux gestes.
+**Ne corrige jamais un compteur par un journal sans vérifier qu'ils comptent la
+même chose.**
 
 Instruments : `/reglages` → `config.retag`, `grep 'tagué en' _journal_serveur.log
 | awk '{print substr($1,1,2)}' | uniq -c` pour le débit horaire, et
-`grep abandon _journal_serveur.log` pour les refus.
+`grep abandon _journal_serveur.log` pour les refus d'entrée.
 
 **LE CHANTIER 18 : (a) ET (b) SONT FAITS.**
 - **(a) l'axe `sensible`** — la visibilité ne se décide plus sur le seul
@@ -45,7 +48,10 @@ Instruments : `/reglages` → `config.retag`, `grep 'tagué en' _journal_serveur
 - **(b) la page `/sensibles`** — trois gestes, **Corbeille en premier**
   (« la médiathèque conserve des souvenirs, pas des documents », Mike, 07/09),
   puis Rendre privée, puis Pas sensible. Chaque geste passe par la route qui
-  existait déjà. L'onglet de nav reste **caché tant qu'il n'y a rien**.
+  existait déjà. L'onglet de nav reste **caché tant qu'il n'y a rien** — et il
+  l'est VRAIMENT depuis le 08/09 seulement : il portait `hidden` et s'affichait
+  quand même, sur toutes les pages, parce qu'une classe posant `display` bat le
+  `[hidden]` de la feuille du navigateur.
 
 **(c) EST EMPÊCHÉE PAR LA CAMPAGNE, et c'est le fait neuf du 08/09.** La spec
 veut la question « dans la MÊME invocation du tagueur ». Or le prompt EST la
@@ -56,12 +62,37 @@ version du pipeline (`v3fr`) : y ajouter une phrase rendrait candidates les
 mots génériques pour un document, donc le signal est DANS l'index.
 `tagging_meta.candidat_sensible` est une règle pure (aucun modèle, aucun GPU,
 aucun NAS) et `GET /api/sensibles/candidats` la mesure en lecture seule.
-**560 → 278 → 214** après deux resserrages sur le vrai fonds. Il s'améliore
-tout seul : 7 des 214 seulement portent déjà le nouveau vocabulaire.
+**560 → 278 → 214** après deux resserrages sur le vrai fonds.
 
-**CE QUI ATTEND MIKE** : `QUESTIONS_MIKE.md` — masquer les 214, ou seulement
-les plus sûrs, ou lui montrer une planche d'abord. Et `MARCHE_A_SUIVRE.md`
-pour le reste.
+**ET LE GESTE A ÉTÉ FAIT** (Mike, 08/09 : « go pour ta recommandation b »).
+**213 photos masquées** — une de moins que la mesure, re-taguée entre-temps et
+ayant perdu son mot-clé : le filet respire avec la campagne. **0 refus, 0
+candidat restant.** Chacune porte SON motif, pas un motif de lot. Le tri des
+213 dans l'onglet est maintenant du travail de Mike : trois gestes par photo,
+tout réversible, rien n'a bougé sur le disque.
+
+**LE 08/09 A ÉTÉ LE PREMIER JOUR OÙ ON A VU LES PIXELS**, et ça a coûté cinq
+défauts qu'aucune relecture n'avait vus. Tous dans `eval/DECISIONS_UI.md` :
+l'onglet `hidden` qui s'affichait ; la page qui bâtissait ses 213 fiches d'un
+coup (63 299 px, moteur de rendu **gelé**) — ramenée à 12 159 px par des
+tranches de 40 et `loading="lazy"` (7 requêtes au lieu de 213) ; le lien
+« Ouvrir la photo en grand » à 18 px ; les cibles tactiles sous 44 px sur
+douze pages ; et six `class="btn"` sur `/reglages` **sans la feuille qui
+définit `.btn`**.
+
+**44 PX PARTOUT, tranché par Mike le 08/09, implémenté et audité.** Corrigés :
+les 5 onglets d'`appnav` (32 px), la marque « Photos » (20), la sous-navigation
+Sujets (`min-height:36px` écrit EN DUR, 4 pages), les champs de recherche de la
+galerie (33), de la carte (36) et des personnes (33), les 2 boutons de la barre
+de la carte (36 et 34), et `/reglages` qui a adopté `components.css`. **Mesuré
+après** : `/files` — la page la plus utilisée — **104 contrôles, 0 sous 44 px**.
+Tout ce qui reste sous 44 est un `<a>` DANS un `<p>`, exempté par WCAG 2.5.8, ou
+un contrôle Leaflet. **L'exemption est désormais ÉCRITE** : c'est son absence
+qui avait laissé les onglets à 32 px pendant treize jours.
+
+**CE QUI ATTEND MIKE** : `QUESTIONS_MIKE.md` — `eval/DECISIONS.md` est à **96 %**
+de son budget (et `ROADMAP.md` à 89 %) ; le découpage du 07/09 a été consommé en
+vingt-quatre heures. Et `MARCHE_A_SUIVRE.md` pour le reste.
 
 ## Prochain pas
 
@@ -71,25 +102,34 @@ Puis le débit (`tagué en`) et la température (`🌡`, `🔥 CHAUD` ≥ 85 °C
 Et : `grep "Temporary file" _journal_serveur.log` doit rendre **zéro** — c'est
 le défaut du 07/09, corrigé ; s'il revient, la correction a lâché.
 
-**1. La réponse de Mike sur les 214** (`QUESTIONS_MIKE.md`). S'il dit oui, le
-geste est un `POST /api/sensibles/etat` par lot avec `etat: 'en_attente'` et un
-motif — la route existe, elle refuse nommément ce qui n'est pas à lui.
+**1. La réponse de Mike sur le budget de `eval/DECISIONS.md`**
+(`QUESTIONS_MIKE.md`) — 96 %, il reste deux ou trois verdicts. Ma recommandation :
+un second découpage par domaine (visibilité / tagging) **et** une condensation
+des entrées anciennes appliquées depuis plus d'un mois. Les nouveaux verdicts UI
+partent déjà dans `eval/DECISIONS_UI.md`, qui est large (14 %).
 
-**2. Ce qui reste à REGARDER sur la page `/sensibles`** :
-  - les **PIXELS**, et l'œil existe désormais : le **volet Navigateur de
-    l'app** tourne sur la machine de Mike et atteint `http://localhost:8080`
-    en **714 × 1080 réels** (mesuré le 08/09 ; le Chrome de Mike, lui, était
-    minimisé à `innerWidth = 0` et une mesure prise là ne vaut rien). Son
-    `javascript_tool` lit la cascade CALCULÉE — ce qu'aucun instrument du
-    dépôt ne sait faire pour les `<style>` des pages. **Il manque une seule
-    chose** : le volet a son propre profil, donc pas de session, et taper un
-    mot de passe n'appartient pas à Claude. **Demander à Mike d'ouvrir une
-    session dans le volet, une fois** — trente secondes, et les pixels de
-    toutes les pages authentifiées deviennent mesurables. La page de
-    connexion, elle, a déjà été mesurée et tient (six couples, deux champs et
-    un bouton à 44 px pile) ;
-  - le masquage **POUR LES AUTRES**, prouvé par banc seulement — l'admin voit
-    tout par construction, la preuve demande deux comptes (Mike et Flo).
+**2. REGARDER LES PIXELS — c'est acquis, et voilà comment.** Deux navigateurs, et
+la différence compte :
+  - **Le Chrome de Mike** (`mcp__claude-in-chrome__*`) porte SA session : c'est le
+    seul qui atteint les pages authentifiées. Il faut qu'il soit **connecté** et
+    la fenêtre **non minimisée**. Adresse : `http://192.168.0.13:8080` (pas
+    `localhost`, qui viserait la machine du navigateur).
+  - **Le volet Navigateur de l'app** a son propre profil, donc **aucune session** :
+    il sert pour la page de connexion et rien d'autre tant que Mike n'y ouvre pas
+    une session lui-même (taper un mot de passe n'appartient pas à Claude).
+
+  **Deux pièges payés le 08/09.** (i) `document.visibilityState === 'hidden'` :
+  une image `lazy` ne se charge JAMAIS dans un onglet qui n'est pas au premier
+  plan — j'en ai tiré une conclusion fausse et failli l'écrire dans le dépôt.
+  Lire `visibilityState` ET `innerWidth` AVANT d'interpréter. (ii) L'extension
+  **gèle** si on lui demande douze iframes dans un seul appel : mesurer **une
+  page par appel**, et repartir d'un onglet neuf quand le moteur ne répond plus.
+
+  **Reste à voir** : le masquage **POUR LES AUTRES**, prouvé par banc seulement —
+  l'admin voit tout par construction, la preuve demande deux comptes (Mike et
+  Flo). Et les **3 pages qui n'ont pas adopté `components.css`** (`browse`,
+  `faces`, `map`) — aucune ne ment aujourd'hui, mais la première qui écrira
+  `class="btn"` mentira.
 
 **3. La seconde moitié du garde-fou NAS** : un scan qui arrive sur une étape
 lourde de maintenance DÉJÀ partie. Attention, la ligne `nas = first or deep or
@@ -261,6 +301,26 @@ a un tableau `historique` : plus rapide qu'un `git log`, sans jamais invoquer
 git.
 
 ### Juger
+
+**Une règle sans son EXCEPTION écrite ne tient pas.** Le plancher disait
+« cibles tactiles ≥ 44 px » sans dire pour QUOI : les onglets sont restés à
+32 px pendant treize jours, et personne n'avait tort — chacun jugeait dans son
+coin faute de texte. La règle complète, écrite le 08/09 : **le plancher vaut
+pour tout ce qui SE VISE — bouton, onglet, chip, champ, barre d'outils — et
+jamais pour un lien porté par une ligne de texte** (WCAG 2.5.8 l'exempte). Quand
+une règle du système est enfreinte quelque part, le premier réflexe est de
+chercher si l'exception est légitime **et écrite** : si elle l'est, l'écrire ;
+sinon, corriger.
+
+**Une décision se propage par le JETON, jamais par un nombre.** `min-height:36px`
+écrit en dur dans la sous-navigation a survécu à deux décisions de Mike sur la
+même valeur. `var(--touch)` les aurait suivies toutes seules.
+
+**Un nom de classe qui ne fait rien est pire qu'une classe absente.** Six
+`class="btn"` sur `/reglages` sans `components.css` : le nom du design system,
+aucun de ses comportements. Une classe absente se voit ; une classe muette fait
+croire que la règle s'applique. `components.css` est OPT-IN — vérifier le
+marqueur `<!--UI:components-->` avant de faire confiance à un `.btn`.
 
 **Avant de RECOMMANDER une règle, relire `eval/DECISIONS.md` en entier sur le
 sujet.** Le carnet n'est pas un journal — c'est la contrainte. **Une clôture

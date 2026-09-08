@@ -163,7 +163,8 @@ input[type=text]:focus, input.qui:focus { border-color: var(--veilleuse); }
      « Aller aux groupes » evite de tout scroller. -->
 <h2 style="display:flex;align-items:center;gap:var(--e-2);flex-wrap:wrap">Personnes nommées <span class="c" id="pc"></span>
   <input type="text" id="pfilter" placeholder="Filtrer par nom&hellip;" autocomplete="off"
-         aria-label="Filtrer les personnes par nom" style="flex:0 1 220px;max-width:220px">
+         aria-label="Filtrer les personnes par nom"
+         style="flex:0 1 220px;max-width:220px;min-height:var(--touch)">
   <a href="#groupes" class="btn" style="font-size:var(--t-xs);padding:var(--e-1) var(--e-2);margin-left:auto;text-decoration:none">Aller aux groupes &#8595;</a></h2>
 <div id="panel"></div>
 <div class="people" id="people"></div>
