@@ -7,13 +7,18 @@ echo ==============================================================
 echo   RAPATRIER CE QUI N'EXISTE QUE CHEZ GOOGLE
 echo ==============================================================
 echo.
-echo   Le 27/08, la verification a compte 3776 medias de l'export
-echo   Takeout que le NAS ne porte pas : 12.6 Go, dont 2017 videos,
-echo   concentres sur 2024, 2025 et 2026.
+echo   Ce script copie ce que l'export Takeout porte et que le NAS
+echo   ne porte pas. COMBIEN exactement, c'est l'etape 1 qui le dit
+echo   et personne d'autre : ce texte ne recite aucun chiffre.
 echo.
-echo   Ces fichiers ne vivent aujourd'hui qu'a UN seul endroit, et
-echo   c'est chez un tiers dont le quota est a 96 pour cent. Tant
-echo   qu'il en reste un, RIEN ne s'efface chez Google.
+echo   Pourquoi aucun chiffre ici : ce bloc annoncait "3776 medias,
+echo   12.6 Go" -- la mesure du 27/08. Le 08/09 la meme verification
+echo   en rendait 570 pour 0.99 Go, le fonds ayant beaucoup bouge
+echo   entre les deux. Un bat qui recite une vieille mesure la fait
+echo   passer pour l'etat du jour.
+echo.
+echo   Tant qu'il en reste UNE seule, RIEN ne s'efface -- ni chez
+echo   Google, ni dans l'extrait du Takeout sur C:.
 echo.
 echo   Ce script les copie sous "_A TRIER\Takeout Google\<annee>",
 echo   la ou la chaine existante les reprend : rangement par annee,

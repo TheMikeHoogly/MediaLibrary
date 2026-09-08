@@ -21,6 +21,7 @@ USAGE
 
 import json
 import sys
+import re
 from pathlib import Path
 
 # Caracteres non-ASCII les plus souvent introduits, avec leur remplacement.
@@ -67,8 +68,53 @@ def controler(chemin):
                 f"   -> remplacer par {suggest!r}"
                 f"\n         {ligne.strip()[:70]}")
     problemes.extend(parentheses_dans_un_bloc(texte))
+    problemes.extend(errorlevel_dans_le_desordre(texte))
     return problemes
 
+
+def errorlevel_dans_le_desordre(texte):
+    """`if errorlevel N` veut dire "N OU PLUS". L'ordre doit DESCENDRE.
+
+    Ecrit en montant -- `if errorlevel 1` avant `if errorlevel 2` -- la
+    premiere ligne attrape aussi le code 2, et la branche du 2 ne sert
+    JAMAIS. Le script ne plante pas : il raconte le mauvais probleme, et
+    souvent dans le sens rassurant. C'est ce qui rend ce defaut durable, la
+    ou une parenthese mal placee se voit tout de suite.
+
+    Trouve le 08/09 en ecrivant le bat 49 : un `verifier_photos_google.py`
+    qui rend 2 (dossier introuvable) se serait annonce comme « il reste des
+    absentes ». La consigne affichee aurait ete la bonne par accident.
+
+    PORTEE : les tests CONSECUTIFS, separes seulement par des lignes vides,
+    des REM ou d'autres `if errorlevel`. Deux tests separes par une vraie
+    commande visent un autre code de retour et ne se comparent pas -- c'est
+    le cas du bat 17, qui est correct. `if NOT errorlevel N` inverse la
+    borne : la regle ne s'y applique pas, la serie repart.
+    """
+    motif = re.compile(r'^\s*if\s+(not\s+)?errorlevel\s+(\d+)', re.I)
+    neutre = re.compile(r'^\s*(rem\b|::|$)', re.I)
+    problemes, serie = [], []
+    for num, ligne in enumerate(texte.splitlines(), 1):
+        m = motif.match(ligne)
+        if m:
+            if m.group(1):
+                serie = []
+                continue
+            n = int(m.group(2))
+            for pnum, pn in serie:
+                if pn < n:
+                    problemes.append(
+                        "l.%d : `if errorlevel %d` apres `if errorlevel %d`"
+                        " (l.%d)   -> `errorlevel N` veut dire N OU PLUS :"
+                        " le premier avale le second, qui ne servira jamais."
+                        " Ordonner en DESCENDANT." % (num, n, pn, pnum))
+                    break
+            serie.append((num, n))
+        elif neutre.match(ligne):
+            continue
+        else:
+            serie = []
+    return problemes
 
 def parentheses_dans_un_bloc(texte):
     """Une parenthese dans un `echo` A L'INTERIEUR d'un bloc le FERME.

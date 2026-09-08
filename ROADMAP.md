@@ -281,6 +281,21 @@ se résolvent ainsi. Le `(N)` des autres est la NUMÉROTATION D'ALBUM de Google
 `.json` compagnon pour retrouver le nom d'origine (`titre or nom`) : ces 169
 sont donc absents sous TOUS les noms qu'on leur connaît.
 
+**L'OUTIL EXISTE : `49 - Effacer l extrait du Takeout (96 Go).bat`** (08/09).
+Bâti sur le modèle du 48, avec une différence dite en toutes lettres dans son
+propre texte : **le 48 effaçait un doublon prouvé, le 49 efface un original.**
+Il relance `verifier_photos_google.py` LUI-MÊME, s'arrête net sur la moindre
+absente en renvoyant au bat 32, et demande `EFFACER` en majuscules. Il rappelle
+aussi que la copie hors site (12 bis) n'existe pas encore — un NAS chez soi ne
+protège ni du feu ni du vol.
+
+**Et le bat 32 a été DÉBLOQUÉ** : il échouait sur « `_google.json` est
+introuvable », parce que le ménage du matin l'avait rangé dans `_to_delete\` en
+le prenant pour un rapport périmé. C'était l'entrée du bat 32. Remis — avec la
+mesure d'AUJOURD'HUI, pas celle de la semaine dernière. Son bandeau, qui
+récitait « 3 776 médias, 12,6 Go » du 27/08, ne récite plus aucun chiffre :
+c'est l'étape à blanc qui les dit. Détail dans `docs/DECISIONS_OUTILLAGE.md`.
+
 **L'ORDRE, et il n'est pas négociable** : `32 - Copier les absentes de
 Google.bat` d'abord — il écrit sous `_A TRIER/<étiquette>/<année>/`, aperçu
 par défaut, 0,99 Go — puis refaire `verifier_photos_google.py` jusqu'à
