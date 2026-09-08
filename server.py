@@ -7182,6 +7182,14 @@ APP_NAV_CSS = """<style id="appnav-css">
 .appnav a.tab.active{color:var(--texte-papier);background:var(--papier);
   box-shadow:0 2px 10px #0007;}
 .appnav .sp{flex:1;}
+/* Onglet « Sensibles » : cache tant qu'il n'y a rien (voir ui/global.js).
+   Le nombre est en --f-donnees comme toute mesure, et l'accent est
+   --veilleuse : « en attente d'un verdict », pas --encre, qui dirait
+   « destructif » alors que rien n'a encore bouge. */
+.appnav a.tab--sensibles .n{font:600 12px/1 var(--f-donnees);
+  background:var(--veilleuse-d);color:var(--texte);
+  border-radius:999px;padding:2px 7px;}
+.appnav a.tab--sensibles.active .n{background:var(--veilleuse);color:#000;}
 /* Indicateur d'activite reseau global : apparait des qu'une requete fetch/POST
    est en vol (voir le script d'enrobage plus bas). Accent --veilleuse = « en
    cours / en attente », par le design system. Rassure : « ca travaille, patiente
@@ -7312,6 +7320,7 @@ APP_NAV_HTML = """<nav class="appnav">
   <a class="tab" data-p="/browse" href="/browse">&#128193; Dossiers</a>
   <a class="tab" data-p="/map" href="/map">&#128506;&#65039; Carte</a>
   <a class="tab" data-p="/sujets" href="/sujets">&#128450;&#65039; Sujets</a>
+  <a class="tab tab--sensibles" data-p="/sensibles" href="/sensibles" hidden>&#128274; Sensibles <span class="n"></span></a>
   <span class="sp"></span>
   <form class="appnav-q" role="search" action="/files" method="get">
     <label class="hors-ecran" for="appnav-q">Recherche IA : d&eacute;cris la photo</label>
@@ -11585,6 +11594,9 @@ class Handler(BaseHTTPRequestHandler):
         elif path == '/api/sensibles':
             self._serve_sensibles()
 
+        elif path == '/sensibles':
+            self._send_html(ui_page('sensibles'))
+
         elif path == '/eval':
             self._serve_eval_page()
 
@@ -11779,7 +11791,11 @@ class Handler(BaseHTTPRequestHandler):
                 continue
             if u is not None and not _visibilite.peut_juger(cle, u):
                 continue
+            # `url` est calculée ICI par `_url_for_key` : la refaire en JS
+            # ferait un second assemblage de la même règle, et un second
+            # assemblage finit toujours par diverger (leçon `faits_vue`).
             photos.append({'key': cle, 'nom': Path(cle).name,
+                           'url': _url_for_key(cle) or '',
                            'motif': (e.get('sensible_motif') or ''),
                            'le': e.get('sensible_le') or '',
                            'par': e.get('sensible_par') or ''})

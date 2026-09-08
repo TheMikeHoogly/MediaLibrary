@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Photos sensibles</title>
+<!--UI:components-->
+<style>
+/* Surface de TRAVAIL : on decide, donc papier. La PHOTO se regarde sur salle.
+   Tokens seuls — aucune valeur en dur. */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+.bar { display: flex; align-items: center; gap: var(--e-3);
+       padding: var(--e-3) var(--e-4); background: var(--salle-2);
+       border-bottom: var(--trait); flex-wrap: wrap; font-size: var(--t-sm); }
+.bar .sp { margin-left: auto; }
+.compte { font-family: var(--f-donnees); color: var(--texte); }
+.rappel { padding: var(--e-3) var(--e-4); color: var(--graphite);
+          font-size: var(--t-sm); line-height: 1.5; max-width: 68ch; }
+.rappel b { color: var(--texte); }
+
+.feuille { background: var(--papier); color: var(--texte-papier);
+           border-radius: var(--r-md); padding: var(--e-4);
+           margin: var(--e-3) var(--e-4) var(--e-6); max-width: 900px;
+           box-shadow: 0 1px 0 var(--papier-2), 0 8px 24px #0008; }
+.feuille h2 { font: 600 var(--t-xl)/1.2 var(--f-affichage);
+              letter-spacing: -0.01em; margin-bottom: var(--e-2); }
+.aide { color: var(--graphite-p); font-size: var(--t-sm); line-height: 1.5; }
+
+/* Une piece = une feuille. La vignette est GRANDE : on juge la NATURE d'un
+   document, et une vignette trop petite oblige a ouvrir la photo pour rien.
+   Elle reste sur fond SALLE — c'est une photo, elle ne se pose pas sur le
+   papier (design system). */
+.piece { display: grid; grid-template-columns: minmax(0, 240px) minmax(0, 1fr);
+         gap: var(--e-4); align-items: start; }
+@media (max-width: 640px) { .piece { grid-template-columns: 1fr; } }
+.piece .vue { background: var(--salle); border-radius: var(--r-sm);
+              line-height: 0; overflow: hidden; }
+.piece .vue img { width: 100%; aspect-ratio: 1; object-fit: contain;
+                  display: block; background: var(--salle); }
+.piece h3 { font: 600 var(--t-lg)/1.25 var(--f-affichage);
+            letter-spacing: -0.01em; word-break: break-word; }
+.meta { font: var(--t-xs)/1.6 var(--f-donnees); color: var(--graphite-p);
+        margin-top: var(--e-1); word-break: break-all; }
+.actes { display: flex; gap: var(--e-2); flex-wrap: wrap; margin-top: var(--e-3); }
+.pied { display: flex; gap: var(--e-3); flex-wrap: wrap; align-items: center;
+        margin-top: var(--e-3); font-size: var(--t-sm); }
+.pied a { color: var(--texte-papier); text-decoration: underline; }
+
+/* Etat VIDE : une invitation, pas un blanc (plancher 7). */
+.vide { margin: var(--e-6) var(--e-4); max-width: 68ch; color: var(--graphite);
+        font-size: var(--t-md); line-height: 1.6; }
+.vide h2 { font: 600 var(--t-xl)/1.2 var(--f-affichage); color: var(--texte);
+           letter-spacing: -0.01em; margin-bottom: var(--e-2); }
+
+/* Le toast d'annulation du design system : toute action destructive est
+   annulable, et l'annonce ne coupe pas la parole au lecteur d'ecran. */
+.toast { position: fixed; left: 50%; bottom: var(--e-4); transform: translateX(-50%);
+         display: flex; align-items: center; gap: var(--e-3); z-index: 60;
+         background: var(--salle-3); color: var(--texte); border: var(--trait);
+         border-radius: var(--r-md); padding: var(--e-2) var(--e-3);
+         box-shadow: 0 8px 24px #000A; font-size: var(--t-sm); max-width: 92vw; }
+.toast[hidden] { display: none; }
+
+:focus-visible { outline: 2px solid var(--veilleuse); outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important;
+                           transition-duration: .01ms !important; } }
+</style>
+</head>
+<body>
+<!--APPNAV-->
+<div class="bar">
+  <span>Photos sensibles</span>
+  <span class="sp"></span>
+  <span class="compte" id="compte">&hellip;</span>
+</div>
+
+<div class="rappel" id="rappel">Chargement&hellip;</div>
+
+<div id="liste"></div>
+
+<section class="vide" id="vide" hidden>
+  <h2>Rien &agrave; juger</h2>
+  <p>Aucune photo n&rsquo;est en attente. Quand l&rsquo;analyse soup&ccedil;onnera
+  un document &mdash; un relev&eacute;, une carte, un courrier &mdash;, la photo
+  sera <b>masqu&eacute;e sans bouger</b> et elle appara&icirc;tra ici, avec les
+  trois gestes.</p>
+  <p class="aide">Rien n&rsquo;est d&eacute;plac&eacute; ni effac&eacute; sans
+  votre verdict.</p>
+</section>
+
+<div class="toast" id="toast" role="status" aria-live="polite" hidden>
+  <span id="toast-dit"></span>
+  <button class="btn btn--discret" id="toast-annuler" type="button">Annuler</button>
+</div>
+
+<script>
+/* La page ne DECIDE rien : elle montre ce que la machine a mis de cote et
+   transmet le verdict humain. Trois gestes, et depuis le 07/09 le premier est
+   la CORBEILLE : « la mediatheque conserve des souvenirs, pas des documents »
+   (Mike). Ranger un releve dans un PRIVE ne fait que deplacer le probleme et
+   le garde indexe, cherchable et sauvegarde pour toujours. */
+(function () {
+  'use strict';
+  var LISTE = document.getElementById('liste');
+  var VIDE = document.getElementById('vide');
+  var RAPPEL = document.getElementById('rappel');
+  var COMPTE = document.getElementById('compte');
+  var TOAST = document.getElementById('toast');
+  var TOAST_DIT = document.getElementById('toast-dit');
+  var TOAST_ANNULER = document.getElementById('toast-annuler');
+  var TOAST_MINUTEUR = null;
+
+  function texte(el, s) { el.textContent = s; }
+
+  function toast(dit, annulable) {
+    texte(TOAST_DIT, dit);
+    TOAST_ANNULER.hidden = !annulable;
+    TOAST.hidden = false;
+    if (TOAST_MINUTEUR) { clearTimeout(TOAST_MINUTEUR); }
+    TOAST_MINUTEUR = setTimeout(function () { TOAST.hidden = true; }, 12000);
+  }
+
+  TOAST_ANNULER.addEventListener('click', function () {
+    fetch('/api/files/undo', { method: 'POST',
+      headers: { 'Content-Type': 'application/json' }, body: '{}' })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        toast(d && d.ok ? 'Geste annulé.'
+                        : 'Annulation impossible : ' + ((d && d.error) || 'le serveur a refusé.'),
+              false);
+        charger();
+      })
+      .catch(function () { toast('Annulation impossible : le serveur n’a pas répondu.', false); });
+  });
+
+  /* Chaque geste a sa route, et ce sont les routes qui existaient DEJA :
+     effacer et rendre privee passent par FileOps (journalise, annulable,
+     re-cle) ; « pas sensible » ne touche qu'a l'index. Refaire l'un des deux
+     ici ferait deux chemins pour un meme geste, et ils divergeraient. */
+  var GESTES = {
+    corbeille: {
+      url: '/api/files/delete',
+      corps: function (k) { return { key: k }; },
+      dit: function (n) { return n + ' — mise à la corbeille (récupérable 180 jours).'; },
+      annulable: true
+    },
+    prive: {
+      url: '/api/files/prive',
+      corps: function (k) { return { key: k }; },
+      dit: function (n) { return n + ' — déplacée dans le dossier privé de son propriétaire.'; },
+      annulable: true
+    },
+    non: {
+      url: '/api/sensibles/etat',
+      corps: function (k) { return { cles: [k], etat: 'non' }; },
+      dit: function (n) { return n + ' — rendue à la galerie, et elle ne sera plus signalée.'; },
+      annulable: false
+    }
+  };
+
+  function agir(bouton, cle, nom, quoi) {
+    var g = GESTES[quoi];
+    if (!g) { return; }
+    var boutons = bouton.closest('.actes').querySelectorAll('button');
+    for (var i = 0; i < boutons.length; i++) { boutons[i].disabled = true; }
+    fetch(g.url, { method: 'POST', headers: { 'Content-Type': 'application/json' },
+                   body: JSON.stringify(g.corps(cle)) })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (!d || d.ok === false) {
+          for (var i = 0; i < boutons.length; i++) { boutons[i].disabled = false; }
+          toast('Impossible : ' + ((d && d.error) ||
+                (d && d.refuses && d.refuses[0] && d.refuses[0].pourquoi) ||
+                'le serveur a refusé.'), false);
+          return;
+        }
+        toast(g.dit(nom), g.annulable);
+        charger();
+      })
+      .catch(function () {
+        for (var i = 0; i < boutons.length; i++) { boutons[i].disabled = false; }
+        toast('Impossible : le serveur n’a pas répondu.', false);
+      });
+  }
+
+  function bouton(classe, libelle, cle, nom, quoi) {
+    var b = document.createElement('button');
+    b.type = 'button';
+    b.className = classe;
+    b.textContent = libelle;
+    b.setAttribute('aria-label', libelle + ' — ' + nom);
+    b.addEventListener('click', function () { agir(b, cle, nom, quoi); });
+    return b;
+  }
+
+  function feuille(p) {
+    var sec = document.createElement('section');
+    sec.className = 'feuille';
+    var piece = document.createElement('div');
+    piece.className = 'piece';
+
+    var vue = document.createElement('div');
+    vue.className = 'vue';
+    var img = document.createElement('img');
+    img.src = '/api/thumb?key=' + encodeURIComponent(p.key);
+    img.alt = 'Aperçu de ' + p.nom;
+    vue.appendChild(img);
+
+    var col = document.createElement('div');
+    var h3 = document.createElement('h3');
+    h3.textContent = p.nom;
+    col.appendChild(h3);
+
+    var meta = document.createElement('p');
+    meta.className = 'meta';
+    var bouts = [];
+    if (p.le) { bouts.push('repérée le ' + p.le); }
+    if (p.motif) { bouts.push(p.motif); }
+    bouts.push(p.key);
+    meta.textContent = bouts.join(' · ');
+    col.appendChild(meta);
+
+    var actes = document.createElement('div');
+    actes.className = 'actes';
+    actes.appendChild(bouton('btn btn--destructif', 'Mettre à la corbeille',
+                             p.key, p.nom, 'corbeille'));
+    actes.appendChild(bouton('btn', 'Rendre privée', p.key, p.nom, 'prive'));
+    actes.appendChild(bouton('btn btn--discret', 'Pas sensible',
+                             p.key, p.nom, 'non'));
+    col.appendChild(actes);
+
+    var pied = document.createElement('div');
+    pied.className = 'pied';
+    if (p.url) {
+      // L'URL vient du SERVEUR (`_url_for_key`) : la recalculer ici ferait un
+      // second assemblage de la meme regle, et il finirait par diverger.
+      var a = document.createElement('a');
+      a.href = p.url;
+      a.target = '_blank';
+      a.rel = 'noopener';
+      a.textContent = 'Ouvrir la photo en grand';
+      pied.appendChild(a);
+      col.appendChild(pied);
+    }
+
+    piece.appendChild(vue);
+    piece.appendChild(col);
+    sec.appendChild(piece);
+    return sec;
+  }
+
+  function chargee(d) {
+    LISTE.textContent = '';
+    var photos = (d && d.photos) || [];
+    texte(COMPTE, photos.length + (photos.length > 1 ? ' photos' : ' photo'));
+    if (!photos.length) {
+      RAPPEL.hidden = true;
+      VIDE.hidden = false;
+      return;
+    }
+    VIDE.hidden = true;
+    RAPPEL.hidden = false;
+    RAPPEL.innerHTML = 'Ces photos sont <b>masquées</b> pour tout le monde '
+      + 'sauf vous, en attendant votre verdict. <b>Aucun fichier n’a '
+      + 'bougé.</b> L’analyse se trompe environ une fois sur trois : '
+      + 'si ce n’est pas un document, « Pas sensible » la rend à la '
+      + 'galerie et elle ne sera plus signalée.';
+    for (var i = 0; i < photos.length; i++) { LISTE.appendChild(feuille(photos[i])); }
+  }
+
+  function charger() {
+    fetch('/api/sensibles').then(function (r) { return r.json(); }).then(chargee)
+      .catch(function () {
+        RAPPEL.hidden = false;
+        texte(RAPPEL, 'Impossible de lire la liste : le serveur n’a pas '
+                      + 'répondu. Rechargez la page.');
+      });
+  }
+
+  charger();
+})();
+</script>
+</body>
+</html>

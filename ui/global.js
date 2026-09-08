@@ -334,8 +334,35 @@
     }).catch(function () { /* sans identite, la barre reste telle quelle */ });
   }
 
+  /* L'onglet « Sensibles » ne s'affiche QUE s'il y a quelque chose a juger.
+
+     Deux raisons, et la seconde est la demande de Mike du 06/09. (1) Une
+     phototheque de famille n'annonce pas en permanence qu'il existe un onglet
+     « sensibles » : un onglet vide en permanence apprend a ne plus le
+     regarder. (2) Quand il y a quelque chose, c'est l'application qui le DIT,
+     avec le nombre — au lieu qu'on colle a Mike des liens a ouvrir un par un.
+
+     Un echec est SILENCIEUX : sans reponse, l'onglet reste cache, exactement
+     comme s'il n'y avait rien. Il ne faut pas qu'une panne reseau fasse
+     clignoter une alerte sur un sujet pareil. */
+  function poserSensibles() {
+    var t = document.querySelector('.appnav .tab--sensibles');
+    if (!t) return;
+    fetch('/api/sensibles').then(function (r) { return r.json(); })
+      .then(function (d) {
+        var n = (d && d.photos && d.photos.length) || 0;
+        if (!n) return;
+        var pastille = t.querySelector('.n');
+        if (pastille) pastille.textContent = n;
+        t.setAttribute('aria-label', n + ' photo(s) en attente de votre verdict');
+        t.hidden = false;
+      })
+      .catch(function () { /* silencieux : pas d'alerte sur une panne reseau */ });
+  }
+
   function demarrer() {
     marquerOngletActif(); poserRecherche(); poserAide(); poserMoi();
+    poserSensibles();
   }
   if (document.querySelector('.appnav') || document.readyState !== 'loading') demarrer();
   else document.addEventListener('DOMContentLoaded', demarrer);

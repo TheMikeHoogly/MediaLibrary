@@ -181,5 +181,84 @@ class LAxeNeVaJamaisDansLeFichier(unittest.TestCase):
         self.assertNotIn('"sensible:"', SOURCE)
 
 
+class LaPageEtSesTroisGestes(unittest.TestCase):
+    """Etape (b) : l'ecran. Ce banc lit le GABARIT, pas le navigateur — le
+    regard en reel est un autre instrument, et les deux sont necessaires."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.page = (HERE / "ui" / "pages" / "sensibles.html").read_text(encoding="utf-8")
+        cls.nav = (HERE / "ui" / "global.js").read_text(encoding="utf-8")
+
+    def test_la_route_sert_le_gabarit(self):
+        self.assertIn("elif path == '/sensibles':", SOURCE)
+        self.assertIn("self._send_html(ui_page('sensibles'))", SOURCE)
+
+    def test_la_corbeille_est_le_geste_par_defaut(self):
+        # Amende par Mike le 07/09 : « la mediatheque conserve des souvenirs,
+        # pas des documents ». Ranger un releve dans un PRIVE ne fait que
+        # deplacer le probleme. L'ORDRE des boutons EST la decision.
+        i_corb = self.page.index("'Mettre à la corbeille'")
+        i_priv = self.page.index("'Rendre privée'")
+        i_non = self.page.index("'Pas sensible'")
+        self.assertLess(i_corb, i_priv)
+        self.assertLess(i_priv, i_non)
+        self.assertIn("btn--destructif", self.page.split("Mettre à la corbeille")[0][-120:])
+
+    def test_les_trois_gestes_passent_par_les_routes_EXISTANTES(self):
+        # Refaire un deplacement ou un effacement dans cette page ferait deux
+        # chemins pour un meme geste, et ils divergeraient (lecon `faits_vue`).
+        for route in ("/api/files/delete", "/api/files/prive", "/api/sensibles/etat"):
+            self.assertIn(route, self.page, route)
+        self.assertNotIn("corbeille-effacements", self.page)
+
+    def test_le_destructif_est_annulable(self):
+        # Design system : toute action destructive est annulable, et l'annonce
+        # ne coupe pas la parole au lecteur d'ecran.
+        self.assertIn("/api/files/undo", self.page)
+        self.assertIn('role="status" aria-live="polite"', self.page)
+
+    def test_l_url_de_la_photo_vient_du_serveur(self):
+        # `_url_for_key` cote serveur ; la refaire en JS ferait un second
+        # assemblage de la meme regle.
+        self.assertIn("_url_for_key(cle)", _corps("_serve_sensibles"))
+        self.assertIn("a.href = p.url", self.page)
+        self.assertNotIn("/media/' +", self.page)
+
+    def test_l_etat_vide_est_REDIGE(self):
+        # Plancher 7 : un ecran vide est une invitation, pas un blanc.
+        self.assertIn("Rien &agrave; juger", self.page)
+        self.assertIn("masqu&eacute;e sans bouger", self.page)
+
+    def test_l_onglet_est_CACHE_tant_qu_il_n_y_a_rien(self):
+        # Une phototheque de famille n'annonce pas en permanence qu'il existe
+        # un onglet « sensibles » ; et quand il y a quelque chose, c'est
+        # l'application qui le DIT — la demande de Mike du 06/09.
+        self.assertIn('class="tab tab--sensibles"', SOURCE)
+        self.assertIn('href="/sensibles" hidden>', SOURCE)
+        self.assertIn("poserSensibles", self.nav)
+        bloc = self.nav.split("function poserSensibles")[1].split("function demarrer")[0]
+        self.assertIn("if (!n) return;", bloc)
+        self.assertIn("t.hidden = false;", bloc)
+        self.assertIn("catch", bloc)      # une panne reseau n'alerte pas
+
+    def test_le_plancher_d_accessibilite(self):
+        self.assertIn(":focus-visible { outline: 2px solid var(--veilleuse)", self.page)
+        self.assertIn("prefers-reduced-motion: reduce", self.page)
+        self.assertIn("b.type = 'button'", self.page)
+        self.assertIn("img.alt =", self.page)
+        self.assertIn("b.setAttribute('aria-label'", self.page)
+
+    def test_tokens_seulement_aucune_valeur_en_dur(self):
+        # Interdits explicites du design system.
+        for interdit in ("#0a84ff", "#0f0f0f", "#161616", "repeat(5,", "repeat(4,"):
+            self.assertNotIn(interdit, self.page, interdit)
+        # les couleurs passent par les tokens : pas de #rrggbb hors ombres
+        import re
+        durs = [c for c in re.findall(r"#[0-9a-fA-F]{3,8}", self.page)
+                if not c.lower().startswith(("#000", "#fff"))]
+        self.assertEqual(durs, [], durs)
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

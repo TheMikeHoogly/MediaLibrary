@@ -9,7 +9,7 @@ FUSIONNÉ — ce document, non. Puis `ROADMAP.md`, `eval/DECISIONS.md`,
 `eval/METHODE.md` — et `docs/DECISIONS_OUTILLAGE.md` si le sujet touche aux
 canaux, à la livraison ou au MCP. Débrief en 2–3 lignes, puis on attaque.
 
-## Où on en est (07/09/2026, soir)
+## Où on en est (08/09/2026, matin)
 
 **Git** : dernier commit fusionné dans `main` — le vérifier dans
 `.git/logs/refs/heads/main`, jamais ici.
@@ -19,6 +19,10 @@ canaux, à la livraison ou au MCP. Débrief en 2–3 lignes, puis on attaque.
 31 629, 0 abandon**, 12–16 s/photo → **~5 jours**. Levier : `retag_actif.txt`,
 fichier VIDE — ne pas l'effacer. Instruments : `/reglages` → `config.retag`, et
 `grep 'en file de RE-TAGGING' _journal_serveur.log`.
+
+**L'onglet Sensibles est LÀ** (étape b, 08/09) : `/sensibles`, trois gestes,
+Corbeille en premier. Reste (c), la détection — aujourd'hui rien ne pose l'axe
+tout seul, donc la page est vide et son onglet reste caché.
 
 **Un défaut trouvé ET fermé le 07/09 au soir : le `_exiftool_tmp` orphelin.**
 Quand une écriture XMP dépassait son délai, Python tuait ExifTool mais son
@@ -72,18 +76,19 @@ Puis le débit (`tagué en`) et la température (`🌡`, `🔥 CHAUD` ≥ 85 °C
 **1. L'ONGLET SENSIBLES — (a) est FAIT, reste (b) puis (c).**
   a. ~~l'axe `sensible` + le filtre au magasin sur un ÉTAT~~ — fait, observé,
      52 bancs. Routes `GET /api/sensibles` et `POST /api/sensibles/etat`.
-  b. **la PAGE `/sensibles`, aux trois gestes** — et depuis le 07/09 au soir
-     le défaut est la **Corbeille** (`/api/corbeille`, 180 j), *Rendre privée*
-     (`/api/files/prive`) pour le document qu'on garde, *« non, pas sensible »*
-     (`/api/sensibles/etat` avec `etat: 'non'`) pour le faux positif. Deux
-     contraintes déjà connues : la vignette d'un document se LIT (voir
-     `eval/METHODE.md`), donc ce n'est pas sa taille qui protège ; et le
-     masquage pour LES AUTRES n'est prouvé que par banc — l'admin voit tout par
-     construction, la preuve à deux comptes se fait ici.
-  c. la question posée dans la MÊME invocation du tagueur (pas de cinquième
-     pipeline), puis la passe rétroactive.
-**Ne pas commencer par (c)** : détecter avant de savoir montrer produirait un
-fonds à moitié masqué sans écran pour le démasquer.
+  b. ~~la PAGE `/sensibles`, aux trois gestes~~ — **faite le 08/09, observée**
+     (`ui/pages/sensibles.html`, route `/sensibles`, onglet de nav caché tant
+     qu'il n'y a rien). Corbeille en premier, Rendre privée, Pas sensible ;
+     chaque geste passe par la route qui existait déjà.
+  c. **la question posée dans la MÊME invocation du tagueur** (pas de cinquième
+     pipeline), puis la passe rétroactive. **C'est le prochain morceau**, et
+     c'est lui qui remplira la page — aujourd'hui rien ne pose l'axe
+     automatiquement.
+
+**Deux choses à regarder avant (c)** : les PIXELS de la page (la fenêtre Chrome
+de Mike était minimisée le 08/09, `innerWidth = 0`, et une mesure prise là ne
+vaut rien) ; et le masquage POUR LES AUTRES, qui n'est prouvé que par banc —
+l'admin voit tout par construction, la preuve demande deux comptes.
 
 **2. Deux dettes courtes** :
   - ~~les 3 vraies dernières copies~~ : **fait le 07/09**, Mike a lancé le
@@ -237,6 +242,13 @@ il ne l'importe pas — et ceux-là tournent très bien depuis la VM, un par un
 
 **ExifTool sous Windows perd les accents des arguments** : argfile UTF-8 BOM
 (`server._run_exiftool`, repris par `appliquer_strip_motionphoto`).
+
+**`device_commit_files` peut écrire la version PRÉCÉDENTE du fichier.** Deux
+fois en deux jours, un fichier édité puis committé sous le MÊME `devicePath`
+est arrivé dans son état d'AVANT l'édition, sans que rien le dise (l'appel
+répond `written`). Parade : committer sous un nom NEUF puis `mv` en place, ou
+vérifier après coup par un `grep` d'une ligne de l'édition. Les deux fois, ce
+qui l'a attrapé est un banc ou une assertion d'ancre — pas une relecture.
 
 **Pour transférer un script accentué vers la machine : `device_commit_files`,
 pas un heredoc.** `device_bash` tronque une commande trop longue SANS le dire

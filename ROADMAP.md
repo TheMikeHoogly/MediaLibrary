@@ -884,8 +884,29 @@ mémorisé ; les deux autres gestes gardent leurs routes existantes).
 listée avec son motif, sa date et son auteur → vignette et faits toujours à 200
 pour l'admin (il ne perd rien, c'est la règle choisie) → axe levé → liste vide.
 Journal : deux lignes, zéro erreur. 52 bancs (`test_visibilite`,
-`test_sensibles`). **Ce qui RESTE** : (b) la page aux trois gestes, puis (c) la
-question dans la même invocation du tagueur et la passe rétroactive. Et le
+`test_sensibles`). **3 bis (b). LA PAGE `/sensibles` EST LÀ — 08/09, observée en réel.** Une
+feuille par pièce : vignette large (on juge la NATURE d'un document, une
+vignette trop petite oblige à ouvrir la photo pour rien), nom, date, motif, et
+les trois gestes **dans l'ordre tranché le 07/09** — Corbeille d'abord
+(`btn--destructif`), Rendre privée, Pas sensible. Chaque geste passe par la
+route qui existait DÉJÀ (`/api/files/delete`, `/api/files/prive`,
+`/api/sensibles/etat`) : refaire un déplacement ici ferait deux chemins pour un
+même geste. Toast annulable (`/api/files/undo`) sur les deux gestes de fichier,
+état vide RÉDIGÉ, et **l'onglet de nav reste caché tant qu'il n'y a rien** — une
+photothèque de famille n'annonce pas en permanence qu'il existe un onglet
+« sensibles », et quand il y a quelque chose c'est l'application qui le DIT,
+avec le nombre. **Observé** : axe posé → l'onglet apparaît avec « 1 » → la
+feuille s'affiche avec ses trois boutons → clic sur « Pas sensible » → toast,
+liste vide, état vide montré, `/api/sensibles` à 0 → l'onglet redisparaît au
+rechargement. Le lien « Ouvrir la photo en grand » rend 200 / image/jpeg.
+Instruments : `verifier_cibles` (0 manquement prouvé), `verifier_controles`
+(0 grief de niveau A sur 14 pages), `verifier_contraste` (24 couples AA), et
+26 bancs dans `test_sensibles.py`. **Les PIXELS n'ont pas été jugés** : la
+fenêtre Chrome de Mike était minimisée (`innerWidth = 0`), et une mesure prise
+là ne vaut rien — c'est la seule chose qui reste à regarder.
+
+**Ce qui RESTE** : (c) la question dans la même invocation du tagueur
+et la passe rétroactive. Et le
 masquage POUR LES AUTRES n'est prouvé que par banc — l'admin voit tout par
 construction, la preuve à deux comptes appartient à (b).
 
