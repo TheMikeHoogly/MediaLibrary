@@ -225,34 +225,60 @@ def run_cycle(sv, now=None):
             sv.log(f"{step} : {_raison(sv)}, reporte")
             continue
 
-        if step == 'recensement':
-            # lecture seule -> sous-processus (aucun conflit d'index)
-            sv.log("recensement + plan (lecture seule)…")
-            r1 = sv.run_readonly(['recensement_doublons.py'])
-            r2 = sv.run_readonly(['plan_rangement.py']) if r1 == 0 else 1
-            lance[step] = {'recensement': r1, 'plan': r2}
-        elif step == 'dedup':
-            if mode == 'auto':
-                lance[step] = apply_pending_dedup(sv)
-            else:
-                sv.log("dedup : mode propose — plan pret, application non lancee")
-                lance[step] = 'propose'
-        elif step == 'purge':
-            import purger_corbeille as PC
-            corb = sv.paths.get('corbeille')
-            stats = PC.purge(corb, 30, appliquer=(mode == 'auto' and not sv.dry),
-                             verifier_canon=False) if corb else None
-            lance[step] = stats
-        elif step == 'rename':
-            # L'application du renommage _Uploads n'est pas encore branchee ;
-            # le coeur (renommage/renommage_facts) et le dry-run existent.
-            sv.log("rename _Uploads : preparation seule (application a venir)")
-            lance[step] = 'propose'
-        elif step == 'rangement':
-            sv.log("rangement par annee : PROPOSE (attend inventaire + feu vert)")
-            lance[step] = 'propose'
+        # L'AUTRE MOITIE DU GARDE-FOU. `is_busy` protege le DEPART d'une etape
+        # lourde ; ces deux crochets protegent sa DUREE, en disant au scan NAS
+        # qu'un parcours du fonds est en cours. Sans eux, un scan qui tombe
+        # cinq minutes apres le depart d'un recensement rejoue exactement le
+        # 06/09, dans l'autre sens.
+        #
+        # `getattr` et non un appel direct : ce module tourne aussi sous des
+        # services de banc qui n'ont pas ces methodes, et un module de
+        # maintenance n'a pas a connaitre l'existence d'un NAS. Ce que
+        # l'optionalite pourrait cacher — le VRAI service ne les implemente
+        # pas — est ferme par un banc qui l'exige de `_MaintSv`.
+        _lourde = step in LOURDES
+        if _lourde:
+            _debut = getattr(sv, 'etape_lourde_debut', None)
+            if _debut is not None:
+                _debut()
+        try:
 
-        state[step] = now
+            if step == 'recensement':
+                # lecture seule -> sous-processus (aucun conflit d'index)
+                sv.log("recensement + plan (lecture seule)…")
+                r1 = sv.run_readonly(['recensement_doublons.py'])
+                r2 = sv.run_readonly(['plan_rangement.py']) if r1 == 0 else 1
+                lance[step] = {'recensement': r1, 'plan': r2}
+            elif step == 'dedup':
+                if mode == 'auto':
+                    lance[step] = apply_pending_dedup(sv)
+                else:
+                    sv.log("dedup : mode propose — plan pret, application non lancee")
+                    lance[step] = 'propose'
+            elif step == 'purge':
+                import purger_corbeille as PC
+                corb = sv.paths.get('corbeille')
+                stats = PC.purge(corb, 30, appliquer=(mode == 'auto' and not sv.dry),
+                                 verifier_canon=False) if corb else None
+                lance[step] = stats
+            elif step == 'rename':
+                # L'application du renommage _Uploads n'est pas encore branchee ;
+                # le coeur (renommage/renommage_facts) et le dry-run existent.
+                sv.log("rename _Uploads : preparation seule (application a venir)")
+                lance[step] = 'propose'
+            elif step == 'rangement':
+                sv.log("rangement par annee : PROPOSE (attend inventaire + feu vert)")
+                lance[step] = 'propose'
+
+            state[step] = now
+        finally:
+            # Dans le `finally` : une etape qui plante ne doit pas laisser
+            # le scan NAS en retrait pour toujours -- meme regle, et meme
+            # phrase, que le drapeau du scan cote serveur.
+            if _lourde:
+                _fin = getattr(sv, 'etape_lourde_fin', None)
+                if _fin is not None:
+                    _fin()
 
     _save_state(sv.paths['state'], state)
     rapport = {'dernier_cycle': time.strftime('%Y-%m-%d %H:%M:%S'),

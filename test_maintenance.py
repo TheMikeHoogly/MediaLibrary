@@ -213,8 +213,98 @@ def check_scan_nas_fait_ceder_la_maintenance():
           "un pont sans raison_busy (StandaloneSv) continue de tourner")
 
 
+def check_l_autre_moitie_du_garde_fou():
+    """Et le SENS INVERSE : une etape lourde deja partie, un scan NAS qui
+    tombe dessus. `is_busy` ne protege que le DEPART d'une etape ; une fois
+    lancee, plus rien ne parlait au scan. Meme panne que le 06/09, jouee dans
+    l'autre ordre."""
+    print("0 quinquies) le scan NAS cede a une etape lourde deja partie")
+    ici = Path(__file__).resolve().parent
+    src = ici.joinpath('server.py').read_text(encoding='utf-8')
+    tree = ast.parse(src)
+
+    def corps(nom):
+        n = next((x for x in ast.walk(tree)
+                  if isinstance(x, ast.FunctionDef) and x.name == nom), None)
+        check(n is not None, nom + " trouvable dans server.py")
+        return (ast.get_source_segment(src, n) or '') if n else ''
+
+    # 1. Le VRAI service porte les deux crochets. C'est ce qui ferme le trou
+    #    ouvert par le `getattr` de maintenance.py : l'optionalite y est faite
+    #    pour les services de banc, pas pour laisser _MaintSv sans rien.
+    sv = next((x for x in ast.walk(tree)
+               if isinstance(x, ast.ClassDef) and x.name == '_MaintSv'), None)
+    check(sv is not None, "_MaintSv trouvable")
+    methodes = {m.name for m in (sv.body if sv else [])
+                if isinstance(m, ast.FunctionDef)}
+    check('etape_lourde_debut' in methodes and 'etape_lourde_fin' in methodes,
+          "_MaintSv implemente les deux crochets (l'optionalite du getattr "
+          "est pour les bancs, pas pour le vrai service)")
+
+    # 2. La boucle REPORTE, elle ne bloque pas.
+    ml = corps('maintenance_loop')
+    check('maint_lourde_en_cours()' in ml,
+          "la boucle de scan consulte l'etape lourde")
+    check('nas_reporte' in ml and 'NAS_REPORTS_MAX' in ml,
+          "elle REPORTE (et plafonne les reports) au lieu de bloquer")
+    check('.acquire(' not in ml and 'with MAINT_LOURDE_LOCK' not in ml,
+          "aucun verrou pris dans la boucle : bloquer ferait attendre la file "
+          "de retag derriere un recensement de vingt minutes")
+
+    # 3. L'echeance n'est pas PERDUE, et le premier scan n'est jamais reporte.
+    check('nas = nas or nas_reporte' in ml,
+          "un volet NAS reporte revient au tour suivant : un `deep` tombe "
+          "pendant un recensement ne perd pas son lot de retag")
+    check('not first and maint_lourde_en_cours()' in ml,
+          "le scan de DEMARRAGE n'est jamais reporte : l'index en depend")
+
+    # 4. Le drapeau se leve dans un finally, cote maintenance.
+    m = ici.joinpath('maintenance.py').read_text(encoding='utf-8')
+    check('etape_lourde_debut' in m and 'etape_lourde_fin' in m,
+          "maintenance.py appelle les deux crochets")
+    i_d = m.index('etape_lourde_debut')
+    apres = m[i_d:]
+    check('finally:' in apres
+          and apres.index('finally:') < apres.index('etape_lourde_fin'),
+          "leve DANS le finally : une etape qui plante ne laisse pas le scan "
+          "en retrait pour toujours")
+    check(m.index('LOURDES = ') < i_d and '_lourde = step in LOURDES' in m,
+          "seules les etapes LOURDES posent le drapeau")
+
+
+def check_le_drapeau_lourd_compte_au_lieu_de_basculer():
+    """Deux etapes lourdes ne doivent pas se relacher l'une l'autre -- meme
+    raison que pour le scan, ou le booleen avait ete refuse."""
+    print("0 sexies) le drapeau d'etape lourde COMPTE")
+    import importlib.util
+    ici = Path(__file__).resolve().parent
+    src = ici.joinpath('server.py').read_text(encoding='utf-8')
+    check('MAINT_LOURDE_EN_COURS = 0' in src, "un compteur, pas un booleen")
+    check('MAINT_LOURDE_EN_COURS = max(0, MAINT_LOURDE_EN_COURS - 1)' in src,
+          "le compteur ne descend jamais sous zero")
+    # Rejoue la mecanique sans importer le serveur (il ouvrirait la base).
+    lock, n = __import__('threading').Lock(), [0]
+    def debut():
+        with lock: n[0] += 1
+    def fin():
+        with lock: n[0] = max(0, n[0] - 1)
+    def en_cours():
+        with lock: return n[0] > 0
+    debut(); debut(); fin()
+    check(en_cours(), "deux etapes lourdes : la premiere qui finit ne "
+                      "relache pas le drapeau de la seconde")
+    fin()
+    check(not en_cours(), "les deux finies : le drapeau retombe")
+    fin()
+    check(not en_cours(), "un `fin` en trop ne rend pas le compteur negatif")
+
+
 def main():
     check_scan_nas_fait_ceder_la_maintenance()
+    print()
+    check_l_autre_moitie_du_garde_fou()
+    print()
+    check_le_drapeau_lourd_compte_au_lieu_de_basculer()
     print()
     check_cablage_refus_standalone()
     print()

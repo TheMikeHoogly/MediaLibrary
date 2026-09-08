@@ -34,15 +34,3 @@
 > Le verdict vit dans `eval/DECISIONS.md`, le correctif dans git, le récit
 > dans `ROADMAP.md`. Une question résolue qui reste ici cesse d'être lisible,
 > et c'est le premier endroit qu'on lit en reprenant.
-
-## En attente
-
-*(vide — 08/09 au soir. Trois questions posées et répondues dans la journée.)*
-
-> **Ce qui attend un GESTE de Mike, et n'est pas une question** :
-> · lancer **`48 - Effacer les archives ZIP du Takeout (95 Go).bat`** — il
->   re-prouve que l'extrait est complet avant de proposer quoi que ce soit, et
->   demande OUI en toutes lettres ;
-> · vider **`_to_delete\`** dans le dossier du projet (366 Mo) — le pont ne
->   sait pas effacer, il ne sait que déplacer ;
-> · trier les **213 photos sensibles** dans l'onglet.

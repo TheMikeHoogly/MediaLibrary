@@ -6676,6 +6676,50 @@ def scan_nas_en_cours():
         return SCAN_NAS_EN_COURS > 0
 
 
+# L'AUTRE MOITIE DU MEME GARDE-FOU. Ci-dessus, la maintenance cede a un scan
+# qui tourne deja. Mais le 06/09 aurait pu se jouer dans l'autre sens : une
+# etape LOURDE de maintenance (`recensement`, `dedup` — elles parcourent le
+# fonds) demarre a 11h30, le tour de scan NAS tombe a 11h35, et voila les deux
+# balayages SMB concurrents que le premier garde-fou existe pour empecher.
+# `sv.is_busy()` ne protege QUE le depart d'une etape : une fois lancee, plus
+# rien ne parle au scan.
+#
+# CE N'EST PAS UN VERROU, et c'est deliberé : le scan ne BLOQUE pas, il
+# REPORTE son volet NAS au tour suivant. Bloquer ferait attendre la file de
+# retag derriere un recensement de vingt minutes ; reporter coute cinq minutes
+# et rend la main.
+#
+# UN COMPTEUR, comme pour le scan : deux etapes lourdes ne se relachent pas
+# l'une l'autre.
+MAINT_LOURDE_LOCK = threading.Lock()
+MAINT_LOURDE_EN_COURS = 0
+
+
+def maint_lourde_debut():
+    global MAINT_LOURDE_EN_COURS
+    with MAINT_LOURDE_LOCK:
+        MAINT_LOURDE_EN_COURS += 1
+
+
+def maint_lourde_fin():
+    global MAINT_LOURDE_EN_COURS
+    with MAINT_LOURDE_LOCK:
+        MAINT_LOURDE_EN_COURS = max(0, MAINT_LOURDE_EN_COURS - 1)
+
+
+def maint_lourde_en_cours():
+    """Vrai si une etape lourde de maintenance parcourt le fonds."""
+    with MAINT_LOURDE_LOCK:
+        return MAINT_LOURDE_EN_COURS > 0
+
+
+# Combien de tours au plus le volet NAS accepte d'etre reporte. Sans plafond,
+# une maintenance qui n'en finit pas affamerait le scan — exactement le defaut
+# qu'on repare, retourne. Au-dela, le scan passe et on l'ECRIT : deux
+# balayages concurrents valent mieux qu'un fonds qui cesse d'etre indexe.
+NAS_REPORTS_MAX = 3
+
+
 # Vérification de la sauvegarde (audit A, « assurance-vie ») : résultat de la
 # dernière restauration à blanc du snapshot NAS. Voir backup_verify().
 BACKUP_VERIFY_STATE = {"at": 0.0, "ok": None, "integrity": "", "detail": "",
@@ -6734,6 +6778,8 @@ def maintenance_loop():
         print(f"  ⚠ purge des détections hors index ignorée : {e}")
     first = True
     cycle = 0
+    # Le volet NAS a-t-il ete reporte, et combien de fois d'affilee.
+    nas_reporte, reports = False, 0
     while True:
         # try/except (audit O5) : la première exception non prévue tuait la
         # boucle SILENCIEUSEMENT — plus de scan NI de backup jusqu'au
@@ -6751,6 +6797,21 @@ def maintenance_loop():
             # NAS, sinon la passe des modifiés et le lot de retag sauteraient un
             # tour sur deux sans que rien ne le dise.
             nas = first or deep or (cycle % NAS_SCAN_CYCLES == 0)
+            # Reporte si une etape lourde parcourt deja le fonds -- mais
+            # l'echeance n'est pas PERDUE : `nas_reporte` la reporte au tour
+            # suivant, sinon un `deep` tombe pendant un recensement sauterait
+            # son lot de retag sans que rien ne le dise.
+            nas = nas or nas_reporte
+            if nas and not first and maint_lourde_en_cours() \
+                    and reports < NAS_REPORTS_MAX:
+                nas, nas_reporte = False, True
+                reports += 1
+                print("  ⏸ scan NAS reporte : une etape lourde de maintenance "
+                      f"parcourt le fonds ({reports}/{NAS_REPORTS_MAX})")
+            elif nas:
+                if nas_reporte and reports:
+                    print(f"  ▶ scan NAS repris apres {reports} report(s)")
+                nas_reporte, reports = False, 0
             # Réconciliation du cycle (chantier 10a) : on encadre le scan par la
             # TAILLE de l'index et on compare à ce que les mutations déclarées
             # prédisent. Le `finally` est essentiel : un cycle laissé OUVERT
@@ -6858,6 +6919,12 @@ class _MaintSv:
 
     def is_busy(self):
         return system_busy() or ui_recent() or scan_nas_en_cours()
+
+    def etape_lourde_debut(self):
+        maint_lourde_debut()
+
+    def etape_lourde_fin(self):
+        maint_lourde_fin()
 
     def raison_busy(self):
         """Ce qui occupe la machine, en clair. `is_busy` dit QUE la machine est
