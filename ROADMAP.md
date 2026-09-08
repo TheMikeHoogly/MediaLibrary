@@ -253,6 +253,43 @@ les originaux du NAS. Ce qui reste vrai : la sauvegarde aurait sa place SUR le
 NAS, mais dans un dossier caché (`.sauvegarde-takeout`, invisible au scan par
 `_is_hidden_path`), pas dans le fonds.
 
+**1 nonies. EFFACER L'EXTRAIT : LA PORTE EST FERMÉE, 570 ABSENTES (08/09).**
+Mike a demandé l'effacement (« mon NAS est dans un emplacement sûr, la
+sauvegarde cloud arrive »). La règle du projet est écrite dans l'instrument
+lui-même : *« ABSENT : le NAS ne connaît pas ce nom. Rien ne s'efface tant
+qu'il en reste. »* J'ai donc refait la preuve au lieu de m'appuyer sur le
+rapport du 28/08 — et **le verdict a changé** : `verifier_photos_google.py`
+rend **CERTAIN 3 136, PROBABLE 10 199, ABSENT 570**, code de sortie 1. Le
+28/08 il rendait ABSENT 0. **Le fonds a bougé entre-temps** : dédoublonnage
+par l'image (2 929 fichiers, 30/08), dédoublonnage `_A TRIER` (29/08), strip
+des Motion Photos (05/09), coquilles en quarantaine (06/09). Un rapport de
+onze jours n'est pas une preuve d'aujourd'hui.
+
+**Ce que pèsent ces 570 : 0,99 Go sur 95,78.** Décomposé :
+· **394 captures d'écran** (0,26 Go) — que la règle produit de Mike exclut de
+  toute façon (« des souvenirs, pas des documents », 07/09) ;
+· **169 photos de personnes** (0,44 Go) — `Moi (34).jpg`, `Sandra (56).jpeg`,
+  `Val (5).jpg`, `Mathilde (5).jpg` : des exports d'ALBUM Google, 4 à 10 Mo,
+  de 2014 à 2021. Ce sont de vraies photos de famille ;
+· 2 vidéos, 5 divers.
+
+**Une hypothèse testée et RÉFUTÉE, qui vaut d'être notée** : j'ai cru que les
+noms en `(N)` étaient les suffixes de collision du Takeout, donc des doublons
+d'un fichier déjà au NAS sous son nom nu. **Sept sur cent soixante** seulement
+se résolvent ainsi. Le `(N)` des autres est la NUMÉROTATION D'ALBUM de Google
+(« Moi », « Val », « Sandra »), pas une collision. Et l'instrument lit déjà le
+`.json` compagnon pour retrouver le nom d'origine (`titre or nom`) : ces 169
+sont donc absents sous TOUS les noms qu'on leur connaît.
+
+**L'ORDRE, et il n'est pas négociable** : `32 - Copier les absentes de
+Google.bat` d'abord — il écrit sous `_A TRIER/<étiquette>/<année>/`, aperçu
+par défaut, 0,99 Go — puis refaire `verifier_photos_google.py` jusqu'à
+**ABSENT 0**, et alors seulement effacer. Le seul choix qui appartient à Mike :
+les 394 captures d'écran viennent-elles aussi ? Si oui elles entrent, se font
+taguer, et le filet des sensibles les propose (`capture` est dans
+`KW_IMPOSES`) : un clic pour les jeter. Sinon, un filtre à ajouter à
+`copier_absentes.py`.
+
 **1 octies. « Chercher les 942 dans le Takeout » — C'ÉTAIT DÉJÀ FAIT, et je
 l'avais écrit comme une tâche ouverte. Corrigé le 08/09 au soir.** J'ai lu
 « à rapatrier AVANT de toucher au Takeout » et j'en ai fait un chantier en
