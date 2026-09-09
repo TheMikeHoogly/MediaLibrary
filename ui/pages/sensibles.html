@@ -130,7 +130,10 @@
 
 <div class="toast" id="toast" role="status" aria-live="polite" hidden>
   <span id="toast-dit"></span>
-  <button class="btn btn--discret" id="toast-annuler" type="button">Annuler</button>
+  <!-- `--principal` et pas `--discret` : le bandeau est une surface SOMBRE
+       (`--salle-3`), et `--discret` est la variante PAPIER. Un bouton papier
+       sur fond sombre ressort a 12:1 et son texte a 14,5:1. -->
+  <button class="btn btn--principal" id="toast-annuler" type="button">Annuler</button>
 </div>
 
 <script>

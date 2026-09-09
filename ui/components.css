@@ -73,7 +73,17 @@
 /* Promus le 25/08 depuis residu/tranche, qui les avaient inventes a l'identique
    toutes les deux : un vocabulaire ne devient canonique que quand deux pages
    l'ecrivent pareil sans se concerter. */
-.btn--discret { background: transparent; border-color: var(--papier-2); color: var(--texte-papier); }
+/* LA VARIANTE PAPIER, et le nom ne le disait pas. `--discret` decrit un poids,
+   pas une surface : rien n'empechait de la poser sur du sombre, et le 09/09
+   c'est arrive -- le bouton « Annuler » du bandeau de `sensibles` ecrivait
+   `--texte-papier` sur `--salle-3`, soit **1,02:1**, du noir sur du noir, sur
+   le seul controle qui rattrape une mise a la corbeille.
+   La BORDURE aussi etait fausse : `--papier-2` sur `--papier` vaut **1,18:1**
+   la ou le plancher demande 3:1 pour une bordure porteuse de sens -- et elle
+   porte tout le sens ici, le fond etant transparent. `--graphite-p` donne
+   **5,97:1** ; c'est ce que `reglages` avait choisi tout seul pour son `.b`,
+   sans le savoir. MESURE, pas juge a l'oeil. */
+.btn--discret { background: transparent; border-color: var(--graphite-p); color: var(--texte-papier); }
 /* --- Survol et etat desactive (25/08, approuves par Mike) ----------------
    Ils n'existaient nulle part dans le systeme : `pets` etait la seule page a
    les ecrire, avec une couleur EN DUR, et `upload` ecrivait un desactive
