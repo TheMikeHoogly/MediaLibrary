@@ -119,11 +119,19 @@ désormais.
 **OÙ EN EST LA CHAÎNE, au matin du 09/09** : bat 32 fait (570 copiées),
 **bat 26 fait** (613 rangées vers `Photos Mike\<année>`), vérification faite
 (**ABSENT 0**), **bat 33 fait** (99 rapatriées, 1 814 vidéos de Motion Photo
-écartées). **Il reste** : laisser le scan reprendre les 613 déplacées et les 99
-arrivées, **relancer `verifier_photos_google.py`** — le compte bougera — puis
-**bat 49**. Ne pas sauter la vérification : la copie place les fichiers, c'est
-le SCAN qui les fait exister pour elle. Et rappeler à Mike, avant qu'il
-confirme, que la copie hors site (12 bis) n'existe toujours pas.
+écartées). **Il reste** : **bat 49**, qui relance
+lui-même `verifier_photos_google.py` avant de proposer quoi que ce soit. Et
+rappeler à Mike, avant qu'il confirme, que la copie hors site (12 bis)
+n'existe toujours pas.
+
+> **Correction du 09/09 — je lui avais dit d'attendre le scan, c'était faux.**
+> J'avais écrit *« la copie place les fichiers, c'est le SCAN qui les fait
+> exister pour la vérification »*. Vérifié dans le code : `verifier_photos_google.py`
+> importe `inventaire_fonds` et parcourt le NAS avec `os.scandir` sur les
+> racines de `dossiers_a_taguer.txt` / `dossier_uploads.txt` — **il ne lit
+> jamais `photos.db`**. Un fichier posé sur le NAS lui est visible tout de
+> suite ; le délai que j'ai fait attendre à Mike n'existait pas. **Ce que
+> l'outil LIT se lit dans son code, pas dans l'idée qu'on s'en fait.**
 
 **UNE RÈGLE PRODUIT NEUVE, ET ELLE COMMANDE** (Mike, 09/09) : *une Motion
 Photo ne garde que son image, et sa vidéo ne se rapatrie JAMAIS* — même quand

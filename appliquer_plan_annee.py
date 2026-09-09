@@ -100,7 +100,17 @@ def apply_move(op, stores, semantic, journal, dry=True, compte=None, gps=None):
     p_src, p_dst = Path(src), Path(dst)
 
     if not p_src.exists():
-        print(f"  [skip] source absente : {src}")
+        # Une source manquante a DEUX causes, et la destination les separe.
+        # Le 09/09 le bat 26 a sorti 613 fois « source absente » — un mot qui
+        # annonce une PERTE — alors que les 613 fichiers etaient a destination,
+        # ranges par une passe precedente : c'est le PLAN qui avait vieilli,
+        # pas la photothèque. Un message qui alarme a tort coute le meme prix
+        # qu'un message qui rassure a tort ; celui-la a coute une soiree.
+        if p_dst.exists():
+            print(f"  [deja] deja rangee : {dst}")
+            return 'deja'
+        print(f"  [skip] introuvable des deux cotes (ni source ni "
+              f"destination) : {src}")
         return 'skip'
     if p_dst.exists():
         print(f"  [skip] destination deja prise (collision) : {dst}")
@@ -377,7 +387,7 @@ def main():
 
     journal = {'genere_le': time.strftime('%Y-%m-%d %H:%M:%S'),
                'plan': str(args.plan), 'operations': []}
-    compte = {'ok': 0, 'dry': 0, 'skip': 0}
+    compte = {'ok': 0, 'dry': 0, 'skip': 0, 'deja': 0}
     gps = charger_gps() if not dry else None
     for op in moves:
         r = apply_move(op, stores, semantic, journal, dry=dry,
@@ -398,6 +408,13 @@ def main():
     if compte.get('decisions'):
         print(f"  dont {compte['decisions']} decision(s) humaine(s) re-clee(s) "
               "dans les fiches personnes/animaux.")
+    if compte.get('deja'):
+        print(f"  dont {compte['deja']} deja rangee(s) par une passe "
+              "precedente — rien de perdu, le plan a simplement vieilli.")
+        if not compte.get('ok') and not compte.get('dry'):
+            print("  Le plan entier etait deja applique. Pour ranger ce qui "
+                  "est arrive depuis, regenere-le :")
+            print("  Reglages -> « Plan de rangement par annee ».")
     if dry:
         print("(dry-run — rien deplace. Ajoute --appliquer, et --limite N pour un "
               "petit lot d'abord.)")

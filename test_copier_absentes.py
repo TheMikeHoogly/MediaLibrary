@@ -316,5 +316,118 @@ class LaLigneDeCommande(unittest.TestCase):
         self.assertEqual(C.main(['--rapport', '/nexistepas.json']), 2)
 
 
+class LaRegleMotionPhoto(unittest.TestCase):
+    """Regle PRODUIT du 08/09 : on ne rapatrie pas les videos de Motion Photo.
+
+    Mesuree sur le vrai rapport avant d'etre ecrite : sur 13 905 entrees,
+    3 114 videos, dont 1 972 portent la tige d'une photo du meme dossier
+    Google. Les 1 142 autres sont de vraies videos et doivent passer."""
+
+    def setUp(self):
+        self.d = Path(tempfile.mkdtemp(prefix="test_mp_"))
+
+    def _rapport(self, medias, verdict='ABSENT'):
+        c = self.d / 'r.json'
+        c.write_text(json.dumps({'par_verdict': {verdict: medias}}),
+                     encoding='utf-8')
+        return str(c)
+
+    def _m(self, rel, octets=10):
+        return {'nom': os.path.basename(rel), 'octets': octets,
+                'chemin_google': str(self.d / rel)}
+
+    def test_la_video_jumelle_d_une_photo_est_ecartee(self):
+        r = self._rapport([self._m('Photos from 2026/20260722_223506.jpg'),
+                           self._m('Photos from 2026/20260722_223506.MP4')])
+        ec = []
+        gardes = C.absentes(r, ('ABSENT',), 0, ecartees=ec)
+        noms = sorted(os.path.basename(x['chemin_google']) for x in gardes)
+        self.assertEqual(noms, ['20260722_223506.jpg'])
+        self.assertEqual(len(ec), 1)
+
+    def test_une_VRAIE_video_passe(self):
+        # Pas de photo de meme tige : ce n'est pas une Motion Photo.
+        r = self._rapport([self._m('Photos from 2026/vacances.mp4')])
+        ec = []
+        gardes = C.absentes(r, ('ABSENT',), 0, ecartees=ec)
+        self.assertEqual(len(gardes), 1)
+        self.assertEqual(ec, [])
+
+    def test_la_photo_doit_etre_dans_le_MEME_dossier(self):
+        # Deux annees differentes : l'homonymie ne prouve pas la paire.
+        r = self._rapport([self._m('Photos from 2025/IMG_1.jpg'),
+                           self._m('Photos from 2026/IMG_1.mp4')])
+        ec = []
+        gardes = C.absentes(r, ('ABSENT',), 0, ecartees=ec)
+        self.assertEqual(len(gardes), 2)
+        self.assertEqual(ec, [])
+
+    def test_la_photo_temoin_peut_vivre_dans_un_AUTRE_verdict(self):
+        # Le cas reel : la photo est CERTAIN (le NAS l'a) et seule la video
+        # sort en ABSENT. Ne regarder que la recolte la rendrait invisible.
+        c = self.d / 'r.json'
+        c.write_text(json.dumps({'par_verdict': {
+            'CERTAIN': [self._m('Photos from 2026/x.jpg')],
+            'ABSENT': [self._m('Photos from 2026/x.MP4')]}}),
+            encoding='utf-8')
+        ec = []
+        gardes = C.absentes(str(c), ('ABSENT',), 0, ecartees=ec)
+        self.assertEqual(gardes, [])
+        self.assertEqual(len(ec), 1)
+
+    def test_l_option_avec_motion_photo_les_garde(self):
+        r = self._rapport([self._m('Photos from 2026/a.jpg'),
+                           self._m('Photos from 2026/a.mp4')])
+        ec = []
+        gardes = C.absentes(r, ('ABSENT',), 0, avec_motion_photo=True,
+                            ecartees=ec)
+        self.assertEqual(len(gardes), 2)
+        self.assertEqual(ec, [])
+
+    def test_ce_que_NOUS_avons_strippe_n_est_pas_rapatrie(self):
+        # Le NAS est plus petit parce que le bat 42 lui a retire la video.
+        # Google ne porte pas une meilleure IMAGE : il porte la video jetee.
+        # Mesure du 09/09 : sur la recolte reelle du bat 33 (1 913 medias),
+        # ce filtre rend exactement les 99 gardes et les 1 814 ecartes que
+        # Mike avait tries a la main, sans un seul desaccord.
+        m = self.d / 'manifeste.json'
+        m.write_text(json.dumps({'faits': {
+            'N:\\Photos\\2026\\20260722_223506.jpg': {'octets': 1}}}),
+            encoding='utf-8')
+        r = self._rapport([self._m('Photos from 2026/20260722_223506.jpg'),
+                           self._m('Photos from 2026/autre.jpg')])
+        ec = []
+        st = C.noms_strippes(m)
+        gardes = C.absentes(r, ('ABSENT',), 0, ecartees=ec, strippes=st)
+        noms = [os.path.basename(x['chemin_google']) for x in gardes]
+        self.assertEqual(noms, ['autre.jpg'])
+        self.assertEqual(len(ec), 1)
+
+    def test_le_manifeste_se_compare_par_NOM(self):
+        # Chemins NAS d'un cote, chemins Google de l'autre : seul le nom de
+        # fichier peut les rapprocher. La limite est assumee et documentee.
+        m = self.d / 'manifeste.json'
+        m.write_text(json.dumps({'faits': {'N:/Photos/2026/X.JPG': 1}}),
+                     encoding='utf-8')
+        self.assertEqual(C.noms_strippes(m), {'x.jpg'})
+
+    def test_un_manifeste_absent_ou_casse_ne_FILTRE_RIEN(self):
+        # Il ne doit jamais ecarter par accident : sans preuve, on rapatrie.
+        self.assertEqual(C.noms_strippes(self.d / 'nexistepas.json'), set())
+        casse = self.d / 'casse.json'
+        casse.write_text('{ pas du json', encoding='utf-8')
+        self.assertEqual(C.noms_strippes(casse), set())
+
+    def test_la_regle_n_efface_JAMAIS_rien(self):
+        # Elle decide ce qu'on RAPATRIE. Le fichier Google reste ou il est.
+        export(self.d, {'Photos from 2026/a.jpg': 10,
+                        'Photos from 2026/a.mp4': 10})
+        r = self._rapport([self._m('Photos from 2026/a.jpg'),
+                           self._m('Photos from 2026/a.mp4')])
+        C.main(['--rapport', r, '--cible', str(self.d / '_A TRIER' / 'T'),
+                '--copier', '--journal', str(self.d / '_corbeille_copies')])
+        self.assertTrue((self.d / 'Photos from 2026/a.mp4').exists())
+
+
 if __name__ == '__main__':
     unittest.main(verbosity=0)

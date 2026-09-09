@@ -11,7 +11,7 @@ vers « <base>/2015/ ». On verifie que l'application :
   - re-cle l'index (tags + faces + semantique suivent le fichier) : aucun nom perdu,
   - REFUSE une collision (dst deja present) sans toucher a la source,
   - est annulable (undo restaure le fichier et l'index),
-  - est idempotente (re-appliquer quand src == dst ne casse rien).
+  - est idempotente, et le DIT : re-appliquer rend 'deja', pas 'skip'.
 
 Lance : python test_appliquer_plan_annee.py
 """
@@ -132,9 +132,13 @@ def main():
         r = A.apply_move(op3, stores, semantic, journal3, dry=False)
         check(r == 'ok' and dk in stores['tags'].data,
               "sans new_key : re-cle sur str(dst)")
-        # re-appliquer le meme op : src a disparu -> skip, aucun degat
+        # Re-appliquer le meme op : la source a disparu, mais la destination
+        # est la — c'est-a-dire que le travail EST fait. Ce test attendait
+        # 'skip' jusqu'au 09/09 ; 'deja' dit la meme innocuite avec le bon
+        # mot, et c'est precisement ce qui manquait au bat 26.
         r = A.apply_move(op3, stores, semantic, {'operations': []}, dry=False)
-        check(r == 'skip', "re-application : source absente -> skip (idempotent)")
+        check(r == 'deja',
+              "re-application : deja a destination -> 'deja' (idempotent)")
 
         for s in stores.values():
             s.cx.close()
@@ -173,6 +177,26 @@ def main():
         check(not A.plan_perime(0, None), "sans journal : on laisse passer")
         (tmp / 'vide.log').write_text("rien\n", encoding='utf-8')
         check(A.dernier_demarrage(tmp / 'vide.log') is None, "journal sans banniere -> None")
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+
+    print("8) « source absente » : distinguer la photo DEJA RANGEE de la photo PERDUE")
+    tmp = Path(tempfile.mkdtemp(prefix='plan_annee_deja_'))
+    try:
+        d = tmp / 'dst'
+        d.mkdir()
+        (d / 'photo.jpg').write_bytes(b'x')
+        j = {'operations': []}
+        op = {'src': str(tmp / 'src' / 'photo.jpg'),
+              'dst': str(d / 'photo.jpg'), 'key': 'k'}
+        check(A.apply_move(op, None, None, j, dry=False) == 'deja',
+              "source absente MAIS destination presente -> 'deja' (pas 'skip')")
+        op2 = {'src': str(tmp / 'src' / 'perdue.jpg'),
+               'dst': str(d / 'perdue.jpg'), 'key': 'k'}
+        check(A.apply_move(op2, None, None, j, dry=False) == 'skip',
+              "absente des DEUX cotes -> 'skip' : la seule vraie alerte")
+        check(j['operations'] == [],
+              "ni l'une ni l'autre n'ecrit dans le journal undo")
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
 

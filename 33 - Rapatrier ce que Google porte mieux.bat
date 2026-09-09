@@ -51,15 +51,16 @@ REM coquilles en quarantaine) et le verdict avec lui. `_google.json` est
 REM ce qu'ecrit la DERNIERE execution de verifier_photos_google.py --
 REM celle que le bat 49 exige de toute facon avant d'effacer.
 REM
-REM ET UNE LISTE FILTREE SI ELLE EXISTE. Le 09/09, le rapport brut
-REM proposait 1913 fichiers a rapatrier, dont 1814 etaient les videos
-REM embarquees des Motion Photos -- que Mike a jetees le 03/09 et dont il
-REM ne veut plus ("un reglage involontaire du telephone, une seule image
-REM me suffit"). Les copier aurait DEFAIT le strip. `_google_a_rapatrier.json`
-REM porte le reste : ce que le NAS ne detient qu'en version degradee.
-REM L'effacer suffit a revenir au rapport complet.
+REM PLUS DE LISTE FILTREE A LA MAIN. Le 09/09 le rapport brut proposait
+REM 1913 fichiers, dont 1814 etaient des Motion Photos strippees par le
+REM bat 42 : le NAS y est plus petit parce que NOUS lui avons retire la
+REM video, pas parce que Google porte une meilleure image. Les copier
+REM aurait DEFAIT le strip. Ce tri vivait dans un JSON filtre a la main,
+REM qui serait retombe au prochain Takeout ; il vit maintenant dans
+REM copier_absentes.py, qui lit docs\strip_motionphoto_manifeste.json.
+REM Verifie le 09/09 : le filtre du code rend exactement les memes 99
+REM gardes et 1814 ecartes que le tri manuel, sans un seul desaccord.
 set "RAPPORT=_google.json"
-if exist "_google_a_rapatrier.json" set "RAPPORT=_google_a_rapatrier.json"
 if not exist "%RAPPORT%" goto :sansrapport
 
 echo   Quel seuil ?

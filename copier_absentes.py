@@ -132,7 +132,88 @@ def _ecart(media):
     return (int(m.group(1)), int(m.group(2))) if m else None
 
 
-def absentes(rapport, verdicts=('ABSENT',), nas_plus_petit_de=0):
+EXT_VIDEO = {'.mp4', '.mov', '.m4v', '.3gp'}
+EXT_IMAGE = {'.jpg', '.jpeg', '.heic', '.heif', '.png', '.webp', '.gif',
+             '.dng', '.tif', '.tiff'}
+
+
+def _paire(chemin):
+    """(dossier, tige, extension) en minuscules, separateurs normalises."""
+    c = str(chemin).replace('\\', '/')
+    dossier, base = c.rsplit('/', 1) if '/' in c else ('', c)
+    tige, ext = os.path.splitext(base)
+    return dossier.lower(), tige.lower(), ext.lower()
+
+
+def stills_du_rapport(d):
+    """{(dossier, tige)} de TOUTES les photos vues dans le Takeout.
+
+    Tous les verdicts, pas seulement la recolte : la photo d'une Motion Photo
+    est presque toujours CERTAIN (le NAS l'a deja) tandis que sa video sort en
+    ABSENT. Ne regarder que la recolte rendrait la compagne invisible."""
+    vus = set()
+    for lst in (d.get('par_verdict') or {}).values():
+        for x in (lst or ()):
+            c = x.get('chemin_google')
+            if not c:
+                continue
+            dossier, tige, ext = _paire(c)
+            if ext in EXT_IMAGE:
+                vus.add((dossier, tige))
+    return vus
+
+
+def est_motion_photo(chemin, stills):
+    """Vrai si `chemin` est la VIDEO d'une Motion Photo.
+
+    Signature : une video qui porte exactement la tige d'une photo du MEME
+    dossier Google (`20260722_223506.MP4` a cote de `20260722_223506.jpg`).
+    Une vraie video n'a pas de photo jumelle ; elle passe.
+
+    Regle PRODUIT, tranchee par Mike le 08/09 : « les images avec 1-2 secondes
+    de mouvement sont inutiles et prennent de l'espace pour rien, c'etait un
+    reglage involontaire sur mon telephone. Une seule image me suffit. » Elle
+    vivait jusqu'ici dans un JSON filtre a la main pour le bat 33 ; a la main,
+    elle serait retombee au prochain Takeout. Ici elle sert les DEUX bats.
+    Elle n'efface rien : elle decide seulement ce qu'on RAPATRIE."""
+    dossier, tige, ext = _paire(chemin)
+    return ext in EXT_VIDEO and (dossier, tige) in stills
+
+
+MANIFESTE_STRIP = RACINE / 'docs' / 'strip_motionphoto_manifeste.json'
+
+
+def noms_strippes(chemin=None):
+    """{nom de fichier} des photos dont NOUS avons retire la video embarquee.
+
+    Le bat 42 a strippe 2 409 Motion Photos sur le NAS : le fichier NAS y a
+    perdu son remorque video, donc il est PLUS PETIT que celui de Google. Le
+    verdict PROBABLE le signale alors comme « Google porte mieux » — et c'est
+    faux : Google ne porte pas une meilleure IMAGE, il porte la video que Mike
+    a jetee volontairement le 03/09.
+
+    MESURE avant d'etre ecrit : sur la recolte du bat 33 (1 913 medias, seuil
+    185 015 octets), 1 814 sont dans ce manifeste et 99 n'y sont pas — et la
+    separation est exactement celle que Mike a faite a la main le 08/09,
+    1 814 contre 99, sans un seul desaccord.
+
+    Comparaison par NOM DE FICHIER : le manifeste porte des chemins NAS, le
+    rapport des chemins Google, et les deux ne se ressemblent pas. Dans ce
+    fonds les noms sont des horodatages (`20260722_223506.jpg`), donc uniques ;
+    ailleurs, deux photos homonymes dans deux dossiers seraient confondues.
+    C'est la limite de la regle, et elle est ecrite ici plutot que decouverte."""
+    c = Path(chemin or MANIFESTE_STRIP)
+    if not c.is_file():
+        return set()
+    try:
+        d = json.loads(c.read_text(encoding='utf-8'))
+    except (OSError, ValueError):
+        return set()
+    return {re.split(r'[\\/]', k)[-1].lower() for k in (d.get('faits') or {})}
+
+
+def absentes(rapport, verdicts=('ABSENT',), nas_plus_petit_de=0,
+             avec_motion_photo=False, ecartees=None, strippes=()):
     """Les médias à rapatrier, lus dans `verifier_photos_google --json`.
 
     Par défaut : les ABSENT — ce que le NAS ne porte pas du tout.
@@ -147,6 +228,7 @@ def absentes(rapport, verdicts=('ABSENT',), nas_plus_petit_de=0):
     NAS a la photo perdrait la bonne version. Le SEUIL existe parce que
     quelques kilo-octets d'écart ne prouvent rien ; un mégaoctet, si."""
     d = json.loads(Path(rapport).read_text(encoding='utf-8'))
+    stills = stills_du_rapport(d) if not avec_motion_photo else set()
     out = []
     for verdict in verdicts:
         for x in (d.get('par_verdict', {}).get(verdict) or []):
@@ -161,6 +243,17 @@ def absentes(rapport, verdicts=('ABSENT',), nas_plus_petit_de=0):
                 tailles = _ecart(x)
                 if tailles is None or tailles[0] - tailles[1] < nas_plus_petit_de:
                     continue
+            if stills and est_motion_photo(x['chemin_google'], stills):
+                if ecartees is not None:
+                    ecartees.append(x['chemin_google'])
+                continue
+            # L'ecart de taille vient de NOTRE strip, pas d'une meilleure
+            # image chez Google. Rapatrier remettrait la video jetee.
+            if strippes and os.path.basename(
+                    x['chemin_google'].replace('\\', '/')).lower() in strippes:
+                if ecartees is not None:
+                    ecartees.append(x['chemin_google'])
+                continue
             out.append(x)
     return out
 
@@ -339,6 +432,19 @@ def main(argv=None):
                     default=0, metavar='OCTETS',
                     help='ne garder que ceux ou le NAS est plus PETIT d au '
                          'moins tant d octets (0 = pas de filtre)')
+    ap.add_argument('--avec-motion-photo', dest='avec_motion_photo',
+                    action='store_true',
+                    help='rapatrier AUSSI les videos de Motion Photo '
+                         '(ecartees par defaut : regle produit du 08/09)')
+    ap.add_argument('--manifeste-strip', dest='manifeste_strip', default=None,
+                    metavar='FICHIER',
+                    help='manifeste du bat 42 ; defaut docs/'
+                         'strip_motionphoto_manifeste.json. Ce qui y figure '
+                         'n est pas rapatrie : l ecart de taille est NOTRE '
+                         'strip, pas une meilleure image chez Google.')
+    ap.add_argument('--sans-manifeste-strip', dest='sans_manifeste',
+                    action='store_true',
+                    help='ne pas lire le manifeste du bat 42')
     a = ap.parse_args(argv)
 
     if not Path(a.rapport).is_file():
@@ -351,11 +457,28 @@ def main(argv=None):
         return 2
 
     verdicts = tuple(a.verdict or ('ABSENT',))
-    medias = absentes(a.rapport, verdicts, a.nas_plus_petit_de)
+    strippes = set() if a.sans_manifeste else noms_strippes(a.manifeste_strip)
+    if strippes:
+        print("  manifeste du bat 42 : %d photo(s) strippee(s) connue(s) ; "
+              "elles ne seront pas rapatriees." % len(strippes))
+    elif not a.sans_manifeste:
+        print("  (manifeste du bat 42 introuvable ou vide : filtre du strip "
+              "inactif. --manifeste-strip pour le designer.)")
+    ecartees = []
+    medias = absentes(a.rapport, verdicts, a.nas_plus_petit_de,
+                      avec_motion_photo=a.avec_motion_photo,
+                      ecartees=ecartees, strippes=strippes)
     print("  %d media(s) a rapatrier (%s%s)." % (
         len(medias), '+'.join(verdicts),
         (", NAS plus petit d au moins %d octets" % a.nas_plus_petit_de)
         if a.nas_plus_petit_de else ""))
+    if ecartees:
+        print("  %d video(s) de Motion Photo ecartee(s) : une photo de meme "
+              "nom existe" % len(ecartees))
+        print("  dans le meme dossier Google. --avec-motion-photo les garde.")
+    elif a.avec_motion_photo:
+        print("  (--avec-motion-photo : les videos de Motion Photo sont "
+              "gardees.)")
     travaux = plan(medias, cible, a.etiquette)
     octets = sum(m.get('octets') or 0 for m, t in zip(medias, travaux)
                  if t[2] != 'deja')
@@ -387,6 +510,7 @@ def main(argv=None):
         Path(a.sortie_json).write_text(json.dumps(
             {'rapport': a.rapport, 'cible': str(cible),
              'absentes': len(medias), 'octets': octets,
+             'motion_photos_ecartees': len(ecartees),
              'compte': compte, 'griefs': list(griefs or ()),
              'journal': chemin_journal, 'ok': ok},
             indent=2, ensure_ascii=False), encoding='utf-8')
