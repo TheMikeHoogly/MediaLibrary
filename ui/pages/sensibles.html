@@ -57,6 +57,17 @@
 .meta { font: var(--t-xs)/1.6 var(--f-donnees); color: var(--graphite-p);
         margin-top: var(--e-1); word-break: break-all; }
 .actes { display: flex; gap: var(--e-2); flex-wrap: wrap; margin-top: var(--e-3); }
+/* La carte que le clavier vise. `--veilleuse` et pas `--fixateur` : elle
+   ATTEND un verdict, elle n'en porte pas encore un. Le liseré reprend l'ombre
+   de `.feuille` au lieu de la remplacer, sinon la carte visée perd son
+   élévation et paraît reculer au moment où on la regarde. */
+.feuille--courante { box-shadow: 0 0 0 2px var(--veilleuse),
+                                 0 1px 0 var(--papier-2), 0 8px 24px #0008; }
+.clavier { color: var(--graphite); font-size: var(--t-sm);
+           margin: 0 var(--e-4) var(--e-3); }
+.clavier kbd { font: var(--t-xs)/1 var(--f-donnees); background: var(--salle-3);
+               border: var(--trait); border-radius: var(--r-sm);
+               padding: 2px 5px; color: var(--texte); }
 .pied { display: flex; gap: var(--e-3); flex-wrap: wrap; align-items: center;
         margin-top: var(--e-3); font-size: var(--t-sm); }
 /* 44 px, pas 18 : MESURE le 08/09 sur la page reelle, ce lien faisait
@@ -99,6 +110,12 @@
 
 <div class="rappel" id="rappel">Chargement&hellip;</div>
 
+<p class="clavier" id="clavier" hidden>Au clavier&nbsp;:
+  <kbd>J</kbd>&nbsp;/&nbsp;<kbd>K</kbd> (ou &darr; &uarr;) pour passer d&rsquo;une
+  photo &agrave; l&rsquo;autre, <kbd>C</kbd> corbeille, <kbd>P</kbd> priv&eacute;e,
+  <kbd>N</kbd> pas sensible, <kbd>Z</kbd> annuler le dernier geste.
+  La photo vis&eacute;e porte un liser&eacute; orange.</p>
+
 <div id="liste"></div>
 
 <section class="vide" id="vide" hidden>
@@ -132,6 +149,11 @@
   var TOAST_DIT = document.getElementById('toast-dit');
   var TOAST_ANNULER = document.getElementById('toast-annuler');
   var TOAST_MINUTEUR = null;
+  var CLAVIER = document.getElementById('clavier');
+  /* L'etat de la liste vit ICI et pas dans une fermeture : c'est lui qui
+     permet de retirer une fiche sans tout rebatir. */
+  var ETAT = { photos: [], poses: 0 };
+  var COURANTE = -1;
 
   function texte(el, s) { el.textContent = s; }
 
@@ -198,7 +220,13 @@
           return;
         }
         toast(g.dit(nom), g.annulable);
-        charger();
+        // RETIRER, pas RECHARGER. `charger()` rebâtit la liste depuis le
+        // serveur, donc depuis la PREMIÈRE tranche : trier la photo n° 120
+        // obligeait à rouvrir deux tranches après CHAQUE verdict, et à
+        // retrouver sa place à la main. Sur 213 photos c'est ce qui rendait
+        // l'onglet inutilisable — pas un défaut visible à la relecture, un
+        // défaut visible au vingtième clic.
+        retirer(cle);
       })
       .catch(function () {
         for (var i = 0; i < boutons.length; i++) { boutons[i].disabled = false; }
@@ -212,6 +240,7 @@
     b.className = classe;
     b.textContent = libelle;
     b.setAttribute('aria-label', libelle + ' — ' + nom);
+    b.dataset.quoi = quoi;
     b.addEventListener('click', function () { agir(b, cle, nom, quoi); });
     return b;
   }
@@ -219,6 +248,7 @@
   function feuille(p) {
     var sec = document.createElement('section');
     sec.className = 'feuille';
+    p._n = sec;
     var piece = document.createElement('div');
     piece.className = 'piece';
 
@@ -277,17 +307,27 @@
     return sec;
   }
 
+  function compter() {
+    var n = ETAT.photos.length;
+    texte(COMPTE, n + (n > 1 ? ' photos' : ' photo'));
+  }
+
   function chargee(d) {
     LISTE.textContent = '';
     var photos = (d && d.photos) || [];
-    texte(COMPTE, photos.length + (photos.length > 1 ? ' photos' : ' photo'));
+    ETAT.photos = photos;
+    ETAT.poses = 0;
+    COURANTE = -1;
+    compter();
     if (!photos.length) {
       RAPPEL.hidden = true;
+      CLAVIER.hidden = true;
       VIDE.hidden = false;
       return;
     }
     VIDE.hidden = true;
     RAPPEL.hidden = false;
+    CLAVIER.hidden = false;
     RAPPEL.innerHTML = 'Ces photos sont <b>masquées</b> pour tout le monde '
       + 'sauf vous, en attendant votre verdict. <b>Aucun fichier n’a '
       + 'bougé.</b> L’analyse se trompe environ une fois sur trois : '
@@ -299,26 +339,113 @@
     // des milliers quand la campagne sera finie. Un BOUTON, pas un observateur
     // d'intersection : il marche aussi dans un onglet qui n'est pas au premier
     // plan, et il dit combien il reste au lieu de le deviner.
-    poserTranche(photos, 0);
+    poserTranche();
   }
 
   var PAR_TRANCHE = 40;
 
-  function poserTranche(photos, depuis) {
-    var fin = Math.min(depuis + PAR_TRANCHE, photos.length);
-    for (var i = depuis; i < fin; i++) { LISTE.appendChild(feuille(photos[i])); }
+  /* Le bouton se REFAIT depuis l'etat, il ne capture plus un indice. Une
+     fermeture sur `fin` devenait fausse des qu'une fiche etait retiree. */
+  function majPlus() {
     var ancien = document.getElementById('plus');
     if (ancien) { ancien.remove(); }
-    if (fin >= photos.length) { return; }
+    var reste = ETAT.photos.length - ETAT.poses;
+    if (reste <= 0) { return; }
     var b = document.createElement('button');
     b.id = 'plus';
     b.className = 'btn';
-    var reste = photos.length - fin;
     texte(b, 'Voir ' + Math.min(PAR_TRANCHE, reste) + ' photos de plus  ('
              + reste + ' restantes)');
-    b.addEventListener('click', function () { poserTranche(photos, fin); });
+    b.addEventListener('click', function () { poserTranche(); });
     LISTE.appendChild(b);
   }
+
+  function poserTranche() {
+    var fin = Math.min(ETAT.poses + PAR_TRANCHE, ETAT.photos.length);
+    for (var i = ETAT.poses; i < fin; i++) {
+      LISTE.appendChild(feuille(ETAT.photos[i]));
+    }
+    ETAT.poses = fin;
+    majPlus();
+  }
+
+  function retirer(cle) {
+    var i = -1, k;
+    for (k = 0; k < ETAT.photos.length; k++) {
+      if (ETAT.photos[k].key === cle) { i = k; break; }
+    }
+    // Introuvable : la page et le serveur ne disent plus la meme chose. On
+    // relit plutot que de deviner — c'est le repli, pas le chemin normal.
+    if (i < 0) { charger(); return; }
+    var ph = ETAT.photos[i];
+    if (ph._n && ph._n.parentNode) { ph._n.parentNode.removeChild(ph._n); }
+    ETAT.photos.splice(i, 1);
+    if (i < ETAT.poses) { ETAT.poses--; }
+    compter();
+    if (!ETAT.photos.length) {
+      RAPPEL.hidden = true;
+      CLAVIER.hidden = true;
+      VIDE.hidden = false;
+    }
+    majPlus();
+    // La suivante prend la place de celle qui part : le pouce n'a pas a
+    // rattraper le curseur.
+    var cs = cartes();
+    if (COURANTE >= cs.length) { COURANTE = cs.length - 1; }
+    marquer();
+  }
+
+  /* ---- Le clavier. Le plancher du systeme l'exige pour les taches de tri
+     repetitives, et c'est ici la tache la plus repetitive du projet : 213
+     verdicts. Les touches sont ECRITES dans la page, juste au-dessus. ---- */
+  function cartes() { return LISTE.querySelectorAll('section.feuille'); }
+
+  function marquer() {
+    var cs = cartes(), i;
+    for (i = 0; i < cs.length; i++) {
+      if (i === COURANTE) { cs[i].classList.add('feuille--courante'); }
+      else { cs[i].classList.remove('feuille--courante'); }
+    }
+    if (COURANTE >= 0 && cs[COURANTE]) {
+      cs[COURANTE].scrollIntoView({ block: 'nearest' });
+    }
+  }
+
+  function deplacer(d) {
+    var cs = cartes();
+    if (!cs.length) { return; }
+    if (COURANTE < 0) { COURANTE = 0; }
+    else { COURANTE = Math.max(0, Math.min(cs.length - 1, COURANTE + d)); }
+    marquer();
+  }
+
+  function agirCourante(quoi) {
+    var cs = cartes();
+    if (COURANTE < 0 || !cs[COURANTE]) { return; }
+    var b = cs[COURANTE].querySelector('button[data-quoi="' + quoi + '"]');
+    // On CLIQUE le bouton au lieu d'appeler `agir` : un seul chemin pour un
+    // seul geste. Deux chemins finiraient par diverger.
+    if (b && !b.disabled) { b.click(); }
+  }
+
+  document.addEventListener('keydown', function (e) {
+    if (e.ctrlKey || e.altKey || e.metaKey || !e.key) { return; }
+    var t = e.target;
+    // Le champ de recherche est dans la barre du haut : sans ce garde, taper
+    // « chat » y mettrait une photo a la corbeille.
+    if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA'
+              || t.isContentEditable)) { return; }
+    var k = e.key.toLowerCase();
+    if (k === 'j' || k === 'arrowdown') { e.preventDefault(); deplacer(1); }
+    else if (k === 'k' || k === 'arrowup') { e.preventDefault(); deplacer(-1); }
+    else if (k === 'c') { e.preventDefault(); agirCourante('corbeille'); }
+    else if (k === 'p') { e.preventDefault(); agirCourante('prive'); }
+    else if (k === 'n') { e.preventDefault(); agirCourante('non'); }
+    else if (k === 'z') {
+      e.preventDefault();
+      if (!TOAST.hidden && !TOAST_ANNULER.hidden) { TOAST_ANNULER.click(); }
+    }
+  });
 
   function charger() {
     fetch('/api/sensibles').then(function (r) { return r.json(); }).then(chargee)
