@@ -72,11 +72,16 @@ HTTP, `/files` 157 → 48 ko et `/pets` 88 → 29 ko, mesuré sur le fil. Resten
 O8–O9 (matmul par visage et backfill sémantique : les deux touchent des boucles
 de calcul, à faire quand la campagne sera finie) et O14–O15 (`_reconcilier`
 re-hashe tout le store sous verrou à chaque `save()`, et les caches de
-vignettes). Puis
-l'adoption de `components.css` par `browse` et `faces` — `/map` est le témoin,
-on n'y touche pas, et **`reglages` sort de la liste** : sa famille maison `.b`
-borde à 5,97:1 là où `.btn--discret` bordait à 1,18, c'est elle qui avait
-raison (09/09, `eval/DECISIONS_UI.md`). **`animal:luna` sort aussi : SANS
+vignettes). **L'adoption de
+`components.css` par `browse`, `faces` et `reglages` — LIGNE CLOSE le 09/09,
+et aucune des trois n'était ce qu'elle annonçait.** `reglages` : sa famille
+maison `.b` borde à 5,97:1 là où `.btn--discret` bordait à 1,18 — c'est elle
+qui avait raison. `browse` : même famille, tokens, 44 px, rien à corriger.
+`faces` : **la page n'est plus servie du tout**, `/faces` est un 302 vers
+`/people` depuis son retrait, et `ui/pages/faces.html` n'est lu par personne —
+6 Ko de code mort derrière une redirection. **Balayage à l'appui** : les sept
+pages servies mesurées en vrai, un seul contrôle sous 44 px, et c'est un lien
+DANS une phrase, l'exception que le système a écrite. `/map` reste le témoin. **`animal:luna` sort aussi : SANS
 OBJET** — 2 photos et non 3, et aucun consommateur ne lit la casse de ce tag
 (`_kw_has` replie, la fiche est clé sur `name.lower()`, la recherche rend le
 même compte). Détail dans `eval/DECISIONS.md`. Tout le reste est hors GPU et
