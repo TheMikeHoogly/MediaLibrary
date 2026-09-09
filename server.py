@@ -12,6 +12,7 @@ Run: python server.py [dossier_uploads]
 
 import base64
 import copy
+import gzip
 import hashlib
 import html
 import io
@@ -14815,19 +14816,57 @@ class Handler(BaseHTTPRequestHandler):
         # Sous-navigation Sujets (guichet unique) : /sujets, /people, /pets.
         if '<!--SUJETSNAV-->' in html_str:
             html_str = html_str.replace('<!--SUJETSNAV-->', SUJETS_NAV_HTML)
-        data = html_str.encode('utf-8')
-        self.send_response(200)
-        self.send_header('Content-Type', 'text/html; charset=utf-8')
-        self.send_header('Content-Length', str(len(data)))
-        self.end_headers()
-        self.wfile.write(data)
+        self._repondre(200, html_str.encode('utf-8'),
+                       'text/html; charset=utf-8')
 
-    def _send(self, code, body, ctype):
+    # O11 de l'audit interne. Le seuil et la liste de types ne sont pas des
+    # precautions de style : sous ~4 Ko, l'en-tete et le temps CPU coutent plus
+    # que les octets economises ; et un JPEG, un MP4 ou un PNG sont DEJA
+    # compresses -- les repasser au gzip brule du CPU pour, souvent, grossir la
+    # reponse. Les vignettes et les medias ne passent de toute facon pas par
+    # ici (`_send_file` et les ecritures directes), donc ce chemin ne voit que
+    # du texte : JSON d'API, pages, CSS, JS.
+    GZIP_MINIMUM = 4096
+    GZIP_TYPES = ('application/json', 'text/html', 'text/css', 'text/plain',
+                  'application/javascript', 'image/svg+xml')
+
+    def _vaut_le_gzip(self, ctype, body):
+        if len(body) < self.GZIP_MINIMUM:
+            return False
+        if not any(str(ctype).startswith(t) for t in self.GZIP_TYPES):
+            return False
+        return 'gzip' in (self.headers.get('Accept-Encoding') or '').lower()
+
+    def _repondre(self, code, body, ctype, entetes=()):
+        """Ecrit la reponse, compressee quand ca vaut le coup.
+
+        UN SEUL endroit compresse, et c'est voulu : la compression touche le
+        `Content-Length`, et deux endroits qui l'ecrivent finiraient par ne
+        plus dire la meme chose. `_send` et `_send_html` passent tous les deux
+        par ici."""
+        if self._vaut_le_gzip(ctype, body):
+            comprime = gzip.compress(body, 6)
+            # On ne GARDE la compression que si elle gagne vraiment. Sur un
+            # contenu deja dense gzip peut rendre plus gros que l'original, et
+            # envoyer alors une version compressee serait payer deux fois.
+            if len(comprime) < len(body):
+                body = comprime
+                entetes = tuple(entetes) + (('Content-Encoding', 'gzip'),)
         self.send_response(code)
         self.send_header('Content-Type', ctype)
+        for cle, valeur in entetes:
+            self.send_header(cle, valeur)
+        # `Vary` MEME quand on n'a pas compresse : sinon un cache qui garde la
+        # version non compressee la sert a un client qui attend du gzip, et
+        # inversement. L'oubli de cet en-tete est la panne classique de la
+        # compression conditionnelle, et elle ne se voit qu'a travers un cache.
+        self.send_header('Vary', 'Accept-Encoding')
         self.send_header('Content-Length', str(len(body)))
         self.end_headers()
         self.wfile.write(body)
+
+    def _send(self, code, body, ctype):
+        self._repondre(code, body, ctype)
 
 
 def pilotage_loop():

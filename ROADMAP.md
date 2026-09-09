@@ -67,7 +67,12 @@ famille qui lira ce texte.
 
 ### B. Pendant la campagne, de mon côté
 
-**B1. Le reste d'audit** (ancien point 5) : O8–O9, O11, O13–O15 ; puis
+**B1. Le reste d'audit** (ancien point 5) : **O11 FAIT le 09/09** — compression
+HTTP, `/files` 157 → 48 ko et `/pets` 88 → 29 ko, mesuré sur le fil. Restent
+O8–O9 (matmul par visage et backfill sémantique : les deux touchent des boucles
+de calcul, à faire quand la campagne sera finie) et O14–O15 (`_reconcilier`
+re-hashe tout le store sous verrou à chaque `save()`, et les caches de
+vignettes). Puis
 l'adoption de `components.css` par `browse` et `faces` — `/map` est le témoin,
 on n'y touche pas, et **`reglages` sort de la liste** : sa famille maison `.b`
 borde à 5,97:1 là où `.btn--discret` bordait à 1,18, c'est elle qui avait
