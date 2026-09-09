@@ -9,7 +9,101 @@ dans **git** ; les rejets dans `eval/DECISIONS.md` (photothèque) et
 > **`N:\\Photos` se connecte à chaque session** — règle dans `CLAUDE.md`
 > (« Tester en réel »), depuis le 29/08.
 
-## Où on en est — 07/09/2026 (à lire en premier)
+## Priorité — repriorisée le 09/09/2026 (à lire en premier)
+
+**Pourquoi cette section existe.** Celle du 26/08 avait cessé d'être une
+priorité : 1 126 lignes, 39 jalons, dont **24 portent « FAIT », « CLOS » ou
+« MESURÉ » dans leur propre titre**, et un numérotage en *bis / ter / quater /
+… / quindecies* où **trois étiquettes désignent chacune deux chantiers
+différents** — `1 septies` (espace disque L211 / règle Motion Photo L405),
+`1 octies` (les 942 L342 / les vidéos L539), `1 nonies` (effacer l'extrait
+L256 / la recherche IA L572). Une liste ordonnée dont les numéros se
+télescopent n'ordonne plus rien : elle est conservée plus bas comme archive de
+preuve, pas comme plan. **Décision de Mike du 09/09 : la copie hors site passe
+en fin de roadmap.**
+
+**CE QUI COMMANDE TOUT : la campagne de retag tourne** (2 quater, lancée le
+05/09). ~27 800 photos restantes au 08/09, **~190 photos/heure comptées dans le
+journal** → environ six jours. Elle occupe le GPU et **elle interdit de toucher
+au prompt** : le prompt EST la version du pipeline, une phrase ajoutée
+rendrait candidates les 12 000 photos déjà refaites (3 bis (c)). L'ordre
+ci-dessous en découle : pendant qu'elle tourne, on ne fait que ce qui n'a
+besoin ni du GPU, ni du prompt, ni du serveur arrêté.
+
+### A. Ce qui appartient à Mike
+
+**A1. Finir la chaîne Takeout — FAIT par Mike le 09/09 à 12h.** Le bat 49 est
+passé de bout en bout : les cinq contrôles, l'étape 3 bis qui a jugé les
+**14 absentes jetables** (moitiés vidéo de Motion Photos sans extension, deux
+preuves chacune), le `EFFACER` écrit en toutes lettres. **C: est passé de
+171,2 à 236 Go libres sur 932** — les 96 Go annoncés, à la mesure près. **Le
+chantier Google est clos pour de bon** : plus de Takeout, ni en `.zip` ni en
+extrait, et le NAS porte tout ce qui devait l'être.
+
+> Ce que ce bat aura appris, et qui vaut plus que les 96 Go : un garde-fou qui
+> ne sait dire que « bloqué » finit par être contourné. Celui-ci a appris à
+> distinguer — deux preuves pour déclarer une absente jetable, et l'arrêt sinon.
+> C'est la différence entre un verrou et un jugement.
+
+**A2. Trier les 213 photos sensibles** (chantier 18) — **c'est maintenant le
+premier chantier vivant du projet.** L'onglet existe, les
+photos sont masquées, le geste par défaut est la corbeille — « la médiathèque
+conserve des SOUVENIRS, pas des documents » (Mike, 07/09). **Zéro GPU, zéro
+NAS, lecture d'index** : c'est le seul vrai chantier qui avance pendant la
+campagne, et c'est celui qui protège des relevés bancaires. Il ne dépend que
+du temps que Mike veut y mettre.
+
+**A3. Lire la page `/aide`** (chantier 17, étape 7). Elle est posée et
+vérifiée ; ce qui reste n'est pas une tâche mais un jugement — c'est sa
+famille qui lira ce texte.
+
+### B. Pendant la campagne, de mon côté
+
+**B1. Le reste d'audit** (ancien point 5) : O8–O9, O11, O13–O15 ; `animal:luna`
+en minuscule sur 3 photos à côté de `animal:Luna` sur 355 ; puis l'adoption de
+`components.css` par `browse`, `faces` et `reglages` — `/map` est le témoin,
+on n'y touche pas. Tout est hors GPU et hors prompt.
+
+**B2. Les dettes nommées, petites et sûres** : `git rm --cached _collage6.py
+_collage7.py` (ignorés mais suivis) ; le libellé du bat 32 ; et ce carnet
+lui-même — voir B3.
+
+**B3. LA ROADMAP EST À 82 % DE SON BUDGET** (102 993 octets sur 125 000), dont
+**77 % dans la seule section d'archive ci-dessous**. Le carnet se scindera par
+DOMAINE avant d'être plein, comme les carnets de décisions l'ont fait le 08/09.
+À faire avant que ce soit urgent, pas après.
+
+### C. Quand la campagne s'arrête, et pas avant
+
+**C1. La question au tagueur sur les documents sensibles** (3 bis (c)) — elle
+n'est pas reportée par prudence, elle est **empêchée** : la toucher rouvrirait
+12 000 photos déjà refaites.
+
+**C2. Re-mesurer les Motion Photos arrivées depuis le 03/09** — demande le
+serveur arrêté.
+
+**C3. Le bilan de la campagne** : ce que `qwen3.5:4b|v3fr|kb1` a changé,
+mesuré, pas supposé — c'est la première passe officielle du fonds, elle mérite
+son compte rendu.
+
+### D. Fin de projet
+
+**D1. La copie hors site (12 bis) — repoussée en fin de roadmap par Mike le
+09/09.** Le choix est le sien et il est noté tel quel. Ce qui reste vrai et qui
+n'a pas besoin d'être répété à chaque session : après l'effacement de
+l'extrait, le NAS est le seul exemplaire des ~40 000 photos, et un NAS chez soi
+ne protège ni du feu, ni du vol, ni d'une fausse manœuvre. Le jour où Mike
+rouvre le sujet, deux choses sont à faire *ensemble* : choisir le fournisseur,
+et écrire le banc qui prouve que la copie distante contient ce que le NAS
+contient — une sauvegarde qu'on ne vérifie jamais n'est pas une sauvegarde.
+
+**D2. Les 633 photos sans copie connue.** Le registre `docs/photos_perdues.md`
+est leur seule trace, il vit dans git. Rien à faire de plus tant qu'un vieux
+disque ne réapparaît pas.
+
+---
+
+## Où on en est — état détaillé au 07-09/09/2026 (le plan est dans la Priorité ci-dessus)
 
 **LA CAMPAGNE DE RETAG TOURNE** (chantier 2 quater, lancée le 05/09 à 16:50).
 C'est le fait qui commande tout le reste : `retag_actif.txt` est posé. **Lu sur
@@ -177,7 +271,12 @@ la galerie garde son observateur mais passe par la même file. Banc :
    filtres + personnes). Une bascule commande désormais les deux barres de
    filtre — une ligne de moins avant la première vignette.
 
-## Priorité (26/08/2026, refixée session 53)
+## Archive — la priorité du 26/08/2026 (refixée session 53), close pour l'essentiel
+
+> **Conservée pour la preuve, plus comme plan.** 24 des 39 jalons sont clos
+> dans leur propre titre, trois étiquettes sont en double (voir en tête), et la
+> section pèse 77 % du carnet. La priorité vivante est ci-dessus.
+
 
 Le garde-fou du filtre est posé (jeton insatisfaisable → RIEN, dit, banc
 `verifier_filtre_negatif.py`) ; l'ordre reprend à ce qui reste.
