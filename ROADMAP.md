@@ -67,10 +67,15 @@ famille qui lira ce texte.
 
 ### B. Pendant la campagne, de mon côté
 
-**B1. Le reste d'audit** (ancien point 5) : O8–O9, O11, O13–O15 ; `animal:luna`
-en minuscule sur 3 photos à côté de `animal:Luna` sur 355 ; puis l'adoption de
-`components.css` par `browse`, `faces` et `reglages` — `/map` est le témoin,
-on n'y touche pas. Tout est hors GPU et hors prompt.
+**B1. Le reste d'audit** (ancien point 5) : O8–O9, O11, O13–O15 ; puis
+l'adoption de `components.css` par `browse` et `faces` — `/map` est le témoin,
+on n'y touche pas, et **`reglages` sort de la liste** : sa famille maison `.b`
+borde à 5,97:1 là où `.btn--discret` bordait à 1,18, c'est elle qui avait
+raison (09/09, `eval/DECISIONS_UI.md`). **`animal:luna` sort aussi : SANS
+OBJET** — 2 photos et non 3, et aucun consommateur ne lit la casse de ce tag
+(`_kw_has` replie, la fiche est clé sur `name.lower()`, la recherche rend le
+même compte). Détail dans `eval/DECISIONS.md`. Tout le reste est hors GPU et
+hors prompt.
 
 **B2. Les dettes nommées, petites et sûres** : `git rm --cached _collage6.py
 _collage7.py` (ignorés mais suivis) ; le libellé du bat 32 ; et ce carnet
