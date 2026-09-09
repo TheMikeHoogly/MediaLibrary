@@ -116,13 +116,27 @@ d'annulation dans `_corbeille_copies\copie_20260908_223100.jsonl`, 570 lignes
 exactement). Il reste `C:\GOOGLE PHOTOS\extrait`, 95,78 Go — la SEULE copie
 désormais.
 
-**LA SUITE, ET L'ORDRE COMPTE** : (1) laisser le serveur SCANNER — il a
-commencé, `📒 index 44121 -> 44136` ; (2) **bat 26** quand elles y sont ;
-(3) **relancer `verifier_photos_google.py`** jusqu'à **ABSENT 0** ; (4) alors
-**bat 49**, qui refait cette preuve tout seul et demande `EFFACER`. Ne pas
-sauter (3) : la copie place les fichiers, c'est le SCAN qui les fait exister
-pour la vérification. Et rappeler à Mike, avant qu'il confirme, que la copie
-hors site (12 bis) n'existe toujours pas.
+**OÙ EN EST LA CHAÎNE, au matin du 09/09** : bat 32 fait (570 copiées),
+**bat 26 fait** (613 rangées vers `Photos Mike\<année>`), vérification faite
+(**ABSENT 0**), **bat 33 fait** (99 rapatriées, 1 814 vidéos de Motion Photo
+écartées). **Il reste** : laisser le scan reprendre les 613 déplacées et les 99
+arrivées, **relancer `verifier_photos_google.py`** — le compte bougera — puis
+**bat 49**. Ne pas sauter la vérification : la copie place les fichiers, c'est
+le SCAN qui les fait exister pour elle. Et rappeler à Mike, avant qu'il
+confirme, que la copie hors site (12 bis) n'existe toujours pas.
+
+**UNE RÈGLE PRODUIT NEUVE, ET ELLE COMMANDE** (Mike, 09/09) : *une Motion
+Photo ne garde que son image, et sa vidéo ne se rapatrie JAMAIS* — même quand
+Google en est le dernier détenteur et que l'effacement est définitif. C'était
+un réglage involontaire du téléphone. **Le vrai correctif est en amont** :
+couper « Photo animée » dans l'appareil photo Samsung, sinon le bat 42 devra
+repasser indéfiniment.
+
+**DEUX RESTES CONNUS** : 14 fichiers SANS EXTENSION (2 à 11 Ko) dans
+`_A TRIER\Takeout Google\2024|2025`, jamais lus — `device_stage_files` refuse
+`N:\Photos` (« Could not stat ») et le montage de `device_bash` était tombé le
+09/09 ; y revenir quand le pont va bien. Et le libellé du bat 26 : « source
+absente » 613 fois pour dire « déjà rangée ».
 
 **CE QUI ATTEND MIKE** : rien à décider — `QUESTIONS_MIKE.md` est vide. Les
 gestes : bat 26 puis bat 49 (dans l'ordre ci-dessus), vider `_to_delete\`

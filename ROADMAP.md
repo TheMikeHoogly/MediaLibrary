@@ -296,6 +296,37 @@ mesure d'AUJOURD'HUI, pas celle de la semaine dernière. Son bandeau, qui
 récitait « 3 776 médias, 12,6 Go » du 27/08, ne récite plus aucun chiffre :
 c'est l'étape à blanc qui les dit. Détail dans `docs/DECISIONS_OUTILLAGE.md`.
 
+**LA CHAÎNE A ÉTÉ PARCOURUE LE 09/09 AU MATIN, et voici où elle en est.**
+· **bat 32** (08/09 22:31) : **570 médias copiés**, 0 grief, journal de 570
+lignes exactement.
+· **bat 26** (09/09, 08:18 puis 08:41) : **613 fichiers rangés** vers
+`Photos Mike\<année>` — 20 + 593, prouvé par deux journaux d'annulation et par
+la disparition des 43 `©CesareMarchitto-*.jpg` de `_A TRIER`. Mike l'a relancé
+ensuite : 613 « source absente », bilan `ok: 0` — c'est un SUCCÈS relu comme
+une panne (voir `docs/DECISIONS_OUTILLAGE.md`).
+· **vérification** (09/09) : **ABSENT 0**, CERTAIN 3 146, PROBABLE 10 759.
+· **bat 33** (09/09) : **99 fichiers rapatriés** sous `_A TRIER\Google porte
+mieux\<année>` — ceux où le NAS ne détient qu'une version dégradée
+(`4.JPG` : 30 Ko sur le NAS contre 3 Mo chez Google). **1 814 écartés** : les
+vidéos de Motion Photo, dont Mike ne veut plus (verdict dans
+`eval/DECISIONS.md`).
+
+**CE QUI RESTE : laisser le scan reprendre les 613 déplacées et les 99
+arrivées, PUIS relancer `verifier_photos_google.py` — le compte va bouger —
+et alors seulement le bat 49.** Un reste connu : 14 fichiers SANS EXTENSION
+(2 à 11 Ko) dorment encore dans `_A TRIER\Takeout Google\2024|2025` ; le
+rangement ne sait pas les classer et je n'ai pas encore pu lire leurs octets
+(`device_stage_files` refuse `N:\Photos`, le montage du shell était tombé).
+
+**LA DÉCOMPOSITION DES 10 759 « PROBABLE », mesurée le 09/09** — parce que le
+mot « probable » ne dit rien tout seul : **8 637 fois le NAS est PLUS GROS**,
+écart médian **4 189 octets** et 8 586 entre 1 et 8 Ko — c'est notre bloc XMP,
+la même photo plus nos mots-clés, rien d'autre. **2 122 fois le NAS est plus
+PETIT**, dont 1 903 de plus de 512 Ko : **1 809 sont des Motion Photos
+strippées** (6,87 Go de vidéo jetée volontairement) et **94 sont le vrai
+résidu**, dont 23 où Google porte 3× à 90× plus. C'est cette décomposition qui
+a évité de rapatrier 14,9 Go pour en sauver 1,26.
+
 **L'ORDRE, et il n'est pas négociable** : `32 - Copier les absentes de
 Google.bat` d'abord — il écrit sous `_A TRIER/<étiquette>/<année>/`, aperçu
 par défaut, 0,99 Go — puis refaire `verifier_photos_google.py` jusqu'à

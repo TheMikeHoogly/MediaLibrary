@@ -1,15 +1,15 @@
 {
-  "rapport": "_rapport_google_apres2.json",
+  "rapport": "_google_a_rapatrier.json",
   "cible": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\Google porte mieux",
-  "absentes": 197,
-  "octets": 581033536,
+  "absentes": 99,
+  "octets": 1257788674,
   "compte": {
-    "copie": 197,
+    "copie": 99,
     "deja": 0,
     "suffixe": 0,
     "grief": 0
   },
   "griefs": [],
-  "journal": "C:\\Prog\\Claude\\MediaLibrary\\_corbeille_copies\\copie_20260828_220141.jsonl",
+  "journal": "C:\\Prog\\Claude\\MediaLibrary\\_corbeille_copies\\copie_20260909_091232.jsonl",
   "ok": true
 }
