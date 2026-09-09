@@ -77,18 +77,50 @@ echo   fonds entier sont parcourus). Ce controle lit le DISQUE, pas
 echo   l'index du serveur : il n'attend aucun scan.
 echo.
 
-REM L'ORDRE EST DESCENDANT, et ce n'est pas un detail : sous cmd.exe,
-REM `if errorlevel N` signifie "N OU PLUS". Ecrit dans l'autre sens,
-REM `if errorlevel 1` attrapait aussi le code 2 et la branche :casse
-REM n'aurait JAMAIS servi -- un dossier introuvable se serait lu comme
-REM "il reste des absentes". Message faux, mais dans le sens prudent :
-REM c'est exactement ce qui l'aurait rendu invisible longtemps.
+REM ON COMPARE LE CODE, on ne l'encadre pas. `if errorlevel N` signifie
+REM "N OU PLUS" : ecrit dans le mauvais ordre il rendait :casse
+REM inatteignable. Ecrit dans le bon ordre il reste piegeux -- le 09/09
+REM un code inattendu (Python pas lance : 9009) est tombe dans :casse,
+REM qui a dit "dossier introuvable" alors que le dossier etait la. Une
+REM egalite stricte ne peut pas se tromper de branche, et le code est
+REM AFFICHE : un script qui s'arrete doit dire sur quoi.
 "%PY%" verifier_photos_google.py --takeout "%GPHOTOS%" --json _google.json
-if errorlevel 2 goto :casse
-if errorlevel 1 goto :absentes
+set "CODE=%ERRORLEVEL%"
+echo.
+echo   code retour de la verification : %CODE%
+if "%CODE%"=="0" goto :verifok
+if "%CODE%"=="1" goto :jugerabsentes
+goto :casse
 
+:jugerabsentes
+echo.
+echo --------------------------------------------------------------
+echo   3 bis sur 5 : ces absentes sont-elles une PERTE ?
+echo --------------------------------------------------------------
+echo.
+echo   Une absente n'est pas forcement une perte. Google exporte la
+echo   moitie VIDEO d'une Motion Photo parfois SANS EXTENSION : le
+echo   NAS ne la porte pas, et c'est voulu depuis le 08/09.
+echo.
+echo   Cet outil exige DEUX preuves avant de dire jetable : une photo
+echo   de meme nom dans le MEME dossier Google, ET une entete MP4
+echo   dans les premiers octets du fichier. S'il manque une seule des
+echo   deux, ou si le fichier ne se lit pas, il dit "a sauver".
+echo.
+"%PY%" verifier_absentes_jetables.py --rapport _google.json
+set "CODE2=%ERRORLEVEL%"
+echo.
+echo   code retour du jugement : %CODE2%
+if not "%CODE2%"=="0" goto :absentes
+echo.
+echo   Toutes les absentes sont jetables. On continue.
+goto :suite4
+
+:verifok
 echo.
 echo   ZERO absente. Le NAS porte tout ce que l'export contient.
+
+:suite4
 
 echo.
 echo --------------------------------------------------------------
@@ -152,8 +184,9 @@ echo ==============================================================
 echo   ARRET. Le NAS ne porte pas tout.
 echo ==============================================================
 echo.
-echo   La liste des absentes est dans _google.json, et elle est
-echo   affichee ci-dessus. RIEN n'a ete efface.
+echo   La liste des absentes est dans _google.json, et le jugement
+echo   du 3 bis est affiche ci-dessus : au moins une n'a pas les
+echo   deux preuves qui la rendraient jetable. RIEN n'a ete efface.
 echo.
 echo   La suite, DANS CET ORDRE :
 echo     1. "32 - Copier les absentes de Google.bat"
@@ -169,8 +202,14 @@ exit /b 1
 
 :casse
 echo.
-echo   La verification n'a pas pu tourner (dossier introuvable ?).
-echo   Rien n'a ete efface.
+echo   La verification s'est arretee sur le code %CODE%, que ce
+echo   script ne sait pas interpreter. Rien n'a ete efface.
+echo.
+echo   Code 2  : le dossier de l'export est introuvable.
+echo   Code 9009 : Python n'a pas pu etre lance du tout. Verifier
+echo   que ".venv\Scripts\python.exe" existe, sinon que "python"
+echo   repond dans ce dossier -- le raccourci du Microsoft Store
+echo   affiche "Python est introuvable" et n'execute rien.
 echo.
 pause
 exit /b 2
