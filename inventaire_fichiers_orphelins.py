@@ -74,7 +74,14 @@ IGNORES_PARTOUT = {'.git', '.venv', 'node_modules'}
 IGNORES_RACINE = {'exiftool-13.59_64', 'photo_thumbs', 'face_thumbs',
                   'animal_thumbs', 'dist', 'OLD', '_corbeille_copies',
                   '_corbeille_session', 'recuperees', 'uploads', '.claude',
-                  '_bat_archive'}
+                  '_bat_archive',
+                  # Ce que le menage vient de sortir du depot. Le parcourir
+                  # rejuge ce qui est deja juge, et son `_manifeste.json`
+                  # CITE les 506 fichiers deplaces : mesure du 09/09, la
+                  # famille `CITE EN DOC SEUL` passe de 97 a 635 d'un coup,
+                  # parce que le proces-verbal du menage temoigne de ses
+                  # propres victimes.
+                  '_corbeille_menage'}
 
 # Dossiers PARCOURUS, mais dont rien ne peut servir de LECTEUR : des artefacts
 # de construction.
@@ -102,7 +109,33 @@ ARTEFACTS = {'__pycache__'}
 # toujours raison.
 PAS_DES_LECTEURS = {'_orphelins.json', '_banc_sortie.txt', '_etat_banc.json',
                     '_etat_git.json', '_journal_serveur.log',
-                    '_journal_serveur.log.1'}
+                    '_journal_serveur.log.1',
+                    # LA MEME PATHOLOGIE, UN CRAN PLUS HAUT (09/09 au soir).
+                    # `appliquer_menage.py` porte la POLITIQUE : une liste de
+                    # motifs de fichiers A JETER. Comptee comme lecture, elle
+                    # PROTEGE exactement ce qu'elle designe -- mesure :
+                    # `_rapport_perdus_takeout.json` etait retenu par le veto
+                    # parce que le nettoyeur le nommait comme cible. Son banc
+                    # fait pareil avec ses fixtures (`_rapport_sef_avant.json`).
+                    # Nommer une chose pour l'effacer n'est pas la lire.
+                    'appliquer_menage.py', 'test_appliquer_menage.py',
+                    # ET LE QUATRIEME CAS, QUE J'AI FABRIQUE MOI-MEME EN
+                    # DOCUMENTANT LES TROIS PREMIERS (09/09, mesure).
+                    # Ce fichier-ci et son banc citent en clair, dans leurs
+                    # commentaires et leurs bancs, chaque fichier sur lequel
+                    # l'instrument s'est trompe : `_rapport_google_apres2.json`,
+                    # `_rapport_perdus_takeout.json`, `_rapport_sef_avant.json`.
+                    # Resultat mesure : au passage suivant, ces fichiers etaient
+                    # de nouveau `LU PAR DU CODE` -- **lus par l'instrument qui
+                    # venait d'expliquer pourquoi personne ne les lisait**.
+                    # Ecrire l'histoire d'une erreur la refaisait.
+                    #
+                    # La regle, une bonne fois : **rien de la chaine de menage
+                    # n'est un lecteur** -- ni l'instrument, ni son banc, ni le
+                    # nettoyeur, ni le sien, ni leurs rapports, ni leurs
+                    # manifestes. Un outil qui juge ne temoigne pas.
+                    'inventaire_fichiers_orphelins.py',
+                    'test_inventaire_fichiers_orphelins.py'}
 
 # Fichiers dont l'absence de citation ne veut RIEN dire : ils sont lus par le
 # systeme, pas par le projet. **Ancre a la racine** (voir `protege_par_nom`) :
@@ -241,22 +274,30 @@ def _lire(p, plafond=PLAFOND_LECTURE):
         return None
 
 
-# Lignes de commentaire d'un .bat : `REM ...` ou `:: ...`.
-_COMMENTAIRE_BAT = re.compile(r'(?im)^[ \t]*(?:rem\b|::).*$')
+# Les lignes d'un .bat qui PARLENT au lieu d'AGIR : un commentaire `REM` ou
+# `::`, et un `echo` qui n'ecrit nulle part. Le `(?!...)` epargne
+# `echo livrer > _commande_git.txt` : un echo REDIRIGE ecrit un fichier pour
+# de bon, et c'est meme le canal de commande de tout ce projet.
+_BAVARDAGE_BAT = re.compile(r'(?im)^[ \t]*(?:rem\b|::|echo(?![^\r\n]*[>|])).*$')
 
 
-def sans_commentaires(texte, suffixe):
-    """Le texte d'un .bat prive de ses lignes REM / ::.
+def sans_bavardage(texte, suffixe):
+    """Le texte d'un .bat prive de ce qui parle sans agir.
 
-    Sert UNIQUEMENT a signaler qu'une citation est peut-etre memorielle -- pas
+    Sert UNIQUEMENT a SIGNALER qu'une citation est peut-etre memorielle -- pas
     a changer de famille. Un bat qui ecrit « REM lit _google.json » a presque
     toujours la vraie lecture deux lignes plus bas ; degrader la famille sur
-    ce seul indice effacerait des entrees vivantes. L'instrument SIGNALE et
-    l'humain tranche : c'est la meme division du travail que le reste du
-    fichier."""
+    ce seul indice effacerait des entrees vivantes. L'instrument signale et
+    l'humain tranche.
+
+    Les deux cas mesures le 09/09 : le bat 33 dit en `REM` qu'il lisait
+    `_rapport_google_apres2.json` **et a cesse de le faire** -- le commentaire
+    dit le contraire de ce que la recherche par nom en conclut ; et sa ligne
+    105 `echo` la commande d'exemple qui nomme `_rapport_google_apres.json`,
+    du texte a l'ecran, pas un fichier ouvert."""
     if suffixe.lower() != '.bat':
         return texte
-    return _COMMENTAIRE_BAT.sub('', texte)
+    return _BAVARDAGE_BAT.sub('', texte)
 
 
 def motifs_du_code(textes_code):
@@ -315,7 +356,7 @@ def inventorier(racine=RACINE, bilan=None):
             continue
         tige = p.stem
         lecteurs_code, lecteurs_doc = [], []
-        code_hors_commentaire = False
+        code_hors_bavardage = False
         for q, t in textes.items():
             if q == p:
                 continue
@@ -324,9 +365,9 @@ def inventorier(racine=RACINE, bilan=None):
             rel = str(q.relative_to(racine))
             if q.suffix.lower() in EXT_CODE:
                 lecteurs_code.append(rel)
-                vif = sans_commentaires(t, q.suffix)
+                vif = sans_bavardage(t, q.suffix)
                 if nom in vif or (len(tige) > 6 and tige in vif):
-                    code_hors_commentaire = True
+                    code_hors_bavardage = True
             else:
                 lecteurs_doc.append(rel)
 
@@ -348,8 +389,8 @@ def inventorier(racine=RACINE, bilan=None):
         out.append({'fichier': str(p.relative_to(racine)), 'famille': fam,
                     'octets': octets, 'convention': conv or '',
                     'texte': p in textes,
-                    'commentaire_seul': bool(lecteurs_code)
-                                        and not code_hors_commentaire,
+                    'citation_bavarde': bool(lecteurs_code)
+                                         and not code_hors_bavardage,
                     'lecteurs_code': sorted(lecteurs_code)[:4],
                     'lecteurs_doc': sorted(lecteurs_doc)[:3]})
 
@@ -406,13 +447,14 @@ def main(argv=None):
         poids = sum(x['octets'] for x in l)
         print('  %-17s %4d fichier(s)  %10.1f Mo'
               % (fam, len(l), poids / 1048576))
-    doute = [x for x in lignes if x['commentaire_seul']]
+    doute = [x for x in lignes if x['citation_bavarde']]
     if doute:
         print('-' * 74)
-        print('  A RELIRE : %d fichier(s) cites UNIQUEMENT dans un commentaire'
+        print('  A RELIRE : %d fichier(s) dont TOUTE citation en .bat est un'
               % len(doute))
-        print('  de .bat (REM / ::). Famille laissee a LU PAR DU CODE : un')
-        print('  commentaire precede presque toujours la vraie lecture.')
+        print('  commentaire (REM / ::) ou un echo non redirige -- du texte,')
+        print('  pas une lecture. Famille laissee a LU PAR DU CODE : c est')
+        print('  un doute a trancher par un humain, pas par l instrument.')
         for x in doute[:8]:
             print('    %s  <- %s' % (x['fichier'], ', '.join(x['lecteurs_code'])))
     print('-' * 74)

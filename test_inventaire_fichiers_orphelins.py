@@ -170,7 +170,7 @@ class TestConventionsNouvelles(DepotFactice):
         self.assertNotIn('photos.db', self.familles())
 
 
-class TestCommentaireBat(DepotFactice):
+class TestBavardageBat(DepotFactice):
     def test_citation_en_REM_seul_est_signalee_mais_pas_degradee(self):
         """L'instrument SIGNALE, il ne tranche pas.
 
@@ -182,26 +182,87 @@ class TestCommentaireBat(DepotFactice):
         lignes = {l['fichier']: l for l in inv.inventorier(self.r)}
         e = lignes['donnees_utiles.json']
         self.assertEqual(e['famille'], 'LU PAR DU CODE')
-        self.assertTrue(e['commentaire_seul'])
+        self.assertTrue(e['citation_bavarde'])
 
     def test_citation_vive_dans_un_bat_nest_pas_signalee(self):
         _ecrire(self.r, 'donnees_utiles.json', '{}')
         _ecrire(self.r, 'un.bat', 'REM on lit donnees_utiles.json\r\n'
                                   'python t.py --in donnees_utiles.json\r\n')
         lignes = {l['fichier']: l for l in inv.inventorier(self.r)}
-        self.assertFalse(lignes['donnees_utiles.json']['commentaire_seul'])
+        self.assertFalse(lignes['donnees_utiles.json']['citation_bavarde'])
 
     def test_deux_points_deux_points_compte_comme_commentaire(self):
         _ecrire(self.r, 'donnees_utiles.json', '{}')
         _ecrire(self.r, 'un.bat', ':: donnees_utiles.json est mort\r\necho ok\r\n')
         lignes = {l['fichier']: l for l in inv.inventorier(self.r)}
-        self.assertTrue(lignes['donnees_utiles.json']['commentaire_seul'])
+        self.assertTrue(lignes['donnees_utiles.json']['citation_bavarde'])
+
+    def test_un_echo_qui_nomme_un_fichier_nest_pas_une_lecture(self):
+        """Bat 33, ligne 105 : la commande d'exemple est AFFICHEE, pas lancee.
+        `_rapport_google_apres.json` etait protege par du texte a l'ecran."""
+        _ecrire(self.r, 'donnees_utiles.json', '{}')
+        _ecrire(self.r, 'un.bat',
+                'echo   python outil.py --json donnees_utiles.json\r\n')
+        lignes = {l['fichier']: l for l in inv.inventorier(self.r)}
+        self.assertTrue(lignes['donnees_utiles.json']['citation_bavarde'])
+
+    def test_un_echo_REDIRIGE_est_une_vraie_ecriture(self):
+        """`echo livrer > _commande_git.txt` est le canal de commande de tout
+        ce projet : le depouiller casserait la detection du canal lui-meme."""
+        _ecrire(self.r, 'donnees_utiles.json', '{}')
+        _ecrire(self.r, 'un.bat', 'echo {} > donnees_utiles.json\r\n')
+        lignes = {l['fichier']: l for l in inv.inventorier(self.r)}
+        self.assertFalse(lignes['donnees_utiles.json']['citation_bavarde'])
 
     def test_un_py_nest_pas_deshabille_de_ses_commentaires(self):
         """`sans_commentaires` ne touche QUE les .bat : un `#` en Python peut
         etre a l'interieur d'une chaine, et REM n'existe pas la-bas."""
         t = "x = '# pas un commentaire'\n"
-        self.assertEqual(inv.sans_commentaires(t, '.py'), t)
+        self.assertEqual(inv.sans_bavardage(t, '.py'), t)
+
+
+class TestAutoProtection(DepotFactice):
+    def test_le_nettoyeur_ne_protege_pas_ses_propres_cibles(self):
+        """La pathologie de l'auto-lecture, un cran plus haut.
+
+        `appliquer_menage.py` porte la liste des motifs A JETER. Comptee comme
+        lecture, elle protege exactement ce qu'elle designe : mesure du 09/09,
+        `_rapport_perdus_takeout.json` retenu par le veto parce que le
+        nettoyeur le nommait comme cible. Nommer une chose pour l'effacer
+        n'est pas la lire."""
+        _ecrire(self.r, '_rapport_perdus_takeout.json', '{}')
+        _ecrire(self.r, 'appliquer_menage.py',
+                "POLITIQUE = ['_rapport_perdus_takeout.json']\n")
+        _ecrire(self.r, 'test_appliquer_menage.py',
+                "CIBLE = '_rapport_perdus_takeout.json'\n")
+        self.assertEqual(self.familles()['_rapport_perdus_takeout.json'],
+                         'ORPHELIN')
+
+
+    def test_l_instrument_ne_se_lit_pas_lui_meme_ni_son_banc(self):
+        """Le quatrieme cas, fabrique en documentant les trois premiers.
+
+        Ce fichier-ci nomme en clair chaque fichier sur lequel l'instrument
+        s'est trompe. Au passage suivant, ces fichiers redevenaient
+        `LU PAR DU CODE` -- lus par l'instrument qui venait d'expliquer que
+        personne ne les lisait. **Ecrire l'histoire d'une erreur la
+        refaisait.** Un outil qui juge ne temoigne pas."""
+        _ecrire(self.r, '_rapport_ancien.json', '{}')
+        _ecrire(self.r, 'inventaire_fichiers_orphelins.py',
+                "# jadis _rapport_ancien.json etait mal protege\n")
+        _ecrire(self.r, 'test_inventaire_fichiers_orphelins.py',
+                "CAS = '_rapport_ancien.json'\n")
+        self.assertEqual(self.familles()['_rapport_ancien.json'], 'ORPHELIN')
+
+    def test_la_corbeille_du_menage_nest_pas_reparcourue(self):
+        """Son `_manifeste.json` cite les 506 fichiers deplaces : le
+        proces-verbal du menage temoignait de ses propres victimes."""
+        _ecrire(self.r, '_corbeille_menage/20260909/_manifeste.json',
+                '{"deplaces": ["vivant.json"]}')
+        _ecrire(self.r, 'vivant.json', '{}')
+        f = self.familles()
+        self.assertFalse([k for k in f if k.startswith('_corbeille_menage/')])
+        self.assertEqual(f['vivant.json'], 'ORPHELIN')
 
 
 class TestContratDeSortie(DepotFactice):

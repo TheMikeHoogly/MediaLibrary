@@ -67,6 +67,24 @@ MOTIF_JOURNAUX = ['docs/undo_*.json', 'docs/plan_rangement*.json']
 # Ce que l'inventaire doit dire pour qu'un fichier puisse partir.
 FAMILLES_JETABLES = {'ORPHELIN', 'CITE EN DOC SEUL'}
 
+# L'EXCEPTION, ET SA RAISON. Pour les journaux d'annulation SEULS, `LU PAR UN
+# MOTIF` s'ajoute a la liste.
+#
+# Mesure du 09/09, deuxieme passage du bat 50 : Mike a repondu « 2 » a l'etape
+# 3, deux fois, et a lu « Rien a deplacer ». **35 des 44 journaux sont
+# `LU PAR UN MOTIF`** -- forcement : `undo_*.json` EST le motif, c'est ce qui
+# fait d'eux des journaux. Le veto ne pouvait donc rien laisser passer, et
+# l'etape 3 proposait un choix qu'elle etait incapable de tenir. *Une option
+# de menu qui ne peut jamais rien faire est une promesse que l'outil ne
+# tiendra pas.*
+#
+# Ici le jugement ne vient pas de l'inventaire mais de l'AGE, que Mike fournit
+# lui-meme et qui est plus fort : un journal de plus de N jours decrit des
+# fichiers qui ont bouge depuis. `LU PAR DU CODE` reste un veto -- un journal
+# qu'un bat nomme en clair (`docs/plan_rangement.json`, lu par les bats 26 et
+# 39) n'est pas un journal perime, c'est une entree vivante.
+FAMILLES_JETABLES_JOURNAUX = FAMILLES_JETABLES | {'LU PAR UN MOTIF'}
+
 
 def inventaire_frais():
     """Relance l'inventaire MAINTENANT. Jamais un rapport garde.
@@ -123,7 +141,9 @@ def trier(avec_journaux=0):
             f = fam.get(rel)
             # LE VETO. Un fichier que l'inventaire n'a pas vu (None) est
             # retenu lui aussi : ne pas savoir n'est pas savoir que non.
-            if f not in FAMILLES_JETABLES:
+            jetables = (FAMILLES_JETABLES_JOURNAUX
+                        if nom == 'journaux_annulation' else FAMILLES_JETABLES)
+            if f not in jetables:
                 retenus.append((rel, 'inventaire : %s' % (f or 'non vu')))
                 continue
             try:

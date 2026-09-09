@@ -67,6 +67,29 @@ famille qui lira ce texte.
 
 ### B. Pendant la campagne, de mon côté
 
+**B0. LE POINT LE PLUS IMPORTANT DE LA PROCHAINE SESSION : réviser `CLAUDE.md`
+et `MARCHE_A_SUIVRE.md`.** Annoncé deux fois le 09/09, pas fait, et dit tel
+quel à Mike. Ce sont les fichiers de RÈGLES — ce qu'une session lit avant tout
+le reste — et la journée du 09/09 a produit cinq règles mesurées qui n'existent
+aujourd'hui que dans un carnet éphémère : *un outil qui juge ne témoigne pas* ;
+*une protection doit nommer la place, pas seulement le nom* ; *quand on corrige
+un angle mort, on cherche ses autres portes, et un compteur d'étendue imprimé
+les rend visibles* ; *ne jamais réécrire un `.bat` pendant qu'il tourne* ; et la
+parade au pont qui écrit une version périmée (re-stager, comparer la TAILLE,
+re-committer) — le défaut d'outillage le plus coûteux du projet, écrit nulle
+part. Zéro GPU, zéro NAS, zéro serveur arrêté : c'est le meilleur usage d'une
+session pendant que la machine calcule.
+
+**B0 bis. Le ménage — à fermer.** Bat 50 passé deux fois le 09/09 : 14 puis
+**506 fichiers / 49,3 Mo** dans `_corbeille_menage\20260909_212726\`. Il
+reste **47 fichiers / 34,8 Mo** au prochain lancement (34 journaux d'annulation
+de plus de 30 jours, 7 rapports périmés, 6 reliquats de quarantaine), puis une
+décision de Mike sur les **283 Mo** de `_to_delete\menage_20260908\
+_avant_deplacement\photos.db` — copie de la base, que le veto retient parce
+que l'instrument ne peut pas la distinguer de la base vivante. Enfin, vider
+`_corbeille_menage\` à la main après quelques jours.
+
+
 **B1. Le reste d'audit** (ancien point 5) : **O11 FAIT le 09/09** — compression
 HTTP, `/files` 157 → 48 ko et `/pets` 88 → 29 ko, mesuré sur le fil. Restent
 O8–O9 (matmul par visage et backfill sémantique : les deux touchent des boucles

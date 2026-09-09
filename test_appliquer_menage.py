@@ -12,6 +12,7 @@ Lance : python test_appliquer_menage.py
 """
 
 import json
+import os
 import shutil
 import time
 import sys
@@ -66,6 +67,41 @@ class LeVetoDeLInventaire(unittest.TestCase):
         bouge, retenus, _e = M.trier()
         self.assertEqual(bouge, [])
         self.assertIn('non vu', retenus[0][1])
+
+    def test_un_journal_LU_PAR_UN_MOTIF_part_quand_l_age_le_dit(self):
+        """L'etape 3 du bat 50 promettait un choix qu'elle ne pouvait tenir.
+
+        Mesure du 09/09 : Mike repond « 2 » et lit « Rien a deplacer ».
+        35 des 44 journaux sont `LU PAR UN MOTIF` -- forcement, `undo_*.json`
+        EST le motif. Ici le jugement vient de l'AGE, que Mike fournit et qui
+        est plus fort."""
+        self._monde(['docs/undo_annee_20260101_000000.json'],
+                    {'docs/undo_annee_20260101_000000.json': 'LU PAR UN MOTIF'})
+        vieux = time.time() - 200 * 86400
+        os.utime(self.d / 'docs/undo_annee_20260101_000000.json',
+                 (vieux, vieux))
+        bouge, _r, _e = M.trier(avec_journaux=30)
+        self.assertEqual([b['fichier'] for b in bouge],
+                         ['docs/undo_annee_20260101_000000.json'])
+
+    def test_un_journal_LU_PAR_DU_CODE_reste_meme_vieux(self):
+        """`docs/plan_rangement.json` est nomme en clair par les bats 26 et
+        39 : ce n'est pas un journal perime, c'est une entree vivante."""
+        self._monde(['docs/plan_rangement.json'],
+                    {'docs/plan_rangement.json': 'LU PAR DU CODE'})
+        vieux = time.time() - 200 * 86400
+        os.utime(self.d / 'docs/plan_rangement.json', (vieux, vieux))
+        bouge, retenus, _e = M.trier(avec_journaux=30)
+        self.assertEqual(bouge, [])
+        self.assertIn('LU PAR DU CODE', retenus[0][1])
+
+    def test_un_motif_hors_journaux_reste_vetote(self):
+        """L'exception est NOMMEE : elle ne vaut que pour les journaux."""
+        self._monde(['_to_delete/x.jsonl'],
+                    {'_to_delete/x.jsonl': 'LU PAR UN MOTIF'})
+        bouge, retenus, _e = M.trier()
+        self.assertEqual(bouge, [])
+        self.assertIn('LU PAR UN MOTIF', retenus[0][1])
 
     def test_LU_PAR_CONVENTION_est_retenu_aussi(self):
         # Un .bat, un test : personne ne les cite, tout le monde s'en sert.

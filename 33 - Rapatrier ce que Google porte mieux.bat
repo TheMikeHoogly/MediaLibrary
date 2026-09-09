@@ -44,10 +44,10 @@ echo.
 set "PY=python"
 if exist ".venv\Scripts\python.exe" set "PY=.venv\Scripts\python.exe"
 
-REM LE RAPPORT LE PLUS FRAIS, jamais un fige. Ce bat lisait
-REM `_rapport_google_apres2.json`, la mesure du 28/08 : onze jours plus
-REM tard le fonds avait change (dedoublonnage, strip Motion Photo,
-REM coquilles en quarantaine) et le verdict avec lui. `_google.json` est
+REM LE RAPPORT LE PLUS FRAIS, jamais un fige. Ce bat lisait autrefois un
+REM rapport DATE, celui du 28/08 : onze jours plus tard le fonds avait
+REM change (dedoublonnage, strip Motion Photo, coquilles en quarantaine)
+REM et le verdict avec lui. `_google.json` est
 REM ce qu'ecrit la DERNIERE execution de verifier_photos_google.py --
 REM celle que le bat 49 exige de toute facon avant d'effacer.
 REM
@@ -102,7 +102,7 @@ goto :fin
 echo.
 echo   %RAPPORT% est introuvable. Il vient de la verification :
 echo.
-echo     "%PY%" verifier_photos_google.py --takeout "C:\GOOGLE PHOTOS\extrait" --json _rapport_google_apres.json
+echo     "%PY%" verifier_photos_google.py --takeout "C:\GOOGLE PHOTOS\extrait" --json _google.json
 echo.
 pause
 exit /b 2

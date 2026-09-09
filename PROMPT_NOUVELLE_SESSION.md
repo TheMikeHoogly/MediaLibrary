@@ -72,85 +72,156 @@ oppose son veto.
 
 ---
 
-## 3. Le bat 50 : le veto a tenu, l'instrument avait TROIS portes ouvertes
+## 3. Le ménage est fait — et l'angle mort avait CINQ portes
 
-**Lancé et terminé le 09/09 à 20:23. 14 fichiers déplacés, 0 échec**, manifeste
-dans `_corbeille_menage\20260909_202315\`. Environ 340 Ko. **Et 810 fichiers
-retenus par le veto** — ce déséquilibre était le vrai résultat.
+**Bat 50, second passage, 21:27 : 506 fichiers déplacés, 49,3 Mo**, manifeste
+dans `_corbeille_menage\20260909_212726\`, réversible par `--annuler`. Le
+premier passage n'en avait déplacé que 14 et **retenu 810** — ce déséquilibre
+était le vrai résultat de la journée.
 
 Le veto (« un fichier que l'inventaire n'a pas vu est retenu : ne pas savoir
-n'est pas savoir que non ») a fait exactement son travail. C'est la mesure en
-amont qui était aveugle, et **elle l'était par trois portes différentes** —
-corrigées et remesurées le 09/09 au soir, une par une :
+n'est pas savoir que non ») a fait exactement son travail à chaque fois. C'est
+`inventaire_fichiers_orphelins.py` qui était aveugle, **et il l'était par cinq
+portes différentes**, corrigées et remesurées une par une :
 
 | # | La porte | Ce qu'elle cachait |
 |---|---|---|
 | 1 | filtre d'**extension** — `_fichiers()` ne rendait que du texte | tous les binaires : `.pyc`, `.jpg`, `.b64`, `.jsonl` |
-| 2 | élagage de **dossier** — `__pycache__` était dans `IGNORES` | 122 `.pyc` de plus, invisibles même après le correctif 1 |
-| 3 | élagage **par nom nu, à toute profondeur** — `_corbeille_session` | **579 des 800 fichiers de `_to_delete\`** |
+| 2 | élagage de **dossier** — `__pycache__` dans `IGNORES` | 122 `.pyc` de plus, invisibles *après* le correctif 1 |
+| 3 | élagage **par nom nu, à toute profondeur** | **579 des 800 fichiers de `_to_delete\`** |
+| 4 | le **nettoyeur** compté comme lecteur de ses propres cibles | `_rapport_perdus_takeout.json`, `_rapport_sef_avant.json` |
+| 5 | l'**instrument lui-même**, via les commentaires du correctif | les quatre fichiers dont je venais d'écrire l'histoire |
 
-La porte 3 est la leçon de la journée. `_corbeille_session` désignait la
-corbeille **vivante**, à la racine. Comparé au nom **nu**, il faisait aussi
-taire `_to_delete\corbeilles_avant_25-08\_corbeille_session\`, une corbeille
-**morte** archivée dans la quarantaine. *Une protection qui vise un dossier
-particulier doit nommer sa **place**, pas seulement son nom.* Même erreur pour
-`JAMAIS_ORPHELIN`, qui protégeait `photos.db` **partout** : une copie de 283 Mo
-archivée dans `_to_delete\` en héritait sans que personne l'ait décidé. Les
-deux sont maintenant **ancrés à la racine**.
+**La porte 3** est la leçon d'ingénierie : `_corbeille_session` désignait la
+corbeille **vivante**, à la racine, mais comparé au nom **nu** il faisait aussi
+taire la corbeille **morte** archivée dans la quarantaine. *Une protection qui
+vise un dossier particulier doit nommer sa **place**, pas seulement son nom.*
+Même défaut sur `JAMAIS_ORPHELIN`, qui protégeait une copie de `photos.db` de
+283 Mo. Les deux sont ancrés à la racine (`IGNORES_RACINE` / `IGNORES_PARTOUT`).
 
-**Et la vraie leçon de méthode : réparer la porte 1 ne suffisait pas, et je
-m'étais déclaré content.** Chaque correctif a fait remonter le compte de
-fichiers parcourus — 719 → 3 761 → 3 883 → **4 465** — et c'est le compte
-imprimé en tête du rapport qui a rendu chaque porte suivante visible. *Quand on
-corrige un angle mort, on cherche ses autres portes avant de se déclarer
-content.*
+**La porte 5 est la leçon de méthode, et elle est humiliante :** en écrivant
+dans les commentaires du correctif *pourquoi* `_rapport_google_apres2.json`
+avait été protégé à tort, j'ai fait de l'instrument son lecteur. Au passage
+suivant, mesuré, les quatre fichiers étaient de nouveau `LU PAR DU CODE` — lus
+par l'outil qui venait d'expliquer que personne ne les lisait. **Écrire
+l'histoire d'une erreur la refaisait.** La règle est maintenant écrite une
+bonne fois : *rien de la chaîne de ménage n'est un lecteur* — ni l'instrument,
+ni son banc, ni le nettoyeur, ni le sien, ni leurs rapports, ni leurs
+manifestes. **Un outil qui juge ne témoigne pas.**
 
-### Ce que l'instrument dit maintenant (mesuré, 09/09 au soir)
+Et la leçon qui les relie toutes : **réparer la porte 1 ne suffisait pas, et
+je m'étais déclaré content.** Ce qui a rendu chaque porte suivante visible,
+c'est le compteur de fichiers parcourus imprimé en tête du rapport —
+719 → 3 761 → 3 883 → 4 465 → 3 944 (la dernière baisse est saine : la
+corbeille du ménage n'est plus reparcourue). *Quand on corrige un angle mort,
+on cherche ses autres portes avant de se déclarer content.*
 
-```
-  parcourus dans le depot        : 4465
-  dont lisibles comme LECTEURS   :  753 sur  770 candidats textuels
-  dossiers elagues (non parcourus):  14  -> .claude, .git, .venv, OLD
-```
+`test_inventaire_fichiers_orphelins.py` : **26 bancs**, au moins un par porte.
 
-Le compteur de dossiers élagués est imprimé **à chaque passage** : c'est le
-seul point aveugle qui reste, et il ne redeviendra pas silencieux.
-`test_inventaire_fichiers_orphelins.py` : **21 bancs**, dont un par porte.
+### Deux défauts du bat 50 lui-même, corrigés
 
-### Ce que le prochain bat 50 déplacerait (simulé sur `_orphelins.json`)
+- **L'étape 3 promettait un choix qu'elle ne pouvait pas tenir.** Mike a
+  répondu « 2 » (journaux > 30 j) et lu « Rien à déplacer » — **35 des 44
+  journaux sont `LU PAR UN MOTIF`**, forcément : `undo_*.json` EST le motif.
+  Le veto ne pouvait rien laisser passer. Pour cette famille seule, le jugement
+  vient désormais de l'**âge**, que Mike fournit et qui est plus fort ;
+  `LU PAR DU CODE` reste un veto (`docs/plan_rangement.json` est lu par les
+  bats 26 et 39). *Une option de menu qui ne peut jamais rien faire est une
+  promesse que l'outil ne tiendra pas.*
+- **`_rapport_google_apres2.json` déclaré mort par Mike.** Réglé sans liste
+  d'exception : le bat 33 le nommait dans un `REM` **pour dire qu'il avait
+  cessé de le lire**, et sa ligne 105 `echo`ait un exemple nommant
+  `_rapport_google_apres.json`. Les deux mentions retirées du bat, la leçon
+  gardée. L'instrument distingue maintenant `REM`, `::` et `echo` non redirigé
+  (mais **pas** `echo x > fichier`, qui écrit pour de bon — c'est le canal de
+  commande de tout ce projet).
 
-| | fichiers | poids |
+### Ce que le prochain bat 50 déplacerait — mesuré
+
+| famille | fichiers | poids |
 |---|---|---|
-| **proposés et jetables** | 506 | **47,1 Mo** |
-| retenus par le veto | 304 | 321,4 Mo |
+| journaux d'annulation (> 30 j) | 34 | 20,6 Mo |
+| rapports périmés | 7 | 14,1 Mo |
+| quarantaine, reliquat | 6 | 0,1 Mo |
+| **total proposé** | **47** | **34,8 Mo** |
 
-**Le gisement n'était pas où je le disais.** `_to_delete\` pèse **349,8 Mo**
-(et non 366,8), mais **283 Mo tiennent dans un seul fichier** :
-`_to_delete\menage_20260908\_avant_deplacement\photos.db`, une copie de la base
-faite avant le ménage du 08/09. L'inventaire la range en `LU PAR DU CODE` — le
-code cite `photos.db` partout, et l'instrument **ne peut pas distinguer la base
-vivante de sa copie**. C'est une limite honnête, pas un bogue : elle demande
-une décision de Mike, pas une règle de plus.
+**Ce qui reste et qui ne bougera pas tout seul : 283 Mo dans un seul
+fichier**, `_to_delete\menage_20260908\_avant_deplacement\photos.db`, la
+copie de la base d'avant le ménage du 08/09. L'inventaire la range en
+`LU PAR DU CODE` parce que le code cite `photos.db` partout et qu'il **ne peut
+pas distinguer la base vivante de sa copie**. C'est une limite honnête, pas un
+bogue : elle demande une décision de Mike, pas une règle de plus.
 
-Le reste de la corbeille du ménage n'est pas vidé, et c'est voulu.
+Enfin : `_corbeille_menage\` n'est **pas** vidée par le bat, et c'est voulu.
+Quelques jours, puis à la main.
 
-## 4. Ce qui est ouvert, dans l'ordre
+---
 
-**À Mike, quand il veut** — la dernière photo sensible ; lire la page `/aide`
-(chantier 17, étape 7 : ce n'est pas une tâche, c'est un jugement, sa famille
-lira ce texte).
+## 4. LE PLAN DE LA PROCHAINE SESSION — arbitré le 09/09 au soir
 
-**De mon côté, sans GPU ni prompt** — la révision de `CLAUDE.md` et de
-`MARCHE_A_SUIVRE.md`, qui n'ont **pas** été relus le 09/09 ; les points
-d'audit restants une fois la campagne finie.
+**Le cadre ne change pas : la campagne de retag tourne jusqu'au ~14/09.** Donc
+pas de GPU, pas de prompt, pas de serveur arrêté. Ce plan ne contient que ce
+qui vit sous cette contrainte, et il est ordonné : le premier point d'abord.
 
-**Quand la campagne s'arrête** — la question au tagueur (3 bis c), la
+### P1 — Réviser `CLAUDE.md` et `MARCHE_A_SUIVRE.md` (le point le plus important)
+
+**Ces deux fichiers n'ont pas été relus le 09/09, et je l'ai dit deux fois sans
+le faire.** Ce sont les fichiers de RÈGLES : ce que la prochaine session lira
+avant toute chose. Or la journée a produit exactement le genre de matière qui
+doit y vivre, et qui aujourd'hui n'existe que dans un carnet éphémère :
+
+1. **Un outil qui juge ne témoigne pas.** Cinq fois le même défaut, dont une
+   fabriquée en documentant les quatre autres.
+2. **Une protection doit nommer la place, pas seulement le nom.**
+3. **Quand on corrige un angle mort, on cherche ses autres portes** — et le
+   moyen de les voir est un compteur d'étendue imprimé à chaque passage.
+4. **Ne jamais réécrire un `.bat` pendant qu'il tourne** (`cmd.exe` reprend à
+   l'octet mémorisé).
+5. **La parade au pont qui écrit une version périmée** : re-stager, comparer la
+   TAILLE, re-committer. Coûté six fois dans la journée, et encore quatre fois
+   le soir. C'est le défaut d'outillage le plus coûteux du projet et il n'est
+   écrit nulle part dans les règles.
+
+Objectif : que ces cinq règles soient dans `CLAUDE.md`/`MARCHE_A_SUIVRE.md`
+avec leur mesure, et que ce qui y est périmé en sorte. **Zéro GPU, zéro NAS,
+zéro serveur.** C'est aussi le meilleur usage d'une session pendant que la
+machine calcule.
+
+### P2 — Fermer le ménage
+
+1. Relancer le **bat 50** : 47 fichiers, 34,8 Mo (dont les journaux, qui
+   marchent enfin). Répondre « 2 » à l'étape 3.
+2. **Décider des 283 Mo** : la copie de `photos.db` du 08/09. Question à Mike,
+   pas règle à écrire.
+3. Dans quelques jours, vider `_corbeille_menage\` à la main.
+
+### P3 — L'audit, ce qui n'a pas besoin du GPU
+
+- **O14 — `_reconcilier` re-hashe tout le store sous verrou à chaque
+  `save()`.** C'est du chemin de service, pas du calcul IA : mesurable et
+  réparable maintenant. **C'est le meilleur gain de perfomance restant.**
+- **O15 — les caches de vignettes.** Même famille.
+- O8 et O9 (matmul par visage, backfill sémantique) touchent des boucles de
+  calcul : **après** la campagne, pas avant.
+
+### P4 — À Mike, quand il veut
+
+La dernière photo sensible ; lire la page `/aide` (chantier 17, étape 7 : ce
+n'est pas une tâche, c'est un jugement — sa famille lira ce texte).
+
+### P5 — Quand la campagne s'arrête (~14/09), et pas avant
+
+La question au tagueur sur les documents sensibles (3 bis c) — **empêchée**,
+pas reportée : toucher au prompt rouvrirait ~12 000 photos déjà refaites ; la
 re-mesure des Motion Photos arrivées depuis le 03/09 (demande le serveur
-arrêté), et le bilan chiffré de cette première passe officielle du fonds.
+arrêté) ; et le **bilan chiffré** de cette première passe officielle du fonds.
 
-**En fin de projet, décision de Mike du 09/09** — la copie hors site. Le fait
-qui ne se répète plus mais qui reste vrai : depuis l'effacement du Takeout, le
-NAS est le seul exemplaire des ~40 000 photos.
+### En fin de projet — décision de Mike du 09/09
+
+La copie hors site. Le fait qui ne se répète plus mais qui reste vrai : depuis
+l'effacement du Takeout, **le NAS est le seul exemplaire des ~40 000 photos**.
+Le jour venu, deux choses ensemble : choisir le fournisseur, **et** écrire le
+banc qui prouve que la copie distante contient ce que le NAS contient.
 
 ---
 
@@ -186,10 +257,14 @@ passer par le navigateur connecté de Mike et lire les styles **calculés**.
 
 ---
 
-## 6. Ce que j'attends de Mike demain matin
+## 6. Ce que j'attends de Mike
 
-1. **La sortie console du bat 50** — c'est le seul point vraiment bloquant.
-2. Rien d'autre. La campagne tourne toute seule ; le reste est de mon côté.
+1. **Une décision sur les 283 Mo** — la copie de `photos.db` dans
+   `_to_delete\menage_20260908\_avant_deplacement\`. Elle est retenue par le
+   veto et le restera : l'instrument ne peut pas distinguer la base vivante de
+   sa copie. C'est un `del` manuel, ou rien.
+2. **Un lancement du bat 50** quand il passe par là (47 fichiers, 34,8 Mo).
+3. Rien d'autre. La campagne tourne toute seule.
 
 ---
 
