@@ -45,8 +45,16 @@ extrait, et le NAS porte tout ce qui devait l'être.
 > distinguer — deux preuves pour déclarer une absente jetable, et l'arrêt sinon.
 > C'est la différence entre un verrou et un jugement.
 
-**A2. Trier les 213 photos sensibles** (chantier 18) — **c'est maintenant le
-premier chantier vivant du projet.** L'onglet existe, les
+**A2. Trier les 213 photos sensibles — FAIT par Mike le 09/09, il en reste UNE.**
+Le chantier 18 est clos pour l'essentiel : 60 documents à la corbeille, 7 rangés
+en privé, le reste rendu à la galerie. **Deux défauts trouvés en le regardant
+faire**, tous deux corrigés et observés en réel : l'onglet se rechargeait depuis
+le haut après chaque verdict (invivable sur 213), et l'API ressuscitait
+**67 dossiers déjà clos** parce que le drapeau `sensible` survit au déménagement
+d'une photo — 68 annoncées là où il y en avait 1. Détail dans `eval/DECISIONS.md`
+et `eval/DECISIONS_UI.md`.
+
+**A2 bis. Ce qui reste du chantier 18** (ancien libellé, conservé) L'onglet existe, les
 photos sont masquées, le geste par défaut est la corbeille — « la médiathèque
 conserve des SOUVENIRS, pas des documents » (Mike, 07/09). **Zéro GPU, zéro
 NAS, lecture d'index** : c'est le seul vrai chantier qui avance pendant la

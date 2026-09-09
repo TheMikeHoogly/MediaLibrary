@@ -121,6 +121,53 @@ class LEtatSeLitDansLIndexBrut(unittest.TestCase):
         self.assertNotIn("STORE.data", s)
 
 
+class UnVerdictRenduNeSAttendPlus(unittest.TestCase):
+    """Le 09/09, Mike a trie les 213 candidates et il en restait UNE.
+    `/api/sensibles` en annoncait 68 : 60 dans `.corbeille-effacements`,
+    7 dans un `PRIVE`, 1 vraie. Le drapeau `sensible` reste pose quand la
+    photo DEMENAGE -- la corbeille et le rangement en prive re-clent l'entree
+    sans effacer la marque. Rien ne se voyait, sa page ayant retire les fiches
+    a l'ecran ; au rechargement suivant, 67 dossiers clos seraient revenus
+    dans l'onglet avec leurs vignettes et leurs chemins complets."""
+
+    def test_la_regle_existe_et_lit_le_CHEMIN(self):
+        s = _corps("_verdict_deja_rendu")
+        self.assertIn("_is_hidden_path", s)
+        self.assertIn("_resolve_key", s)
+        self.assertIn("est_prive", s)
+
+    def test_les_DEUX_routes_l_appliquent(self):
+        # La liste ET le compteur de candidates : un onglet propre au-dessus
+        # d'un compteur qui gonfle serait un mensonge d'une autre forme.
+        for nom in ("_serve_sensibles", "_serve_sensibles_candidats"):
+            self.assertIn("_verdict_deja_rendu(cle)", _corps(nom), nom)
+
+    def test_c_est_un_SAUT_pas_un_marquage(self):
+        # `continue` : l'entree n'est pas modifiee. Effacer le drapeau au
+        # moment du geste couterait la reversibilite -- une photo restauree
+        # de la corbeille revient a son ancien chemin et redevient en
+        # attente toute seule, ce qu'un drapeau efface ne saurait plus dire.
+        for nom in ("_serve_sensibles", "_serve_sensibles_candidats"):
+            s = _corps(nom)
+            i = s.index("_verdict_deja_rendu(cle)")
+            self.assertIn("continue", s[i:i + 120], nom)
+
+    def test_la_route_qui_POSE_l_etat_ne_filtre_PAS(self):
+        # Juger une photo deja rangee doit rester possible : c'est la route
+        # d'ecriture, pas la liste d'attente. Un filtre ici rendrait le
+        # geste « pas sensible » impossible sur une photo de la corbeille.
+        self.assertNotIn("_verdict_deja_rendu", _corps("_post_sensibles_etat")
+                         if _existe("_post_sensibles_etat") else "")
+
+
+def _existe(nom):
+    try:
+        _noeud(nom)
+        return True
+    except AssertionError:
+        return False
+
+
 class LaRouteDEtat(unittest.TestCase):
     def setUp(self):
         self.s = _corps("_do_sensibles_post")
@@ -399,11 +446,46 @@ class CeQueLesPIXELSOntDit(unittest.TestCase):
         # 213 fiches d'un coup : page de 63 299 px. Par tranches de 40 :
         # 12 159 px, et le bouton DIT combien il reste.
         self.assertIn("PAR_TRANCHE = 40", self.page)
-        self.assertIn("poserTranche(photos, 0);", self.page)
         self.assertIn("restantes)", self.page)
         # Un BOUTON, pas un observateur d'intersection : celui-ci ne se
         # declenche pas dans un onglet qui n'est pas au premier plan.
         self.assertNotIn("IntersectionObserver", self.page)
+
+    def test_un_verdict_RETIRE_la_fiche_au_lieu_de_TOUT_REBATIR(self):
+        # Cette assertion attendait `poserTranche(photos, 0)` jusqu'au 09/09 :
+        # apres chaque verdict la page relisait le serveur et reposait la
+        # PREMIERE tranche. Trier la photo n 120 imposait donc de rouvrir deux
+        # tranches et de retrouver sa place, 213 fois. Le code etait juste
+        # ligne a ligne ; le defaut n'apparait qu'au vingtieme clic.
+        i = self.page.index("toast(g.dit(nom), g.annulable);")
+        suite = self.page[i:i + 800]
+        self.assertIn("retirer(cle);", suite)
+        self.assertNotIn("charger();", suite)
+        # L'etat vit hors des fermetures : c'est ce qui permet de retirer.
+        self.assertIn("var ETAT = { photos: [], poses: 0 };", self.page)
+        # Le bouton se REFAIT depuis l'etat -- une fermeture sur `fin`
+        # devenait fausse des la premiere suppression.
+        self.assertIn("ETAT.photos.length - ETAT.poses", self.page)
+
+    def test_le_CLAVIER_existe_et_ses_touches_sont_ECRITES_dans_la_page(self):
+        # Plancher 6 du systeme : les taches de tri repetitives se font au
+        # clavier, ET les raccourcis se documentent dans l'interface.
+        for touche in ("'c'", "'p'", "'n'", "'z'", "'j'", "'k'"):
+            self.assertIn(touche, self.page, touche)
+        self.assertIn("<kbd>C</kbd>", self.page)
+        self.assertIn("<kbd>Z</kbd>", self.page)
+        # Le garde du champ de recherche : sans lui, taper « chat » dans la
+        # barre du haut mettrait une photo a la corbeille.
+        self.assertIn("t.tagName === 'INPUT'", self.page)
+
+    def test_le_bouton_ANNULER_n_est_pas_la_variante_PAPIER(self):
+        # Il etait `btn--discret` sur un bandeau `--salle-3` : texte
+        # `--texte-papier` sur fond sombre, soit 1,02:1 -- invisible, sur le
+        # seul controle qui rattrape une mise a la corbeille.
+        i = self.page.index('id="toast-annuler"')
+        ligne = self.page[max(0, i - 120):i]
+        self.assertNotIn("btn--discret", ligne)
+        self.assertIn("btn--principal", ligne)
 
     def test_le_lien_atteint_le_plancher_tactile(self):
         # 18 px quand les trois boutons de verdict faisaient 44 -- et c'est le

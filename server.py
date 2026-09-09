@@ -3064,6 +3064,27 @@ def _is_hidden_path(p):
     return any(part.startswith(('.', '@', '#')) for part in Path(p).parts)
 
 
+def _verdict_deja_rendu(cle):
+    """Le CHEMIN dit-il, à lui seul, que cette photo n'attend plus de verdict ?
+
+    Le drapeau `sensible` reste posé quand la photo DÉMÉNAGE : la mettre à la
+    corbeille ou la ranger dans un `PRIVE` re-clé l'entrée sans effacer la
+    marque. Le 09/09, Mike a trié les 213 candidates ; `/api/sensibles` en
+    annonçait encore **68** — 60 dans `.corbeille-effacements`, 7 dans un
+    `PRIVE`, et **une** vraiment en attente. Rien ne se voyait : sa page avait
+    retiré les fiches à l'écran. Au rechargement suivant, 67 documents déjà
+    jugés seraient revenus dans l'onglet, vignettes et chemins complets
+    compris — l'exact contraire de ce que l'onglet promet.
+
+    Le chemin suffit à trancher, et c'est pour ça qu'on ne remet pas le
+    drapeau à zéro au moment du geste : une photo SORTIE du fonds (`.corbeille-*`,
+    `@eaDir`) ou rangée dans un `PRIVE` a reçu son verdict par construction, et
+    si Mike l'ANNULE, elle revient à son ancien chemin et redevient en attente
+    toute seule. Effacer la marque au moment du geste perdrait cette réversibilité.
+    """
+    return _is_hidden_path(_resolve_key(cle)) or _visibilite.est_prive(cle)
+
+
 # Dossiers navigables/galerie mais PAS tagués automatiquement
 BROWSE_DIRS_FILE = SCRIPT_DIR / "dossiers_a_explorer.txt"
 
@@ -11894,6 +11915,8 @@ class Handler(BaseHTTPRequestHandler):
                 continue
             if u is not None and not _visibilite.peut_juger(cle, u):
                 continue
+            if _verdict_deja_rendu(cle):
+                continue
             # `url` est calculée ICI par `_url_for_key` : la refaire en JS
             # ferait un second assemblage de la même règle, et un second
             # assemblage finit toujours par diverger (leçon `faits_vue`).
@@ -11935,6 +11958,10 @@ class Handler(BaseHTTPRequestHandler):
         total, par_motif, echantillon, retagues = 0, {}, [], 0
         for cle, e in list(INDEX_BRUT.items()):
             if u is not None and not _visibilite.peut_juger(cle, u):
+                continue
+            # Même règle que la liste : une photo déjà à la corbeille ou déjà
+            # rangée en PRIVE n'est pas une candidate, c'est un dossier clos.
+            if _verdict_deja_rendu(cle):
                 continue
             oui, motif = _tm.candidat_sensible(e)
             if not oui:
