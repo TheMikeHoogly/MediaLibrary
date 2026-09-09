@@ -72,28 +72,43 @@ oppose son veto.
 
 ---
 
-## 3. Le bat 50 : passé, et une question ouverte
+## 3. Le bat 50 : le veto a eu raison, mon instrument est à moitié aveugle
 
 **Lancé et terminé le 09/09 à 20:23. 14 fichiers déplacés, 0 échec**, manifeste
-dans `_corbeille_menage\20260909_202315\`. Sont partis : tout `_to_delete\`
-(y compris le `menage_20260908` et le `blob_prefusion` de 178 Ko) et les trois
-pièces de `docs\_archive\`. Environ 340 Ko.
+dans `_corbeille_menage\20260909_202315\`. Environ 340 Ko.
 
-**Mais la famille la plus lourde n'a PAS bougé** — `_rapport_google_avant_purge.json`
-(4,65 Mo) et les autres `_rapport_*` sont toujours en place. L'inventaire du
-17 h les donnait ORPHELINS ; à 20:23 le veto les a manifestement retenus.
+**Et 810 fichiers retenus par le veto.** Ce déséquilibre est le résultat, pas
+un détail. La sortie console en donne la raison, fichier par fichier, et elle
+accuse l'instrument :
 
-**Première chose à faire : lire la ligne « RETENUS par le veto » dans la sortie
-console de Mike**, ou relancer `python appliquer_menage.py` (aperçu seul, il
-n'écrit rien) et lire la raison qu'il imprime. Deux lectures possibles, et
-elles ne se réparent pas au même endroit : soit un carnet écrit aujourd'hui
-cite ces noms et les a fait passer en « lu », soit la politique ne les attrape
-pas. **Ne pas forcer : le veto a fait exactement ce pour quoi il est là.**
+- **`_to_delete\` contient 800 fichiers et 366,8 Mo** — dont **560 `.pyc`**.
+  J'avais annoncé « 136 Ko » à Mike. Faux de trois ordres de grandeur.
+- `inventaire_fichiers_orphelins.py` ne PARCOURT que les fichiers texte
+  (`EXT_LECTEURS`). **609 binaires n'ont donc jamais été examinés** → famille
+  `non vu` → retenus, comme le veto l'exige (« ne pas savoir n'est pas savoir
+  que non »).
+- Les `_rapport_*` sont retenus pour une autre raison : `LU PAR DU CODE` ou
+  `LU PAR UN MOTIF`. À vérifier avant de conclure — **une citation dans un
+  commentaire `REM` d'un `.bat` compte aujourd'hui comme une lecture**, et ce
+  n'en est pas une.
 
-Le reste de la corbeille du ménage n'est pas vidé, et c'est voulu — laisser
-passer quelques jours, puis l'effacer à la main.
+**Le veto a fait exactement son travail. C'est la mesure en amont qui est
+incomplète, et ma recommandation à Mike en a hérité.**
 
----
+### Le correctif, et c'est la première tâche de demain
+
+1. **Séparer PARCOURIR de LIRE.** N'importe quel fichier peut être un
+   CANDIDAT ; seul un fichier texte peut être un LECTEUR. Aujourd'hui les deux
+   sont filtrés par la même liste d'extensions.
+2. **Dire tout haut ce qu'on n'a pas examiné.** Un rapport qui range 609
+   fichiers en « non vu » sans le crier laisse croire à un inventaire complet.
+   Le nombre de non-vus doit sortir dans le bilan, pas dans le détail.
+3. **Distinguer une citation en COMMENTAIRE d'une lecture réelle.** Au minimum,
+   imprimer la ligne citante pour qu'un humain tranche.
+4. Ensuite seulement, relancer le bat 50 : les 366 Mo de `_to_delete\` sont le
+   vrai gisement, et ils sont toujours là.
+
+Le reste de la corbeille du ménage n'est pas vidé, et c'est voulu.
 
 ## 4. Ce qui est ouvert, dans l'ordre
 
