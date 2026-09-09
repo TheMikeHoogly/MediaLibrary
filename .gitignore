@@ -357,3 +357,12 @@ _planches_corbeille/
 # Le motif, pas l'enumeration : tout brouillon pose a la racine par une session
 # porte ce prefixe, et l'agent Git prend TOUT ce qui traine.
 _collage*.py
+
+# --- Sas de lecture des fichiers du NAS (09/09) -----------------------------
+# Le pont vers le poste refuse de STAGER quoi que ce soit sous `N:\Photos`
+# (« Could not stat » sur la lettre de lecteur reseau ; l'UNC est refuse par
+# principe), et le montage de `device_bash` peut tomber. Le seul chemin qui
+# reste alors : Mike copie dans `_sans_ext\`, sur C:, et la lecture passe.
+# C'est un SAS, jamais un depot : ce sont des copies de photos de famille, et
+# elles repartent des qu'on a lu ce qu'il fallait.
+_sans_ext/

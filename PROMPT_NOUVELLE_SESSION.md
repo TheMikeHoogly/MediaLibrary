@@ -132,11 +132,22 @@ un réglage involontaire du téléphone. **Le vrai correctif est en amont** :
 couper « Photo animée » dans l'appareil photo Samsung, sinon le bat 42 devra
 repasser indéfiniment.
 
-**DEUX RESTES CONNUS** : 14 fichiers SANS EXTENSION (2 à 11 Ko) dans
-`_A TRIER\Takeout Google\2024|2025`, jamais lus — `device_stage_files` refuse
-`N:\Photos` (« Could not stat ») et le montage de `device_bash` était tombé le
-09/09 ; y revenir quand le pont va bien. Et le libellé du bat 26 : « source
-absente » 613 fois pour dire « déjà rangée ».
+**LE PONT PEUT TOMBER DE DEUX FAÇONS, et il faut le savoir avant de s'y
+casser les dents** : `device_stage_files` refuse tout chemin sous `N:\Photos`
+(« Could not stat » ; l'UNC est refusé aussi) alors que `device_list_dir` y
+marche — on VOIT sans pouvoir LIRE ; et le montage de `device_bash` peut
+disparaître entièrement, `C:` compris. **Le contournement, quand les deux se
+cumulent** : demander à Mike de copier vers `C:\...\_sans_ext\` (gitignoré,
+c'est un sas), puis stager depuis C:. **Et les livraisons passent quand même** :
+`SESSION_COMMIT.txt` et `_commande_git.txt` s'écrivent par
+`device_commit_files` — les trois canaux sont des FICHIERS, exprès.
+
+**DEUX CHOSES À CORRIGER, petites et notées** : le libellé du bat 26 (« source
+absente » 613 fois pour dire « déjà rangée ») et le **bat 32, qui rapatrie tout
+ce qui est ABSENT sans connaître les règles produit** — il a ramené 394
+captures d'écran et 14 vidéos de Motion Photo, soit 72 % de sa moisson, que
+Mike refuse par principe. Le bat 33 sait filtrer par son entrée depuis le
+09/09 ; le 32 devrait faire pareil au prochain export.
 
 **CE QUI ATTEND MIKE** : rien à décider — `QUESTIONS_MIKE.md` est vide. Les
 gestes : bat 26 puis bat 49 (dans l'ordre ci-dessus), vider `_to_delete\`

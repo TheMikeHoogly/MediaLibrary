@@ -311,12 +311,15 @@ mieux\<année>` — ceux où le NAS ne détient qu'une version dégradée
 vidéos de Motion Photo, dont Mike ne veut plus (verdict dans
 `eval/DECISIONS.md`).
 
+**LE RANGEMENT EST CONFIRMÉ COMPLET** : le plan recalculé par le serveur rend
+`total_a_ranger: 0`. Et `_A TRIER` ne contient plus que `Google porte mieux` —
+les 14 fichiers sans extension ont été identifiés (les vidéos des Motion
+Photos, voir `eval/DECISIONS.md`) et effacés par Mike avec le dossier
+`Takeout Google`.
+
 **CE QUI RESTE : laisser le scan reprendre les 613 déplacées et les 99
-arrivées, PUIS relancer `verifier_photos_google.py` — le compte va bouger —
-et alors seulement le bat 49.** Un reste connu : 14 fichiers SANS EXTENSION
-(2 à 11 Ko) dorment encore dans `_A TRIER\Takeout Google\2024|2025` ; le
-rangement ne sait pas les classer et je n'ai pas encore pu lire leurs octets
-(`device_stage_files` refuse `N:\Photos`, le montage du shell était tombé).
+arrivées — il tourne — PUIS relancer `verifier_photos_google.py` (le compte va
+bouger), et alors seulement le bat 49.**
 
 **LA DÉCOMPOSITION DES 10 759 « PROBABLE », mesurée le 09/09** — parce que le
 mot « probable » ne dit rien tout seul : **8 637 fois le NAS est PLUS GROS**,
