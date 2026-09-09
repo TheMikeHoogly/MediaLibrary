@@ -54,8 +54,15 @@
                   display: block; background: var(--salle); }
 .piece h3 { font: 600 var(--t-lg)/1.25 var(--f-affichage);
             letter-spacing: -0.01em; word-break: break-word; }
+/* `overflow-wrap: anywhere` et plus `word-break: break-all` : le second
+   coupe des que la ligne est pleine, donc AU MILIEU d'un mot -- vu le 09/09
+   sur la seule fiche restante, `...home\Ph` puis `otos\Photos Flo...`. Un
+   chemin ainsi coupe ne se lit plus et ne se recopie plus. Le premier ne
+   coupe qu'en dernier recours, et les `<wbr>` poses aux separateurs par
+   `chemin_coupable()` lui donnent de vrais points de coupe : la ligne casse
+   entre deux dossiers, la ou un humain l'aurait cassee. */
 .meta { font: var(--t-xs)/1.6 var(--f-donnees); color: var(--graphite-p);
-        margin-top: var(--e-1); word-break: break-all; }
+        margin-top: var(--e-1); word-break: normal; overflow-wrap: anywhere; }
 .actes { display: flex; gap: var(--e-2); flex-wrap: wrap; margin-top: var(--e-3); }
 /* La carte que le clavier vise. `--veilleuse` et pas `--fixateur` : elle
    ATTEND un verdict, elle n'en porte pas encore un. Le liseré reprend l'ombre
@@ -277,8 +284,15 @@
     var bouts = [];
     if (p.le) { bouts.push('repérée le ' + p.le); }
     if (p.motif) { bouts.push(p.motif); }
-    bouts.push(p.key);
-    meta.textContent = bouts.join(' · ');
+    meta.textContent = bouts.join(' · ') + (bouts.length ? ' · ' : '');
+    // Le chemin est ajoute a part, avec des points de coupe APRES chaque
+    // separateur. `\u200B` est une espace de CHASSE NULLE : elle n'ajoute
+    // aucun caractere visible, ne change pas ce qu'un copier-coller rend
+    // dans la plupart des navigateurs, et donne au moteur de rendu le droit
+    // de casser la ligne LA plutot qu'au milieu de « Photos ».
+    var chemin = document.createElement('span');
+    chemin.textContent = String(p.key).replace(/([\\/])/g, '$1\u200B');
+    meta.appendChild(chemin);
     col.appendChild(meta);
 
     var actes = document.createElement('div');
