@@ -11,7 +11,7 @@ fichier sert ; ses LECTEURS le disent.
 
 Ce que l'instrument fait, et rien d'autre : pour chaque fichier du dépôt, il
 cherche son nom dans tous les autres fichiers texte, et range le résultat en
-quatre familles :
+cinq familles :
 
   LU PAR DU CODE   -- cité par un .py, un .bat, un .txt de configuration.
                       Ne pas toucher.
@@ -37,6 +37,7 @@ exprès.
 
   python inventaire_fichiers_orphelins.py
   python inventaire_fichiers_orphelins.py --json _orphelins.json
+  python inventaire_fichiers_orphelins.py --famille "LU PAR CONVENTION"
 """
 
 import argparse
@@ -48,11 +49,50 @@ from pathlib import Path
 
 RACINE = Path(__file__).resolve().parent
 
-# Dossiers jamais parcourus : ni comme candidats, ni comme lecteurs.
-IGNORES = {'.git', '.venv', '__pycache__', 'node_modules', 'exiftool-13.59_64',
-           'photo_thumbs', 'face_thumbs', 'animal_thumbs', 'dist', 'OLD',
-           '_corbeille_copies', '_corbeille_session', 'recuperees', 'uploads',
-           '.claude', '_bat_archive'}
+# ── Les elagages, et POURQUOI ils sont ancres ──────────────────────────────
+#
+# **La troisieme porte de l'angle mort du 09/09, et de loin la plus large.**
+# Ces noms etaient dans un seul ensemble, compare au nom NU de chaque dossier
+# rencontre, a n'importe quelle profondeur. `_corbeille_session` designait la
+# corbeille VIVANTE, a la racine -- mais il faisait aussi taire
+# `_to_delete/corbeilles_avant_25-08/_corbeille_session/`, une corbeille MORTE
+# archivee dans la quarantaine. Mesure : sur les 800 fichiers de
+# `_to_delete/`, 579 etaient elagues par ce seul nom, 3 par
+# `_corbeille_copies`, et 218 seulement etaient parcourus.
+#
+# Une protection qui vise un dossier PARTICULIER doit nommer sa PLACE, pas
+# seulement son nom : sinon elle protege aussi ses homonymes, y compris ceux
+# qu'on vient de mettre a la poubelle.
+#
+# Elagues partout : ils s'imbriquent par nature et ne sont jamais du contenu
+# de projet.
+IGNORES_PARTOUT = {'.git', '.venv', 'node_modules'}
+
+# Elagues UNIQUEMENT a la racine du depot : ce sont des meubles de ce
+# projet-ci. Un dossier du meme nom trouve ailleurs est du contenu ordinaire,
+# et doit etre juge comme tel.
+IGNORES_RACINE = {'exiftool-13.59_64', 'photo_thumbs', 'face_thumbs',
+                  'animal_thumbs', 'dist', 'OLD', '_corbeille_copies',
+                  '_corbeille_session', 'recuperees', 'uploads', '.claude',
+                  '_bat_archive'}
+
+# Dossiers PARCOURUS, mais dont rien ne peut servir de LECTEUR : des artefacts
+# de construction.
+#
+# **La derniere moitie de l'angle mort du 09/09, et la plus instructive.**
+# Ouvrir le parcours aux binaires (voir `_tous_les_fichiers`) n'a rendu que 217
+# des 800 fichiers de `_to_delete/` : les 583 autres sont des `.pyc` ranges
+# dans des `__pycache__`, et `__pycache__` etait ici, dans IGNORES. La cecite
+# avait DEUX portes -- un filtre d'EXTENSION et un elagage de DOSSIER -- et
+# reparer la premiere laissait la seconde grande ouverte. **Quand on corrige un
+# angle mort, on cherche ses autres portes avant de se declarer content.**
+#
+# Un `.pyc` est regenerable par construction : personne ne le cite, et c'est
+# normal. L'inventaire le dit ORPHELIN, ce qui est la verite ; c'est la
+# POLITIQUE d'`appliquer_menage.py` qui decide OU on a le droit d'en tirer une
+# consequence -- aujourd'hui `_to_delete/` seul. Juger et effacer restent deux
+# gestes separes.
+ARTEFACTS = {'__pycache__'}
 
 # CE QUI NE COMPTE PAS COMME LECTEUR. Second faux verdict de cet instrument
 # sur lui-meme (09/09) : sa propre sortie `_orphelins.json` cite TOUS les
@@ -65,12 +105,25 @@ PAS_DES_LECTEURS = {'_orphelins.json', '_banc_sortie.txt', '_etat_banc.json',
                     '_journal_serveur.log.1'}
 
 # Fichiers dont l'absence de citation ne veut RIEN dire : ils sont lus par le
-# systeme, pas par le projet.
+# systeme, pas par le projet. **Ancre a la racine** (voir `protege_par_nom`) :
+# une COPIE de `photos.db` archivee dans `_to_delete/` n'est pas la base
+# vivante, et la proteger sous pretexte qu'elle porte le meme nom cache 283 Mo
+# a l'inventaire sans que personne l'ait decide.
 JAMAIS_ORPHELIN = {
     '.gitignore', '.gitattributes', 'requirements.txt', 'CLAUDE.md',
     'README.md', 'INSTALLATION.md', 'ROADMAP.md', 'PROMPT_NOUVELLE_SESSION.md',
-    'QUESTIONS_MIKE.md', 'server.py', 'photos.db', 'copie.db',
+    'QUESTIONS_MIKE.md', 'MARCHE_A_SUIVRE.md', 'server.py',
+    'photos.db', 'copie.db',
 }
+
+
+def protege_par_nom(p, racine):
+    """Ce fichier est-il un meuble du depot, protege par son nom ?
+
+    A LA RACINE seulement. Ailleurs, un fichier qui porte le nom d'un meuble
+    est un homonyme, et un homonyme se juge."""
+    return p.parent == racine and p.name in JAMAIS_ORPHELIN
+
 
 def lecteur_par_convention(p, racine):
     """Le lecteur qui ne CITE pas -- il trouve par convention.
@@ -83,40 +136,127 @@ def lecteur_par_convention(p, racine):
     trouve par motif, un `.bat` se lance au double-clic par un humain, et une
     page est lue par un chemin CALCULÉ (`_gabarit(nom)` ouvre
     `ui/pages/<nom>.html`, vérifié dans `server.py`). Livrer cette liste-là
-    aurait proposé d'effacer toute la suite de tests."""
+    aurait proposé d'effacer toute la suite de tests.
+
+    Les trois dernières règles sont arrivées le 09/09 avec l'ouverture de
+    l'inventaire aux fichiers BINAIRES (voir `_tous_les_fichiers`). Tant que
+    l'instrument ne voyait que du texte, elles n'avaient pas lieu d'être ;
+    dès qu'il a vu le dépôt entier, `photos.db-wal` et `yolo11s.pt` sont
+    devenus des candidats que personne ne cite par leur nom. **Élargir le
+    champ d'un instrument crée des angles morts neufs : les chercher fait
+    partie de l'élargissement.**"""
     n = p.name
+    nl = n.lower()
+    sfx = p.suffix.lower()
     if n.startswith('test_') and p.suffix == '.py':
         return "banc : trouve par le lanceur de tests, jamais cite"
-    if p.suffix.lower() == '.bat' and p.parent == racine:
+    if sfx == '.bat' and p.parent == racine:
         return "porte d entree de Mike : un .bat se lance au double-clic"
-    if p.parent.name == 'pages' and p.suffix.lower() == '.html':
+    if p.parent.name == 'pages' and sfx == '.html':
         return "page servie par chemin CALCULE (ui/pages/<nom>.html)"
-    if p.suffix.lower() == '.md' and p.parent.name in ('docs', 'eval'):
+    if sfx == '.md' and p.parent.name in ('docs', 'eval'):
         return "carnet : lu par un humain, pas par le code"
+    # Annexe SQLite : `-wal` et `-shm` ne sont JAMAIS cites, et separer un WAL
+    # de sa base pendant que le serveur ecrit dedans corrompt la base.
+    if re.search(r'\.db-(wal|shm|journal)$', nl):
+        return "annexe SQLite : appartient a la base, jamais separable"
+    # Poids de modele : charges par une constante ou un nom construit, lourds
+    # a re-telecharger, et hors de portee d'une recherche par nom si le code
+    # ecrit `MODELE = 'yolo11' + taille + '.pt'`.
+    if sfx in ('.pt', '.onnx', '.gguf', '.safetensors', '.bin', '.pth'):
+        return "poids de modele : couteux a perdre, souvent nomme par calcul"
+    # Un __init__.py vide n'est jamais cite : c'est le paquet qui l'est.
+    if n == '__init__.py':
+        return "marqueur de paquet : c est le dossier qui est importe"
     return None
 
 
 # Ce qu'on regarde comme "du code qui lit".
-EXT_LECTEURS = {'.py', '.bat', '.txt', '.md', '.json', '.css', '.html', '.js'}
+EXT_LECTEURS = {'.py', '.bat', '.txt', '.md', '.json', '.css', '.html', '.js',
+                '.jsonl', '.cfg', '.ini', '.yml', '.yaml', '.toml'}
 EXT_CODE = {'.py', '.bat'}
 
+# Au-dela, on ne charge pas le fichier en memoire pour y chercher des noms.
+# `cities1000.txt` fait 31 Mo a lui seul. Le plafond est un choix de cout, PAS
+# un jugement : un lecteur ecarte pour sa taille est COMPTE et affiche dans le
+# resume, sinon il redevient un angle mort silencieux.
+PLAFOND_LECTURE = 3_000_000
 
-def _fichiers(racine):
+
+def _tous_les_fichiers(racine, elagues=None):
+    """Le vivier des CANDIDATS : tout fichier du depot. Aucun filtre d'extension.
+
+    **Troisieme faux verdict de cet instrument sur lui-meme (09/09), et le
+    plus couteux.** L'ancienne version ne rendait ici que les fichiers dont
+    l'extension etait dans EXT_LECTEURS : j'avais confondu « peut lire » et
+    « peut etre lu ». Mesure sur `_to_delete/` apres le bat 50 : 800 fichiers,
+    dont 609 jamais parcourus (560 .pyc, 24 .jsonl, 9 .jpg, 8 .b64). Absents
+    de l'inventaire, donc « non vus » pour le veto d'`appliquer_menage.py`,
+    donc tous retenus. J'ai lu les 810 retenus du bat 50 comme de la prudence :
+    c'etait une cecite, et le veto m'a rattrape a ma place.
+
+    Un `.pyc` ne peut pas etre un LECTEUR -- on n'y cherche pas de citation.
+    Il est parfaitement un CANDIDAT. Les deux questions sont maintenant
+    posees separement : ici « quels fichiers existent », dans `_peut_lire`
+    « lesquels savent citer un nom »."""
     for d, sousd, noms in os.walk(racine):
-        sousd[:] = [s for s in sousd if s not in IGNORES and not s.startswith('.')]
+        ici = Path(d)
+        a_la_racine = (ici == Path(racine))
+        gardes = []
+        for s in sousd:
+            if s in IGNORES_PARTOUT or s.startswith('.'):
+                motif = 'partout'
+            elif a_la_racine and s in IGNORES_RACINE:
+                motif = 'meuble du depot'
+            else:
+                gardes.append(s)
+                continue
+            if elagues is not None:
+                elagues.append((str((ici / s).relative_to(racine)), motif))
+        sousd[:] = gardes
         for n in noms:
-            p = Path(d) / n
-            if p.suffix.lower() in EXT_LECTEURS or p.suffix == '':
-                yield p
+            yield ici / n
 
 
-def _lire(p, plafond=3_000_000):
+def _peut_lire(p):
+    """Ce fichier peut-il CITER le nom d'un autre ? Seul du texte le peut."""
+    if p.name in PAS_DES_LECTEURS:
+        return False
+    if any(d in ARTEFACTS for d in p.parts[:-1]):
+        return False
+    return p.suffix.lower() in EXT_LECTEURS or p.suffix == ''
+
+
+def _lire(p, plafond=PLAFOND_LECTURE):
+    """Le texte du fichier, ou None s'il n'a PAS ete lu.
+
+    La distinction compte : `''` disait « lu, et vide », `None` dit « pas
+    lu ». L'ancienne version rendait `''` dans les deux cas, et un lecteur
+    ecarte pour sa taille disparaissait sans laisser de trace."""
     try:
         if p.stat().st_size > plafond:
-            return ''
+            return None
         return p.read_text(encoding='utf-8', errors='replace')
     except OSError:
-        return ''
+        return None
+
+
+# Lignes de commentaire d'un .bat : `REM ...` ou `:: ...`.
+_COMMENTAIRE_BAT = re.compile(r'(?im)^[ \t]*(?:rem\b|::).*$')
+
+
+def sans_commentaires(texte, suffixe):
+    """Le texte d'un .bat prive de ses lignes REM / ::.
+
+    Sert UNIQUEMENT a signaler qu'une citation est peut-etre memorielle -- pas
+    a changer de famille. Un bat qui ecrit « REM lit _google.json » a presque
+    toujours la vraie lecture deux lignes plus bas ; degrader la famille sur
+    ce seul indice effacerait des entrees vivantes. L'instrument SIGNALE et
+    l'humain tranche : c'est la meme division du travail que le reste du
+    fichier."""
+    if suffixe.lower() != '.bat':
+        return texte
+    return _COMMENTAIRE_BAT.sub('', texte)
 
 
 def motifs_du_code(textes_code):
@@ -136,28 +276,60 @@ def motifs_du_code(textes_code):
     return motifs
 
 
-def inventorier(racine=RACINE):
-    fichiers = sorted(_fichiers(racine))
+def inventorier(racine=RACINE, bilan=None):
+    """La liste des candidats et leur famille.
+
+    `bilan`, si un dict est passe, est REMPLI avec ce que la liste ne dit pas :
+    combien de fichiers ont ete parcourus, combien pouvaient servir de lecteur,
+    et combien de lecteurs ont ete ecartes faute d'etre lisibles. Le contrat de
+    retour ne bouge pas -- `appliquer_menage.py` appelle `inventorier(RACINE)`
+    et attend une liste."""
+    elagues = []
+    candidats = sorted(_tous_les_fichiers(racine, elagues))
+
     textes = {}
-    for p in fichiers:
-        textes[p] = _lire(p)
+    lecteurs_potentiels = 0
+    ecartes_taille, ecartes_illisibles = [], []
+    for p in candidats:
+        if not _peut_lire(p):
+            continue
+        lecteurs_potentiels += 1
+        t = _lire(p)
+        if t is None:
+            try:
+                gros = p.stat().st_size > PLAFOND_LECTURE
+            except OSError:
+                gros = False
+            (ecartes_taille if gros else ecartes_illisibles).append(
+                str(p.relative_to(racine)))
+            continue
+        textes[p] = t
+
     codes = [t for p, t in textes.items() if p.suffix.lower() in EXT_CODE]
     motifs = motifs_du_code(codes)
 
     out = []
-    for p in fichiers:
+    for p in candidats:
         nom = p.name
-        if nom in JAMAIS_ORPHELIN:
+        if protege_par_nom(p, racine):
             continue
         tige = p.stem
         lecteurs_code, lecteurs_doc = [], []
+        code_hors_commentaire = False
         for q, t in textes.items():
-            if q == p or not t or q.name in PAS_DES_LECTEURS:
+            if q == p:
                 continue
-            if nom in t or (len(tige) > 6 and tige in t):
-                rel = str(q.relative_to(racine))
-                (lecteurs_code if q.suffix.lower() in EXT_CODE
-                 else lecteurs_doc).append(rel)
+            if not (nom in t or (len(tige) > 6 and tige in t)):
+                continue
+            rel = str(q.relative_to(racine))
+            if q.suffix.lower() in EXT_CODE:
+                lecteurs_code.append(rel)
+                vif = sans_commentaires(t, q.suffix)
+                if nom in vif or (len(tige) > 6 and tige in vif):
+                    code_hors_commentaire = True
+            else:
+                lecteurs_doc.append(rel)
+
         conv = lecteur_par_convention(p, racine)
         if lecteurs_code:
             fam = 'LU PAR DU CODE'
@@ -175,8 +347,23 @@ def inventorier(racine=RACINE):
             octets = 0
         out.append({'fichier': str(p.relative_to(racine)), 'famille': fam,
                     'octets': octets, 'convention': conv or '',
+                    'texte': p in textes,
+                    'commentaire_seul': bool(lecteurs_code)
+                                        and not code_hors_commentaire,
                     'lecteurs_code': sorted(lecteurs_code)[:4],
                     'lecteurs_doc': sorted(lecteurs_doc)[:3]})
+
+    if bilan is not None:
+        bilan.update({
+            'parcourus': len(candidats),
+            'juges': len(out),
+            'proteges_par_nom': len(candidats) - len(out),
+            'lecteurs_potentiels': lecteurs_potentiels,
+            'lecteurs_lus': len(textes),
+            'ecartes_taille': ecartes_taille,
+            'ecartes_illisibles': ecartes_illisibles,
+            'elagues': sorted(elagues),
+        })
     return out
 
 
@@ -187,29 +374,59 @@ def main(argv=None):
                     help='n afficher qu une famille (ORPHELIN, ...)')
     a = ap.parse_args(argv)
 
-    lignes = inventorier()
+    bilan = {}
+    lignes = inventorier(RACINE, bilan)
     par_fam = {}
     for l in lignes:
         par_fam.setdefault(l['famille'], []).append(l)
 
     print('=' * 74)
-    print('  QUI LIT CE FICHIER ? -- %d fichiers examines' % len(lignes))
+    print('  QUI LIT CE FICHIER ? -- %d fichiers juges' % len(lignes))
     print('=' * 74)
+    # LE COMPTE D'ABORD. Un angle mort qui ne se compte pas ne se voit jamais :
+    # c'est exactement ce qui a fait passer 609 binaires pour de la prudence.
+    print('  parcourus dans le depot        : %4d' % bilan['parcourus'])
+    print('  proteges par leur nom          : %4d  (JAMAIS_ORPHELIN)'
+          % bilan['proteges_par_nom'])
+    print('  dont lisibles comme LECTEURS   : %4d sur %4d candidats textuels'
+          % (bilan['lecteurs_lus'], bilan['lecteurs_potentiels']))
+    ecartes = bilan['ecartes_taille'] + bilan['ecartes_illisibles']
+    print('  lecteurs ecartes (taille/lect.): %4d%s'
+          % (len(ecartes), ('  -> ' + ', '.join(ecartes[:3])) if ecartes else ''))
+    # Les dossiers elagues sont LE point aveugle restant, et le seul moyen
+    # qu'il ne redevienne pas invisible est de l'imprimer a chaque passage.
+    print('  dossiers elagues (non parcourus): %4d%s'
+          % (len(bilan['elagues']),
+             ('  -> ' + ', '.join(e for e, _ in bilan['elagues'][:4]))
+             if bilan['elagues'] else ''))
+    print('-' * 74)
     for fam in ('LU PAR DU CODE', 'LU PAR CONVENTION', 'LU PAR UN MOTIF',
                 'CITE EN DOC SEUL', 'ORPHELIN'):
         l = par_fam.get(fam, [])
         poids = sum(x['octets'] for x in l)
-        print('  %-17s %4d fichier(s)  %8.1f Ko' % (fam, len(l), poids / 1024))
+        print('  %-17s %4d fichier(s)  %10.1f Mo'
+              % (fam, len(l), poids / 1048576))
+    doute = [x for x in lignes if x['commentaire_seul']]
+    if doute:
+        print('-' * 74)
+        print('  A RELIRE : %d fichier(s) cites UNIQUEMENT dans un commentaire'
+              % len(doute))
+        print('  de .bat (REM / ::). Famille laissee a LU PAR DU CODE : un')
+        print('  commentaire precede presque toujours la vraie lecture.')
+        for x in doute[:8]:
+            print('    %s  <- %s' % (x['fichier'], ', '.join(x['lecteurs_code'])))
     print('-' * 74)
 
     montrer = a.famille.upper() or 'ORPHELIN'
     l = sorted(par_fam.get(montrer, []), key=lambda x: -x['octets'])
     print('  %s -- le detail (%d) :' % (montrer, len(l)))
-    for x in l:
+    for x in l[:80]:
         print('    %8.1f Ko  %s' % (x['octets'] / 1024, x['fichier']))
         if x['lecteurs_doc']:
             print('                 cite dans : %s'
                   % ', '.join(x['lecteurs_doc']))
+    if len(l) > 80:
+        print('    ... et %d autres (voir le --json)' % (len(l) - 80))
     print('=' * 74)
     print('  Rien n a ete efface. Un orphelin peut etre une piece gardee')
     print('  expres : c est une liste a LIRE, pas une liste a executer.')

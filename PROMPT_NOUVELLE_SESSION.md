@@ -72,41 +72,65 @@ oppose son veto.
 
 ---
 
-## 3. Le bat 50 : le veto a eu raison, mon instrument est à moitié aveugle
+## 3. Le bat 50 : le veto a tenu, l'instrument avait TROIS portes ouvertes
 
 **Lancé et terminé le 09/09 à 20:23. 14 fichiers déplacés, 0 échec**, manifeste
-dans `_corbeille_menage\20260909_202315\`. Environ 340 Ko.
+dans `_corbeille_menage\20260909_202315\`. Environ 340 Ko. **Et 810 fichiers
+retenus par le veto** — ce déséquilibre était le vrai résultat.
 
-**Et 810 fichiers retenus par le veto.** Ce déséquilibre est le résultat, pas
-un détail. La sortie console en donne la raison, fichier par fichier, et elle
-accuse l'instrument :
+Le veto (« un fichier que l'inventaire n'a pas vu est retenu : ne pas savoir
+n'est pas savoir que non ») a fait exactement son travail. C'est la mesure en
+amont qui était aveugle, et **elle l'était par trois portes différentes** —
+corrigées et remesurées le 09/09 au soir, une par une :
 
-- **`_to_delete\` contient 800 fichiers et 366,8 Mo** — dont **560 `.pyc`**.
-  J'avais annoncé « 136 Ko » à Mike. Faux de trois ordres de grandeur.
-- `inventaire_fichiers_orphelins.py` ne PARCOURT que les fichiers texte
-  (`EXT_LECTEURS`). **609 binaires n'ont donc jamais été examinés** → famille
-  `non vu` → retenus, comme le veto l'exige (« ne pas savoir n'est pas savoir
-  que non »).
-- Les `_rapport_*` sont retenus pour une autre raison : `LU PAR DU CODE` ou
-  `LU PAR UN MOTIF`. À vérifier avant de conclure — **une citation dans un
-  commentaire `REM` d'un `.bat` compte aujourd'hui comme une lecture**, et ce
-  n'en est pas une.
+| # | La porte | Ce qu'elle cachait |
+|---|---|---|
+| 1 | filtre d'**extension** — `_fichiers()` ne rendait que du texte | tous les binaires : `.pyc`, `.jpg`, `.b64`, `.jsonl` |
+| 2 | élagage de **dossier** — `__pycache__` était dans `IGNORES` | 122 `.pyc` de plus, invisibles même après le correctif 1 |
+| 3 | élagage **par nom nu, à toute profondeur** — `_corbeille_session` | **579 des 800 fichiers de `_to_delete\`** |
 
-**Le veto a fait exactement son travail. C'est la mesure en amont qui est
-incomplète, et ma recommandation à Mike en a hérité.**
+La porte 3 est la leçon de la journée. `_corbeille_session` désignait la
+corbeille **vivante**, à la racine. Comparé au nom **nu**, il faisait aussi
+taire `_to_delete\corbeilles_avant_25-08\_corbeille_session\`, une corbeille
+**morte** archivée dans la quarantaine. *Une protection qui vise un dossier
+particulier doit nommer sa **place**, pas seulement son nom.* Même erreur pour
+`JAMAIS_ORPHELIN`, qui protégeait `photos.db` **partout** : une copie de 283 Mo
+archivée dans `_to_delete\` en héritait sans que personne l'ait décidé. Les
+deux sont maintenant **ancrés à la racine**.
 
-### Le correctif, et c'est la première tâche de demain
+**Et la vraie leçon de méthode : réparer la porte 1 ne suffisait pas, et je
+m'étais déclaré content.** Chaque correctif a fait remonter le compte de
+fichiers parcourus — 719 → 3 761 → 3 883 → **4 465** — et c'est le compte
+imprimé en tête du rapport qui a rendu chaque porte suivante visible. *Quand on
+corrige un angle mort, on cherche ses autres portes avant de se déclarer
+content.*
 
-1. **Séparer PARCOURIR de LIRE.** N'importe quel fichier peut être un
-   CANDIDAT ; seul un fichier texte peut être un LECTEUR. Aujourd'hui les deux
-   sont filtrés par la même liste d'extensions.
-2. **Dire tout haut ce qu'on n'a pas examiné.** Un rapport qui range 609
-   fichiers en « non vu » sans le crier laisse croire à un inventaire complet.
-   Le nombre de non-vus doit sortir dans le bilan, pas dans le détail.
-3. **Distinguer une citation en COMMENTAIRE d'une lecture réelle.** Au minimum,
-   imprimer la ligne citante pour qu'un humain tranche.
-4. Ensuite seulement, relancer le bat 50 : les 366 Mo de `_to_delete\` sont le
-   vrai gisement, et ils sont toujours là.
+### Ce que l'instrument dit maintenant (mesuré, 09/09 au soir)
+
+```
+  parcourus dans le depot        : 4465
+  dont lisibles comme LECTEURS   :  753 sur  770 candidats textuels
+  dossiers elagues (non parcourus):  14  -> .claude, .git, .venv, OLD
+```
+
+Le compteur de dossiers élagués est imprimé **à chaque passage** : c'est le
+seul point aveugle qui reste, et il ne redeviendra pas silencieux.
+`test_inventaire_fichiers_orphelins.py` : **21 bancs**, dont un par porte.
+
+### Ce que le prochain bat 50 déplacerait (simulé sur `_orphelins.json`)
+
+| | fichiers | poids |
+|---|---|---|
+| **proposés et jetables** | 506 | **47,1 Mo** |
+| retenus par le veto | 304 | 321,4 Mo |
+
+**Le gisement n'était pas où je le disais.** `_to_delete\` pèse **349,8 Mo**
+(et non 366,8), mais **283 Mo tiennent dans un seul fichier** :
+`_to_delete\menage_20260908\_avant_deplacement\photos.db`, une copie de la base
+faite avant le ménage du 08/09. L'inventaire la range en `LU PAR DU CODE` — le
+code cite `photos.db` partout, et l'instrument **ne peut pas distinguer la base
+vivante de sa copie**. C'est une limite honnête, pas un bogue : elle demande
+une décision de Mike, pas une règle de plus.
 
 Le reste de la corbeille du ménage n'est pas vidé, et c'est voulu.
 
