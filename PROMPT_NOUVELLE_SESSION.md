@@ -229,6 +229,17 @@ n'est touché (une formule fausse se trompe d'abord sur ce qui vient d'être
 créé). *La réversibilité, ici, c'est la régénération : une vignette n'est pas
 une donnée, c'est un calcul mis de côté.*
 
+**LA QUESTION OUVERTE, et c'est la plus rentable du moment** — le cache de
+vignettes est **éteint** : 1 995 photos sur 44 604 (**4,5 %**) ont une vignette
+512 utilisable, 80 (0,2 %) une 1600. Cause mesurée : le nom porte le MTIME, et
+écrire un tag XMP le change **sans toucher un pixel** — la campagne périme
+**6 524 vignettes par jour**, la galerie n'en refait que ce qu'on regarde.
+**95 % des cases relisent l'original sur le NAS**, 2 à 6 Mo au lieu de ~50 Ko :
+exactement ce que l'audit O1 avait voulu supprimer. La proposition (séparer le
+nom de la validité, et re-tamponner la vignette quand c'est NOUS qui écrivons
+le tag) est dans `QUESTIONS_MIKE.md` et attend son feu vert. Elle ne touche ni
+le prompt, ni la version du pipeline, ni un index.
+
 **À moi, sans GPU ni prompt** — plus rien de l'audit : O8 et O9 sont les
 derniers, et ils touchent des boucles de calcul.
 
