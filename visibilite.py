@@ -188,9 +188,22 @@ def filtre(utilisateur, sensible=None):
 # `auteurs` (le propriétaire l'emporte, le perdant est `#contesté`) — juger
 # une photo partagée est permis, la détruire ne l'est pas.
 
-def peut_ecrire(chemin, utilisateur):
-    """`utilisateur` peut-il toucher ce FICHIER ? None (fil de fond) : tout."""
+def peut_ecrire(chemin, utilisateur, depot=False):
+    """`utilisateur` peut-il toucher ce FICHIER ? None (fil de fond) : tout.
+
+    `depot=True` marque le seul geste qui ENTRE dans un PRIVE sans rien y
+    lire : ranger une photo chez son propriétaire. **Tranché par Mike le
+    10/09 : « j'ai le droit de déposer dans le privé de tout le monde, mais
+    uniquement parce que je suis administrateur ».** L'admin dépose, il ne
+    fouille pas — tout le reste du PRIVE d'autrui lui reste fermé, et
+    `depot` ne s'écrit qu'au point d'appel de « Rendre privée ».
+
+    La dissymétrie qu'on réparait : sans cette exception, l'admin pouvait
+    EFFACER la photo de Flo mais pas la PROTÉGER. Une règle de confidentialité
+    qui laisse détruire et interdit d'abriter protège le mauvais geste."""
     if utilisateur is None:
+        return True
+    if depot and utilisateur == ADMIN and est_prive(chemin):
         return True
     if not visible(chemin, utilisateur):
         return False
@@ -199,11 +212,11 @@ def peut_ecrire(chemin, utilisateur):
     return proprietaire_de(chemin) == utilisateur
 
 
-def refus_ecriture(chemin, utilisateur):
+def refus_ecriture(chemin, utilisateur, depot=False):
     """None si le geste est permis ; sinon (code, message) : 404 quand la
     photo n'est pas visible (dire « interdit » dirait « ça existe »), 403
     quand elle est partagée mais n'est pas à lui."""
-    if peut_ecrire(chemin, utilisateur):
+    if peut_ecrire(chemin, utilisateur, depot):
         return None
     if not visible(chemin, utilisateur):
         return 404, 'Fichier introuvable.'
@@ -211,6 +224,51 @@ def refus_ecriture(chemin, utilisateur):
     if proprietaire is None:
         return 403, "Hors d'un dossier propriétaire, seul l'admin range ou efface."
     return 403, f"Cette photo est à {proprietaire} : {proprietaire} ou l'admin peuvent la déplacer ou l'effacer, pas vous."
+
+
+def refus_rendre_privee(chemin, utilisateur):
+    """None si `utilisateur` peut rendre CETTE photo privee, sinon
+    (code, message). Regle PURE, mise ici parce que c'est ici que vit la
+    notion de chez-soi.
+
+    **Pourquoi cette fonction existe** (10/09). L'onglet /sensibles offrait
+    « Rendre privee » sur une photo de `Photos Flo`. Le geste deplace vers le
+    PRIVE du PROPRIETAIRE (`cible_prive`), donc `Photos Flo/PRIVE` -- et le
+    chantier 17 ferme le PRIVE de Flo meme a l'admin. Le refus tombait donc
+    plus bas, dans `FileOps._permis`, sur la creation du dossier, et il
+    sortait avec le message concu pour l'INCONNU : « Fichier introuvable. »
+
+    Ce message est juste quand il s'adresse a quelqu'un qui ne peut pas voir
+    la photo -- dire « interdit » dirait « ca existe ». Il est FAUX ici :
+    l'onglet venait de mettre la photo sous les yeux de Mike, vignette
+    comprise, parce que `peut_juger` l'y autorise. **Un refus doit nommer sa
+    cause a qui regarde deja la chose.**
+
+    Ce qui change : la cause est dite AVANT de toucher au disque, donc
+    l'interface peut eteindre un bouton qui ne peut pas aboutir plutot que de
+    le laisser echouer au clic. Et **l'admin depose** (`peut_ecrire(...,
+    depot=True)`, tranche par Mike le 10/09) : la dissymetrie qui le laissait
+    EFFACER la photo de Flo sans pouvoir la PROTEGER est fermee."""
+    if utilisateur is None:
+        return None
+    # LA VISIBILITE D'ABORD, ET C'EST L'ORDRE QUI COMPTE. Le banc l'a attrape
+    # au premier lancement : en demandant `cible_prive` avant, une photo qu'on
+    # ne voit pas se faisait repondre « deja dans un dossier prive » — un refus
+    # exact, et une CONFIRMATION D'EXISTENCE a qui n'avait pas le droit de
+    # savoir qu'elle existe. Le message de l'inconnu ne vaut que s'il est dit
+    # en premier.
+    if not visible(chemin, utilisateur):
+        return 404, 'Fichier introuvable.'
+    dossier, raison = cible_prive(chemin)
+    if dossier is None:
+        return 400, raison
+    proprietaire = proprietaire_de(chemin)
+    if utilisateur != proprietaire and utilisateur != ADMIN:
+        return 403, (f"Le dossier prive de {proprietaire} n'appartient qu'a "
+                     f"{proprietaire} : cette photo ne peut y etre rangee que "
+                     f"par {proprietaire} ou par l'admin. Vous pouvez la "
+                     "mettre a la corbeille.")
+    return None
 
 
 class VueFiltree(Mapping):

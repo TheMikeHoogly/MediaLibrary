@@ -152,13 +152,21 @@ class FileOps:
         rec['par'] = self.auteur() if self.auteur else None
         return rec
 
-    def _permis(self, *chemins):
+    def _permis(self, *chemins, garde=None):
         """Leve FileOpRefus si l'utilisateur courant n'a pas la main sur l'un
-        des chemins (le premier refus parle)."""
-        if self.garde is None:
+        des chemins (le premier refus parle).
+
+        `garde=` remplace le garde injecte POUR CET APPEL seulement. Un seul
+        appelant s'en sert (10/09) : « Rendre privee », qui DEPOSE dans le
+        PRIVE d'un proprietaire sans rien y lire. L'exception est passee en
+        ARGUMENT, jamais posee en etat partage : ce serveur est threade, et un
+        drapeau global « depot en cours » ouvrirait le PRIVE d'autrui a la
+        requete d'a cote."""
+        garde = garde or self.garde
+        if garde is None:
             return
         for c in chemins:
-            verdict = self.garde(str(c))
+            verdict = garde(str(c))
             if verdict:
                 code, message = verdict
                 raise FileOpRefus(code, message)
@@ -251,13 +259,13 @@ class FileOps:
         return {'op': 'rename', 'changed': True, 'dst_name': dst.name,
                 'rekeyed': len(pairs)}
 
-    def move(self, idx, rel, dst_idx, dst_rel, upload_dir):
+    def move(self, idx, rel, dst_idx, dst_rel, upload_dir, garde=None):
         roots = self.roots_fn()
         root, src = resolve_target(roots, idx, rel)
         droot, ddir = resolve_target(roots, dst_idx, dst_rel)
         if src == root:
             raise FileOpError('On ne deplace pas la racine.')
-        self._permis(src, ddir / src.name)
+        self._permis(src, ddir / src.name, garde=garde)
         if not src.exists():
             raise FileOpError('Fichier introuvable.')
         if not ddir.is_dir():
@@ -278,11 +286,11 @@ class FileOps:
         self._append(self._signe(rec))
         return {'op': 'move', 'changed': True, 'rekeyed': len(pairs)}
 
-    def mkdir(self, idx, rel, name):
+    def mkdir(self, idx, rel, name, garde=None):
         roots = self.roots_fn()
         root, parent = resolve_target(roots, idx, rel)
         new = parent / sanitize_name(name)
-        self._permis(new)
+        self._permis(new, garde=garde)
         if not parent.is_dir():
             raise FileOpError('Dossier parent invalide.')
         if new.exists():

@@ -369,7 +369,7 @@
  {
   "fichier": "__pycache__\\appliquer_menage.cpython-311.pyc",
   "famille": "ORPHELIN",
-  "octets": 15083,
+  "octets": 15230,
   "convention": "",
   "texte": false,
   "citation_bavarde": false,
@@ -749,7 +749,7 @@
  {
   "fichier": "__pycache__\\inventaire_fichiers_orphelins.cpython-311.pyc",
   "famille": "ORPHELIN",
-  "octets": 22621,
+  "octets": 23174,
   "convention": "",
   "texte": false,
   "citation_bavarde": false,
@@ -1615,7 +1615,7 @@
  {
   "fichier": "_banc_sortie.txt",
   "famille": "LU PAR DU CODE",
-  "octets": 1943,
+  "octets": 7713,
   "convention": "",
   "texte": false,
   "citation_bavarde": false,
@@ -1659,7 +1659,7 @@
  {
   "fichier": "_commande_banc.txt",
   "famille": "LU PAR DU CODE",
-  "octets": 57,
+  "octets": 37,
   "convention": "",
   "texte": true,
   "citation_bavarde": false,
@@ -1735,7 +1735,7 @@
  {
   "fichier": "_comptes_index.json",
   "famille": "LU PAR DU CODE",
-  "octets": 11499,
+  "octets": 11498,
   "convention": "",
   "texte": true,
   "citation_bavarde": false,
@@ -1817,7 +1817,7 @@
  {
   "fichier": "_etat_git.json",
   "famille": "LU PAR DU CODE",
-  "octets": 16948,
+  "octets": 17100,
   "convention": "",
   "texte": false,
   "citation_bavarde": false,
@@ -1953,14 +1953,14 @@
   ],
   "lecteurs_doc": [
    ".gitignore",
-   "_copie_absentes.json",
-   "_copie_google_mieux.json"
+   "PROMPT_NOUVELLE_SESSION.md",
+   "_copie_absentes.json"
   ]
  },
  {
   "fichier": "_journal_serveur.log",
   "famille": "LU PAR DU CODE",
-  "octets": 4070885,
+  "octets": 625477,
   "convention": "",
   "texte": false,
   "citation_bavarde": false,
@@ -1979,7 +1979,7 @@
  {
   "fichier": "_journal_serveur.log.1",
   "famille": "LU PAR DU CODE",
-  "octets": 4194513,
+  "octets": 4194331,
   "convention": "",
   "texte": false,
   "citation_bavarde": false,
@@ -2029,7 +2029,7 @@
  {
   "fichier": "_orphelins.json",
   "famille": "LU PAR DU CODE",
-  "octets": 1267945,
+  "octets": 1037495,
   "convention": "",
   "texte": false,
   "citation_bavarde": false,
@@ -2087,6 +2087,7 @@
   "citation_bavarde": false,
   "lecteurs_code": [],
   "lecteurs_doc": [
+   "PROMPT_NOUVELLE_SESSION.md",
    "docs\\DECISIONS_OUTILLAGE.md"
   ]
  },
@@ -2099,6 +2100,7 @@
   "citation_bavarde": false,
   "lecteurs_code": [],
   "lecteurs_doc": [
+   "PROMPT_NOUVELLE_SESSION.md",
    "docs\\DECISIONS_OUTILLAGE.md"
   ]
  },
@@ -2128,13 +2130,16 @@
  },
  {
   "fichier": "_rapport_perdus_takeout.json",
-  "famille": "ORPHELIN",
+  "famille": "CITE EN DOC SEUL",
   "octets": 247140,
   "convention": "",
   "texte": true,
   "citation_bavarde": false,
   "lecteurs_code": [],
-  "lecteurs_doc": []
+  "lecteurs_doc": [
+   "PROMPT_NOUVELLE_SESSION.md",
+   "docs\\DECISIONS_OUTILLAGE.md"
+  ]
  },
  {
   "fichier": "_rapport_sef_apres.json",
@@ -2155,6 +2160,7 @@
   "citation_bavarde": false,
   "lecteurs_code": [],
   "lecteurs_doc": [
+   "PROMPT_NOUVELLE_SESSION.md",
    "_rapport_sef_apres.json",
    "eval\\DECISIONS.md"
   ]
@@ -2268,7 +2274,8 @@
   ],
   "lecteurs_doc": [
    ".gitignore",
-   "eval\\DECISIONS.md"
+   "PROMPT_NOUVELLE_SESSION.md",
+   "docs\\DECISIONS_OUTILLAGE.md"
   ]
  },
  {
@@ -3553,2037 +3560,6 @@
   ]
  },
  {
-  "fichier": "_to_delete\\menage_20260908\\_avant_chip\\gallery\\base.css",
-  "famille": "LU PAR DU CODE",
-  "octets": 3659,
-  "convention": "",
-  "texte": true,
-  "citation_bavarde": false,
-  "lecteurs_code": [
-   "bundle.py",
-   "server.py",
-   "test_comptes.py",
-   "test_ui_composants.py"
-  ],
-  "lecteurs_doc": [
-   "_to_delete\\menage_20260908\\_avant_chip\\gallery\\components.css",
-   "_to_delete\\menage_20260908\\_avant_chip\\gallery\\gallery.html",
-   "_to_delete\\menage_20260908\\_avant_chip\\people\\base.css"
-  ]
- },
- {
-  "fichier": "_to_delete\\menage_20260908\\_avant_chip\\gallery\\components.css",
-  "famille": "LU PAR DU CODE",
-  "octets": 8074,
-  "convention": "",
-  "texte": true,
-  "citation_bavarde": false,
-  "lecteurs_code": [
-   "bundle.py",
-   "server.py",
-   "test_sensibles.py",
-   "test_ui_composants.py"
-  ],
-  "lecteurs_doc": [
-   "PROMPT_NOUVELLE_SESSION.md",
-   "ROADMAP.md",
-   "_to_delete\\menage_20260908\\_avant_chip\\people\\components.css"
-  ]
- },
- {
-  "fichier": "_to_delete\\menage_20260908\\_avant_chip\\gallery\\gallery.html",
-  "famille": "LU PAR DU CODE",
-  "octets": 77220,
-  "convention": "",
-  "texte": true,
-  "citation_bavarde": false,
-  "lecteurs_code": [
-   "recherche.py",
-   "server.py",
-   "test_faits_affichage.py",
-   "test_recalage_serveur.py"
-  ],
-  "lecteurs_doc": [
-   "ROADMAP.md",
-   "_to_delete\\corbeilles_avant_25-08\\_corbeille_xmp\\xmp_tous_20260823_223850.jsonl",
-   "_to_delete\\menage_20260908\\_avant_chip\\upload\\upload.html"
-  ]
- },
- {
-  "fichier": "_to_delete\\menage_20260908\\_avant_chip\\gallery\\tokens.css",
-  "famille": "LU PAR DU CODE",
-  "octets": 3783,
-  "convention": "",
-  "texte": true,
-  "citation_bavarde": false,
-  "lecteurs_code": [
-   "bundle.py",
-   "server.py",
-   "test_ui_composants.py",
-   "test_verifier_cibles.py"
-  ],
-  "lecteurs_doc": [
-   "_to_delete\\menage_20260908\\_avant_chip\\gallery\\components.css",
-   "_to_delete\\menage_20260908\\_avant_chip\\people\\components.css",
-   "_to_delete\\menage_20260908\\_avant_chip\\people\\tokens.css"
-  ]
- },
- {
-  "fichier": "_to_delete\\menage_20260908\\_avant_chip\\people\\base.css",
-  "famille": "LU PAR DU CODE",
-  "octets": 3659,
-  "convention": "",
-  "texte": true,
-  "citation_bavarde": false,
-  "lecteurs_code": [
-   "bundle.py",
-   "server.py",
-   "test_comptes.py",
-   "test_ui_composants.py"
-  ],
-  "lecteurs_doc": [
-   "_to_delete\\menage_20260908\\_avant_chip\\gallery\\base.css",
-   "_to_delete\\menage_20260908\\_avant_chip\\gallery\\components.css",
-   "_to_delete\\menage_20260908\\_avant_chip\\gallery\\gallery.html"
-  ]
- },
- {
-  "fichier": "_to_delete\\menage_20260908\\_avant_chip\\people\\components.css",
-  "famille": "LU PAR DU CODE",
-  "octets": 8074,
-  "convention": "",
-  "texte": true,
-  "citation_bavarde": false,
-  "lecteurs_code": [
-   "bundle.py",
-   "server.py",
-   "test_sensibles.py",
-   "test_ui_composants.py"
-  ],
-  "lecteurs_doc": [
-   "PROMPT_NOUVELLE_SESSION.md",
-   "ROADMAP.md",
-   "_to_delete\\menage_20260908\\_avant_chip\\gallery\\components.css"
-  ]
- },
- {
-  "fichier": "_to_delete\\menage_20260908\\_avant_chip\\people\\people.html",
-  "famille": "LU PAR DU CODE",
-  "octets": 54059,
-  "convention": "",
-  "texte": true,
-  "citation_bavarde": false,
-  "lecteurs_code": [
-   "server.py",
-   "test_verifier_css_cascade.py",
-   "verifier_css_cascade.py"
-  ],
-  "lecteurs_doc": []
- },
- {
-  "fichier": "_to_delete\\menage_20260908\\_avant_chip\\people\\tokens.css",
-  "famille": "LU PAR DU CODE",
-  "octets": 3783,
-  "convention": "",
-  "texte": true,
-  "citation_bavarde": false,
-  "lecteurs_code": [
-   "bundle.py",
-   "server.py",
-   "test_ui_composants.py",
-   "test_verifier_cibles.py"
-  ],
-  "lecteurs_doc": [
-   "_to_delete\\menage_20260908\\_avant_chip\\gallery\\components.css",
-   "_to_delete\\menage_20260908\\_avant_chip\\gallery\\tokens.css",
-   "_to_delete\\menage_20260908\\_avant_chip\\people\\components.css"
-  ]
- },
- {
-  "fichier": "_to_delete\\menage_20260908\\_avant_chip\\pets\\base.css",
-  "famille": "LU PAR DU CODE",
-  "octets": 3659,
-  "convention": "",
-  "texte": true,
-  "citation_bavarde": false,
-  "lecteurs_code": [
-   "bundle.py",
-   "server.py",
-   "test_comptes.py",
-   "test_ui_composants.py"
-  ],
-  "lecteurs_doc": [
-   "_to_delete\\menage_20260908\\_avant_chip\\gallery\\base.css",
-   "_to_delete\\menage_20260908\\_avant_chip\\gallery\\components.css",
-   "_to_delete\\menage_20260908\\_avant_chip\\gallery\\gallery.html"
-  ]
- },
- {
-  "fichier": "_to_delete\\menage_20260908\\_avant_chip\\pets\\components.css",
-  "famille": "LU PAR DU CODE",
-  "octets": 8074,
-  "convention": "",
-  "texte": true,
-  "citation_bavarde": false,
-  "lecteurs_code": [
-   "bundle.py",
-   "server.py",
-   "test_sensibles.py",
-   "test_ui_composants.py"
-  ],
-  "lecteurs_doc": [
-   "PROMPT_NOUVELLE_SESSION.md",
-   "ROADMAP.md",
-   "_to_delete\\menage_20260908\\_avant_chip\\gallery\\components.css"
-  ]
- },
- {
-  "fichier": "_to_delete\\menage_20260908\\_avant_chip\\pets\\pets.html",
-  "famille": "LU PAR DU CODE",
-  "octets": 33819,
-  "convention": "",
-  "texte": true,
-  "citation_bavarde": false,
-  "lecteurs_code": [
-   "server.py"
-  ],
-  "lecteurs_doc": []
- },
- {
-  "fichier": "_to_delete\\menage_20260908\\_avant_chip\\pets\\tokens.css",
-  "famille": "LU PAR DU CODE",
-  "octets": 3783,
-  "convention": "",
-  "texte": true,
-  "citation_bavarde": false,
-  "lecteurs_code": [
-   "bundle.py",
-   "server.py",
-   "test_ui_composants.py",
-   "test_verifier_cibles.py"
-  ],
-  "lecteurs_doc": [
-   "_to_delete\\menage_20260908\\_avant_chip\\gallery\\components.css",
-   "_to_delete\\menage_20260908\\_avant_chip\\gallery\\tokens.css",
-   "_to_delete\\menage_20260908\\_avant_chip\\people\\components.css"
-  ]
- },
- {
-  "fichier": "_to_delete\\menage_20260908\\_avant_chip\\residu\\base.css",
-  "famille": "LU PAR DU CODE",
-  "octets": 3659,
-  "convention": "",
-  "texte": true,
-  "citation_bavarde": false,
-  "lecteurs_code": [
-   "bundle.py",
-   "server.py",
-   "test_comptes.py",
-   "test_ui_composants.py"
-  ],
-  "lecteurs_doc": [
-   "_to_delete\\menage_20260908\\_avant_chip\\gallery\\base.css",
-   "_to_delete\\menage_20260908\\_avant_chip\\gallery\\components.css",
-   "_to_delete\\menage_20260908\\_avant_chip\\gallery\\gallery.html"
-  ]
- },
- {
-  "fichier": "_to_delete\\menage_20260908\\_avant_chip\\residu\\components.css",
-  "famille": "LU PAR DU CODE",
-  "octets": 8074,
-  "convention": "",
-  "texte": true,
-  "citation_bavarde": false,
-  "lecteurs_code": [
-   "bundle.py",
-   "server.py",
-   "test_sensibles.py",
-   "test_ui_composants.py"
-  ],
-  "lecteurs_doc": [
-   "PROMPT_NOUVELLE_SESSION.md",
-   "ROADMAP.md",
-   "_to_delete\\menage_20260908\\_avant_chip\\gallery\\components.css"
-  ]
- },
- {
-  "fichier": "_to_delete\\menage_20260908\\_avant_chip\\residu\\residu.html",
-  "famille": "LU PAR DU CODE",
-  "octets": 15985,
-  "convention": "",
-  "texte": true,
-  "citation_bavarde": false,
-  "lecteurs_code": [
-   "server.py"
-  ],
-  "lecteurs_doc": []
- },
- {
-  "fichier": "_to_delete\\menage_20260908\\_avant_chip\\residu\\tokens.css",
-  "famille": "LU PAR DU CODE",
-  "octets": 3783,
-  "convention": "",
-  "texte": true,
-  "citation_bavarde": false,
-  "lecteurs_code": [
-   "bundle.py",
-   "server.py",
-   "test_ui_composants.py",
-   "test_verifier_cibles.py"
-  ],
-  "lecteurs_doc": [
-   "_to_delete\\menage_20260908\\_avant_chip\\gallery\\components.css",
-   "_to_delete\\menage_20260908\\_avant_chip\\gallery\\tokens.css",
-   "_to_delete\\menage_20260908\\_avant_chip\\people\\components.css"
-  ]
- },
- {
-  "fichier": "_to_delete\\menage_20260908\\_avant_chip\\subjects\\base.css",
-  "famille": "LU PAR DU CODE",
-  "octets": 3659,
-  "convention": "",
-  "texte": true,
-  "citation_bavarde": false,
-  "lecteurs_code": [
-   "bundle.py",
-   "server.py",
-   "test_comptes.py",
-   "test_ui_composants.py"
-  ],
-  "lecteurs_doc": [
-   "_to_delete\\menage_20260908\\_avant_chip\\gallery\\base.css",
-   "_to_delete\\menage_20260908\\_avant_chip\\gallery\\components.css",
-   "_to_delete\\menage_20260908\\_avant_chip\\gallery\\gallery.html"
-  ]
- },
- {
-  "fichier": "_to_delete\\menage_20260908\\_avant_chip\\subjects\\components.css",
-  "famille": "LU PAR DU CODE",
-  "octets": 8074,
-  "convention": "",
-  "texte": true,
-  "citation_bavarde": false,
-  "lecteurs_code": [
-   "bundle.py",
-   "server.py",
-   "test_sensibles.py",
-   "test_ui_composants.py"
-  ],
-  "lecteurs_doc": [
-   "PROMPT_NOUVELLE_SESSION.md",
-   "ROADMAP.md",
-   "_to_delete\\menage_20260908\\_avant_chip\\gallery\\components.css"
-  ]
- },
- {
-  "fichier": "_to_delete\\menage_20260908\\_avant_chip\\subjects\\subjects.html",
-  "famille": "LU PAR DU CODE",
-  "octets": 36028,
-  "convention": "",
-  "texte": true,
-  "citation_bavarde": false,
-  "lecteurs_code": [
-   "server.py",
-   "test_ui_composants.py",
-   "test_verifier_controles.py",
-   "test_verifier_css_cascade.py"
-  ],
-  "lecteurs_doc": [
-   "ROADMAP.md",
-   "_to_delete\\menage_20260908\\_avant_chip\\gallery\\base.css",
-   "_to_delete\\menage_20260908\\_avant_chip\\gallery\\gallery.html"
-  ]
- },
- {
-  "fichier": "_to_delete\\menage_20260908\\_avant_chip\\subjects\\tokens.css",
-  "famille": "LU PAR DU CODE",
-  "octets": 3783,
-  "convention": "",
-  "texte": true,
-  "citation_bavarde": false,
-  "lecteurs_code": [
-   "bundle.py",
-   "server.py",
-   "test_ui_composants.py",
-   "test_verifier_cibles.py"
-  ],
-  "lecteurs_doc": [
-   "_to_delete\\menage_20260908\\_avant_chip\\gallery\\components.css",
-   "_to_delete\\menage_20260908\\_avant_chip\\gallery\\tokens.css",
-   "_to_delete\\menage_20260908\\_avant_chip\\people\\components.css"
-  ]
- },
- {
-  "fichier": "_to_delete\\menage_20260908\\_avant_chip\\tranche\\base.css",
-  "famille": "LU PAR DU CODE",
-  "octets": 3659,
-  "convention": "",
-  "texte": true,
-  "citation_bavarde": false,
-  "lecteurs_code": [
-   "bundle.py",
-   "server.py",
-   "test_comptes.py",
-   "test_ui_composants.py"
-  ],
-  "lecteurs_doc": [
-   "_to_delete\\menage_20260908\\_avant_chip\\gallery\\base.css",
-   "_to_delete\\menage_20260908\\_avant_chip\\gallery\\components.css",
-   "_to_delete\\menage_20260908\\_avant_chip\\gallery\\gallery.html"
-  ]
- },
- {
-  "fichier": "_to_delete\\menage_20260908\\_avant_chip\\tranche\\components.css",
-  "famille": "LU PAR DU CODE",
-  "octets": 8074,
-  "convention": "",
-  "texte": true,
-  "citation_bavarde": false,
-  "lecteurs_code": [
-   "bundle.py",
-   "server.py",
-   "test_sensibles.py",
-   "test_ui_composants.py"
-  ],
-  "lecteurs_doc": [
-   "PROMPT_NOUVELLE_SESSION.md",
-   "ROADMAP.md",
-   "_to_delete\\menage_20260908\\_avant_chip\\gallery\\components.css"
-  ]
- },
- {
-  "fichier": "_to_delete\\menage_20260908\\_avant_chip\\tranche\\tokens.css",
-  "famille": "LU PAR DU CODE",
-  "octets": 3783,
-  "convention": "",
-  "texte": true,
-  "citation_bavarde": false,
-  "lecteurs_code": [
-   "bundle.py",
-   "server.py",
-   "test_ui_composants.py",
-   "test_verifier_cibles.py"
-  ],
-  "lecteurs_doc": [
-   "_to_delete\\menage_20260908\\_avant_chip\\gallery\\components.css",
-   "_to_delete\\menage_20260908\\_avant_chip\\gallery\\tokens.css",
-   "_to_delete\\menage_20260908\\_avant_chip\\people\\components.css"
-  ]
- },
- {
-  "fichier": "_to_delete\\menage_20260908\\_avant_chip\\tranche\\tranche.html",
-  "famille": "LU PAR DU CODE",
-  "octets": 10362,
-  "convention": "",
-  "texte": true,
-  "citation_bavarde": false,
-  "lecteurs_code": [
-   "30 - Repetition de restauration.bat",
-   "33 - Rapatrier ce que Google porte mieux.bat",
-   "40 - Dedoublonner par l image (memes pixels).bat",
-   "_to_delete\\patch_roadmap.py"
-  ],
-  "lecteurs_doc": [
-   ".gitignore",
-   "CLAUDE.md",
-   "QUESTIONS_MIKE.md"
-  ]
- },
- {
-  "fichier": "_to_delete\\menage_20260908\\_avant_chip\\upload\\base.css",
-  "famille": "LU PAR DU CODE",
-  "octets": 3659,
-  "convention": "",
-  "texte": true,
-  "citation_bavarde": false,
-  "lecteurs_code": [
-   "bundle.py",
-   "server.py",
-   "test_comptes.py",
-   "test_ui_composants.py"
-  ],
-  "lecteurs_doc": [
-   "_to_delete\\menage_20260908\\_avant_chip\\gallery\\base.css",
-   "_to_delete\\menage_20260908\\_avant_chip\\gallery\\components.css",
-   "_to_delete\\menage_20260908\\_avant_chip\\gallery\\gallery.html"
-  ]
- },
- {
-  "fichier": "_to_delete\\menage_20260908\\_avant_chip\\upload\\components.css",
-  "famille": "LU PAR DU CODE",
-  "octets": 8074,
-  "convention": "",
-  "texte": true,
-  "citation_bavarde": false,
-  "lecteurs_code": [
-   "bundle.py",
-   "server.py",
-   "test_sensibles.py",
-   "test_ui_composants.py"
-  ],
-  "lecteurs_doc": [
-   "PROMPT_NOUVELLE_SESSION.md",
-   "ROADMAP.md",
-   "_to_delete\\menage_20260908\\_avant_chip\\gallery\\components.css"
-  ]
- },
- {
-  "fichier": "_to_delete\\menage_20260908\\_avant_chip\\upload\\tokens.css",
-  "famille": "LU PAR DU CODE",
-  "octets": 3783,
-  "convention": "",
-  "texte": true,
-  "citation_bavarde": false,
-  "lecteurs_code": [
-   "bundle.py",
-   "server.py",
-   "test_ui_composants.py",
-   "test_verifier_cibles.py"
-  ],
-  "lecteurs_doc": [
-   "_to_delete\\menage_20260908\\_avant_chip\\gallery\\components.css",
-   "_to_delete\\menage_20260908\\_avant_chip\\gallery\\tokens.css",
-   "_to_delete\\menage_20260908\\_avant_chip\\people\\components.css"
-  ]
- },
- {
-  "fichier": "_to_delete\\menage_20260908\\_avant_chip\\upload\\upload.html",
-  "famille": "LU PAR DU CODE",
-  "octets": 11042,
-  "convention": "",
-  "texte": true,
-  "citation_bavarde": false,
-  "lecteurs_code": [
-   "server.py",
-   "test_upload_precontrole.py"
-  ],
-  "lecteurs_doc": []
- },
- {
-  "fichier": "_to_delete\\menage_20260908\\_avant_cibles\\browse\\base.css",
-  "famille": "LU PAR DU CODE",
-  "octets": 3659,
-  "convention": "",
-  "texte": true,
-  "citation_bavarde": false,
-  "lecteurs_code": [
-   "bundle.py",
-   "server.py",
-   "test_comptes.py",
-   "test_ui_composants.py"
-  ],
-  "lecteurs_doc": [
-   "_to_delete\\menage_20260908\\_avant_chip\\gallery\\base.css",
-   "_to_delete\\menage_20260908\\_avant_chip\\gallery\\components.css",
-   "_to_delete\\menage_20260908\\_avant_chip\\gallery\\gallery.html"
-  ]
- },
- {
-  "fichier": "_to_delete\\menage_20260908\\_avant_cibles\\browse\\browse.html",
-  "famille": "LU PAR DU CODE",
-  "octets": 9729,
-  "convention": "",
-  "texte": true,
-  "citation_bavarde": false,
-  "lecteurs_code": [
-   "server.py",
-   "test_ui_pages.py",
-   "verifier_vignettes.py"
-  ],
-  "lecteurs_doc": []
- },
- {
-  "fichier": "_to_delete\\menage_20260908\\_avant_cibles\\browse\\components.css",
-  "famille": "LU PAR DU CODE",
-  "octets": 8074,
-  "convention": "",
-  "texte": true,
-  "citation_bavarde": false,
-  "lecteurs_code": [
-   "bundle.py",
-   "server.py",
-   "test_sensibles.py",
-   "test_ui_composants.py"
-  ],
-  "lecteurs_doc": [
-   "PROMPT_NOUVELLE_SESSION.md",
-   "ROADMAP.md",
-   "_to_delete\\menage_20260908\\_avant_chip\\gallery\\components.css"
-  ]
- },
- {
-  "fichier": "_to_delete\\menage_20260908\\_avant_cibles\\browse\\tokens.css",
-  "famille": "LU PAR DU CODE",
-  "octets": 3783,
-  "convention": "",
-  "texte": true,
-  "citation_bavarde": false,
-  "lecteurs_code": [
-   "bundle.py",
-   "server.py",
-   "test_ui_composants.py",
-   "test_verifier_cibles.py"
-  ],
-  "lecteurs_doc": [
-   "_to_delete\\menage_20260908\\_avant_chip\\gallery\\components.css",
-   "_to_delete\\menage_20260908\\_avant_chip\\gallery\\tokens.css",
-   "_to_delete\\menage_20260908\\_avant_chip\\people\\components.css"
-  ]
- },
- {
-  "fichier": "_to_delete\\menage_20260908\\_avant_cibles\\gallery\\base.css",
-  "famille": "LU PAR DU CODE",
-  "octets": 3659,
-  "convention": "",
-  "texte": true,
-  "citation_bavarde": false,
-  "lecteurs_code": [
-   "bundle.py",
-   "server.py",
-   "test_comptes.py",
-   "test_ui_composants.py"
-  ],
-  "lecteurs_doc": [
-   "_to_delete\\menage_20260908\\_avant_chip\\gallery\\base.css",
-   "_to_delete\\menage_20260908\\_avant_chip\\gallery\\components.css",
-   "_to_delete\\menage_20260908\\_avant_chip\\gallery\\gallery.html"
-  ]
- },
- {
-  "fichier": "_to_delete\\menage_20260908\\_avant_cibles\\gallery\\components.css",
-  "famille": "LU PAR DU CODE",
-  "octets": 8074,
-  "convention": "",
-  "texte": true,
-  "citation_bavarde": false,
-  "lecteurs_code": [
-   "bundle.py",
-   "server.py",
-   "test_sensibles.py",
-   "test_ui_composants.py"
-  ],
-  "lecteurs_doc": [
-   "PROMPT_NOUVELLE_SESSION.md",
-   "ROADMAP.md",
-   "_to_delete\\menage_20260908\\_avant_chip\\gallery\\components.css"
-  ]
- },
- {
-  "fichier": "_to_delete\\menage_20260908\\_avant_cibles\\gallery\\gallery.html",
-  "famille": "LU PAR DU CODE",
-  "octets": 76263,
-  "convention": "",
-  "texte": true,
-  "citation_bavarde": false,
-  "lecteurs_code": [
-   "recherche.py",
-   "server.py",
-   "test_faits_affichage.py",
-   "test_recalage_serveur.py"
-  ],
-  "lecteurs_doc": [
-   "ROADMAP.md",
-   "_to_delete\\corbeilles_avant_25-08\\_corbeille_xmp\\xmp_tous_20260823_223850.jsonl",
-   "_to_delete\\menage_20260908\\_avant_chip\\upload\\upload.html"
-  ]
- },
- {
-  "fichier": "_to_delete\\menage_20260908\\_avant_cibles\\gallery\\tokens.css",
-  "famille": "LU PAR DU CODE",
-  "octets": 3783,
-  "convention": "",
-  "texte": true,
-  "citation_bavarde": false,
-  "lecteurs_code": [
-   "bundle.py",
-   "server.py",
-   "test_ui_composants.py",
-   "test_verifier_cibles.py"
-  ],
-  "lecteurs_doc": [
-   "_to_delete\\menage_20260908\\_avant_chip\\gallery\\components.css",
-   "_to_delete\\menage_20260908\\_avant_chip\\gallery\\tokens.css",
-   "_to_delete\\menage_20260908\\_avant_chip\\people\\components.css"
-  ]
- },
- {
-  "fichier": "_to_delete\\menage_20260908\\_avant_cibles\\people\\base.css",
-  "famille": "LU PAR DU CODE",
-  "octets": 3659,
-  "convention": "",
-  "texte": true,
-  "citation_bavarde": false,
-  "lecteurs_code": [
-   "bundle.py",
-   "server.py",
-   "test_comptes.py",
-   "test_ui_composants.py"
-  ],
-  "lecteurs_doc": [
-   "_to_delete\\menage_20260908\\_avant_chip\\gallery\\base.css",
-   "_to_delete\\menage_20260908\\_avant_chip\\gallery\\components.css",
-   "_to_delete\\menage_20260908\\_avant_chip\\gallery\\gallery.html"
-  ]
- },
- {
-  "fichier": "_to_delete\\menage_20260908\\_avant_cibles\\people\\components.css",
-  "famille": "LU PAR DU CODE",
-  "octets": 8074,
-  "convention": "",
-  "texte": true,
-  "citation_bavarde": false,
-  "lecteurs_code": [
-   "bundle.py",
-   "server.py",
-   "test_sensibles.py",
-   "test_ui_composants.py"
-  ],
-  "lecteurs_doc": [
-   "PROMPT_NOUVELLE_SESSION.md",
-   "ROADMAP.md",
-   "_to_delete\\menage_20260908\\_avant_chip\\gallery\\components.css"
-  ]
- },
- {
-  "fichier": "_to_delete\\menage_20260908\\_avant_cibles\\people\\people.html",
-  "famille": "LU PAR DU CODE",
-  "octets": 53274,
-  "convention": "",
-  "texte": true,
-  "citation_bavarde": false,
-  "lecteurs_code": [
-   "server.py",
-   "test_verifier_css_cascade.py",
-   "verifier_css_cascade.py"
-  ],
-  "lecteurs_doc": []
- },
- {
-  "fichier": "_to_delete\\menage_20260908\\_avant_cibles\\people\\tokens.css",
-  "famille": "LU PAR DU CODE",
-  "octets": 3783,
-  "convention": "",
-  "texte": true,
-  "citation_bavarde": false,
-  "lecteurs_code": [
-   "bundle.py",
-   "server.py",
-   "test_ui_composants.py",
-   "test_verifier_cibles.py"
-  ],
-  "lecteurs_doc": [
-   "_to_delete\\menage_20260908\\_avant_chip\\gallery\\components.css",
-   "_to_delete\\menage_20260908\\_avant_chip\\gallery\\tokens.css",
-   "_to_delete\\menage_20260908\\_avant_chip\\people\\components.css"
-  ]
- },
- {
-  "fichier": "_to_delete\\menage_20260908\\_avant_cibles\\people2\\base.css",
-  "famille": "LU PAR DU CODE",
-  "octets": 3659,
-  "convention": "",
-  "texte": true,
-  "citation_bavarde": false,
-  "lecteurs_code": [
-   "bundle.py",
-   "server.py",
-   "test_comptes.py",
-   "test_ui_composants.py"
-  ],
-  "lecteurs_doc": [
-   "_to_delete\\menage_20260908\\_avant_chip\\gallery\\base.css",
-   "_to_delete\\menage_20260908\\_avant_chip\\gallery\\components.css",
-   "_to_delete\\menage_20260908\\_avant_chip\\gallery\\gallery.html"
-  ]
- },
- {
-  "fichier": "_to_delete\\menage_20260908\\_avant_cibles\\people2\\components.css",
-  "famille": "LU PAR DU CODE",
-  "octets": 8074,
-  "convention": "",
-  "texte": true,
-  "citation_bavarde": false,
-  "lecteurs_code": [
-   "bundle.py",
-   "server.py",
-   "test_sensibles.py",
-   "test_ui_composants.py"
-  ],
-  "lecteurs_doc": [
-   "PROMPT_NOUVELLE_SESSION.md",
-   "ROADMAP.md",
-   "_to_delete\\menage_20260908\\_avant_chip\\gallery\\components.css"
-  ]
- },
- {
-  "fichier": "_to_delete\\menage_20260908\\_avant_cibles\\people2\\people.html",
-  "famille": "LU PAR DU CODE",
-  "octets": 53714,
-  "convention": "",
-  "texte": true,
-  "citation_bavarde": false,
-  "lecteurs_code": [
-   "server.py",
-   "test_verifier_css_cascade.py",
-   "verifier_css_cascade.py"
-  ],
-  "lecteurs_doc": []
- },
- {
-  "fichier": "_to_delete\\menage_20260908\\_avant_cibles\\people2\\tokens.css",
-  "famille": "LU PAR DU CODE",
-  "octets": 3783,
-  "convention": "",
-  "texte": true,
-  "citation_bavarde": false,
-  "lecteurs_code": [
-   "bundle.py",
-   "server.py",
-   "test_ui_composants.py",
-   "test_verifier_cibles.py"
-  ],
-  "lecteurs_doc": [
-   "_to_delete\\menage_20260908\\_avant_chip\\gallery\\components.css",
-   "_to_delete\\menage_20260908\\_avant_chip\\gallery\\tokens.css",
-   "_to_delete\\menage_20260908\\_avant_chip\\people\\components.css"
-  ]
- },
- {
-  "fichier": "_to_delete\\menage_20260908\\_avant_cibles\\pets\\base.css",
-  "famille": "LU PAR DU CODE",
-  "octets": 3659,
-  "convention": "",
-  "texte": true,
-  "citation_bavarde": false,
-  "lecteurs_code": [
-   "bundle.py",
-   "server.py",
-   "test_comptes.py",
-   "test_ui_composants.py"
-  ],
-  "lecteurs_doc": [
-   "_to_delete\\menage_20260908\\_avant_chip\\gallery\\base.css",
-   "_to_delete\\menage_20260908\\_avant_chip\\gallery\\components.css",
-   "_to_delete\\menage_20260908\\_avant_chip\\gallery\\gallery.html"
-  ]
- },
- {
-  "fichier": "_to_delete\\menage_20260908\\_avant_cibles\\pets\\components.css",
-  "famille": "LU PAR DU CODE",
-  "octets": 8074,
-  "convention": "",
-  "texte": true,
-  "citation_bavarde": false,
-  "lecteurs_code": [
-   "bundle.py",
-   "server.py",
-   "test_sensibles.py",
-   "test_ui_composants.py"
-  ],
-  "lecteurs_doc": [
-   "PROMPT_NOUVELLE_SESSION.md",
-   "ROADMAP.md",
-   "_to_delete\\menage_20260908\\_avant_chip\\gallery\\components.css"
-  ]
- },
- {
-  "fichier": "_to_delete\\menage_20260908\\_avant_cibles\\pets\\pets.html",
-  "famille": "LU PAR DU CODE",
-  "octets": 33342,
-  "convention": "",
-  "texte": true,
-  "citation_bavarde": false,
-  "lecteurs_code": [
-   "server.py"
-  ],
-  "lecteurs_doc": []
- },
- {
-  "fichier": "_to_delete\\menage_20260908\\_avant_cibles\\pets\\tokens.css",
-  "famille": "LU PAR DU CODE",
-  "octets": 3783,
-  "convention": "",
-  "texte": true,
-  "citation_bavarde": false,
-  "lecteurs_code": [
-   "bundle.py",
-   "server.py",
-   "test_ui_composants.py",
-   "test_verifier_cibles.py"
-  ],
-  "lecteurs_doc": [
-   "_to_delete\\menage_20260908\\_avant_chip\\gallery\\components.css",
-   "_to_delete\\menage_20260908\\_avant_chip\\gallery\\tokens.css",
-   "_to_delete\\menage_20260908\\_avant_chip\\people\\components.css"
-  ]
- },
- {
-  "fichier": "_to_delete\\menage_20260908\\_avant_cibles\\subjects\\base.css",
-  "famille": "LU PAR DU CODE",
-  "octets": 3659,
-  "convention": "",
-  "texte": true,
-  "citation_bavarde": false,
-  "lecteurs_code": [
-   "bundle.py",
-   "server.py",
-   "test_comptes.py",
-   "test_ui_composants.py"
-  ],
-  "lecteurs_doc": [
-   "_to_delete\\menage_20260908\\_avant_chip\\gallery\\base.css",
-   "_to_delete\\menage_20260908\\_avant_chip\\gallery\\components.css",
-   "_to_delete\\menage_20260908\\_avant_chip\\gallery\\gallery.html"
-  ]
- },
- {
-  "fichier": "_to_delete\\menage_20260908\\_avant_cibles\\subjects\\components.css",
-  "famille": "LU PAR DU CODE",
-  "octets": 8074,
-  "convention": "",
-  "texte": true,
-  "citation_bavarde": false,
-  "lecteurs_code": [
-   "bundle.py",
-   "server.py",
-   "test_sensibles.py",
-   "test_ui_composants.py"
-  ],
-  "lecteurs_doc": [
-   "PROMPT_NOUVELLE_SESSION.md",
-   "ROADMAP.md",
-   "_to_delete\\menage_20260908\\_avant_chip\\gallery\\components.css"
-  ]
- },
- {
-  "fichier": "_to_delete\\menage_20260908\\_avant_cibles\\subjects\\subjects.html",
-  "famille": "LU PAR DU CODE",
-  "octets": 35486,
-  "convention": "",
-  "texte": true,
-  "citation_bavarde": false,
-  "lecteurs_code": [
-   "server.py",
-   "test_ui_composants.py",
-   "test_verifier_controles.py",
-   "test_verifier_css_cascade.py"
-  ],
-  "lecteurs_doc": [
-   "ROADMAP.md",
-   "_to_delete\\menage_20260908\\_avant_chip\\gallery\\base.css",
-   "_to_delete\\menage_20260908\\_avant_chip\\gallery\\gallery.html"
-  ]
- },
- {
-  "fichier": "_to_delete\\menage_20260908\\_avant_cibles\\subjects\\tokens.css",
-  "famille": "LU PAR DU CODE",
-  "octets": 3783,
-  "convention": "",
-  "texte": true,
-  "citation_bavarde": false,
-  "lecteurs_code": [
-   "bundle.py",
-   "server.py",
-   "test_ui_composants.py",
-   "test_verifier_cibles.py"
-  ],
-  "lecteurs_doc": [
-   "_to_delete\\menage_20260908\\_avant_chip\\gallery\\components.css",
-   "_to_delete\\menage_20260908\\_avant_chip\\gallery\\tokens.css",
-   "_to_delete\\menage_20260908\\_avant_chip\\people\\components.css"
-  ]
- },
- {
-  "fichier": "_to_delete\\menage_20260908\\_avant_css\\aa\\base.css",
-  "famille": "LU PAR DU CODE",
-  "octets": 2812,
-  "convention": "",
-  "texte": true,
-  "citation_bavarde": false,
-  "lecteurs_code": [
-   "bundle.py",
-   "server.py",
-   "test_comptes.py",
-   "test_ui_composants.py"
-  ],
-  "lecteurs_doc": [
-   "_to_delete\\menage_20260908\\_avant_chip\\gallery\\base.css",
-   "_to_delete\\menage_20260908\\_avant_chip\\gallery\\components.css",
-   "_to_delete\\menage_20260908\\_avant_chip\\gallery\\gallery.html"
-  ]
- },
- {
-  "fichier": "_to_delete\\menage_20260908\\_avant_css\\aa\\browse.html",
-  "famille": "LU PAR DU CODE",
-  "octets": 9442,
-  "convention": "",
-  "texte": true,
-  "citation_bavarde": false,
-  "lecteurs_code": [
-   "server.py",
-   "test_ui_pages.py",
-   "verifier_vignettes.py"
-  ],
-  "lecteurs_doc": []
- },
- {
-  "fichier": "_to_delete\\menage_20260908\\_avant_css\\aa\\components.css",
-  "famille": "LU PAR DU CODE",
-  "octets": 5325,
-  "convention": "",
-  "texte": true,
-  "citation_bavarde": false,
-  "lecteurs_code": [
-   "bundle.py",
-   "server.py",
-   "test_sensibles.py",
-   "test_ui_composants.py"
-  ],
-  "lecteurs_doc": [
-   "PROMPT_NOUVELLE_SESSION.md",
-   "ROADMAP.md",
-   "_to_delete\\menage_20260908\\_avant_chip\\gallery\\components.css"
-  ]
- },
- {
-  "fichier": "_to_delete\\menage_20260908\\_avant_css\\aa\\faces.html",
-  "famille": "LU PAR DU CODE",
-  "octets": 6033,
-  "convention": "",
-  "texte": true,
-  "citation_bavarde": false,
-  "lecteurs_code": [
-   "server.py"
-  ],
-  "lecteurs_doc": [
-   "ROADMAP.md",
-   "eval\\DECISIONS_UI.md"
-  ]
- },
- {
-  "fichier": "_to_delete\\menage_20260908\\_avant_css\\aa\\gallery.html",
-  "famille": "LU PAR DU CODE",
-  "octets": 72719,
-  "convention": "",
-  "texte": true,
-  "citation_bavarde": false,
-  "lecteurs_code": [
-   "recherche.py",
-   "server.py",
-   "test_faits_affichage.py",
-   "test_recalage_serveur.py"
-  ],
-  "lecteurs_doc": [
-   "ROADMAP.md",
-   "_to_delete\\corbeilles_avant_25-08\\_corbeille_xmp\\xmp_tous_20260823_223850.jsonl",
-   "_to_delete\\menage_20260908\\_avant_chip\\upload\\upload.html"
-  ]
- },
- {
-  "fichier": "_to_delete\\menage_20260908\\_avant_css\\aa\\map.html",
-  "famille": "LU PAR DU CODE",
-  "octets": 19097,
-  "convention": "",
-  "texte": true,
-  "citation_bavarde": false,
-  "lecteurs_code": [
-   "server.py"
-  ],
-  "lecteurs_doc": []
- },
- {
-  "fichier": "_to_delete\\menage_20260908\\_avant_css\\aa\\people.html",
-  "famille": "LU PAR DU CODE",
-  "octets": 52177,
-  "convention": "",
-  "texte": true,
-  "citation_bavarde": false,
-  "lecteurs_code": [
-   "server.py",
-   "test_verifier_css_cascade.py",
-   "verifier_css_cascade.py"
-  ],
-  "lecteurs_doc": []
- },
- {
-  "fichier": "_to_delete\\menage_20260908\\_avant_css\\aa\\pets.html",
-  "famille": "LU PAR DU CODE",
-  "octets": 30966,
-  "convention": "",
-  "texte": true,
-  "citation_bavarde": false,
-  "lecteurs_code": [
-   "server.py"
-  ],
-  "lecteurs_doc": []
- },
- {
-  "fichier": "_to_delete\\menage_20260908\\_avant_css\\aa\\reglages.html",
-  "famille": "LU PAR DU CODE",
-  "octets": 31989,
-  "convention": "",
-  "texte": true,
-  "citation_bavarde": false,
-  "lecteurs_code": [
-   "server.py",
-   "test_elargissement_fr_en.py",
-   "test_sensibles.py",
-   "test_ui_global.py"
-  ],
-  "lecteurs_doc": [
-   "MARCHE_A_SUIVRE.md",
-   "PROMPT_NOUVELLE_SESSION.md",
-   "QUESTIONS_MIKE.md"
-  ]
- },
- {
-  "fichier": "_to_delete\\menage_20260908\\_avant_css\\aa\\residu.html",
-  "famille": "LU PAR DU CODE",
-  "octets": 15985,
-  "convention": "",
-  "texte": true,
-  "citation_bavarde": false,
-  "lecteurs_code": [
-   "server.py"
-  ],
-  "lecteurs_doc": []
- },
- {
-  "fichier": "_to_delete\\menage_20260908\\_avant_css\\aa\\subjects.html",
-  "famille": "LU PAR DU CODE",
-  "octets": 35166,
-  "convention": "",
-  "texte": true,
-  "citation_bavarde": false,
-  "lecteurs_code": [
-   "server.py",
-   "test_ui_composants.py",
-   "test_verifier_controles.py",
-   "test_verifier_css_cascade.py"
-  ],
-  "lecteurs_doc": [
-   "ROADMAP.md",
-   "_to_delete\\menage_20260908\\_avant_chip\\gallery\\base.css",
-   "_to_delete\\menage_20260908\\_avant_chip\\gallery\\gallery.html"
-  ]
- },
- {
-  "fichier": "_to_delete\\menage_20260908\\_avant_css\\aa\\tokens.css",
-  "famille": "LU PAR DU CODE",
-  "octets": 2790,
-  "convention": "",
-  "texte": true,
-  "citation_bavarde": false,
-  "lecteurs_code": [
-   "bundle.py",
-   "server.py",
-   "test_ui_composants.py",
-   "test_verifier_cibles.py"
-  ],
-  "lecteurs_doc": [
-   "_to_delete\\menage_20260908\\_avant_chip\\gallery\\components.css",
-   "_to_delete\\menage_20260908\\_avant_chip\\gallery\\tokens.css",
-   "_to_delete\\menage_20260908\\_avant_chip\\people\\components.css"
-  ]
- },
- {
-  "fichier": "_to_delete\\menage_20260908\\_avant_css\\aa\\tranche.html",
-  "famille": "LU PAR DU CODE",
-  "octets": 10362,
-  "convention": "",
-  "texte": true,
-  "citation_bavarde": false,
-  "lecteurs_code": [
-   "30 - Repetition de restauration.bat",
-   "33 - Rapatrier ce que Google porte mieux.bat",
-   "40 - Dedoublonner par l image (memes pixels).bat",
-   "_to_delete\\patch_roadmap.py"
-  ],
-  "lecteurs_doc": [
-   ".gitignore",
-   "CLAUDE.md",
-   "QUESTIONS_MIKE.md"
-  ]
- },
- {
-  "fichier": "_to_delete\\menage_20260908\\_avant_css\\aa\\upload.html",
-  "famille": "LU PAR DU CODE",
-  "octets": 9592,
-  "convention": "",
-  "texte": true,
-  "citation_bavarde": false,
-  "lecteurs_code": [
-   "server.py",
-   "test_upload_precontrole.py"
-  ],
-  "lecteurs_doc": []
- },
- {
-  "fichier": "_to_delete\\menage_20260908\\_avant_css\\base\\base.css",
-  "famille": "LU PAR DU CODE",
-  "octets": 1872,
-  "convention": "",
-  "texte": true,
-  "citation_bavarde": false,
-  "lecteurs_code": [
-   "bundle.py",
-   "server.py",
-   "test_comptes.py",
-   "test_ui_composants.py"
-  ],
-  "lecteurs_doc": [
-   "_to_delete\\menage_20260908\\_avant_chip\\gallery\\base.css",
-   "_to_delete\\menage_20260908\\_avant_chip\\gallery\\components.css",
-   "_to_delete\\menage_20260908\\_avant_chip\\gallery\\gallery.html"
-  ]
- },
- {
-  "fichier": "_to_delete\\menage_20260908\\_avant_css\\base\\browse.html",
-  "famille": "LU PAR DU CODE",
-  "octets": 9525,
-  "convention": "",
-  "texte": true,
-  "citation_bavarde": false,
-  "lecteurs_code": [
-   "server.py",
-   "test_ui_pages.py",
-   "verifier_vignettes.py"
-  ],
-  "lecteurs_doc": []
- },
- {
-  "fichier": "_to_delete\\menage_20260908\\_avant_css\\base\\faces.html",
-  "famille": "LU PAR DU CODE",
-  "octets": 6002,
-  "convention": "",
-  "texte": true,
-  "citation_bavarde": false,
-  "lecteurs_code": [
-   "server.py"
-  ],
-  "lecteurs_doc": [
-   "ROADMAP.md",
-   "eval\\DECISIONS_UI.md"
-  ]
- },
- {
-  "fichier": "_to_delete\\menage_20260908\\_avant_css\\base\\gallery.html",
-  "famille": "LU PAR DU CODE",
-  "octets": 72803,
-  "convention": "",
-  "texte": true,
-  "citation_bavarde": false,
-  "lecteurs_code": [
-   "recherche.py",
-   "server.py",
-   "test_faits_affichage.py",
-   "test_recalage_serveur.py"
-  ],
-  "lecteurs_doc": [
-   "ROADMAP.md",
-   "_to_delete\\corbeilles_avant_25-08\\_corbeille_xmp\\xmp_tous_20260823_223850.jsonl",
-   "_to_delete\\menage_20260908\\_avant_chip\\upload\\upload.html"
-  ]
- },
- {
-  "fichier": "_to_delete\\menage_20260908\\_avant_css\\base\\map.html",
-  "famille": "LU PAR DU CODE",
-  "octets": 19187,
-  "convention": "",
-  "texte": true,
-  "citation_bavarde": false,
-  "lecteurs_code": [
-   "server.py"
-  ],
-  "lecteurs_doc": []
- },
- {
-  "fichier": "_to_delete\\menage_20260908\\_avant_css\\base\\people.html",
-  "famille": "LU PAR DU CODE",
-  "octets": 52146,
-  "convention": "",
-  "texte": true,
-  "citation_bavarde": false,
-  "lecteurs_code": [
-   "server.py",
-   "test_verifier_css_cascade.py",
-   "verifier_css_cascade.py"
-  ],
-  "lecteurs_doc": []
- },
- {
-  "fichier": "_to_delete\\menage_20260908\\_avant_css\\base\\pets.html",
-  "famille": "LU PAR DU CODE",
-  "octets": 31217,
-  "convention": "",
-  "texte": true,
-  "citation_bavarde": false,
-  "lecteurs_code": [
-   "server.py"
-  ],
-  "lecteurs_doc": []
- },
- {
-  "fichier": "_to_delete\\menage_20260908\\_avant_css\\base\\reglages.html",
-  "famille": "LU PAR DU CODE",
-  "octets": 32065,
-  "convention": "",
-  "texte": true,
-  "citation_bavarde": false,
-  "lecteurs_code": [
-   "server.py",
-   "test_elargissement_fr_en.py",
-   "test_sensibles.py",
-   "test_ui_global.py"
-  ],
-  "lecteurs_doc": [
-   "MARCHE_A_SUIVRE.md",
-   "PROMPT_NOUVELLE_SESSION.md",
-   "QUESTIONS_MIKE.md"
-  ]
- },
- {
-  "fichier": "_to_delete\\menage_20260908\\_avant_css\\base\\residu.html",
-  "famille": "LU PAR DU CODE",
-  "octets": 15947,
-  "convention": "",
-  "texte": true,
-  "citation_bavarde": false,
-  "lecteurs_code": [
-   "server.py"
-  ],
-  "lecteurs_doc": []
- },
- {
-  "fichier": "_to_delete\\menage_20260908\\_avant_css\\base\\subjects.html",
-  "famille": "LU PAR DU CODE",
-  "octets": 35233,
-  "convention": "",
-  "texte": true,
-  "citation_bavarde": false,
-  "lecteurs_code": [
-   "server.py",
-   "test_ui_composants.py",
-   "test_verifier_controles.py",
-   "test_verifier_css_cascade.py"
-  ],
-  "lecteurs_doc": [
-   "ROADMAP.md",
-   "_to_delete\\menage_20260908\\_avant_chip\\gallery\\base.css",
-   "_to_delete\\menage_20260908\\_avant_chip\\gallery\\gallery.html"
-  ]
- },
- {
-  "fichier": "_to_delete\\menage_20260908\\_avant_css\\base\\tranche.html",
-  "famille": "LU PAR DU CODE",
-  "octets": 10324,
-  "convention": "",
-  "texte": true,
-  "citation_bavarde": false,
-  "lecteurs_code": [
-   "30 - Repetition de restauration.bat",
-   "33 - Rapatrier ce que Google porte mieux.bat",
-   "40 - Dedoublonner par l image (memes pixels).bat",
-   "_to_delete\\patch_roadmap.py"
-  ],
-  "lecteurs_doc": [
-   ".gitignore",
-   "CLAUDE.md",
-   "QUESTIONS_MIKE.md"
-  ]
- },
- {
-  "fichier": "_to_delete\\menage_20260908\\_avant_css\\base\\upload.html",
-  "famille": "LU PAR DU CODE",
-  "octets": 9702,
-  "convention": "",
-  "texte": true,
-  "citation_bavarde": false,
-  "lecteurs_code": [
-   "server.py",
-   "test_upload_precontrole.py"
-  ],
-  "lecteurs_doc": []
- },
- {
-  "fichier": "_to_delete\\menage_20260908\\_avant_css\\gallery.html",
-  "famille": "LU PAR DU CODE",
-  "octets": 77699,
-  "convention": "",
-  "texte": true,
-  "citation_bavarde": false,
-  "lecteurs_code": [
-   "recherche.py",
-   "server.py",
-   "test_faits_affichage.py",
-   "test_recalage_serveur.py"
-  ],
-  "lecteurs_doc": [
-   "ROADMAP.md",
-   "_to_delete\\corbeilles_avant_25-08\\_corbeille_xmp\\xmp_tous_20260823_223850.jsonl",
-   "_to_delete\\menage_20260908\\_avant_chip\\upload\\upload.html"
-  ]
- },
- {
-  "fichier": "_to_delete\\menage_20260908\\_avant_css\\people.html",
-  "famille": "LU PAR DU CODE",
-  "octets": 52036,
-  "convention": "",
-  "texte": true,
-  "citation_bavarde": false,
-  "lecteurs_code": [
-   "server.py",
-   "test_verifier_css_cascade.py",
-   "verifier_css_cascade.py"
-  ],
-  "lecteurs_doc": []
- },
- {
-  "fichier": "_to_delete\\menage_20260908\\_avant_css\\pets.html",
-  "famille": "LU PAR DU CODE",
-  "octets": 30740,
-  "convention": "",
-  "texte": true,
-  "citation_bavarde": false,
-  "lecteurs_code": [
-   "server.py"
-  ],
-  "lecteurs_doc": []
- },
- {
-  "fichier": "_to_delete\\menage_20260908\\_avant_css\\residu.html",
-  "famille": "LU PAR DU CODE",
-  "octets": 16397,
-  "convention": "",
-  "texte": true,
-  "citation_bavarde": false,
-  "lecteurs_code": [
-   "server.py"
-  ],
-  "lecteurs_doc": []
- },
- {
-  "fichier": "_to_delete\\menage_20260908\\_avant_css\\subjects.html",
-  "famille": "LU PAR DU CODE",
-  "octets": 34792,
-  "convention": "",
-  "texte": true,
-  "citation_bavarde": false,
-  "lecteurs_code": [
-   "server.py",
-   "test_ui_composants.py",
-   "test_verifier_controles.py",
-   "test_verifier_css_cascade.py"
-  ],
-  "lecteurs_doc": [
-   "ROADMAP.md",
-   "_to_delete\\menage_20260908\\_avant_chip\\gallery\\base.css",
-   "_to_delete\\menage_20260908\\_avant_chip\\gallery\\gallery.html"
-  ]
- },
- {
-  "fichier": "_to_delete\\menage_20260908\\_avant_css\\survol\\base.css",
-  "famille": "LU PAR DU CODE",
-  "octets": 1872,
-  "convention": "",
-  "texte": true,
-  "citation_bavarde": false,
-  "lecteurs_code": [
-   "bundle.py",
-   "server.py",
-   "test_comptes.py",
-   "test_ui_composants.py"
-  ],
-  "lecteurs_doc": [
-   "_to_delete\\menage_20260908\\_avant_chip\\gallery\\base.css",
-   "_to_delete\\menage_20260908\\_avant_chip\\gallery\\components.css",
-   "_to_delete\\menage_20260908\\_avant_chip\\gallery\\gallery.html"
-  ]
- },
- {
-  "fichier": "_to_delete\\menage_20260908\\_avant_css\\survol\\browse.html",
-  "famille": "LU PAR DU CODE",
-  "octets": 9442,
-  "convention": "",
-  "texte": true,
-  "citation_bavarde": false,
-  "lecteurs_code": [
-   "server.py",
-   "test_ui_pages.py",
-   "verifier_vignettes.py"
-  ],
-  "lecteurs_doc": []
- },
- {
-  "fichier": "_to_delete\\menage_20260908\\_avant_css\\survol\\components.css",
-  "famille": "LU PAR DU CODE",
-  "octets": 3803,
-  "convention": "",
-  "texte": true,
-  "citation_bavarde": false,
-  "lecteurs_code": [
-   "bundle.py",
-   "server.py",
-   "test_sensibles.py",
-   "test_ui_composants.py"
-  ],
-  "lecteurs_doc": [
-   "PROMPT_NOUVELLE_SESSION.md",
-   "ROADMAP.md",
-   "_to_delete\\menage_20260908\\_avant_chip\\gallery\\components.css"
-  ]
- },
- {
-  "fichier": "_to_delete\\menage_20260908\\_avant_css\\survol\\faces.html",
-  "famille": "LU PAR DU CODE",
-  "octets": 6033,
-  "convention": "",
-  "texte": true,
-  "citation_bavarde": false,
-  "lecteurs_code": [
-   "server.py"
-  ],
-  "lecteurs_doc": [
-   "ROADMAP.md",
-   "eval\\DECISIONS_UI.md"
-  ]
- },
- {
-  "fichier": "_to_delete\\menage_20260908\\_avant_css\\survol\\gallery.html",
-  "famille": "LU PAR DU CODE",
-  "octets": 72719,
-  "convention": "",
-  "texte": true,
-  "citation_bavarde": false,
-  "lecteurs_code": [
-   "recherche.py",
-   "server.py",
-   "test_faits_affichage.py",
-   "test_recalage_serveur.py"
-  ],
-  "lecteurs_doc": [
-   "ROADMAP.md",
-   "_to_delete\\corbeilles_avant_25-08\\_corbeille_xmp\\xmp_tous_20260823_223850.jsonl",
-   "_to_delete\\menage_20260908\\_avant_chip\\upload\\upload.html"
-  ]
- },
- {
-  "fichier": "_to_delete\\menage_20260908\\_avant_css\\survol\\map.html",
-  "famille": "LU PAR DU CODE",
-  "octets": 19097,
-  "convention": "",
-  "texte": true,
-  "citation_bavarde": false,
-  "lecteurs_code": [
-   "server.py"
-  ],
-  "lecteurs_doc": []
- },
- {
-  "fichier": "_to_delete\\menage_20260908\\_avant_css\\survol\\people.html",
-  "famille": "LU PAR DU CODE",
-  "octets": 52177,
-  "convention": "",
-  "texte": true,
-  "citation_bavarde": false,
-  "lecteurs_code": [
-   "server.py",
-   "test_verifier_css_cascade.py",
-   "verifier_css_cascade.py"
-  ],
-  "lecteurs_doc": []
- },
- {
-  "fichier": "_to_delete\\menage_20260908\\_avant_css\\survol\\pets.html",
-  "famille": "LU PAR DU CODE",
-  "octets": 31150,
-  "convention": "",
-  "texte": true,
-  "citation_bavarde": false,
-  "lecteurs_code": [
-   "server.py"
-  ],
-  "lecteurs_doc": []
- },
- {
-  "fichier": "_to_delete\\menage_20260908\\_avant_css\\survol\\reglages.html",
-  "famille": "LU PAR DU CODE",
-  "octets": 31989,
-  "convention": "",
-  "texte": true,
-  "citation_bavarde": false,
-  "lecteurs_code": [
-   "server.py",
-   "test_elargissement_fr_en.py",
-   "test_sensibles.py",
-   "test_ui_global.py"
-  ],
-  "lecteurs_doc": [
-   "MARCHE_A_SUIVRE.md",
-   "PROMPT_NOUVELLE_SESSION.md",
-   "QUESTIONS_MIKE.md"
-  ]
- },
- {
-  "fichier": "_to_delete\\menage_20260908\\_avant_css\\survol\\residu.html",
-  "famille": "LU PAR DU CODE",
-  "octets": 15985,
-  "convention": "",
-  "texte": true,
-  "citation_bavarde": false,
-  "lecteurs_code": [
-   "server.py"
-  ],
-  "lecteurs_doc": []
- },
- {
-  "fichier": "_to_delete\\menage_20260908\\_avant_css\\survol\\subjects.html",
-  "famille": "LU PAR DU CODE",
-  "octets": 35166,
-  "convention": "",
-  "texte": true,
-  "citation_bavarde": false,
-  "lecteurs_code": [
-   "server.py",
-   "test_ui_composants.py",
-   "test_verifier_controles.py",
-   "test_verifier_css_cascade.py"
-  ],
-  "lecteurs_doc": [
-   "ROADMAP.md",
-   "_to_delete\\menage_20260908\\_avant_chip\\gallery\\base.css",
-   "_to_delete\\menage_20260908\\_avant_chip\\gallery\\gallery.html"
-  ]
- },
- {
-  "fichier": "_to_delete\\menage_20260908\\_avant_css\\survol\\tokens.css",
-  "famille": "LU PAR DU CODE",
-  "octets": 2367,
-  "convention": "",
-  "texte": true,
-  "citation_bavarde": false,
-  "lecteurs_code": [
-   "bundle.py",
-   "server.py",
-   "test_ui_composants.py",
-   "test_verifier_cibles.py"
-  ],
-  "lecteurs_doc": [
-   "_to_delete\\menage_20260908\\_avant_chip\\gallery\\components.css",
-   "_to_delete\\menage_20260908\\_avant_chip\\gallery\\tokens.css",
-   "_to_delete\\menage_20260908\\_avant_chip\\people\\components.css"
-  ]
- },
- {
-  "fichier": "_to_delete\\menage_20260908\\_avant_css\\survol\\tranche.html",
-  "famille": "LU PAR DU CODE",
-  "octets": 10362,
-  "convention": "",
-  "texte": true,
-  "citation_bavarde": false,
-  "lecteurs_code": [
-   "30 - Repetition de restauration.bat",
-   "33 - Rapatrier ce que Google porte mieux.bat",
-   "40 - Dedoublonner par l image (memes pixels).bat",
-   "_to_delete\\patch_roadmap.py"
-  ],
-  "lecteurs_doc": [
-   ".gitignore",
-   "CLAUDE.md",
-   "QUESTIONS_MIKE.md"
-  ]
- },
- {
-  "fichier": "_to_delete\\menage_20260908\\_avant_css\\survol\\upload.html",
-  "famille": "LU PAR DU CODE",
-  "octets": 9592,
-  "convention": "",
-  "texte": true,
-  "citation_bavarde": false,
-  "lecteurs_code": [
-   "server.py",
-   "test_upload_precontrole.py"
-  ],
-  "lecteurs_doc": []
- },
- {
-  "fichier": "_to_delete\\menage_20260908\\_avant_css\\tranche.html",
-  "famille": "LU PAR DU CODE",
-  "octets": 10774,
-  "convention": "",
-  "texte": true,
-  "citation_bavarde": false,
-  "lecteurs_code": [
-   "30 - Repetition de restauration.bat",
-   "33 - Rapatrier ce que Google porte mieux.bat",
-   "40 - Dedoublonner par l image (memes pixels).bat",
-   "_to_delete\\patch_roadmap.py"
-  ],
-  "lecteurs_doc": [
-   ".gitignore",
-   "CLAUDE.md",
-   "QUESTIONS_MIKE.md"
-  ]
- },
- {
-  "fichier": "_to_delete\\menage_20260908\\_avant_css\\upload\\base.css",
-  "famille": "LU PAR DU CODE",
-  "octets": 2812,
-  "convention": "",
-  "texte": true,
-  "citation_bavarde": false,
-  "lecteurs_code": [
-   "bundle.py",
-   "server.py",
-   "test_comptes.py",
-   "test_ui_composants.py"
-  ],
-  "lecteurs_doc": [
-   "_to_delete\\menage_20260908\\_avant_chip\\gallery\\base.css",
-   "_to_delete\\menage_20260908\\_avant_chip\\gallery\\components.css",
-   "_to_delete\\menage_20260908\\_avant_chip\\gallery\\gallery.html"
-  ]
- },
- {
-  "fichier": "_to_delete\\menage_20260908\\_avant_css\\upload\\browse.html",
-  "famille": "LU PAR DU CODE",
-  "octets": 9442,
-  "convention": "",
-  "texte": true,
-  "citation_bavarde": false,
-  "lecteurs_code": [
-   "server.py",
-   "test_ui_pages.py",
-   "verifier_vignettes.py"
-  ],
-  "lecteurs_doc": []
- },
- {
-  "fichier": "_to_delete\\menage_20260908\\_avant_css\\upload\\components.css",
-  "famille": "LU PAR DU CODE",
-  "octets": 7567,
-  "convention": "",
-  "texte": true,
-  "citation_bavarde": false,
-  "lecteurs_code": [
-   "bundle.py",
-   "server.py",
-   "test_sensibles.py",
-   "test_ui_composants.py"
-  ],
-  "lecteurs_doc": [
-   "PROMPT_NOUVELLE_SESSION.md",
-   "ROADMAP.md",
-   "_to_delete\\menage_20260908\\_avant_chip\\gallery\\components.css"
-  ]
- },
- {
-  "fichier": "_to_delete\\menage_20260908\\_avant_css\\upload\\faces.html",
-  "famille": "LU PAR DU CODE",
-  "octets": 6033,
-  "convention": "",
-  "texte": true,
-  "citation_bavarde": false,
-  "lecteurs_code": [
-   "server.py"
-  ],
-  "lecteurs_doc": [
-   "ROADMAP.md",
-   "eval\\DECISIONS_UI.md"
-  ]
- },
- {
-  "fichier": "_to_delete\\menage_20260908\\_avant_css\\upload\\gallery.html",
-  "famille": "LU PAR DU CODE",
-  "octets": 72719,
-  "convention": "",
-  "texte": true,
-  "citation_bavarde": false,
-  "lecteurs_code": [
-   "recherche.py",
-   "server.py",
-   "test_faits_affichage.py",
-   "test_recalage_serveur.py"
-  ],
-  "lecteurs_doc": [
-   "ROADMAP.md",
-   "_to_delete\\corbeilles_avant_25-08\\_corbeille_xmp\\xmp_tous_20260823_223850.jsonl",
-   "_to_delete\\menage_20260908\\_avant_chip\\upload\\upload.html"
-  ]
- },
- {
-  "fichier": "_to_delete\\menage_20260908\\_avant_css\\upload\\map.html",
-  "famille": "LU PAR DU CODE",
-  "octets": 19097,
-  "convention": "",
-  "texte": true,
-  "citation_bavarde": false,
-  "lecteurs_code": [
-   "server.py"
-  ],
-  "lecteurs_doc": []
- },
- {
-  "fichier": "_to_delete\\menage_20260908\\_avant_css\\upload\\people.html",
-  "famille": "LU PAR DU CODE",
-  "octets": 52177,
-  "convention": "",
-  "texte": true,
-  "citation_bavarde": false,
-  "lecteurs_code": [
-   "server.py",
-   "test_verifier_css_cascade.py",
-   "verifier_css_cascade.py"
-  ],
-  "lecteurs_doc": []
- },
- {
-  "fichier": "_to_delete\\menage_20260908\\_avant_css\\upload\\pets.html",
-  "famille": "LU PAR DU CODE",
-  "octets": 30966,
-  "convention": "",
-  "texte": true,
-  "citation_bavarde": false,
-  "lecteurs_code": [
-   "server.py"
-  ],
-  "lecteurs_doc": []
- },
- {
-  "fichier": "_to_delete\\menage_20260908\\_avant_css\\upload\\reglages.html",
-  "famille": "LU PAR DU CODE",
-  "octets": 31989,
-  "convention": "",
-  "texte": true,
-  "citation_bavarde": false,
-  "lecteurs_code": [
-   "server.py",
-   "test_elargissement_fr_en.py",
-   "test_sensibles.py",
-   "test_ui_global.py"
-  ],
-  "lecteurs_doc": [
-   "MARCHE_A_SUIVRE.md",
-   "PROMPT_NOUVELLE_SESSION.md",
-   "QUESTIONS_MIKE.md"
-  ]
- },
- {
-  "fichier": "_to_delete\\menage_20260908\\_avant_css\\upload\\residu.html",
-  "famille": "LU PAR DU CODE",
-  "octets": 15985,
-  "convention": "",
-  "texte": true,
-  "citation_bavarde": false,
-  "lecteurs_code": [
-   "server.py"
-  ],
-  "lecteurs_doc": []
- },
- {
-  "fichier": "_to_delete\\menage_20260908\\_avant_css\\upload\\subjects.html",
-  "famille": "LU PAR DU CODE",
-  "octets": 35166,
-  "convention": "",
-  "texte": true,
-  "citation_bavarde": false,
-  "lecteurs_code": [
-   "server.py",
-   "test_ui_composants.py",
-   "test_verifier_controles.py",
-   "test_verifier_css_cascade.py"
-  ],
-  "lecteurs_doc": [
-   "ROADMAP.md",
-   "_to_delete\\menage_20260908\\_avant_chip\\gallery\\base.css",
-   "_to_delete\\menage_20260908\\_avant_chip\\gallery\\gallery.html"
-  ]
- },
- {
-  "fichier": "_to_delete\\menage_20260908\\_avant_css\\upload\\tokens.css",
-  "famille": "LU PAR DU CODE",
-  "octets": 3783,
-  "convention": "",
-  "texte": true,
-  "citation_bavarde": false,
-  "lecteurs_code": [
-   "bundle.py",
-   "server.py",
-   "test_ui_composants.py",
-   "test_verifier_cibles.py"
-  ],
-  "lecteurs_doc": [
-   "_to_delete\\menage_20260908\\_avant_chip\\gallery\\components.css",
-   "_to_delete\\menage_20260908\\_avant_chip\\gallery\\tokens.css",
-   "_to_delete\\menage_20260908\\_avant_chip\\people\\components.css"
-  ]
- },
- {
-  "fichier": "_to_delete\\menage_20260908\\_avant_css\\upload\\tranche.html",
-  "famille": "LU PAR DU CODE",
-  "octets": 10362,
-  "convention": "",
-  "texte": true,
-  "citation_bavarde": false,
-  "lecteurs_code": [
-   "30 - Repetition de restauration.bat",
-   "33 - Rapatrier ce que Google porte mieux.bat",
-   "40 - Dedoublonner par l image (memes pixels).bat",
-   "_to_delete\\patch_roadmap.py"
-  ],
-  "lecteurs_doc": [
-   ".gitignore",
-   "CLAUDE.md",
-   "QUESTIONS_MIKE.md"
-  ]
- },
- {
-  "fichier": "_to_delete\\menage_20260908\\_avant_css\\upload\\upload.html",
-  "famille": "LU PAR DU CODE",
-  "octets": 9592,
-  "convention": "",
-  "texte": true,
-  "citation_bavarde": false,
-  "lecteurs_code": [
-   "server.py",
-   "test_upload_precontrole.py"
-  ],
-  "lecteurs_doc": []
- },
- {
-  "fichier": "_to_delete\\menage_20260908\\_avant_deplacement\\photos.db",
-  "famille": "LU PAR DU CODE",
-  "octets": 289964032,
-  "convention": "",
-  "texte": false,
-  "citation_bavarde": false,
-  "lecteurs_code": [
-   "30 - Repetition de restauration.bat",
-   "40 - Dedoublonner par l image (memes pixels).bat",
-   "41 - Remettre les mots-cles anglais dans kw_en (index).bat",
-   "Migrer - Exporter (ancien PC).bat"
-  ],
-  "lecteurs_doc": [
-   ".gitignore",
-   "CLAUDE.md",
-   "INSTALLATION.md"
-  ]
- },
- {
-  "fichier": "_to_delete\\menage_20260908\\_avant_deplacement\\photos.db-shm",
-  "famille": "LU PAR DU CODE",
-  "octets": 32768,
-  "convention": "annexe SQLite : appartient a la base, jamais separable",
-  "texte": false,
-  "citation_bavarde": false,
-  "lecteurs_code": [
-   "migrer.py",
-   "test_migrer.py"
-  ],
-  "lecteurs_doc": [
-   ".gitignore"
-  ]
- },
- {
-  "fichier": "_to_delete\\menage_20260908\\_avant_deplacement\\photos.db-wal",
-  "famille": "LU PAR DU CODE",
-  "octets": 0,
-  "convention": "annexe SQLite : appartient a la base, jamais separable",
-  "texte": false,
-  "citation_bavarde": false,
-  "lecteurs_code": [
-   "mesure_copie_base.py",
-   "migrer.py",
-   "test_migrer.py"
-  ],
-  "lecteurs_doc": [
-   ".gitignore"
-  ]
- },
- {
-  "fichier": "_to_delete\\menage_20260908\\_corbeille_copies\\copie_20260827_202934.jsonl",
-  "famille": "LU PAR UN MOTIF",
-  "octets": 878318,
-  "convention": "",
-  "texte": true,
-  "citation_bavarde": false,
-  "lecteurs_code": [],
-  "lecteurs_doc": []
- },
- {
-  "fichier": "_to_delete\\menage_20260908\\_corbeille_copies\\copie_20260828_203649.jsonl",
-  "famille": "LU PAR UN MOTIF",
-  "octets": 22680,
-  "convention": "",
-  "texte": true,
-  "citation_bavarde": false,
-  "lecteurs_code": [],
-  "lecteurs_doc": []
- },
- {
-  "fichier": "_to_delete\\menage_20260908\\_corbeille_copies\\copie_20260828_220141.jsonl",
-  "famille": "LU PAR UN MOTIF",
-  "octets": 44574,
-  "convention": "",
-  "texte": true,
-  "citation_bavarde": false,
-  "lecteurs_code": [],
-  "lecteurs_doc": []
- },
- {
-  "fichier": "_to_delete\\menage_20260908\\_corbeille_deplacements\\deplacement_20260826_221815.jsonl",
-  "famille": "LU PAR UN MOTIF",
-  "octets": 5667803,
-  "convention": "",
-  "texte": false,
-  "citation_bavarde": false,
-  "lecteurs_code": [],
-  "lecteurs_doc": []
- },
- {
-  "fichier": "_to_delete\\menage_20260908\\_google.json",
-  "famille": "LU PAR DU CODE",
-  "octets": 4391650,
-  "convention": "",
-  "texte": false,
-  "citation_bavarde": false,
-  "lecteurs_code": [
-   "31 - Dezipper le Takeout Google.bat",
-   "32 - Copier les absentes de Google.bat",
-   "33 - Rapatrier ce que Google porte mieux.bat",
-   "49 - Effacer l extrait du Takeout (96 Go).bat"
-  ],
-  "lecteurs_doc": [
-   ".gitignore",
-   "_copie_absentes.json",
-   "_copie_google_mieux.json"
-  ]
- },
- {
-  "fichier": "_to_delete\\menage_20260908\\_xmp_fonds_apres.json",
-  "famille": "LU PAR UN MOTIF",
-  "octets": 47678,
-  "convention": "",
-  "texte": true,
-  "citation_bavarde": false,
-  "lecteurs_code": [],
-  "lecteurs_doc": [
-   ".gitignore"
-  ]
- },
- {
-  "fichier": "_to_delete\\menage_20260908\\_xmp_fonds_final.json",
-  "famille": "LU PAR UN MOTIF",
-  "octets": 47712,
-  "convention": "",
-  "texte": true,
-  "citation_bavarde": false,
-  "lecteurs_code": [],
-  "lecteurs_doc": [
-   ".gitignore"
-  ]
- },
- {
   "fichier": "_to_delete\\mesure_retag_gain.py.b64",
   "famille": "LU PAR DU CODE",
   "octets": 20437,
@@ -6329,7 +4305,8 @@
    "50 - Grand menage du depot.bat"
   ],
   "lecteurs_doc": [
-   "PROMPT_NOUVELLE_SESSION.md"
+   "PROMPT_NOUVELLE_SESSION.md",
+   "docs\\DECISIONS_OUTILLAGE.md"
   ]
  },
  {
@@ -6493,8 +4470,8 @@
   ],
   "lecteurs_doc": [
    ".gitignore",
-   "_to_delete\\menage_20260908\\_avant_chip\\gallery\\components.css",
-   "_to_delete\\menage_20260908\\_avant_chip\\people\\components.css"
+   "eval\\DECISIONS_UI.md",
+   "ui\\components.css"
   ]
  },
  {
@@ -6828,6 +4805,18 @@
   "lecteurs_doc": []
  },
  {
+  "fichier": "diagnostic_cle_sensible.py",
+  "famille": "LU PAR UN MOTIF",
+  "octets": 8574,
+  "convention": "",
+  "texte": true,
+  "citation_bavarde": false,
+  "lecteurs_code": [],
+  "lecteurs_doc": [
+   "_commande_banc.txt"
+  ]
+ },
+ {
   "fichier": "diagnostic_dates.py",
   "famille": "LU PAR DU CODE",
   "octets": 10746,
@@ -7037,7 +5026,7 @@
  {
   "fichier": "docs\\DECISIONS_OUTILLAGE.md",
   "famille": "LU PAR DU CODE",
-  "octets": 41230,
+  "octets": 44495,
   "convention": "carnet : lu par un humain, pas par le code",
   "texte": true,
   "citation_bavarde": false,
@@ -7306,8 +5295,8 @@
   ],
   "lecteurs_doc": [
    ".gitignore",
-   "_to_delete\\undo_avant_25-08\\undo_annee_20260802_201658.json",
-   "_to_delete\\undo_avant_25-08\\undo_rangement_20260801_124326.json"
+   "PROMPT_NOUVELLE_SESSION.md",
+   "_to_delete\\undo_avant_25-08\\undo_annee_20260802_201658.json"
   ]
  },
  {
@@ -7325,8 +5314,8 @@
   ],
   "lecteurs_doc": [
    ".gitignore",
-   "_to_delete\\undo_avant_25-08\\undo_annee_20260802_201658.json",
-   "_to_delete\\undo_avant_25-08\\undo_rangement_20260801_124326.json"
+   "PROMPT_NOUVELLE_SESSION.md",
+   "_to_delete\\undo_avant_25-08\\undo_annee_20260802_201658.json"
   ]
  },
  {
@@ -7405,8 +5394,7 @@
   ],
   "lecteurs_doc": [
    ".gitignore",
-   "_to_delete\\menage_20260908\\_avant_css\\aa\\reglages.html",
-   "_to_delete\\menage_20260908\\_avant_css\\base\\reglages.html"
+   "ui\\pages\\reglages.html"
   ]
  },
  {
@@ -7423,8 +5411,7 @@
   ],
   "lecteurs_doc": [
    ".gitignore",
-   "_to_delete\\menage_20260908\\_avant_css\\aa\\reglages.html",
-   "_to_delete\\menage_20260908\\_avant_css\\base\\reglages.html"
+   "ui\\pages\\reglages.html"
   ]
  },
  {
@@ -7492,8 +5479,8 @@
   ],
   "lecteurs_doc": [
    ".gitignore",
-   "_to_delete\\menage_20260908\\_avant_css\\aa\\reglages.html",
-   "_to_delete\\menage_20260908\\_avant_css\\base\\reglages.html"
+   "docs\\RANGEMENT_2026.md",
+   "docs\\maintenance_report.json"
   ]
  },
  {
@@ -7511,8 +5498,8 @@
   ],
   "lecteurs_doc": [
    ".gitignore",
-   "_to_delete\\menage_20260908\\_avant_css\\aa\\reglages.html",
-   "_to_delete\\menage_20260908\\_avant_css\\base\\reglages.html"
+   "docs\\RANGEMENT_2026.md",
+   "docs\\maintenance_report.json"
   ]
  },
  {
@@ -8017,9 +6004,9 @@
   "citation_bavarde": false,
   "lecteurs_code": [
    "appliquer_xmp_personnes.py",
+   "diagnostic_cle_sensible.py",
    "eval_animaux.py",
-   "installer.py",
-   "inventaire_fantomes.py"
+   "installer.py"
   ],
   "lecteurs_doc": [
    ".gitignore",
@@ -8048,10 +6035,10 @@
   "texte": true,
   "citation_bavarde": false,
   "lecteurs_code": [
+   "diagnostic_cle_sensible.py",
    "installer.py",
    "mesure_faits_vue.py",
-   "migrer.py",
-   "recensement_doublons.py"
+   "migrer.py"
   ],
   "lecteurs_doc": [
    ".gitignore",
@@ -8067,9 +6054,9 @@
   "citation_bavarde": false,
   "lecteurs_code": [
    "copier_absentes.py",
+   "diagnostic_cle_sensible.py",
    "installer.py",
-   "inventaire_fantomes.py",
-   "inventaire_fonds.py"
+   "inventaire_fantomes.py"
   ],
   "lecteurs_doc": [
    ".gitignore",
@@ -8086,9 +6073,9 @@
   "citation_bavarde": false,
   "lecteurs_code": [
    "copier_absentes.py",
+   "diagnostic_cle_sensible.py",
    "installer.py",
-   "inventaire_fantomes.py",
-   "inventaire_fonds.py"
+   "inventaire_fantomes.py"
   ],
   "lecteurs_doc": [
    ".gitignore",
@@ -37595,7 +35582,7 @@
   "lecteurs_doc": [
    ".gitignore",
    "_animaux_a_juger.json",
-   "_to_delete\\menage_20260908\\_avant_chip\\gallery\\gallery.html"
+   "eval\\DECISIONS.md"
   ]
  },
  {
@@ -37746,7 +35733,7 @@
   "lecteurs_doc": [
    ".gitignore",
    "_fonds.json",
-   "_to_delete\\menage_20260908\\_avant_chip\\subjects\\subjects.html"
+   "diagnostic_dates.txt"
   ]
  },
  {
@@ -38751,8 +36738,8 @@
   ],
   "lecteurs_doc": [
    "ROADMAP.md",
-   "_to_delete\\menage_20260908\\_avant_chip\\gallery\\gallery.html",
-   "_to_delete\\menage_20260908\\_avant_cibles\\gallery\\gallery.html"
+   "docs\\DECISIONS_OUTILLAGE.md",
+   "eval\\DECISIONS.md"
   ]
  },
  {
@@ -38875,8 +36862,7 @@
   ],
   "lecteurs_doc": [
    ".gitignore",
-   "_to_delete\\menage_20260908\\_avant_chip\\subjects\\subjects.html",
-   "_to_delete\\menage_20260908\\_avant_cibles\\subjects\\subjects.html"
+   "ui\\pages\\subjects.html"
   ]
  },
  {
@@ -38917,7 +36903,6 @@
   "lecteurs_code": [],
   "lecteurs_doc": [
    "PROMPT_NOUVELLE_SESSION.md",
-   "_commande_banc.txt",
    "docs\\DECISIONS_OUTILLAGE.md"
   ]
  },
@@ -39067,8 +37052,8 @@
   ],
   "lecteurs_doc": [
    ".gitignore",
-   "_to_delete\\menage_20260908\\_avant_chip\\subjects\\subjects.html",
-   "_to_delete\\menage_20260908\\_avant_cibles\\subjects\\subjects.html"
+   "docs\\PROTOCOLE_3B_TAGGING.md",
+   "docs\\RANGEMENT_2026.md"
   ]
  },
  {
@@ -39086,8 +37071,8 @@
   ],
   "lecteurs_doc": [
    ".gitignore",
-   "_to_delete\\menage_20260908\\_avant_chip\\subjects\\subjects.html",
-   "_to_delete\\menage_20260908\\_avant_cibles\\subjects\\subjects.html"
+   "docs\\PROTOCOLE_3B_TAGGING.md",
+   "docs\\RANGEMENT_2026.md"
   ]
  },
  {
@@ -39170,9 +37155,9 @@
    "recherche.py"
   ],
   "lecteurs_doc": [
-   "_to_delete\\menage_20260908\\_avant_chip\\gallery\\gallery.html",
-   "_to_delete\\menage_20260908\\_avant_cibles\\gallery\\gallery.html",
-   "_to_delete\\menage_20260908\\_avant_css\\aa\\gallery.html"
+   "docs\\DECISIONS_OUTILLAGE.md",
+   "eval\\DECISIONS.md",
+   "ui\\pages\\gallery.html"
   ]
  },
  {
@@ -39455,9 +37440,8 @@
    "server.py"
   ],
   "lecteurs_doc": [
-   "_to_delete\\menage_20260908\\_avant_chip\\residu\\residu.html",
-   "_to_delete\\menage_20260908\\_avant_css\\aa\\residu.html",
-   "_to_delete\\menage_20260908\\_avant_css\\base\\residu.html"
+   "eval\\DECISIONS.md",
+   "ui\\pages\\residu.html"
   ]
  },
  {
@@ -39617,9 +37601,7 @@
    "test_tranche_jugements.py"
   ],
   "lecteurs_doc": [
-   "_to_delete\\menage_20260908\\_avant_chip\\tranche\\tranche.html",
-   "_to_delete\\menage_20260908\\_avant_css\\aa\\tranche.html",
-   "_to_delete\\menage_20260908\\_avant_css\\base\\tranche.html"
+   "ui\\pages\\tranche.html"
   ]
  },
  {
@@ -39824,8 +37806,8 @@
   ],
   "lecteurs_doc": [
    "ROADMAP.md",
-   "_to_delete\\menage_20260908\\_avant_css\\aa\\reglages.html",
-   "_to_delete\\menage_20260908\\_avant_css\\base\\reglages.html"
+   "docs\\AUDIT_INTERNE_2026-08.md",
+   "ui\\pages\\reglages.html"
   ]
  },
  {
@@ -39893,8 +37875,8 @@
   ],
   "lecteurs_doc": [
    ".gitignore",
-   "_to_delete\\undo_avant_25-08\\undo_annee_20260802_201658.json",
-   "_to_delete\\undo_avant_25-08\\undo_rangement_20260801_124326.json"
+   "PROMPT_NOUVELLE_SESSION.md",
+   "_to_delete\\undo_avant_25-08\\undo_annee_20260802_201658.json"
   ]
  },
  {
@@ -39910,8 +37892,7 @@
   ],
   "lecteurs_doc": [
    ".gitignore",
-   "_to_delete\\menage_20260908\\_avant_css\\aa\\reglages.html",
-   "_to_delete\\menage_20260908\\_avant_css\\base\\reglages.html"
+   "ui\\pages\\reglages.html"
   ]
  },
  {
@@ -39973,7 +37954,7 @@
   "lecteurs_doc": [
    "CLAUDE.md",
    "ROADMAP.md",
-   "_to_delete\\menage_20260908\\_avant_css\\aa\\components.css"
+   "docs\\AUDIT_INTERNE_2026-08.md"
   ]
  },
  {
@@ -40110,7 +38091,7 @@
   "lecteurs_doc": [
    ".gitignore",
    "ROADMAP.md",
-   "_to_delete\\menage_20260908\\_avant_chip\\subjects\\subjects.html"
+   "docs\\AUDIT_INTERNE_2026-08.md"
   ]
  },
  {
@@ -40272,8 +38253,7 @@
   ],
   "lecteurs_doc": [
    "CLAUDE.md",
-   "_to_delete\\menage_20260908\\_avant_chip\\subjects\\subjects.html",
-   "_to_delete\\menage_20260908\\_avant_cibles\\subjects\\subjects.html"
+   "docs\\DECISIONS_OUTILLAGE.md"
   ]
  },
  {
@@ -40287,7 +38267,7 @@
    "appliquer_plan.py",
    "appliquer_scission_fr_en.py",
    "comptes_index.py",
-   "mesure_elargissement.py"
+   "diagnostic_cle_sensible.py"
   ],
   "lecteurs_doc": [
    "CLAUDE.md"
@@ -40394,7 +38374,9 @@
   "texte": false,
   "citation_bavarde": false,
   "lecteurs_code": [],
-  "lecteurs_doc": []
+  "lecteurs_doc": [
+   "docs\\DECISIONS_OUTILLAGE.md"
+  ]
  },
  {
   "fichier": "test_appliquer_perdues.py",
@@ -41734,9 +39716,9 @@
    "test_ui_composants.py"
   ],
   "lecteurs_doc": [
-   "_to_delete\\menage_20260908\\_avant_chip\\gallery\\base.css",
-   "_to_delete\\menage_20260908\\_avant_chip\\gallery\\components.css",
-   "_to_delete\\menage_20260908\\_avant_chip\\gallery\\gallery.html"
+   "docs\\RACCOURCIS.md",
+   "ui\\components.css",
+   "ui\\global.js"
   ]
  },
  {
@@ -41755,7 +39737,7 @@
   "lecteurs_doc": [
    "PROMPT_NOUVELLE_SESSION.md",
    "ROADMAP.md",
-   "_to_delete\\menage_20260908\\_avant_chip\\gallery\\components.css"
+   "dico_fr_en.json"
   ]
  },
  {
@@ -41851,7 +39833,7 @@
   "lecteurs_doc": [
    "ROADMAP.md",
    "_to_delete\\corbeilles_avant_25-08\\_corbeille_xmp\\xmp_tous_20260823_223850.jsonl",
-   "_to_delete\\menage_20260908\\_avant_chip\\upload\\upload.html"
+   "dico_fr_en.json"
   ]
  },
  {
@@ -41932,9 +39914,9 @@
   "citation_bavarde": false,
   "lecteurs_code": [
    "_collage6.py",
+   "diagnostic_cle_sensible.py",
    "mesure_retag_gain.py",
-   "mesure_sensibles.py",
-   "renommage.py"
+   "mesure_sensibles.py"
   ],
   "lecteurs_doc": [
    "MARCHE_A_SUIVRE.md",
@@ -41957,8 +39939,8 @@
   ],
   "lecteurs_doc": [
    "ROADMAP.md",
-   "_to_delete\\menage_20260908\\_avant_chip\\gallery\\base.css",
-   "_to_delete\\menage_20260908\\_avant_chip\\gallery\\gallery.html"
+   "eval\\DECISIONS_UI.md",
+   "ui\\base.css"
   ]
  },
  {
@@ -42008,8 +39990,8 @@
   ],
   "lecteurs_doc": [
    "ROADMAP.md",
-   "_to_delete\\menage_20260908\\_avant_chip\\upload\\upload.html",
-   "_to_delete\\menage_20260908\\_avant_css\\aa\\upload.html"
+   "docs\\AUDIT_INTERNE_2026-08.md",
+   "ui\\pages\\upload.html"
   ]
  },
  {
@@ -42026,9 +40008,9 @@
    "test_verifier_cibles.py"
   ],
   "lecteurs_doc": [
-   "_to_delete\\menage_20260908\\_avant_chip\\gallery\\components.css",
-   "_to_delete\\menage_20260908\\_avant_chip\\gallery\\tokens.css",
-   "_to_delete\\menage_20260908\\_avant_chip\\people\\components.css"
+   "docs\\DECISIONS_OUTILLAGE.md",
+   "docs\\RACCOURCIS.md",
+   "eval\\DECISIONS_UI.md"
   ]
  },
  {
@@ -42129,8 +40111,8 @@
   ],
   "lecteurs_doc": [
    "ROADMAP.md",
-   "_to_delete\\menage_20260908\\_avant_chip\\gallery\\gallery.html",
-   "_to_delete\\menage_20260908\\_avant_chip\\subjects\\subjects.html"
+   "eval\\DECISIONS_UI.md",
+   "ui\\pages\\gallery.html"
   ]
  },
  {
@@ -42147,9 +40129,9 @@
    "verifier_controles.py"
   ],
   "lecteurs_doc": [
-   "_to_delete\\menage_20260908\\_avant_chip\\gallery\\tokens.css",
-   "_to_delete\\menage_20260908\\_avant_chip\\people\\tokens.css",
-   "_to_delete\\menage_20260908\\_avant_chip\\pets\\tokens.css"
+   "docs\\DECISIONS_OUTILLAGE.md",
+   "eval\\DECISIONS_UI.md",
+   "ui\\pages\\gallery.html"
   ]
  },
  {
@@ -42220,8 +40202,8 @@
   ],
   "lecteurs_doc": [
    ".gitignore",
-   "_to_delete\\menage_20260908\\_avant_chip\\gallery\\base.css",
-   "_to_delete\\menage_20260908\\_avant_chip\\people\\base.css"
+   "docs\\DECISIONS_OUTILLAGE.md",
+   "eval\\DECISIONS_UI.md"
   ]
  },
  {
@@ -42671,9 +40653,9 @@
   "citation_bavarde": false,
   "lecteurs_code": [
    "comptes.py",
+   "diagnostic_cle_sensible.py",
    "server.py",
-   "test_sensibles.py",
-   "test_visibilite.py"
+   "test_sensibles.py"
   ],
   "lecteurs_doc": [
    "eval\\DECISIONS.md",

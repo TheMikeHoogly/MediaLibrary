@@ -299,10 +299,28 @@
     actes.className = 'actes';
     actes.appendChild(bouton('btn btn--destructif', 'Mettre à la corbeille',
                              p.key, p.nom, 'corbeille'));
-    actes.appendChild(bouton('btn', 'Rendre privée', p.key, p.nom, 'prive'));
+    var bp = bouton('btn', 'Rendre privée', p.key, p.nom, 'prive');
+    // Le serveur dit AVANT le clic si ce geste peut aboutir sur cette photo
+    // (`prive_refus`). Le 10/09, « Rendre privée » sur une photo de Flo
+    // échouait à chaque fois avec « Fichier introuvable » — le message conçu
+    // pour quelqu'un qui ne voit PAS la photo, servi à quelqu'un qui en
+    // regardait la vignette. Un bouton qui ne peut jamais aboutir est une
+    // promesse que l'interface ne tiendra pas : on l'éteint, et on DIT
+    // pourquoi. `disabled` seul laisserait un bouton mort sans explication.
+    if (p.prive_refus) {
+      bp.disabled = true;
+      bp.title = p.prive_refus;
+    }
+    actes.appendChild(bp);
     actes.appendChild(bouton('btn btn--discret', 'Pas sensible',
                              p.key, p.nom, 'non'));
     col.appendChild(actes);
+    if (p.prive_refus) {
+      var pourquoi = document.createElement('p');
+      pourquoi.className = 'aide';
+      pourquoi.textContent = p.prive_refus;
+      col.appendChild(pourquoi);
+    }
 
     var pied = document.createElement('div');
     pied.className = 'pied';

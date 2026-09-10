@@ -121,6 +121,47 @@ class LEtatSeLitDansLIndexBrut(unittest.TestCase):
         self.assertNotIn("STORE.data", s)
 
 
+class UnBoutonQuiNePeutPasAboutir(unittest.TestCase):
+    """Le 10/09 : « Rendre privee » sur la derniere photo -- une photo de
+    `Photos Flo` -- repondait « Impossible : Fichier introuvable. » a chaque
+    clic. Le fichier etait la (mesure : `cible.exists() : True`). Le geste
+    DEPLACE vers le PRIVE du proprietaire, donc `Photos Flo\PRIVE`, et le
+    chantier 17 fermait ce dossier meme a l'admin. Le refus tombait deux
+    etages plus bas, dans `_permis`, et sortait avec le message concu pour
+    l'INCONNU -- servi a quelqu'un qui regardait la vignette.
+
+    Deux corrections, et elles sont de nature differente : **dire la cause**
+    (ici), et **ouvrir le depot a l'admin** (banc de `visibilite`, tranche par
+    Mike le 10/09 : « je depose partout, mais uniquement parce que je suis
+    administrateur »)."""
+
+    def setUp(self):
+        self.page = (HERE / 'ui' / 'pages' / 'sensibles.html').read_text(
+            encoding='utf-8')
+
+    def test_le_refus_est_dit_AVANT_de_toucher_au_disque(self):
+        s = _corps('_rendre_privee')
+        self.assertIn('refus_rendre_privee', s)
+        # et il est leve comme un REFUS (403/404), pas comme une panne
+        self.assertIn('FileOpRefus', s)
+
+    def test_le_depot_passe_par_un_garde_PASSE_EN_ARGUMENT(self):
+        """Un drapeau global « depot en cours » ouvrirait le PRIVE d'autrui a
+        la requete d'a cote : ce serveur est threade."""
+        s = _corps('_rendre_privee')
+        self.assertIn('depot=True', s)
+        self.assertIn('garde=depot', s)
+
+    def test_la_liste_dit_au_client_ce_qui_ne_peut_pas_aboutir(self):
+        self.assertIn("'prive_refus'", _corps('_serve_sensibles'))
+
+    def test_la_page_eteint_le_bouton_ET_dit_pourquoi(self):
+        # `disabled` seul laisserait un bouton mort sans explication.
+        self.assertIn('prive_refus', self.page)
+        self.assertIn('bp.disabled = true', self.page)
+        self.assertIn("pourquoi.textContent = p.prive_refus", self.page)
+
+
 class UnVerdictRenduNeSAttendPlus(unittest.TestCase):
     """Le 09/09, Mike a trie les 213 candidates et il en restait UNE.
     `/api/sensibles` en annoncait 68 : 60 dans `.corbeille-effacements`,

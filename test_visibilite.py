@@ -190,6 +190,79 @@ class Ecriture(unittest.TestCase):
         self.assertIsNone(V.refus_ecriture(MIKE_PUB, 'Mike'))
 
 
+class LeDepotDeLAdmin(unittest.TestCase):
+    """« J'ai le droit de deposer dans le prive de tout le monde, mais
+    uniquement parce que je suis administrateur » -- Mike, 10/09/2026.
+
+    Le defaut repare : l'admin pouvait EFFACER la photo de Flo mais pas la
+    PROTEGER, parce que « Rendre privee » ecrit dans `Photos Flo/PRIVE` et que
+    le PRIVE d'autrui lui est ferme. Une regle de confidentialite qui laisse
+    detruire et interdit d'abriter protege le mauvais geste."""
+
+    def test_l_admin_depose_dans_le_prive_d_un_autre(self):
+        self.assertIsNone(V.refus_ecriture(FLO_PRIV, 'Mike', depot=True))
+        self.assertTrue(V.peut_ecrire(FLO_PRIV, 'Mike', depot=True))
+
+    def test_l_admin_depose_MAIS_NE_FOUILLE_PAS(self):
+        """Le geste ordinaire sur le meme chemin reste refuse. C'est toute la
+        difference entre entrer poser quelque chose et entrer regarder."""
+        self.assertEqual(V.refus_ecriture(FLO_PRIV, 'Mike'),
+                         (404, 'Fichier introuvable.'))
+
+    def test_le_depot_n_ouvre_rien_a_qui_n_est_pas_admin(self):
+        """`depot` n'est pas un passe-partout : c'est une exception NOMMEE,
+        et elle ne nomme que l'admin."""
+        self.assertEqual(V.refus_ecriture(MIKE_PRIV, 'Flo', depot=True),
+                         (404, 'Fichier introuvable.'))
+        self.assertFalse(V.peut_ecrire(MIKE_PRIV, 'Flo', depot=True))
+
+    def test_le_depot_ne_change_rien_hors_d_un_prive(self):
+        """Hors PRIVE, `depot=True` doit se comporter comme s'il n'existait
+        pas -- sinon il deviendrait un contournement general."""
+        for u in ('Mike', 'Flo'):
+            self.assertEqual(V.refus_ecriture(MIKE_PUB, u, depot=True),
+                             V.refus_ecriture(MIKE_PUB, u), u)
+            self.assertEqual(V.refus_ecriture(FLO_PUB, u, depot=True),
+                             V.refus_ecriture(FLO_PUB, u), u)
+
+
+class RendrePriveeDitPourquoi(unittest.TestCase):
+    """Le 10/09, « Rendre privee » sur une photo de Flo repondait « Fichier
+    introuvable » a un Mike qui en regardait la vignette. Le message existe
+    pour l'INCONNU -- dire « interdit » dirait « ca existe ». Il ment des que
+    l'onglet a mis la photo sous les yeux de celui qui clique."""
+
+    def test_l_admin_peut_desormais(self):
+        self.assertIsNone(V.refus_rendre_privee(FLO_PUB, 'Mike'))
+
+    def test_le_proprietaire_peut(self):
+        self.assertIsNone(V.refus_rendre_privee(FLO_PUB, 'Flo'))
+
+    def test_un_tiers_s_entend_dire_POURQUOI(self):
+        code, msg = V.refus_rendre_privee(FLO_PUB, 'Papa')
+        self.assertEqual(code, 403)
+        self.assertIn('Flo', msg)
+        self.assertIn('corbeille', msg)          # ce qu'il PEUT faire
+
+    def test_qui_ne_voit_pas_la_photo_garde_le_message_de_l_inconnu(self):
+        """La ou le message est JUSTE, il ne bouge pas."""
+        self.assertEqual(V.refus_rendre_privee(MIKE_PRIV, 'Flo'),
+                         (404, 'Fichier introuvable.'))
+
+    def test_une_photo_deja_privee_le_dit(self):
+        code, msg = V.refus_rendre_privee(MIKE_PRIV, 'Mike')
+        self.assertEqual(code, 400)
+        self.assertIn('deja', msg.lower())
+
+    def test_hors_dossier_proprietaire_le_geste_n_a_pas_de_sens(self):
+        code, msg = V.refus_rendre_privee(RACINE, 'Mike')
+        self.assertEqual(code, 400)
+        self.assertIn('proprietaire', msg.lower())
+
+    def test_le_fil_de_fond_n_est_jamais_refuse(self):
+        self.assertIsNone(V.refus_rendre_privee(FLO_PUB, None))
+
+
 class Vue(unittest.TestCase):
     D = {MIKE_PUB: {'kw_fr': ['personne:Flo']}, MIKE_PRIV: {'kw_fr': ['personne:Flo']},
          FLO_PRIV: {'kw_fr': ['personne:Mike']}}

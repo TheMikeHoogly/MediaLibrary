@@ -11869,14 +11869,32 @@ class Handler(BaseHTTPRequestHandler):
         if not tgt or tgt[0] is None:
             raise fichiers.FileOpError('Photo introuvable dans les dossiers connus.')
         idx, rel = tgt
+        # LE REFUS EST DIT ICI, ET IL SE NOMME (10/09). Sans cette ligne il
+        # tombait deux etages plus bas, dans `_permis` sur la CREATION du
+        # `PRIVE` du proprietaire, et il sortait avec le message concu pour
+        # l'inconnu — « Fichier introuvable. » — a un Mike qui regardait la
+        # vignette. Aucune permission ne change : `refus_rendre_privee` refuse
+        # exactement ce que `_permis` refusait deja, mais il le dit avant, et
+        # il dit POURQUOI.
+        verdict = _visibilite.refus_rendre_privee(rel, utilisateur_vu())
+        if verdict:
+            code, message = verdict
+            raise fichiers.FileOpRefus(code, message)
         dossier, raison = _visibilite.cible_prive(rel)
         if dossier is None:
             raise fichiers.FileOpError(raison)
+        # LE GARDE DU DEPOT, et lui seul. Il n'ouvre qu'une chose : ENTRER
+        # dans le PRIVE d'un proprietaire pour y ranger une photo. Ce que
+        # l'admin ne peut toujours pas faire, c'est LIRE ou toucher ce qui s'y
+        # trouve deja — « l'admin depose, il ne fouille pas » (Mike, 10/09).
+        # Passe en argument, jamais en etat partage : le serveur est threade.
+        depot = lambda c: _visibilite.refus_ecriture(     # noqa: E731
+            str(c), utilisateur_vu(), depot=True)
         try:
-            ops.mkdir(idx, dossier.rsplit('/', 1)[0], PRIVE_NOM)
+            ops.mkdir(idx, dossier.rsplit('/', 1)[0], PRIVE_NOM, garde=depot)
         except fichiers.FileOpError:
             pass                      # existe deja : c'est le cas courant
-        res = ops.move(idx, rel, idx, dossier, up)
+        res = ops.move(idx, rel, idx, dossier, up, garde=depot)
         print(f"  🔒 {utilisateur_vu()} rend privee {Path(rel).name} → {dossier}")
         return {**res, 'prive': dossier}
 
@@ -11921,11 +11939,18 @@ class Handler(BaseHTTPRequestHandler):
             # `url` est calculée ICI par `_url_for_key` : la refaire en JS
             # ferait un second assemblage de la même règle, et un second
             # assemblage finit toujours par diverger (leçon `faits_vue`).
+            # `prive_refus` : la raison pour laquelle « Rendre privee »
+            # ne peut pas aboutir sur CETTE photo, ou '' si le geste est
+            # possible. Un bouton qui ne peut jamais rien faire est une
+            # promesse que l'interface ne tiendra pas — meme defaut que
+            # l'etape 3 du bat 50, meme correction : le dire AVANT le clic.
+            _r = _visibilite.refus_rendre_privee(cle, u)
             photos.append({'key': cle, 'nom': Path(cle).name,
                            'url': _url_for_key(cle) or '',
                            'motif': (e.get('sensible_motif') or ''),
                            'le': e.get('sensible_le') or '',
-                           'par': e.get('sensible_par') or ''})
+                           'par': e.get('sensible_par') or '',
+                           'prive_refus': _r[1] if _r else ''})
         photos.sort(key=lambda p: (p['le'], p['key']))
         self._send(200, json.dumps({'ok': True, 'n': len(photos),
                                     'photos': photos},
