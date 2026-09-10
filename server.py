@@ -6893,6 +6893,10 @@ def maintenance_loop():
                 # Le carnet part sur disque À CHAQUE cycle : un redémarrage
                 # perdrait au pire le cycle en cours, jamais l'historique.
                 sauver_comptes()
+                # Et le tableau des routes avec lui : la VM ne joint pas le
+                # LAN, un fichier est le seul chemin par lequel un banc peut
+                # lire ce que le serveur a mesure.
+                perf_ecrire()
             first = False
             MAINT_LOOP_STATE["dernier_scan"] = time.time()
         except Exception as e:                                # noqa: BLE001
@@ -11648,6 +11652,104 @@ def _retamponner_vignettes(key, mt):
     return n
 
 
+# ─── L'HORLOGE DES ROUTES (10/09) ───────────────────────────────────────────
+# Ce serveur n'a jamais su ce qu'il passait a servir. On a optimise O1 (les
+# vignettes), O11 (la compression), O14 (la reconciliation) sur des soupcons
+# justes mais choisis a l'oeil. **Avant d'optimiser encore, il faut un
+# classement.**
+#
+# Trois choix qui font que cet instrument coute ~0 et ne ment pas :
+#
+# 1. **Des SEAUX, pas un centile.** Garder les temps pour calculer un p95
+#    demanderait de la memoire par requete ; un centile approche serait un
+#    chiffre qu'on croirait exact. Des seuils lisibles (30 ms, 100, 300, 1 s,
+#    3 s) repondent EXACTEMENT a la seule question qui compte pour du ressenti :
+#    « combien de requetes ont depasse 300 ms ». Un histogramme ne se trompe
+#    pas sur ce qu'il mesure.
+# 2. **Le total, pas le maximum.** Une route lente appelee trois fois coute
+#    moins qu'une route tiede appelee mille fois. Le classement se fait sur le
+#    TEMPS TOTAL — c'est la qu'une optimisation se paie.
+# 3. **On mesure le temps du FIL, ecriture de la reponse comprise.** Une grosse
+#    vignette servie a un client lent gonfle donc le chiffre : c'est voulu,
+#    c'est bien ce que la requete coute au serveur, mais il faut le savoir en
+#    lisant.
+#
+# Le tableau part dans `_perf_routes.json` a chaque cycle de maintenance : la
+# VM ne joint pas le LAN, et c'est le seul moyen qu'un banc le lise.
+PERF_LOCK = threading.Lock()
+PERF_ROUTES = {}
+PERF_DEPUIS = time.time()
+PERF_MAX_ROUTES = 300          # au-dela, tout tombe dans « (autres) »
+PERF_SEUILS = (30, 100, 300, 1000, 3000)   # ms
+
+
+def _route_perf(methode, chemin):
+    """La cle de classement : la ROUTE, jamais l'argument.
+
+    Sans ce repliage, `/api/thumb?key=...` ferait 44 604 lignes de tableau et
+    aucune n'aurait de sens : ce qu'on veut savoir, c'est ce que coute « servir
+    une vignette », pas ce que coute une photo en particulier."""
+    p = urllib.parse.urlparse(chemin or '').path or '/'
+    for prefixe in ('/media/', '/uploads/', '/face_thumbs/', '/animal_thumbs/'):
+        if p.startswith(prefixe):
+            return '%s %s*' % (methode, prefixe)
+    return '%s %s' % (methode, p)
+
+
+def _perf_note(methode, chemin, ms):
+    """Enregistre une requete servie. Jamais d'exception vers l'appelant : une
+    horloge qui casse une requete serait pire que pas d'horloge."""
+    try:
+        cle = _route_perf(methode, chemin)
+        with PERF_LOCK:
+            e = PERF_ROUTES.get(cle)
+            if e is None:
+                if len(PERF_ROUTES) >= PERF_MAX_ROUTES:
+                    cle = '%s (autres)' % methode
+                    e = PERF_ROUTES.get(cle)
+                if e is None:
+                    e = {'n': 0, 'ms': 0.0, 'max': 0.0,
+                         'seaux': [0] * (len(PERF_SEUILS) + 1)}
+                    PERF_ROUTES[cle] = e
+            e['n'] += 1
+            e['ms'] += ms
+            if ms > e['max']:
+                e['max'] = ms
+            i = 0
+            while i < len(PERF_SEUILS) and ms >= PERF_SEUILS[i]:
+                i += 1
+            e['seaux'][i] += 1
+    except Exception:                                             # noqa: BLE001
+        pass
+
+
+def perf_tableau():
+    """Le tableau, trie par TEMPS TOTAL decroissant."""
+    with PERF_LOCK:
+        lignes = [dict(cle=k, **v) for k, v in PERF_ROUTES.items()]
+    lignes.sort(key=lambda x: -x['ms'])
+    return {'depuis': PERF_DEPUIS, 'duree_s': time.time() - PERF_DEPUIS,
+            'seuils_ms': list(PERF_SEUILS), 'routes': lignes}
+
+
+PERF_FICHIER = SCRIPT_DIR / '_perf_routes.json'
+
+
+def perf_ecrire():
+    """Depose le tableau la ou un banc peut le lire. Ecriture atomique : un
+    banc qui lit pendant l'ecriture ne doit pas tomber sur un demi-fichier."""
+    try:
+        t = perf_tableau()
+        if not t['routes']:
+            return False
+        tmp = PERF_FICHIER.with_suffix('.tmp')
+        tmp.write_text(json.dumps(t, indent=1), encoding='utf-8')
+        os.replace(tmp, PERF_FICHIER)
+        return True
+    except Exception:                                             # noqa: BLE001
+        return False
+
+
 class Handler(BaseHTTPRequestHandler):
 
     def log_message(self, fmt, *args):
@@ -11690,10 +11792,16 @@ class Handler(BaseHTTPRequestHandler):
         return False
 
     def do_GET(self):
+        # L'horloge est POSEE ICI, dans l'enveloppe, et le routeur (`_do_get`)
+        # n'est pas touche d'une ligne : mesurer ne doit pas etre l'occasion de
+        # rouvrir 250 lignes de dispatch.
+        t0 = time.perf_counter()
+        chemin = self.path
         try:
             if self._ouvrir():
                 self._do_get()
         finally:
+            _perf_note('GET', chemin, (time.perf_counter() - t0) * 1000.0)
             _UTILISATEUR.nom = None     # le fil sert la requête suivante : jamais d'héritage
 
     def _serve_connexion_post(self):
@@ -11914,6 +12022,14 @@ class Handler(BaseHTTPRequestHandler):
         elif path == '/api/serveur':
             self._serve_serveur_etat()
 
+        elif path == '/api/perf':
+            # Lecture seule, aucun secret : des noms de routes et des
+            # millisecondes. Pas de garde admin — un chiffre qu'on doit
+            # demander la permission de lire finit par n'etre jamais lu.
+            self._send(200, json.dumps(perf_tableau(), ensure_ascii=False,
+                                       default=str).encode(),
+                       'application/json')
+
         elif path == '/api/raccourcis':
             self._serve_raccourcis()
 
@@ -11947,6 +12063,8 @@ class Handler(BaseHTTPRequestHandler):
     def do_POST(self):
         note_heavy_activity()
         print(f"  POST {self.path}")
+        t0 = time.perf_counter()
+        chemin = self.path
         try:
             if self._ouvrir():
                 self._do_post()
@@ -11955,6 +12073,7 @@ class Handler(BaseHTTPRequestHandler):
             traceback.print_exc()
             self._send(500, str(e).encode(), 'text/plain')
         finally:
+            _perf_note('POST', chemin, (time.perf_counter() - t0) * 1000.0)
             _UTILISATEUR.nom = None
 
     def _read_json_body(self):
