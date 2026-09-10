@@ -102,7 +102,11 @@ d'appel passent à `flush()`, chacun avec sa preuve écrite à côté ; `save()`
 sa garantie sur les mutations profondes ne bougent pas, et un banc tient la
 limite (`test_flush_o14.py`). Restent O8–O9 (matmul par visage et backfill
 sémantique : les deux touchent des boucles de calcul, à faire quand la campagne
-sera finie) et **O15** (les caches de vignettes). **L'adoption de
+sera finie). **O15 MESURÉ ET OUTILLÉ le 10/09** : les trois caches de vignettes
+pèsent **722 Mo dont 541 Mo d'orphelins (75 %)** — rien ne les avait jamais
+purgés. `51 - Purger les vignettes orphelines.bat` attend un geste de Mike ;
+la réversibilité y est la **régénération**, pas une corbeille, et les deux
+garde-fous visent la formule de nommage de l'outil, pas les fichiers. **L'adoption de
 `components.css` par `browse`, `faces` et `reglages` — LIGNE CLOSE le 09/09,
 et aucune des trois n'était ce qu'elle annonçait.** `reglages` : sa famille
 maison `.b` borde à 5,97:1 là où `.btn--discret` bordait à 1,18 — c'est elle

@@ -216,8 +216,21 @@ reste refusé 404.
 
 ## 4 bis. Ce qui reste, dans l'ordre
 
-**À moi, sans GPU ni prompt** — **O15**, les caches de vignettes : c'est le
-dernier point d'audit qui ne demande ni le GPU ni le serveur arrêté.
+**O15 — FAIT le 10/09, et le chiffre est gros.** Les trois caches pèsent
+**722 Mo dont 541 Mo d'orphelins (75 %)** : `photo_thumbs` 56 % morts,
+`face_thumbs` **83 %** (le ré-embedding déplace les bboxes), `animal_thumbs`
+74 %. Le nom de fichier est une empreinte de ce qui définit la vignette, donc
+tout ce qui change le mtime ou la bbox l'orpheline — et écrire les tags XMP
+change le mtime. `51 - Purger les vignettes orphelines.bat` attend Mike.
+**Deux garde-fous, et ils visent l'outil, pas les fichiers** : un dossier dont
+moins de 5 % des noms sont reconnus est refusé EN BLOC (c'est la formule qui a
+divergé de `server.py`, pas le cache qui est mort), et rien de moins de 7 jours
+n'est touché (une formule fausse se trompe d'abord sur ce qui vient d'être
+créé). *La réversibilité, ici, c'est la régénération : une vignette n'est pas
+une donnée, c'est un calcul mis de côté.*
+
+**À moi, sans GPU ni prompt** — plus rien de l'audit : O8 et O9 sont les
+derniers, et ils touchent des boucles de calcul.
 
 **À Mike, quand il veut** — relancer le bat 50 (47 fichiers / 34,8 Mo, dont les
 journaux qui marchent enfin) ; vider `_corbeille_menage\` à la main dans
