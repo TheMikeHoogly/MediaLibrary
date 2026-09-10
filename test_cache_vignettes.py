@@ -145,7 +145,7 @@ class LesQuatreProprietes(unittest.TestCase):
                 # la fonction ENGLOBANTE la plus proche suffit : on veut le nom
                 # sous lequel le geste se relit.
                 appelants.add(n.name)
-        # Les deux chemins d'ecriture de metadonnees, et eux seuls.
+        # LES TROIS chemins d'ecriture de metadonnees, et eux seuls.
         self.assertTrue(appelants, 'aucun appelant : le correctif ne sert a rien')
         for nom in appelants:
             src = _src(nom)
@@ -154,6 +154,72 @@ class LesQuatreProprietes(unittest.TestCase):
                 "%s appelle _retamponner_vignettes sans ecrire de metadonnees "
                 "-- si l'image a pu changer, la vignette doit etre REFAITE, "
                 "pas redatee" % nom)
+
+
+class QuiEnregistreUnMtimeRedateLaVignette(unittest.TestCase):
+    """L'invariant, dans sa bonne formulation — et l'erreur qu'il attrape.
+
+    Le 10/09, le correctif a d'abord ete pose sur DEUX chemins d'ecriture de
+    metadonnees. Il en existait TROIS, et celui qui manquait etait le
+    principal : `tagger_worker` ecrit les XMP en ligne puis releve
+    `_stat_of(path)` — c'est LUI qui change le mtime de ~6 500 photos par jour
+    pendant la campagne. `retro_write_metadata`, que j'avais patche, ne tourne
+    qu'avec la maintenance. **Trouve en observant en reel, pas en relisant.**
+
+    Le banc precedent verrouillait la liste des appelants : il verifiait que
+    chacun ecrit bien des metadonnees. **Une liste blanche ne compte pas les
+    absents.** D'ou celui-ci, et sa formulation, qui est la bonne :
+
+        *Toute fonction qui ECRIT des metadonnees ET enregistre le nouveau
+        mtime doit redater les vignettes.*
+
+    Enregistrer le mtime est le geste qui perime la vignette : c'est donc lui,
+    et non l'ecriture, qui porte l'obligation. Une enveloppe qui se contente de
+    relayer l'appel (`write_person_tag` au singulier) n'enregistre rien et n'a
+    rien a redater — le critere l'exempte tout seul, sans liste d'exception."""
+
+    @staticmethod
+    def _appels(noeud):
+        noms = set()
+        for n in ast.walk(noeud):
+            if isinstance(n, ast.Call) and isinstance(n.func, ast.Name):
+                noms.add(n.func.id)
+        return noms
+
+    def _fautifs(self):
+        fautifs = []
+        for n in ast.walk(ARBRE):
+            if not isinstance(n, ast.FunctionDef):
+                continue
+            appels = self._appels(n)
+            if not ({'write_metadata', 'write_person_tags'} & appels):
+                continue
+            if n.name in ('write_metadata', 'write_person_tags'):
+                continue
+            src = ast.get_source_segment(SOURCE, n) or ''
+            # Enregistre-t-il un nouveau mtime ? (`_stat_of` est le seul
+            # chemin par lequel server.py releve un mtime apres ecriture.)
+            if '_stat_of(' not in src:
+                continue
+            if '_retamponner_vignettes(' not in src:
+                fautifs.append(n.name)
+        return fautifs
+
+    def test_aucun_chemin_n_enregistre_un_mtime_sans_redater(self):
+        self.assertEqual(
+            self._fautifs(), [],
+            "ces fonctions enregistrent un nouveau mtime apres avoir ecrit des "
+            "metadonnees, sans redater les vignettes : chaque photo qu'elles "
+            "touchent jettera les siennes")
+
+    def test_les_TROIS_chemins_connus_sont_couverts(self):
+        """Nommes, pour que leur disparition se voie. Le premier est celui qui
+        porte la campagne, et celui dont l'oubli coutait tout le gain."""
+        for nom in ('tagger_worker', 'retro_write_metadata'):
+            self.assertIn('_retamponner_vignettes(', _src(nom), nom)
+        # le troisieme est une closure interne au worker de tags nommes :
+        # on le cherche dans la source entiere, par son voisinage.
+        self.assertIn('_retamponner_vignettes(key, mtime)', SOURCE)
 
 
 class LesDeuxRoutesUtilisentLaNouvelleMecanique(unittest.TestCase):

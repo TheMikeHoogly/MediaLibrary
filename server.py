@@ -2852,6 +2852,13 @@ def tagger_worker():
             merged = list(dict.fromkeys(kw_fr + kw_en))
             in_file = write_metadata(path, merged, desc)
             size, mtime = _stat_of(path)   # après écriture des métadonnées
+            # LE CHEMIN PRINCIPAL, et celui que j'avais manqué (10/09, trouvé
+            # en observant en réel). C'est ICI que la campagne de retag change
+            # le mtime de ~6 500 photos par jour — pas dans
+            # `retro_write_metadata`, qui ne tourne qu'avec la maintenance.
+            # Seules les métadonnées ont bougé : la vignette reste bonne, on
+            # la redate. Un `os.utime` au lieu d'une relecture de 2 à 6 Mo.
+            _retamponner_vignettes(name, mtime)
             entry = {"kw_fr": kw_fr, "kw_en": kw_en, "desc": desc,
                      "in_file": in_file, "at": time.time(),
                      "size": size, "mtime": mtime,
