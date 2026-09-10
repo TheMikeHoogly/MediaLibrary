@@ -25,12 +25,16 @@
       Attendu : ~9,27 Go déplacés. Puis le **bat 24** pour purger réellement.
       **Je n'ai pas revérifié qu'ils sont encore là** : si le bat annonce
       « 0 fait », c'est qu'il a déjà tourné, et ce n'est pas un échec.
-- [ ] **Lancer le `51 - Purger les vignettes orphelines.bat`** — nouveau.
-      Les trois caches de vignettes pèsent **722 Mo, dont 541 Mo de morts**
-      (rien ne les avait jamais purgés). Aperçu d'abord ; tu peux répondre
-      **N**. Une vignette effacée n'est pas perdue : elle se **refait** à la
-      première demande. Les premières pages de galerie seront un peu plus
-      lentes, une seule fois.
+- [ ] **Relancer le `51 - Purger les vignettes orphelines.bat`.** Ton **N**
+      du 10/09 était le bon réflexe et il a sauvé 282 Mo : le banc écrit
+      ensuite a montré que `photo_thumbs` est **illisible tant que la campagne
+      tourne** (son nom porte le mtime, que le retag réécrit). Le bat traite
+      maintenant les deux caches qu'on sait lire, `face_thumbs` et
+      `animal_thumbs` : **32 458 fichiers, 227 Mo**, dont les vignettes les
+      plus jeunes sont reconnues à **100 %**. Une vignette effacée n'est pas
+      perdue : elle se **refait** à la première demande.
+- [ ] **Après la campagne (~14/09)**, relancer le bat 51 pour `photo_thumbs` —
+      environ 282 Mo de plus, quand son âge redeviendra lisible.
 - [ ] **Une fois par jour** : `/reglages` → `config.retag`. `reste` doit
       baisser, `abandons` doit rester à **0**. Si `en_file` reste à 0
       longtemps, le GPU jeûne : dis-le-moi.

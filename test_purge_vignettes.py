@@ -111,6 +111,48 @@ class LeTriEtSesDeuxVerrous(DepotFactice):
         self.assertEqual(refus, [])
 
 
+class CeQuOnSaitLireEtCeQuOnAttend(DepotFactice):
+    """Le 10/09, l'apercu du bat 51 annoncait 282 Mo a effacer dans
+    `photo_thumbs` avec 33 % de reconnaissance. Mike a repondu NON. Le banc
+    ecrit ensuite (`verifier_formule_vignettes.py`) a montre que **16 %
+    seulement des vignettes les plus JEUNES** y sont reconnues -- alors que les
+    deux autres caches sont a 100 %.
+
+    La cause n'est pas une formule fausse (2 563 noms reconnus le prouvent : on
+    ne tombe pas par accident sur des milliers de md5 justes). C'est que
+    `photo_thumbs` est nomme sur le MTIME, et que la campagne de retag reecrit
+    les XMP en continu : ce cache se perime plus vite qu'il ne se remplit, et
+    **on ne sait plus lire son age**. On purge ce qu'on sait lire."""
+
+    def test_par_defaut_photo_thumbs_est_ECARTE(self):
+        self.assertNotIn('photo_thumbs', P.SANS_MTIME)
+        self.assertEqual(set(P.SANS_MTIME), {'face_thumbs', 'animal_thumbs'})
+
+    def test_trier_ne_regarde_que_les_dossiers_demandes(self):
+        vivants = ['v%d' % i for i in range(20)]
+        self._vivants(**{d: vivants for d in P.DOSSIERS})
+        for d in P.DOSSIERS:
+            _fichier(self.r / d, 'mort', 500, jours=30)
+            for nom in vivants:
+                _fichier(self.r / d, nom, 10, jours=30)
+        a_effacer, _r, vus = P.trier(7, 5.0, list(P.SANS_MTIME))
+        self.assertNotIn('photo_thumbs', a_effacer)
+        self.assertNotIn('photo_thumbs', vus)
+        self.assertIn('face_thumbs', a_effacer)
+
+    def test_on_peut_le_demander_explicitement_quand_on_saura_lire(self):
+        """L'ecart est un DEFAUT, pas un interdit : apres la campagne, le
+        cache redevient lisible et le meme outil le traitera."""
+        vivants = ['v%d' % i for i in range(20)]
+        self._vivants(photo_thumbs=vivants)
+        _fichier(self.r / 'photo_thumbs', 'mort', 500, jours=30)
+        for nom in vivants:
+            _fichier(self.r / 'photo_thumbs', nom, 10, jours=30)
+        a_effacer, refus, _v = P.trier(7, 5.0, ['photo_thumbs'])
+        self.assertEqual(refus, [])
+        self.assertEqual(len(a_effacer['photo_thumbs']), 1)
+
+
 class LEffacementEtSonJournal(DepotFactice):
     def test_efface_et_journalise(self):
         self._vivants(photo_thumbs=['vivant'])

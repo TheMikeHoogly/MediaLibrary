@@ -48,6 +48,10 @@ RACINE = Path(__file__).resolve().parent
 sys.path.insert(0, str(RACINE))
 
 DOSSIERS = ('photo_thumbs', 'face_thumbs', 'animal_thumbs')
+
+# Les caches dont la cle ne porte PAS le mtime — donc les seuls dont l'age
+# reste lisible pendant une campagne de retag. Voir `trier`.
+SANS_MTIME = ('face_thumbs', 'animal_thumbs')
 PLANCHER_RECONNU = 5.0      # % de fichiers vivants en dessous duquel on refuse
 JOURS_PAR_DEFAUT = 7
 
@@ -61,13 +65,25 @@ def _index():
             open_store(RACINE / 'animals_index.json', RACINE, None).data)
 
 
-def trier(jours, plancher):
-    """(a_effacer, refus) — a_effacer : {dossier: [(chemin, octets, jours)]}."""
+def trier(jours, plancher, dossiers=None):
+    """(a_effacer, refus) — a_effacer : {dossier: [(chemin, octets, jours)]}.
+
+    `dossiers` restreint le travail. Un seul appelant s'en sert et sa raison
+    vaut d'etre lue : `photo_thumbs` est nomme `md5(cle|taille|MTIME)`, et la
+    campagne de retag reecrit les XMP donc le mtime. Tant qu'elle tourne, ce
+    cache se perime plus vite qu'il ne se remplit et **on ne sait plus lire son
+    age** — 16 % seulement de ses vignettes les plus JEUNES sont reconnues
+    (mesure du 10/09), ce qui ressemble a une derive de formule sans en etre
+    une (2 563 noms reconnus prouvent le contraire : on ne tombe pas par
+    accident sur des milliers de md5 justes). Les deux autres caches sont
+    nommes sur la BBOX, que rien ne reecrit en ce moment : leurs 50 plus jeunes
+    sont reconnues a 100 %. **On purge donc ce qu'on sait lire, et on attend
+    pour le reste.**"""
     import mesure_caches_vignettes as M
     vivants = M.noms_vivants(*_index())
     maintenant = time.time()
     a_effacer, refus, vus = {}, [], {}
-    for d in DOSSIERS:
+    for d in (dossiers or DOSSIERS):
         dossier = RACINE / d
         if not dossier.is_dir():
             continue
@@ -133,9 +149,17 @@ def main(argv=None):
     ap.add_argument('--jours', type=int, default=JOURS_PAR_DEFAUT,
                     help="ne rien toucher de plus jeune que N jours")
     ap.add_argument('--plancher', type=float, default=PLANCHER_RECONNU)
+    ap.add_argument('--dossiers', default=','.join(SANS_MTIME),
+                    help='les caches a traiter (defaut : ceux qu on sait lire '
+                         'pendant la campagne)')
     a = ap.parse_args(argv)
 
-    a_effacer, refus, vus = trier(a.jours, a.plancher)
+    choisis = [d.strip() for d in a.dossiers.split(',') if d.strip()]
+    inconnus = [d for d in choisis if d not in DOSSIERS]
+    if inconnus:
+        print('  dossier inconnu : %s' % ', '.join(inconnus))
+        return 2
+    a_effacer, refus, vus = trier(a.jours, a.plancher, choisis)
 
     print('=' * 74)
     print('  O15 — PURGE DES VIGNETTES ORPHELINES')
@@ -143,7 +167,14 @@ def main(argv=None):
     print("  Rien de plus jeune que %d jours n'est touche." % a.jours)
     print('-' * 74)
     total_n = total_o = 0
-    for d in DOSSIERS:
+    ecartes = [d for d in DOSSIERS if d not in choisis]
+    if ecartes:
+        print('  ECARTES de cette purge : %s' % ', '.join(ecartes))
+        print('     leur nom porte le MTIME, que la campagne de retag reecrit :')
+        print('     tant qu elle tourne, leur age ne dit plus rien. On purge')
+        print('     ce qu on sait lire, et on attend pour le reste.')
+        print('-' * 74)
+    for d in choisis:
         if d in dict(refus):
             continue
         n, reconnus, taux = vus.get(d, (0, 0, 100.0))

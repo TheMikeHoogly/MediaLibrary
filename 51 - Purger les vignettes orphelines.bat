@@ -30,6 +30,19 @@ echo        de nommage qui a cesse de parler la meme langue que
 echo        server.py ;
 echo     2. rien de plus jeune que 7 jours n'est touche.
 echo.
+echo   ET UN TROISIEME, APPRIS DE TON "N" DU 10/09. photo_thumbs est
+echo   ECARTE tant que la campagne de retag tourne : son nom porte le
+echo   MTIME de la photo, et le retag reecrit les XMP donc le mtime.
+echo   Ce cache se perime plus vite qu'il ne se remplit, et on ne
+echo   sait plus lire son age -- 16 pourcent seulement de ses
+echo   vignettes les plus JEUNES sont reconnues, contre 100 pourcent
+echo   pour les deux autres. Ce n'est PAS une formule fausse : 2 563
+echo   noms reconnus le prouvent. C'est un cache illisible pour
+echo   l'instant. On purge ce qu'on sait lire, on revient apres.
+echo.
+echo   Cette passe traite donc face_thumbs et animal_thumbs :
+echo   environ 32 458 fichiers, 227 Mo.
+echo.
 pause
 
 echo.
