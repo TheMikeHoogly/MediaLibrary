@@ -3673,6 +3673,12 @@ def retro_write_metadata():
             e.pop('file_error', None)
             e.pop('write_fails', None)
             STORE.set(name, e)
+            # NOUS venons d'ecrire, et NOUS savons n'avoir touche qu'aux
+            # metadonnees : les pixels sont les memes, la vignette reste bonne.
+            # Sans cette ligne, chaque photo retaguee jetait ses vignettes —
+            # 6 524 par jour pendant la campagne, cache a 4,5 % de service
+            # (10/09). Un `os.utime` remplace une relecture de 2 a 6 Mo.
+            _retamponner_vignettes(name, e['mtime'])
             print(f"  ✓ Tags écrits dans le fichier {name}")
         else:
             e['write_fails'] = e.get('write_fails', 0) + 1
@@ -10151,6 +10157,9 @@ def _ecrire_lot_personne(lot):
                         e['mtime'] = mtime
                         if size is not None:
                             e['size'] = size
+                        # Ecriture de tags nommes : metadonnees seules, donc
+                        # les vignettes suivent au lieu d'etre jetees (10/09).
+                        _retamponner_vignettes(key, mtime)
                 except Exception:
                     pass
     except Exception as e:                                    # noqa: BLE001
@@ -11456,6 +11465,88 @@ def curator_loop():
 
 
 # PEOPLE_PAGE vit dans ui/pages/people.html (point 7).
+
+
+def _fichier_vignette(key, s, video=False):
+    """Le chemin de la vignette de (photo, taille) — **et son nom ne porte PAS
+    le mtime**. C'est tout le changement du 10/09, et il tient en une phrase :
+    *le nom dit QUELLE vignette c'est, le tampon dit si elle est A JOUR.*
+
+    Avant, le nom etait `md5(cle|taille|MTIME)`. Consequence mesuree
+    (`mesure_service_vignettes.py`) : **ecrire un tag XMP change le mtime sans
+    changer un seul pixel**, donc chaque photo retaguee jetait ses vignettes.
+    La campagne en perimait 6 524 par jour, la galerie n'en refaisait que ce
+    qu'on regardait, et le cache tombait a **4,5 % de taux de service** — 95 %
+    des cases de galerie relisaient l'original sur le NAS, 2 a 6 Mo au lieu de
+    ~50 Ko. Exactement ce que l'audit O1 avait voulu supprimer.
+
+    Avec un nom stable : **un seul fichier par (photo, taille)**. Une vignette
+    perimee est ECRASEE, pas dupliquee — donc plus d'orphelin par construction,
+    et O15 disparait a sa racine. Il en reste un cas, honnetement : renommer ou
+    deplacer une photo change sa CLE, donc son nom de vignette, et l'ancienne
+    devient morte. C'est rare devant les ecritures de tag, et le bat 51 sait
+    encore les ramasser."""
+    import hashlib
+    nom = hashlib.md5(("%s|%s%s" % (key, s, '|video' if video else ''))
+                      .encode('utf-8', 'replace')).hexdigest()
+    return PHOTO_THUMB_DIR / (nom + ".jpg")
+
+
+def _vignette_a_jour(cache_file, mt):
+    """La vignette existe-t-elle, et porte-t-elle le tampon de CETTE version
+    de la photo ?
+
+    Le tampon, c'est le mtime du fichier de cache, mis a celui de la source.
+    Comparaison a la SECONDE ENTIERE : les deux horloges ne viennent pas du
+    meme systeme de fichiers (source sur SMB, cache en local) et une egalite
+    de flottants y serait un piege.
+
+    `mt` absent (8 entrees de l'index sur 44 604) : rien ne permet de juger, on
+    garde ce qu'on a. Jeter ce qu'on ne sait pas juger couterait une relecture
+    NAS a chaque affichage."""
+    try:
+        st = cache_file.stat()
+    except OSError:
+        return False
+    if mt is None:
+        return True
+    return int(st.st_mtime) == int(mt)
+
+
+def _tamponner_vignette(cache_file, mt):
+    """Marque la vignette comme etant celle de CETTE version de la photo."""
+    if mt is None:
+        return
+    try:
+        os.utime(cache_file, (int(mt), int(mt)))
+    except OSError:
+        pass
+
+
+def _retamponner_vignettes(key, mt):
+    """Apres NOTRE PROPRE ecriture de metadonnees : les pixels n'ont pas bouge,
+    donc les vignettes restent bonnes — on ne fait que les redater.
+
+    **A n'appeler que la ou l'on SAIT n'avoir touche qu'aux metadonnees**
+    (`write_metadata`, `write_person_tags`). Appele apres une vraie
+    modification d'image, il servirait une vignette perimee.
+
+    C'est la seconde moitie du correctif du 10/09, et la plus rentable : un
+    `os.utime` remplace une relecture de 2 a 6 Mo sur le NAS plus un
+    reencodage JPEG, pour chaque photo que la campagne retague."""
+    if mt is None:
+        return 0
+    n = 0
+    for s in (512, 1600):
+        for video in (False, True):
+            f = _fichier_vignette(key, s, video)
+            try:
+                if f.is_file():
+                    os.utime(f, (int(mt), int(mt)))
+                    n += 1
+            except OSError:
+                pass
+    return n
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -13455,18 +13546,17 @@ class Handler(BaseHTTPRequestHandler):
         if path.suffix.lower() not in IMAGE_EXT:
             _fallback()
             return
-        import hashlib
-        # mtime (de l'index, en mémoire — pas de stat NAS) dans la clé de
-        # cache : un fichier modifié ou une clé recyclée ne sert jamais une
-        # vignette périmée. Les anciennes vignettes orphelines restent sur
-        # disque (purge maintenance : à traiter avec O15).
+        # LE NOM DIT QUELLE VIGNETTE, LE TAMPON DIT SI ELLE EST A JOUR
+        # (10/09 — voir `_fichier_vignette`). Le mtime de l'index (en mémoire,
+        # pas de stat NAS) ne sert plus à NOMMER mais à COMPARER : un fichier
+        # modifié ne sert jamais une vignette périmée, et une photo dont on a
+        # seulement réécrit les tags garde la sienne.
         e = STORE.get(key)
         mt = e.get('mtime') if isinstance(e, dict) else None
-        ck = hashlib.md5(f"{key}|{s}|{mt}".encode('utf-8', 'replace')).hexdigest()
-        cache_file = PHOTO_THUMB_DIR / (ck + ".jpg")
+        cache_file = _fichier_vignette(key, s)
         data = None
         try:
-            if cache_file.is_file():
+            if _vignette_a_jour(cache_file, mt):
                 data = cache_file.read_bytes()
         except OSError:
             data = None
@@ -13486,6 +13576,7 @@ class Handler(BaseHTTPRequestHandler):
                 try:
                     PHOTO_THUMB_DIR.mkdir(parents=True, exist_ok=True)
                     cache_file.write_bytes(data)
+                    _tamponner_vignette(cache_file, mt)
                 except OSError:
                     pass
             except Exception:
@@ -13509,11 +13600,12 @@ class Handler(BaseHTTPRequestHandler):
         import shutil as _sh
         e = STORE.get(key)
         mt = e.get('mtime') if isinstance(e, dict) else None
-        ck = hashlib.md5(f"{key}|{s}|{mt}|video".encode('utf-8', 'replace')).hexdigest()
-        cache_file = PHOTO_THUMB_DIR / (ck + ".jpg")
+        # Meme regle que pour les photos (10/09) : le nom ne porte pas le
+        # mtime, le tampon dit si l'image-cle est encore celle de cette video.
+        cache_file = _fichier_vignette(key, s, video=True)
         data = None
         try:
-            if cache_file.is_file():
+            if _vignette_a_jour(cache_file, mt):
                 data = cache_file.read_bytes()
         except OSError:
             data = None
@@ -13547,6 +13639,7 @@ class Handler(BaseHTTPRequestHandler):
             try:
                 PHOTO_THUMB_DIR.mkdir(parents=True, exist_ok=True)
                 cache_file.write_bytes(data)
+                _tamponner_vignette(cache_file, mt)
             except OSError:
                 pass
         self.send_response(200)

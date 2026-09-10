@@ -117,7 +117,7 @@ def trier(jours, plancher, dossiers=None):
     return a_effacer, refus, vus
 
 
-def effacer(a_effacer, jours):
+def effacer(a_effacer, jours, formule_changee=''):
     """Efface, et journalise ce qui est parti. Rend (n, octets, journal)."""
     faits, octets, lignes = 0, 0, []
     for d, morts in a_effacer.items():
@@ -137,6 +137,7 @@ def effacer(a_effacer, jours):
     journal.parent.mkdir(parents=True, exist_ok=True)
     journal.write_text(json.dumps(
         {'quand': time.time(), 'jours_plancher': jours,
+         'plancher_leve': formule_changee or None,
          'note': ("Une vignette se REGENERE a la premiere demande : ce journal "
                   "dit ce qui est parti, il n'a pas a le rendre."),
          'efface': lignes}, indent=1, ensure_ascii=False), encoding='utf-8')
@@ -149,6 +150,11 @@ def main(argv=None):
     ap.add_argument('--jours', type=int, default=JOURS_PAR_DEFAUT,
                     help="ne rien toucher de plus jeune que N jours")
     ap.add_argument('--plancher', type=float, default=PLANCHER_RECONNU)
+    ap.add_argument('--formule-changee', default='', metavar='RAISON',
+                    dest='formule_changee',
+                    help="lever le plancher de reconnaissance, en NOMMANT la "
+                         "raison — pour une migration de format voulue, jamais "
+                         "pour passer outre un doute")
     ap.add_argument('--dossiers', default=','.join(SANS_MTIME),
                     help='les caches a traiter (defaut : ceux qu on sait lire '
                          'pendant la campagne)')
@@ -159,12 +165,22 @@ def main(argv=None):
     if inconnus:
         print('  dossier inconnu : %s' % ', '.join(inconnus))
         return 2
-    a_effacer, refus, vus = trier(a.jours, a.plancher, choisis)
+    # `--formule-changee` met le plancher a zero, mais EXIGE une raison ecrite
+    # et la journalise. C'est la meme regle que `force=raison` cote git : un
+    # controle qu'on leve sans dire pourquoi n'est plus un controle. Le cas qui
+    # l'a fait naitre : le 10/09, le nommage des vignettes de photo perd le
+    # mtime (voir `_fichier_vignette` dans server.py) — TOUS les fichiers de
+    # l'ancien format deviennent orphelins d'un coup, et le plancher, qui ne
+    # sait pas distinguer une migration voulue d'une derive subie, refuserait.
+    plancher = 0.0 if a.formule_changee else a.plancher
+    a_effacer, refus, vus = trier(a.jours, plancher, choisis)
 
     print('=' * 74)
     print('  O15 — PURGE DES VIGNETTES ORPHELINES')
     print('=' * 74)
     print("  Rien de plus jeune que %d jours n'est touche." % a.jours)
+    if a.formule_changee:
+        print('  PLANCHER LEVE — raison donnee : %s' % a.formule_changee)
     print('-' * 74)
     total_n = total_o = 0
     ecartes = [d for d in DOSSIERS if d not in choisis]
@@ -202,7 +218,7 @@ def main(argv=None):
     if not total_n:
         print('  Rien a effacer.')
         return 0
-    faits, octets, journal = effacer(a_effacer, a.jours)
+    faits, octets, journal = effacer(a_effacer, a.jours, a.formule_changee)
     print('  %d fichier(s) efface(s), %.1f Mo rendus.' % (faits, octets / 1048576))
     print('  journal : %s' % journal)
     return 0

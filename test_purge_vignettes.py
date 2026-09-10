@@ -153,6 +153,48 @@ class CeQuOnSaitLireEtCeQuOnAttend(DepotFactice):
         self.assertEqual(len(a_effacer['photo_thumbs']), 1)
 
 
+class LePlancherNeSeLevePasSansRaison(DepotFactice):
+    """`--formule-changee` existe pour UN cas : une migration de format voulue,
+    ou tous les anciens fichiers deviennent orphelins d'un coup et ou le
+    plancher — qui ne sait pas distinguer une migration subie d'une derive —
+    refuserait. Meme regle que `force=raison` cote git : **un controle qu'on
+    leve sans dire pourquoi n'est plus un controle.**"""
+
+    def test_sans_raison_le_plancher_refuse(self):
+        self._vivants(face_thumbs=[])
+        for i in range(40):
+            _fichier(self.r / 'face_thumbs', 'f%d' % i, 10, jours=30)
+        _a, refus, _v = P.trier(7, 5.0, ['face_thumbs'])
+        self.assertEqual(len(refus), 1)
+
+    def test_avec_raison_il_se_leve(self):
+        self._vivants(face_thumbs=[])
+        for i in range(40):
+            _fichier(self.r / 'face_thumbs', 'f%d' % i, 10, jours=30)
+        a_effacer, refus, _v = P.trier(7, 0.0, ['face_thumbs'])
+        self.assertEqual(refus, [])
+        self.assertEqual(len(a_effacer['face_thumbs']), 40)
+
+    def test_la_raison_part_dans_le_JOURNAL(self):
+        """Sinon on relira dans six mois « 36 000 fichiers effaces » sans
+        savoir au nom de quoi."""
+        self._vivants(face_thumbs=[])
+        _fichier(self.r / 'face_thumbs', 'f0', 10, jours=30)
+        a_effacer, _r, _v = P.trier(7, 0.0, ['face_thumbs'])
+        _n, _o, journal = P.effacer(a_effacer, 7, 'migration du nommage 10/09')
+        j = json.loads(journal.read_text(encoding='utf-8'))
+        self.assertEqual(j['plancher_leve'], 'migration du nommage 10/09')
+
+    def test_sans_levee_le_journal_le_dit_aussi(self):
+        self._vivants(face_thumbs=['v'])
+        _fichier(self.r / 'face_thumbs', 'v', 10, jours=30)
+        _fichier(self.r / 'face_thumbs', 'f0', 10, jours=30)
+        a_effacer, _r, _v = P.trier(7, 5.0, ['face_thumbs'])
+        _n, _o, journal = P.effacer(a_effacer, 7)
+        j = json.loads(journal.read_text(encoding='utf-8'))
+        self.assertIsNone(j['plancher_leve'])
+
+
 class LEffacementEtSonJournal(DepotFactice):
     def test_efface_et_journalise(self):
         self._vivants(photo_thumbs=['vivant'])

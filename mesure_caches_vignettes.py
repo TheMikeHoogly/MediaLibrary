@@ -13,16 +13,23 @@ Le code le dit lui-meme, dans `_serve_thumb` :
 
 Le nom de fichier est une empreinte de ce qui DEFINIT la vignette :
 
-    photo   md5("<cle>|<taille>|<mtime>")           512 et 1600
-    video   md5("<cle>|<taille>|<mtime>|video")
+    photo   md5("<cle>|<taille>")                     512 et 1600
+    video   md5("<cle>|<taille>|video")
     visage  md5("<cle>|<index>|<bbox>")
     animal  md5("a|<cle>|<index>|<bbox>")
 
-Donc **tout ce qui change le mtime d'une photo orpheline sa vignette** — et
-l'ecriture des tags XMP par exiftool change le mtime. Une campagne de retag qui
-reecrit les noms laisse derriere elle une vignette morte par photo touchee, par
-taille. Ce banc ne suppose pas : il RECALCULE les noms vivants depuis l'index
-et compte ce qui reste.
+**Les deux premieres ont CHANGE le 10/09**, et c'est le correctif du cache :
+elles portaient le MTIME, que l'ecriture d'un tag XMP change sans toucher un
+pixel. Le nom dit maintenant QUELLE vignette c'est ; c'est le TAMPON (le mtime
+du fichier de cache, mis a celui de la source) qui dit si elle est a jour.
+Consequence pour ce banc : une vignette de photo n'est plus orpheline parce que
+la photo a ete retaguee — elle l'est parce que la photo a ete RENOMMEE ou a
+disparu. **Et tous les fichiers de l'ancien format sont, eux, orphelins d'un
+coup** : c'est une migration, pas une derive, et le bat 51 la traite avec
+`--formule-changee`.
+
+Ce banc ne suppose pas : il RECALCULE les noms vivants depuis l'index et compte
+ce qui reste.
 
 Il n'efface RIEN. Il rend un compte et, avec `--liste`, ecrit la liste des
 orphelines pour qu'un outil de purge — ecrit apres, et separement — ait de quoi
@@ -61,11 +68,10 @@ def noms_vivants(tags, faces, animals):
     la-bas sans changer ici, ce banc declarera orphelin tout le cache : c'est
     voyant, et c'est voulu — un banc qui se trompe en silence serait pire."""
     photo, visage, animal = set(), set(), set()
-    for k, e in tags.items():
-        mt = e.get('mtime') if isinstance(e, dict) else None
+    for k, _e in tags.items():
         for s in (512, 1600):
-            photo.add(_md5(f"{k}|{s}|{mt}"))
-            photo.add(_md5(f"{k}|{s}|{mt}|video"))
+            photo.add(_md5(f"{k}|{s}"))
+            photo.add(_md5(f"{k}|{s}|video"))
     for k, e in (faces or {}).items():
         for i, f in enumerate(e.get('faces') or []):
             visage.add(_md5(f"{k}|{i}|{f.get('bbox', [0, 0, 0, 0])}"))

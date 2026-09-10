@@ -6,59 +6,11 @@
 > `eval/DECISIONS.md` si elle tranche, dans `docs/DECISIONS_OUTILLAGE.md` si
 > elle touche l'outillage, dans `ROADMAP.md` si elle priorise.
 > Protocole : `CLAUDE.md`, « Traite autonome ».
-
----
-
-## Le cache de vignettes est éteint pendant la campagne — le refait-on ?
-
-**Ce que j'ai mesuré le 10/09** (`mesure_service_vignettes.py`, sur ta machine) :
-
-```
-  photos avec une vignette 512  utilisable :   1995  (4.5 %)
-  photos avec une vignette 1600 utilisable :     80  (0.2 %)
-
-  photos dont le mtime a change dans le dernier jour :  6524  (14.6 %)
-                                        en 7 jours    : 29196  (65.5 %)
-```
-
-**Le cache est éteint, et c'est nous qui l'éteignons.** Une vignette s'appelle
-`md5(clé|taille|MTIME)`. Écrire un tag XMP change le mtime **sans changer un
-seul pixel** — donc chaque photo retaguée jette ses vignettes. La campagne en
-périme ~6 500 par jour ; la galerie ne peut en refaire que ce qu'on regarde.
-Résultat : **95 % des cases de galerie relisent l'original sur le NAS**, 2 à
-6 Mo au lieu de ~50 Ko. C'est une partie de ce que tu ressens quand une planche
-met du temps à venir.
-
-Et aucun champ de l'index ne décrit les PIXELS : le cache est indexé sur une
-identité de FICHIER pour retrouver une image qui, elle, n'a pas bougé.
-
-### Ce que je propose, en deux gestes qui vont ensemble
-
-1. **Séparer le NOM de la VALIDITÉ.** La vignette s'appellerait `md5(clé|taille)`
-   — sans mtime — et porterait, dans son propre mtime de fichier, celui de la
-   photo dont elle vient. Valide si les deux concordent. Conséquence : **un seul
-   fichier par (photo, taille), et plus jamais d'orphelin** — une vignette
-   périmée est écrasée, pas dupliquée. **O15 disparaît à sa racine** : la purge
-   devient une migration unique au lieu d'une corvée qui revient.
-2. **Ne plus jeter ce que nous savons intact.** C'est le serveur lui-même qui
-   écrit les XMP : à ce moment-là, il SAIT que seuls les métadonnées ont changé.
-   Il lui suffit alors de re-tamponner la vignette existante (`os.utime`, une
-   microseconde) au lieu de la laisser périmer. Un tag écrit ne coûterait plus
-   une relecture de 2 à 6 Mo sur le NAS.
-
-**Ma recommandation : oui, et maintenant plutôt qu'après la campagne** — c'est
-pendant qu'elle tourne que le défaut coûte le plus cher. Le changement ne
-touche ni le prompt, ni la version du pipeline, ni un index : uniquement la
-mécanique du cache.
-
-**Ce que ça coûte, dit franchement** : au premier redémarrage, les vignettes
-actuelles ne répondent plus au nouveau nom. Mais elles ne répondent déjà
-qu'à 4,5 % — la perte réelle est de **1 995 vignettes**, refaites au fil de la
-navigation. Et le bat 51 reste utile une dernière fois pour vider l'ancien
-format.
-
-**Ce que je fais en attendant** : rien sur cette mécanique. La mesure est
-livrée, l'analyse est ici, et le geste attend ton feu vert.
+>
+> **Vidée le 10/09 au soir** : « le cache de vignettes est éteint à 4,5 % — le
+> refait-on ? » Mike : **« ok, je te suis ! »**. Les deux gestes sont livrés :
+> le nom ne porte plus le mtime, et nos propres écritures de tags re-tamponnent
+> la vignette au lieu de la jeter. Le verdict vit dans `eval/DECISIONS.md`.
 >
 > **Vidée le 08/09 au soir** : le budget de `eval/DECISIONS.md`. Mike :
 > « augmente le budget de +25 %, je suis toutes tes recommandations ». Les

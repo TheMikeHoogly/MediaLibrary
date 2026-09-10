@@ -33,8 +33,12 @@
       `animal_thumbs` : **32 458 fichiers, 227 Mo**, dont les vignettes les
       plus jeunes sont reconnues à **100 %**. Une vignette effacée n'est pas
       perdue : elle se **refait** à la première demande.
-- [ ] **Après la campagne (~14/09)**, relancer le bat 51 pour `photo_thumbs` —
-      environ 282 Mo de plus, quand son âge redeviendra lisible.
+- [ ] **`photo_thumbs` : 450 Mo d'un format qui n'existe plus.** Le 10/09 au
+      soir, le nommage des vignettes a changé (voir plus bas) : tous les
+      anciens fichiers sont morts d'un coup. Pour les balayer :
+      `python appliquer_purge_vignettes.py --dossiers photo_thumbs
+      --formule-changee "migration du nommage 10/09" --appliquer`.
+      Le garde-fou refuserait sans cette raison écrite — c'est voulu.
 - [ ] **Une fois par jour** : `/reglages` → `config.retag`. `reste` doit
       baisser, `abandons` doit rester à **0**. Si `en_file` reste à 0
       longtemps, le GPU jeûne : dis-le-moi.

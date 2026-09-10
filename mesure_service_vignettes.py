@@ -71,12 +71,25 @@ def main(argv=None):
                     fenetres[f] += 1
         if e.get('size') is not None:
             tailles['avec_size'] += 1
-        h512 = hashlib.md5(f"{cle}|512|{mt}".encode('utf-8', 'replace')).hexdigest()
-        h1600 = hashlib.md5(f"{cle}|1600|{mt}".encode('utf-8', 'replace')).hexdigest()
-        if h512 in presents:
-            servies512 += 1
-        if h1600 in presents:
-            servies1600 += 1
+        # NOUVEAU NOMMAGE (10/09) : le nom ne porte plus le mtime. Mais la
+        # VALIDITE, elle, le compare toujours — d'ou le stat ci-dessous. Un
+        # fichier present mais mal tamponne ne SERT pas.
+        h512 = hashlib.md5(f"{cle}|512".encode('utf-8', 'replace')).hexdigest()
+        h1600 = hashlib.md5(f"{cle}|1600".encode('utf-8', 'replace')).hexdigest()
+        for h, compteur in ((h512, '512'), (h1600, '1600')):
+            if h not in presents:
+                continue
+            # Present ne veut pas dire SERVI : le tampon doit concorder.
+            try:
+                st = (d / (h + '.jpg')).stat()
+            except OSError:
+                continue
+            if mt is not None and int(st.st_mtime) != int(mt):
+                continue
+            if compteur == '512':
+                servies512 += 1
+            else:
+                servies1600 += 1
 
     print('=' * 74)
     print('  LE CACHE DE VIGNETTES SERT-IL ENCORE ?')
