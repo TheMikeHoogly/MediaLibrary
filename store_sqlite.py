@@ -488,6 +488,36 @@ class SqliteStore:
         with self.lock:
             self._reconcilier()
 
+    def flush(self):
+        """N'ecrit que ce qui a ete SIGNALE. A n'appeler que la ou toutes les
+        mutations depuis le dernier `save()` sont de PREMIER NIVEAU.
+
+        **Ce que ca evite, mesure le 10/09** (`mesure_reconciliation.py`, sur
+        une copie de la base, 44 121 entrees) :
+
+            reconciliation A VIDE (rien n a change) :  627,2 ms, 0 ecriture
+                                                       14,2 us par entree
+            flush RAPIDE apres UNE mutation signalee :   0,1 ms, 1 ecriture
+            -> la reconciliation a vide coute 6547 x ce flush
+
+        `save()` re-empreinte l'index ENTIER -- `dict(e)`, `json.dumps`,
+        `blake2b` par entree -- pour trouver les mutations PROFONDES, que
+        `TrackedEntry` ne signale pas (`e['faits']['lieu'] = ...` ne passe pas
+        par `__setitem__` de premier niveau). C'est une garantie qu'il faut
+        garder ; ce qui n'allait pas, c'est de la payer 627 ms **sous le
+        verrou du magasin** la ou il n'y avait rien de profond a trouver --
+        notamment une fois PAR DOSSIER dans `_sync_dir`, sur le chemin meme
+        qui avait gele l'interface le 06/09.
+
+        La regle d'usage, et elle se PROUVE au point d'appel : `flush()` si
+        toutes les ecritures depuis le dernier `save()` sont des
+        `store.set(...)` ou des `e['champ'] = ...` ; `save()` des qu'un
+        conteneur imbrique a pu etre mute en place. Dans le doute, `save()` --
+        se tromper ici perd une ecriture, se tromper dans l'autre sens ne
+        coute que du temps."""
+        with self.lock:
+            return self._flush_rapide()
+
     def _save(self):
         """Appelé par server.py DÉJÀ sous `with STORE.lock:` — ne reverrouille pas
         (le RLock rendrait la chose inoffensive, mais on reste fidèle à TagStore)."""

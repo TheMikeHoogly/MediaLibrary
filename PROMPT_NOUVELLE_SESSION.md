@@ -157,71 +157,82 @@ Quelques jours, puis à la main.
 
 ---
 
-## 4. LE PLAN DE LA PROCHAINE SESSION — arbitré le 09/09 au soir
+## 4. Le plan du 09/09 au soir — CE QUI EN A ÉTÉ FAIT le 10/09
 
-**Le cadre ne change pas : la campagne de retag tourne jusqu'au ~14/09.** Donc
-pas de GPU, pas de prompt, pas de serveur arrêté. Ce plan ne contient que ce
-qui vit sous cette contrainte, et il est ordonné : le premier point d'abord.
+| | | |
+|---|---|---|
+| **P1** | réviser `CLAUDE.md` et `MARCHE_A_SUIVRE.md` | **FAIT** |
+| **P2** | fermer le ménage | **Mike a relancé le bat 50** et effacé les 283 Mo |
+| **P3** | O14 — `_reconcilier` | **FAIT et mesuré** |
+| **P4** | la dernière photo sensible | **FAIT** — un vrai défaut trouvé au passage |
 
-### P1 — Réviser `CLAUDE.md` et `MARCHE_A_SUIVRE.md` (le point le plus important)
+**P1.** `CLAUDE.md` porte cinq règles neuves (6 à 10), chacune avec sa mesure :
+*un outil qui juge ne témoigne pas* · *une protection doit nommer la place, pas
+seulement le nom* · *un angle mort a rarement une seule porte, et c'est un
+compteur d'étendue qui rend la suivante visible* · *une option qui ne peut
+jamais aboutir est une promesse que l'outil ne tiendra pas* · *un refus doit
+nommer sa cause à qui regarde déjà la chose*. Plus la **parade au pont** qui
+écrit une version périmée (committer deux fois, comparer la TAILLE ; pour un
+canal, écrire `rien` d'abord). Deux faits périmés corrigés : ~40 600 photos et
+non ~30 000, modèle `qwen3.5:4b` et non `qwen3-vl:2b`. `MARCHE_A_SUIVRE.md` est
+réécrit en entier : cinq lignes à faire en tête, le reste dit ce qui est FAIT.
 
-**Ces deux fichiers n'ont pas été relus le 09/09, et je l'ai dit deux fois sans
-le faire.** Ce sont les fichiers de RÈGLES : ce que la prochaine session lira
-avant toute chose. Or la journée a produit exactement le genre de matière qui
-doit y vivre, et qui aujourd'hui n'existe que dans un carnet éphémère :
+**P3 — O14, et la mesure a déplacé la cible.** `save()` appelle
+`_reconcilier()`, qui re-empreinte l'index ENTIER pour trouver les mutations
+**profondes** (`e['faits']['lieu'] = …` ne passe pas par `__setitem__` de
+premier niveau, donc rien ne le signale) :
 
-1. **Un outil qui juge ne témoigne pas.** Cinq fois le même défaut, dont une
-   fabriquée en documentant les quatre autres.
-2. **Une protection doit nommer la place, pas seulement le nom.**
-3. **Quand on corrige un angle mort, on cherche ses autres portes** — et le
-   moyen de les voir est un compteur d'étendue imprimé à chaque passage.
-4. **Ne jamais réécrire un `.bat` pendant qu'il tourne** (`cmd.exe` reprend à
-   l'octet mémorisé).
-5. **La parade au pont qui écrit une version périmée** : re-stager, comparer la
-   TAILLE, re-committer. Coûté six fois dans la journée, et encore quatre fois
-   le soir. C'est le défaut d'outillage le plus coûteux du projet et il n'est
-   écrit nulle part dans les règles.
+```
+  entrees        : 44121
+  reconciliation A VIDE (rien n a change) :  627.2 ms, 0 ecriture
+                                             14.2 us par entree
+  flush RAPIDE apres UNE mutation signalee :   0.1 ms, 1 ecriture
+     -> la reconciliation a vide coute 6547 x ce flush
+```
 
-Objectif : que ces cinq règles soient dans `CLAUDE.md`/`MARCHE_A_SUIVRE.md`
-avec leur mesure, et que ce qui y est périmé en sorte. **Zéro GPU, zéro NAS,
-zéro serveur.** C'est aussi le meilleur usage d'une session pendant que la
-machine calcule.
+Le point d'appel coûteux **n'est pas le tagging** — il passe par `set()`, donc
+par le chemin rapide. C'est **`_sync_dir`, qui termine CHAQUE DOSSIER par un
+`STORE.save()`** : le chemin même qui avait gelé l'interface le 06/09.
 
-### P2 — Fermer le ménage
+`flush()` devient un nom public, sa limite écrite noir sur blanc et tenue par
+un banc. Trois points d'appel convertis, **chacun avec sa preuve à côté**.
+`save()` et sa garantie ne bougent pas. Le repli JSON porte le même nom, sinon
+supprimer `photos.db` — censé être un retour arrière trivial — ferait tomber
+le scan.
 
-1. Relancer le **bat 50** : 47 fichiers, 34,8 Mo (dont les journaux, qui
-   marchent enfin). Répondre « 2 » à l'étape 3.
-2. **Décider des 283 Mo** : la copie de `photos.db` du 08/09. Question à Mike,
-   pas règle à écrire.
-3. Dans quelques jours, vider `_corbeille_menage\` à la main.
+**P4 — la dernière photo sensible, et un défaut qu'on n'aurait pas trouvé
+autrement.** « Rendre privée » répondait *« Impossible : Fichier
+introuvable. »* sur une photo dont la vignette était à l'écran. La photo est à
+**Flo** ; le geste écrit dans `Photos Flo/PRIVE`, fermé même à l'admin — d'où
+une dissymétrie que personne n'avait voulue : **l'admin pouvait EFFACER la
+photo sans pouvoir la PROTÉGER**. Tranché par Mike : *« j'ai le droit de
+déposer dans le privé de tout le monde, mais uniquement parce que je suis
+administrateur »*. L'admin dépose, il ne fouille pas — exception **nommée**,
+passée en ARGUMENT au garde de `mkdir` et `move` (jamais un drapeau global : le
+serveur est threadé). Contrôle négatif mesuré : sans `depot`, le même chemin
+reste refusé 404.
 
-### P3 — L'audit, ce qui n'a pas besoin du GPU
+---
 
-- **O14 — `_reconcilier` re-hashe tout le store sous verrou à chaque
-  `save()`.** C'est du chemin de service, pas du calcul IA : mesurable et
-  réparable maintenant. **C'est le meilleur gain de perfomance restant.**
-- **O15 — les caches de vignettes.** Même famille.
-- O8 et O9 (matmul par visage, backfill sémantique) touchent des boucles de
-  calcul : **après** la campagne, pas avant.
+## 4 bis. Ce qui reste, dans l'ordre
 
-### P4 — À Mike, quand il veut
+**À moi, sans GPU ni prompt** — **O15**, les caches de vignettes : c'est le
+dernier point d'audit qui ne demande ni le GPU ni le serveur arrêté.
 
-La dernière photo sensible ; lire la page `/aide` (chantier 17, étape 7 : ce
-n'est pas une tâche, c'est un jugement — sa famille lira ce texte).
+**À Mike, quand il veut** — relancer le bat 50 (47 fichiers / 34,8 Mo, dont les
+journaux qui marchent enfin) ; vider `_corbeille_menage\` à la main dans
+quelques jours ; le bat 43 puis le bat 24 pour les Motion Photos ; lire la page
+`/aide`.
 
-### P5 — Quand la campagne s'arrête (~14/09), et pas avant
+**Quand la campagne s'arrête (~14/09)** — O8 et O9 (boucles de calcul) ; la
+question au tagueur sur les documents sensibles (**empêchée**, pas reportée :
+toucher au prompt rouvrirait ~12 000 photos déjà refaites) ; la re-mesure des
+Motion Photos depuis le 03/09 (demande le serveur arrêté) ; et le **bilan
+chiffré** de cette première passe officielle du fonds.
 
-La question au tagueur sur les documents sensibles (3 bis c) — **empêchée**,
-pas reportée : toucher au prompt rouvrirait ~12 000 photos déjà refaites ; la
-re-mesure des Motion Photos arrivées depuis le 03/09 (demande le serveur
-arrêté) ; et le **bilan chiffré** de cette première passe officielle du fonds.
-
-### En fin de projet — décision de Mike du 09/09
-
-La copie hors site. Le fait qui ne se répète plus mais qui reste vrai : depuis
-l'effacement du Takeout, **le NAS est le seul exemplaire des ~40 000 photos**.
-Le jour venu, deux choses ensemble : choisir le fournisseur, **et** écrire le
-banc qui prouve que la copie distante contient ce que le NAS contient.
+**En fin de projet, décision de Mike du 09/09** — la copie hors site. Le fait
+qui ne se répète plus mais reste vrai : depuis l'effacement du Takeout, le NAS
+est le **seul exemplaire** des ~40 600 photos.
 
 ---
 

@@ -28,6 +28,16 @@ photos.db-shm
 copie.db
 copie.db-wal
 copie.db-shm
+# Et le RESTE de la famille, une bonne fois (10/09). `mesure_reconciliation.py`
+# a laisse `_mesure_reconciliation.db` a la racine et l'agent git a refuse la
+# livraison — il avait raison deux fois : sur la regle, et sur le fait qu'un
+# banc qui abandonne 300 Mo de binaire dans l'arbre de travail n'est pas
+# propre. Le banc ecrit maintenant dans le dossier temporaire du systeme ; ce
+# motif n'est qu'un filet pour ce qui traine encore, pas une permission de
+# recommencer.
+_mesure_*.db
+_mesure_*.db-wal
+_mesure_*.db-shm
 
 # ─── Le levier de la campagne de retag (chantier 2 quater) ───────────────────
 # `retag_actif.txt` est de l'ETAT MACHINE, pas de la source : sa seule presence

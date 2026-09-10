@@ -3883,5 +3883,26 @@
   "ts": 1788963662.6549609,
   "expire": 1804515662.6549609,
   "par": "Mike"
+ },
+ {
+  "op": "mkdir",
+  "dir": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\PRIVE",
+  "ts": 1789019484.0319777,
+  "par": "Mike"
+ },
+ {
+  "op": "move",
+  "src": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Appartement Bremblens\\20210630_200127.jpg",
+  "dst": "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\PRIVE\\20210630_200127.jpg",
+  "idx": 1,
+  "dst_idx": 1,
+  "keys": [
+   [
+    "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\Appartement Bremblens\\20210630_200127.jpg",
+    "\\\\NAS-Bremblens\\home\\Photos\\Photos Flo\\PRIVE\\20210630_200127.jpg"
+   ]
+  ],
+  "ts": 1789019488.7060556,
+  "par": "Mike"
  }
 ]

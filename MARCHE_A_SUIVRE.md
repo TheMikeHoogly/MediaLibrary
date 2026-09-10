@@ -1,217 +1,199 @@
 # Marche à suivre — Mike
 
-> Mis à jour le 07/09/2026 au matin. Ce qui est coché ici est ce que la
-> prochaine session n'aura pas à te redemander.
-
-> Tout ce que j'attends de toi, dans l'ordre, avec le résultat à voir à chaque
-> étape. Coche au fur et à mesure. Rien ici n'est urgent ; rien ici ne se perd
-> si tu t'arrêtes en cours de route.
+> Mis à jour le **10/09/2026 au matin**. Ce qui est ici est ce que la prochaine
+> session n'aura pas à te redemander. Rien n'est urgent ; rien ne se perd si tu
+> t'arrêtes en cours de route.
 >
-> **Une règle qui vaut pour tout ce document** : ne lance jamais deux gros
-> travaux NAS en même temps. Un bat qui lit le NAS + le serveur qui scanne + une
-> galerie ouverte = le disque à genoux, et c'est exactement ce qui a coûté deux
-> heures de GPU aujourd'hui. Un travail à la fois.
+> **La règle qui vaut pour tout le document** : ne lance jamais deux gros
+> travaux NAS en même temps. Un bat qui lit le NAS + le serveur qui scanne +
+> une galerie ouverte = le disque à genoux. C'est ce qui a coûté deux heures de
+> GPU le 06/09. **Un travail à la fois.**
 
 ---
 
-## A. Les trois fenêtres — à vérifier avant tout
+## Ce qu'il te reste à faire — la liste courte
 
-Le 06/09 à 13h17 les trois fenêtres du bat 0 se sont arrêtées ensemble, sans
-prévenir. Le serveur photo était éteint pendant 25 minutes sans que rien ne le
-dise.
+- [ ] **Relancer le `50 - Grand menage du depot.bat`** quand tu passes par là.
+      Il propose maintenant **47 fichiers / 34,8 Mo** : 34 journaux
+      d'annulation de plus de 30 jours (ils marchent enfin, voir plus bas),
+      7 rapports périmés, 6 reliquats. Réponds **2** à l'étape 3.
+- [ ] **Vider `_corbeille_menage\` à la main**, dans quelques jours. Le bat ne
+      le fait pas exprès : *un ménage qui efface le jour même n'est pas un
+      ménage, c'est un pari.* Elle contient les 506 fichiers du 09/09.
+- [ ] **Lancer le `43 - Purger les originaux Motion Photo (apres verif).bat`**
+      — il met les 2 409 `*.jpg_original` en quarantaine, il ne supprime rien.
+      Attendu : ~9,27 Go déplacés. Puis le **bat 24** pour purger réellement.
+      **Je n'ai pas revérifié qu'ils sont encore là** : si le bat annonce
+      « 0 fait », c'est qu'il a déjà tourné, et ce n'est pas un échec.
+- [ ] **Une fois par jour** : `/reglages` → `config.retag`. `reste` doit
+      baisser, `abandons` doit rester à **0**. Si `en_file` reste à 0
+      longtemps, le GPU jeûne : dis-le-moi.
+- [ ] **Lire la page `/aide`** — ce n'est pas une tâche, c'est un jugement :
+      c'est ta famille qui lira ce texte.
 
-- [x] **Les trois fenêtres du `0 - Démarrer le serveur.bat` sont ouvertes**
-      (Serveur, Git, Bancs). **Vérifié le 07/09 à 07:12** : les deux agents
-      avaient vu le canal depuis moins de 5 s, et le serveur écrivait au
-      journal. Si l'une manque un jour, relance le bat 0 : il les rouvre
-      toutes.
+C'est tout. Le reste de ce document dit ce qui est FAIT, pour que tu n'aies pas
+à te demander.
+
+---
+
+## A. Les trois fenêtres — le seul point vraiment nécessaire
+
+Le 06/09 à 13h17, les trois fenêtres du bat 0 se sont arrêtées ensemble sans
+prévenir : le serveur photo est resté éteint 25 minutes sans que rien ne le
+dise. Sans elles, je ne peux **ni mesurer, ni livrer**.
+
+- [x] **Vérifié le 10/09 à 07:45** : les deux agents voyaient leur canal, et le
+      serveur a redémarré proprement sur le nouveau code.
 - [ ] Doute ? `http://192.168.0.13:8080/reglages` répond → le serveur vit.
+      Si une fenêtre manque, relance le bat 0 : il les rouvre toutes.
 
 ---
 
-## B. Les 6 photos sensibles — FAIT
+## B. Les photos sensibles — TERMINÉ
 
-Les six sont traitées. Deux étaient déjà à la corbeille le 06/09 (le relevé
-Migros et la carte d'assurance-maladie) ; **j'ai effacé les quatre autres le
-07/09 au soir**, sur ta consigne — « la médiathèque est censée conserver des
-photos et vidéos de souvenirs, et non des documents » :
+**L'onglet est à zéro.** Les 6 de l'échantillon tranchées le 07/09, les 213
+candidates triées par toi le 09/09 (60 documents à la corbeille, 7 rangés en
+privé, le reste rendu à la galerie), et **la dernière le 10/09**.
 
-| Effacé | Ce que c'était |
+Trois défauts trouvés en te regardant faire, tous corrigés et observés en réel :
+
+| Ce qui clochait | Ce que c'était |
 |---|---|
-| `Photos Mike\2023\20230326_190923.jpg` | décompte de charges + bulletin de versement (IBAN) |
-| `Photos Mike\2022\20220805_200910.jpg` | courrier bancaire avec IBAN — au nom d'un tiers, en Bolivie |
-| `Photos Flo\Floufline\20240226_223732.jpg` | document officiel au nom de Florine |
-| `Photos Mike\2026\20260201_202623.jpg` | certificat médical d'incapacité de travail |
+| l'onglet se rechargeait depuis le haut après chaque verdict | invivable sur 213 photos — la fiche est maintenant retirée, pas la liste rechargée |
+| 68 photos annoncées là où il y en avait **1** | le drapeau `sensible` survit au déménagement : 67 dossiers déjà clos revenaient avec leurs vignettes et leurs chemins |
+| « Rendre privée » refusait avec *« Fichier introuvable »* | la photo était à **Flo** : le geste écrit dans `Photos Flo\PRIVE`, fermé même à l'admin. **Tu pouvais l'effacer sans pouvoir la protéger.** Tranché par toi le 10/09 : l'admin dépose partout, il ne fouille nulle part |
 
-**Rien n'est perdu** : elles sont dans `Photos\.corbeille-effacements\`, une
-par seau horodaté, et la purge automatique les garde **180 jours**. Le décompte
-de charges concerne la PPE — si tu en as besoin pour tes comptes, il est encore
-là.
+**Ta consigne reste la spec** : « la médiathèque conserve des SOUVENIRS, pas des
+documents ». Le geste par défaut de l'onglet est la **corbeille**.
 
-- [x] **`_planches\` et `_planches_corbeille\` supprimés** — ils contenaient
-      des copies lisibles de ces documents. Note au passage : la « basse
-      définition » ne protégeait rien (un IBAN et une date de naissance s'y
-      lisaient), c'est écrit dans `eval/METHODE.md`.
-
-Ta consigne change aussi la spec de l'onglet Sensibles : le geste par défaut
-devient **Corbeille**, pas « Rendre privée ». Voir `ROADMAP.md` § 3 bis.
+Rien n'est perdu : tout part dans `Photos\.corbeille-effacements\`, un seau
+horodaté par geste, gardé **180 jours**.
 
 ---
 
-## C. Motion Photos — le bat 43
+## C. Le ménage du dépôt — FAIT, et il reste un dernier passage
 
-Le **bat 42 est terminé depuis le 03/09** : 2 409 photos strippées, 9,27 Go de
-vidéo retirés. Le relancer ne fait rien (le passage du 06/09 l'a confirmé :
-0 faits, 20 déjà propres). Ne le relance plus.
+Le `50 - Grand menage du depot.bat` a tourné deux fois le 09/09 : **14 fichiers
+au premier passage, 506 au second**. L'écart n'est pas un caprice — mon
+instrument était aveugle, et il l'était par **cinq portes** différentes. La plus
+large : un élagage comparé à un nom NU protégeait la corbeille VIVANTE de la
+racine et faisait taire, du même coup, la corbeille MORTE archivée dans
+`_to_delete\` — 579 des 800 fichiers.
 
-- [ ] **Lancer le `43 - Purger les originaux Motion Photo (apres verif).bat`** —
-      il met les 2 409 `*.jpg_original` en quarantaine, il ne supprime rien.
-      Attendu : ~9,27 Go déplacés.
-- [ ] Puis le **bat 24** pour purger réellement.
+Deux choses que tu as vues et qui étaient de vrais défauts :
+
+- **L'étape 3 te promettait un choix qu'elle ne pouvait pas tenir.** Tu as
+  répondu « 2 » deux fois et lu « Rien à déplacer » : 35 des 44 journaux
+  étaient vétotés par construction. Corrigé — pour cette famille, c'est **l'âge
+  que tu donnes** qui juge, pas le motif.
+- **`_rapport_google_apres2.json`** que tu as déclaré mort : réglé en retirant
+  les deux mentions du bat 33, sans liste d'exception. L'instrument est
+  d'accord de lui-même.
+
+Tu as effacé la copie de `photos.db` du 08/09 — **283 Mo**, la plus grosse
+pièce de `_to_delete\`. Bien vu : c'était le seul fichier que le veto ne
+pouvait pas trancher, parce que le code cite `photos.db` partout et qu'aucun
+instrument ne distingue la base vivante de sa copie.
 
 ---
 
-## D. La corbeille de rangement — ce qui reste
+## D. La corbeille de rangement — FAIT
 
 Le 06/09 : 325 groupes réancrés (bat 46), 364 fichiers purgés (bat 24),
-**25,36 Go rendus**. Restent 77 groupes.
+**25,36 Go rendus**. Le 07/09 tu as lancé le bat 47 : les **3 vraies photos
+sans jumeau connu** sont revenues à leur dossier d'origine à 08:16 — Florine à
+un mariage, un paysage de Bolivie avec un hérisson en peluche, trois personnes
+sous un arbre en fleurs.
 
-- 33 ont moins de 30 jours : **rien à faire**, ils partiront d'eux-mêmes au
-  prochain bat 24.
-- 44 refusent la purge parce que leur copie gardée est introuvable.
-
-La question n'était PAS « cette photo compte-t-elle ? » (elles comptent
-toutes) mais « existe-t-elle encore ailleurs ? ». **Tranché le 06/09 au soir**,
-après une première réponse fausse de ma part (voir ROADMAP : le bat 40
-dédoublonne par les PIXELS, pas par les octets — mon premier banc cherchait
-par empreinte de fichier et rendait 37 « dernières copies » dont 30 n'en
-étaient pas) :
-
-- **36 sont des doublons réels** → purgeables sans risque.
-- **4 sont des coquilles « Read error in the sector ! »** de la vieille
-  récupération de disque, même famille que les 942 → à jeter, elles ne
-  contiennent rien.
-- **3 seulement sont de vraies photos sans jumeau connu** → à **RESTAURER** :
-  Florine à un mariage, un paysage de Bolivie avec un hérisson en peluche, et
-  trois personnes sous un arbre en fleurs. Tu les vois dans
-  `_planches_corbeille\les_7_a_juger.jpg`.
-
-**L'outil existe depuis le 07/09 : `47 - Restaurer les photos sans jumeau
-connu.bat`.** Il ne supprime rien, il n'écrase jamais un fichier existant, et
-il s'annule (journal dans `docs/`). Il commence par un aperçu ; tu peux
-répondre **N** et rien ne bouge. Je ne l'ai pas lancé moi-même : déplacer des
-photos dans ton archive passe par un bat, comme tous les outils qui touchent
-aux fichiers.
-
-**Vérifié pour toi le 07/09 avant de te le donner** — les trois photos sont
-présentes en quarantaine, leur empreinte correspond à leur manifeste, et leur
-dossier d'origine existe et est LIBRE :
-
-| Photo | Retourne dans |
-|---|---|
-| `IMG-20180527-WA0008.jpg` | `Photos Flo\Floufline\` |
-| `IMG-20150729-WA0018.jpg` | `Photos Flo\2015 Bolivie\` |
-| `IMG-20210426-WA0002.jpg` | `Photos Flo\Sista\40 ans Val et Thierry\` |
-
-- [ ] **Lancer le bat 47** (aperçu, puis O pour restaurer).
-- [ ] Puis le **bat 24** pour purger ce qui reste.
-- [ ] **Supprimer `_planches_corbeille\`** et `_planches\` quand tu les as vus
-      — dis-le-moi et je peux le faire, tu m'as donné le droit d'effacer dans
-      `C:\Prog\Claude\MediaLibrary` ce matin.
+La question n'était pas « cette photo compte-t-elle ? » (elles comptent toutes)
+mais « existe-t-elle encore ailleurs ? ». J'y avais d'abord répondu faux : le
+bat 40 dédoublonne par les **pixels**, pas par les octets, et mon premier banc
+cherchait par empreinte de fichier — 37 « dernières copies » dont 30 n'en
+étaient pas.
 
 ---
 
-## E. La campagne de retag
+## E. La chaîne Google — CLOSE
 
-Elle tourne toute seule. Le levier est `retag_actif.txt` — un fichier VIDE à la
-racine du projet. **Ne l'efface pas** : l'effacer arrête la campagne au lot
-suivant (rien n'est perdu, mais elle s'arrête).
+Le bat 49 est passé le 09/09 : les cinq contrôles, l'étape qui a jugé les
+**14 absentes jetables** (moitiés vidéo de Motion Photos, deux preuves
+chacune), le `EFFACER` écrit en toutes lettres. **C: est passé de 171,2 à
+236 Go libres sur 932** — les 96 Go annoncés, à la mesure près.
 
-- [ ] **Une fois par jour**, jeter un œil à `/reglages` → `config.retag` :
-      `reste` doit baisser, `abandons` doit rester à 0.
-- [ ] Si `en_file` reste à 0 longtemps, le GPU jeûne : dis-le-moi.
-- [ ] **Le 9 septembre** : redémarrage Patch Tuesday. Après le redémarrage de
-      Windows, relance le bat 0 — sinon rien ne repart.
+Plus de Takeout, ni en `.zip` ni en extrait. Le NAS porte tout ce qui devait
+l'être.
+
+> Ce que ce bat aura appris, et qui vaut plus que les 96 Go : un garde-fou qui
+> ne sait dire que « bloqué » finit par être contourné. Celui-ci a appris à
+> **distinguer** — deux preuves pour déclarer une absente jetable, et l'arrêt
+> sinon. C'est la différence entre un verrou et un jugement.
+
+**Et le fait qui reste vrai, sans se répéter à chaque session** : depuis cet
+effacement, le NAS est le **seul exemplaire** des ~40 600 photos. Un NAS chez
+soi ne protège ni du feu, ni du vol, ni d'une fausse manœuvre. Tu as placé la
+copie hors site en fin de roadmap le 09/09 — c'est ton choix et il est noté
+tel quel.
+
+---
+
+## F. La campagne de retag
+
+Elle tourne toute seule depuis le 05/09. Le levier est `retag_actif.txt`, un
+fichier **vide** à la racine. **Ne l'efface pas** : l'effacer arrête la
+campagne au lot suivant (rien n'est perdu, mais elle s'arrête).
+
+Fin attendue autour du **14/09** — ~190 photos/heure, comptées dans le journal.
 
 Ce qu'il faut savoir sur son rythme, pour ne pas t'inquiéter à tort :
 
 - **Quand tu navigues dans la photothèque, le tagueur s'efface.** C'est voulu :
-  l'interface a la priorité sur le NAS. Une campagne qui ralentit pendant que tu
-  regardes des photos n'est pas en panne.
+  l'interface a la priorité sur le NAS. Une campagne qui ralentit pendant que
+  tu regardes des photos n'est pas en panne.
 - Un **redémarrage du serveur** ne coûte plus que **9 secondes** de GPU
-  inoccupé (corrigé le 07/09 au matin, observé deux fois). Avant, c'était
-  entre 1 minute et 81 minutes selon l'humeur du NAS — je disais « ~15 min »,
-  c'était une moyenne qui cachait le vrai problème : ça ne dépendait pas du
-  code, mais du disque.
+  inoccupé (corrigé le 07/09, observé trois fois depuis).
 
 ---
 
-## E bis. Avant de dire « go ! » à la prochaine session
+## G. Ce que je te dois encore — ma liste, pas la tienne
 
-Rien de tout ceci n'est bloquant — tu peux dire « go » sans, je reprendrai
-l'état réel de toute façon. Mais chacun de ces trois points m'évite de te
-poser une question et fait gagner du temps :
-
-- [ ] **Les trois fenêtres du bat 0 tournent** (section A). C'est le seul
-      point vraiment nécessaire : sans elles je ne peux ni mesurer, ni livrer.
-- [ ] **Les 6 photos sensibles sont traitées** (section B). Au 06/09 22h30,
-      deux sont déjà à la corbeille (le relevé Migros et la carte
-      d'assurance-maladie) ; les quatre autres sont encore en place. Le
-      collage est dans `_planches\les_6_sensibles.jpg`.
-- [ ] **Tu as jeté un œil aux 3 photos à restaurer** (section D,
-      `_planches_corbeille\les_7_a_juger.jpg`). Si elles te vont, tu n'as rien
-      à dire : je les restaure et je purge le reste.
-
-Et une chose à me dire seulement si elle a changé : **as-tu touché à
-`retag_actif.txt`** ou arrêté la campagne ? Si oui, dis-le en une ligne avec le
-« go » — c'est le fait qui commande tout le reste.
-
-## F. Ce que je te dois encore
-
-Rien de tout ceci n'attend un geste de ta part — c'est ma liste, pas la tienne.
-Elle est là pour que tu saches où on en est.
-
-1. **L'ONGLET SENSIBLES** — celui que tu as demandé, et le gros morceau de la
-   prochaine session. L'application te dit ce qu'elle a trouvé ; la photo est
-   masquée sans bouger en attendant ton verdict.
-2. ~~Remplir la file de retag AVANT le travail de démarrage.~~ **FAIT le
-   07/09**, et mesuré : 9 secondes au lieu de 1 à 81 minutes.
-3. ~~Empêcher deux balayages NAS simultanés.~~ **FAIT À MOITIÉ le 07/09** : la
-   maintenance se met maintenant en retrait quand un scan tourne — c'est
-   l'ordre qui a coûté les 85 minutes du 06/09 à midi. **Reste l'ordre
-   inverse** (une maintenance déjà partie, puis le scan qui arrive dessus) ;
-   je ne l'ai pas touché parce que la ligne concernée porte un garde-fou posé
-   exprès, et que je n'ai pas de mesure pour le remplacer sans risque.
-4. ~~L'outil qui restaure les 3 dernières copies de la corbeille.~~ **FAIT
-   le 07/09**, et **tu l'as lancé** : les trois photos sont revenues à leur
-   dossier d'origine à 08:16.
-6. ~~Le `_exiftool_tmp` orphelin qui ferme une photo pour toujours.~~ **TROUVÉ
-   ET CORRIGÉ le 07/09 au soir.** Quand une écriture dépassait son délai, le
-   fichier de travail d'ExifTool restait sur le NAS et toutes les écritures
-   suivantes sur cette photo échouaient — 13 photos en huit heures, et ça
-   grossissait. Le serveur le ramasse maintenant sur preuve, et une passe
-   unique a rouvert les 22 photos déjà touchées. Zéro tmp restant.
-5. **Reprendre la mesure des photos sensibles sur `qwen3.5:4b`** (l'ancienne
-   portait sur `qwen3-vl:2b`), avec les 24 verdicts humains comme vérité
-   terrain. **Après la campagne** : un banc qui interroge le modèle pendant
-   qu'elle tourne lui prend le GPU.
-
-*(Le chargement paresseux des vignettes est fait ET observé : 585 tuiles,
-30 chargées, 555 en attente, plafond à 4.)*
+1. **Réviser les fichiers de règles** (`CLAUDE.md`, ce document) — **fait le
+   10/09**, et c'était le point le plus important : cinq règles mesurées les
+   09 et 10/09 n'existaient que dans un carnet éphémère.
+2. **`_reconcilier` re-hashe tout le store à chaque `save()`** (point d'audit
+   O14). C'est du chemin de service, pas du calcul IA : réparable pendant que
+   le GPU est pris. **C'est le meilleur gain de performance qui reste.**
+3. **Reprendre la mesure des photos sensibles sur `qwen3.5:4b`** — l'ancienne
+   portait sur `qwen3-vl:2b`, avec tes verdicts comme vérité terrain.
+   **Après la campagne** : un banc qui interroge le modèle lui prend le GPU.
+4. **La question au tagueur sur les documents** — elle n'est pas reportée par
+   prudence, elle est **empêchée** : toucher au prompt rouvrirait les ~12 000
+   photos déjà refaites.
+5. **Le bilan chiffré de la campagne** : ce que `qwen3.5:4b|v3fr|kb1` a changé,
+   mesuré et non supposé. C'est la première passe officielle du fonds.
+6. ~~Empêcher deux balayages NAS simultanés.~~ **À MOITIÉ** : la maintenance se
+   retire quand un scan tourne. Reste l'ordre inverse — une maintenance déjà
+   partie, puis le scan qui arrive dessus. Je n'y ai pas touché : la ligne
+   porte un garde-fou posé exprès, et je n'ai pas de mesure pour le remplacer
+   sans risque.
 
 ---
 
 ## Si quelque chose cloche
 
-- **Une page tourne sans fin** → regarde s'il y a un autre onglet de la
-  photothèque ouvert sur un gros dossier. Ferme-le. Chrome n'ouvre que six
-  connexions par site, et une planche pouvait les prendre toutes.
+- **Une page tourne sans fin** → cherche un autre onglet de la photothèque
+  ouvert sur un gros dossier, et ferme-le. Chrome n'ouvre que six connexions
+  par site, et une planche pouvait les prendre toutes.
 - **Un bat dit ECHEC** → lis la ligne au-dessus. « Déjà fait » n'est pas un
-  échec, et deux bats l'ont déjà crié à tort (45 puis 42) ; les deux sont
-  corrigés.
+  échec, et deux bats l'ont crié à tort (45 puis 42) ; les deux sont corrigés.
+- **Un bat semble sauter des étapes** → ne me laisse **jamais** le réécrire
+  pendant qu'il tourne. `cmd.exe` relit le fichier par décalage d'octets :
+  le 09/09, +70 octets ajoutés pendant le bat 49 lui ont fait exécuter un
+  fragment de ligne, d'où un « Python est introuvable » et un message d'arrêt
+  entièrement faux.
 - **Le serveur ne répond plus** → bat 0. Si les fenêtres sont là mais muettes,
   ferme-les et relance le bat 0.
 - **Tu veux tout annuler** → chaque outil destructif a son journal dans `docs/`
-  (`undo_*.json`) et son option `--annuler`. Rien de ce qui a été fait
-  aujourd'hui n'est irréversible, sauf le bat 24, qui ne touche que ce dont
-  l'existence d'une autre copie a été prouvée au bit près.
+  (`undo_*.json`) et son option `--annuler`. Le bat 50 a le sien
+  (`_corbeille_menage\<horodatage>\_manifeste.json`). Rien n'est irréversible,
+  sauf le bat 24 — et lui ne touche que ce dont l'existence d'une autre copie
+  a été prouvée au bit près.

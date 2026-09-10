@@ -7,8 +7,10 @@
 ## Ce que c'est
 
 Photothèque familiale locale : serveur **Python stdlib pur** (`http.server`) sur
-le réseau domestique, ~30 000 photos sur NAS SMB, 5 pipelines d'IA locale —
-tagging `qwen3-vl:2b` (Ollama), visages InsightFace `buffalo_l` (512-d), animaux
+le réseau domestique, **~40 600 photos** sur NAS SMB (mesure du 10/09 :
+`faces_index` en porte 40 584), 5 pipelines d'IA locale — tagging
+**`qwen3.5:4b`** (Ollama ; `qwen3-vl:2b` était le modèle d'avant la campagne du
+05/09), visages InsightFace `buffalo_l` (512-d), animaux
 YOLO11s, individus animaux DINOv2 (768-d), recherche sémantique SigLIP 2
 (`semantic.py`). Les noms attribués (`personne:Nom`, `animal:Nom`) sont écrits
 dans les **XMP des fichiers** (exiftool) : ils survivent à la base.
@@ -29,7 +31,11 @@ décisions techniques. `FACE_USE_GPU=False` **volontaire** (VRAM prise par Ollam
    **Et ne JAMAIS éditer un `.bat` pendant qu'il TOURNE** : même correction
    juste, même ASCII pur — le décalage d'octets déplace le curseur du
    `cmd.exe` en cours, qui saute ou meurt sans rien dire. Le 23/08 la fenêtre
-   des Bancs est morte comme ça, sur l'ajout d'une ligne d'aide. Éditer, puis
+   des Bancs est morte comme ça, sur l'ajout d'une ligne d'aide. Le 09/09 une
+   reformulation de +70 octets pendant le bat 49 lui a fait exécuter un
+   FRAGMENT de ligne : Windows a résolu `.py` vers l'alias du Microsoft Store,
+   « Python est introuvable », errelevel 9009, et un message d'arrêt FAUX —
+   démontré en recalculant l'offset sur les deux versions. Éditer, puis
    demander à Mike de ROUVRIR la fenêtre — et vérifier son `_agent_*_vu.txt`.
 2. **Les noms humains ne se perdent jamais.** Toute migration les préserve
    (modèle `migrate_animal_pipeline()`). Un changement qui risque d'en perdre un
@@ -59,6 +65,41 @@ décisions techniques. `FACE_USE_GPU=False` **volontaire** (VRAM prise par Ollam
    checkout, rien n'en paraît dans `logs/HEAD`) via staging, lecture seule,
    aucun verrou. `_etat_git.json` dit ce que l'agent a **tenté** ; git dit ce
    qui s'est **passé**.
+
+6. **Un outil qui JUGE ne TÉMOIGNE pas.** Un instrument qui se lit lui-même se
+   donne toujours raison. Mesuré **cinq fois** sur la seule chaîne de ménage
+   (09/09) : la sortie `_orphelins.json` citait tous les fichiers du dépôt ;
+   `_banc_sortie.txt` recopiait ce qu'il venait d'imprimer ; la POLITIQUE
+   d'`appliquer_menage.py` — une liste de cibles **à jeter** — protégeait ce
+   qu'elle désignait ; son banc faisait pareil avec ses fixtures ; et
+   l'instrument lui-même, **parce que j'avais écrit dans ses commentaires le
+   nom des fichiers sur lesquels il s'était trompé** : écrire l'histoire d'une
+   erreur la refaisait. Tout ce qui juge, mesure, nettoie ou consigne — l'outil,
+   son banc, ses rapports, ses manifestes — est **hors du corpus de preuve**.
+7. **Une protection doit nommer la PLACE, pas seulement le nom.** Un élagage
+   comparé à un nom NU frappe aussi les homonymes, y compris ceux qu'on vient
+   de jeter : `_corbeille_session` protégeait la corbeille VIVANTE de la racine
+   et faisait taire la corbeille MORTE archivée dans `_to_delete\` — **579 des
+   800 fichiers**. Idem pour `photos.db`, dont une COPIE de 283 Mo héritait de
+   la protection de la base. Ancrer (`IGNORES_RACINE` vs `IGNORES_PARTOUT`).
+8. **Un angle mort a rarement une seule porte.** Corriger la première et se
+   déclarer content est l'erreur, pas la première erreur. Ce qui rend la
+   suivante visible : **un compteur d'ÉTENDUE imprimé à chaque passage** —
+   combien de fichiers parcourus, combien examinés, combien d'écartés et
+   pourquoi. 719 → 3 761 → 3 883 → 4 465, trois portes, trois passages.
+   *Une règle qu'on ne mesure pas n'est pas un plancher, c'est un vœu.*
+9. **Une option qui ne peut JAMAIS aboutir est une promesse que l'outil ne
+   tiendra pas.** L'étape 3 du bat 50 proposait de purger les journaux : 35 des
+   44 étaient `LU PAR UN MOTIF`, donc vétotés par construction — Mike a répondu
+   « 2 » deux fois et lu « Rien à déplacer ». Le bouton « Rendre privée » de
+   /sensibles échouait de même à chaque clic. Dans les deux cas : le dire AVANT
+   (éteindre le contrôle, nommer la cause), ou permettre le geste.
+10. **Un refus doit nommer sa cause à qui regarde déjà la chose.** « Fichier
+   introuvable » existe pour ne pas révéler une existence à qui n'a pas le
+   droit de la connaître — et il devient un mensonge dès que l'interface a mis
+   la photo sous les yeux de celui qui clique. Corollaire d'ORDRE, attrapé par
+   un banc : la visibilité se teste EN PREMIER, sinon un refus exact (« déjà
+   dans un dossier privé ») confirme une existence à qui n'y a pas droit.
 
 ## Fichiers
 
@@ -137,6 +178,19 @@ coller.
 
 Serveur chez Mike : **192.168.0.13:8080**, via **Claude-in-Chrome**. **Pas de
 hot-reload** : toute modif de `server.py` exige un redémarrage.
+
+**LE PONT ÉCRIT PARFOIS LA VERSION PRÉCÉDENTE DU FICHIER.** C'est le défaut
+d'outillage le plus coûteux du projet : `device_commit_files` répond
+« written » et dépose le contenu du commit d'AVANT. Arrivé une douzaine de fois
+les 09 et 10/09, sur des `.md`, des `.py`, un `SESSION_COMMIT.txt` et surtout
+les `_commande_*.txt` — un agent exécute alors l'ordre qu'on croyait avoir
+remplacé, et on lit le résultat du mauvais banc en croyant lire le sien.
+**Parade, systématique** : committer **DEUX FOIS**, puis re-stager et comparer
+la TAILLE ; si elle diffère, re-committer. Pour un CANAL (`_commande_*.txt`), y
+écrire d'abord `rien`, le committer deux fois, puis l'ordre réel deux fois : un
+rejeu périmé écrit alors `rien`, qui ne fait rien. **Diagnostiquer par la
+TAILLE, jamais par le symptôme** — le chercher ailleurs coûte trois
+allers-retours au lieu d'un.
 
 **Redémarrage par Claude** (`pilotage.py` + `superviseur.bat`) : écrire un mot
 dans `_commande_serveur.txt` — `redemarrer`, `arret`, `marche` — via

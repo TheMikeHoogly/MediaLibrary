@@ -410,6 +410,13 @@ class TagStore:
         with self.lock:
             self._save()
 
+    def flush(self):
+        """Meme nom que `SqliteStore.flush` — ici il n'y a rien de moins cher
+        a faire qu'une ecriture complete du JSON, mais l'appelant ne doit pas
+        avoir a savoir lequel des deux magasins il tient."""
+        with self.lock:
+            self._save()
+
     def _save(self):
         # Écriture ATOMIQUE : on écrit dans un fichier temporaire puis on le
         # renomme par-dessus l'original. Une écriture interrompue (coupure NAS,
@@ -3853,7 +3860,14 @@ def _sync_dir(label, cur, own_keys, first=False, deep=False):
             else:
                 enqueue(k)
                 n_queue += 1
-        STORE.save()
+        # `flush()` et non `save()` : TOUT ce que cette boucle a differe passe
+        # par `STORE.set(..., save=False)`, donc par le signalement de premier
+        # niveau. Mesure du 10/09 : `save()` re-empreintait les 44 121 entrees
+        # pour ne rien trouver — **627 ms sous le verrou, une fois PAR
+        # DOSSIER**, sur le chemin meme qui avait gele l'interface le 06/09.
+        # Le flush fait le meme travail utile en 0,1 ms. La reconciliation
+        # complete reste, ailleurs.
+        STORE.flush()
         print(f"  🏷  {label} : {n_queue} photo(s) à taguer"
               + (f", {n_import} importée(s)" if n_import else "")
               + (f" dont {n_scinde} FR/EN scindée(s)" if n_scinde else ""))
@@ -9248,7 +9262,9 @@ def _cat_auto_pass():
                             del CAT_AUTO_LOG[:-CAT_AUTO_LOG_MAX]
             break   # un seul chat représentatif par photo suffit
     if added:
-        STORE.save()
+        # `_index_add_person` termine par `e['kw_fr'] = kw` : premier niveau,
+        # donc signale. Rien de profond n'a bouge ici (10/09, O14).
+        STORE.flush()
         print(f"  🐱 Auto-attribution chats : {added} photo(s) rattachée(s)")
     return added
 
@@ -9494,7 +9510,8 @@ def reembed_one_batch():
         if n >= REEMBED_BATCH or system_busy() or ui_recent():
             break                   # cède le NAS dès que l'UI l'utilise
     if changed and n == 0:
-        FACE_STORE.save()           # persiste les marquages « rien à faire »
+        # `e['reemb'] = 1` / `e['faces'] = ...` : premier niveau, signale.
+        FACE_STORE.flush()          # persiste les marquages « rien à faire »
     return n
 
 

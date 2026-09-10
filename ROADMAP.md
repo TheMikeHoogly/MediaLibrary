@@ -92,10 +92,17 @@ que l'instrument ne peut pas la distinguer de la base vivante. Enfin, vider
 
 **B1. Le reste d'audit** (ancien point 5) : **O11 FAIT le 09/09** — compression
 HTTP, `/files` 157 → 48 ko et `/pets` 88 → 29 ko, mesuré sur le fil. Restent
-O8–O9 (matmul par visage et backfill sémantique : les deux touchent des boucles
-de calcul, à faire quand la campagne sera finie) et O14–O15 (`_reconcilier`
-re-hashe tout le store sous verrou à chaque `save()`, et les caches de
-vignettes). **L'adoption de
+**O14 FAIT le 10/09, et mesuré AVANT d'être touché** : `_reconcilier`
+re-empreintait les **44 121 entrées à chaque `save()` — 627,2 ms sous le verrou
+pour trouver ZÉRO changement**, contre 0,1 ms pour le flush signalé, soit
+**6 547 ×**. Le point d'appel coûteux n'était pas le tagging (il passe par
+`set()`, chemin rapide) mais **`_sync_dir`, qui termine CHAQUE DOSSIER par un
+`save()`** — le chemin même qui avait gelé l'interface le 06/09. Trois points
+d'appel passent à `flush()`, chacun avec sa preuve écrite à côté ; `save()` et
+sa garantie sur les mutations profondes ne bougent pas, et un banc tient la
+limite (`test_flush_o14.py`). Restent O8–O9 (matmul par visage et backfill
+sémantique : les deux touchent des boucles de calcul, à faire quand la campagne
+sera finie) et **O15** (les caches de vignettes). **L'adoption de
 `components.css` par `browse`, `faces` et `reglages` — LIGNE CLOSE le 09/09,
 et aucune des trois n'était ce qu'elle annonçait.** `reglages` : sa famille
 maison `.b` borde à 5,97:1 là où `.btn--discret` bordait à 1,18 — c'est elle
