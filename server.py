@@ -9118,6 +9118,13 @@ def migrate_animal_pipeline():
     with ANIMAL_STORE.lock:
         ANIMAL_STORE.data = {}
         ANIMAL_STORE._save()
+    # Plus une decoupe n'a de fiche a laquelle se rattacher : les laisser,
+    # c'etait 47 Mo d'orphelins immediats (10/09). Elles se refont a la
+    # demande, comme toute decoupe.
+    _vides = _vider_cache_decoupes(ANIMAL_THUMB_DIR)
+    if _vides:
+        print(f"  🧹 {_vides} decoupe(s) d'animaux effacee(s) : leur pipeline "
+              "n'existe plus, elles se referont a la demande")
     with PETS_STORE.lock:
         for pk, pe in PETS_STORE.data.items():
             if isinstance(pe, dict):
@@ -9507,6 +9514,11 @@ def reembed_one_batch():
             continue
         try:
             newfaces = detect_faces(p, max_side=ms)
+            # CELUI QUI REMPLACE NETTOIE (10/09). Le re-embedding deplace les
+            # cadres : les anciennes decoupes n'ont plus de fiche et restaient
+            # sur disque pour toujours — 83 % de `face_thumbs`, 192,9 Mo. Les
+            # cadres inchanges gardent la leur.
+            _oublier_visages(k, e.get('faces'), newfaces)
             e['faces'] = newfaces
             e['n'] = len(newfaces)
             e['reemb'] = 1
@@ -11472,6 +11484,86 @@ def curator_loop():
 
 
 # PEOPLE_PAGE vit dans ui/pages/people.html (point 7).
+
+
+def _nom_decoupe(key, i, bbox, prefixe=''):
+    """Le nom d'une decoupe de visage ou d'animal, tel que `_serve_facecrop` et
+    `_serve_animalcrop` le calculent : `md5(<prefixe><cle>|<index>|<bbox>)`.
+
+    Ici le nom EST derive du contenu, et c'est juste : la decoupe depend du
+    cadre. Mais un cadre qui change abandonne l'ancien fichier — d'ou les
+    orphelins (mesure du 10/09 : 83 % de `face_thumbs`, 74 % de
+    `animal_thumbs`). La reponse n'est donc pas de changer le nom, comme pour
+    les vignettes de photo, mais de **faire nettoyer celui qui remplace**."""
+    import hashlib
+    return hashlib.md5(("%s%s|%s|%s" % (prefixe, key, i, bbox))
+                       .encode('utf-8', 'replace')).hexdigest()
+
+
+def _oublier_decoupes(key, anciennes, nouvelles, dossier, prefixe=''):
+    """Efface les decoupes qui appartenaient a une detection REMPLACEE.
+
+    **Celui qui remplace nettoie.** C'est la meme idee que le re-tamponnage des
+    vignettes, dans l'autre sens : la, nous savions que l'image n'avait pas
+    change et nous gardions ; ici nous savons qu'elle a change et nous jetons.
+    Dans les deux cas c'est l'ECRIVAIN qui sait, donc c'est lui qui agit — et
+    O15 se ferme par construction au lieu d'etre une corvee qui revient.
+
+    Les noms que la NOUVELLE detection produira sont epargnes : un cadre
+    inchange garde sa decoupe, et on evite de la refaire pour rien.
+
+    Une decoupe effacee n'est pas une perte : elle se refait a la demande, en
+    relisant l'original. La reversibilite, ici, c'est la regeneration."""
+    if not anciennes:
+        return 0
+    garder = {_nom_decoupe(key, i, (d or {}).get('bbox', [0, 0, 0, 0]), prefixe)
+              for i, d in enumerate(nouvelles or []) if isinstance(d, dict)}
+    n = 0
+    for i, d in enumerate(anciennes):
+        if not isinstance(d, dict):
+            continue
+        nom = _nom_decoupe(key, i, d.get('bbox', [0, 0, 0, 0]), prefixe)
+        if nom in garder:
+            continue
+        f = Path(dossier) / (nom + '.jpg')
+        try:
+            if f.is_file():
+                f.unlink()
+                n += 1
+        except OSError:
+            pass
+    return n
+
+
+def _oublier_visages(key, anciennes, nouvelles):
+    return _oublier_decoupes(key, anciennes, nouvelles, FACE_THUMB_DIR)
+
+
+def _oublier_animaux(key, anciens, nouveaux):
+    return _oublier_decoupes(key, anciens, nouveaux, ANIMAL_THUMB_DIR, 'a|')
+
+
+def _vider_cache_decoupes(dossier):
+    """Vide un cache de decoupes en entier — pour le seul cas ou TOUT devient
+    caduc d'un coup : une migration qui remet le magasin a zero.
+
+    `migrate_animal_pipeline` fait `ANIMAL_STORE.data = {}` : plus une seule
+    decoupe n'a de fiche a laquelle se rattacher. Les laisser, c'etait 47 Mo
+    d'orphelins immediats (mesure du 10/09 : 74 % du dossier)."""
+    n = 0
+    try:
+        with os.scandir(dossier) as it:
+            for x in it:
+                if not x.is_file():
+                    continue
+                try:
+                    os.remove(x.path)
+                    n += 1
+                except OSError:
+                    pass
+    except OSError:
+        pass
+    return n
 
 
 def _fichier_vignette(key, s, video=False):

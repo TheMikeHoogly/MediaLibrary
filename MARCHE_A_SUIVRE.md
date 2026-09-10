@@ -25,20 +25,12 @@
       Attendu : ~9,27 Go déplacés. Puis le **bat 24** pour purger réellement.
       **Je n'ai pas revérifié qu'ils sont encore là** : si le bat annonce
       « 0 fait », c'est qu'il a déjà tourné, et ce n'est pas un échec.
-- [ ] **Relancer le `51 - Purger les vignettes orphelines.bat`.** Ton **N**
-      du 10/09 était le bon réflexe et il a sauvé 282 Mo : le banc écrit
-      ensuite a montré que `photo_thumbs` est **illisible tant que la campagne
-      tourne** (son nom porte le mtime, que le retag réécrit). Le bat traite
-      maintenant les deux caches qu'on sait lire, `face_thumbs` et
-      `animal_thumbs` : **32 458 fichiers, 227 Mo**, dont les vignettes les
-      plus jeunes sont reconnues à **100 %**. Une vignette effacée n'est pas
-      perdue : elle se **refait** à la première demande.
-- [ ] **`photo_thumbs` : 450 Mo d'un format qui n'existe plus.** Le 10/09 au
-      soir, le nommage des vignettes a changé (voir plus bas) : tous les
-      anciens fichiers sont morts d'un coup. Pour les balayer :
-      `python appliquer_purge_vignettes.py --dossiers photo_thumbs
-      --formule-changee "migration du nommage 10/09" --appliquer`.
-      Le garde-fou refuserait sans cette raison écrite — c'est voulu.
+- [ ] **Lancer le `51 - Purger les vignettes orphelines.bat`** — il traite
+      `face_thumbs` et `animal_thumbs` : **32 458 fichiers, 227 Mo**. C'est
+      désormais un **arriéré**, pas une corvée qui revient : depuis le 10/09
+      au soir, celui qui remplace une détection efface lui-même les découpes
+      qu'il périme. Une fois ces 227 Mo balayés, le dossier ne regonflera plus
+      tout seul.
 - [ ] **Une fois par jour** : `/reglages` → `config.retag`. `reste` doit
       baisser, `abandons` doit rester à **0**. Si `en_file` reste à 0
       longtemps, le GPU jeûne : dis-le-moi.
