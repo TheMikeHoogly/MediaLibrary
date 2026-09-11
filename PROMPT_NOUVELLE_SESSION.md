@@ -28,6 +28,7 @@ intouchable**, fin attendue vers le **14/09**.
 | `fix/vue-rapide` | prédicat de visibilité réécrit à l'identique, `filter()` natif, `mesure_vue.py` | sur les vraies clés : `len` ×1,66, `values` ×1,67, `items` ×1,44 ; comptes identiques |
 | `fix/rename-garde-les-auteurs` | `rename` transporte `auteurs` de la fiche absorbée : les jugements de Flo passaient au nom de celui qui renomme | bancs sur le vrai `SubjectStore` ; ancien code, 3 rouges |
 | `fix/gel-du-gc` | `gc.freeze()` des 505 000 objets permanents **et** `threshold2` à 100 | temps de collecte ÷3,8 (3,43 → 0,91 ms par seconde de service), pire pause 509 → 210 ms |
+| `feat/http-1-1` | `Content-Length` partout (instrument par l'arbre : 4 réponses nues corrigées), puis `protocol_version` et `timeout` | 120 vignettes : **120 connexions TCP → 4 puis 0**, médiane 14–20 → 11–13 ms ; 416 et plages vérifiés |
 
 ---
 
@@ -61,9 +62,9 @@ intouchable**, fin attendue vers le **14/09**.
    Le chiffre qui compte : **7,8 Go résidents** pour un modèle de 3,47 Go.
    Rien à faire pendant la campagne — après, un modèle qui tient dans les
    4 Go de VRAM (`vision-eval`). Tant que ça tient, la machine pagine.
-3. **HTTP/1.1** : l'instrument `Content-Length` d'abord (un chemin qui répond
-   sans lui SUSPEND la page en HTTP/1.1), le drapeau ensuite, puis
-   **`Last-Modified`** sur les médias (`PERFORMANCE.md` § 3.5, § 3.6).
+3. **`Last-Modified` sur les médias** (§ 3.6) — petit, sûr : revenir en
+   arrière sur une photo de 5 Mo la retélécharge depuis le NAS. Puis § 3.7,
+   la planche entière, qui ne se rouvre qu'avec une mesure côté navigateur.
 
 ---
 

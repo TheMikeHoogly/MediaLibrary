@@ -12360,6 +12360,27 @@ def perf_ecrire():
 
 class Handler(BaseHTTPRequestHandler):
 
+    # ─── HTTP/1.1 : la connexion RESTE OUVERTE (12/09) ─────────────────────
+    # En HTTP/1.0, chaque réponse ferme sa connexion : le relevé du 10/09
+    # comptait 432 découpes de visages sur une planche, donc 432 poignées de
+    # main TCP et 432 fils. Le navigateur n'ouvre que six connexions par site
+    # et les rouvre sans cesse — c'est aussi, très probablement, la panne
+    # notée dans `MARCHE_A_SUIVRE.md` (« une planche pouvait prendre les six
+    # connexions »).
+    #
+    # LE DANGER, ET CE QUI LE FERME. Sans `Content-Length`, un client HTTP/1.1
+    # attend un corps qui ne vient pas et LA PAGE SE FIGE. D'où l'ordre suivi
+    # ici : l'instrument d'abord (`verifier_content_length.py`, par l'arbre
+    # syntaxique : 12 réponses écrites à la main, 4 sans longueur — trois 302
+    # et un 416, toutes corrigées), le drapeau ensuite.
+    #
+    # `timeout` : une connexion gardée ouverte retient un fil de
+    # `ThreadingHTTPServer`. Trente secondes sans un octet et le fil rend la
+    # main (`handle_one_request` ferme sur le délai) — un téléphone qui
+    # s'endort ne coûte plus un fil pour la nuit.
+    protocol_version = 'HTTP/1.1'
+    timeout = 30
+
     def log_message(self, fmt, *args):
         print(f"  {self.client_address[0]}  {fmt % args}")
 
@@ -12383,6 +12404,10 @@ class Handler(BaseHTTPRequestHandler):
         suite = urllib.parse.quote(self.path if self.path.startswith('/') else '/')
         self.send_response(302)
         self.send_header('Location', '/connexion?suite=' + suite)
+        # `Content-Length: 0` : une redirection n'a pas de corps, et en
+        # HTTP/1.1 (12/09) un client qui n'a pas de longueur ATTEND un corps
+        # sur une connexion qui reste ouverte — la page se fige.
+        self.send_header('Content-Length', '0')
         self.end_headers()
         return False
 
@@ -12513,6 +12538,7 @@ class Handler(BaseHTTPRequestHandler):
             # Page « Visages » retirée : redirige vers Personnes (compat marque-pages)
             self.send_response(302)
             self.send_header('Location', '/people')
+            self.send_header('Content-Length', '0')   # sans corps, et le dire
             self.end_headers()
 
         elif path == '/api/faces/status':
@@ -14429,6 +14455,7 @@ class Handler(BaseHTTPRequestHandler):
         def _fallback():
             self.send_response(302)
             self.send_header('Location', url)
+            self.send_header('Content-Length', '0')   # sans corps, et le dire
             self.end_headers()
 
         if not PIL_OK:
@@ -15853,6 +15880,7 @@ class Handler(BaseHTTPRequestHandler):
             if start >= size or start > end:
                 self.send_response(416)
                 self.send_header('Content-Range', f'bytes */{size}')
+                self.send_header('Content-Length', '0')   # sans corps, et le dire
                 self.end_headers()
                 return
             partial = True

@@ -585,29 +585,44 @@ trois écritures d'avant recopiées, et le compte des parcours (3 → 1).
 **Observé** : 280–560 ms → **200–460 ms**, la passe à 140–220 ms. Le reste du
 temps n'est pas dans la route : § 3.10 et § 3.11.
 
-### 3.5 Le serveur parle **HTTP/1.0**
+### 3.5 Le serveur parlait **HTTP/1.0** — **livré le 12/09**
 
-`Handler` ne pose pas `protocol_version = 'HTTP/1.1'`. Conséquence : la
-connexion est **fermée après chaque réponse**. Les 432 découpes de visages du
-relevé, ce sont 432 connexions TCP et 432 fils.
+`Handler` ne posait pas `protocol_version` : la connexion se fermait après
+CHAQUE réponse. Les 432 découpes de visages d'un relevé, c'étaient 432
+poignées de main TCP et 432 fils — et, très probablement, la panne notée dans
+`MARCHE_A_SUIVRE.md` (« une planche pouvait prendre les six connexions que
+Chrome ouvre par site »).
 
-C'est aussi, très probablement, la vraie cause de la panne déjà notée dans
-`MARCHE_A_SUIVRE.md` — « une planche pouvait prendre les six connexions que
-Chrome ouvre par site ». Avec `keep-alive`, Chrome **réutilise** ses six
-sockets au lieu de les rouvrir sans cesse.
+**L'instrument D'ABORD, le drapeau ensuite.** En HTTP/1.1, une réponse sans
+`Content-Length` ne se termine plus par la fermeture de la socket : le client
+attend des octets qui ne viennent pas et **la page reste suspendue** — une
+panne pire que la lenteur qu'on corrige. `verifier_content_length.py` suit,
+par l'arbre syntaxique, chaque `end_headers()` jusqu'à son `send_response()` :
+**12 réponses écrites à la main, 8 conformes, 4 sans longueur** — trois `302`
+(la porte, `/faces`, le repli de vignette) et le `416` des plages hors bornes.
+Toutes corrigées (`Content-Length: 0` : sans corps, et le dire).
+`test_verifier_content_length.py` (12 bancs) montre à l'instrument des cas
+conformes et fautifs écrits exprès — un outil qui juge ne témoigne pas de
+lui-même.
 
-**Ce changement ne se fait pas sans instrument.** En HTTP/1.1, une réponse sans
-`Content-Length` juste désynchronise la connexion : le navigateur attend des
-octets qui ne viennent pas, et la page **reste suspendue** — une panne bien
-pire que la lenteur qu'on corrige. Il faut donc, dans cet ordre :
+**Puis le drapeau**, avec `timeout = 30` : une connexion gardée ouverte retient
+un fil de `ThreadingHTTPServer`, et trente secondes sans un octet le rendent.
 
-1. `verifier_content_length.py` — par l'arbre syntaxique, **tout** chemin qui
-   appelle `send_response` atteint un `end_headers` précédé d'un
-   `Content-Length` (ou d'un encodage en morceaux). Les chemins connus
-   (`_repondre`, `_send_file`, les quatre écritures directes de vignettes)
-   le font ; ce sont les autres qu'il faut trouver ;
-2. le drapeau ;
-3. réobservation par l'horloge sur une planche complète.
+**Observé en réel** (même dossier, mêmes 120 vignettes déjà en cache, 6 en
+parallèle, campagne en cours) :
+
+| | connexions TCP | médiane par vignette | total |
+|---|---:|---:|---:|
+| HTTP/1.0 | **120** puis 120 | 14–20 ms | 463–538 ms |
+| HTTP/1.1 | **4** puis **0** | 11–13 ms | 598–606 ms |
+
+Le total ne bouge pas — il est tenu par le serveur, pas par les connexions —
+et c'est la SEULE façon honnête de le dire : ce qui change, c'est que la
+planche ne consomme plus les six connexions du navigateur, et qu'une requête
+coûte une poignée de main en moins. Vérifié aussi sous le nouveau protocole :
+`/media` entier (200), une plage (206, `Content-Range`), une plage hors bornes
+(**416 en 26 ms, plus de suspension**), un 404, la galerie compressée, et la
+redirection de `/faces`.
 
 ### 3.6 Les médias ne portent ni `Last-Modified` ni `ETag`
 
@@ -825,7 +840,7 @@ péage du GIL (§ 3.9), `/api/maint/status` en une passe (§ 3.4), sondes GC/GIL
 et CPU/défauts par phase (§ 3.10, § 3.11).
 
 **Fait le 12/09** : la vue accélérée (§ 3.11), le ramasse-miettes gelé et
-espacé (§ 3.12).
+espacé (§ 3.12), HTTP/1.1 et son instrument (§ 3.5).
 
 0. **Quand la campagne finit** : `/api/serveur` → `vignettes` passe à
    `fabrique` ; relancer `mesure_couverture_vignettes.py`.
@@ -836,8 +851,8 @@ espacé (§ 3.12).
 2. **La vue (§ 3.11)** : réécriture exacte livrée (×1,4–1,6) — la réobserver
    dans `comptes` de `/api/maint/status` ; puis la décision sur un cache à
    génération.
-3. **HTTP/1.1** — l'instrument `Content-Length` d'abord.
-4. **`Last-Modified` sur les médias.**
+3. **`Last-Modified` sur les médias** (§ 3.6) : le retour arrière sur une
+   photo de 5 Mo la retélécharge entièrement depuis le NAS.
 6. **La planche entière (3.7)** : seulement avec une mesure côté navigateur.
 
 ---
@@ -862,6 +877,7 @@ espacé (§ 3.12).
 | `mesure_cpu.py` | occupation par cœur, processus par cœurs consommés, CPU de chaque fil du serveur |
 | `diagnostic_ollama_memoire.py` | ce qu'Ollama déclare (`/api/ps`) contre ce que `llama-server` tient ; drapeaux de mémoire, jamais un chemin |
 | `test_horloge_maint_status.py`, `test_passe_index.py` | 8 et 5 bancs, anciennes écritures en oracle |
+| `verifier_content_length.py`, `test_verifier_content_length.py` | toute réponse dit-elle sa longueur ? (le feu vert d'HTTP/1.1) ; 12 bancs sur des cas écrits exprès |
 | `test_gel_gc.py` | 8 bancs : le gel, le seuil, ce qui naît après, un interpréteur qui refuse |
 | `mesure_vue.py`, `test_vue_rapide.py` | ce que coûte la vue sur les vraies clés, deux écritures alternées ; 5 bancs d'équivalence sur 6 000 clés tirées |
 | `test_horloge_phases.py` | 15 bancs + 4 (CPU et défauts par phase) : les phases se succèdent, le détail est borné, rien ne lève ; `_serve_gallery` garde ses arguments et ne livre aucun nom de dossier |
