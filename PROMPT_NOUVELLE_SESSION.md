@@ -58,6 +58,11 @@ matin). `index` 393–772 → **137–156 ms** par clic ; reconstruction de
 `_key_index` (TTL, verrou tenu) 618–784 → **44 ms**. Règle inchangée, prouvée
 sous `PureWindowsPath` ; 10 bancs dans `test_pkey_memoire.py`.
 
+**`/api/pets/list` en une passe** (`fix/sujets-en-une-passe`, 11/09 matin).
+2,3–2,5 s → **~290 ms**, réponse identique au caractère près. Le repli de
+`people_list` suit la même fonction. Oracle verbatim sur 300 tirages dans
+`test_sujets_une_passe.py`.
+
 ---
 
 ## 3. Le résultat, honnêtement
@@ -83,16 +88,13 @@ complet : `PERFORMANCE.md` § 2 bis) :
 
 Détail et précautions : `PERFORMANCE.md` § 5.
 
-1. ~~Les deux balayages par ouverture~~ — faits (§ 2 ter). Reste un `index`
-   isolé à 430 ms : `_pkey(Path(UPLOAD_DIR).resolve())` fait un aller-retour
-   SMB à chaque appel hors Uploads — suspect, pas mesuré.
-2. **Compter les vignettes manquantes** — `/api/thumb` reste premier au total.
-3. **`/api/pets/list`** — boucle imbriquée, meilleur gain/risque.
-4. **`/api/corbeille`** — banc de parcours d'abord, le verrou ensuite.
-5. **`/api/geo`** — instantané en cache.
-6. **`nvidia-smi`** — le mesurer d'abord.
-7. **HTTP/1.1** — l'instrument `Content-Length` d'abord.
-8. **`Last-Modified` sur les médias.**
+1. **Compter les vignettes manquantes** — `/api/thumb` reste premier au total.
+2. **`/api/corbeille`** — banc de parcours d'abord, le verrou ensuite.
+3. **`/api/geo`** — re-mesurer (profite déjà de `_pkey` mémoïsé), puis cache.
+4. **`nvidia-smi`** — le mesurer d'abord.
+5. **HTTP/1.1** — l'instrument `Content-Length` d'abord.
+6. **`Last-Modified` sur les médias.**
+7. Le reste d'`index` (vue ~140 ms ; `resolve()` d'Uploads suspect).
 
 ---
 

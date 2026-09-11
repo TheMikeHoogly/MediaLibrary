@@ -144,7 +144,8 @@ refait l'erreur rejetée le 20/08.
 **B4. Le chantier PERFORMANCE (ouvert le 10/09 au soir) — le plan vit dans
 `PERFORMANCE.md` § 5, pas ici.** Fait : l'horloge des routes, `scandir` dans
 la galerie, l'horloge de phases et les deux balayages par clic (11/09 :
-`index` ~480 → ~140 ms, carte des clés ~700 → 44 ms). Prochain : les
+`index` ~480 → ~140 ms, carte des clés ~700 → 44 ms) et `/api/pets/list` en
+une passe (2,5 s → 0,29 s). Prochain : les
 vignettes manquantes (`/api/thumb`, premier au temps total).
 Compatible avec la campagne : chemin de service seulement, jamais le calcul IA.
 

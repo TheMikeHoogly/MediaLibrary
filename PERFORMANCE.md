@@ -359,7 +359,23 @@ Deux choses, dans cet ordre :
 > relâcher — c'est le genre de garde-fou qu'on retire une fois et qu'on
 > regrette six mois.
 
-### 3.2 `GET /api/pets/list` — 2,87 s, une boucle dans une boucle
+### 3.2 `GET /api/pets/list` — 2,87 s, une boucle dans une boucle — **FAIT le 11/09**
+
+> **Livré** (`fix/sujets-en-une-passe`). Une passe unique,
+> `_premieres_vignettes(tags, entrees, index, vignette)`, sert tous les chats à
+> la fois et s'arrête quand chacun a sa vignette ; le repli de `people_list`
+> (fiches sans avatar) passe par la même fonction. **Oracle** : les deux
+> fonctions d'avant, recopiées verbatim dans `test_sujets_une_passe.py`,
+> comparées sur 300 magasins tirés au hasard (graine fixe), avec un banc qui
+> exige que les tirages aient bien produit les cas durs ; le nombre de
+> balayages est COMPTÉ (6 → 1 pour six chats). Quatre mutations, quatre rouges.
+>
+> **Réobservé** (serveur redémarré 08:44:40) : `/api/pets/list`
+> **2 271 · 2 545 ms → 282 · 299 ms**, et la réponse est **identique au
+> caractère près** (même longueur, même empreinte FNV-1a avant et après).
+> `/api/people/list` : 137–139 → 143 ms, réponse identique — rien à gagner
+> aujourd'hui, les 354 fiches ont toutes un avatar et le repli ne sert pas ;
+> la correction y protège le jour où le curateur n'a pas tourné.
 
 ```python
 for pk, pe in PETS_STORE.data.items():        # ~17 chats
@@ -485,35 +501,26 @@ règle.
 
 ---
 
-## 5. L'ordre — reclassé le 11/09 avec l'horloge de phases
+## 5. L'ordre — reclassé le 11/09 au matin
 
-~~1. L'horloge de phases dans `_serve_gallery`~~ — **faite**, § 2 bis.
+**Fait le 11/09** : l'horloge de phases (§ 2 bis), les deux balayages par clic
+(§ 2 ter), `/api/pets/list` en une passe (§ 3.2).
 
-1. ~~**Les deux balayages par ouverture de dossier**~~ — **faits le 11/09**,
-   § 2 ter. Reste à comprendre le 430 ms isolé (`resolve()` d'Uploads à
-   chaque appel ? GIL ?) — le mesurer avant d'y toucher. Ancien libellé :
-   (§ 2 bis, point 2 ; c'est l'ancien 3.8, qui passe devant). `index` + `carte_cles` : ~1 à 1,5 s par
-   clic, indépendamment du dossier. Même espèce de bug que `/api/pets/list` :
-   *un balayage de toute la photothèque là où la question porte sur une
-   partie.* **Précautions déjà lues** : `_key_index` est bâtie sur
-   `INDEX_BRUT` avec `_resolve_key` (une clé d'Uploads y devient un chemin
-   absolu), alors que `_index_entries_under` lit la VUE `STORE.data` et
-   reconnaît Uploads par l'absence de `/` — les deux ne sont pas
-   interchangeables, et la visibilité (chantier 18) passe par la vue. Et
-   `_pkey` ne se réécrit pas (§ 3.8) : le mémoïser sur les chaînes garde la
-   règle exacte. Oracle : l'ancienne fonction, sur les vraies clés de
-   `copie.db`.
-2. **Compter les vignettes manquantes**, puis décider si le tagueur doit les
+1. **Compter les vignettes manquantes**, puis décider si le tagueur doit les
    écrire au passage (3.0). `/api/thumb` reste premier au temps total.
-3. **`/api/pets/list`** — la boucle imbriquée. Le meilleur gain/risque.
-4. **`/api/corbeille`** — d'abord le banc de parcours, ensuite la question du
+2. **`/api/corbeille`** — d'abord le banc de parcours, ensuite la question du
    verrou, et seulement si la raison du verrou est comprise.
-5. **`/api/geo`** — instantané en cache, patron `_key_index`.
-6. **`nvidia-smi`** — le mesurer avant de toucher au cache.
-7. **HTTP/1.1** — l'instrument d'abord, le drapeau ensuite.
-8. **`Last-Modified` sur les médias.**
-9. **La planche entière (3.7)** redescend : côté serveur, 150 ms sur 1,9 s. Ne
-   se reconsidère qu'avec une mesure du côté navigateur.
+3. **`/api/geo`** — instantané en cache, patron `_key_index`. Profite déjà en
+   partie de `_pkey` mémoïsé : le re-mesurer avant d'y toucher.
+4. **`nvidia-smi`** — le mesurer avant de toucher au cache.
+5. **HTTP/1.1** — l'instrument `Content-Length` d'abord, le drapeau ensuite.
+6. **`Last-Modified` sur les médias.**
+7. **Le reste de `index` dans la galerie** : ~140 ms de VUE (le prédicat de
+   visibilité sur 44 604 clés) et un 430 ms isolé non expliqué —
+   `_pkey(Path(UPLOAD_DIR).resolve())` fait un aller-retour SMB à chaque appel
+   hors Uploads : suspect, pas mesuré.
+8. **La planche entière (3.7)** : côté serveur, 150 ms sur 1,9 s. Ne se
+   reconsidère qu'avec une mesure du côté navigateur.
 
 ---
 
@@ -525,6 +532,7 @@ règle.
 | `mesure_parcours_dossier.py` | compare `iterdir`/`scandir`/`scandir+stat` sur un vrai dossier du NAS, méthodes alternées ; et `_pkey` sur les vraies clés, depuis **`copie.db`** — jamais `photos.db` |
 | `test_horloge_routes.py` | 16 bancs : l'horloge compte juste, et ne fait jamais tomber une requête |
 | `test_parcours_dossier.py` | 16 bancs : l'ancienne écriture sert d'oracle ; deux bancs comptent les `stat()` |
+| `test_sujets_une_passe.py` | 7 bancs : `pets_list`/`people_list` d'avant, recopiées verbatim, servent d'oracle sur 300 tirages ; le nombre de balayages est compté |
 | `test_pkey_memoire.py` | 10 bancs : `_pkey` mémoïsé rend l'ancienne expression sous `PureWindowsPath` ; la carte égale le vrai `build_key_index` ; la 2ᵉ reconstruction ne construit aucun `Path` |
 | `test_horloge_phases.py` | 15 bancs : les phases se succèdent, le détail est borné, rien ne lève ; `_serve_gallery` garde ses arguments et ne livre aucun nom de dossier |
 

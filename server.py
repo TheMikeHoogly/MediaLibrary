@@ -9177,30 +9177,75 @@ def pets_list():
             if str(kw).lower().startswith('animal:'):
                 key = str(kw)[7:].strip().lower()
                 tagcount[key] = tagcount.get(key, 0) + 1
+    fiches = [(pk, pe) for pk, pe in PETS_STORE.data.items()
+              if isinstance(pe, dict)]
+    # La vignette de chaque chat : la PREMIERE détection nommable d'une photo
+    # qui porte son tag, dans l'ordre de l'index des animaux. Jusqu'au 11/09,
+    # une boucle sur les chats contenait un balayage des 40 584 détections —
+    # 17 balayages par ouverture de /pets, 2,87 s mesurées. Une seule passe
+    # sert désormais tous les chats à la fois, et s'arrête dès que chacun a
+    # sa vignette : même règle, même ordre, donc même gagnant.
+    crops = _premieres_vignettes(
+        {f"animal:{pe.get('name', pk)}".lower() for pk, pe in fiches},
+        ANIMAL_STORE.data.items(), STORE.data,
+        lambda k, e: _premiere_nommable(k, e))
     out = []
-    for pk, pe in PETS_STORE.data.items():
-        if not isinstance(pe, dict):
-            continue
+    for pk, pe in fiches:
         nm = pe.get('name', pk)
-        crop = None
-        for k, e in ANIMAL_STORE.data.items():
-            if not _kw_has(STORE.data.get(k), f"animal:{nm}"):
-                continue
-            animals = e.get('animals') if isinstance(e, dict) else None
-            if animals:
-                for i, a in enumerate(animals):
-                    if _nommable(a):
-                        crop = _animal_crop_url(k, i)
-                        break
-            if crop:
-                break
         # `contestes` : les jugements perdus que la fiche garde en mémoire —
         # comptés ici pour que la carte le DISE (chantier 17, étape 2).
         out.append({"name": nm, "photos": tagcount.get(nm.strip().lower(), 0),
-                    "crop": crop,
+                    "crop": crops.get(f"animal:{nm}".lower()),
                     "contestes": len(_auteurs.contestations(pe))})
     out.sort(key=lambda x: -x["photos"])
     return out
+
+
+def _premiere_nommable(k, e):
+    """URL de découpe de la première détection nommable de l'entrée `e`
+    (index des animaux), ou None."""
+    animals = e.get('animals') if isinstance(e, dict) else None
+    if animals:
+        for i, a in enumerate(animals):
+            if _nommable(a):
+                return _animal_crop_url(k, i)
+    return None
+
+
+def _premieres_vignettes(tags, entrees, index, vignette):
+    """{tag en minuscules : URL} — pour chaque tag, la vignette de la PREMIÈRE
+    entrée (dans l'ordre de `entrees`) dont la photo porte le tag ET qui en
+    fournit une. UNE passe pour tous les tags.
+
+    C'est la règle qu'appliquaient `pets_list` et le repli de `people_list`
+    sujet par sujet, chacun avec son propre balayage de toute la photothèque :
+    - `tags` : `f"animal:{nom}".lower()` / `f"personne:{nom}".lower()` ;
+    - `entrees` : les couples (clé, entrée) dans l'ordre à respecter ;
+    - `index` : où lire les mots-clés d'une clé (`.get`) — `None` pour les
+      lire dans l'entrée elle-même ;
+    - `vignette(clé, entrée)` : l'URL, ou None si cette entrée n'en a pas —
+      auquel cas on continue, exactement comme avant.
+    La comparaison des tags est celle de `_kw_has` : `str(x).lower()` exact."""
+    restants = set(tags)
+    trouves = {}
+    for k, e in entrees:
+        if not restants:
+            break
+        porteur = e if index is None else index.get(k)
+        if not isinstance(porteur, dict):
+            continue
+        touches = {t for t in (str(x).lower()
+                               for x in (porteur.get('kw_fr') or []))
+                   if t in restants}
+        if not touches:
+            continue
+        url = vignette(k, e)
+        if url is None:
+            continue
+        for t in touches:
+            trouves[t] = url
+        restants -= touches
+    return trouves
 
 
 ANIMAL_VER_FILE = SCRIPT_DIR / "animal_pipeline.ver"
@@ -10637,7 +10682,7 @@ def people_list():
             if str(kw).lower().startswith('personne:'):
                 key = str(kw)[9:].strip().lower()
                 tagcount[key] = tagcount.get(key, 0) + 1
-    out = []
+    fiches = []
     for pk, pe in PEOPLE_STORE.data.items():
         if not isinstance(pe, dict):
             continue
@@ -10652,13 +10697,24 @@ def people_list():
                 if faces:
                     ai = av[1] if 0 <= av[1] < len(faces) else 0
                     crop = _crop_url(av[0], ai)
-        if crop is None:   # repli tant que le curateur n'a pas encore tourné
-            for k, e in STORE.data.items():
-                if _kw_has(e, f"personne:{nm}"):
-                    fe = FACE_STORE.data.get(k)
-                    if isinstance(fe, dict) and fe.get('faces'):
-                        crop = _crop_url(k, 0)
-                        break
+        fiches.append((pe, nm, crop))
+    # Repli tant que le curateur n'a pas encore tourné : la première photo
+    # portant le tag et ayant des visages. Même règle qu'avant le 11/09, mais
+    # UNE passe pour toutes les fiches sans avatar au lieu d'un balayage de
+    # l'index par fiche (`_premieres_vignettes`).
+    a_chercher = {f"personne:{nm}".lower() for _pe, nm, crop in fiches
+                  if crop is None}
+    replis = {}
+    if a_chercher:
+        visages = FACE_STORE.data
+        replis = _premieres_vignettes(
+            a_chercher, STORE.data.items(), None,
+            lambda k, e: (_crop_url(k, 0) if isinstance(visages.get(k), dict)
+                          and visages.get(k).get('faces') else None))
+    out = []
+    for pe, nm, crop in fiches:
+        if crop is None:
+            crop = replis.get(f"personne:{nm}".lower())
         # `contestes` : les jugements perdus que la fiche garde en mémoire —
         # comptés ici pour que la carte le DISE (chantier 17, étape 2).
         out.append({"name": nm, "photos": tagcount.get(nm.strip().lower(), 0),
