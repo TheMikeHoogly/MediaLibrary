@@ -12358,6 +12358,37 @@ def perf_ecrire():
         return False
 
 
+def _date_http(mtime):
+    """Un `mtime` en date HTTP (RFC 9110, toujours en GMT)."""
+    import email.utils
+    return email.utils.formatdate(mtime, usegmt=True)
+
+
+def _non_modifie(entete, mtime):
+    """Le client a-t-il DÉJÀ cette version ? (`If-Modified-Since`)
+
+    Comparaison à la SECONDE : la date HTTP n'en porte pas plus, et un fichier
+    réécrit dans la même seconde que la date envoyée serait servi comme
+    inchangé — d'où le `<` strict sur la seconde entière, jamais `<=`.
+
+    Ne lève jamais : un en-tête absent, vide ou illisible (un client en écrit
+    de toutes sortes) veut dire « je n'ai rien », donc la réponse complète.
+    """
+    if not entete:
+        return False
+    try:
+        import email.utils
+        quand = email.utils.parsedate_to_datetime(entete)
+    except Exception:                                         # noqa: BLE001
+        return False
+    if quand is None:
+        return False
+    try:
+        return int(mtime) <= int(quand.timestamp())
+    except (OverflowError, OSError, ValueError):
+        return False
+
+
 class Handler(BaseHTTPRequestHandler):
 
     # ─── HTTP/1.1 : la connexion RESTE OUVERTE (12/09) ─────────────────────
@@ -15863,9 +15894,29 @@ class Handler(BaseHTTPRequestHandler):
         }
         mime = mime_map.get(ext, 'application/octet-stream')
         try:
-            size = filepath.stat().st_size
+            st = filepath.stat()
+            size = st.st_size
         except OSError:
             self._send(404, b'Not found', 'text/plain')
+            return
+        # ─── `Last-Modified` (12/09) ───────────────────────────────────────
+        # Revenir en arrière sur une photo de 5 Mo la RETÉLÉCHARGEAIT depuis le
+        # NAS : la réponse ne disait pas ce que le navigateur avait déjà. Le
+        # `mtime` est la source de vérité du reste du projet (le scan, les
+        # vignettes, la réconciliation) — il l'est ici aussi.
+        #
+        # `no-cache` et PAS un `max-age` : nos propres écritures XMP changent le
+        # fichier (une campagne de retag en écrit des dizaines de milliers). Un
+        # cache muet servirait une version périmée pendant des heures ; avec
+        # `no-cache`, le navigateur REVALIDE à chaque fois — un `stat` et un
+        # 304 de quelques octets, au lieu de mégaoctets.
+        derniere = _date_http(st.st_mtime)
+        if _non_modifie(self.headers.get('If-Modified-Since'), st.st_mtime) \
+                and not self.headers.get('Range'):
+            self.send_response(304)
+            self.send_header('Last-Modified', derniere)
+            self.send_header('Cache-Control', 'no-cache')
+            self.end_headers()
             return
         start, end, partial = 0, size - 1, False
         rng = self.headers.get('Range', '')
@@ -15891,6 +15942,8 @@ class Handler(BaseHTTPRequestHandler):
         if partial:
             self.send_header('Content-Range', f'bytes {start}-{end}/{size}')
         self.send_header('Content-Disposition', f'inline; filename="{filepath.name}"')
+        self.send_header('Last-Modified', derniere)
+        self.send_header('Cache-Control', 'no-cache')
         self.end_headers()
         with open(filepath, 'rb') as f:
             f.seek(start)

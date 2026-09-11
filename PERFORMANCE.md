@@ -624,15 +624,32 @@ coûte une poignée de main en moins. Vérifié aussi sous le nouveau protocole 
 (**416 en 26 ms, plus de suspension**), un 404, la galerie compressée, et la
 redirection de `/faces`.
 
-### 3.6 Les médias ne portent ni `Last-Modified` ni `ETag`
+### 3.6 Les médias ne disaient pas de quand ils datent — **livré le 12/09**
 
-`_send_file` sert les octets, gère `Range` (audit O2) — mais ne dit pas au
-navigateur ce qu'il a déjà. Revenir en arrière sur une photo de 5 Mo la
-**retélécharge entièrement depuis le NAS**.
+`_send_file` servait les octets et gérait `Range` (audit O2), mais ne disait
+pas au navigateur ce qu'il avait déjà : **revenir en arrière sur une photo de
+5 Mo la retéléchargeait entièrement depuis le NAS.**
 
-`Last-Modified` + réponse `304` sur `If-Modified-Since` : peu de code, aucun
-risque de cohérence (le `mtime` est déjà la source de vérité du reste du
-projet), et le retour arrière devient instantané.
+`Last-Modified` vient du `mtime` — la source de vérité du reste du projet — et
+du MÊME `stat` que la taille servie (deux `stat` diraient deux vérités). Un
+`If-Modified-Since` à jour rend **304**. Le cache est en **`no-cache`, pas en
+`max-age`** : nos propres écritures XMP changent les fichiers par dizaines de
+milliers pendant une campagne, et un cache muet servirait une version périmée
+pendant des heures ; là, le navigateur revalide, et paie un `stat`.
+
+**Observé en réel** sur une photo de 1,6 Mo :
+
+| requête | réponse | octets | temps |
+|---|---|---:|---:|
+| première | 200 | 1 599 130 | 334 ms |
+| avec `If-Modified-Since` à jour | **304** | **0** | 41 ms |
+| avec une date plus ancienne | 200 | 1 599 130 | 34 ms |
+| une PLAGE + `If-Modified-Since` | **206** (jamais 304) | 1 024 | 33 ms |
+
+Ce dernier cas est le piège que le banc tient : répondre « rien à renvoyer » à
+qui demande les octets 0-1023 d'une vidéo casserait le seek.
+`test_last_modified.py` : 9 bancs, dont la comparaison à la seconde et les
+en-têtes tordus qu'un client peut envoyer.
 
 ### 3.7 La planche entière dans une seule page
 
@@ -840,7 +857,7 @@ péage du GIL (§ 3.9), `/api/maint/status` en une passe (§ 3.4), sondes GC/GIL
 et CPU/défauts par phase (§ 3.10, § 3.11).
 
 **Fait le 12/09** : la vue accélérée (§ 3.11), le ramasse-miettes gelé et
-espacé (§ 3.12), HTTP/1.1 et son instrument (§ 3.5).
+espacé (§ 3.12), HTTP/1.1 et son instrument (§ 3.5), `Last-Modified` (§ 3.6).
 
 0. **Quand la campagne finit** : `/api/serveur` → `vignettes` passe à
    `fabrique` ; relancer `mesure_couverture_vignettes.py`.
@@ -851,8 +868,9 @@ espacé (§ 3.12), HTTP/1.1 et son instrument (§ 3.5).
 2. **La vue (§ 3.11)** : réécriture exacte livrée (×1,4–1,6) — la réobserver
    dans `comptes` de `/api/maint/status` ; puis la décision sur un cache à
    génération.
-3. **`Last-Modified` sur les médias** (§ 3.6) : le retour arrière sur une
-   photo de 5 Mo la retélécharge entièrement depuis le NAS.
+3. **La planche entière (§ 3.7)** : elle ne se reconsidère qu'avec une mesure
+   côté NAVIGATEUR — combien coûte l'analyse de 1,7 million de caractères de
+   JSON avant la première vignette.
 6. **La planche entière (3.7)** : seulement avec une mesure côté navigateur.
 
 ---
@@ -877,6 +895,7 @@ espacé (§ 3.12), HTTP/1.1 et son instrument (§ 3.5).
 | `mesure_cpu.py` | occupation par cœur, processus par cœurs consommés, CPU de chaque fil du serveur |
 | `diagnostic_ollama_memoire.py` | ce qu'Ollama déclare (`/api/ps`) contre ce que `llama-server` tient ; drapeaux de mémoire, jamais un chemin |
 | `test_horloge_maint_status.py`, `test_passe_index.py` | 8 et 5 bancs, anciennes écritures en oracle |
+| `test_last_modified.py` | 9 bancs : la règle à la seconde, les en-têtes tordus, le 304 qui ne vole pas une plage |
 | `verifier_content_length.py`, `test_verifier_content_length.py` | toute réponse dit-elle sa longueur ? (le feu vert d'HTTP/1.1) ; 12 bancs sur des cas écrits exprès |
 | `test_gel_gc.py` | 8 bancs : le gel, le seuil, ce qui naît après, un interpréteur qui refuse |
 | `mesure_vue.py`, `test_vue_rapide.py` | ce que coûte la vue sur les vraies clés, deux écritures alternées ; 5 bancs d'équivalence sur 6 000 clés tirées |
