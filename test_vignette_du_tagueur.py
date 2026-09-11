@@ -133,7 +133,11 @@ class LaVignetteVautCelleDuServeur(_Base):
             self.assertGreater(_psnr(data, _oracle_serve_thumb(p)), 38, o)
 
     def test_l_oracle_est_bien_l_ecriture_du_serveur(self):
-        s = ast.unparse(_noeud('_serve_thumb'))
+        # depuis le 11/09 au soir, la route et le fil de fond partagent
+        # `_fabriquer_vignette` : c'est elle qui porte l'écriture
+        self.assertIn('_fabriquer_vignette(path, s)',
+                      ast.unparse(_noeud('_serve_thumb')))
+        s = ast.unparse(_noeud('_fabriquer_vignette'))
         for geste in ("ImageOps.exif_transpose(im).convert('RGB')",
                       'im.thumbnail((s, s))', "im.save(buf, 'JPEG', quality=82)"):
             self.assertIn(geste, s)

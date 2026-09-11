@@ -39,7 +39,8 @@ def _jpeg(orientation, taille=(1600, 1200)):
 
 class LaCopieEstCelleDuServeur(unittest.TestCase):
     def test_la_sequence_de_serve_thumb(self):
-        serveur = _corps('_serve_thumb')
+        self.assertIn('_fabriquer_vignette(path, s)', _corps('_serve_thumb'))
+        serveur = _corps('_fabriquer_vignette')
         banc = ast.unparse(ast.parse(
             (HERE / 'mesure_fabrication_vignette.py').read_text(encoding='utf-8')))
         for geste in ("ImageOps.exif_transpose(im).convert('RGB')",

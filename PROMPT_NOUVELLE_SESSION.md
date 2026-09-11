@@ -70,6 +70,10 @@ vignette, au mtime exact, servie en 5–7 ms. Image envoyée à l'IA inchangée
 (banc). Bancs de mesure : `mesure_couverture_vignettes.py`,
 `mesure_fabrication_vignette.py`.
 
+**Le fil de fond des vignettes** (`feat/vignettes-de-fond`, 11/09 soir) : fabrique
+le reste quand la file de tagging est vide, cède à l'UI, 20 Go de plancher.
+Lot témoin au démarrage : 3/3 en 2,2 s. État dans `/api/serveur` → `vignettes`.
+
 ---
 
 ## 3. Le résultat, honnêtement
@@ -95,16 +99,15 @@ complet : `PERFORMANCE.md` § 2 bis) :
 
 Détail et précautions : `PERFORMANCE.md` § 5.
 
-1. **Le fil de fond des vignettes** (choix de Mike, 11/09) — ~39 000 photos
-   sans vignette 512 ; à lancer APRÈS la campagne, qui cède la main à
-   l'interface, écrit comme `_deposer_vignette`. Le tagueur couvre déjà ce qu'il
-   repasse.
-2. **`/api/corbeille`** — banc de parcours d'abord, le verrou ensuite.
-3. **`/api/geo`** — re-mesurer (profite déjà de `_pkey` mémoïsé), puis cache.
-4. **`nvidia-smi`** — le mesurer d'abord.
-5. **HTTP/1.1** — l'instrument `Content-Length` d'abord.
-6. **`Last-Modified` sur les médias.**
-7. Le reste d'`index` (vue ~140 ms ; `resolve()` d'Uploads suspect).
+0. **Quand la campagne finit (~14/09)** : lire `/api/serveur` → `vignettes`.
+   `etat` doit passer à `fabrique` et `a_faire` descendre (~39 000) ; relancer
+   `mesure_couverture_vignettes.py` pour le compte ferme.
+1. **`/api/corbeille`** — banc de parcours d'abord, le verrou ensuite.
+2. **`/api/geo`** — re-mesurer (profite déjà de `_pkey` mémoïsé), puis cache.
+3. **`nvidia-smi`** — le mesurer d'abord.
+4. **HTTP/1.1** — l'instrument `Content-Length` d'abord.
+5. **`Last-Modified` sur les médias.**
+6. Le reste d'`index` (vue ~140 ms ; `resolve()` d'Uploads suspect).
 
 ---
 

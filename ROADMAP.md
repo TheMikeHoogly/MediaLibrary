@@ -146,8 +146,9 @@ refait l'erreur rejetée le 20/08.
 la galerie, l'horloge de phases et les deux balayages par clic (11/09 :
 `index` ~480 → ~140 ms, carte des clés ~700 → 44 ms) et `/api/pets/list` en
 une passe (2,5 s → 0,29 s), et la vignette écrite par le tagueur (98 % du fonds
-n'en avait pas ; choix de Mike « les deux »). **Prochain : le fil de fond qui
-fabrique les vignettes restantes, APRÈS la campagne** (~5 h de NAS, ~2 Go).
+n'en avait pas ; choix de Mike « les deux ») et le fil de fond qui fabrique le
+reste — **livré, il attend la fin de la campagne** (`/api/serveur` →
+`vignettes`). Prochain : `/api/corbeille` (4,9 s sous verrou).
 Compatible avec la campagne : chemin de service seulement, jamais le calcul IA.
 
 ### C. Quand la campagne s'arrête, et pas avant

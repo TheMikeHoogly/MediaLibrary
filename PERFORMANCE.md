@@ -404,9 +404,40 @@ inécrivable sans exception. Quatre mutations, quatre rouges.
   des photos différentes ; la vignette elle-même coûte quelques ms. À relire
   sur un plus grand nombre avant d'en conclure quoi que ce soit.
 
-#### (b) Le fil de fond — à faire, pour après la campagne
+#### (b) Livré le 11/09 au soir — `feat/vignettes-de-fond`
 
-Les ~39 000 photos que la campagne ne repasse pas.
+`vignettes_loop`, lancé par `fil_surveille`. Il fabrique les vignettes 512
+manquantes ou périmées, **les plus récentes d'abord**, par lots de 20, et
+seulement quand il ne dispute rien : **file de tagging vide** (la campagne en
+tient 500 en permanence : il attend), **`ui_recent`** consulté entre DEUX photos
+d'un même lot, un **créneau de fond** (`creneau('vignettes')`), et un plancher de
+**20 Go libres** sur le disque, sous lequel il s'arrête et le dit. Photo
+illisible : notée, sautée. La fabrication est **une seule fonction**,
+`_fabriquer_vignette`, que `_serve_thumb` utilise désormais aussi — prouvée
+identique octet pour octet à l'ancienne écriture de la route.
+
+**Un lot TÉMOIN** de 3 photos part au démarrage, campagne ou pas : le chemin est
+prouvé dans le journal aujourd'hui, pas découvert le jour où la campagne finit.
+L'état complet se lit dans **`/api/serveur` → `vignettes`**.
+
+**Bancs** (`test_vignettes_de_fond.py`, 15) : la liste (écarts, ordre, index qui
+bouge pendant le compte), le tampon, la photo illisible, et le fil lui-même —
+campagne en cours, UI au milieu d'un lot, disque plein, créneau refusé, fil
+désactivé qui dort au lieu de mourir. Mutations : campagne ignorée, coupure UI
+retirée, tampon retiré, disque ignoré, témoin retiré — cinq rouges. (Rendre un
+lot interrompu à la file n'est pas tenu par un banc : sans lui, la liste se
+recalcule au passage suivant et retrouve les mêmes photos.)
+
+**Réobservé** (serveur redémarré 18:58:17) :
+- `🖼 Vignettes de fond — lot témoin : 3/3 en 2.2 s`, zéro traceback ;
+- `/api/serveur` : `"etat": "attend la fin du tagging"`, `"temoin": {"faites": 3}` ;
+- les trois photos les plus récentes (`Photos Mike\2026\20260824_19…`) ont leur
+  vignette, **au mtime exact** du fichier sur le NAS ; servie en 8 ms ;
+- la route refactorisée : une photo jamais vue, **1 304 ms** (fabriquée), puis
+  **18 ms** (servie du cache), mêmes octets.
+
+**À vérifier quand la campagne finit** : `vignettes.etat` passe à `fabrique`,
+`a_faire` descend (~39 000 au départ), `echecs` reste petit.
 
 ---
 

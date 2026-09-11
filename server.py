@@ -11839,6 +11839,197 @@ def _deposer_vignette(im, cache_file):
         return False
 
 
+def _fabriquer_vignette(path, s):
+    """Les octets JPEG de la vignette `s` px d'une photo, lue sur le disque.
+
+    UNE écriture pour la route (`_serve_thumb`) et pour le fil de fond
+    (`vignettes_loop`) : deux copies finiraient par ne plus produire la même
+    image sous le même nom de cache. Lève si la photo est illisible — c'est
+    l'appelant qui décide (la route redirige vers l'original, le fil passe à
+    la suivante)."""
+    with Image.open(path) as im:
+        im = ImageOps.exif_transpose(im).convert("RGB")
+        im.thumbnail((s, s))
+        buf = io.BytesIO()
+        im.save(buf, "JPEG", quality=82)
+        return buf.getvalue()
+
+
+# ─── Le FIL DE FOND des vignettes de grille (11/09, choix de Mike « les deux ») ─
+# Mesuré le 11/09 : 98 % des photos sans vignette 512, chacune ~0,5 s à
+# fabriquer dont 78 % de lecture NAS. Le tagueur écrit celles qu'il repasse ;
+# ce fil fabrique LE RESTE — et seulement quand il ne dispute rien à personne :
+#   * **après la campagne** : tant que la file de tagging n'est pas vide, il
+#     attend (la campagne en tient 500 en permanence, un upload quelques-unes) ;
+#   * **l'interface d'abord** : une lecture d'image par l'UI dans les 12 s
+#     (`ui_recent`) le met en pause, comme le ré-embedding ;
+#   * **un créneau de fond** (`creneau('vignettes')`) : il passe à son tour
+#     parmi les autres travaux, jamais en plus d'eux ;
+#   * **le disque** : sous `VIGNETTES_DISQUE_MIN_GO` libres, il s'arrête et le
+#     dit (~2 Go attendus pour tout le fonds).
+# Les plus RÉCENTES d'abord : ce sont celles qu'on regarde.
+#
+# Un LOT TÉMOIN de `VIGNETTES_TEMOIN` photos part au démarrage, campagne ou
+# pas : quelques secondes de NAS, pour que le chemin soit prouvé dans le
+# journal dès aujourd'hui plutôt que découvert le jour où la campagne finit.
+VIGNETTES_FOND_ENABLE = True
+VIGNETTES_LOT = 20              # photos par créneau (~10 s de NAS)
+VIGNETTES_PACE = 2.0            # s entre deux lots
+VIGNETTES_ATTENTE_S = 120       # s quand la file de tagging est occupée
+VIGNETTES_REPOS_S = 1800        # s quand tout est fait
+VIGNETTES_DISQUE_MIN_GO = 20
+VIGNETTES_TEMOIN = 3
+VIGNETTES_ETAT = {"etat": "demarrage", "faites": 0, "echecs": 0,
+                  "a_faire": None, "compte_a": None, "temoin": None,
+                  "derniere": None}
+_VIGNETTES_ECHECS = set()       # clés illisibles : pas retentées avant redémarrage
+
+
+def _vignettes_a_faire(index, noms_presents, limite=None):
+    """Les clés d'IMAGE dont la vignette 512 manque ou est périmée, les plus
+    récentes d'abord. Règle PURE (aucun accès disque) :
+
+    - `index` : {clé: entrée} — l'index BRUT (un fil de fond voit tout ; le
+      cache n'est servi qu'après `chemin_visible`, rien ne fuit) ;
+    - `noms_presents` : {nom de fichier sans .jpg: mtime entier} de
+      `photo_thumbs`, lu en UN `scandir`.
+
+    Écartées : échecs, vidéos, extensions hors `IMAGE_EXT`, chemins cachés
+    (corbeilles), et les clés déjà illisibles dans cette vie du processus."""
+    cand = []
+    # `list(...)` : l'index est VIVANT — le tagueur y écrit pendant ce compte.
+    for k, e in list(index.items()):
+        if not isinstance(e, dict) or e.get('failed') or e.get('video'):
+            continue
+        if k in _VIGNETTES_ECHECS:
+            continue
+        if os.path.splitext(k)[1].lower() not in IMAGE_EXT:
+            continue
+        nom = _fichier_vignette(k, VIGNETTE_GRILLE).stem
+        mt = e.get('mtime')
+        present = noms_presents.get(nom)
+        if present is not None and (mt is None or present == int(mt)):
+            continue
+        if _is_hidden_path(k):          # le plus cher en dernier (un Path par clé)
+            continue
+        cand.append((_best_time(k, e) or 0, k))
+    cand.sort(reverse=True)
+    cles = [k for _t, k in cand]
+    return cles if limite is None else cles[:limite]
+
+
+def _noms_vignettes_presents():
+    """{nom sans .jpg: mtime entier} du cache — un seul `scandir` local."""
+    out = {}
+    try:
+        with os.scandir(PHOTO_THUMB_DIR) as it:
+            for x in it:
+                if x.name.endswith('.jpg'):
+                    try:
+                        out[x.name[:-4]] = int(x.stat().st_mtime)
+                    except OSError:
+                        pass
+    except OSError:
+        pass
+    return out
+
+
+def _vignette_de_fond(k):
+    """Fabrique et range la vignette 512 d'UNE clé. True si écrite."""
+    e = INDEX_BRUT.get(k)
+    if not isinstance(e, dict) or e.get('failed'):
+        return False
+    mt = e.get('mtime')
+    cache_file = _fichier_vignette(k, VIGNETTE_GRILLE)
+    if _vignette_a_jour(cache_file, mt):
+        return False                  # la route ou le tagueur l'a faite entre-temps
+    try:
+        data = _fabriquer_vignette(_resolve_key(k), VIGNETTE_GRILLE)
+    except Exception:                                         # noqa: BLE001
+        _VIGNETTES_ECHECS.add(k)
+        VIGNETTES_ETAT["echecs"] += 1
+        return False
+    try:
+        PHOTO_THUMB_DIR.mkdir(parents=True, exist_ok=True)
+        tmp = cache_file.with_name(cache_file.name + '.tmp')
+        tmp.write_bytes(data)
+        os.replace(tmp, cache_file)
+        _tamponner_vignette(cache_file, mt)
+    except OSError:
+        return False
+    VIGNETTES_ETAT["faites"] += 1
+    VIGNETTES_ETAT["derniere"] = time.time()
+    return True
+
+
+def _disque_libre_go():
+    try:
+        return shutil.disk_usage(SCRIPT_DIR).free / 1073741824
+    except OSError:
+        return None
+
+
+def vignettes_loop(dormir=None):
+    """Le fil de fond. Voir le bloc de commentaires ci-dessus."""
+    dormir = dormir or time.sleep
+    dormir(120)                       # laisser démarrer les autres fils
+    if not VIGNETTES_FOND_ENABLE or not PIL_OK:
+        # Ne pas RENDRE : pour `fil_surveille`, un retour est une mort, et le
+        # fil repartirait en boucle en criant. Un fil désactivé dort.
+        VIGNETTES_ETAT["etat"] = "desactive"
+        while True:
+            dormir(VIGNETTES_REPOS_S)
+    # Le lot témoin : prouver le chemin en réel, tout de suite.
+    if VIGNETTES_ETAT["temoin"] is None:
+        cles = _vignettes_a_faire(INDEX_BRUT, _noms_vignettes_presents(),
+                                  VIGNETTES_TEMOIN)
+        t0 = time.time()
+        faites = sum(1 for k in cles if _vignette_de_fond(k))
+        VIGNETTES_ETAT["temoin"] = {"faites": faites, "essayees": len(cles),
+                                    "duree_s": round(time.time() - t0, 1)}
+        print(f"  🖼 Vignettes de fond — lot témoin : {faites}/{len(cles)} "
+              f"en {time.time() - t0:.1f} s")
+    cles = []
+    while True:
+        if ui_recent():
+            VIGNETTES_ETAT["etat"] = "cede a l'interface"
+            dormir(5)
+            continue
+        if not TAG_QUEUE.empty():
+            VIGNETTES_ETAT["etat"] = "attend la fin du tagging"
+            dormir(VIGNETTES_ATTENTE_S)
+            continue
+        libre = _disque_libre_go()
+        if libre is not None and libre < VIGNETTES_DISQUE_MIN_GO:
+            if VIGNETTES_ETAT["etat"] != "disque plein":
+                print(f"  ⚠ Vignettes de fond : {libre:.1f} Go libres, "
+                      f"sous le plancher de {VIGNETTES_DISQUE_MIN_GO} Go — arrêt")
+            VIGNETTES_ETAT["etat"] = "disque plein"
+            dormir(VIGNETTES_REPOS_S)
+            continue
+        if not cles:
+            cles = _vignettes_a_faire(INDEX_BRUT, _noms_vignettes_presents())
+            VIGNETTES_ETAT["a_faire"] = len(cles)
+            VIGNETTES_ETAT["compte_a"] = time.time()
+            if not cles:
+                VIGNETTES_ETAT["etat"] = "a jour"
+                dormir(VIGNETTES_REPOS_S)
+                continue
+        VIGNETTES_ETAT["etat"] = "fabrique"
+        lot, cles = cles[:VIGNETTES_LOT], cles[VIGNETTES_LOT:]
+        with creneau('vignettes', timeout=240) as ok:
+            if ok:
+                for k in lot:
+                    if ui_recent():
+                        cles = lot[lot.index(k):] + cles   # rendu, repris plus tard
+                        break
+                    _vignette_de_fond(k)
+            else:
+                cles = lot + cles
+        VIGNETTES_ETAT["a_faire"] = len(cles)
+        dormir(VIGNETTES_PACE)
+
+
 def _retamponner_vignettes(key, mt):
     """Apres NOTRE PROPRE ecriture de metadonnees : les pixels n'ont pas bouge,
     donc les vignettes restent bonnes — on ne fait que les redater.
@@ -14125,12 +14316,7 @@ class Handler(BaseHTTPRequestHandler):
                     # sous-dossier Uploads) : laisser l'URL servable trancher.
                     _fallback()
                     return
-                with Image.open(path) as im:
-                    im = ImageOps.exif_transpose(im).convert("RGB")
-                    im.thumbnail((s, s))
-                    buf = io.BytesIO()
-                    im.save(buf, "JPEG", quality=82)
-                    data = buf.getvalue()
+                data = _fabriquer_vignette(path, s)
                 try:
                     PHOTO_THUMB_DIR.mkdir(parents=True, exist_ok=True)
                     cache_file.write_bytes(data)
@@ -14645,6 +14831,9 @@ class Handler(BaseHTTPRequestHandler):
             'server_py_mtime_charge': SERVER_PY_MTIME,
             'server_py_mtime_disque': mtime,
             'code_a_jour': a_jour,
+            # Le fil de fond des vignettes (11/09) : un travail qui attend ou
+            # n'avance plus doit se VOIR sans ouvrir le journal.
+            'vignettes': dict(VIGNETTES_ETAT),
         }, ensure_ascii=False).encode()
         self._send(200, body, 'application/json')
 
@@ -15838,6 +16027,7 @@ if __name__ == '__main__':
     fil_surveille(person_writer)
     fil_surveille(curator_loop)
     fil_surveille(reembed_loop)
+    fil_surveille(vignettes_loop)
     fil_surveille(semantic_loop)
     fil_surveille(maintenance_orchestrator)
     fil_surveille(thermique_loop)
