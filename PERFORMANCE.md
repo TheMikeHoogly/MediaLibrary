@@ -651,18 +651,28 @@ qui demande les octets 0-1023 d'une vidéo casserait le seek.
 `test_last_modified.py` : 9 bancs, dont la comparaison à la seconde et les
 en-têtes tordus qu'un client peut envoyer.
 
-### 3.7 La planche entière dans une seule page
+### 3.7 La planche entière dans une seule page — **MESURÉE côté navigateur le 12/09, et ce n'est pas là**
 
-`_serve_gallery` sérialise **tout** `file_data` dans `__FILE_JSON__`. Pour
-2 465 photos, chaque entrée portant nom, clé, URL, taille, dates, faits
-(date · lieu · noms), jusqu'à 20 tags, GPS et description, cela fait **plusieurs
-mégaoctets de JSON** fabriqués, compressés, puis analysés par le navigateur —
-avant la première vignette.
+`_serve_gallery` sérialise TOUT `file_data` dans `__FILE_JSON__`. Pour le
+dossier 2022 en récursif : **2 519 photos, 1 708 829 caractères**, 1,86 Mo une
+fois décodés, **265 Ko sur le fil** (gzip). La question ouverte depuis le
+10/09 était : que coûte tout ça au NAVIGATEUR, avant la première vignette ?
 
-C'est le plus gros chantier de la liste et le seul qui touche l'interface
-(pagination, ou chargement par tranches). Il ne se commence **qu'après** avoir
-réobservé `/files` : avec 26 s de moins, le classement aura changé, et il se
-peut que ce point passe devant — ou derrière.
+Trois chargements de la même page (campagne en cours) :
+
+| | serveur (requête → 1ᵉʳ octet) | après la réponse → DOM prêt | `JSON.parse` de la planche | total |
+|---|---:|---:|---:|---:|
+| 1 | 1 496 ms | 226 ms | 6,3 ms | 1 905 ms |
+| 2 | 1 869 ms | 254 ms | 8,0 ms | 2 207 ms |
+| 3 | 1 625 ms | 209 ms | 12,8 ms | 1 924 ms |
+
+**Le navigateur analyse 1,7 million de caractères en une dizaine de
+millisecondes**, et construit ses 2 521 `<img>` en ~230 ms : un huitième du
+temps. Les sept huitièmes sont dans le serveur. **Paginer la planche — le plus
+gros chantier de la liste, et le seul qui touche l'interface — ne rendrait
+donc presque rien** tant que la page coûte 1,5 s à fabriquer. Le point est
+CLOS jusqu'à ce que le serveur descende sous la demi-seconde ; alors il se
+rouvrira, et cette mesure sera à refaire.
 
 ### 3.8 `_pkey` construit un `Path` par appel
 
@@ -858,6 +868,7 @@ et CPU/défauts par phase (§ 3.10, § 3.11).
 
 **Fait le 12/09** : la vue accélérée (§ 3.11), le ramasse-miettes gelé et
 espacé (§ 3.12), HTTP/1.1 et son instrument (§ 3.5), `Last-Modified` (§ 3.6).
+Et **§ 3.7 mesurée côté navigateur, puis écartée**.
 
 0. **Quand la campagne finit** : `/api/serveur` → `vignettes` passe à
    `fabrique` ; relancer `mesure_couverture_vignettes.py`.
@@ -868,9 +879,10 @@ espacé (§ 3.12), HTTP/1.1 et son instrument (§ 3.5), `Last-Modified` (§ 3.6)
 2. **La vue (§ 3.11)** : réécriture exacte livrée (×1,4–1,6) — la réobserver
    dans `comptes` de `/api/maint/status` ; puis la décision sur un cache à
    génération.
-3. **La planche entière (§ 3.7)** : elle ne se reconsidère qu'avec une mesure
-   côté NAVIGATEUR — combien coûte l'analyse de 1,7 million de caractères de
-   JSON avant la première vignette.
+3. **Ce qui reste dans `_serve_gallery`** : 1,5 à 1,9 s pour 2 519 photos,
+   dont ~140 ms de `index` et un `_pkey(Path(UPLOAD_DIR).resolve())` qui fait
+   un aller-retour SMB à chaque appel (§ 3.8). La planche entière (§ 3.7) est
+   mesurée et écartée : le navigateur n'y est pour rien.
 6. **La planche entière (3.7)** : seulement avec une mesure côté navigateur.
 
 ---

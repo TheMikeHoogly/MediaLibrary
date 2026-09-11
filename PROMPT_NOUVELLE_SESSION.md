@@ -63,9 +63,10 @@ intouchable**, fin attendue vers le **14/09**.
    Le chiffre qui compte : **7,8 Go résidents** pour un modèle de 3,47 Go.
    Rien à faire pendant la campagne — après, un modèle qui tient dans les
    4 Go de VRAM (`vision-eval`). Tant que ça tient, la machine pagine.
-3. **La planche entière** (§ 3.7) : le seul gros morceau qui reste, et il ne
-   se rouvre qu'avec une mesure côté NAVIGATEUR (ce que coûte l'analyse de
-   1,7 million de caractères de JSON avant la première vignette).
+3. **`_serve_gallery`** : 1,5 à 1,9 s pour 2 519 photos. La planche entière
+   (§ 3.7) est mesurée et ÉCARTÉE — le navigateur n'y met que 10 ms de
+   `JSON.parse`. Ce qui reste est serveur : `index` (~140 ms) et
+   `_pkey(Path(UPLOAD_DIR).resolve())`, un aller-retour SMB par appel (§ 3.8).
 
 ---
 
