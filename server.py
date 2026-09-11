@@ -35,7 +35,7 @@ import zipfile
 from datetime import datetime
 from functools import lru_cache
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
-from pathlib import Path
+from pathlib import Path, PurePath
 
 # ── Une sortie REDIRIGÉE ne doit pas tuer l'import ───────────────────────────
 # Windows : quand stdout est une CONSOLE, Python encode dans la page de code du
@@ -3097,10 +3097,17 @@ def _pkey(p):
     déjà vue : l'horloge de phases a mesuré 378 à 772 ms par ouverture de
     dossier dans `_index_entries_under`, qui la demande pour les 44 604 clés à
     chaque clic — un objet `Path` Windows par clé, pour une réponse qui ne
-    varie jamais. Seules les CHAÎNES sont mémoïsées : un `Path` passe par le
-    calcul direct, comme avant."""
+    varie jamais.
+
+    Un `Path` passe par sa CHAÎNE (11/09 au soir) : `Path(str(p))` est le même
+    chemin que `p`, donc la même clé — et `str(p)` est gardé par l'objet
+    lui-même. `/api/geo` demandait `_pkey(root)` pour chaque racine et chaque
+    photo géolocalisée : ~34 000 objets `Path` Windows par ouverture de carte.
+    Tout autre type (un `DirEntry`, des octets) passe par le calcul direct."""
     if type(p) is str:
         return _pkey_chaine(p)
+    if isinstance(p, PurePath):
+        return _pkey_chaine(str(p))
     return Path(p).as_posix().lower()
 
 
@@ -13537,10 +13544,14 @@ class Handler(BaseHTTPRequestHandler):
 
     def _serve_geo(self):
         """Liste JSON des photos géolocalisées, pour la vue carte."""
+        ph = _Phases('GET /api/geo')      # horloge de phases (11/09)
         roots = media_roots()
         gps_places = gps_places_connus()   # géocodage inverse offline précalculé
+        ph.top('contexte')
+        entrees = list(STORE.data.items())
+        ph.top('vue')
         pts = []
-        for k, e in list(STORE.data.items()):
+        for k, e in entrees:
             if not isinstance(e, dict) or e.get('failed'):
                 continue
             g = e.get('gps')
@@ -13579,8 +13590,13 @@ class Handler(BaseHTTPRequestHandler):
                 'taken': _best_time(k, e),
                 'lieu': gps_places.get(k),   # lieu géocodé (None si non calculé)
             })
+        ph.top('boucle')
         body = json.dumps({'points': pts}, ensure_ascii=False).encode()
+        ph.top('json')
         self._send(200, body, 'application/json')
+        ph.top('envoi')
+        ph.note(entrees=len(entrees), points=len(pts), octets=len(body))
+        _phases_note(ph)
 
     def _serve_names(self):
         """Autocomplétion : personnes ET animaux, dans une seule liste."""

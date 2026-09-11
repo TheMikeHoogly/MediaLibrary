@@ -28,7 +28,7 @@ import time
 import types
 import unittest
 from functools import lru_cache
-from pathlib import Path, PureWindowsPath
+from pathlib import Path, PurePath, PureWindowsPath
 
 HERE = Path(__file__).resolve().parent
 SOURCE = (HERE / 'server.py').read_text(encoding='utf-8')
@@ -94,7 +94,7 @@ class _Monde:
 
         self.fichiers_mod = _fichiers_windows(FauxPath)
         self.g = {
-            'Path': FauxPath, 'lru_cache': lru_cache, 'time': time,
+            'Path': FauxPath, 'PurePath': PurePath, 'lru_cache': lru_cache, 'time': time,
             'threading': threading, 'fichiers': self.fichiers_mod,
             'UPLOAD_DIR': UPLOAD, 'INDEX_BRUT': index,
             '_KEY_IDX': {"at": 0.0, "n": -1, "map": None},
@@ -125,12 +125,29 @@ class LaRegleNaPasBouge(unittest.TestCase):
             for c in CAS:
                 self.assertEqual(m.g['_pkey'](c), _oracle(c), (tour, c))
 
-    def test_un_PATH_passe_par_le_calcul_direct_et_pas_par_la_memoire(self):
+    def test_un_PATH_rend_la_meme_cle_et_passe_par_sa_chaine(self):
+        """Depuis le 11/09 au soir, un `Path` est mémoïsé par sa chaîne :
+        `Path(str(p))` est le même chemin que `p`. Vérifié sur les cas tordus,
+        sous les règles de Windows ; et un `Path` déjà vu ne reconstruit rien."""
         m = _Monde({})
-        avant = m.g['_pkey_chaine'].cache_info().currsize
         for c in CAS:
             self.assertEqual(m.g['_pkey'](PureWindowsPath(c)), _oracle(c), c)
-        self.assertEqual(m.g['_pkey_chaine'].cache_info().currsize, avant)
+        p = PureWindowsPath(CAS[0])
+        m.g['_pkey'](p)
+        n = m.construits
+        for _ in range(50):
+            m.g['_pkey'](p)
+        self.assertEqual(m.construits, n)
+
+    def test_un_objet_ni_chaine_ni_path_passe_par_le_calcul_direct(self):
+        class Entree:                       # un DirEntry : str() n'est PAS le chemin
+            def __fspath__(self):
+                return r'\\NAS\a\B.jpg'
+
+            def __str__(self):
+                return '<DirEntry B.jpg>'
+        m = _Monde({})
+        self.assertEqual(m.g['_pkey'](Entree()), _oracle(r'\\NAS\a\B.jpg'))
 
     def test_une_chaine_deja_vue_ne_se_recalcule_pas(self):
         m = _Monde({})

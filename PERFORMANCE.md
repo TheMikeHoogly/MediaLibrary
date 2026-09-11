@@ -534,7 +534,28 @@ verrou, sans NAS, et son résultat se compare octet pour octet avec l'ancien.
 imbriqué dans une boucle sur les sujets.* `/api/people/list` (318 ms) est de la
 même famille — à vérifier au même moment.
 
-### 3.3 `GET /api/geo` — 993 ms à chaque ouverture de la carte
+### 3.3 `GET /api/geo` — 993 ms à chaque ouverture de la carte — **allégé le 11/09**
+
+> **Mesuré avant** (11/09 19:34, après `_pkey` mémoïsé et le péage du GIL) :
+> **812 · 814 · 1 029 ms**. Le code demandait `_pkey(root)` pour chaque racine
+> et chaque photo géolocalisée — un `Path` Windows à chaque fois, puisque la
+> mémoire de `_pkey` ne gardait que les chaînes.
+>
+> **Livré** (`fix/pkey-des-path-et-carte`) : un `Path` passe par sa chaîne
+> (`Path(str(p))` est le même chemin, donc la même clé) — bénéfice pour TOUS
+> les appelants qui passent des `Path`, pas seulement la carte. Et l'horloge de
+> phases est posée sur `_serve_geo` (prouvée sans effet par l'arbre syntaxique).
+> Oracle sous `PureWindowsPath` sur les quinze cas tordus ; un `DirEntry`, dont
+> `str()` n'est pas le chemin, passe par le calcul direct (banc).
+>
+> **Réobservé** (redémarré 19:36:40) : **540 · 578 · 674 ms**, 5 649 points.
+> Les phases disent où est le reste : `boucle` 260–343 ms (`_best_time`, un
+> `Path(k).name` et deux `quote` par point), `envoi` ~80 ms (**3,25 Mo** de
+> JSON compressés à chaque ouverture), `vue` 61–92, `json` ~50. L'instantané en
+> cache reste possible s'il devient utile ; à ~0,5 s pour une page qu'on ouvre
+> rarement, il ne passe pas devant.
+
+Ancien constat :
 
 Balayage complet des 44 121 entrées, avec `_pkey(k)` (donc un `Path` par clé),
 `_url_for_key`, `Path(k).name` et `_best_time` sur chaque photo géolocalisée.
@@ -695,7 +716,8 @@ fil de fond des vignettes (§ 3.0), `/api/corbeille` hors verrou (§ 3.1), le p�
    `fabrique`, `a_faire` descendre ; relancer `mesure_couverture_vignettes.py`.
 1. ~~Le péage du GIL~~ — **mesuré et réglé** (§ 3.9) : ×10 au banc, ×1,5–2 sur
    la corbeille réelle.
-2. **`/api/geo`** — re-mesurer (profite déjà de `_pkey` mémoïsé), puis cache.
+2. ~~`/api/geo`~~ — allégé (§ 3.3) : 0,8–1,0 s → 0,54–0,67 s. Le cache
+   attend qu'on en ait besoin.
 3. **`nvidia-smi`** — le mesurer avant de toucher au cache.
 4. **HTTP/1.1** — l'instrument `Content-Length` d'abord, le drapeau ensuite.
 5. **`Last-Modified` sur les médias.**

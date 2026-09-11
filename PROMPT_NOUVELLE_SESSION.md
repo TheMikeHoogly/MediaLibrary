@@ -83,6 +83,9 @@ et bascule à 1 ms au démarrage. Un `stat` sous charge CPU : 6–37 ms → 1,4�
 au banc ; corbeille réelle 2,3–2,5 s → 1,0–1,7 s. **Jamais sous 1 ms** (débit
 CPU à 16 %).
 
+**`_pkey` des `Path` par leur chaîne + phases de la carte**
+(`fix/pkey-des-path-et-carte`) : `/api/geo` 0,8–1,0 → 0,54–0,67 s.
+
 ---
 
 ## 3. Le résultat, honnêtement
@@ -114,7 +117,7 @@ Détail et précautions : `PERFORMANCE.md` § 5.
 1. ~~Le péage du GIL~~ — réglé (`PERFORMANCE.md` § 3.9). Si un fil de calcul
    semble ralenti, regarder `/api/serveur` → `gil` et relancer
    `mesure_peage_gil.py` : le plancher d'1 ms ne se franchit pas.
-2. **`/api/geo`** — re-mesurer, puis cache.
+2. ~~`/api/geo`~~ — allégé (0,8–1,0 → 0,54–0,67 s) ; phases posées.
 3. **`nvidia-smi`** — le mesurer d'abord.
 4. **HTTP/1.1** — l'instrument `Content-Length` d'abord.
 5. **`Last-Modified` sur les médias.**

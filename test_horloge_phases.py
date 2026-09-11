@@ -280,5 +280,26 @@ class ElleEstPoseeDansLaGalerie(unittest.TestCase):
         self.assertNotIn('_Phases(', _src('do_GET'))
 
 
+
+class ElleEstPoseeSurLaCarte(unittest.TestCase):
+    """`/api/geo` (11/09 au soir) : même instrument, mêmes règles."""
+
+    def test_premier_et_dernier_geste(self):
+        n = _noeud('_serve_geo')
+        corps = n.body[1:] if isinstance(n.body[0], ast.Expr) else n.body
+        self.assertIn("_Phases('GET /api/geo')", ast.unparse(corps[0]))
+        self.assertEqual(ast.unparse(n.body[-1]), '_phases_note(ph)')
+        src = ast.unparse(n)
+        self.assertLess(src.index("self._send(200, body, 'application/json')"),
+                        src.index('_phases_note(ph)'))
+
+    def test_des_comptes_jamais_des_cles(self):
+        for c in _appels(_noeud('_serve_geo'), 'note'):
+            self.assertEqual(sorted(kw.arg for kw in c.keywords),
+                             ['entrees', 'octets', 'points'])
+            for kw in c.keywords:
+                self.assertEqual(ast.unparse(kw.value.func), 'len')
+
+
 if __name__ == '__main__':
     unittest.main(verbosity=2)
