@@ -72,8 +72,13 @@ def sensible_de(entree):
 
 
 def en_attente(entree):
-    """Cette entrée est-elle masquée en attendant un verdict humain ?"""
-    return sensible_de(entree) == SENSIBLE_EN_ATTENTE
+    """Cette entrée est-elle masquée en attendant un verdict humain ?
+
+    Écrite sans passer par `sensible_de` (11/09) : la vue la demande pour
+    CHAQUE clé de chaque lecture agrégée. Même réponse — une valeur égale à
+    `'en_attente'` est une chaîne, et une entrée qui n'est pas un dict n'a pas
+    d'axe (`test_vue_rapide.py` le tient contre l'écriture d'avant)."""
+    return isinstance(entree, dict) and entree.get('sensible') == SENSIBLE_EN_ATTENTE
 
 
 def _segments(chemin):
@@ -169,12 +174,30 @@ def visible(chemin, utilisateur, sensible=False):
 def filtre(utilisateur, sensible=None):
     """Le prédicat `clé -> bool` d'un utilisateur, ou None s'il voit tout.
     `sensible` : un appelable `clé -> bool` qui dit si l'entrée est masquée
-    par son ÉTAT. Absent, seul le chemin décide (le comportement d'avant)."""
+    par son ÉTAT. Absent, seul le chemin décide (le comportement d'avant).
+
+    LA MÊME RÈGLE QUE `visible`, DANS UN AUTRE ORDRE (11/09). La vue appelle
+    ce prédicat pour chaque clé de chaque lecture agrégée — 44 603 clés pour
+    un `len(STORE.data)`, ~3 µs chacune sur la machine chargée : 47 ms de CPU
+    pour trois `len()` dans `/api/maint/status`. Presque aucune clé n'est dans
+    un PRIVE (10 sur 44 604 le 11/09) : `est_prive`, mémoïsé, passe devant, et
+    `visible` n'est appelée que pour elles. Hors PRIVE, seule l'ÉTAT peut
+    masquer, et `peut_juger` décide. `test_vue_rapide.py` compare les deux
+    écritures sur des milliers de clés tirées au hasard."""
     if utilisateur is None:
         return None
     if sensible is None:
-        return lambda cle: visible(cle, utilisateur)
-    return lambda cle: visible(cle, utilisateur, sensible(cle))
+        def ok(cle):
+            return not est_prive(cle) or chez_soi(cle, utilisateur)
+        return ok
+
+    def ok(cle):
+        if est_prive(cle):
+            return visible(cle, utilisateur, sensible(cle))
+        if sensible(cle):
+            return peut_juger(cle, utilisateur)
+        return True
+    return ok
 
 
 # ─── L'ÉCRITURE restreinte (chantier 17, étape 5 — 29/08/2026, choix de Mike :
@@ -290,11 +313,14 @@ class VueFiltree(Mapping):
     def __contains__(self, k):
         return self._ok(k) and k in self._d
 
+    # `filter` natif plutôt qu'un générateur qui rappelle une méthode par clé
+    # (11/09) : même prédicat, même instantané des clés, la boucle en C.
+
     def __iter__(self):
-        return (k for k in list(self._d) if self._ok(k))
+        return filter(self._ok, list(self._d))
 
     def __len__(self):
-        return sum(1 for _ in self)
+        return len(list(filter(self._ok, list(self._d))))
 
     def get(self, k, default=None):
         if not self._ok(k):
@@ -302,13 +328,15 @@ class VueFiltree(Mapping):
         return self._d.get(k, default)
 
     def keys(self):
-        return list(self)
+        return list(filter(self._ok, list(self._d)))
 
     def values(self):
-        return [self._d[k] for k in self]
+        d = self._d
+        return [d[k] for k in filter(self._ok, list(d))]
 
     def items(self):
-        return [(k, self._d[k]) for k in self]
+        d = self._d
+        return [(k, d[k]) for k in filter(self._ok, list(d))]
 
     def copy(self):
         return dict(self.items())

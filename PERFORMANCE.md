@@ -730,10 +730,28 @@ calcul, 2 défauts de page. Depuis les comptes (29/08), `STORE.data`,
 sandbox, ~3 µs sur la machine chargée. 40 583 visages → 47 ms ; l'index → le
 gros de la passe. **Toutes les routes qui agrègent le paient.**
 
-Banc sandbox (44 603 clés synthétiques) : réécriture EXACTE du prédicat
-(`est_prive` d'abord, `sensible` seulement hors PRIVE) + `filter()` natif →
-29 → 17 ms (×1,7). Au-delà, il faut un cache invalidé par une génération du
-magasin — à décider, la règle 17b ne tolère pas un cache approximatif.
+**Livré** (`fix/vue-rapide`) : réécriture EXACTE du prédicat (`est_prive`
+d'abord — 10 clés sur 44 604 sont dans un PRIVE —, `visible` seulement pour
+elles, `peut_juger` seulement pour les sensibles), `en_attente` sans détour,
+`filter()` natif dans `VueFiltree`. **Mesuré sur la machine de Mike, sur les
+44 604 vraies clés** (`mesure_vue.py`, conditions alternées, meilleur de 5) :
+
+| geste | avant | après | |
+|---|---:|---:|---:|
+| `len(vue)` | 44,8 ms | 27,0 ms | ×1,66 |
+| `list(vue)` | 97,9 | 71,2 | ×1,37 |
+| `vue.values()` | 53,3 | 31,9 | ×1,67 |
+| `vue.items()` | 63,6 | 44,1 | ×1,44 |
+| le prédicat seul | 0,99 µs/clé | 0,81 µs/clé | |
+
+Comptes identiques des deux côtés. En REQUÊTE le gain se lit mal — `comptes`
+passe de 51–74 à 37–83 ms, `passe` de 149–241 à 118–260 : la machine varie
+plus que le gain, et c'est pour ça que le banc alterne les conditions.
+`test_vue_rapide.py` : les écritures d'avant en oracle sur 6 000 clés (PRIVE
+à toutes les profondeurs et casses, deux séparateurs, entrées abîmées), pour
+chaque utilisateur — zéro écart ; trois mutations, trois rouges. Au-delà, il
+faut un cache invalidé par une génération du magasin — à décider, la règle
+17b ne tolère pas un cache approximatif.
 
 **En la lisant, trois défauts de CORRECTION** (reproduits sur le vrai
 `SubjectStore`, `test_ecriture_sous_la_vue.py`) : une écriture de fiche sous un
@@ -772,8 +790,9 @@ et CPU/défauts par phase (§ 3.10, § 3.11).
 1. **La fuite d'Ollama** : relancer `diagnostic_ollama_memoire.py` à +1 h et
    +24 h. Si le privé regrimpe, proposer à Mike un recyclage du modèle (une
    requête `keep_alive: 0` toutes les N photos).
-2. **La vue (§ 3.11)** : la réécriture exacte ×1,7, puis la décision sur un
-   cache à génération.
+2. **La vue (§ 3.11)** : réécriture exacte livrée (×1,4–1,6) — la réobserver
+   dans `comptes` de `/api/maint/status` ; puis la décision sur un cache à
+   génération.
 3. **HTTP/1.1** — l'instrument `Content-Length` d'abord.
 4. **`Last-Modified` sur les médias.**
 5. **La collecte complète du GC** (230–430 ms / ~40 s) : `gc.freeze()` après
@@ -802,6 +821,7 @@ et CPU/défauts par phase (§ 3.10, § 3.11).
 | `mesure_cpu.py` | occupation par cœur, processus par cœurs consommés, CPU de chaque fil du serveur |
 | `diagnostic_ollama_memoire.py` | ce qu'Ollama déclare (`/api/ps`) contre ce que `llama-server` tient ; drapeaux de mémoire, jamais un chemin |
 | `test_horloge_maint_status.py`, `test_passe_index.py` | 8 et 5 bancs, anciennes écritures en oracle |
+| `mesure_vue.py`, `test_vue_rapide.py` | ce que coûte la vue sur les vraies clés, deux écritures alternées ; 5 bancs d'équivalence sur 6 000 clés tirées |
 | `test_horloge_phases.py` | 15 bancs + 4 (CPU et défauts par phase) : les phases se succèdent, le détail est borné, rien ne lève ; `_serve_gallery` garde ses arguments et ne livre aucun nom de dossier |
 
 Les deux bancs `mesure_` tournent sur l'agent de banc. L'espace dans un

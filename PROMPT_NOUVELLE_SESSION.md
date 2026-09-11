@@ -1,86 +1,86 @@
-# Reprise — MediaLibrary, après la session PERFORMANCE du 11 septembre 2026
+# Reprise — MediaLibrary, après la session du 11 septembre 2026 au soir
 
 > **Ce fichier est ÉPHÉMÈRE.** Il décrit un état, pas des règles. Les règles
 > vivent dans `CLAUDE.md`, le plan dans `ROADMAP.md`, les verdicts dans
-> `eval/DECISIONS.md` et `docs/DECISIONS_OUTILLAGE.md`. **Tous les chiffres du
-> chantier sont dans `PERFORMANCE.md`** — ce document n'en est que l'entrée.
+> `eval/DECISIONS.md` et `docs/DECISIONS_OUTILLAGE.md`. **Les chiffres du
+> chantier performance sont dans `PERFORMANCE.md`** (§ 3.4, 3.10, 3.11, § 5).
 
 ---
 
 ## 0. La consigne de Mike
 
-> « concentre toi sur la performance (toujours en attendant la fin du tagging).
-> fais une analyse en profondeur, des tests utiles et intelligents »
-> — puis, le 11/09 au soir : « sois le plus autonome possible, fais les tests,
-> tu as accès aux folders et à Chrome ».
+> « concentre toi sur la performance (toujours en attendant la fin du
+> tagging). fais une analyse en profondeur, des tests utiles et intelligents »
+> — « sois le plus autonome possible, fais les tests, tu as accès aux folders
+> et à Chrome ».
+
+La campagne de retag commande toujours tout : GPU pris, **prompt
+intouchable**, fin attendue vers le **14/09**.
 
 ---
 
-## 1. Ce qui commande toujours tout : la campagne de retag
+## 1. Livré le 11/09 au soir — sur `main`
 
-Fin attendue vers le **14/09**. Le GPU est pris, le NAS disputé, **le prompt est
-intouchable**. Une mesure prise pendant la campagne est une borne haute.
-
----
-
-## 2. Ce qui a été livré le 11/09 — huit branches, toutes sur `main`
-
-| Commit | Quoi | Observé en réel |
+| Commit | Quoi | Observé |
 |---|---|---|
-| `23c5dac` | horloge de PHASES dans la galerie | les 10 s froides d'hier ne reviennent pas |
-| `825c4a2` | `_pkey` mémoïsé (chaînes) | `index` ~480 → ~140 ms ; carte des clés ~700 → 44 ms |
-| `4ba4bfd` | `/api/pets/list` en une passe | 2,5 s → 0,29 s, réponse identique |
-| `36d269c` | le tagueur écrit la vignette 512 au passage | 5–7 ms, mtime exact, image IA inchangée |
-| `f30231c` | fil de fond des vignettes (après la campagne) | lot témoin 3/3 ; attend la file vide |
-| `b63ff0b` | corbeille : un `stat` par panier, hors verrou | 4,2 s → ~1,2 s, réponse identique |
-| `0680d44` | péage du GIL : minuteur Windows + bascule à 1 ms | corbeille 2,3 s → 1,0–1,7 s ; tagging inchangé |
-| `8d3b183` | `_pkey` des `Path` + phases de la carte | `/api/geo` 0,9 → 0,57 s |
-
-Mesures qui ont décidé : **98 % des photos sans vignette de grille** ; une
-fabrication = 78 % de lecture NAS ; **un `stat` attend ~15 ms dès qu'un fil de
-calcul Python tourne** (pas du minuteur Windows) — jamais de bascule sous 1 ms
-(débit CPU à 16 %).
+| `2d40c26` | `/api/maint/status` : trois balayages → une passe ; sondes GC/GIL (`/api/serveur` → `sondes`) ; CPU du fil et défauts de page par phase (`/api/perf` → `derniers`) ; bancs `mesure_memoire`, `mesure_cpu`, `diagnostic_ollama_memoire`, `mesure_citations_cachees` | 280–560 → 200–460 ms |
+| `3c88b9e` | **correction** de la vue par utilisateur : une fiche réécrite garde ce que l'écrivain ne voyait pas (`restaurer_fiche`), `pop` sur la vue, `values`/`items` filtrés | listes Personnes/Animaux identiques octet pour octet ; exposition réelle 0 fiche |
+| `fix/vue-rapide` | prédicat de visibilité réécrit à l'identique, `filter()` natif, `mesure_vue.py` | sur les vraies clés : `len` ×1,66, `values` ×1,67, `items` ×1,44 ; comptes identiques |
 
 ---
 
-## 3. Ce que la session suivante doit faire
+## 2. Ce que la session a appris
 
-0. **Quand la campagne finit** : `/api/serveur` → `vignettes` doit passer de
-   `attend la fin du tagging` à `fabrique`, et `a_faire` descendre (~39 000).
-   Puis `mesure_couverture_vignettes.py` (sur une copie fraîche de la base)
-   pour le compte ferme.
-1. **`/api/maint/status`** (0,3–0,4 s, page /reglages) : poser les phases
-   d'abord. Suspects : les balayages de l'index (`len(STORE.data)` sur la vue,
-   `tagged_count`, `_tagging_pipe_counts`, `_retag_etat`) et les JSON de
-   `docs/` relus à chaque appel — **pas forcément `nvidia-smi`**, que
-   `hw_state` garde déjà 8 s.
-2. **Le reste de la galerie** : ~140 ms de vue dans `index` ;
-   `_pkey(Path(UPLOAD_DIR).resolve())` fait un aller-retour SMB à chaque appel.
-3. **HTTP/1.1** — l'instrument `Content-Length` d'abord, le drapeau ensuite.
-4. **`Last-Modified` sur les médias.**
+1. **Le temps perdu n'était pas dans les routes.** Trois `len()` à 47 ms de
+   CPU : c'est la **vue par utilisateur**, ~3 µs par clé sur chaque lecture
+   agrégée dès qu'un compte est connecté.
+2. **La machine paginait** : 0,4 Go de RAM libre, `llama-server` à **13,7 Go
+   privés** après 60 h (modèle déclaré 3,47 Go). `ollama stop` → 3 Go libres.
+   Fuite **probable, pas prouvée** — il manque la courbe.
+3. **Le GC complet gèle tout 230–430 ms, toutes les ~40 s.**
+4. **Le modèle de tagging n'a que 1,2–1,7 Go en VRAM** : le reste tourne sur
+   le CPU. La VRAM libre au chargement décide.
+
+---
+
+## 3. Ce que la session suivante doit faire, dans l'ordre
+
+0. **Vérifier l'état réel** : `.git/logs/refs/heads/main` doit finir sur
+   `3c88b9e` (ou la vue rapide si elle a été livrée entre-temps).
+1. **`device_bash` remarche** (Mike a retiré la mise à jour Windows le 11/09
+   au soir) — mais il tourne dans une VM **Linux** : il ne voit ni les
+   processus Windows, ni `localhost:11434`. Ollama, la RAM, le CPU : par
+   l'agent de banc. Et le pont écrit encore parfois une version périmée
+   (vu deux fois ce soir) : **vérifier par `sha1sum` en `device_bash`**.
+2. **La fuite d'Ollama** : `diagnostic_ollama_memoire.py` — le privé de
+   `llama-server` était à 6,20 Go à 21:23 le 11/09. S'il regrimpe, proposer à
+   Mike un recyclage (`keep_alive: 0` toutes les N photos) → `QUESTIONS_MIKE.md`.
+3. **`gc.freeze()`** après le chargement des index : mesurer la collecte
+   complète avant/après (`/api/serveur` → `sondes.gc.par_gen.2`).
+4. **HTTP/1.1**, puis **`Last-Modified`** (`PERFORMANCE.md` § 3.5, 3.6).
+5. **Noté, pas corrigé** : `SubjectStore.rename` ne transporte pas `auteurs`
+   de la fiche absorbée — les jugements de Flo passent au nom de Mike.
+   Petit, sûr, banc déjà écrit (`test_ecriture_sous_la_vue.py`).
 
 ---
 
 ## 4. Les pièges
 
-- **`device_bash` hors service** depuis la mise à jour Windows du 08/09 :
-  éditer et tester dans la sandbox, écrire par le pont, **vérifier par `sha1`**
-  après re-staging (le pont a encore rendu une version périmée le 11/09).
-- **Canaux** : fichiers CRLF préparés dans `outputs/canal/`, deux écritures,
-  puis vérification. L'agent git ignore la seconde écriture d'un même ordre
-  (« pas de titre » : `SESSION_COMMIT.txt` a déjà été consommé) — sans effet.
-- **Chrome** : onglet caché → un JavaScript de plus de 45 s expire ; une mesure
-  par appel. Une URL à paramètres dans le résultat est bloquée : ne renvoyer
-  que des chiffres. Onglets du groupe MCP qui changent d'id : relire le contexte.
-- **Comparer phase par phase, jamais les totaux** : le NAS varie du simple au
-  triple d'une heure à l'autre pendant la campagne.
+- **`device_bash`** : hors service depuis la mise à jour Windows du 08/09 ;
+  Mike l'a désinstallée le 11/09 au soir — **à revérifier**. Sans lui : éditer
+  dans la sandbox, écrire par le pont, **vérifier par `sha1`** après re-staging.
+- **Canaux** : un ordre écrit DEUX fois relance le banc deux fois (vu le 11/09) ;
+  pour un banc, écrire `rien`, puis l'ordre UNE fois, puis re-stager et
+  comparer la taille.
+- **Chrome** : un onglet resté inactif gèle (`Runtime.evaluate` 45 s) — en
+  ouvrir un neuf ; scripts de moins de 20 s. `crypto.subtle` absent (http).
+- **Comparer phase par phase**, et maintenant **CPU contre temps écoulé** :
+  c'est ce qui a départagé calcul, attente du disque et attente du GIL.
 - `server.py` : skill `monolith-surgery` ; UI : `photo-ui`.
 
 ---
 
 ## 5. Protocole (inchangé)
 
-Éditer → redémarrer (`uptime_s` > 60 d'abord) → **observer en réel**
-(`/api/serveur` `code_a_jour`, `/api/perf` et ses `derniers`, le journal) →
+Éditer → redémarrer (`uptime_s` > 60 d'abord) → **observer en réel** →
 `SESSION_COMMIT.txt` → `livrer` → **vérifier dans `.git/logs/refs/heads/main`**.
-Branches `feat|fix|chore|docs|test/…` ; `.bat` en ASCII pur.
