@@ -621,6 +621,53 @@ règle.
 
 ---
 
+### 3.9 Le péage du GIL — **MESURÉ et RÉGLÉ le 11/09 au soir**
+
+L'hypothèse du § 3.1 (un `stat` qui attend le GIL) mesurée sur la machine,
+`mesure_peage_gil.py`, 100 `stat`, fils CPU purs Python à côté, conditions
+alternées :
+
+```
+un stat LOCAL                  seul      +1 fil CPU   +3 fils CPU   débit CPU, 3 fils
+défaut (bascule 5 ms)          0,04 ms   6–15 ms      31–37 ms       100 %
+bascule 1 ms seule             0,06      14,65        37,28          118 %
+minuteur 1 ms + bascule 1 ms   0,04      1,41         4,13           125 %
+bascule 0,5 ms                 0,06      0,06         0,13            16 %
+```
+
+- **Pire que prévu** : sous Windows, la reprise du GIL attend le PAS DU
+  MINUTEUR (15,6 ms), pas l'intervalle de bascule — baisser l'intervalle seul
+  ne change rien.
+- **Minuteur à 1 ms + bascule à 1 ms** : ×10 sur le `stat` local, sans perte de
+  débit pour les fils de calcul.
+- **Sous 1 ms, piège** : les fils de calcul se disputent le GIL et tombent à
+  16 % de débit. C'est un PLANCHER, tenu dans le code et par un banc.
+
+**Livré** (`fix/peage-du-gil`) : `regler_peage_gil()` au tout début de
+`__main__`, avant le premier fil — `sys.setswitchinterval(1 ms)` et
+`timeBeginPeriod(1)` pour ce processus (Windows le rend à sa sortie). Ne lève
+jamais ; l'état se lit dans `/api/serveur` → `gil`. `test_peage_gil.py`,
+10 bancs (plancher, Windows sans `ctypes`, `winmm` absent, refus, ordre).
+
+**Réobservé** (redémarré 19:25:35, journal : `⏱ GIL : bascule 1.0 ms, minuteur
+Windows 1 ms`) :
+
+| | avant (19:15) | après (19:29–19:31) |
+|---|---:|---:|
+| `/api/corbeille` (252 `stat` NAS) | 2 303 · 2 355 · 2 502 ms | 983 · 1 013 · 1 227 · 1 333 · 1 401 · 1 717 ms |
+| `/files` 2022 à chaud | 1 416 ms | 1 231 ms |
+| vignette en cache | 5–11 ms | 4–7 ms |
+| tagging d'une photo | 15,4 s (63 photos) | 15,1 s (21 photos) |
+
+Le gain est **×1,5 à ×2 sur la corbeille**, pas ×10 : les fils de calcul du
+serveur passent l'essentiel de leur temps dans du code natif (ONNX, torch,
+numpy), qui relâche déjà le GIL ; et le NAS lui-même répondait à ~6 ms par
+`stat` ce soir-là (banc, colonne « seul »), soit ~1,5 s pour 252 — **la
+corbeille est maintenant au prix du réseau**. Aucune régression visible : le
+tagging est au même temps, zéro traceback.
+
+---
+
 ## 4. Ce qui a été vérifié et qui va bien
 
 À ne pas rouvrir sans raison neuve :
@@ -642,13 +689,12 @@ règle.
 
 **Fait le 11/09** : l'horloge de phases (§ 2 bis), les deux balayages par clic
 (§ 2 ter), `/api/pets/list` en une passe (§ 3.2), la vignette du tagueur et le
-fil de fond des vignettes (§ 3.0), `/api/corbeille` hors verrou (§ 3.1).
+fil de fond des vignettes (§ 3.0), `/api/corbeille` hors verrou (§ 3.1), le péage du GIL (§ 3.9).
 
 0. **Quand la campagne finit** : `/api/serveur` → `vignettes` doit passer à
    `fabrique`, `a_faire` descendre ; relancer `mesure_couverture_vignettes.py`.
-1. **Le péage du GIL sur les entrées-sorties** (hypothèse du § 3.1) : le
-   mesurer — un banc qui chronomètre 250 `stat` avec et sans un fil CPU à côté.
-   S'il se confirme, il pèse sur toutes les routes qui lisent le NAS.
+1. ~~Le péage du GIL~~ — **mesuré et réglé** (§ 3.9) : ×10 au banc, ×1,5–2 sur
+   la corbeille réelle.
 2. **`/api/geo`** — re-mesurer (profite déjà de `_pkey` mémoïsé), puis cache.
 3. **`nvidia-smi`** — le mesurer avant de toucher au cache.
 4. **HTTP/1.1** — l'instrument `Content-Length` d'abord, le drapeau ensuite.
@@ -670,6 +716,7 @@ fil de fond des vignettes (§ 3.0), `/api/corbeille` hors verrou (§ 3.1).
 | `test_parcours_dossier.py` | 16 bancs : l'ancienne écriture sert d'oracle ; deux bancs comptent les `stat()` |
 | `mesure_couverture_vignettes.py` | combien de photos ont leur vignette 512 (sur `copie.db`, noms recalculés) |
 | `mesure_fabrication_vignette.py` | ce que coûte une vignette : lecture NAS contre décodage, et la variante `draft` |
+| `mesure_peage_gil.py` | ce que coûte un `stat` quand des fils CPU tournent, selon la bascule du GIL et le minuteur de Windows ; et le débit CPU en face |
 | `mesure_corbeille.py` | la liste de la corbeille : `exists+is_dir+stat` contre un `stat`, sur le vrai journal |
 | `test_vignette_du_tagueur.py`, `test_vignettes_de_fond.py`, `test_corbeille_une_lecture.py` | 12, 15 et 4 bancs, chacun avec l'ancienne écriture en oracle |
 | `test_sujets_une_passe.py` | 7 bancs : `pets_list`/`people_list` d'avant, recopiées verbatim, servent d'oracle sur 300 tirages ; le nombre de balayages est compté |

@@ -14843,6 +14843,7 @@ class Handler(BaseHTTPRequestHandler):
             # Le fil de fond des vignettes (11/09) : un travail qui attend ou
             # n'avance plus doit se VOIR sans ouvrir le journal.
             'vignettes': dict(VIGNETTES_ETAT),
+            'gil': dict(GIL_REGLAGE),
         }, ensure_ascii=False).encode()
         self._send(200, body, 'application/json')
 
@@ -15948,6 +15949,51 @@ def _fil_tourne(cible, nom, boucle, args, dormir, continuer):
         attente = min(attente * 2, FIL_PAUSE_MAX_S)
 
 
+# ─── LE PÉAGE DU GIL (11/09) ────────────────────────────────────────────────
+# Un appel système (un `stat`, une lecture de socket) RELÂCHE le GIL. Pour le
+# reprendre, le fil HTTP attend que le fil qui calcule le lâche : au plus tard à
+# l'intervalle de bascule (5 ms par défaut)… arrondi au pas du MINUTEUR de
+# Windows (15,6 ms). Et ce serveur a toujours des fils de calcul en Python.
+#
+# MESURÉ sur la machine (`mesure_peage_gil.py`, 100 `stat`, Python 3.11.3) :
+#
+#   un stat LOCAL            seul     +1 fil CPU   +3 fils CPU   débit CPU (3 fils)
+#   défaut (5 ms, 15,6 ms)   0,04 ms   6–15 ms      31–37 ms       100 %
+#   bascule 1 ms seule       0,06      14,65        37,28          118 %
+#   minuteur 1 ms + 1 ms     0,04      1,41         4,13           125 %
+#   bascule 0,5 ms           0,06      0,06         0,13           **16 %**
+#
+# Deux leçons. (1) Baisser l'intervalle SEUL ne sert à rien sous Windows : c'est
+# le minuteur qui fixe l'attente. (2) Sous 1 ms, les fils de calcul se battent
+# pour le GIL et leur débit s'effondre à 16 % — c'est un PLANCHER, pas un
+# réglage : `test_peage_gil.py` le tient.
+#
+# D'où : minuteur Windows à 1 ms (`timeBeginPeriod`, pour CE processus, rendu
+# par Windows à sa sortie — rien n'est changé dans le système) et bascule à
+# 1 ms. Aucun des deux ne peut empêcher le serveur de démarrer.
+GIL_BASCULE_S = 0.001
+MINUTEUR_WINDOWS_MS = 1
+GIL_REGLAGE = {"bascule_ms": None, "minuteur_ms": None, "erreur": None}
+
+
+def regler_peage_gil():
+    """Pose la bascule du GIL et la résolution du minuteur. Ne lève jamais :
+    une erreur est notée dans `GIL_REGLAGE` (lu par `/api/serveur`)."""
+    try:
+        sys.setswitchinterval(max(GIL_BASCULE_S, 0.001))
+        GIL_REGLAGE["bascule_ms"] = round(sys.getswitchinterval() * 1000, 3)
+    except Exception as e:                                    # noqa: BLE001
+        GIL_REGLAGE["erreur"] = f"bascule : {e}"
+    if os.name == 'nt' and MINUTEUR_WINDOWS_MS:
+        try:
+            import ctypes
+            if ctypes.WinDLL('winmm').timeBeginPeriod(int(MINUTEUR_WINDOWS_MS)) == 0:
+                GIL_REGLAGE["minuteur_ms"] = int(MINUTEUR_WINDOWS_MS)
+        except Exception as e:                                # noqa: BLE001
+            GIL_REGLAGE["erreur"] = f"minuteur : {e}"
+    return dict(GIL_REGLAGE)
+
+
 def fil_surveille(cible, nom=None, boucle=True, args=(), dormir=None,
                   continuer=None, demarrer=True):
     """Lance `cible` dans un fil SURVEILLÉ, qui se relance s'il doit boucler.
@@ -15984,6 +16030,11 @@ class QuietServer(ThreadingHTTPServer):
 
 if __name__ == '__main__':
     ip = get_local_ip()
+    # AVANT le premier fil : le péage du GIL se règle pour tout le processus.
+    _gil = regler_peage_gil()
+    print(f"  ⏱ GIL : bascule {_gil['bascule_ms']} ms, minuteur Windows "
+          f"{_gil['minuteur_ms'] or 'inchangé'} ms"
+          + (f" — {_gil['erreur']}" if _gil['erreur'] else ''))
 
     # Migration éventuelle du pipeline animaux (modèles/seuils changés) AVANT de
     # lancer les workers, pour repartir sur une base propre (pas de dimensions

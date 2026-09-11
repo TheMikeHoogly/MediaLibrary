@@ -78,6 +78,11 @@ Lot témoin au démarrage : 3/3 en 2,2 s. État dans `/api/serveur` → `vignett
 `stat` par panier au lieu de trois, et seul l'instantané du journal reste sous
 `FILE_OPS_LOCK`. 4,2 s → 0,9–2,1 s, réponse identique.
 
+**Le péage du GIL** (`fix/peage-du-gil`, 11/09 soir) : minuteur Windows à 1 ms
+et bascule à 1 ms au démarrage. Un `stat` sous charge CPU : 6–37 ms → 1,4–4,1 ms
+au banc ; corbeille réelle 2,3–2,5 s → 1,0–1,7 s. **Jamais sous 1 ms** (débit
+CPU à 16 %).
+
 ---
 
 ## 3. Le résultat, honnêtement
@@ -106,9 +111,9 @@ Détail et précautions : `PERFORMANCE.md` § 5.
 0. **Quand la campagne finit (~14/09)** : `/api/serveur` → `vignettes` doit
    passer à `fabrique` et `a_faire` descendre (~39 000) ; relancer
    `mesure_couverture_vignettes.py` pour le compte ferme.
-1. **Le péage du GIL** : `/api/corbeille` fait 252 `stat` en ~67 ms au banc et
-   ~1,5 s dans le serveur. Hypothèse : chaque reprise du GIL attend 5 ms tant
-   que des fils CPU tournent. Le mesurer avant tout le reste.
+1. ~~Le péage du GIL~~ — réglé (`PERFORMANCE.md` § 3.9). Si un fil de calcul
+   semble ralenti, regarder `/api/serveur` → `gil` et relancer
+   `mesure_peage_gil.py` : le plancher d'1 ms ne se franchit pas.
 2. **`/api/geo`** — re-mesurer, puis cache.
 3. **`nvidia-smi`** — le mesurer d'abord.
 4. **HTTP/1.1** — l'instrument `Content-Length` d'abord.
