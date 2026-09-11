@@ -63,6 +63,13 @@ sous `PureWindowsPath` ; 10 bancs dans `test_pkey_memoire.py`.
 `people_list` suit la même fonction. Oracle verbatim sur 300 tirages dans
 `test_sujets_une_passe.py`.
 
+**La vignette de grille écrite par le tagueur** (`feat/vignette-du-tagueur`,
+11/09 soir, choix de Mike). Mesuré avant : **98 % des photos sans vignette**,
+78 % d'une fabrication = lecture NAS. Observé après : chaque retag laisse sa
+vignette, au mtime exact, servie en 5–7 ms. Image envoyée à l'IA inchangée
+(banc). Bancs de mesure : `mesure_couverture_vignettes.py`,
+`mesure_fabrication_vignette.py`.
+
 ---
 
 ## 3. Le résultat, honnêtement
@@ -88,7 +95,10 @@ complet : `PERFORMANCE.md` § 2 bis) :
 
 Détail et précautions : `PERFORMANCE.md` § 5.
 
-1. **Compter les vignettes manquantes** — `/api/thumb` reste premier au total.
+1. **Le fil de fond des vignettes** (choix de Mike, 11/09) — ~39 000 photos
+   sans vignette 512 ; à lancer APRÈS la campagne, qui cède la main à
+   l'interface, écrit comme `_deposer_vignette`. Le tagueur couvre déjà ce qu'il
+   repasse.
 2. **`/api/corbeille`** — banc de parcours d'abord, le verrou ensuite.
 3. **`/api/geo`** — re-mesurer (profite déjà de `_pkey` mémoïsé), puis cache.
 4. **`nvidia-smi`** — le mesurer d'abord.

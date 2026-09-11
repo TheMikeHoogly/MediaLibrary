@@ -7,6 +7,12 @@
 > elle touche l'outillage, dans `ROADMAP.md` si elle priorise.
 > Protocole : `CLAUDE.md`, « Traite autonome ».
 >
+> **Vidée le 11/09** : « qui fabrique les 39 181 vignettes absentes ? » (98 %
+> du fonds sans vignette de grille). Mike : **« les deux »** — le tagueur au
+> passage dès maintenant (livré le soir même), un fil de fond pour le reste
+> après la campagne. Le verdict vit dans `eval/DECISIONS.md`, les chiffres
+> dans `PERFORMANCE.md` § 3.0.
+>
 > **Vidée le 10/09 au soir** : « le cache de vignettes est éteint à 4,5 % — le
 > refait-on ? » Mike : **« ok, je te suis ! »**. Les deux gestes sont livrés :
 > le nom ne porte plus le mtime, et nos propres écritures de tags re-tamponnent

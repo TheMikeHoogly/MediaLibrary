@@ -330,9 +330,83 @@ mémoire. 40 600 photos retaguées = 40 600 vignettes qui n'auraient plus jamais
 à être fabriquées à la demande.
 
 À vérifier d'abord, parce que ça change le raisonnement : **combien de photos
-n'ont pas encore de vignette ?** `mesure_caches_vignettes.py` sait compter le
-cache ; il suffit de le croiser avec l'index. Si le fonds est déjà couvert à
-95 %, ces 35 requêtes sont un cas de bord et ce point redescend.
+n'ont pas encore de vignette ?**
+
+#### Mesuré le 11/09 au matin — deux bancs, et une décision qui revient à Mike
+
+**`mesure_couverture_vignettes.py`** (sur `copie.db`, 2,5 jours) recalcule le
+nom exact de chaque vignette et regarde si le fichier existe :
+
+```
+photos (images, hors échecs)   39 999
+vignette 512 PRÉSENTE             818    2,0 %
+vignette 512 ABSENTE           39 181   98,0 %
+vignette 1600 présente              0
+cache : 3 577 fichiers .jpg dans photo_thumbs
+Photos Mike 2,7 % · Photos Flo 1,5 % · Photos Papa 0,3 %
+```
+
+**Le fonds n'est pas couvert : il est vide.** Le changement de formule du 10/09
+(nom sans mtime) a rendu orphelin tout l'ancien cache, et seules les photos
+regardées depuis ont une vignette. Ce n'est donc pas un cas de bord : **presque
+chaque case de galerie** lit l'original sur le NAS.
+
+**`mesure_fabrication_vignette.py`** (`Photos Mike/2023`, 12 JPEG, campagne en
+cours) sépare les deux coûts d'une fabrication :
+
+```
+lecture NAS        376 ms en moyenne pour 2,3 Mo   (163 à 606 ms)
+décodage actuel    108 ms
+décodage « draft » 93 ms   → ×1,2 seulement ; 9 photos sur 12 IDENTIQUES
+fabrication        ~480 ms par vignette, ~5,3 h pour les 39 181 absentes
+```
+
+- **C'est le NAS qui coûte, pas Pillow** : 78 % du temps est la lecture du
+  fichier (~6 Mo/s pendant la campagne). Le serveur, lui, met 1 à 4 s parce que
+  la grille en demande six à la fois, qui se disputent le même disque.
+- **`draft` est REJETÉ** : l'hypothèse que `exif_transpose` forçait un décodage
+  pleine taille coûteux ne tient pas sur les vraies photos (×1,2, et le plus
+  souvent une sortie identique). Pas de changement d'écriture pour ça.
+- **Donc la seule vraie économie est de ne pas relire le fichier.** Le tagueur
+  le lit déjà : `image_to_b64` l'ouvre, le tourne, le réduit à 896 px. En tirer
+  la vignette 512 coûte quelques millisecondes, **zéro octet NAS de plus**.
+  Mais la campagne ne repasse que sur ce qu'il lui reste ; pour le reste du
+  fonds, il faut un fil de fond (~5 h de lectures NAS, ~2 Go sur C:, qui cède
+  la main à l'interface comme les autres).
+
+**Tranché par Mike le 11/09 : « les deux ».** (a) le tagueur maintenant,
+(b) un fil de fond pour le reste, après la campagne.
+
+#### (a) Livré le 11/09 au soir — `feat/vignette-du-tagueur`
+
+`image_to_b64(path, vignette=…)` : après la réduction à 896 px, une COPIE de
+l'image en mémoire donne la vignette 512 (`_deposer_vignette`, JPEG q82 comme
+`_serve_thumb`), écrite atomiquement, **jamais par-dessus une vignette
+existante, jamais depuis une image réduite sous 512 px, et sans tampon** — c'est
+`_retamponner_vignettes`, déjà appelé après `write_metadata`, qui la date. Si
+la passe échoue avant, la vignette garde sa date de création, que
+`_vignette_a_jour` refuse : elle sera refaite, jamais servie périmée.
+
+**Bancs** (`test_vignette_du_tagueur.py`, 12) : l'image envoyée à l'IA est
+**identique octet pour octet** avec ou sans vignette — la campagne n'est pas
+touchée ; orientation et taille égales à `_serve_thumb`, PSNR > 38 dB contre
+son écriture ; ordre image → XMP → tampon lu dans `tagger_worker` ; cache
+inécrivable sans exception. Quatre mutations, quatre rouges.
+
+**Réobservé** (serveur redémarré 18:38:31) :
+- les **6 premières photos retaguées ont leur vignette**, et chacune porte
+  **exactement le mtime de la photo sur le NAS** (lu dans `N:\Photos`) — donc
+  « à jour » pour le serveur ; orientation vérifiée à l'œil sur la portrait ;
+- `/api/thumb` sur ces clés : **5 à 7 ms**, et les octets servis sont ceux du
+  fichier écrit par le tagueur (même taille exacte) ;
+- temps de tagging : **15,3 s** en moyenne sur les 22 premières, contre 14,4 s
+  sur les 60 d'avant le redémarrage — dans la dispersion (13 à 19 s), et sur
+  des photos différentes ; la vignette elle-même coûte quelques ms. À relire
+  sur un plus grand nombre avant d'en conclure quoi que ce soit.
+
+#### (b) Le fil de fond — à faire, pour après la campagne
+
+Les ~39 000 photos que la campagne ne repasse pas.
 
 ---
 

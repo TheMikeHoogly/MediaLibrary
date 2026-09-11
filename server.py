@@ -2368,13 +2368,25 @@ def backfill_dates():
 
 # ────────────────────────── Tagging IA ──────────────────────────
 
-def image_to_b64(path):
+def image_to_b64(path, vignette=None):
+    """L'image envoyée au VLM, en base64.
+
+    `vignette` (11/09, choix de Mike « les deux ») : le fichier de cache de la
+    vignette 512 px de cette photo. Quand il est donné et absent, la vignette
+    est tirée de l'image DÉJÀ en mémoire — tournée, en RGB, réduite à
+    `MAX_IMAGE_SIDE` — sans relire un octet du NAS. Mesuré le 11/09 : 98 % des
+    photos n'avaient pas de vignette, et 78 % du coût d'une fabrication à la
+    demande est la lecture du fichier. Ce qui part vers l'IA n'en dépend PAS :
+    la vignette est faite sur une copie, après la réduction, et avant
+    l'encodage de ce qui est envoyé."""
     if PIL_OK:
         try:
             with Image.open(path) as im:
                 im = ImageOps.exif_transpose(im)
                 im = im.convert("RGB")
                 im.thumbnail((MAX_IMAGE_SIDE, MAX_IMAGE_SIDE))
+                if vignette is not None:
+                    _deposer_vignette(im, vignette)
                 buf = io.BytesIO()
                 im.save(buf, "JPEG", quality=85)
                 return base64.b64encode(buf.getvalue()).decode()
@@ -2819,7 +2831,12 @@ def tagger_worker():
             print(f"  ♻ Re-tagging IA : {name}" if retag
                   else f"  🏷  Analyse IA : {name}")
             t0 = time.time()
-            b64 = image_to_b64(path)
+            # La vignette de grille sort de l'image que l'IA reçoit : zéro
+            # lecture NAS de plus (11/09). Les vidéos et formats hors
+            # IMAGE_EXT n'en ont pas, comme dans `_serve_thumb`.
+            b64 = image_to_b64(
+                path, vignette=(_fichier_vignette(name, VIGNETTE_GRILLE)
+                                if path.suffix.lower() in IMAGE_EXT else None))
             # Knowledge Builder AMONT : la lecture exiftool (mots-clés existants
             # + GPS + date, toujours UN seul appel) passe AVANT le VLM — les
             # faits connus (noms XMP, espèce, lieu, date) partent DANS le prompt
@@ -11781,6 +11798,45 @@ def _tamponner_vignette(cache_file, mt):
         os.utime(cache_file, (int(mt), int(mt)))
     except OSError:
         pass
+
+
+VIGNETTE_GRILLE = 512
+
+
+def _deposer_vignette(im, cache_file):
+    """Écrit la vignette de grille depuis une image PIL déjà décodée, tournée et
+    en RGB — si le cache ne l'a pas déjà. Rend True si elle a été écrite.
+
+    **Ne lève jamais** : c'est un cadeau du tagueur au cache, et un cadeau ne
+    doit pas coûter une photo à la campagne.
+
+    - Même écriture que `_serve_thumb` : `thumbnail((512, 512))`, JPEG q82.
+    - **Jamais depuis une image réduite sous 512 px par nous** : si
+      `MAX_IMAGE_SIDE` descendait sous la taille de la grille, la vignette
+      serait plus petite que celle que le serveur fabrique — on s'abstient.
+    - Une vignette déjà présente n'est pas réécrite (elle vient de l'original,
+      c'est la meilleure).
+    - Écriture ATOMIQUE (`.tmp` puis `os.replace`) : `_serve_thumb` peut lire le
+      même nom au même instant.
+    - **Pas de tampon ici.** Le tagueur réécrit les métadonnées juste après, ce
+      qui change le mtime ; c'est `_retamponner_vignettes`, appelé après
+      `write_metadata`, qui date la vignette. Si la passe échoue avant, la
+      vignette garde la date de sa création, que `_vignette_a_jour` refuse :
+      elle sera refaite à la demande — jamais servie périmée."""
+    try:
+        if MAX_IMAGE_SIDE < VIGNETTE_GRILLE or cache_file.is_file():
+            return False
+        v = im.copy()
+        v.thumbnail((VIGNETTE_GRILLE, VIGNETTE_GRILLE))
+        buf = io.BytesIO()
+        v.save(buf, "JPEG", quality=82)
+        cache_file.parent.mkdir(parents=True, exist_ok=True)
+        tmp = cache_file.with_name(cache_file.name + '.tmp')
+        tmp.write_bytes(buf.getvalue())
+        os.replace(tmp, cache_file)
+        return True
+    except Exception:                                             # noqa: BLE001
+        return False
 
 
 def _retamponner_vignettes(key, mt):
