@@ -26,6 +26,7 @@ intouchable**, fin attendue vers le **14/09**.
 | `2d40c26` | `/api/maint/status` : trois balayages → une passe ; sondes GC/GIL (`/api/serveur` → `sondes`) ; CPU du fil et défauts de page par phase (`/api/perf` → `derniers`) ; bancs `mesure_memoire`, `mesure_cpu`, `diagnostic_ollama_memoire`, `mesure_citations_cachees` | 280–560 → 200–460 ms |
 | `3c88b9e` | **correction** de la vue par utilisateur : une fiche réécrite garde ce que l'écrivain ne voyait pas (`restaurer_fiche`), `pop` sur la vue, `values`/`items` filtrés | listes Personnes/Animaux identiques octet pour octet ; exposition réelle 0 fiche |
 | `fix/vue-rapide` | prédicat de visibilité réécrit à l'identique, `filter()` natif, `mesure_vue.py` | sur les vraies clés : `len` ×1,66, `values` ×1,67, `items` ×1,44 ; comptes identiques |
+| `fix/rename-garde-les-auteurs` | `rename` transporte `auteurs` de la fiche absorbée : les jugements de Flo passaient au nom de celui qui renomme | bancs sur le vrai `SubjectStore` ; ancien code, 3 rouges |
 
 ---
 
@@ -58,9 +59,6 @@ intouchable**, fin attendue vers le **14/09**.
 3. **`gc.freeze()`** après le chargement des index : mesurer la collecte
    complète avant/après (`/api/serveur` → `sondes.gc.par_gen.2`).
 4. **HTTP/1.1**, puis **`Last-Modified`** (`PERFORMANCE.md` § 3.5, 3.6).
-5. **Noté, pas corrigé** : `SubjectStore.rename` ne transporte pas `auteurs`
-   de la fiche absorbée — les jugements de Flo passent au nom de Mike.
-   Petit, sûr, banc déjà écrit (`test_ecriture_sous_la_vue.py`).
 
 ---
 

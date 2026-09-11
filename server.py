@@ -1174,6 +1174,17 @@ class SubjectStore:
                 npp["avatar"] = op["avatar"]
             if self.species and not npp.get("species") and op.get("species"):
                 npp["species"] = op["species"]
+            # Les AUTEURS suivent leurs décisions (11/09). Les listes étaient
+            # fusionnées, pas `auteurs` : à l'écriture, `auteurs.reconcilier`
+            # trouvait des décisions sans auteur et les attribuait à celui qui
+            # renomme — les jugements de Flo passaient au nom de Mike, en fil
+            # de fond comme sous la vue (`test_ecriture_sous_la_vue.py`). Les
+            # clés ne nomment que le CHEMIN, que la fusion ne change pas ; en
+            # cas de clé commune, la fiche qui reçoit garde la sienne.
+            auteurs_fusion = dict(op.get("auteurs") or {})
+            auteurs_fusion.update(npp.get("auteurs") or {})
+            if auteurs_fusion:
+                npp["auteurs"] = auteurs_fusion
             # La fiche fusionnée date de la PLUS ANCIENNE des deux : c'est
             # depuis ce jour-là que ce sujet est connu.
             ats = [x.get("at") for x in (npp, op) if isinstance(x.get("at"), (int, float))]

@@ -297,16 +297,23 @@ class LeVraiSubjectStore(unittest.TestCase):
         self.S.rename('Florine', 'Flo')
         self.assertNotIn('florine', self.d)
         f = self.d['flo']
-        # `rename` ne transporte PAS `auteurs` de la fiche absorbée — ni sous
-        # la vue, ni en fil de fond (banc ci-dessous) : c'est une limite
-        # d'avant, notée à part, pas l'objet de ce banc.
-        self._cache_de_flo_intact(f, auteurs=False)
+        self._cache_de_flo_intact(f)
         self.assertEqual(f['name'], 'Flo')
+        self.assertEqual(f['auteurs'].get('faces:%s:0' % MIKE_PUB), 'Mike')
 
-    def test_rename_perd_les_auteurs_de_l_absorbee_AUSSI_en_fil_de_fond(self):
+    def test_rename_garde_les_auteurs_de_l_absorbee_AUSSI_en_fil_de_fond(self):
+        """Jusqu'au 11/09, `rename` fusionnait les listes mais pas `auteurs` :
+        la réconciliation attribuait les décisions de Flo à celui qui renomme."""
         self.courant.nom = None
         self.S.rename('Florine', 'Flo')
-        self.assertNotEqual(self.d['flo']['auteurs'].get('faces:%s:0' % FLO_PRIV), 'Flo')
+        self._cache_de_flo_intact(self.d['flo'])
+
+    def test_une_cle_d_auteur_COMMUNE_la_fiche_qui_recoit_garde_la_sienne(self):
+        self.d['flo'] = {'name': 'Flo', 'refs': [], 'faces': [[MIKE_PUB, 0]],
+                         'auteurs': {'faces:%s:0' % MIKE_PUB: 'Flo'}}
+        self.courant.nom = None
+        self.S.rename('Florine', 'Flo')
+        self.assertEqual(self.d['flo']['auteurs'].get('faces:%s:0' % MIKE_PUB), 'Flo')
 
     def test_FUSIONNER_dans_une_fiche_qui_cache_aussi_ne_perd_rien(self):
         self.d['flo'] = {'name': 'Flo', 'refs': [], 'at': 0.5,
@@ -315,7 +322,7 @@ class LeVraiSubjectStore(unittest.TestCase):
                                      'faces:%s:5' % FLO_PRIV2: 'Flo'}}
         self.S.rename('Florine', 'Flo')
         f = self.d['flo']
-        self._cache_de_flo_intact(f, auteurs=False)
+        self._cache_de_flo_intact(f)
         self.assertIn([FLO_PRIV2, 5], f['faces'])
         self.assertEqual(f['auteurs'].get('faces:%s:5' % FLO_PRIV2), 'Flo')
 
