@@ -12572,8 +12572,17 @@ class Handler(BaseHTTPRequestHandler):
         photos de tous."""
         if not self._exige_admin('La corbeille'):
             return
+        # Le VERROU pour l'instantané du journal, et lui seul (11/09). Lire
+        # 252 paniers sur le NAS prenait 3,4 s à froid, verrou tenu : aucun
+        # déplacement ni restauration ne pouvait partir pendant qu'on LISAIT.
+        # Le journal est réécrit atomiquement (`.tmp` puis `replace`) ; ce que
+        # le disque dit ensuite de chaque panier est une lecture, qui peut
+        # croiser un geste en cours sans rien abîmer — au pire un panier
+        # restauré à l'instant apparaît « absent » jusqu'au rechargement.
         with FILE_OPS_LOCK:
-            entrees = file_ops().corbeille()
+            ops = file_ops()
+            journal = ops.journal_instantane()
+        entrees = ops.corbeille(journal=journal)
         self._send(200, json.dumps({"ok": True, "retention_jours": fichiers.RETENTION_JOURS,
                                     "entrees": entrees,
                                     "expirees": sum(1 for e in entrees if e['expiree']),

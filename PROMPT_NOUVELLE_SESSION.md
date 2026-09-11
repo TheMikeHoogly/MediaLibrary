@@ -74,6 +74,10 @@ vignette, au mtime exact, servie en 5–7 ms. Image envoyée à l'IA inchangée
 le reste quand la file de tagging est vide, cède à l'UI, 20 Go de plancher.
 Lot témoin au démarrage : 3/3 en 2,2 s. État dans `/api/serveur` → `vignettes`.
 
+**`/api/corbeille` hors verrou** (`fix/corbeille-hors-verrou`, 11/09 soir) : un
+`stat` par panier au lieu de trois, et seul l'instantané du journal reste sous
+`FILE_OPS_LOCK`. 4,2 s → 0,9–2,1 s, réponse identique.
+
 ---
 
 ## 3. Le résultat, honnêtement
@@ -99,15 +103,16 @@ complet : `PERFORMANCE.md` § 2 bis) :
 
 Détail et précautions : `PERFORMANCE.md` § 5.
 
-0. **Quand la campagne finit (~14/09)** : lire `/api/serveur` → `vignettes`.
-   `etat` doit passer à `fabrique` et `a_faire` descendre (~39 000) ; relancer
+0. **Quand la campagne finit (~14/09)** : `/api/serveur` → `vignettes` doit
+   passer à `fabrique` et `a_faire` descendre (~39 000) ; relancer
    `mesure_couverture_vignettes.py` pour le compte ferme.
-1. **`/api/corbeille`** — banc de parcours d'abord, le verrou ensuite.
-2. **`/api/geo`** — re-mesurer (profite déjà de `_pkey` mémoïsé), puis cache.
+1. **Le péage du GIL** : `/api/corbeille` fait 252 `stat` en ~67 ms au banc et
+   ~1,5 s dans le serveur. Hypothèse : chaque reprise du GIL attend 5 ms tant
+   que des fils CPU tournent. Le mesurer avant tout le reste.
+2. **`/api/geo`** — re-mesurer, puis cache.
 3. **`nvidia-smi`** — le mesurer d'abord.
 4. **HTTP/1.1** — l'instrument `Content-Length` d'abord.
 5. **`Last-Modified` sur les médias.**
-6. Le reste d'`index` (vue ~140 ms ; `resolve()` d'Uploads suspect).
 
 ---
 

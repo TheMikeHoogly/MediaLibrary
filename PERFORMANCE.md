@@ -441,7 +441,39 @@ recalcule au passage suivant et retrouve les mêmes photos.)
 
 ---
 
-### 3.1 `GET /api/corbeille` — 4,88 s, verrou tenu
+### 3.1 `GET /api/corbeille` — 4,88 s, verrou tenu — **FAIT le 11/09**
+
+> **Mesuré** (`mesure_corbeille.py`, 252 effacements, NAS, méthodes alternées) :
+> l'écriture de `FileOps.corbeille` faisait `exists` + `is_dir` + `stat` —
+> **trois allers-retours SMB par panier**. À froid 3 374 ms ; à chaud 230 ms.
+> Un seul `os.stat` : **67 ms à chaud, ×3,4**, mêmes (existe, octets) sur les
+> 252 entrées. (Le « premier » passage des deux autres méthodes profitait du
+> cache chauffé par la première : seul le « meilleur » se compare.)
+>
+> **Pourquoi le verrou était là, lu avant d'y toucher** : `FILE_OPS_LOCK`
+> protège les séquences *lire le journal → modifier → réécrire* et la re-clé de
+> l'index. La liste, elle, ne fait que LIRE le journal — réécrit atomiquement
+> (`.tmp` puis `replace`) — puis interroger le disque. Seul l'instantané du
+> journal reste sous verrou (`journal_instantane`) ; les 252 `stat` passent
+> dehors. Au pire, un panier restauré à l'instant apparaît « absent » jusqu'au
+> rechargement.
+>
+> **Livré** (`fix/corbeille-hors-verrou`) : `fichiers._present_et_taille`, un
+> `stat` (+ un `scandir` par dossier). **Oracle** : l'ancienne écriture
+> recopiée dans `test_corbeille_une_lecture.py` (absent, vide, dossier
+> imbriqué, dossier vide) ; les appels à `os.stat` sont comptés ; l'arbre de la
+> route dit que le verrou ne couvre que l'instantané. Deux mutations, deux rouges.
+>
+> **Réobservé** (redémarré 19:09:00) : **4 234 · 4 200 ms → 930 à 2 065 ms**
+> (cinq appels), et la réponse est **identique** (252 entrées, 603 305 825
+> octets, même empreinte). Le serveur reste bien plus lent que le banc (67 ms) :
+> **hypothèse, non mesurée** — chaque `stat` rend le GIL, et le reprendre attend
+> l'intervalle de bascule (5 ms) tant que des fils CPU tournent (visages,
+> DINOv2, encodage) : 252 × ~5 ms ≈ 1,3 s, l'ordre de grandeur observé. Si
+> c'est cela, **toute boucle d'entrées-sorties du serveur paie ce péage**, et
+> c'est un sujet en soi.
+
+Ancien constat :
 
 ```python
 with FILE_OPS_LOCK:
@@ -606,26 +638,25 @@ règle.
 
 ---
 
-## 5. L'ordre — reclassé le 11/09 au matin
+## 5. L'ordre — reclassé le 11/09 au soir
 
 **Fait le 11/09** : l'horloge de phases (§ 2 bis), les deux balayages par clic
-(§ 2 ter), `/api/pets/list` en une passe (§ 3.2).
+(§ 2 ter), `/api/pets/list` en une passe (§ 3.2), la vignette du tagueur et le
+fil de fond des vignettes (§ 3.0), `/api/corbeille` hors verrou (§ 3.1).
 
-1. **Compter les vignettes manquantes**, puis décider si le tagueur doit les
-   écrire au passage (3.0). `/api/thumb` reste premier au temps total.
-2. **`/api/corbeille`** — d'abord le banc de parcours, ensuite la question du
-   verrou, et seulement si la raison du verrou est comprise.
-3. **`/api/geo`** — instantané en cache, patron `_key_index`. Profite déjà en
-   partie de `_pkey` mémoïsé : le re-mesurer avant d'y toucher.
-4. **`nvidia-smi`** — le mesurer avant de toucher au cache.
-5. **HTTP/1.1** — l'instrument `Content-Length` d'abord, le drapeau ensuite.
-6. **`Last-Modified` sur les médias.**
-7. **Le reste de `index` dans la galerie** : ~140 ms de VUE (le prédicat de
-   visibilité sur 44 604 clés) et un 430 ms isolé non expliqué —
-   `_pkey(Path(UPLOAD_DIR).resolve())` fait un aller-retour SMB à chaque appel
-   hors Uploads : suspect, pas mesuré.
-8. **La planche entière (3.7)** : côté serveur, 150 ms sur 1,9 s. Ne se
-   reconsidère qu'avec une mesure du côté navigateur.
+0. **Quand la campagne finit** : `/api/serveur` → `vignettes` doit passer à
+   `fabrique`, `a_faire` descendre ; relancer `mesure_couverture_vignettes.py`.
+1. **Le péage du GIL sur les entrées-sorties** (hypothèse du § 3.1) : le
+   mesurer — un banc qui chronomètre 250 `stat` avec et sans un fil CPU à côté.
+   S'il se confirme, il pèse sur toutes les routes qui lisent le NAS.
+2. **`/api/geo`** — re-mesurer (profite déjà de `_pkey` mémoïsé), puis cache.
+3. **`nvidia-smi`** — le mesurer avant de toucher au cache.
+4. **HTTP/1.1** — l'instrument `Content-Length` d'abord, le drapeau ensuite.
+5. **`Last-Modified` sur les médias.**
+6. **Le reste de `index` dans la galerie** : ~140 ms de vue, et
+   `_pkey(Path(UPLOAD_DIR).resolve())` suspect.
+7. **La planche entière (3.7)** : ne se reconsidère qu'avec une mesure
+   côté navigateur.
 
 ---
 
@@ -637,6 +668,10 @@ règle.
 | `mesure_parcours_dossier.py` | compare `iterdir`/`scandir`/`scandir+stat` sur un vrai dossier du NAS, méthodes alternées ; et `_pkey` sur les vraies clés, depuis **`copie.db`** — jamais `photos.db` |
 | `test_horloge_routes.py` | 16 bancs : l'horloge compte juste, et ne fait jamais tomber une requête |
 | `test_parcours_dossier.py` | 16 bancs : l'ancienne écriture sert d'oracle ; deux bancs comptent les `stat()` |
+| `mesure_couverture_vignettes.py` | combien de photos ont leur vignette 512 (sur `copie.db`, noms recalculés) |
+| `mesure_fabrication_vignette.py` | ce que coûte une vignette : lecture NAS contre décodage, et la variante `draft` |
+| `mesure_corbeille.py` | la liste de la corbeille : `exists+is_dir+stat` contre un `stat`, sur le vrai journal |
+| `test_vignette_du_tagueur.py`, `test_vignettes_de_fond.py`, `test_corbeille_une_lecture.py` | 12, 15 et 4 bancs, chacun avec l'ancienne écriture en oracle |
 | `test_sujets_une_passe.py` | 7 bancs : `pets_list`/`people_list` d'avant, recopiées verbatim, servent d'oracle sur 300 tirages ; le nombre de balayages est compté |
 | `test_pkey_memoire.py` | 10 bancs : `_pkey` mémoïsé rend l'ancienne expression sous `PureWindowsPath` ; la carte égale le vrai `build_key_index` ; la 2ᵉ reconstruction ne construit aucun `Path` |
 | `test_horloge_phases.py` | 15 bancs : les phases se succèdent, le détail est borné, rien ne lève ; `_serve_gallery` garde ses arguments et ne livre aucun nom de dossier |

@@ -148,7 +148,8 @@ la galerie, l'horloge de phases et les deux balayages par clic (11/09 :
 une passe (2,5 s → 0,29 s), et la vignette écrite par le tagueur (98 % du fonds
 n'en avait pas ; choix de Mike « les deux ») et le fil de fond qui fabrique le
 reste — **livré, il attend la fin de la campagne** (`/api/serveur` →
-`vignettes`). Prochain : `/api/corbeille` (4,9 s sous verrou).
+`vignettes`) ; `/api/corbeille` hors verrou (4,2 s → ~1,5 s). Prochain : mesurer
+le péage du GIL sur les entrées-sorties (`PERFORMANCE.md` § 5).
 Compatible avec la campagne : chemin de service seulement, jamais le calcul IA.
 
 ### C. Quand la campagne s'arrête, et pas avant
