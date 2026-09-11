@@ -3079,6 +3079,62 @@ def _is_hidden_path(p):
     return any(part.startswith(('.', '@', '#')) for part in Path(p).parts)
 
 
+def _lister_dossier(dossier, rec=False):
+    """Les fichiers média et les sous-dossiers d'un dossier — en UNE passe.
+
+    MESURÉ le 10/09 sur `Photos Mike/2022` (2 465 photos, partage SMB) :
+    **26,05 s** avec `iterdir()` + `is_file()`, **308 ms** avec `os.scandir`.
+    Un facteur **84**, et la cause n'est pas le réseau : `Path.is_file()` est
+    un `stat()`, donc un aller-retour SMB PAR FICHIER — et l'ancienne écriture
+    en faisait DEUX tournées, une pour les fichiers, une pour les dossiers.
+    `os.scandir` reçoit le type dans la ligne de répertoire elle-même : le
+    partage répond une fois pour le dossier entier. C'est le nombre d'appels
+    qui coûtait, pas leur latence.
+
+    Même règle pour `rec=1` : `os.walk` marche sur `scandir`, là où
+    `rglob('*')` suivi de `is_file()` repayait un stat par fichier — et il
+    DESCENDAIT dans `.thumbs` / `@eaDir` / `#recycle` avant de les écarter.
+    Ici l'élagage se fait dans `dirs[:]`, donc ces dossiers ne sont jamais lus.
+
+    Rend `(fichiers, sous_dossiers)` : mêmes objets `Path`, mêmes filtres
+    (`MEDIA_EXT`, noms commençant par `.`, `@` ou `#`) et même tri qu'avant.
+
+    Une seule différence de comportement, assumée : en mode récursif, un lien
+    symbolique CASSÉ portant une extension média entrait autrefois dans la
+    liste par `is_file()` — il en sortait. Ici `os.walk` le classe en fichier.
+    Le vérifier coûterait un stat par fichier, c'est-à-dire tout ce que ce
+    changement vient d'économiser ; la photothèque n'en contient aucun.
+    """
+    fichiers, sous = [], []
+    if rec:
+        for racine, dirs, noms in os.walk(dossier):
+            # Élagage EN PLACE : `os.walk` lit `dirs` après la boucle pour
+            # décider où descendre. Filtrer une copie ne l'élaguerait pas.
+            dirs[:] = [d for d in dirs if not d.startswith(('.', '@', '#'))]
+            rp = Path(racine)
+            for n in noms:
+                if n.startswith(('.', '@', '#')):
+                    continue
+                if os.path.splitext(n)[1].lower() in MEDIA_EXT:
+                    fichiers.append(rp / n)
+        with os.scandir(dossier) as it:
+            for e in it:
+                if not e.name.startswith(('.', '@', '#')) and e.is_dir():
+                    sous.append(Path(e.path))
+    else:
+        with os.scandir(dossier) as it:
+            for e in it:
+                if e.name.startswith(('.', '@', '#')):
+                    continue
+                if e.is_dir():
+                    sous.append(Path(e.path))
+                elif (e.is_file()
+                      and os.path.splitext(e.name)[1].lower() in MEDIA_EXT):
+                    fichiers.append(Path(e.path))
+    sous.sort(key=lambda x: x.name.lower())
+    return fichiers, sous
+
+
 def _verdict_deja_rendu(cle):
     """Le CHEMIN dit-il, à lui seul, que cette photo n'attend plus de verdict ?
 
@@ -12632,17 +12688,7 @@ class Handler(BaseHTTPRequestHandler):
         top_tags = sorted(tag_counts.items(), key=lambda kv: (-kv[1], kv[0]))[:60]
 
         try:
-            if rec:
-                files = [f for f in folder.rglob('*')
-                         if f.is_file() and f.suffix.lower() in MEDIA_EXT
-                         and not _is_hidden_path(f.relative_to(folder))]
-            else:
-                files = [f for f in folder.iterdir()
-                         if f.is_file() and f.suffix.lower() in MEDIA_EXT
-                         and not f.name.startswith(('.', '@', '#'))]
-            subdirs = sorted([e for e in folder.iterdir() if e.is_dir()
-                              and not e.name.startswith(('.', '@', '#'))],
-                             key=lambda x: x.name.lower())
+            files, subdirs = _lister_dossier(folder, rec)
         except OSError as e:
             self._send(500, str(e).encode(), 'text/plain')
             return
