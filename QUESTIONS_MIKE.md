@@ -45,3 +45,38 @@
 > Le verdict vit dans `eval/DECISIONS.md`, le correctif dans git, le récit
 > dans `ROADMAP.md`. Une question résolue qui reste ici cesse d'être lisible,
 > et c'est le premier endroit qu'on lit en reprenant.
+
+## La mémoire de la machine — 13,5 Go engagés par le moteur d'Ollama (12/09, 00 h)
+
+**Ce qui est mesuré** (`mesure_memoire.py`, `diagnostic_ollama_memoire.py`,
+sur ta machine) : 27 Go d'engagement mémoire pour 15,7 Go de RAM, **0,5 Go
+libre**, 3,8 Go de fichier d'échange, et jusqu'à **1 300 pages relues du
+disque par seconde**. Le serveur de la photothèque a entre 31 % et 65 % de sa
+mémoire hors RAM : chaque parcours de l'index la relit sur le disque, et c'est
+une part du prix des routes (§ 3.10, § 3.11 de `PERFORMANCE.md`).
+
+**Qui la tient** : `llama-server.exe` (le moteur d'Ollama) — **13,53 Go
+privés** pour un modèle déclaré à 3,47 Go, contexte 4 096, une requête à la
+fois. Ce n'est pas une fuite lente : après le redémarrage du PC il était à
+5,9 Go, et **de retour à 13,5 Go vingt minutes plus tard**. Ensuite, `vmmem`
+(la VM de Claude sur ton PC) à 4 Go, le serveur à 2,4 Go.
+
+**La question t'appartient** : c'est ta machine, et deux des trois leviers
+touchent ton confort, pas le code.
+
+| Piste | Ce qu'elle coûte | Ce qu'elle rapporterait |
+|---|---|---|
+| **(a) Relancer Ollama avec `GGML_CUDA_NO_PINNED=1`** (mémoire hôte épinglée par CUDA — l'hypothèse la plus plausible) | un arrêt/relance d'Ollama, 2 min ; mesurable à +20 min | si c'est ça : plusieurs Go rendus, sans rien changer au tagging |
+| **(b) Vivre avec** | rien | rien ; le serveur reste 1,5 à 3 × plus lent qu'il ne devrait, tant que la campagne tourne |
+| **(c) Fermer la VM de Claude quand je ne travaille pas** | tu perds l'accès à tes dossiers depuis Claude | 4 Go d'engagement en moins |
+
+**Ma recommandation : (a), puis remesurer.** C'est la seule piste qui peut
+rendre de la RAM sans rien coûter au reste, et elle se juge en vingt minutes.
+Si elle ne donne rien, (b) jusqu'à la fin de la campagne — le 14/09 le GPU se
+libère, et la question change.
+
+**En attendant** : rien n'est touché ; les bancs sont écrits et se relancent
+en une ligne (`diagnostic_ollama_memoire.py`, `mesure_memoire.py`).
+
+---
+

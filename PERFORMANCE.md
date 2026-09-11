@@ -711,10 +711,17 @@ qui gèle tous les fils) et le **GIL** (un fil qui dort 20 ms se réveille avec
 | `llama-server.exe` privé | **13,68 Go** (en RAM 6,13), lancé il y a **60 h** | 5,90 → 6,20 Go en 2 min |
 | serveur privé / hors RAM | 2,44 Go / 44 % | 2,46 Go / 65 % |
 
-Ollama 0.33.3 déclare le modèle à **3,47 Go** (contexte 4 096, 1 requête) :
-les ~10 Go d'écart ressemblent à une **fuite** du moteur sur 60 h d'images.
-**Pas encore prouvé** : il faut revoir la courbe du privé de `llama-server`
-dans une heure, puis dans un jour. Au passage : le modèle n'a que **1,74 Go en
+Ollama déclare le modèle à **3,47 Go** (contexte 4 096, 1 requête) : ~10 Go
+d'écart. **Ce n'est PAS une fuite lente — vérifié le 12/09 à 00 h 10.** Après
+le redémarrage du PC et une mise à jour d'Ollama (0.33.3 → 0.34.0), le
+processus était **déjà à 13,53 Go de privé après 20 minutes** de campagne,
+contre 5,90 Go juste après un chargement. Le moteur RÉSERVE donc ~13,5 Go
+d'engagement mémoire en quelques dizaines de minutes, une fois pour toutes :
+`ollama stop` rend la place, et elle est reprise dans l'heure. La machine
+engage 27 Go pour 15,7 Go de RAM — **elle paginera tant que ce chiffre
+tiendra** (RAM libre : 0,5 Go, serveur à 31 % hors RAM). La cause exacte du
+chiffre reste inconnue (mémoire hôte épinglée par CUDA ? tampons de calcul ?)
+— c'est une question ouverte dans `QUESTIONS_MIKE.md`. Au passage : le modèle n'a que **1,74 Go en
 VRAM** avant, **1,21 Go** après rechargement (`--no-mmproj-offload` : la VRAM
 libre au chargement décide), le reste calcule sur le CPU (2,7 cœurs).
 `vmmem` (la VM de Claude sur ce PC) tient 4 Go de plus.
@@ -787,9 +794,9 @@ et CPU/défauts par phase (§ 3.10, § 3.11).
 
 0. **Quand la campagne finit** : `/api/serveur` → `vignettes` passe à
    `fabrique` ; relancer `mesure_couverture_vignettes.py`.
-1. **La fuite d'Ollama** : relancer `diagnostic_ollama_memoire.py` à +1 h et
-   +24 h. Si le privé regrimpe, proposer à Mike un recyclage du modèle (une
-   requête `keep_alive: 0` toutes les N photos).
+1. **Les 13,5 Go d'Ollama** (§ 3.10) : la question est posée à Mike. Une piste
+   MESURABLE avant de toucher à quoi que ce soit : relancer le moteur avec
+   `GGML_CUDA_NO_PINNED=1`, puis `diagnostic_ollama_memoire.py` à +20 min.
 2. **La vue (§ 3.11)** : réécriture exacte livrée (×1,4–1,6) — la réobserver
    dans `comptes` de `/api/maint/status` ; puis la décision sur un cache à
    génération.

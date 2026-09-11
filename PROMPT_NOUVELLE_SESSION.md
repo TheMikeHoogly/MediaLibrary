@@ -35,9 +35,9 @@ intouchable**, fin attendue vers le **14/09**.
 1. **Le temps perdu n'était pas dans les routes.** Trois `len()` à 47 ms de
    CPU : c'est la **vue par utilisateur**, ~3 µs par clé sur chaque lecture
    agrégée dès qu'un compte est connecté.
-2. **La machine paginait** : 0,4 Go de RAM libre, `llama-server` à **13,7 Go
-   privés** après 60 h (modèle déclaré 3,47 Go). `ollama stop` → 3 Go libres.
-   Fuite **probable, pas prouvée** — il manque la courbe.
+2. **La machine pagine** : 0,5 Go de RAM libre, `llama-server` à **13,5 Go
+   privés** (modèle déclaré 3,47 Go). `ollama stop` rend la place, elle est
+   reprise en vingt minutes : réservation, pas fuite lente.
 3. **Le GC complet gèle tout 230–430 ms, toutes les ~40 s.**
 4. **Le modèle de tagging n'a que 1,2–1,7 Go en VRAM** : le reste tourne sur
    le CPU. La VRAM libre au chargement décide.
@@ -53,9 +53,10 @@ intouchable**, fin attendue vers le **14/09**.
    processus Windows, ni `localhost:11434`. Ollama, la RAM, le CPU : par
    l'agent de banc. Et le pont écrit encore parfois une version périmée
    (vu deux fois ce soir) : **vérifier par `sha1sum` en `device_bash`**.
-2. **La fuite d'Ollama** : `diagnostic_ollama_memoire.py` — le privé de
-   `llama-server` était à 6,20 Go à 21:23 le 11/09. S'il regrimpe, proposer à
-   Mike un recyclage (`keep_alive: 0` toutes les N photos) → `QUESTIONS_MIKE.md`.
+2. **Les 13,5 Go d'Ollama** : ce n'est PAS une fuite lente (13,53 Go après
+   20 min de campagne, le 12/09 à 00 h 10) — la question est posée dans
+   `QUESTIONS_MIKE.md` avec sa recommandation (`GGML_CUDA_NO_PINNED=1`, puis
+   remesurer). Tant qu'elle tient, la machine pagine et les routes paient.
 3. **`gc.freeze()`** après le chargement des index : mesurer la collecte
    complète avant/après (`/api/serveur` → `sondes.gc.par_gen.2`).
 4. **HTTP/1.1**, puis **`Last-Modified`** (`PERFORMANCE.md` § 3.5, 3.6).
