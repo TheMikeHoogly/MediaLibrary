@@ -735,8 +735,13 @@ Banc sandbox (44 603 clés synthétiques) : réécriture EXACTE du prédicat
 29 → 17 ms (×1,7). Au-delà, il faut un cache invalidé par une génération du
 magasin — à décider, la règle 17b ne tolère pas un cache approximatif.
 
-**En la lisant, trois défauts de CORRECTION** — traités à part (branche
-`fix/ecriture-sous-la-vue`).
+**En la lisant, trois défauts de CORRECTION** (reproduits sur le vrai
+`SubjectStore`, `test_ecriture_sous_la_vue.py`) : une écriture de fiche sous un
+utilisateur effaçait ses citations invisibles (règle 2) ; `rename`/`delete`
+plantaient (`VueFiches` sans `pop`) ; `values`/`items` rendaient les fiches
+brutes (17b). Corrigés au goulot : `visibilite.restaurer_fiche`.
+**Exposition mesurée** (`mesure_citations_cachees.py`, copie du 11/09 21:41) :
+0 fiche ne cite une photo invisible à Mike ou à Flo — le défaut était latent.
 
 ## 4. Ce qui a été vérifié et qui va bien
 

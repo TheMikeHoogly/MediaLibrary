@@ -348,6 +348,71 @@ def filtrer_fiche(fiche, ok):
     return out if out is not None else fiche
 
 
+def _cachee(champ, c, ok):
+    """Cette citation du champ `champ` est-elle invisible ? Les mêmes tests
+    que `filtrer_fiche`, écrits une fois pour les deux sens."""
+    if champ == 'faces':
+        return isinstance(c, (list, tuple)) and bool(c) and not ok(c[0])
+    return isinstance(c, str) and not ok(c)
+
+
+def _cle_citation(c):
+    return tuple(c) if isinstance(c, list) else c
+
+
+def restaurer_fiche(neuve, brute, ok):
+    """Remet dans `neuve` ce que `filtrer_fiche(brute, ok)` en avait retiré.
+
+    L'INVERSE EXACT DU FILTRE (11/09). Le serveur lit une fiche à travers la
+    vue, la modifie, et la réécrit par `store.set` : sous un utilisateur
+    connecté, la fiche lue était une COPIE sans ses citations invisibles, et la
+    réécriture les EFFAÇAIT — visages, confirmations, exclusions et avatar pris
+    dans le PRIVE d'un autre. Mesuré sur le vrai `SubjectStore.confirm` : Mike
+    confirme une photo sur la fiche de Florine, le visage et la confirmation
+    qu'elle a dans `Photos Flo/PRIVE` disparaissent de la base. La règle 2 du
+    projet — un nom humain ne se perd jamais — tombait par une LECTURE.
+
+    Ce qu'on ne pouvait pas voir, on ne peut pas l'avoir retiré. Donc :
+      - pour `faces`, `exclude`, `confirmed` : les citations invisibles de la
+        fiche brute reprennent LEUR PLACE (l'ordre compte : `_merge_assigned`
+        coupe les plus anciennes au-delà de 6 000) ; les citations visibles
+        suivent ce que l'écriture a décidé, et les nouvelles vont à la fin ;
+      - l'`avatar` : invisible dans la brute et absent de la neuve, il revient.
+        Un avatar VISIBLE posé par l'écriture l'emporte.
+    Rend `neuve`, modifiée en place (comme `auteurs.garnir`)."""
+    if not isinstance(neuve, dict) or not isinstance(brute, dict) or neuve is brute:
+        return neuve
+    for champ in ('faces',) + CHAMPS_CHEMINS:
+        B = brute.get(champ)
+        if not isinstance(B, list):
+            continue
+        if not any(_cachee(champ, c, ok) for c in B):
+            continue
+        N = neuve.get(champ)
+        N = list(N) if isinstance(N, list) else []
+        restant = {}
+        for i, c in enumerate(N):
+            restant.setdefault(_cle_citation(c), []).append(i)
+        pris = set()
+        out = []
+        for c in B:
+            if _cachee(champ, c, ok):
+                out.append(c)
+                continue
+            places = restant.get(_cle_citation(c))
+            if places:
+                i = places.pop(0)
+                pris.add(i)
+                out.append(N[i])
+        out.extend(c for i, c in enumerate(N) if i not in pris)
+        neuve[champ] = out
+    av = brute.get('avatar')
+    if (isinstance(av, (list, tuple)) and av and not ok(av[0])
+            and not neuve.get('avatar')):
+        neuve['avatar'] = av
+    return neuve
+
+
 class VueFiches(VueFiltree):
     """La vue d'un magasin keyé par NOM : toute fiche est là, filtrée."""
 
@@ -369,6 +434,41 @@ class VueFiches(VueFiltree):
         if k not in self._d:
             return default
         return filtrer_fiche(self._d[k], self._ok)
+
+    # ─── `values`, `items`, `copy` : FILTRÉS (11/09) ───────────────────────
+    # Hérités de `VueFiltree`, ils lisaient `self._d[k]` — la fiche BRUTE,
+    # citations invisibles comprises. `__getitem__` et `get` filtraient, mais
+    # les agrégats du serveur (`for pk, pe in PEOPLE_STORE.data.items()` : la
+    # page Personnes, ses avatars, ses comptes) passaient à côté : un avatar
+    # pris dans le PRIVE de Mike pouvait s'afficher chez Flo. C'est le point
+    # 17b que ce module existe pour tenir.
+
+    def values(self):
+        ok = self._ok
+        return [filtrer_fiche(v, ok) for v in list(self._d.values())]
+
+    def items(self):
+        ok = self._ok
+        return [(k, filtrer_fiche(v, ok)) for k, v in list(self._d.items())]
+
+    def copy(self):
+        return dict(self.items())
+
+    def pop(self, k, *defaut):
+        """Retire la fiche ENTIÈRE et la rend BRUTE (11/09).
+
+        La vue est en lecture seule, sauf ce geste-ci, et il a une raison :
+        `SubjectStore.rename` et `.delete` (et les annulations) retirent une
+        fiche par `store.data.pop(nom)`. Sous un utilisateur connecté, la vue
+        n'avait pas de `pop` — renommer, fusionner ou supprimer une fiche
+        PLANTAIT depuis l'étape 4. Retirer une fiche n'a rien à cacher : son
+        nom est visible par construction (`__contains__`).
+
+        Elle est rendue BRUTE parce que l'appelant la FUSIONNE ailleurs
+        (`rename`) : filtrée, ses citations invisibles seraient perdues en
+        route. **Ce qu'elle rend ne doit jamais partir tel quel vers un
+        client** — c'est une matière d'écriture, pas d'affichage."""
+        return self._d.pop(k, *defaut)
 
 
 def brancher(store, utilisateur, par_nom=False, sensible=None):
@@ -415,4 +515,18 @@ def brancher(store, utilisateur, par_nom=False, sensible=None):
     # cachée par la vue resterait lisible par `STORE.get(k)`.
     store.__class__ = type(cls.__name__, (cls,), {'data': property(lire, ecrire),
                                                  'get': get, 'has': has})
+    if par_nom:
+        # L'ÉCRITURE d'une fiche remet ce que l'écrivain ne voyait pas (11/09,
+        # `restaurer_fiche`). Posé sur l'ATTRIBUT d'instance, par-dessus ce
+        # qui s'y trouve déjà (`auteurs.garnir`) : la réconciliation des
+        # auteurs doit voir la fiche ENTIÈRE, sinon elle prendrait chaque
+        # citation invisible pour une décision annulée.
+        set_avant = store.set
+
+        def set_restaure(name, entry, *a, **kw):
+            u = utilisateur()
+            if u is not None and isinstance(entry, dict):
+                restaurer_fiche(entry, brut(store).get(name), filtre(u, sensible))
+            return set_avant(name, entry, *a, **kw)
+        store.set = set_restaure
     return store
