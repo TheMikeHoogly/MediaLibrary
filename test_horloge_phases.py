@@ -180,6 +180,63 @@ class ElleNeCassePasLaRequete(_Base):
         self.assertEqual(len(self.m.PERF_DERNIERS), self.m.PERF_MAX_DERNIERS)
 
 
+class CeQueLeFilAttend(_Base):
+    """CPU du fil et defauts de page, par phase (11/09). La mesure est
+    INJECTEE : `_mesure_fil` rend ce qu'on lui dit."""
+
+    def _avec(self, suite):
+        it = iter(suite)
+        self.m._mesure_fil = lambda: next(it)
+
+    def test_par_phase_et_au_total(self):
+        #            depart      apres a        apres b
+        self._avec([(1.000, 100), (1.020, 100), (1.025, 4100)])
+        ph = self.m._Phases('GET /x')
+        ph.top('a')
+        ph.top('b')
+        self.m._phases_note(ph)
+        r = self.m.PERF_DERNIERS[-1]
+        self.assertAlmostEqual(r['cpu_ms']['a'], 20.0, places=3)
+        self.assertAlmostEqual(r['cpu_ms']['b'], 5.0, places=3)
+        self.assertEqual(r['defauts'], {'a': 0, 'b': 4000})
+        self.assertAlmostEqual(r['info']['cpu_ms'], 25.0, places=3)
+        self.assertEqual(r['info']['defauts'], 4000)
+
+    def test_une_mesure_qui_LEVE_eteint_la_mesure_sans_rien_casser(self):
+        appels = []
+
+        def casse():
+            appels.append(1)
+            if len(appels) > 1:
+                raise OSError('psutil parti')
+            return (1.0, 10)
+        self.m._mesure_fil = casse
+        ph = self.m._Phases('GET /x')
+        ph.top('a')
+        ph.top('b')
+        self.m._phases_note(ph)
+        r = self.m.PERF_DERNIERS[-1]
+        self.assertEqual(set(r['phases']), {'a', 'b'})
+        self.assertNotIn('cpu_ms', r)
+        self.assertEqual(len(appels), 2, 'une fois eteinte, elle ne rappelle plus')
+
+    def test_un_defaut_ILLISIBLE_laisse_le_cpu(self):
+        self._avec([(1.0, None), (1.010, None)])
+        ph = self.m._Phases('GET /x')
+        ph.top('a')
+        self.m._phases_note(ph)
+        r = self.m.PERF_DERNIERS[-1]
+        self.assertIn('cpu_ms', r)
+        self.assertNotIn('defauts', r)
+
+    def test_la_vraie_mesure_ne_leve_pas(self):
+        src = _src('_mesure_fil')
+        ns = {'time': time, '_PROCESSUS_SOI': {'p': None, 'ko': False}}
+        exec(src, ns)                                              # noqa: S102
+        c, _f = ns['_mesure_fil']()
+        self.assertIsInstance(c, float)
+
+
 # ─── Les bancs qui relisent `_serve_gallery` ──────────────────────────────
 GALERIE = _noeud('_serve_gallery')
 

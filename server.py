@@ -1325,10 +1325,45 @@ def retag_cible():
     return cible
 
 
-def _retag_etat():
+def _passe_index(cible):
+    """UNE passe sur l'index pour les trois comptes de /reglages (11/09).
+
+    `/api/maint/status` balayait les 44 600 entrees TROIS fois a chaque appel
+    — `STORE.tagged_count()`, `_tagging_pipe_counts()`, puis la boucle de
+    `_retag_etat()` — et la page le rappelle toutes les 6 s. L'horloge de
+    phases les a mesurees a 70-135 ms CHACUNE sous la charge de la campagne,
+    soit les trois quarts de la route. Memes filtres que les trois ecritures
+    d'origine, dans le meme ordre d'iteration : les comptes sont les memes, et
+    `test_passe_index.py` les tient contre elles, recopiees verbatim.
+
+    `cible` : la version visee par la campagne (`retag_cible()`), ou None —
+    alors `reste` et `abandons` valent 0 et ne servent a rien."""
+    tagues = reste = abandons = 0
+    pipes = {}
+    for e in list(STORE.data.values()):
+        if not isinstance(e, dict) or e.get('failed'):
+            continue
+        if e.get('kw_fr') or e.get('kw_en'):
+            tagues += 1
+        v = e.get('pipe') or 'v0'
+        pipes[v] = pipes.get(v, 0) + 1
+        if cible and not e.get('video'):
+            if e.get('retag_fail') == cible:
+                abandons += 1
+            elif e.get('pipe') != cible:
+                reste += 1
+    return {'cible': cible, 'tagues': tagues, 'pipes': pipes,
+            'reste': reste, 'abandons': abandons}
+
+
+def _retag_etat(passe=None):
     """État de la campagne pour /api/serveur : la cible, ce qui reste, ce qui
     est en file, ce qui a été abandonné. Une campagne qui n'avance plus doit se
-    VOIR — c'est la leçon des backfills morts en silence pendant des mois."""
+    VOIR — c'est la leçon des backfills morts en silence pendant des mois.
+
+    `passe` : le resultat de `_passe_index`, pour ne pas rebalayer l'index.
+    Il ne sert que s'il a ete fait pour la MEME cible — le fichier du levier
+    peut changer entre les deux lectures, et alors on recompte."""
     cible = retag_cible()
     if not cible:
         # Un levier POSÉ mais REFUSÉ doit se voir : sinon Mike lit « inactif »
@@ -1337,14 +1372,17 @@ def _retag_etat():
             return {'actif': False, 'refus': _RETAG_REFUS_DIT['quoi'],
                     'attendu': TAGGING_PIPELINE_VERSION}
         return {'actif': False}
-    reste = abandons = 0
-    for e in list(STORE.data.values()):
-        if not isinstance(e, dict) or e.get('failed') or e.get('video'):
-            continue
-        if e.get('retag_fail') == cible:
-            abandons += 1
-        elif e.get('pipe') != cible:
-            reste += 1
+    if passe is not None and passe.get('cible') == cible:
+        reste, abandons = passe['reste'], passe['abandons']
+    else:
+        reste = abandons = 0
+        for e in list(STORE.data.values()):
+            if not isinstance(e, dict) or e.get('failed') or e.get('video'):
+                continue
+            if e.get('retag_fail') == cible:
+                abandons += 1
+            elif e.get('pipe') != cible:
+                reste += 1
     with PENDING_LOCK:
         en_file = len(RETAG_PENDING)
     return {'actif': True, 'cible': cible, 'reste': reste, 'en_file': en_file,
@@ -12182,11 +12220,40 @@ class _Phases:
         self.t0 = self.t = time.perf_counter()
         self.ms = {}
         self.info = {}
+        # Cumul du ramasse-miettes au depart (sondes.py) : la difference a la
+        # fin dit combien de ms de collecte sont tombees PENDANT l'execution.
+        _gc = globals().get('SONDE_GC')
+        self.gc0 = getattr(_gc, 'total_ms', None)
+        # Ce que le FIL a calcule, et les defauts de page du processus, par
+        # phase (11/09) : une phase de trois `len()` a 50-100 ms, avec 4 coeurs
+        # libres, sans GC ni GIL, ne s'explique que par ce qu'elle ATTEND. Le
+        # temps CPU du fil dit s'il calculait ; les defauts de page, s'il
+        # attendait le disque. Absent (bancs, autre OS) : rien n'est note.
+        self.cpu = {}
+        self.defauts = {}
+        self._mesure = globals().get('_mesure_fil')
+        self.c = self.f = None
+        if self._mesure is not None:
+            try:
+                self.c, self.f = self._mesure()
+            except Exception:                                     # noqa: BLE001
+                self._mesure = None
+        self.c0, self.f0 = self.c, self.f
 
     def top(self, nom):
         t = time.perf_counter()
         self.ms[nom] = self.ms.get(nom, 0.0) + (t - self.t) * 1000.0
         self.t = t
+        if self._mesure is not None:
+            try:
+                c, f = self._mesure()
+                if c is not None and self.c is not None:
+                    self.cpu[nom] = self.cpu.get(nom, 0.0) + (c - self.c) * 1000.0
+                if f is not None and self.f is not None:
+                    self.defauts[nom] = self.defauts.get(nom, 0) + (f - self.f)
+                self.c, self.f = c, f
+            except Exception:                                     # noqa: BLE001
+                self._mesure = None
 
     def ajoute(self, nom, secondes):
         self.ms[nom] = self.ms.get(nom, 0.0) + secondes * 1000.0
@@ -12209,14 +12276,57 @@ def _phases_note(ph):
                 e['ms'] += ms
                 if ms > e['max']:
                     e['max'] = ms
-            PERF_DERNIERS.append({
+            info = dict(ph.info)
+            _gc = globals().get('SONDE_GC')
+            if _gc is not None and getattr(ph, 'gc0', None) is not None:
+                info['gc_ms'] = round(_gc.total_ms - ph.gc0, 1)
+            releve = {
                 'route': ph.route, 't': time.time(),
                 'total_ms': round(total, 1),
                 'phases': {k: round(v, 1) for k, v in ph.ms.items()},
-                'info': dict(ph.info)})
+                'info': info}
+            if getattr(ph, 'cpu', None):
+                releve['cpu_ms'] = {k: round(v, 1) for k, v in ph.cpu.items()}
+                if ph.c is not None and ph.c0 is not None:
+                    info['cpu_ms'] = round((ph.c - ph.c0) * 1000.0, 1)
+            if getattr(ph, 'defauts', None):
+                releve['defauts'] = dict(ph.defauts)
+                if ph.f is not None and ph.f0 is not None:
+                    info['defauts'] = ph.f - ph.f0
+            PERF_DERNIERS.append(releve)
             del PERF_DERNIERS[:-PERF_MAX_DERNIERS]
     except Exception:                                             # noqa: BLE001
         pass
+
+
+_PROCESSUS_SOI = {'p': None, 'ko': False}
+
+
+def _mesure_fil():
+    """(temps CPU de CE fil en secondes, defauts de page du PROCESSUS) — l'un
+    ou l'autre None s'il est illisible. Lu par `_Phases` a chaque `top`.
+
+    `time.thread_time()` : sous Windows, il avance par pas de l'horloge
+    systeme (15,6 ms) — juste sur une route, grossier sur une phase courte.
+    Les defauts de page (`psutil`, `num_page_faults`) comptent les DOUX et les
+    DURS, et ceux de tous les fils : un nombre de milliers pendant une phase
+    de trois `len()` n'est pourtant pas ambigu. psutil absent : None, une fois
+    pour toutes."""
+    try:
+        cpu = time.thread_time()
+    except Exception:                                             # noqa: BLE001
+        cpu = None
+    defauts = None
+    if not _PROCESSUS_SOI['ko']:
+        try:
+            p = _PROCESSUS_SOI['p']
+            if p is None:
+                import psutil
+                p = _PROCESSUS_SOI['p'] = psutil.Process()
+            defauts = getattr(p.memory_info(), 'num_page_faults', None)
+        except Exception:                                         # noqa: BLE001
+            _PROCESSUS_SOI['ko'] = True
+    return cpu, defauts
 
 
 PERF_FICHIER = SCRIPT_DIR / '_perf_routes.json'
@@ -14860,6 +14970,11 @@ class Handler(BaseHTTPRequestHandler):
             # n'avance plus doit se VOIR sans ouvrir le journal.
             'vignettes': dict(VIGNETTES_ETAT),
             'gil': dict(GIL_REGLAGE),
+            # Ce que le processus fait payer à toutes les routes (11/09) :
+            # collectes du ramasse-miettes, et retard d'un fil à reprendre le GIL.
+            'sondes': {
+                'gc': SONDE_GC.etat() if SONDE_GC is not None else None,
+                'gil': SONDE_GIL.etat() if SONDE_GIL is not None else None},
         }, ensure_ascii=False).encode()
         self._send(200, body, 'application/json')
 
@@ -14915,8 +15030,16 @@ class Handler(BaseHTTPRequestHandler):
                     r[f"{k} (cles)"] = len(v)
             return r
 
+        # Horloge de PHASES (11/09) : la page /reglages rappelle cette route
+        # toutes les 6 s, et chaque appel coutait 0,3 a 0,7 s sans que rien ne
+        # dise ou. Les valeurs sont calculees AVANT le dictionnaire, dans
+        # l'ordre ou le litteral les evaluait, pour qu'un `top` puisse les
+        # separer ; le corps rendu est le meme, cle pour cle.
+        ph = _Phases('GET /api/maint/status')
+        maintenant = time.time()
         with PENDING_LOCK:
             tagpend = len(PENDING)
+        ph.top('contexte')
         # Stock d'empreintes animales (DINOv2) dans le magasin de vecteurs :
         # compte INDEXE (kind='animals'), instantane, lecture seule. Bien plus
         # parlant que le compteur de session (remis a 0 au demarrage). Repli None
@@ -14925,17 +15048,74 @@ class Handler(BaseHTTPRequestHandler):
             pets_vec = photo_vectors().count('animals')
         except Exception:
             pets_vec = None
+        ph.top('vecteurs')
+        sonde_avant = _HW_CACHE["at"]
+        hw = hw_state()
+        # `sonde` : cet appel a-t-il LANCE nvidia-smi, ou lu le cache de 8 s ?
+        # Sans ce drapeau, une moyenne melange deux routes differentes.
+        ph.note(sonde=_HW_CACHE["at"] != sonde_avant)
+        ph.top('hw')
+        busy = bool(system_busy() or ui_recent())
+        queues = {'tag': TAG_QUEUE.qsize(), 'faces': FACE_QUEUE.qsize(),
+                  'animaux': ANIMAL_QUEUE.qsize(), 'personnes': PERSON_QUEUE.qsize()}
+        pending = {'tag': tagpend, 'faces': len(FACE_PENDING),
+                   'animaux': len(ANIMAL_PENDING)}
+        ph.top('files')
+        entrees = len(STORE.data)
+        # Les trois comptes de l'index en UNE passe (ils en faisaient trois).
+        passe = _passe_index(retag_cible())
+        tagues = passe['tagues']
+        ph.top('passe')
+        counts = {'entrees': entrees, 'tagues': tagues,
+                  'personnes': len(PEOPLE_STORE.data), 'animaux': len(PETS_STORE.data),
+                  'visages': len(FACE_STORE.data)}
+        ph.top('comptes')
+        gpu = (GPU.etat() if GPU is not None else None)
+        ordonnanceur = (ORDO.etat() if ORDO is not None else None)
+        ph.top('arbitres')
+        moteurs = {'visages': FACE_LAST_ENGINE or 'CPU',
+                   'visages_gpu_pret': FACE_APP_GPU is not None,
+                   'visages_gpu_erreur': FACE_GPU_ERROR or '',
+                   'visages_gpu_voulu': FACE_USE_GPU}
+        boucle = dict(MAINT_LOOP_STATE,
+                      # Un drapeau qu'on ne voit pas ne se prouve
+                      # pas : c'est LUI qui fait maintenant céder
+                      # la maintenance (is_busy), et sans lui le
+                      # journal ne dirait rien tant qu'aucune étape
+                      # n'est due.
+                      scan_nas=scan_nas_en_cours())
+        oublis = REGISTRE.resume()
+        backup_verify = dict(BACKUP_VERIFY_STATE)
+        backfill = {k: dict(v) for k, v in BACKFILL_STATE.items()}
+        ph.top('etats')
+        maint = {'auto': MAINTENANCE_AUTO, 'paused': MAINT_PAUSED,
+                 'every_s': MAINTENANCE_EVERY, 'autonomy': _m.AUTONOMY,
+                 'intervals': _m.INTERVALS, 'state': load('maintenance_state.json') or {},
+                 'report': summ(load('maintenance_report.json'))}
+        recensement = summ(load('recensement.json'))
+        plan = summ(load('plan_rangement.json'))
+        plan_annee = (lambda pa: {
+            'total_a_ranger': pa.get('total_a_ranger'),
+            'sans_date': pa.get('sans_date'), 'deja': pa.get('deja'),
+            'conflits': len(pa.get('conflits') or []),
+            'par_annee': pa.get('par_annee') or {},
+            # Quand le plan a ete ECRIT : c'est ce que la page attend pour
+            # dire « fini » (le bouton ne l'a jamais dit, 29/08).
+            'genere_le': mtime_de('plan_rangement_annee.json')})(
+                load('plan_rangement_annee.json') or {})
+        ph.top('docs')
+        tagging_pipe = passe['pipes']
+        retag = _retag_etat(passe)
+        ph.top('retag')
+        racines = [[label, str(r)] for label, r in media_roots()]
+        ph.top('config')
         body = {
-            'now': time.time(),
-            'hw': hw_state(),
-            'busy': bool(system_busy() or ui_recent()),
-            'queues': {'tag': TAG_QUEUE.qsize(), 'faces': FACE_QUEUE.qsize(),
-                       'animaux': ANIMAL_QUEUE.qsize(), 'personnes': PERSON_QUEUE.qsize()},
-            'pending': {'tag': tagpend, 'faces': len(FACE_PENDING),
-                        'animaux': len(ANIMAL_PENDING)},
-            'counts': {'entrees': len(STORE.data), 'tagues': STORE.tagged_count(),
-                       'personnes': len(PEOPLE_STORE.data), 'animaux': len(PETS_STORE.data),
-                       'visages': len(FACE_STORE.data)},
+            'now': maintenant,
+            'hw': hw,
+            'busy': busy,
+            'queues': queues,
+            'pending': pending,
+            'counts': counts,
             # Empreintes animales : `pets_vec` = stock reel (magasin de vecteurs) ;
             # `pets_embed` = calculees depuis le demarrage (activite du worker de
             # fond) ; `dino_loaded` = modele charge (drapeau, PAS d'import lourd,
@@ -14949,8 +15129,8 @@ class Handler(BaseHTTPRequestHandler):
             # `/api/search/status` — la page qui montre l'état du serveur ne
             # savait donc rien des baux, des refus ni des évictions. Un
             # mécanisme qu'on ne voit pas ne se diagnostique pas.
-            'gpu': (GPU.etat() if GPU is not None else None),
-            'ordonnanceur': (ORDO.etat() if ORDO is not None else None),
+            'gpu': gpu,
+            'ordonnanceur': ordonnanceur,
             # I5 : le moteur des visages était AFFIRMÉ en dur (« CPU (seul
             # Ollama utilise le GPU) »), ce qui est faux depuis le GPU
             # adaptatif. Il se DIT maintenant, avec ce qu'il a fait en dernier.
@@ -14958,50 +15138,34 @@ class Handler(BaseHTTPRequestHandler):
             # appel CHARGE InsightFace (invariant 3), et une page d'état qui
             # monte un modèle pour dire s'il est monté serait le contraire
             # d'un instrument.
-            'moteurs': {'visages': FACE_LAST_ENGINE or 'CPU',
-                        'visages_gpu_pret': FACE_APP_GPU is not None,
-                        'visages_gpu_erreur': FACE_GPU_ERROR or '',
-                        'visages_gpu_voulu': FACE_USE_GPU},
-            'boucle': dict(MAINT_LOOP_STATE,
-                           # Un drapeau qu'on ne voit pas ne se prouve
-                           # pas : c'est LUI qui fait maintenant céder
-                           # la maintenance (is_busy), et sans lui le
-                           # journal ne dirait rien tant qu'aucune étape
-                           # n'est due.
-                           scan_nas=scan_nas_en_cours()),
+            'moteurs': moteurs,
+            'boucle': boucle,
             # Comptes de l'index (chantier 10a) : qui retire des cles, combien,
             # et ce que personne n'explique. Toutes les listes sont bornees par
             # le registre lui-meme.
-            'oublis': REGISTRE.resume(),
-            'backup_verify': dict(BACKUP_VERIFY_STATE),
+            'oublis': oublis,
+            'backup_verify': backup_verify,
             # Backfills EXIF (dates, GPS) : morts en silence pendant des mois,
             # desormais observables (bug du 13/08, cf. _attendre_exiftool).
-            'backfill': {k: dict(v) for k, v in BACKFILL_STATE.items()},
-            'maint': {'auto': MAINTENANCE_AUTO, 'paused': MAINT_PAUSED,
-                      'every_s': MAINTENANCE_EVERY, 'autonomy': _m.AUTONOMY,
-                      'intervals': _m.INTERVALS, 'state': load('maintenance_state.json') or {},
-                      'report': summ(load('maintenance_report.json'))},
-            'recensement': summ(load('recensement.json')),
-            'plan': summ(load('plan_rangement.json')),
-            'plan_annee': (lambda pa: {
-                'total_a_ranger': pa.get('total_a_ranger'),
-                'sans_date': pa.get('sans_date'), 'deja': pa.get('deja'),
-                'conflits': len(pa.get('conflits') or []),
-                'par_annee': pa.get('par_annee') or {},
-                # Quand le plan a ete ECRIT : c'est ce que la page attend pour
-                # dire « fini » (le bouton ne l'a jamais dit, 29/08).
-                'genere_le': mtime_de('plan_rangement_annee.json')})(
-                    load('plan_rangement_annee.json') or {}),
+            'backfill': backfill,
+            'maint': maint,
+            'recensement': recensement,
+            'plan': plan,
+            'plan_annee': plan_annee,
             'config': {'MODEL': MODEL, 'ANIMAL_PIPELINE_VERSION': ANIMAL_PIPELINE_VERSION,
                        'TAGGING_PIPELINE_VERSION': TAGGING_PIPELINE_VERSION,
-                       'tagging_pipe': _tagging_pipe_counts(),
-                       'retag': _retag_etat(),
+                       'tagging_pipe': tagging_pipe,
+                       'retag': retag,
                        'UPLOAD_DIR': str(UPLOAD_DIR),
-                       'racines': [[label, str(r)] for label, r in media_roots()],
+                       'racines': racines,
                        'FACE_MATCH_SIM': FACE_MATCH_SIM, 'PET_MATCH_SIM': PET_MATCH_SIM},
         }
-        self._send(200, json.dumps(body, ensure_ascii=False, default=str).encode(),
-                   'application/json')
+        corps = json.dumps(body, ensure_ascii=False, default=str).encode()
+        ph.top('json')
+        self._send(200, corps, 'application/json')
+        ph.top('envoi')
+        ph.note(entrees=entrees, octets=len(corps))
+        _phases_note(ph)
 
     def _do_maint_post(self, path):
         """Actions SURES : lancer un cycle (auto = sur/reversible), pause runtime,
@@ -15991,6 +16155,19 @@ GIL_BASCULE_S = 0.001
 MINUTEUR_WINDOWS_MS = 1
 GIL_REGLAGE = {"bascule_ms": None, "minuteur_ms": None, "erreur": None}
 
+# LES SONDES DU PROCESSUS (11/09) — `sondes.py`. Pendant la campagne, trois
+# `len()` ont couté 51 à 101 ms dans `/api/maint/status`, appel après appel :
+# le temps se perdait HORS de la route. Ramasse-miettes ou GIL ? Ces deux
+# sondes les départagent ; elles ne changent rien à ce que fait le serveur.
+# Branchées au démarrage (`__main__`), lues par `/api/serveur` → `sondes`, et
+# `_phases_note` note les ms de GC tombées PENDANT chaque exécution relevée.
+try:
+    import sondes as _sondes
+    SONDE_GC = _sondes.SondeGC()
+    SONDE_GIL = _sondes.SondeGIL(periode=0.02, fenetre_s=60.0)
+except Exception:                                             # noqa: BLE001
+    SONDE_GC = SONDE_GIL = None
+
 
 def regler_peage_gil():
     """Pose la bascule du GIL et la résolution du minuteur. Ne lève jamais :
@@ -16051,6 +16228,12 @@ if __name__ == '__main__':
     print(f"  ⏱ GIL : bascule {_gil['bascule_ms']} ms, minuteur Windows "
           f"{_gil['minuteur_ms'] or 'inchangé'} ms"
           + (f" — {_gil['erreur']}" if _gil['erreur'] else ''))
+    if SONDE_GC is not None:
+        SONDE_GC.brancher()
+        SONDE_GIL.demarrer()
+    print(f"  ⏱ Sondes : ramasse-miettes "
+          f"{'branché' if SONDE_GC is not None and SONDE_GC.branchee else 'ABSENT'}, "
+          f"retard du GIL {'mesuré' if SONDE_GIL is not None else 'ABSENT'}")
 
     # Migration éventuelle du pipeline animaux (modèles/seuils changés) AVANT de
     # lancer les workers, pour repartir sur une base propre (pas de dimensions

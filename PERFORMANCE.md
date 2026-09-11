@@ -565,21 +565,25 @@ chaque clic**, alors qu'il ne change qu'au rythme du tagging.
 Même patron que `_key_index` : un instantané en cache, invalidé par le nombre
 d'entrées et un TTL. Le mécanisme existe déjà, il suffit de s'en servir.
 
-### 3.4 `GET /api/maint/status` — 532 ms, quatre fois sur quatre
+### 3.4 `GET /api/maint/status` — **mesuré et allégé le 11/09 au soir**, et ce n'était pas `nvidia-smi`
 
-Deux coûts, et le premier est le plus surprenant :
+La page /reglages la rappelle **toutes les 6 s**. Horloge de phases posée
+d'abord (`test_horloge_maint_status.py` : corps identique à l'ancienne écriture,
+recopiée en oracle), puis relevé sous campagne :
 
-- **`hw_state()` lance `nvidia-smi` en sous-processus.** Le cache de 8 s ne
-  couvre pas une page qui interroge plus souvent, et sous charge GPU (la
-  campagne) `nvidia-smi` met du temps à répondre. **La page des réglages paie
-  une création de processus par interrogation.**
-- `STORE.tagged_count()` rebalaie les 44 121 entrées à chaque appel, sans
-  cache.
+| phase | ms (10 appels) | ce que c'est |
+|---|---:|---|
+| `tagged_count` + `_tagging_pipe_counts` + boucle de `_retag_etat` | **70–135 chacun, ~250 à trois** | trois balayages des 44 603 entrées |
+| `comptes` (trois `len()`) | **51–107** | voir § 3.11 — la vue |
+| `hw` | 0 ou 54–134 | `nvidia-smi`, un appel sur deux (cache 8 s, page à 6 s) |
+| `docs`, `arbitres`, `vecteurs` | 6–20, 0 ou ~85, 0–13 | secondaires |
 
-Aucun des deux ne demande de réécriture : un cache un peu plus long côté
-`hw_state` pour les lecteurs non prioritaires, un compteur tenu à jour côté
-store. **À mesurer avant** : un banc qui chronomètre `nvidia-smi` seul, GPU
-occupé et GPU libre, dira si c'est bien lui.
+**Livré** (`_passe_index`) : les trois comptes en UNE passe, mêmes filtres,
+même ordre ; `_retag_etat(passe)` ne rebalaie que si la cible a changé entre
+deux lectures. `test_passe_index.py` : 400 index tirés au hasard contre les
+trois écritures d'avant recopiées, et le compte des parcours (3 → 1).
+**Observé** : 280–560 ms → **200–460 ms**, la passe à 140–220 ms. Le reste du
+temps n'est pas dans la route : § 3.10 et § 3.11.
 
 ### 3.5 Le serveur parle **HTTP/1.0**
 
@@ -689,6 +693,51 @@ tagging est au même temps, zéro traceback.
 
 ---
 
+### 3.10 La machine PAGINE — `llama-server` tenait 13,7 Go (11/09 au soir)
+
+Écartés d'abord, instruments posés pour ça (`sondes.py`, lues dans
+`/api/serveur` → `sondes`) : le **ramasse-miettes** (0–1 ms pendant les
+requêtes ; mais une collecte complète de **230–430 ms toutes les ~40 s**,
+qui gèle tous les fils) et le **GIL** (un fil qui dort 20 ms se réveille avec
+0,4–0,9 ms de retard moyen).
+
+`mesure_memoire.py` et `diagnostic_ollama_memoire.py` (agent de banc) :
+
+| | avant `ollama stop` (21:14) | après (21:21) |
+|---|---:|---:|
+| RAM disponible | **0,4–0,8 Go** / 15,7 | 3,0 Go |
+| fichier d'échange utilisé | 5,08 Go | 2,45 Go |
+| pages relues du disque /s | 30 – **1 363** | 0 – 95 (pics 1 016) |
+| `llama-server.exe` privé | **13,68 Go** (en RAM 6,13), lancé il y a **60 h** | 5,90 → 6,20 Go en 2 min |
+| serveur privé / hors RAM | 2,44 Go / 44 % | 2,46 Go / 65 % |
+
+Ollama 0.33.3 déclare le modèle à **3,47 Go** (contexte 4 096, 1 requête) :
+les ~10 Go d'écart ressemblent à une **fuite** du moteur sur 60 h d'images.
+**Pas encore prouvé** : il faut revoir la courbe du privé de `llama-server`
+dans une heure, puis dans un jour. Au passage : le modèle n'a que **1,74 Go en
+VRAM** avant, **1,21 Go** après rechargement (`--no-mmproj-offload` : la VRAM
+libre au chargement décide), le reste calcule sur le CPU (2,7 cœurs).
+`vmmem` (la VM de Claude sur ce PC) tient 4 Go de plus.
+
+### 3.11 La VUE par utilisateur coûte ~3 µs par clé, sur chaque lecture agrégée
+
+Le vrai coupable des « trois `len()` » : le CPU du fil (`_Phases`, depuis le
+11/09 : `cpu_ms` et `defauts` par phase) **égale** le temps écoulé — 47 ms de
+calcul, 2 défauts de page. Depuis les comptes (29/08), `STORE.data`,
+`FACE_STORE.data`… rendent sous un utilisateur connecté une `VueFiltree` dont
+`len`, `values`, `items`, l'itération appellent le prédicat de visibilité
+**clé par clé** (`visible` → `est_prive` + `sensible_en_attente`) : ~0,7 µs en
+sandbox, ~3 µs sur la machine chargée. 40 583 visages → 47 ms ; l'index → le
+gros de la passe. **Toutes les routes qui agrègent le paient.**
+
+Banc sandbox (44 603 clés synthétiques) : réécriture EXACTE du prédicat
+(`est_prive` d'abord, `sensible` seulement hors PRIVE) + `filter()` natif →
+29 → 17 ms (×1,7). Au-delà, il faut un cache invalidé par une génération du
+magasin — à décider, la règle 17b ne tolère pas un cache approximatif.
+
+**En la lisant, trois défauts de CORRECTION** — traités à part (branche
+`fix/ecriture-sous-la-vue`).
+
 ## 4. Ce qui a été vérifié et qui va bien
 
 À ne pas rouvrir sans raison neuve :
@@ -706,25 +755,25 @@ tagging est au même temps, zéro traceback.
 
 ---
 
-## 5. L'ordre — reclassé le 11/09 au soir
+## 5. L'ordre — reclassé le 11/09 à 22 h
 
-**Fait le 11/09** : l'horloge de phases (§ 2 bis), les deux balayages par clic
-(§ 2 ter), `/api/pets/list` en une passe (§ 3.2), la vignette du tagueur et le
-fil de fond des vignettes (§ 3.0), `/api/corbeille` hors verrou (§ 3.1), le péage du GIL (§ 3.9).
+**Fait le 11/09** : horloge de phases (§ 2 bis), deux balayages par clic
+(§ 2 ter), `/api/pets/list` (§ 3.2), vignettes (§ 3.0), corbeille (§ 3.1),
+péage du GIL (§ 3.9), `/api/maint/status` en une passe (§ 3.4), sondes GC/GIL
+et CPU/défauts par phase (§ 3.10, § 3.11).
 
-0. **Quand la campagne finit** : `/api/serveur` → `vignettes` doit passer à
-   `fabrique`, `a_faire` descendre ; relancer `mesure_couverture_vignettes.py`.
-1. ~~Le péage du GIL~~ — **mesuré et réglé** (§ 3.9) : ×10 au banc, ×1,5–2 sur
-   la corbeille réelle.
-2. ~~`/api/geo`~~ — allégé (§ 3.3) : 0,8–1,0 s → 0,54–0,67 s. Le cache
-   attend qu'on en ait besoin.
-3. **`nvidia-smi`** — le mesurer avant de toucher au cache.
-4. **HTTP/1.1** — l'instrument `Content-Length` d'abord, le drapeau ensuite.
-5. **`Last-Modified` sur les médias.**
-6. **Le reste de `index` dans la galerie** : ~140 ms de vue, et
-   `_pkey(Path(UPLOAD_DIR).resolve())` suspect.
-7. **La planche entière (3.7)** : ne se reconsidère qu'avec une mesure
-   côté navigateur.
+0. **Quand la campagne finit** : `/api/serveur` → `vignettes` passe à
+   `fabrique` ; relancer `mesure_couverture_vignettes.py`.
+1. **La fuite d'Ollama** : relancer `diagnostic_ollama_memoire.py` à +1 h et
+   +24 h. Si le privé regrimpe, proposer à Mike un recyclage du modèle (une
+   requête `keep_alive: 0` toutes les N photos).
+2. **La vue (§ 3.11)** : la réécriture exacte ×1,7, puis la décision sur un
+   cache à génération.
+3. **HTTP/1.1** — l'instrument `Content-Length` d'abord.
+4. **`Last-Modified` sur les médias.**
+5. **La collecte complète du GC** (230–430 ms / ~40 s) : `gc.freeze()` après
+   le chargement des index la sortirait des objets permanents — à mesurer.
+6. **La planche entière (3.7)** : seulement avec une mesure côté navigateur.
 
 ---
 
@@ -743,7 +792,12 @@ fil de fond des vignettes (§ 3.0), `/api/corbeille` hors verrou (§ 3.1), le p�
 | `test_vignette_du_tagueur.py`, `test_vignettes_de_fond.py`, `test_corbeille_une_lecture.py` | 12, 15 et 4 bancs, chacun avec l'ancienne écriture en oracle |
 | `test_sujets_une_passe.py` | 7 bancs : `pets_list`/`people_list` d'avant, recopiées verbatim, servent d'oracle sur 300 tirages ; le nombre de balayages est compté |
 | `test_pkey_memoire.py` | 10 bancs : `_pkey` mémoïsé rend l'ancienne expression sous `PureWindowsPath` ; la carte égale le vrai `build_key_index` ; la 2ᵉ reconstruction ne construit aucun `Path` |
-| `test_horloge_phases.py` | 15 bancs : les phases se succèdent, le détail est borné, rien ne lève ; `_serve_gallery` garde ses arguments et ne livre aucun nom de dossier |
+| `sondes.py`, `test_sondes.py` | collectes du GC par génération et retard d'un fil à reprendre le GIL, lues dans `/api/serveur` ; 14 bancs |
+| `mesure_memoire.py` | RAM du système, processus regroupés par nom, serveur (plage de travail / privé), défauts de page, compteurs Windows |
+| `mesure_cpu.py` | occupation par cœur, processus par cœurs consommés, CPU de chaque fil du serveur |
+| `diagnostic_ollama_memoire.py` | ce qu'Ollama déclare (`/api/ps`) contre ce que `llama-server` tient ; drapeaux de mémoire, jamais un chemin |
+| `test_horloge_maint_status.py`, `test_passe_index.py` | 8 et 5 bancs, anciennes écritures en oracle |
+| `test_horloge_phases.py` | 15 bancs + 4 (CPU et défauts par phase) : les phases se succèdent, le détail est borné, rien ne lève ; `_serve_gallery` garde ses arguments et ne livre aucun nom de dossier |
 
 Les deux bancs `mesure_` tournent sur l'agent de banc. L'espace dans un
 argument passe par le jeton `b64:` :

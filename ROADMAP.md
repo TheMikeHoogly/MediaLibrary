@@ -150,8 +150,14 @@ n'en avait pas ; choix de Mike « les deux ») et le fil de fond qui fabrique le
 reste — **livré, il attend la fin de la campagne** (`/api/serveur` →
 `vignettes`) ; `/api/corbeille` hors verrou (4,2 s → ~1,5 s). Le péage du GIL
 mesuré et réglé (minuteur et bascule à 1 ms) ; `/api/geo` 0,8–1,0 → 0,54–0,67 s.
-Prochain : `nvidia-smi` dans `/api/maint/status` (0,3–0,4 s par appel).
-Compatible avec la campagne : chemin de service seulement, jamais le calcul IA.
+`/api/maint/status` en une passe (11/09 soir : ce n'était pas `nvidia-smi`),
+sondes GC/GIL, CPU et défauts de page par phase. **Deux trouvailles du même
+soir** : la machine PAGINE (`llama-server` à 13,7 Go après 60 h — fuite
+probable, `ollama stop` a rendu 2,5 Go ; à surveiller) et **la vue par
+utilisateur coûte ~3 µs par clé** sur toutes les lectures agrégées — plus trois
+défauts de correction dans cette vue (`fix/ecriture-sous-la-vue`).
+Prochain : `PERFORMANCE.md` § 5. Compatible avec la campagne : chemin de
+service seulement, jamais le calcul IA.
 
 ### C. Quand la campagne s'arrête, et pas avant
 
