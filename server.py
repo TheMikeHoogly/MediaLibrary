@@ -11783,9 +11783,85 @@ def perf_tableau():
     """Le tableau, trie par TEMPS TOTAL decroissant."""
     with PERF_LOCK:
         lignes = [dict(cle=k, **v) for k, v in PERF_ROUTES.items()]
+        phases = {r: {k: dict(v) for k, v in d.items()}
+                  for r, d in PERF_PHASES.items()}
+        derniers = [dict(x, phases=dict(x['phases']), info=dict(x['info']))
+                    for x in PERF_DERNIERS]
     lignes.sort(key=lambda x: -x['ms'])
     return {'depuis': PERF_DEPUIS, 'duree_s': time.time() - PERF_DEPUIS,
-            'seuils_ms': list(PERF_SEUILS), 'routes': lignes}
+            'seuils_ms': list(PERF_SEUILS), 'routes': lignes,
+            'phases': phases, 'derniers': derniers}
+
+
+# ─── L'horloge de PHASES (11/09) ──────────────────────────────────────────
+# L'horloge des routes dit QUELLE route coute ; elle ne dit pas OU. Le 11/09,
+# `/files` froid est passe de 31,4 s a 10,2 s apres `scandir` — le banc
+# promettait 84x, la page a rendu 3x, et les ~10 s restantes n'avaient jamais
+# ete mesurees. Tout ce qu'on corrigerait avant de les voir serait choisi a
+# l'oeil.
+#
+# Trois regles, les memes que celles de l'horloge des routes :
+# 1. **Jamais d'exception vers la requete.** `_phases_note` avale tout.
+# 2. **Les phases se succedent** : `top(nom)` range le temps ecoule depuis le
+#    top precedent. Leur somme vaut donc le temps de la fonction, et un trou
+#    dans la liste se voit comme une phase au nom inattendu, pas comme un
+#    temps disparu.
+# 3. **Une sous-phase porte un point** (`enrichir.faits`) : c'est une PART de sa
+#    phase parente, deja comptee dans celle-ci. Ne jamais les additionner aux
+#    phases de premier niveau.
+#
+# Aucun nom de dossier n'est garde : `/api/perf` se lit sans garde admin, et un
+# dossier prive n'a pas a y apparaitre (CLAUDE.md, regle 10). Le mode, le
+# nombre de fichiers et le temps suffisent a lire une ouverture.
+PERF_PHASES = {}               # route -> {phase: {'n', 'ms', 'max'}}
+PERF_DERNIERS = []             # les dernieres executions, detail complet
+PERF_MAX_DERNIERS = 20
+
+
+class _Phases:
+    """Chronometre de phases d'UNE execution de route. Trois gestes, tous
+    triviaux : il n'y a rien la-dedans qui puisse lever."""
+
+    def __init__(self, route):
+        self.route = route
+        self.t0 = self.t = time.perf_counter()
+        self.ms = {}
+        self.info = {}
+
+    def top(self, nom):
+        t = time.perf_counter()
+        self.ms[nom] = self.ms.get(nom, 0.0) + (t - self.t) * 1000.0
+        self.t = t
+
+    def ajoute(self, nom, secondes):
+        self.ms[nom] = self.ms.get(nom, 0.0) + secondes * 1000.0
+
+    def note(self, **info):
+        self.info.update(info)
+
+
+def _phases_note(ph):
+    """Range une execution terminee. Jamais d'exception vers l'appelant."""
+    try:
+        total = (time.perf_counter() - ph.t0) * 1000.0
+        with PERF_LOCK:
+            agr = PERF_PHASES.setdefault(ph.route, {})
+            for nom, ms in list(ph.ms.items()) + [('(total)', total)]:
+                e = agr.get(nom)
+                if e is None:
+                    e = agr[nom] = {'n': 0, 'ms': 0.0, 'max': 0.0}
+                e['n'] += 1
+                e['ms'] += ms
+                if ms > e['max']:
+                    e['max'] = ms
+            PERF_DERNIERS.append({
+                'route': ph.route, 't': time.time(),
+                'total_ms': round(total, 1),
+                'phases': {k: round(v, 1) for k, v in ph.ms.items()},
+                'info': dict(ph.info)})
+            del PERF_DERNIERS[:-PERF_MAX_DERNIERS]
+    except Exception:                                             # noqa: BLE001
+        pass
 
 
 PERF_FICHIER = SCRIPT_DIR / '_perf_routes.json'
@@ -12613,6 +12689,10 @@ class Handler(BaseHTTPRequestHandler):
         self._send(200, b'OK', 'text/plain')
 
     def _serve_gallery(self):
+        # Horloge de phases (11/09) : voir `_Phases`. Chaque `ph.top(nom)`
+        # range le temps depuis le precedent ; rien ne change de ce que la
+        # page calcule ni de l'ordre dans lequel elle le calcule.
+        ph = _Phases('GET /files')
         q = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
         dirparam = (q.get('dir') or [''])[0]
         rec = (q.get('rec') or [''])[0] == '1'
@@ -12677,6 +12757,7 @@ class Handler(BaseHTTPRequestHandler):
                 return '/uploads/' + urllib.parse.quote(
                     p.relative_to(UPLOAD_DIR).as_posix())
 
+        ph.top('prelude')       # arguments + resolve()/is_dir() du dossier
         # tags du dossier ET de ses sous-dossiers, depuis l'index (instantané)
         entries = _index_entries_under(folder)
         tag_counts = {}
@@ -12686,12 +12767,14 @@ class Handler(BaseHTTPRequestHandler):
             for t in set((_e.get('kw_fr') or []) + (_e.get('kw_en') or [])):
                 tag_counts[t] = tag_counts.get(t, 0) + 1
         top_tags = sorted(tag_counts.items(), key=lambda kv: (-kv[1], kv[0]))[:60]
+        ph.top('index')
 
         try:
             files, subdirs = _lister_dossier(folder, rec)
         except OSError as e:
             self._send(500, str(e).encode(), 'text/plain')
             return
+        ph.top('parcours')
 
         # barre de navigation par dossiers
         fparts = []
@@ -12747,17 +12830,27 @@ class Handler(BaseHTTPRequestHandler):
                 jour_libelle = meme_jour.libelle_jour(jour_cle)
                 jour_items = meme_jour.photos_du_jour(
                     _jour_index(), jour_cle, exclure=jour_ref)
+        ph.top('barre')         # barre de dossiers + index du meme jour
         is_uploads = folder in (UPLOAD_DIR, UPLOAD_DIR.resolve())
         roots_g = media_roots()
         carte_cles = _key_index()   # UN instantané pour toute la boucle
+        ph.top('carte_cles')
         # Faits (date . lieu . noms) : le contexte des noms, lieux et
         # racines est bati UNE fois pour la page entiere -- voir
         # `_faits_ctx`. Les quatre modes de la page (navigation, tags,
         # recherche, meme jour) le partagent : c'est le meme instantane
         # qui sert la planche et la visionneuse.
         fctx = _faits_ctx()
+        ph.top('faits_ctx')
         file_data = []
+        # Sous-phases de la boucle : cinq accumulateurs, six `perf_counter`
+        # par fichier (~1 ms pour 2 465 photos). `enrichir.stat` compte aussi
+        # ses APPELS — c'est un aller-retour NAS par photo absente de l'index.
+        _pc = time.perf_counter
+        _t_cle = _t_stat = _t_dossier = _t_dates = _t_faits = 0.0
+        _n_stat = 0
         for f in files:
+            _ta = _pc()
             # Clé d'index EXACTE (casse d'origine) : `f` vient d'un parcours de
             # `folder`, donc d'un resolve() qui minuscule l'hôte SMB — un accès
             # direct STORE.get(str(f)) raterait toute la racine NAS.
@@ -12766,15 +12859,21 @@ class Handler(BaseHTTPRequestHandler):
                 fkey = f.name
             entry = (STORE.get(fkey) if fkey else None) or {}
             if entry.get('failed'):
+                _t_cle += _pc() - _ta
                 continue  # image endommagée : on ne l'affiche pas
+            _tb = _pc()
+            _t_cle += _tb - _ta
             # évite un stat() réseau par fichier quand l'index connaît déjà
             size, mtime = entry.get('size'), entry.get('mtime')
             if size is None or mtime is None:
+                _n_stat += 1
                 try:
                     st = f.stat()
                     size, mtime = st.st_size, st.st_mtime
                 except OSError:
                     size, mtime = 0, 0
+            _tc = _pc()
+            _t_stat += _tc - _tb
             kw = list(dict.fromkeys(
                 (entry.get('kw_fr') or []) + (entry.get('kw_en') or [])))
             # Chemin ABSOLU, pas la clé : une clé d'Uploads est relative
@@ -12783,6 +12882,16 @@ class Handler(BaseHTTPRequestHandler):
             # _resolve_key préserve la casse d'origine de la clé NAS.
             folder_lbl, gurl = _folder_link_for_key(
                 str(_resolve_key(fkey)) if fkey else str(f), roots_g)
+            _td = _pc()
+            _t_dossier += _td - _tc
+            # Sortis du littéral pour être chronométrés : mêmes arguments,
+            # fonctions pures — le dictionnaire rendu est identique.
+            _taken = _best_time(fkey or str(f), entry)
+            _jour = _jour_de(fkey or str(f), entry)
+            _te = _pc()
+            _t_dates += _te - _td
+            _faits = _faits_pour(fkey or str(f), entry, fctx)
+            _t_faits += _pc() - _te
             file_data.append({
                 'name': f.relative_to(folder).as_posix() if rec else f.name,
                 # Clé d'index : sert à recouper les résultats de la recherche
@@ -12805,17 +12914,24 @@ class Handler(BaseHTTPRequestHandler):
                 'mtime': mtime,
                 # Date de PRISE (epoch) pour le tri chronologique de la galerie
                 # et l'ordre du diaporama — _best_time : EXIF, sinon nom/annee, sinon mtime.
-                'taken': _best_time(fkey or str(f), entry),
+                'taken': _taken,
                 # Jour « MM-JJ » si la date est PRÉCISE (sinon None) : c'est lui
                 # qui décide si le bouton « Même jour » s'affiche.
-                'jour': _jour_de(fkey or str(f), entry),
-                'faits': _faits_pour(fkey or str(f), entry, fctx),
+                'jour': _jour,
+                'faits': _faits,
                 'kw': kw,
                 'gps': entry.get('gps'),
                 'desc': entry.get('desc', ''),
                 'folder': folder_lbl,
                 'gurl': gurl,
             })
+        ph.top('enrichir')
+        ph.ajoute('enrichir.cle', _t_cle)
+        ph.ajoute('enrichir.stat', _t_stat)
+        ph.ajoute('enrichir.dossier', _t_dossier)
+        ph.ajoute('enrichir.dates', _t_dates)
+        ph.ajoute('enrichir.faits', _t_faits)
+        ph.note(fichiers=len(files), stats_nas=_n_stat)
         # sélection de tags active : résultats récursifs depuis l'index,
         # sans parcourir le NAS
         if sel:
@@ -12853,6 +12969,7 @@ class Handler(BaseHTTPRequestHandler):
                     'folder': folder_lbl,
                     'gurl': gurl,
                 })
+            ph.top('mode_tags')
 
         detail_q = {}
         # Recherche globale (/files?q=...) : on REMPLACE la grille par le resultat
@@ -12918,6 +13035,7 @@ class Handler(BaseHTTPRequestHandler):
                     'folder': folder_lbl,
                     'gurl': gurl,
                 })
+            ph.top('mode_recherche')
 
         # « Même jour » : la grille devient la journée, du plus ANCIEN au plus
         # récent (l'ordre du récit familial). Même forme d'objet que les autres
@@ -12967,6 +13085,7 @@ class Handler(BaseHTTPRequestHandler):
                 chips += ('<span class="fetiquette">Aucune autre photo ce '
                           'jour-là dans la photothèque.</span>')
             folders_html = '<div class="folders">' + chips + '</div>'
+            ph.top('mode_jour')
 
         # Comptes par motif sur la vue courante, puis filtre eventuel. Import
         # PARESSEUX : interet est pur (re/pathlib), aucun modele ni deps ML au
@@ -12985,6 +13104,7 @@ class Handler(BaseHTTPRequestHandler):
             motif_counts = {}
             if motif:
                 file_data = []
+        ph.top('motifs')
 
         # Marque les photos qu'aucune date sûre ne classe. Post-passe UNIQUE :
         # les trois branches qui remplissent `file_data` (navigation, sélection,
@@ -13003,6 +13123,7 @@ class Handler(BaseHTTPRequestHandler):
                 _fd['video'] = 1
                 if isinstance(_e, dict) and _e.get('duree'):
                     _fd['duree'] = _e['duree']
+        ph.top('marques')
 
         # Sur une grille qui est un RÉSULTAT (?q=, ?sim=, ?jour=), les puces
         # de filtre comptent les tags DU RÉSULTAT — pas ceux du dossier
@@ -13020,13 +13141,21 @@ class Handler(BaseHTTPRequestHandler):
                 for t in set((_e.get('kw_fr') or []) + (_e.get('kw_en') or [])):
                     tag_counts[t] = tag_counts.get(t, 0) + 1
             top_tags = sorted(tag_counts.items(), key=lambda kv: (-kv[1], kv[0]))[:60]
+            ph.top('tags_resultat')
 
+        # Les deux valeurs cheres du gabarit sont calculees AVANT la chaine de
+        # `replace` pour etre chronometrees. Memes valeurs, meme ordre de
+        # substitution : la page rendue est identique octet pour octet.
+        _file_json = json.dumps(file_data, ensure_ascii=False)
+        ph.top('json')
+        _tagged = str(STORE.tagged_count())
+        ph.top('tagged_count')
         page = (ui_page('gallery')
                 .replace('__FOLDERS__', folders_html)
                 .replace('__MOTIFS__', json.dumps(
                     {'counts': motif_counts, 'sel': motif}, ensure_ascii=False))
-                .replace('__FILE_JSON__', json.dumps(file_data, ensure_ascii=False))
-                .replace('__TAGGED__', str(STORE.tagged_count()))
+                .replace('__FILE_JSON__', _file_json)
+                .replace('__TAGGED__', _tagged)
                 .replace('__REC__', '1' if rec else '0')
                 .replace('__HASSUBS__', '1' if subdirs else '0')
                 .replace('__DIRQ__', json.dumps(dirparam))
@@ -13039,7 +13168,15 @@ class Handler(BaseHTTPRequestHandler):
                 .replace('__TAGDATA__', json.dumps(
                     {'counts': top_tags, 'sel': sel, 'mode': tmode},
                     ensure_ascii=False)))
+        ph.top('gabarit')
         self._send_html(page)
+        ph.top('envoi')         # CSS partage + gzip + ecriture sur la socket
+        ph.note(mode=('recherche' if search_mode else 'semblables' if sim_mode
+                      else 'jour' if jour_mode else 'tags' if sel
+                      else 'dossier'),
+                rec=bool(rec), rendues=len(file_data),
+                car_json=len(_file_json), car_page=len(page))
+        _phases_note(ph)
 
     def _serve_geo(self):
         """Liste JSON des photos géolocalisées, pour la vue carte."""

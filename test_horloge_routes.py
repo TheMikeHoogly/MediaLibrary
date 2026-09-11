@@ -50,6 +50,7 @@ def _horloge(tmp):
         'PERF_LOCK': threading.Lock(), 'PERF_ROUTES': {},
         'PERF_DEPUIS': time.time(), 'PERF_MAX_ROUTES': 300,
         'PERF_SEUILS': (30, 100, 300, 1000, 3000),
+        'PERF_PHASES': {}, 'PERF_DERNIERS': [], 'PERF_MAX_DERNIERS': 20,
         'SCRIPT_DIR': Path(tmp), 'PERF_FICHIER': Path(tmp) / '_perf_routes.json',
     })
     for nom in ('_route_perf', '_perf_note', 'perf_tableau', 'perf_ecrire'):

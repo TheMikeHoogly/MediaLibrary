@@ -45,6 +45,50 @@ def _duree(s):
     return '%.1f h' % (s / 3600)
 
 
+def _phases(t):
+    """OU part le temps d'une route instrumentee (horloge de phases, 11/09).
+
+    Deux vues, et c'est la seconde qui decide : l'AGREGAT melange ouvertures
+    froides et chaudes ; le DETAIL des dernieres executions montre une
+    ouverture froide telle qu'elle a ete vecue. Une sous-phase (nom a point)
+    est une part de sa parente : elle n'entre pas dans la colonne « part »."""
+    phases = t.get('phases') or {}
+    derniers = t.get('derniers') or []
+    if not phases:
+        return
+    for route, d in sorted(phases.items()):
+        tot = d.get('(total)') or {}
+        n = max(tot.get('n', 0), 1)
+        print('-' * 78)
+        print('  OU PART LE TEMPS : %s  (%d execution(s), %.0f ms en moyenne)'
+              % (route, tot.get('n', 0), tot.get('ms', 0) / n))
+        print('  %-26s %10s %10s %8s' % ('phase', 'moyenne', 'pire', 'part'))
+        premier = sorted(((k, v) for k, v in d.items()
+                          if k != '(total)' and '.' not in k),
+                         key=lambda kv: -kv[1]['ms'])
+        for k, v in premier:
+            print('  %-26s %8.0fms %8.0fms %6.1f %%'
+                  % (k, v['ms'] / n, v['max'],
+                     100.0 * v['ms'] / max(tot.get('ms', 0), 1e-9)))
+            for k2, v2 in sorted(((a, b) for a, b in d.items()
+                                  if a.startswith(k + '.')),
+                                 key=lambda kv: -kv[1]['ms']):
+                print('    %-24s %8.0fms %8.0fms'
+                      % (k2[len(k):], v2['ms'] / n, v2['max']))
+    if derniers:
+        print('-' * 78)
+        print('  LES DERNIERES EXECUTIONS (la plus recente en bas)')
+        for x in derniers[-10:]:
+            info = x.get('info') or {}
+            ph = sorted(((k, v) for k, v in (x.get('phases') or {}).items()
+                         if '.' not in k), key=lambda kv: -kv[1])[:4]
+            print('  %s  %8.0fms  %-9s %5s fich. %4s stat  | %s'
+                  % (time.strftime('%H:%M:%S', time.localtime(x.get('t', 0))),
+                     x.get('total_ms', 0), info.get('mode', '?'),
+                     info.get('fichiers', '?'), info.get('stats_nas', '?'),
+                     '  '.join('%s %.0f' % kv for kv in ph)))
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.split('\n')[1])
     ap.add_argument('--n', type=int, default=20, help='lignes a montrer')
@@ -106,6 +150,7 @@ def main(argv=None):
             break
     if not montres:
         print('  aucune requete au-dela de %d ms — rien ne pique.' % seuils[2])
+    _phases(t)
     print('=' * 78)
     print('  A LIRE AVEC SA DATE : pendant la campagne de retag, ce releve est')
     print('  une BORNE HAUTE — le tagueur tient le NAS et le GPU. Le meme banc')

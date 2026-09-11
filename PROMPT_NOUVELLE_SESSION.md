@@ -1,4 +1,4 @@
-# Reprise — MediaLibrary, session PERFORMANCE (11 septembre 2026)
+# Reprise — MediaLibrary, session PERFORMANCE (11 septembre 2026, suite)
 
 > **Ce fichier est ÉPHÉMÈRE.** Il décrit un état, pas des règles. Les règles
 > vivent dans `CLAUDE.md`, le plan dans `ROADMAP.md`, les verdicts dans
@@ -41,86 +41,73 @@ HTTP, parcours de dossier, caches), jamais le calcul IA.
 
 ## 2. Ce qui a été fait, et qui est sur `main`
 
-**L'horloge des routes** (`feat/horloge-des-routes` → `743fef9`). Elle compte
-chaque requête dans les enveloppes de `do_GET`/`do_POST`, replie les routes à
-argument, ne lève jamais, et dépose `_perf_routes.json` à chaque cycle de
-maintenance. `/api/perf` le rend à la demande. `mesure_routes.py` le classe.
-16 bancs dans `test_horloge_routes.py`.
+**L'horloge des routes** (`feat/horloge-des-routes`, 10/09) : chaque requête
+comptée dans `do_GET`/`do_POST`, `_perf_routes.json` à chaque cycle de
+maintenance, `/api/perf` à la demande, `mesure_routes.py` pour classer.
 
-**`_lister_dossier`** (`fix/parcours-dossier-scandir` → `8eba291`). `os.scandir`
-au lieu de `iterdir()` + un `stat()` par fichier ; `os.walk` avec élagage dans
-`dirs[:]` en récursif. 16 bancs dans `test_parcours_dossier.py`, dont deux qui
-**comptent les appels à `os.stat`** et deux qui relisent `server.py` par l'AST
-pour vérifier que l'ancien chemin a bien disparu. L'ancienne implémentation est
-gardée **dans le fichier de test** et sert d'oracle.
+**`_lister_dossier` en `os.scandir`** (`fix/parcours-dossier-scandir`, 10/09).
 
-**`mesure_parcours_dossier.py`**, le banc qui a tranché : sur `Photos
-Mike/2022` (2 465 photos, SMB), **26,05 s → 308 ms**, facteur 84.
+**L'horloge de PHASES dans `_serve_gallery`** (`feat/horloge-de-phases-galerie`,
+11/09 matin). `/api/perf` rend maintenant `phases` (agrégat) et `derniers` (les
+20 dernières ouvertures, phase par phase, **sans nom de dossier**). Page rendue
+prouvée identique par l'arbre syntaxique ; 15 bancs dans
+`test_horloge_phases.py`.
 
 ---
 
 ## 3. Le résultat, honnêtement
 
-| | avant | après |
-|---|---:|---:|
-| `/files` **à froid** | 31,4 s | **10,2 s** |
-| `/files` **à chaud** | 1,35 s | ~1,6 s |
+Huit ouvertures de `/files` relevées le 11/09 entre 08:15 et 08:18 (tableau
+complet : `PERFORMANCE.md` § 2 bis) :
 
-**Le banc promettait 84×, la page a rendu 3×.** Les deux chiffres sont justes,
-et l'écart est la chose la plus utile apprise ce soir :
-
-- les **21 secondes** gagnées sur le chemin froid sont bien celles du parcours ;
-- les **~10 s qui restent** sont l'enrichissement des 2 465 photos, le balayage
-  de l'index et la sérialisation du JSON — que je n'avais pas mesurés, et que
-  j'avais supposés petits ;
-- **à chaud rien n'a bougé**, parce que Windows gardait déjà les métadonnées du
-  répertoire : l'ancien code n'était catastrophique que sur un dossier pas vu
-  depuis un moment. C'est-à-dire exactement le geste de quelqu'un qui cherche
-  une photo.
-
-> **La règle qui sort de là** : un banc qui isole un morceau prouve le gain de
-> ce morceau, pas celui de la page. Il faut les deux mesures, et c'est la
-> seconde qui décide.
+- **Les 10,2 s froides d'hier ne sont pas revenues** : 0,6 à 4,1 s. Pas
+  d'explication mesurée ; l'horloge reste posée, `derniers` dira la phase si
+  ça se reproduit chez Mike.
+- **Le vrai coût est ailleurs** : deux balayages de TOUTE la photothèque à
+  chaque clic, quelle que soit la taille du dossier — `index`
+  (`_index_entries_under`, 378–772 ms, même pour 23 photos) et `carte_cles`
+  (`_key_index`, 618–784 ms dès que son TTL de 60 s a expiré).
+- Le parcours froid existe encore (2020 : 2,6 s pour 1 084 photos, 2,4 ms par
+  fichier — dix fois mieux qu'avant, mais c'est le réseau).
+- L'enrichissement (~0,18 ms/photo), le JSON, le gabarit et l'envoi sont
+  petits.
 
 ---
 
-## 4. L'ordre pour cette session
+## 4. L'ordre pour la suite
 
-Le détail, les chiffres et les précautions de chaque point sont dans
-`PERFORMANCE.md`. Résumé :
+Détail et précautions : `PERFORMANCE.md` § 5.
 
-1. **Horloge de phases dans `_serve_gallery`.** Cinq `perf_counter` au même
-   patron que l'horloge des routes, rendus dans le même fichier. ~10 s froides
-   à expliquer : **tout le reste de cette liste est plus petit que ce qu'on
-   ignore.**
-2. **Compter les vignettes manquantes.** `/api/thumb` est le nouveau premier du
-   classement (35 requêtes, 62,9 s, **28 au-dessus d'une seconde**). Si le fonds
-   est mal couvert, la piste est que **le tagueur écrive la vignette au
-   passage** — il ouvre déjà la photo. Mesurer d'abord, décider ensuite.
-3. **`/api/pets/list`** — 2,87 s pour une boucle sur 17 chats **imbriquée dans
-   un balayage des 40 584 entrées**. Une seule passe suffit. Meilleur
-   gain/risque de la liste ; `/api/people/list` est de la même famille.
-4. **`/api/corbeille`** — 4,88 s **sous `FILE_OPS_LOCK`**. D'abord le banc de
-   parcours (même mal que `/files` ?), ensuite seulement la question du verrou,
-   et uniquement si la raison pour laquelle il a été posé là est comprise.
-5. **`/api/geo`** — 993 ms, agrégat de toute la photothèque reconstruit à chaque
-   ouverture de la carte. Instantané en cache, patron `_key_index`.
-6. **`nvidia-smi`** — `hw_state()` lance un sous-processus ; les quatre appels à
-   `/api/maint/status` ont tous mis entre 300 ms et 1 s. Le chronométrer seul,
-   GPU occupé puis libre, avant de toucher au cache.
-7. **HTTP/1.1.** Le serveur parle HTTP/1.0 : une connexion TCP par vignette.
-   **Ne pas poser le drapeau sans l'instrument** — une réponse sans
-   `Content-Length` en HTTP/1.1 suspend la page au lieu de la ralentir.
-   `verifier_content_length.py` (par l'AST) d'abord.
-8. **`Last-Modified` + `304` sur les médias.** Revenir sur une photo de 5 Mo la
-   retélécharge entièrement depuis le NAS.
-9. **Reclasser** avec le relevé suivant. La planche entière en un seul JSON
-   (§ 3.7 de `PERFORMANCE.md`) et `_pkey` (§ 3.8) attendent ce reclassement :
-   leur place d'aujourd'hui a été calculée sur une page qui mettait 31 s.
+1. **Les deux balayages par ouverture** (`index` + `carte_cles`). Attention :
+   `_key_index` est bâtie sur `INDEX_BRUT` avec `_resolve_key`,
+   `_index_entries_under` sur la VUE `STORE.data` — pas interchangeables, la
+   visibilité passe par la vue. `_pkey` ne se réécrit pas ; il peut se
+   mémoïser sur les chaînes.
+2. **Compter les vignettes manquantes** — `/api/thumb` reste premier au total.
+3. **`/api/pets/list`** — boucle imbriquée, meilleur gain/risque.
+4. **`/api/corbeille`** — banc de parcours d'abord, le verrou ensuite.
+5. **`/api/geo`** — instantané en cache.
+6. **`nvidia-smi`** — le mesurer d'abord.
+7. **HTTP/1.1** — l'instrument `Content-Length` d'abord.
+8. **`Last-Modified` sur les médias.**
 
 ---
 
 ## 5. Les pièges qui coûtent du temps
+
+**`device_bash` est CASSÉ depuis le 11/09 au matin** — « A Windows update
+released September 8 prevents Claude's workspace from reaching your files ».
+Staging et commit marchent ; le shell sur le PC, non. Conséquences : éditer et
+tester **dans le sandbox** (les bancs AST s'y lancent tels quels), écrire les
+canaux **par `device_commit_files`** (`printf 'redemarrer\r\n'` dans un
+fichier de `/mnt/user-data/outputs/`, deux écritures, puis vérification), et
+contrôler une écriture par **empreinte** : re-stager et comparer le `sha1`,
+plus sûr que la taille. Le 11/09, les quatre fichiers livrés étaient justes du
+premier coup.
+
+**`/api/perf` lu par Claude in Chrome** : un résultat JavaScript qui contient
+une URL à paramètres est bloqué (« Cookie/query string data »). Ne renvoyer
+que des chiffres.
 
 **Le pont écrit une version PÉRIMÉE du fichier.** Une quinzaine de fois en deux
 jours. **Parade systématique** : après chaque `device_commit_files`,

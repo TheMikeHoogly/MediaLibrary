@@ -141,6 +141,12 @@ lui-même qu'il vit dans git. Retiré plutôt que déplacé — **108 881 → en
 30 000 octets, de 87 % à ~24 % du budget.** Une scission par statut aurait
 refait l'erreur rejetée le 20/08.
 
+**B4. Le chantier PERFORMANCE (ouvert le 10/09 au soir) — le plan vit dans
+`PERFORMANCE.md` § 5, pas ici.** Fait : l'horloge des routes, `scandir` dans
+la galerie, l'horloge de phases (11/09). Prochain : les deux balayages de toute
+la photothèque que paie chaque ouverture de dossier (~1 à 1,5 s par clic).
+Compatible avec la campagne : chemin de service seulement, jamais le calcul IA.
+
 ### C. Quand la campagne s'arrête, et pas avant
 
 **C1. La question au tagueur sur les documents sensibles** (3 bis (c)) — elle

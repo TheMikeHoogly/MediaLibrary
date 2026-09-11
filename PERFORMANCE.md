@@ -181,9 +181,75 @@ et l'écart enseigne quelque chose qu'aucun banc ne pouvait dire :
 > deux mesures, et c'est la seconde qui compte.
 
 Reste donc à savoir où partent les 10 secondes froides. C'est une **horloge de
-phases dans `_serve_gallery`** — cinq `perf_counter` posés aux mêmes endroits
-que l'horloge des routes, rendus dans le même fichier. C'est le premier travail
-de la prochaine session, et il est maintenant chiffré : ~10 s à gagner.
+phases dans `_serve_gallery`** — posée le 11/09 au matin, § 2 bis.
+
+---
+
+## 2 bis. L'horloge de phases — et les 10 secondes qui ne sont pas revenues
+
+Livrée le 11/09 (`feat/horloge-de-phases-galerie`).
+
+- `_Phases` : `top(nom)` range le temps écoulé depuis le top précédent, donc
+  **la somme des phases est le temps de la fonction** ; un oubli se voit comme
+  une phase trop grosse, pas comme un temps disparu. Une sous-phase porte un
+  point (`enrichir.faits`) et fait PARTIE de sa parente.
+- `/api/perf` et `_perf_routes.json` gagnent `phases` (agrégat par route) et
+  `derniers` (les 20 dernières exécutions en détail — c'est là qu'on lit UNE
+  ouverture froide, que l'agrégat noierait). **Aucun nom de dossier** n'y
+  entre : la route se lit sans garde admin (règle 10).
+- **La page rendue est inchangée, et c'est prouvé** : l'arbre syntaxique de
+  `_serve_gallery` instrumentée, une fois l'instrumentation retirée et les cinq
+  valeurs sorties du littéral réinsérées, est **identique** à celui d'avant.
+  Les bancs durables (`test_horloge_phases.py`, 15) tiennent les arguments des
+  appels chronométrés, l'ordre des phases et l'absence de nom de dossier —
+  trois mutations écrites exprès, trois rouges.
+
+### Le relevé — 11/09, 08:15 → 08:18, serveur redémarré à 08:14:41, campagne en cours
+
+| ouverture | photos | total | `index` | `carte_cles` | `parcours` | `enrichir` | reste |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| 2019 — 1ʳᵉ requête après démarrage | 81 | 1 488 ms | 511 | **784** | 31 | 16 | 146 |
+| 2023 | 2 098 | 1 711 ms | 481 | — | 533 | 379 | 318 |
+| 2022 | 2 465 | 1 935 ms | **772** | — | 357 | 437 | 369 |
+| 2021 | 1 602 | 1 231 ms | 477 | — | 210 | 295 | 249 |
+| 2022, rouverte | 2 465 | 1 652 ms | 450 | — | 373 | 472 | 357 |
+| 2018, récursif | 1 789 | 1 627 ms | 393 | — | 430 | 547 | 257 |
+| **2020 — vraiment froide, cache de clés expiré** | 1 084 | **4 091 ms** | 500 | **618** | **2 638** | 166 | 169 |
+| 2017 | 23 | 585 ms | 378 | — | 122 | — | 85 |
+
+`—` : moins de 20 ms. `stats_nas` (le repli `stat()` par photo absente de
+l'index) vaut **0 partout**.
+
+**Ce que ce relevé dit, dans l'ordre où il le dit :**
+
+1. **Les 10,2 s d'hier ne sont pas revenues.** Huit ouvertures, dont une
+   première requête après démarrage et un dossier jamais ouvert de la
+   matinée : de 0,6 à 4,1 s. Je n'ai **pas** d'explication mesurée du chiffre
+   d'hier. L'horloge reste en place, et si une ouverture à 10 s se reproduit
+   chez Mike, `derniers` dira laquelle des phases l'a faite — c'est la seule
+   manière honnête de clore ce point.
+2. **Deux balayages de TOUTE la photothèque à chaque ouverture, quelle que
+   soit la taille du dossier.** `index` (`_index_entries_under`, un `_pkey` —
+   donc un objet `Path` — par clé, sur 44 604) coûte **378 à 772 ms même pour
+   23 photos**. `carte_cles` (`_key_index`) le rejoint **dès que son TTL de
+   60 s a expiré** : 618 à 784 ms. Quelqu'un qui ouvre un dossier toutes les
+   deux minutes paie donc **~1 à 1,5 s de balayage par clic** avant qu'une
+   seule photo du dossier soit regardée. Le banc d'hier avait isolé `_pkey` à
+   264 ms ; sous la vraie charge c'est 1,5 à 3 fois plus.
+3. **Le parcours froid n'est pas gratuit.** `scandir` a tenu sa promesse sur
+   un dossier tiède (210–533 ms pour 1 600–2 465 photos), mais 2020 vraiment
+   froid prend **2,6 s pour 1 084 photos, 2,4 ms par fichier**. C'est dix fois
+   mieux que l'ancien code (10,57 ms), et c'est désormais le réseau qui paie,
+   pas le nombre d'appels. Le balayage du NAS que la maintenance lance après
+   chaque démarrage réchauffe de toute façon les répertoires en quelques
+   minutes.
+4. **L'enrichissement est sain** : ~0,18 ms par photo, réparti à parts égales
+   entre clé, dossier, dates et faits. Pas une cible — sauf en récursif, où
+   `faits` monte à 304 ms sur 1 789 photos.
+5. **La planche entière en JSON (§ 3.7) coûte peu côté serveur** : 1,4 à
+   1,7 million de caractères pour ~2 000 photos, mais `json.dumps` 25–30 ms,
+   gabarit ~50, envoi (gzip + socket) 55–81 ms. Ce que le NAVIGATEUR paie pour
+   analyser ce JSON n'est pas mesuré.
 
 ---
 
@@ -367,13 +433,24 @@ règle.
 
 ---
 
-## 5. L'ordre pour la prochaine session
+## 5. L'ordre — reclassé le 11/09 avec l'horloge de phases
 
-1. **L'horloge de phases dans `_serve_gallery`.** ~10 s froides restent, et on
-   ne sait pas où. Tout le reste de cette liste est plus petit que ce
-   qu'on ignore.
+~~1. L'horloge de phases dans `_serve_gallery`~~ — **faite**, § 2 bis.
+
+1. **Les deux balayages par ouverture de dossier** (§ 2 bis, point 2 ; c'est
+   l'ancien 3.8, qui passe devant). `index` + `carte_cles` : ~1 à 1,5 s par
+   clic, indépendamment du dossier. Même espèce de bug que `/api/pets/list` :
+   *un balayage de toute la photothèque là où la question porte sur une
+   partie.* **Précautions déjà lues** : `_key_index` est bâtie sur
+   `INDEX_BRUT` avec `_resolve_key` (une clé d'Uploads y devient un chemin
+   absolu), alors que `_index_entries_under` lit la VUE `STORE.data` et
+   reconnaît Uploads par l'absence de `/` — les deux ne sont pas
+   interchangeables, et la visibilité (chantier 18) passe par la vue. Et
+   `_pkey` ne se réécrit pas (§ 3.8) : le mémoïser sur les chaînes garde la
+   règle exacte. Oracle : l'ancienne fonction, sur les vraies clés de
+   `copie.db`.
 2. **Compter les vignettes manquantes**, puis décider si le tagueur doit les
-   écrire au passage (3.0). Une mesure d'abord, la décision ensuite.
+   écrire au passage (3.0). `/api/thumb` reste premier au temps total.
 3. **`/api/pets/list`** — la boucle imbriquée. Le meilleur gain/risque.
 4. **`/api/corbeille`** — d'abord le banc de parcours, ensuite la question du
    verrou, et seulement si la raison du verrou est comprise.
@@ -381,9 +458,8 @@ règle.
 6. **`nvidia-smi`** — le mesurer avant de toucher au cache.
 7. **HTTP/1.1** — l'instrument d'abord, le drapeau ensuite.
 8. **`Last-Modified` sur les médias.**
-9. Reclasser la liste avec le relevé d'après. Les points 3.7 et 3.8 attendent
-   ce reclassement : leur place d'aujourd'hui a été calculée sur une page qui
-   mettait 31 secondes.
+9. **La planche entière (3.7)** redescend : côté serveur, 150 ms sur 1,9 s. Ne
+   se reconsidère qu'avec une mesure du côté navigateur.
 
 ---
 
@@ -391,10 +467,11 @@ règle.
 
 | Fichier | Ce qu'il fait |
 |---|---|
-| `mesure_routes.py` | classe `_perf_routes.json` par temps total, et une vue « latence ressentie » par seuils |
+| `mesure_routes.py` | classe `_perf_routes.json` par temps total, une vue « latence ressentie » par seuils, et depuis le 11/09 **où part le temps** (phases) et les dernières exécutions en détail |
 | `mesure_parcours_dossier.py` | compare `iterdir`/`scandir`/`scandir+stat` sur un vrai dossier du NAS, méthodes alternées ; et `_pkey` sur les vraies clés, depuis **`copie.db`** — jamais `photos.db` |
 | `test_horloge_routes.py` | 16 bancs : l'horloge compte juste, et ne fait jamais tomber une requête |
 | `test_parcours_dossier.py` | 16 bancs : l'ancienne écriture sert d'oracle ; deux bancs comptent les `stat()` |
+| `test_horloge_phases.py` | 15 bancs : les phases se succèdent, le détail est borné, rien ne lève ; `_serve_gallery` garde ses arguments et ne livre aucun nom de dossier |
 
 Les deux bancs `mesure_` tournent sur l'agent de banc. L'espace dans un
 argument passe par le jeton `b64:` :
