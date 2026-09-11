@@ -253,6 +253,58 @@ l'index) vaut **0 partout**.
 
 ---
 
+## 2 ter. Les deux balayages par clic — `_pkey` mémoïsé
+
+Livré le 11/09 (`fix/deux-balayages-par-clic`), une heure après le relevé qui
+l'a désigné.
+
+**Ce qui a changé** : rien de la règle. `_pkey(p)` rend toujours
+`Path(p).as_posix().lower()` ; pour une **chaîne**, le résultat est gardé
+(`lru_cache`, borne 131 072). La carte `_key_index` se rebâtit à l'identique de
+`fichiers.build_key_index` — même ordre, même gagnant quand deux clés se
+normalisent pareil, même clé écartée si elle lève — mais la normalisation de
+chaque clé (`fichiers.norm(_resolve_key(k))`) est gardée elle aussi.
+`UPLOAD_DIR` est fixé au chargement : rien ne peut périmer.
+
+**Preuves avant livraison** (`test_pkey_memoire.py`, 10 bancs) : l'ancienne
+expression sert d'oracle **avec `PureWindowsPath`** — les règles de Windows,
+pas celles de la sandbox — sur quinze chemins tordus (UNC, casse, double
+séparateur, `.`, séparateur final, accents, `ß`, clés d'Uploads relatives) ;
+la carte est comparée au VRAI `build_key_index` de `fichiers.py` ; et la
+seconde reconstruction de la carte est **comptée : zéro `Path` construit**.
+Trois mutations (règle réécrite en `replace`, clé d'Uploads mal résolue,
+premier gagnant au lieu du dernier) : trois rouges.
+
+**Réobservé** — serveur redémarré 08:30:47, campagne en cours, énumération du
+NAS lancée à 08:31:55 :
+
+| | avant (08:15–08:18) | après (08:33–08:35) |
+|---|---:|---:|
+| `index`, 1ʳᵉ ouverture après démarrage | 511 ms | 710 ms (la mémoire se remplit) |
+| `index`, ouvertures suivantes | 393 · 450 · 477 · 481 · 500 · 772 | **137 · 139 · 156** · 430 |
+| `carte_cles`, TTL expiré | 618 · 784 ms | **44 ms** |
+| 2022 (2 465 photos), total | 1 935 · 1 652 ms | 1 696 ms |
+| 2021 (1 602 photos), total | 1 231 ms | 1 124 ms |
+
+Le gain est là où il était attendu : **~340 ms de moins sur `index`** à chaque
+clic, **~650 ms de moins** une fois par minute sur la carte — **et ce second
+gain se fait verrou tenu** : pendant la reconstruction, toute vignette qui
+vérifie sa visibilité par `_key_index` attendait.
+
+**Ce qu'il ne dit pas encore** :
+- Une ouverture (2017, 23 photos) a encore payé **430 ms** d'`index`. Deux
+  suspects, **aucun mesuré** : `_pkey(Path(UPLOAD_DIR).resolve())`, qui fait un
+  aller-retour SMB à chaque appel pour tout dossier hors Uploads, et la
+  contention du GIL avec les fils CPU (visages, DINOv2, encodage sémantique)
+  qui démarraient à ce moment-là. Les ~140 ms qui restent sont la VUE
+  (`STORE.data.items()` filtre 44 604 clés par le prédicat de visibilité).
+- Les totaux bougent peu sur 2022/2021, parce que `parcours` était ce
+  matin-là plus lent qu'au premier relevé (429–642 ms contre 210–373) :
+  l'énumération du NAS tournait. **Comparer phase par phase, pas les totaux**
+  — c'est exactement ce que l'horloge de phases permet.
+
+---
+
 ## 3. Ce qui est trouvé et pas encore fait
 
 Par ordre de gain mesuré, pas par ordre de facilité.
@@ -437,8 +489,10 @@ règle.
 
 ~~1. L'horloge de phases dans `_serve_gallery`~~ — **faite**, § 2 bis.
 
-1. **Les deux balayages par ouverture de dossier** (§ 2 bis, point 2 ; c'est
-   l'ancien 3.8, qui passe devant). `index` + `carte_cles` : ~1 à 1,5 s par
+1. ~~**Les deux balayages par ouverture de dossier**~~ — **faits le 11/09**,
+   § 2 ter. Reste à comprendre le 430 ms isolé (`resolve()` d'Uploads à
+   chaque appel ? GIL ?) — le mesurer avant d'y toucher. Ancien libellé :
+   (§ 2 bis, point 2 ; c'est l'ancien 3.8, qui passe devant). `index` + `carte_cles` : ~1 à 1,5 s par
    clic, indépendamment du dossier. Même espèce de bug que `/api/pets/list` :
    *un balayage de toute la photothèque là où la question porte sur une
    partie.* **Précautions déjà lues** : `_key_index` est bâtie sur
@@ -471,6 +525,7 @@ règle.
 | `mesure_parcours_dossier.py` | compare `iterdir`/`scandir`/`scandir+stat` sur un vrai dossier du NAS, méthodes alternées ; et `_pkey` sur les vraies clés, depuis **`copie.db`** — jamais `photos.db` |
 | `test_horloge_routes.py` | 16 bancs : l'horloge compte juste, et ne fait jamais tomber une requête |
 | `test_parcours_dossier.py` | 16 bancs : l'ancienne écriture sert d'oracle ; deux bancs comptent les `stat()` |
+| `test_pkey_memoire.py` | 10 bancs : `_pkey` mémoïsé rend l'ancienne expression sous `PureWindowsPath` ; la carte égale le vrai `build_key_index` ; la 2ᵉ reconstruction ne construit aucun `Path` |
 | `test_horloge_phases.py` | 15 bancs : les phases se succèdent, le détail est borné, rien ne lève ; `_serve_gallery` garde ses arguments et ne livre aucun nom de dossier |
 
 Les deux bancs `mesure_` tournent sur l'agent de banc. L'espace dans un

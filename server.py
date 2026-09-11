@@ -33,6 +33,7 @@ import urllib.parse
 import urllib.request
 import zipfile
 from datetime import datetime
+from functools import lru_cache
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
@@ -3070,8 +3071,41 @@ def _upload_content_dup(data):
 
 
 def _pkey(p):
-    """Clé de correspondance insensible aux séparateurs / à la casse."""
+    """Clé de correspondance insensible aux séparateurs / à la casse.
+
+    La RÈGLE ne change pas et ne doit pas changer : `Path(p).as_posix().lower()`
+    (`fichiers.norm` en est le miroir exact, et `str.replace('\\', '/')` ne lui
+    est PAS équivalent sur les cas tordus — PERFORMANCE.md § 3.8). Ce qui
+    change depuis le 11/09, c'est qu'elle n'est plus RECALCULÉE pour une chaîne
+    déjà vue : l'horloge de phases a mesuré 378 à 772 ms par ouverture de
+    dossier dans `_index_entries_under`, qui la demande pour les 44 604 clés à
+    chaque clic — un objet `Path` Windows par clé, pour une réponse qui ne
+    varie jamais. Seules les CHAÎNES sont mémoïsées : un `Path` passe par le
+    calcul direct, comme avant."""
+    if type(p) is str:
+        return _pkey_chaine(p)
     return Path(p).as_posix().lower()
+
+
+# Borne des deux mémoires de normalisation. 44 604 clés d'index aujourd'hui,
+# que partagent visages et animaux ; le double laisse la place aux dossiers et
+# aux renommages sans laisser la mémoire grossir sans fin (~30 Mo au pire).
+PKEY_MEMO_MAX = 1 << 17
+
+
+@lru_cache(maxsize=PKEY_MEMO_MAX)
+def _pkey_chaine(p):
+    """`_pkey` d'une chaîne, mémoïsé — la même expression, calculée une fois."""
+    return Path(p).as_posix().lower()
+
+
+@lru_cache(maxsize=PKEY_MEMO_MAX)
+def _pkey_de_cle(k):
+    """`fichiers.norm(_resolve_key(k))` pour UNE clé d'index : ce que
+    `fichiers.build_key_index` calcule pour chaque clé en bâtissant la carte.
+    `UPLOAD_DIR` est fixé au chargement du module, donc le résultat ne dépend
+    que de `k` — il se mémoïse sans pouvoir périmer."""
+    return fichiers.norm(_resolve_key(k))
 
 
 def _is_hidden_path(p):
@@ -3630,8 +3664,19 @@ def _key_index():
         n, now = len(INDEX_BRUT), time.time()
         if (_KEY_IDX["map"] is None or _KEY_IDX["n"] != n
                 or now - _KEY_IDX["at"] > KEY_IDX_TTL):
-            _KEY_IDX["map"] = fichiers.build_key_index(
-                list(INDEX_BRUT.keys()), _resolve_key)
+            # `fichiers.build_key_index(cles, _resolve_key)`, à l'identique
+            # (même ordre, donc même gagnant quand deux clés se normalisent
+            # pareil ; même clé écartée si elle lève) — mais la normalisation
+            # de chaque clé est mémoïsée. MESURÉ le 11/09 : 618 à 784 ms par
+            # reconstruction, VERROU TENU, une fois par minute (TTL) ; pendant
+            # ce temps toute vignette qui vérifie sa visibilité attend.
+            carte = {}
+            for k in list(INDEX_BRUT.keys()):
+                try:
+                    carte[_pkey_de_cle(k)] = k
+                except Exception:                             # noqa: BLE001
+                    pass
+            _KEY_IDX["map"] = carte
             _KEY_IDX["n"], _KEY_IDX["at"] = n, now
         return _KEY_IDX["map"]
 

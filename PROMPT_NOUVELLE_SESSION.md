@@ -53,6 +53,11 @@ maintenance, `/api/perf` à la demande, `mesure_routes.py` pour classer.
 prouvée identique par l'arbre syntaxique ; 15 bancs dans
 `test_horloge_phases.py`.
 
+**`_pkey` mémoïsé sur les chaînes** (`fix/deux-balayages-par-clic`, 11/09
+matin). `index` 393–772 → **137–156 ms** par clic ; reconstruction de
+`_key_index` (TTL, verrou tenu) 618–784 → **44 ms**. Règle inchangée, prouvée
+sous `PureWindowsPath` ; 10 bancs dans `test_pkey_memoire.py`.
+
 ---
 
 ## 3. Le résultat, honnêtement
@@ -78,11 +83,9 @@ complet : `PERFORMANCE.md` § 2 bis) :
 
 Détail et précautions : `PERFORMANCE.md` § 5.
 
-1. **Les deux balayages par ouverture** (`index` + `carte_cles`). Attention :
-   `_key_index` est bâtie sur `INDEX_BRUT` avec `_resolve_key`,
-   `_index_entries_under` sur la VUE `STORE.data` — pas interchangeables, la
-   visibilité passe par la vue. `_pkey` ne se réécrit pas ; il peut se
-   mémoïser sur les chaînes.
+1. ~~Les deux balayages par ouverture~~ — faits (§ 2 ter). Reste un `index`
+   isolé à 430 ms : `_pkey(Path(UPLOAD_DIR).resolve())` fait un aller-retour
+   SMB à chaque appel hors Uploads — suspect, pas mesuré.
 2. **Compter les vignettes manquantes** — `/api/thumb` reste premier au total.
 3. **`/api/pets/list`** — boucle imbriquée, meilleur gain/risque.
 4. **`/api/corbeille`** — banc de parcours d'abord, le verrou ensuite.
