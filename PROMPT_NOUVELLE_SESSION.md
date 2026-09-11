@@ -53,10 +53,11 @@ intouchable**, fin attendue vers le **14/09**.
    processus Windows, ni `localhost:11434`. Ollama, la RAM, le CPU : par
    l'agent de banc. Et le pont écrit encore parfois une version périmée
    (vu deux fois ce soir) : **vérifier par `sha1sum` en `device_bash`**.
-2. **Les 13,5 Go d'Ollama** : ce n'est PAS une fuite lente (13,53 Go après
-   20 min de campagne, le 12/09 à 00 h 10) — la question est posée dans
-   `QUESTIONS_MIKE.md` avec sa recommandation (`GGML_CUDA_NO_PINNED=1`, puis
-   remesurer). Tant qu'elle tient, la machine pagine et les routes paient.
+2. **Les 13,5 Go d'Ollama** : ni fuite lente (13,5 Go après 20 min), ni
+   mémoire épinglée par CUDA (`GGML_CUDA_NO_PINNED=1` essayé, 13,33 Go).
+   Le chiffre qui compte : **7,8 Go résidents** pour un modèle de 3,47 Go.
+   Rien à faire pendant la campagne — après, un modèle qui tient dans les
+   4 Go de VRAM (`vision-eval`). Tant que ça tient, la machine pagine.
 3. **`gc.freeze()`** après le chargement des index : mesurer la collecte
    complète avant/après (`/api/serveur` → `sondes.gc.par_gen.2`).
 4. **HTTP/1.1**, puis **`Last-Modified`** (`PERFORMANCE.md` § 3.5, 3.6).

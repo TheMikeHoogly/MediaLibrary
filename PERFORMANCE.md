@@ -719,9 +719,14 @@ contre 5,90 Go juste après un chargement. Le moteur RÉSERVE donc ~13,5 Go
 d'engagement mémoire en quelques dizaines de minutes, une fois pour toutes :
 `ollama stop` rend la place, et elle est reprise dans l'heure. La machine
 engage 27 Go pour 15,7 Go de RAM — **elle paginera tant que ce chiffre
-tiendra** (RAM libre : 0,5 Go, serveur à 31 % hors RAM). La cause exacte du
-chiffre reste inconnue (mémoire hôte épinglée par CUDA ? tampons de calcul ?)
-— c'est une question ouverte dans `QUESTIONS_MIKE.md`. Au passage : le modèle n'a que **1,74 Go en
+tiendra** (RAM libre : 0,5 Go, serveur à 31 % hors RAM). **La mémoire hôte épinglée par CUDA est ÉCARTÉE** : Mike a relancé Ollama
+avec `GGML_CUDA_NO_PINNED=1` (vu dans l'environnement du runner par
+`diagnostic_ollama_memoire.py`), et le privé remonte à **13,33 Go en
+17 minutes** — 13,53 sans la variable. Le tagging ne bouge pas non plus
+(médiane 12 s sur 40 photos contre 13 s sur 120). Ce qui PÈSE vraiment sur la
+RAM n'est d'ailleurs pas l'engagement de 13,3 Go, dont la moitié n'est jamais
+touchée, mais ses **7,8 Go résidents** pour un modèle de 3,47 Go. La cause
+reste inconnue ; la question, réduite, vit dans `QUESTIONS_MIKE.md`. Au passage : le modèle n'a que **1,74 Go en
 VRAM** avant, **1,21 Go** après rechargement (`--no-mmproj-offload` : la VRAM
 libre au chargement décide), le reste calcule sur le CPU (2,7 cœurs).
 `vmmem` (la VM de Claude sur ce PC) tient 4 Go de plus.
@@ -794,9 +799,10 @@ et CPU/défauts par phase (§ 3.10, § 3.11).
 
 0. **Quand la campagne finit** : `/api/serveur` → `vignettes` passe à
    `fabrique` ; relancer `mesure_couverture_vignettes.py`.
-1. **Les 13,5 Go d'Ollama** (§ 3.10) : la question est posée à Mike. Une piste
-   MESURABLE avant de toucher à quoi que ce soit : relancer le moteur avec
-   `GGML_CUDA_NO_PINNED=1`, puis `diagnostic_ollama_memoire.py` à +20 min.
+1. **Les 13,5 Go d'Ollama** (§ 3.10) : la piste CUDA est écartée par la
+   mesure. Ce qui reste se joue APRÈS la campagne — un modèle qui tient dans
+   les 4 Go de VRAM ne garderait pas 7,8 Go en RAM ; d'ici là, la machine
+   pagine et les routes paient.
 2. **La vue (§ 3.11)** : réécriture exacte livrée (×1,4–1,6) — la réobserver
    dans `comptes` de `/api/maint/status` ; puis la décision sur un cache à
    génération.

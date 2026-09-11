@@ -66,14 +66,22 @@ touchent ton confort, pas le code.
 
 | Piste | Ce qu'elle coûte | Ce qu'elle rapporterait |
 |---|---|---|
-| **(a) Relancer Ollama avec `GGML_CUDA_NO_PINNED=1`** (mémoire hôte épinglée par CUDA — l'hypothèse la plus plausible) | un arrêt/relance d'Ollama, 2 min ; mesurable à +20 min | si c'est ça : plusieurs Go rendus, sans rien changer au tagging |
+| ~~**(a) `GGML_CUDA_NO_PINNED=1`**~~ — **ESSAYÉ le 12/09 à 00 h 20, ÉCARTÉ** | — | **13,33 Go après 17 min**, contre 13,53 sans la variable ; tagging inchangé (médiane 12 s contre 13 s). La variable ne sert donc à rien : `setx GGML_CUDA_NO_PINNED ""` pour la retirer, ou la laisser, elle ne coûte rien non plus. |
 | **(b) Vivre avec** | rien | rien ; le serveur reste 1,5 à 3 × plus lent qu'il ne devrait, tant que la campagne tourne |
 | **(c) Fermer la VM de Claude quand je ne travaille pas** | tu perds l'accès à tes dossiers depuis Claude | 4 Go d'engagement en moins |
 
-**Ma recommandation : (a), puis remesurer.** C'est la seule piste qui peut
-rendre de la RAM sans rien coûter au reste, et elle se juge en vingt minutes.
-Si elle ne donne rien, (b) jusqu'à la fin de la campagne — le 14/09 le GPU se
-libère, et la question change.
+**Ce que la mesure a appris** : le chiffre à regarder n'est pas l'engagement
+de 13,3 Go — la moitié n'est jamais touchée — mais les **7,8 Go RÉSIDENTS**
+du moteur pour un modèle de 3,47 Go. C'est ça qui ne laisse que 0,5 Go à la
+machine.
+
+**Ma recommandation, maintenant : (b) jusqu'au 14/09.** Il reste ~6 700 photos
+à re-taguer, soit une journée. Pendant la campagne, le modèle et son prompt
+sont gelés (règle du chantier), donc la seule variable libre est la mémoire de
+la machine, et aucun réglage mesuré ne la rend. **Après la campagne**, la
+question redevient ouverte et se pose autrement : un modèle qui tient
+ENTIÈREMENT dans les 4 Go de VRAM (qwen3-vl:2b y tenait) ne garderait pas
+7,8 Go en RAM — à instruire avec `vision-eval`, pas à décider ici.
 
 **En attendant** : rien n'est touché ; les bancs sont écrits et se relancent
 en une ligne (`diagnostic_ollama_memoire.py`, `mesure_memoire.py`).
