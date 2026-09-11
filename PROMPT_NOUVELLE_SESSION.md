@@ -1,316 +1,186 @@
-# Reprise — MediaLibrary, au soir du 9 septembre 2026
+# Reprise — MediaLibrary, session PERFORMANCE (11 septembre 2026)
 
 > **Ce fichier est ÉPHÉMÈRE.** Il décrit un état, pas des règles. Les règles
 > vivent dans `CLAUDE.md`, le plan dans `ROADMAP.md`, les verdicts dans
 > `eval/DECISIONS.md`, `eval/DECISIONS_UI.md`, `eval/DECISIONS_TAGGING.md` et
-> `docs/DECISIONS_OUTILLAGE.md`. Si ce fichier contredit un carnet, **le carnet
-> a raison** : lui a été relu, celui-ci a été écrit vite.
+> `docs/DECISIONS_OUTILLAGE.md`. **L'analyse de performance complète, avec tous
+> les chiffres, est dans `PERFORMANCE.md`** — ce document-ci n'en est que le
+> point d'entrée. Si ce fichier contredit un carnet, **le carnet a raison**.
 
 ---
 
-## 1. Ce qui commande tout : la campagne de retag
+## 0. La consigne de Mike, mot pour mot
 
-Elle tourne depuis le 05/09 (`retag_actif.txt` posé). Au 08/09 au matin,
-compté **dans le journal** heure par heure : **~190 photos/heure**, 16 s
-médian, **~27 800 restantes** → environ six jours, donc autour du **14/09**.
+> « concentre toi sur la performance (toujours en attendant la fin du tagging).
+> fais une analyse en profondeur, des tests utiles et intelligents et prépare
+> la future session qui consistera à augmenter les performances de notre
+> application dans tous les domaines. »
 
-**Trois conséquences, et elles ferment des portes :**
-
-- Le GPU est pris. Tout banc qui appelle Ollama avec un autre modèle est à
-  reporter.
-- **Le prompt est intouchable.** Le prompt EST la version du pipeline
-  (`v3fr`) : y ajouter une phrase rendrait candidates les ~12 000 photos déjà
-  refaites. La question au tagueur sur les documents sensibles n'est donc pas
-  « reportée par prudence », elle est **empêchée**.
-- Les optimisations O8, O9, O14 et O15 touchent des boucles de calcul : après
-  la campagne.
-
-Lire l'avancement : `/api/maint/status` → `config.retag`. **Compter dans le
-journal, ne pas diviser une durée par 24 h** — c'est ce qui a fait annoncer
-4 jours là où il en restait 6.
+**« dans tous les domaines » ne veut pas dire « partout à la fois ».** La seule
+manière d'y arriver est de mesurer, corriger le plus gros, **re-mesurer**, et
+laisser le nouveau classement décider de la suite. Le premier tour l'a déjà
+prouvé : le point n° 1 du 10/09 a été corrigé, et le classement du 11/09 n'a
+plus la même tête.
 
 ---
 
-## 2. Ce qui s'est fait le 09/09 — dix-sept livraisons
+## 1. Ce qui commande toujours tout : la campagne de retag
 
-Vérifiées une par une dans `.git/logs/refs/heads/main`, jamais sur le rapport
-de l'agent.
+Elle tourne depuis le 05/09. Fin attendue autour du **14/09**.
 
-**Le Takeout Google est CLOS.** Le bat 49 est passé de bout en bout : cinq
-contrôles, l'étape 3 bis qui a jugé les **14 absentes jetables** (moitiés
-vidéo de Motion Photos sans extension, deux preuves chacune), le `EFFACER`
-écrit en toutes lettres. **C: de 171,2 à 236 Go libres sur 932.** Plus de
-Takeout, ni zip ni extrait.
+- Le GPU est pris : tout banc qui appelle Ollama avec un autre modèle attend.
+- **Le prompt est intouchable** — il EST la version du pipeline (`v3fr`). Y
+  toucher rouvrirait les ~12 000 photos déjà refaites.
+- Le NAS est disputé. **Une mesure prise pendant la campagne n'est pas une
+  mesure prise à vide** : l'écrire à côté du chiffre, toujours.
 
-**Le chantier 18 est clos pour l'essentiel.** Mike a trié les 213 photos
-sensibles : 60 à la corbeille, 7 en privé, le reste rendu à la galerie. **Il
-en reste UNE** (`Photos Flo\Appartement Bremblens\20210630_200127.jpg`).
-
-**Deux défauts trouvés en le regardant faire**, tous deux corrigés et observés
-en réel :
-- l'onglet se rechargeait depuis le haut après chaque verdict — invivable sur
-  213 fiches, invisible à la relecture ;
-- l'API ressuscitait **67 dossiers déjà clos** (68 annoncées là où il y en
-  avait 1) parce que le drapeau `sensible` survit au déménagement d'une photo.
-
-**La roadmap redevient une carte** : 108 881 → 31 871 octets, de 87 % à 25 %
-du budget. Le récit des travaux finis est sorti du carnet et vit dans git.
-
-**Trois lignes d'audit fermées sans une ligne de code** : `animal:luna`
-(personne ne lit la casse de ce tag), et l'adoption de `components.css` par
-`reglages`, `browse` et `faces` (la première avait raison, la deuxième était
-conforme, la troisième n'est plus servie).
-
-**Deux gains mesurés** : la compression HTTP (O11) — `/files` 157 → 48 ko,
-`/pets` 88 → 29 ko, lu sur le fil — et le bouton « Annuler » du bandeau, qui
-était à **1,02:1**, du noir sur du noir, sur le seul contrôle qui rattrape une
-mise à la corbeille.
-
-**Deux instruments neufs** : `inventaire_fichiers_orphelins.py` (qui lit quoi)
-et `appliquer_menage.py` + **bat 50**, où la politique propose et l'inventaire
-oppose son veto.
+Ce chantier-ci est compatible : il touche le **chemin de service** (routes
+HTTP, parcours de dossier, caches), jamais le calcul IA.
 
 ---
 
-## 3. Le ménage est fait — et l'angle mort avait CINQ portes
+## 2. Ce qui a été fait, et qui est sur `main`
 
-**Bat 50, second passage, 21:27 : 506 fichiers déplacés, 49,3 Mo**, manifeste
-dans `_corbeille_menage\20260909_212726\`, réversible par `--annuler`. Le
-premier passage n'en avait déplacé que 14 et **retenu 810** — ce déséquilibre
-était le vrai résultat de la journée.
+**L'horloge des routes** (`feat/horloge-des-routes` → `743fef9`). Elle compte
+chaque requête dans les enveloppes de `do_GET`/`do_POST`, replie les routes à
+argument, ne lève jamais, et dépose `_perf_routes.json` à chaque cycle de
+maintenance. `/api/perf` le rend à la demande. `mesure_routes.py` le classe.
+16 bancs dans `test_horloge_routes.py`.
 
-Le veto (« un fichier que l'inventaire n'a pas vu est retenu : ne pas savoir
-n'est pas savoir que non ») a fait exactement son travail à chaque fois. C'est
-`inventaire_fichiers_orphelins.py` qui était aveugle, **et il l'était par cinq
-portes différentes**, corrigées et remesurées une par une :
+**`_lister_dossier`** (`fix/parcours-dossier-scandir` → `8eba291`). `os.scandir`
+au lieu de `iterdir()` + un `stat()` par fichier ; `os.walk` avec élagage dans
+`dirs[:]` en récursif. 16 bancs dans `test_parcours_dossier.py`, dont deux qui
+**comptent les appels à `os.stat`** et deux qui relisent `server.py` par l'AST
+pour vérifier que l'ancien chemin a bien disparu. L'ancienne implémentation est
+gardée **dans le fichier de test** et sert d'oracle.
 
-| # | La porte | Ce qu'elle cachait |
-|---|---|---|
-| 1 | filtre d'**extension** — `_fichiers()` ne rendait que du texte | tous les binaires : `.pyc`, `.jpg`, `.b64`, `.jsonl` |
-| 2 | élagage de **dossier** — `__pycache__` dans `IGNORES` | 122 `.pyc` de plus, invisibles *après* le correctif 1 |
-| 3 | élagage **par nom nu, à toute profondeur** | **579 des 800 fichiers de `_to_delete\`** |
-| 4 | le **nettoyeur** compté comme lecteur de ses propres cibles | `_rapport_perdus_takeout.json`, `_rapport_sef_avant.json` |
-| 5 | l'**instrument lui-même**, via les commentaires du correctif | les quatre fichiers dont je venais d'écrire l'histoire |
-
-**La porte 3** est la leçon d'ingénierie : `_corbeille_session` désignait la
-corbeille **vivante**, à la racine, mais comparé au nom **nu** il faisait aussi
-taire la corbeille **morte** archivée dans la quarantaine. *Une protection qui
-vise un dossier particulier doit nommer sa **place**, pas seulement son nom.*
-Même défaut sur `JAMAIS_ORPHELIN`, qui protégeait une copie de `photos.db` de
-283 Mo. Les deux sont ancrés à la racine (`IGNORES_RACINE` / `IGNORES_PARTOUT`).
-
-**La porte 5 est la leçon de méthode, et elle est humiliante :** en écrivant
-dans les commentaires du correctif *pourquoi* `_rapport_google_apres2.json`
-avait été protégé à tort, j'ai fait de l'instrument son lecteur. Au passage
-suivant, mesuré, les quatre fichiers étaient de nouveau `LU PAR DU CODE` — lus
-par l'outil qui venait d'expliquer que personne ne les lisait. **Écrire
-l'histoire d'une erreur la refaisait.** La règle est maintenant écrite une
-bonne fois : *rien de la chaîne de ménage n'est un lecteur* — ni l'instrument,
-ni son banc, ni le nettoyeur, ni le sien, ni leurs rapports, ni leurs
-manifestes. **Un outil qui juge ne témoigne pas.**
-
-Et la leçon qui les relie toutes : **réparer la porte 1 ne suffisait pas, et
-je m'étais déclaré content.** Ce qui a rendu chaque porte suivante visible,
-c'est le compteur de fichiers parcourus imprimé en tête du rapport —
-719 → 3 761 → 3 883 → 4 465 → 3 944 (la dernière baisse est saine : la
-corbeille du ménage n'est plus reparcourue). *Quand on corrige un angle mort,
-on cherche ses autres portes avant de se déclarer content.*
-
-`test_inventaire_fichiers_orphelins.py` : **26 bancs**, au moins un par porte.
-
-### Deux défauts du bat 50 lui-même, corrigés
-
-- **L'étape 3 promettait un choix qu'elle ne pouvait pas tenir.** Mike a
-  répondu « 2 » (journaux > 30 j) et lu « Rien à déplacer » — **35 des 44
-  journaux sont `LU PAR UN MOTIF`**, forcément : `undo_*.json` EST le motif.
-  Le veto ne pouvait rien laisser passer. Pour cette famille seule, le jugement
-  vient désormais de l'**âge**, que Mike fournit et qui est plus fort ;
-  `LU PAR DU CODE` reste un veto (`docs/plan_rangement.json` est lu par les
-  bats 26 et 39). *Une option de menu qui ne peut jamais rien faire est une
-  promesse que l'outil ne tiendra pas.*
-- **`_rapport_google_apres2.json` déclaré mort par Mike.** Réglé sans liste
-  d'exception : le bat 33 le nommait dans un `REM` **pour dire qu'il avait
-  cessé de le lire**, et sa ligne 105 `echo`ait un exemple nommant
-  `_rapport_google_apres.json`. Les deux mentions retirées du bat, la leçon
-  gardée. L'instrument distingue maintenant `REM`, `::` et `echo` non redirigé
-  (mais **pas** `echo x > fichier`, qui écrit pour de bon — c'est le canal de
-  commande de tout ce projet).
-
-### Ce que le prochain bat 50 déplacerait — mesuré
-
-| famille | fichiers | poids |
-|---|---|---|
-| journaux d'annulation (> 30 j) | 34 | 20,6 Mo |
-| rapports périmés | 7 | 14,1 Mo |
-| quarantaine, reliquat | 6 | 0,1 Mo |
-| **total proposé** | **47** | **34,8 Mo** |
-
-**Ce qui reste et qui ne bougera pas tout seul : 283 Mo dans un seul
-fichier**, `_to_delete\menage_20260908\_avant_deplacement\photos.db`, la
-copie de la base d'avant le ménage du 08/09. L'inventaire la range en
-`LU PAR DU CODE` parce que le code cite `photos.db` partout et qu'il **ne peut
-pas distinguer la base vivante de sa copie**. C'est une limite honnête, pas un
-bogue : elle demande une décision de Mike, pas une règle de plus.
-
-Enfin : `_corbeille_menage\` n'est **pas** vidée par le bat, et c'est voulu.
-Quelques jours, puis à la main.
+**`mesure_parcours_dossier.py`**, le banc qui a tranché : sur `Photos
+Mike/2022` (2 465 photos, SMB), **26,05 s → 308 ms**, facteur 84.
 
 ---
 
-## 4. Le plan du 09/09 au soir — CE QUI EN A ÉTÉ FAIT le 10/09
+## 3. Le résultat, honnêtement
 
-| | | |
-|---|---|---|
-| **P1** | réviser `CLAUDE.md` et `MARCHE_A_SUIVRE.md` | **FAIT** |
-| **P2** | fermer le ménage | **Mike a relancé le bat 50** et effacé les 283 Mo |
-| **P3** | O14 — `_reconcilier` | **FAIT et mesuré** |
-| **P4** | la dernière photo sensible | **FAIT** — un vrai défaut trouvé au passage |
+| | avant | après |
+|---|---:|---:|
+| `/files` **à froid** | 31,4 s | **10,2 s** |
+| `/files` **à chaud** | 1,35 s | ~1,6 s |
 
-**P1.** `CLAUDE.md` porte cinq règles neuves (6 à 10), chacune avec sa mesure :
-*un outil qui juge ne témoigne pas* · *une protection doit nommer la place, pas
-seulement le nom* · *un angle mort a rarement une seule porte, et c'est un
-compteur d'étendue qui rend la suivante visible* · *une option qui ne peut
-jamais aboutir est une promesse que l'outil ne tiendra pas* · *un refus doit
-nommer sa cause à qui regarde déjà la chose*. Plus la **parade au pont** qui
-écrit une version périmée (committer deux fois, comparer la TAILLE ; pour un
-canal, écrire `rien` d'abord). Deux faits périmés corrigés : ~40 600 photos et
-non ~30 000, modèle `qwen3.5:4b` et non `qwen3-vl:2b`. `MARCHE_A_SUIVRE.md` est
-réécrit en entier : cinq lignes à faire en tête, le reste dit ce qui est FAIT.
+**Le banc promettait 84×, la page a rendu 3×.** Les deux chiffres sont justes,
+et l'écart est la chose la plus utile apprise ce soir :
 
-**P3 — O14, et la mesure a déplacé la cible.** `save()` appelle
-`_reconcilier()`, qui re-empreinte l'index ENTIER pour trouver les mutations
-**profondes** (`e['faits']['lieu'] = …` ne passe pas par `__setitem__` de
-premier niveau, donc rien ne le signale) :
+- les **21 secondes** gagnées sur le chemin froid sont bien celles du parcours ;
+- les **~10 s qui restent** sont l'enrichissement des 2 465 photos, le balayage
+  de l'index et la sérialisation du JSON — que je n'avais pas mesurés, et que
+  j'avais supposés petits ;
+- **à chaud rien n'a bougé**, parce que Windows gardait déjà les métadonnées du
+  répertoire : l'ancien code n'était catastrophique que sur un dossier pas vu
+  depuis un moment. C'est-à-dire exactement le geste de quelqu'un qui cherche
+  une photo.
 
-```
-  entrees        : 44121
-  reconciliation A VIDE (rien n a change) :  627.2 ms, 0 ecriture
-                                             14.2 us par entree
-  flush RAPIDE apres UNE mutation signalee :   0.1 ms, 1 ecriture
-     -> la reconciliation a vide coute 6547 x ce flush
-```
-
-Le point d'appel coûteux **n'est pas le tagging** — il passe par `set()`, donc
-par le chemin rapide. C'est **`_sync_dir`, qui termine CHAQUE DOSSIER par un
-`STORE.save()`** : le chemin même qui avait gelé l'interface le 06/09.
-
-`flush()` devient un nom public, sa limite écrite noir sur blanc et tenue par
-un banc. Trois points d'appel convertis, **chacun avec sa preuve à côté**.
-`save()` et sa garantie ne bougent pas. Le repli JSON porte le même nom, sinon
-supprimer `photos.db` — censé être un retour arrière trivial — ferait tomber
-le scan.
-
-**P4 — la dernière photo sensible, et un défaut qu'on n'aurait pas trouvé
-autrement.** « Rendre privée » répondait *« Impossible : Fichier
-introuvable. »* sur une photo dont la vignette était à l'écran. La photo est à
-**Flo** ; le geste écrit dans `Photos Flo/PRIVE`, fermé même à l'admin — d'où
-une dissymétrie que personne n'avait voulue : **l'admin pouvait EFFACER la
-photo sans pouvoir la PROTÉGER**. Tranché par Mike : *« j'ai le droit de
-déposer dans le privé de tout le monde, mais uniquement parce que je suis
-administrateur »*. L'admin dépose, il ne fouille pas — exception **nommée**,
-passée en ARGUMENT au garde de `mkdir` et `move` (jamais un drapeau global : le
-serveur est threadé). Contrôle négatif mesuré : sans `depot`, le même chemin
-reste refusé 404.
+> **La règle qui sort de là** : un banc qui isole un morceau prouve le gain de
+> ce morceau, pas celui de la page. Il faut les deux mesures, et c'est la
+> seconde qui décide.
 
 ---
 
-## 4 bis. Ce qui reste, dans l'ordre
+## 4. L'ordre pour cette session
 
-**O15 — FAIT le 10/09, et le chiffre est gros.** Les trois caches pèsent
-**722 Mo dont 541 Mo d'orphelins (75 %)** : `photo_thumbs` 56 % morts,
-`face_thumbs` **83 %** (le ré-embedding déplace les bboxes), `animal_thumbs`
-74 %. Le nom de fichier est une empreinte de ce qui définit la vignette, donc
-tout ce qui change le mtime ou la bbox l'orpheline — et écrire les tags XMP
-change le mtime. `51 - Purger les vignettes orphelines.bat` attend Mike.
-**Deux garde-fous, et ils visent l'outil, pas les fichiers** : un dossier dont
-moins de 5 % des noms sont reconnus est refusé EN BLOC (c'est la formule qui a
-divergé de `server.py`, pas le cache qui est mort), et rien de moins de 7 jours
-n'est touché (une formule fausse se trompe d'abord sur ce qui vient d'être
-créé). *La réversibilité, ici, c'est la régénération : une vignette n'est pas
-une donnée, c'est un calcul mis de côté.*
+Le détail, les chiffres et les précautions de chaque point sont dans
+`PERFORMANCE.md`. Résumé :
 
-**LA QUESTION OUVERTE, et c'est la plus rentable du moment** — le cache de
-vignettes est **éteint** : 1 995 photos sur 44 604 (**4,5 %**) ont une vignette
-512 utilisable, 80 (0,2 %) une 1600. Cause mesurée : le nom porte le MTIME, et
-écrire un tag XMP le change **sans toucher un pixel** — la campagne périme
-**6 524 vignettes par jour**, la galerie n'en refait que ce qu'on regarde.
-**95 % des cases relisent l'original sur le NAS**, 2 à 6 Mo au lieu de ~50 Ko :
-exactement ce que l'audit O1 avait voulu supprimer. La proposition (séparer le
-nom de la validité, et re-tamponner la vignette quand c'est NOUS qui écrivons
-le tag) est dans `QUESTIONS_MIKE.md` et attend son feu vert. Elle ne touche ni
-le prompt, ni la version du pipeline, ni un index.
-
-**À moi, sans GPU ni prompt** — plus rien de l'audit : O8 et O9 sont les
-derniers, et ils touchent des boucles de calcul.
-
-**À Mike, quand il veut** — relancer le bat 50 (47 fichiers / 34,8 Mo, dont les
-journaux qui marchent enfin) ; vider `_corbeille_menage\` à la main dans
-quelques jours ; le bat 43 puis le bat 24 pour les Motion Photos ; lire la page
-`/aide`.
-
-**Quand la campagne s'arrête (~14/09)** — O8 et O9 (boucles de calcul) ; la
-question au tagueur sur les documents sensibles (**empêchée**, pas reportée :
-toucher au prompt rouvrirait ~12 000 photos déjà refaites) ; la re-mesure des
-Motion Photos depuis le 03/09 (demande le serveur arrêté) ; et le **bilan
-chiffré** de cette première passe officielle du fonds.
-
-**En fin de projet, décision de Mike du 09/09** — la copie hors site. Le fait
-qui ne se répète plus mais reste vrai : depuis l'effacement du Takeout, le NAS
-est le **seul exemplaire** des ~40 600 photos.
+1. **Horloge de phases dans `_serve_gallery`.** Cinq `perf_counter` au même
+   patron que l'horloge des routes, rendus dans le même fichier. ~10 s froides
+   à expliquer : **tout le reste de cette liste est plus petit que ce qu'on
+   ignore.**
+2. **Compter les vignettes manquantes.** `/api/thumb` est le nouveau premier du
+   classement (35 requêtes, 62,9 s, **28 au-dessus d'une seconde**). Si le fonds
+   est mal couvert, la piste est que **le tagueur écrive la vignette au
+   passage** — il ouvre déjà la photo. Mesurer d'abord, décider ensuite.
+3. **`/api/pets/list`** — 2,87 s pour une boucle sur 17 chats **imbriquée dans
+   un balayage des 40 584 entrées**. Une seule passe suffit. Meilleur
+   gain/risque de la liste ; `/api/people/list` est de la même famille.
+4. **`/api/corbeille`** — 4,88 s **sous `FILE_OPS_LOCK`**. D'abord le banc de
+   parcours (même mal que `/files` ?), ensuite seulement la question du verrou,
+   et uniquement si la raison pour laquelle il a été posé là est comprise.
+5. **`/api/geo`** — 993 ms, agrégat de toute la photothèque reconstruit à chaque
+   ouverture de la carte. Instantané en cache, patron `_key_index`.
+6. **`nvidia-smi`** — `hw_state()` lance un sous-processus ; les quatre appels à
+   `/api/maint/status` ont tous mis entre 300 ms et 1 s. Le chronométrer seul,
+   GPU occupé puis libre, avant de toucher au cache.
+7. **HTTP/1.1.** Le serveur parle HTTP/1.0 : une connexion TCP par vignette.
+   **Ne pas poser le drapeau sans l'instrument** — une réponse sans
+   `Content-Length` en HTTP/1.1 suspend la page au lieu de la ralentir.
+   `verifier_content_length.py` (par l'AST) d'abord.
+8. **`Last-Modified` + `304` sur les médias.** Revenir sur une photo de 5 Mo la
+   retélécharge entièrement depuis le NAS.
+9. **Reclasser** avec le relevé suivant. La planche entière en un seul JSON
+   (§ 3.7 de `PERFORMANCE.md`) et `_pkey` (§ 3.8) attendent ce reclassement :
+   leur place d'aujourd'hui a été calculée sur une page qui mettait 31 s.
 
 ---
 
-## 5. Les pièges qui ont coûté du temps le 09/09
+## 5. Les pièges qui coûtent du temps
 
-**Le pont écrit une version PÉRIMÉE du fichier.** Arrivé six fois dans la
-journée, sur des `.md`, un `.py`, un `SESSION_COMMIT.txt` et deux
-`_commande_*.txt`. Symptôme : l'agent refuse en citant une assertion qui passe
-pourtant en local, ou un agent exécute un ordre qu'on croyait avoir remplacé.
-**Parade, systématique** : après chaque `device_commit_files`, re-stager et
-comparer la TAILLE. Si elle diffère, re-committer — la seconde tentative
-passe. Le diagnostic par la taille coûte un aller-retour ; le chercher
-ailleurs en coûte trois.
+**Le pont écrit une version PÉRIMÉE du fichier.** Une quinzaine de fois en deux
+jours. **Parade systématique** : après chaque `device_commit_files`,
+re-committer une seconde fois, puis **vérifier la TAILLE** par un listing de
+dossier. Pour un fichier de canal, écrire `rien` d'abord — une reprise périmée
+écrira alors `rien`, ce qui est sans effet. Le 10/09, `SESSION_COMMIT.txt` a
+demandé **trois** écritures.
 
-**Ne jamais réécrire un `.bat` pendant que Mike le lance.** `cmd.exe` rouvre
-le fichier après chaque commande et reprend à l'octet mémorisé. Une
-reformulation de +70 octets pendant l'exécution du bat 49 lui a fait exécuter
-un fragment de ligne, d'où « Python est introuvable » puis un message
-d'arrêt faux. Démontré en recalculant l'offset sur les deux versions.
+**Le banc refuse les espaces dans un argument.** `--dossier "Photos Mike/2022"`
+est rejeté ; il faut le jeton `b64:` suivi du base64url du texte UTF-8 —
+`--dossier b64:UGhvdG9zIE1pa2UvMjAyMg`.
 
-**Une assertion peut lire un COMMENTAIRE au lieu du code.** Trois fois cette
-semaine : `min-height:36px` trouvé dans le commentaire qui expliquait son
-retrait, `Content-Length` trouvé dans une docstring. Assertir sur l'appel.
+**Un instrument qui écrit périodiquement doit dire QUAND.** Le 10/09,
+`_perf_routes.json` a semblé absent : le banc l'a cherché 2 min 40 avant le
+premier cycle de maintenance. Ce n'était pas une panne.
 
-**Un instrument qui se lit lui-même se donne toujours raison.**
-`inventaire_fichiers_orphelins.py` comptait sa propre sortie comme lecteur, et
-sa première version rangeait toute la suite de tests en orphelins parce que
-« cité par un nom » n'est pas « a un lecteur ».
+**Ne jamais réécrire un `.bat` pendant qu'il tourne.** `cmd.exe` reprend à
+l'octet mémorisé : +70 octets lui font exécuter un fragment de ligne.
 
-**Le banc a besoin d'une session.** `verifier_pages_composants.py` lancé par
-l'agent est renvoyé sur `/connexion` et ne prouve rien. Pour un vrai regard :
-passer par le navigateur connecté de Mike et lire les styles **calculés**.
+**Une assertion peut lire un COMMENTAIRE au lieu du code.** Assertir sur
+l'appel, par l'AST.
+
+**Un instrument qui se lit lui-même se donne toujours raison.** Et une liste
+blanche ne compte jamais les absents — c'est ce qui a fait passer verte, le
+10/09, une correction posée sur deux chemins d'écriture sur trois.
+
+**Le banc n'a pas de session HTTP.** Un banc lancé par l'agent est renvoyé sur
+`/connexion`. Pour une vraie observation : passer par le navigateur connecté de
+Mike (Claude in Chrome), pas par le volet intégré — celui-ci classe
+`192.168.0.13` comme site à risque et ne donne l'accès qu'une action à la fois.
 
 ---
 
 ## 6. Ce que j'attends de Mike
 
-1. **Une décision sur les 283 Mo** — la copie de `photos.db` dans
-   `_to_delete\menage_20260908\_avant_deplacement\`. Elle est retenue par le
-   veto et le restera : l'instrument ne peut pas distinguer la base vivante de
-   sa copie. C'est un `del` manuel, ou rien.
-2. **Un lancement du bat 50** quand il passe par là (47 fichiers, 34,8 Mo).
-3. Rien d'autre. La campagne tourne toute seule.
+1. **Relancer le bat 50** quand il passe par là (47 fichiers, 34,8 Mo ;
+   répondre **2** à l'étape 3).
+2. **Lancer le bat 51** — `face_thumbs` + `animal_thumbs`, 32 458 fichiers,
+   227 Mo. C'est un arriéré, pas une corvée qui revient.
+3. **Le bat 43 puis le bat 24** pour les Motion Photos (~9,27 Go).
+4. **Vider `_corbeille_menage\` à la main**, dans quelques jours.
+5. **Lire la page `/aide`** — ce n'est pas une tâche, c'est un jugement.
+
+Rien de tout cela ne bloque le chantier performance.
 
 ---
 
 ## 7. Rappels de protocole qui ne changent pas
 
-- **Éditer → redémarrer → OBSERVER EN RÉEL → livrer.** L'ordre n'est pas
-  négociable, et « observer » veut dire regarder la chose elle-même : la page
-  dans le navigateur, les styles calculés, le compte rendu par l'API.
+- **Éditer → redémarrer → OBSERVER EN RÉEL → livrer.** « Observer » veut dire
+  regarder la chose elle-même : la page dans le navigateur, `/api/perf`, le
+  journal. Pas le rapport d'un agent.
 - **Git ne se lance jamais depuis la VM.** On écrit `livrer` dans
-  `_commande_git.txt` ; l'agent Windows vérifie, committe, pousse, fusionne.
-  **Vérifier dans `.git/logs/refs/heads/main`, jamais dans son rapport.**
-- Branches : `feat|fix|chore|docs|test/nom-en-minuscules`. `perf/` est refusé.
-- Les `.bat` sont en **ASCII pur**, contrôlés par `verifier_bat.py`.
+  `_commande_git.txt`. **Vérifier dans `.git/logs/refs/heads/main`, jamais dans
+  son rapport.**
+- Branches : `feat|fix|chore|docs|test/nom-en-minuscules`. **`perf/` est
+  refusé** — un chantier de performance livre en `fix/` ou `feat/`.
+- Les `.bat` sont en **ASCII pur**, **CRLF**, contrôlés par `verifier_bat.py`.
 - `SESSION_COMMIT.txt` en ASCII pur : `branche=` puis `titre=`.
+- `server.py` : lire la skill `monolith-surgery` avant d'y toucher ; toute UI
+  passe par `photo-ui`.
+- Les bancs `mesure_` ne lisent **jamais** `photos.db` — le serveur l'a
+  ouverte. Ils travaillent sur `copie.db` ou sur un dossier temporaire.
