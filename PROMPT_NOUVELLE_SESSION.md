@@ -27,6 +27,7 @@ intouchable**, fin attendue vers le **14/09**.
 | `3c88b9e` | **correction** de la vue par utilisateur : une fiche réécrite garde ce que l'écrivain ne voyait pas (`restaurer_fiche`), `pop` sur la vue, `values`/`items` filtrés | listes Personnes/Animaux identiques octet pour octet ; exposition réelle 0 fiche |
 | `fix/vue-rapide` | prédicat de visibilité réécrit à l'identique, `filter()` natif, `mesure_vue.py` | sur les vraies clés : `len` ×1,66, `values` ×1,67, `items` ×1,44 ; comptes identiques |
 | `fix/rename-garde-les-auteurs` | `rename` transporte `auteurs` de la fiche absorbée : les jugements de Flo passaient au nom de celui qui renomme | bancs sur le vrai `SubjectStore` ; ancien code, 3 rouges |
+| `fix/gel-du-gc` | `gc.freeze()` des 505 000 objets permanents **et** `threshold2` à 100 | temps de collecte ÷3,8 (3,43 → 0,91 ms par seconde de service), pire pause 509 → 210 ms |
 
 ---
 
@@ -38,7 +39,8 @@ intouchable**, fin attendue vers le **14/09**.
 2. **La machine pagine** : 0,5 Go de RAM libre, `llama-server` à **13,5 Go
    privés** (modèle déclaré 3,47 Go). `ollama stop` rend la place, elle est
    reprise en vingt minutes : réservation, pas fuite lente.
-3. **Le GC complet gèle tout 230–430 ms, toutes les ~40 s.**
+3. **Le GC complet gelait tout 348 ms toutes les ~100 s** — corrigé le 12/09
+   (§ 3.12) : il fallait le gel ET le seuil, le gel seul déplaçait le coût.
 4. **Le modèle de tagging n'a que 1,2–1,7 Go en VRAM** : le reste tourne sur
    le CPU. La VRAM libre au chargement décide.
 
@@ -46,8 +48,9 @@ intouchable**, fin attendue vers le **14/09**.
 
 ## 3. Ce que la session suivante doit faire, dans l'ordre
 
-0. **Vérifier l'état réel** : `.git/logs/refs/heads/main` doit finir sur
-   `3c88b9e` (ou la vue rapide si elle a été livrée entre-temps).
+0. **Vérifier l'état réel** : `.git/logs/refs/heads/main` doit finir sur le
+   dernier commit du tableau § 1 — une doc décrit une intention, git dit ce
+   qui est fusionné.
 1. **`device_bash` remarche** (Mike a retiré la mise à jour Windows le 11/09
    au soir) — mais il tourne dans une VM **Linux** : il ne voit ni les
    processus Windows, ni `localhost:11434`. Ollama, la RAM, le CPU : par
@@ -58,9 +61,9 @@ intouchable**, fin attendue vers le **14/09**.
    Le chiffre qui compte : **7,8 Go résidents** pour un modèle de 3,47 Go.
    Rien à faire pendant la campagne — après, un modèle qui tient dans les
    4 Go de VRAM (`vision-eval`). Tant que ça tient, la machine pagine.
-3. **`gc.freeze()`** après le chargement des index : mesurer la collecte
-   complète avant/après (`/api/serveur` → `sondes.gc.par_gen.2`).
-4. **HTTP/1.1**, puis **`Last-Modified`** (`PERFORMANCE.md` § 3.5, 3.6).
+3. **HTTP/1.1** : l'instrument `Content-Length` d'abord (un chemin qui répond
+   sans lui SUSPEND la page en HTTP/1.1), le drapeau ensuite, puis
+   **`Last-Modified`** sur les médias (`PERFORMANCE.md` § 3.5, § 3.6).
 
 ---
 

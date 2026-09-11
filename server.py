@@ -16198,6 +16198,63 @@ def regler_peage_gil():
     return dict(GIL_REGLAGE)
 
 
+# ─── LE GEL DES OBJETS PERMANENTS (12/09) ───────────────────────────────────
+# Le ramasse-miettes de CPython parcourt, à chaque collecte complète, TOUS les
+# objets qu'il suit. Ce processus en porte des millions : l'index (44 604
+# entrées), les visages (40 584), les animaux, les fiches — chargés une fois au
+# démarrage et vivants jusqu'à l'arrêt. La sonde du 11/09 (`sondes.py`) les a
+# chiffrés : **une collecte de génération 2 toutes les ~40 s, 230 à 568 ms**,
+# pendant lesquelles AUCUN fil ne tourne — la route qui tombe dedans paie une
+# demi-seconde qui n'est pas la sienne.
+#
+# `gc.freeze()` déplace tout ce qui existe À CET INSTANT dans une génération
+# PERMANENTE, que les collectes ne parcourent plus. Ce n'est pas une fuite : le
+# comptage de références continue de libérer ces objets quand ils meurent (une
+# entrée retirée de l'index n'est plus référencée que par lui) ; seuls les
+# CYCLES nés avant le gel ne seraient plus ramassés, et un serveur qui vient de
+# charger ses index n'en a pas à ramasser.
+#
+# Appelé au tout début de `__main__`, APRÈS le chargement des magasins (il se
+# fait à l'import) et AVANT le premier fil : ce qui naîtra ensuite — les photos
+# taguées pendant la campagne, les réponses HTTP — reste suivi normalement.
+# Et le SEUIL, parce que le gel seul déplace le problème sans le résoudre.
+# Mesuré sur la machine, campagne en cours, deux processus de plus de 9 min :
+#
+#   sans gel : 21 collectes completes en 2 133 s — 348 ms en moyenne, 509 au pire
+#   avec gel : 20 collectes completes en   560 s —  96 ms en moyenne, 201 au pire
+#
+# Chaque pause est 3,6 fois plus courte — et elles sont 3,7 fois plus
+# FRÉQUENTES, donc le temps total passé à ramasser ne bouge pas. C'est
+# mécanique : CPython déclenche une collecte complète quand les objets promus
+# dépassent le quart de ce qu'il suit, et le gel a retiré 505 000 objets de ce
+# dénominateur. `threshold2` (le nombre de collectes de génération 1 exigées
+# avant une complète) les espace à nouveau.
+GC_SEUIL_GEN2 = 100
+
+
+def geler_les_permanents():
+    """Sort les objets déjà chargés du champ du ramasse-miettes, et espace les
+    collectes complètes. Rend `(objets gelés, seuil posé)`, ou `(None, None)`
+    si l'interpréteur ne sait pas le faire (PyPy, versions anciennes). Ne lève
+    jamais : un serveur qui ne démarre pas pour une optimisation serait un
+    mauvais échange."""
+    import gc
+    try:
+        gc.collect()
+        gc.freeze()
+        geles = gc.get_freeze_count()
+    except Exception:                                         # noqa: BLE001
+        return None, None
+    seuil = None
+    try:
+        a, b, _c = gc.get_threshold()
+        gc.set_threshold(a, b, GC_SEUIL_GEN2)
+        seuil = gc.get_threshold()[2]
+    except Exception:                                         # noqa: BLE001
+        seuil = None
+    return geles, seuil
+
+
 def fil_surveille(cible, nom=None, boucle=True, args=(), dormir=None,
                   continuer=None, demarrer=True):
     """Lance `cible` dans un fil SURVEILLÉ, qui se relance s'il doit boucler.
@@ -16245,6 +16302,10 @@ if __name__ == '__main__':
     print(f"  ⏱ Sondes : ramasse-miettes "
           f"{'branché' if SONDE_GC is not None and SONDE_GC.branchee else 'ABSENT'}, "
           f"retard du GIL {'mesuré' if SONDE_GIL is not None else 'ABSENT'}")
+    _geles, _seuil = geler_les_permanents()
+    print(f"  ⏱ GC : {_geles} objets permanents gelés, collectes complètes "
+          f"espacées (seuil {_seuil})"
+          if _geles else "  ⏱ GC : gel indisponible sur cet interpréteur")
 
     # Migration éventuelle du pipeline animaux (modèles/seuils changés) AVANT de
     # lancer les workers, pour repartir sur une base propre (pas de dimensions

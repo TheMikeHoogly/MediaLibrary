@@ -773,6 +773,33 @@ brutes (17b). Corrigés au goulot : `visibilite.restaurer_fiche`.
 **Exposition mesurée** (`mesure_citations_cachees.py`, copie du 11/09 21:41) :
 0 fiche ne cite une photo invisible à Mike ou à Flo — le défaut était latent.
 
+### 3.12 Le ramasse-miettes : gelé et espacé — **livré le 12/09**
+
+La sonde du 11/09 l'a chiffré : une **collecte complète toutes les ~100 s,
+348 ms en moyenne, 509 ms au pire**, tous fils arrêtés. Ce processus porte
+l'index (44 604), les visages (40 584), les animaux et les fiches — chargés au
+démarrage, vivants jusqu'à l'arrêt, et parcourus à chaque collecte complète
+pour n'y rien trouver.
+
+`gc.freeze()` au début de `__main__` (après les sondes, avant le premier fil,
+donc APRÈS le chargement des magasins) sort **505 000 objets** de ce parcours.
+Et c'est là que la mesure a corrigé le geste :
+
+| | collectes complètes | moyenne | pire | temps de gel par seconde de service |
+|---|---|---:|---:|---:|
+| sans rien | 21 en 2 133 s (1/102 s) | 348 ms | 509 ms | 3,43 ms/s |
+| **gel seul** | 20 en 560 s (**1/28 s**) | 96 ms | 201 ms | **3,42 ms/s** |
+| gel + `threshold2 = 100` | 4 en 666 s (1/167 s) | 151 ms | 210 ms | **0,91 ms/s** |
+
+**Le gel seul ne gagne rien en temps total** : CPython déclenche une collecte
+complète quand les objets promus dépassent le quart de ce qu'il SUIT, et le
+gel vient de retirer 505 000 objets de ce dénominateur — les pauses sont 3,6 ×
+plus courtes et 3,7 × plus fréquentes. Il fallait les deux : le gel pour la
+durée, le seuil pour la fréquence. **Ensemble : ×3,8 sur le temps total, et la
+pire pause passe de 509 à 210 ms.** `test_gel_gc.py` (8 bancs) tient l'ordre
+d'appel, le fait que ce qui naît APRÈS reste ramassé, et qu'un interpréteur
+qui refuse ne fait pas tomber le serveur.
+
 ## 4. Ce qui a été vérifié et qui va bien
 
 À ne pas rouvrir sans raison neuve :
@@ -790,12 +817,15 @@ brutes (17b). Corrigés au goulot : `visibilite.restaurer_fiche`.
 
 ---
 
-## 5. L'ordre — reclassé le 11/09 à 22 h
+## 5. L'ordre — reclassé le 12/09 à 01 h
 
 **Fait le 11/09** : horloge de phases (§ 2 bis), deux balayages par clic
 (§ 2 ter), `/api/pets/list` (§ 3.2), vignettes (§ 3.0), corbeille (§ 3.1),
 péage du GIL (§ 3.9), `/api/maint/status` en une passe (§ 3.4), sondes GC/GIL
 et CPU/défauts par phase (§ 3.10, § 3.11).
+
+**Fait le 12/09** : la vue accélérée (§ 3.11), le ramasse-miettes gelé et
+espacé (§ 3.12).
 
 0. **Quand la campagne finit** : `/api/serveur` → `vignettes` passe à
    `fabrique` ; relancer `mesure_couverture_vignettes.py`.
@@ -808,8 +838,6 @@ et CPU/défauts par phase (§ 3.10, § 3.11).
    génération.
 3. **HTTP/1.1** — l'instrument `Content-Length` d'abord.
 4. **`Last-Modified` sur les médias.**
-5. **La collecte complète du GC** (230–430 ms / ~40 s) : `gc.freeze()` après
-   le chargement des index la sortirait des objets permanents — à mesurer.
 6. **La planche entière (3.7)** : seulement avec une mesure côté navigateur.
 
 ---
@@ -834,6 +862,7 @@ et CPU/défauts par phase (§ 3.10, § 3.11).
 | `mesure_cpu.py` | occupation par cœur, processus par cœurs consommés, CPU de chaque fil du serveur |
 | `diagnostic_ollama_memoire.py` | ce qu'Ollama déclare (`/api/ps`) contre ce que `llama-server` tient ; drapeaux de mémoire, jamais un chemin |
 | `test_horloge_maint_status.py`, `test_passe_index.py` | 8 et 5 bancs, anciennes écritures en oracle |
+| `test_gel_gc.py` | 8 bancs : le gel, le seuil, ce qui naît après, un interpréteur qui refuse |
 | `mesure_vue.py`, `test_vue_rapide.py` | ce que coûte la vue sur les vraies clés, deux écritures alternées ; 5 bancs d'équivalence sur 6 000 clés tirées |
 | `test_horloge_phases.py` | 15 bancs + 4 (CPU et défauts par phase) : les phases se succèdent, le détail est borné, rien ne lève ; `_serve_gallery` garde ses arguments et ne livre aucun nom de dossier |
 

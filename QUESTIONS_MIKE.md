@@ -7,6 +7,13 @@
 > elle touche l'outillage, dans `ROADMAP.md` si elle priorise.
 > Protocole : `CLAUDE.md`, « Traite autonome ».
 >
+> **Vidée le 12/09** : « les 13,5 Go du moteur d'Ollama ». Mike a essayé (a)
+> — `GGML_CUDA_NO_PINNED=1` — qui est **écarté par la mesure** (13,33 Go
+> après 17 min contre 13,53 sans), puis a tranché **(b) : on vit avec**
+> jusqu'à la fin de la campagne. Le verdict et ses chiffres vivent dans
+> `eval/DECISIONS.md` ; la suite — un modèle de vision qui tient dans les
+> 4 Go de VRAM — est un jalon de `ROADMAP.md` (section C).
+>
 > **Vidée le 11/09** : « qui fabrique les 39 181 vignettes absentes ? » (98 %
 > du fonds sans vignette de grille). Mike : **« les deux »** — le tagueur au
 > passage dès maintenant (livré le soir même), un fil de fond pour le reste
@@ -45,46 +52,4 @@
 > Le verdict vit dans `eval/DECISIONS.md`, le correctif dans git, le récit
 > dans `ROADMAP.md`. Une question résolue qui reste ici cesse d'être lisible,
 > et c'est le premier endroit qu'on lit en reprenant.
-
-## La mémoire de la machine — 13,5 Go engagés par le moteur d'Ollama (12/09, 00 h)
-
-**Ce qui est mesuré** (`mesure_memoire.py`, `diagnostic_ollama_memoire.py`,
-sur ta machine) : 27 Go d'engagement mémoire pour 15,7 Go de RAM, **0,5 Go
-libre**, 3,8 Go de fichier d'échange, et jusqu'à **1 300 pages relues du
-disque par seconde**. Le serveur de la photothèque a entre 31 % et 65 % de sa
-mémoire hors RAM : chaque parcours de l'index la relit sur le disque, et c'est
-une part du prix des routes (§ 3.10, § 3.11 de `PERFORMANCE.md`).
-
-**Qui la tient** : `llama-server.exe` (le moteur d'Ollama) — **13,53 Go
-privés** pour un modèle déclaré à 3,47 Go, contexte 4 096, une requête à la
-fois. Ce n'est pas une fuite lente : après le redémarrage du PC il était à
-5,9 Go, et **de retour à 13,5 Go vingt minutes plus tard**. Ensuite, `vmmem`
-(la VM de Claude sur ton PC) à 4 Go, le serveur à 2,4 Go.
-
-**La question t'appartient** : c'est ta machine, et deux des trois leviers
-touchent ton confort, pas le code.
-
-| Piste | Ce qu'elle coûte | Ce qu'elle rapporterait |
-|---|---|---|
-| ~~**(a) `GGML_CUDA_NO_PINNED=1`**~~ — **ESSAYÉ le 12/09 à 00 h 20, ÉCARTÉ** | — | **13,33 Go après 17 min**, contre 13,53 sans la variable ; tagging inchangé (médiane 12 s contre 13 s). La variable ne sert donc à rien : `setx GGML_CUDA_NO_PINNED ""` pour la retirer, ou la laisser, elle ne coûte rien non plus. |
-| **(b) Vivre avec** | rien | rien ; le serveur reste 1,5 à 3 × plus lent qu'il ne devrait, tant que la campagne tourne |
-| **(c) Fermer la VM de Claude quand je ne travaille pas** | tu perds l'accès à tes dossiers depuis Claude | 4 Go d'engagement en moins |
-
-**Ce que la mesure a appris** : le chiffre à regarder n'est pas l'engagement
-de 13,3 Go — la moitié n'est jamais touchée — mais les **7,8 Go RÉSIDENTS**
-du moteur pour un modèle de 3,47 Go. C'est ça qui ne laisse que 0,5 Go à la
-machine.
-
-**Ma recommandation, maintenant : (b) jusqu'au 14/09.** Il reste ~6 700 photos
-à re-taguer, soit une journée. Pendant la campagne, le modèle et son prompt
-sont gelés (règle du chantier), donc la seule variable libre est la mémoire de
-la machine, et aucun réglage mesuré ne la rend. **Après la campagne**, la
-question redevient ouverte et se pose autrement : un modèle qui tient
-ENTIÈREMENT dans les 4 Go de VRAM (qwen3-vl:2b y tenait) ne garderait pas
-7,8 Go en RAM — à instruire avec `vision-eval`, pas à décider ici.
-
-**En attendant** : rien n'est touché ; les bancs sont écrits et se relancent
-en une ligne (`diagnostic_ollama_memoire.py`, `mesure_memoire.py`).
-
----
 

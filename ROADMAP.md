@@ -161,6 +161,15 @@ service seulement, jamais le calcul IA.
 
 ### C. Quand la campagne s'arrête, et pas avant
 
+**C0. La mémoire de la machine, et donc le modèle de vision.** Tranché le
+12/09 (« ok pour b ») : pendant la campagne on vit avec les **13,5 Go privés
+dont 7,8 résidents** du moteur d'Ollama, qui laissent 0,5 Go de RAM libre et
+font paginer le serveur (`PERFORMANCE.md` § 3.10, `eval/DECISIONS.md`). La
+piste CUDA est écartée par la mesure. Quand le GPU se libère, la question
+redevient un choix de MODÈLE : celui qui tient entièrement dans les 4 Go de
+VRAM ne garde pas 7,8 Go en RAM — protocole `vision-eval`, et le changement
+de modèle est un changement de pipeline (3 bis (c)).
+
 **C1. La question au tagueur sur les documents sensibles** (3 bis (c)) — elle
 n'est pas reportée par prudence, elle est **empêchée** : la toucher rouvrirait
 12 000 photos déjà refaites.
