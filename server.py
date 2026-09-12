@@ -6388,7 +6388,7 @@ def _epoch_precis(cle, entree):
 _annee_fiable = recherche.annee_fiable_depuis(_epoch_precis, _path_year_num)
 
 
-def _sans_date_sure(cle, e):
+def _sans_date_sure(cle, e, ep=recherche.A_CALCULER):
     """1 si AUCUNE date sûre ne classe cette photo — ni précise, ni année de
     dossier. Elle n'est alors ni récente ni ancienne : elle est INCONNUE.
 
@@ -6399,7 +6399,7 @@ def _sans_date_sure(cle, e):
     en compte 43 sur 54. Le client les range désormais en fin de liste dans les
     deux sens, et les compte."""
     try:
-        return 0 if _annee_fiable(cle, e or {}) else 1
+        return 0 if _annee_fiable(cle, e or {}, ep) else 1
     except Exception:                                         # noqa: BLE001
         return 1
 
@@ -14123,6 +14123,9 @@ class Handler(BaseHTTPRequestHandler):
                 # Jour « MM-JJ » si la date est PRÉCISE (sinon None) : c'est lui
                 # qui décide si le bouton « Même jour » s'affiche.
                 'jour': _jour,
+                # Transportée jusqu'à la passe « marques », qui la
+                # redemandait ; retirée là-bas avant le JSON.
+                '_ep': _ep,
                 'faits': _faits,
                 'kw': kw,
                 'gps': entry.get('gps'),
@@ -14171,6 +14174,7 @@ class Handler(BaseHTTPRequestHandler):
                     # date de prise (epoch) pour le tri chronologique
                     'taken': _best_time_depuis(k, e, _epk),
                     'jour': _jour_depuis(_epk),
+                    '_ep': _epk,
                     'faits': _faits_pour(k, e, fctx),
                     'kw': sorted(kws),
                     'gps': e.get('gps'),
@@ -14239,6 +14243,7 @@ class Handler(BaseHTTPRequestHandler):
                     'mtime': e.get('mtime') or 0,
                     'taken': _best_time_depuis(k, e, _epk),
                     'jour': _jour_depuis(_epk),
+                    '_ep': _epk,
                     'faits': _faits_pour(k, e, fctx),
                     'kw': kws,
                     'gps': e.get('gps'),
@@ -14264,6 +14269,7 @@ class Handler(BaseHTTPRequestHandler):
                 kws = list(dict.fromkeys(
                     (e.get('kw_fr') or []) + (e.get('kw_en') or [])))
                 folder_lbl, gurl = _lien_dossier_memo(k, roots_cache, _liens)
+                _epj = _epoch_precis(k, e)
                 file_data.append({
                     'name': Path(k).name,
                     'key': k,
@@ -14272,7 +14278,8 @@ class Handler(BaseHTTPRequestHandler):
                     'mtime': e.get('mtime') or 0,
                     'taken': _ep,
                     'annee': meme_jour.annee_de(_ep),
-                    'jour': _jour_depuis(_epoch_precis(k, e)),
+                    'jour': _jour_depuis(_epj),
+                    '_ep': _epj,
                     'faits': _faits_pour(k, e, fctx),
                     'kw': kws,
                     'gps': e.get('gps'),
@@ -14326,7 +14333,13 @@ class Handler(BaseHTTPRequestHandler):
         for _fd in file_data:
             _k = _fd.get('key') or _fd.get('name') or ''
             _e = STORE.data.get(_k)
-            if _sans_date_sure(_k, _e):
+            # La date précise a déjà été calculée par la branche qui a rempli
+            # cette entrée ; `_annee_fiable` la redemandait — TROISIÈME lecture
+            # de l'EXIF gardé et du nom de fichier pour la même photo. La clé
+            # `_ep` ne sert qu'à la transporter d'une passe à l'autre : elle
+            # est retirée ICI, avant le JSON, pour CHAQUE entrée.
+            _ep_connu = _fd.pop('_ep', recherche.A_CALCULER)
+            if _sans_date_sure(_k, _e, _ep_connu):
                 _fd['sd'] = 1
             # Phase 1 des vidéos : la planche sait qu'elle tient une vidéo
             # (badge « ▶ durée », `<video>` dans la visionneuse).

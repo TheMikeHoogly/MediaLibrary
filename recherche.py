@@ -700,6 +700,11 @@ def filtrer_periode(entrees, periode, epoch_precis, annee_fiable):
     return retenues, sans_date
 
 
+# Sentinelle PUBLIQUE (server.py la passe) : distingue « date précise absente » (None, une réponse) de
+# « date précise pas fournie » (à calculer).
+A_CALCULER = object()
+
+
 def annee_fiable_depuis(epoch_precis, path_year_num):
     """Fabrique le lecteur d'année SÛRE attendu par `filtrer_periode`.
 
@@ -708,8 +713,14 @@ def annee_fiable_depuis(epoch_precis, path_year_num):
     de 2026 réécrit le fichier d'une photo de 1998, et « photos de 2026 »
     remonterait alors la moitié de la photothèque.
     """
-    def lire(cle, entree):
-        ep = epoch_precis(cle, entree)
+    def lire(cle, entree, ep=A_CALCULER):
+        # `ep` déjà connue : l'appelant l'a sous la main (la galerie la
+        # calcule pour `taken` et pour `jour`). Un sentinelle, et pas `None` :
+        # `None` est une VALEUR légitime ici — elle veut dire « pas de date
+        # précise », et la confondre avec « pas fournie » ferait recalculer
+        # exactement les cas où il n'y a rien à trouver.
+        if ep is A_CALCULER:
+            ep = epoch_precis(cle, entree)
         if ep is not None:
             try:
                 return time.localtime(float(ep)).tm_year

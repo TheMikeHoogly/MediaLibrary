@@ -222,8 +222,27 @@ class LaCarteNaPasBouge(unittest.TestCase):
 class LesAppelantsNOntPasBouge(unittest.TestCase):
     def test_l_appelant_de_la_galerie_demande_toujours_pkey(self):
         """C'est l'appelant qu'on accélère par la mémoire, pas la règle qu'on
-        contourne : `_index_entries_under` garde son `_pkey(k)`."""
-        self.assertIn('_pkey(k).startswith(pref)', _src('_index_entries_under'))
+        contourne : `_index_entries_under` normalise CHAQUE clé par `_pkey`,
+        dans sa boucle.
+
+        Sur l'ARBRE, pas sur une ligne : la version d'avant cherchait le texte
+        `_pkey(k).startswith(pref)`, et elle est tombée ROUGE le 12/09 quand
+        le § 3.17 a scindé l'expression en `kp = _pkey(k)` puis
+        `kp.startswith(pref)` — même règle, même appel, autre écriture. Rien
+        ne la lançait (§ 3.18)."""
+        arbre = ast.parse(_src('_index_entries_under'))
+        boucles = [n for n in ast.walk(arbre) if isinstance(n, ast.For)]
+        self.assertTrue(boucles, 'plus de boucle sur les clés de l\'index')
+        dans_boucle = set()
+        for b in boucles:
+            for c in ast.walk(b):
+                if (isinstance(c, ast.Call) and isinstance(c.func, ast.Name)
+                        and isinstance(b.target, ast.Name)):
+                    args = [a.id for a in c.args if isinstance(a, ast.Name)]
+                    if b.target.id in args:
+                        dans_boucle.add(c.func.id)
+        self.assertIn('_pkey', dans_boucle,
+                      'la boucle ne normalise plus chaque clé par _pkey')
 
     def test_la_carte_n_appelle_plus_la_reconstruction_sans_memoire(self):
         s = _src('_key_index')

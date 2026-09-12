@@ -3,7 +3,7 @@
 > **Ce fichier est ÉPHÉMÈRE.** Il décrit un état, pas des règles. Les règles
 > vivent dans `CLAUDE.md`, le plan dans `ROADMAP.md`, les verdicts dans
 > `eval/DECISIONS.md` et `docs/DECISIONS_OUTILLAGE.md`. **Les chiffres du
-> chantier performance sont dans `PERFORMANCE.md`** (§ 3.13 à 3.16 pour la
+> chantier performance sont dans `PERFORMANCE.md`** (§ 3.13 à 3.18 pour la
 > galerie, § 5 pour l'ordre).
 
 ---
@@ -20,9 +20,11 @@ née de quatre fautes de la même matinée. Elle a mordu dans l'heure : voir
 § 2 ci-dessous.
 
 La campagne de retag commande toujours tout : GPU pris, **prompt
-intouchable**. **Relevé le 12/09 à 11h40 : 3 656 photos restantes**, ~14 s
-chacune → elle finit dans la **nuit du 12 au 13/09**. La section C du
-`ROADMAP` s'ouvre donc tout de suite après.
+intouchable**. **Relevé le 12/09 à 12h15 : 3 537 restantes, 1 abandon**
+(`/api/maint/status` → `config.retag`, la seule source juste : `counts.tagues`
+compte les photos taguées un jour, pas celles de CETTE passe). 119 photos en
+35 min → ~17,6 s chacune → elle finit **au petit matin du 13/09**. La section
+C du `ROADMAP` s'ouvre tout de suite après.
 
 ---
 
@@ -32,12 +34,14 @@ chacune → elle finit dans la **nuit du 12 au 13/09**. La section C du
 
 | | matin | soir |
 |---|---:|---:|
-| `parcours` | 715 ms | **8 ms** |
-| `enrichir` (mode navigation) | 455 ms | 275 à 481 ms |
+| `parcours` | 715 ms | **46 ms** (8 ms cache chaud) |
+| `index` | 112 à 136 ms | **47 ms** |
+| `marques` | 76 à 114 ms | **29 ms** |
+| `enrichir` (mode navigation) | 455 ms | 325 ms |
 | `enrichir` (dès qu'un tag est coché) | 455 ms | **0,0 ms** |
-| la page entière | 1 493 à 1 870 ms | **732 à 1 092 ms** |
+| la page entière | 1 493 à 1 870 ms | **633 à 820 ms** |
 
-Quatre gestes, chacun avec son banc et sa réobservation :
+Six gestes, chacun avec son banc et sa réobservation :
 
 1. **Le dossier de tête était énuméré DEUX fois** en récursif (§ 3.13).
 2. **Le lien de dossier était calculé par PHOTO** alors qu'il ne dépend que du
@@ -51,8 +55,15 @@ Quatre gestes, chacun avec son banc et sa réobservation :
    et ses 20 bancs ; `_lister_dossier_frais` décide. **Aucune invalidation
    explicite n'est câblée** : une écriture du serveur change la date du
    dossier comme n'importe quelle autre.
+5. **La vue était consultée 44 605 fois pour 2 519 réponses** dans `index` :
+   balayer l'index BRUT, ne demander à la vue que les clés retenues (§ 3.17).
+6. **La date précise était calculée une TROISIÈME fois**, dans la passe des
+   marques (§ 3.18) : les quatre branches la rangent sous `'_ep'`, la passe la
+   `pop` pour chaque entrée. Sentinelle `recherche.A_CALCULER` obligatoire —
+   `None` est une réponse légitime d'`epoch_precis`.
 
-52 bancs verts sur la machine (20 + 18 + 14).
+84 bancs verts sur la machine (20 + 24 + 14 + 3 + 25 + 8 et `test_git_agent`
+à 50).
 
 ---
 
@@ -99,11 +110,14 @@ trois pages rustinaient déjà chacune de leur côté (corrigé dans `base.css`)
 
 0. **Vérifier l'état réel** : `.git/logs/refs/heads/main`, et l'UBR Windows
    (§ 4) avant de compter sur `device_bash`.
-1. **`PERFORMANCE.md` § 5, point 3** — ce qui reste dans `_serve_gallery`, par
-   ordre de poids : `enrichir` (275–481 ms de CPU), puis `marques` et `motifs`,
-   **deux post-passes qui relisent `STORE.data` par photo** — donc la VUE, le
-   même coût que celui que le § 3.17 vient de retirer du balayage. C'est le
-   prochain caillou, et il est déjà identifié.
+1. **`PERFORMANCE.md` § 5, point 3** — il ne reste qu'UN gros poste dans
+   `_serve_gallery` : `enrichir`, **325 ms de CPU pur**, dont `enrichir.faits`
+   89 ms (`_faits_pour`), `enrichir.dates` 76 ms, `enrichir.dossier` 40 ms (le
+   `Path(...)` de `_resolve_key`, un par photo, mémoïsable). Puis `motifs`
+   (70 ms), **la dernière post-passe qui relit `STORE.data` par photo** — donc
+   la VUE, le même coût que celui que le § 3.17 a retiré du balayage. Tout le
+   reste est sous 75 ms : la suite est un chantier de cent millisecondes à la
+   fois.
 2. **B5 — le tri des dépôts, à voir à l'usage** : le mur de 7 jours est-il le
    bon, faut-il un geste groupé pour les 248 hérités ? Ne rien changer avant
    que Mike s'en soit servi une fois.
@@ -132,6 +146,21 @@ trois pages rustinaient déjà chacune de leur côté (corrigé dans `base.css`)
   La racine du NAS est `dir=1`, pas `dir=0`.
 - **Comparer phase par phase**, et **CPU contre temps écoulé** : c'est ce qui
   a montré que `parcours` était de l'attente (15,6 ms de CPU pour 692).
+- **Un banc peut être ROUGE sans que rien ne le lance** : `tests_pour`
+  appariait par NOM seul. Depuis le 12/09 il lance aussi tout `test_*.py` dont
+  le TEXTE cite un module touché — **63 bancs** étaient invisibles, dont 59
+  citent `server.py`, et **CINQ étaient rouges** depuis des livraisons
+  entières. Un `livrer` qui touche `server.py` lance donc beaucoup et dure
+  plusieurs minutes : c'est voulu. Son seul trou est nommé,
+  `git_agent.BANCS_A_LA_MAIN`.
+- **Un banc qui lit le source par le TEXTE mesure une orthographe.** Les cinq
+  rouges cherchaient `'jour': _jour_de(`, `_pkey(k).startswith(pref)`… — le
+  sens n'avait pas bougé, l'écriture si. Réécrire sur l'ARBRE (`ast`), et se
+  méfier d'un compte : deux d'entre eux annonçaient le mauvais NOMBRE.
+- **`_banc_sortie.txt` porte son EN-TÊTE** (`# <banc>.py`, `# code 0 — 94 s`) :
+  c'est LUI qui dit de quel run on lit la sortie. Le 12/09, deux lectures ont
+  été attribuées au mauvais banc faute de la lire — et `test_cache_vignettes`
+  dure 94 s, plus que la fenêtre d'attente qu'on croyait large.
 - `server.py` : skill `monolith-surgery` ; UI : `photo-ui`.
 
 ---

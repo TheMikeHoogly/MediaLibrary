@@ -289,17 +289,32 @@ class ElleEstPoseeDansLaGalerie(unittest.TestCase):
     def test_les_appels_chronometres_ont_garde_leurs_ARGUMENTS(self):
         """Sortis du litteral pour etre mesures — mais la meme cle, la meme
         entree, le meme contexte. Une virgule deplacee ici changerait la date
-        d'une photo, sans qu'aucune horloge ne le dise."""
+        d'une photo, sans qu'aucune horloge ne le dise.
+
+        Ecriture du 12/09 (§ 3.13 puis § 3.18) : la date precise est calculee
+        UNE fois, dans `_ep`, et les deux `_depuis` la recoivent. Ce banc
+        attendait encore `_best_time` / `_jour_de` et etait ROUGE depuis le
+        § 3.13 sans que rien ne le lance (§ 3.18)."""
         boucle = [n for n in ast.walk(GALERIE) if isinstance(n, ast.For)
                   and ast.unparse(n.target) == 'f'][0]
         attendu = {
-            '_best_time': '_best_time(fkey or str(f), entry)',
-            '_jour_de': '_jour_de(fkey or str(f), entry)',
+            '_epoch_precis': '_epoch_precis(_cle_date, entry)',
+            '_best_time_depuis': '_best_time_depuis(_cle_date, entry, _ep)',
+            '_jour_depuis': '_jour_depuis(_ep)',
             '_faits_pour': '_faits_pour(fkey or str(f), entry, fctx)',
         }
         for nom, texte in attendu.items():
             vus = [ast.unparse(c) for c in _appels(boucle, nom)]
             self.assertEqual(vus, [texte], nom)
+        # Et la cle de date EST bien celle d'avant : `_cle_date` n'est pas un
+        # autre couple glisse en douce.
+        src = ast.unparse(boucle)
+        self.assertIn('_cle_date = fkey or str(f)', src)
+        # Les anciens noms ne doivent plus apparaitre dans la boucle : les
+        # laisser, c'est repayer la lecture EXIF (§ 3.13).
+        for vieux in ('_best_time', '_jour_de'):
+            self.assertEqual(
+                [ast.unparse(c) for c in _appels(boucle, vieux)], [], vieux)
 
     def test_le_json_de_la_planche_est_calcule_UNE_fois(self):
         vus = [ast.unparse(c) for c in _appels(GALERIE, 'dumps')

@@ -193,9 +193,37 @@ class TestCablage(unittest.TestCase):
         self.src += "\n".join(ui_gabarits.tous().values())
 
     def test_les_quatre_constructeurs_portent_les_faits(self):
-        self.assertEqual(self.src.count("'jour': _jour_de("),
-                         self.src.count("'faits': _faits_pour("),
+        """Chaque objet-photo bati par `_serve_gallery` porte `faits` ET
+        `jour`. Compte sur l'ARBRE, pas sur le texte : la version d'avant
+        comptait `"'jour': _jour_de("`, elle est donc tombee a ZERO le jour ou
+        la fonction a ete renommee `_jour_depuis` (§ 3.13) — et personne ne
+        l'a vu, parce que rien ne la lancait (§ 3.18). Elle annoncait aussi
+        TROIS constructeurs pour quatre modes : le texte comptait un appel,
+        l'arbre compte un objet."""
+        with io.open(SERVER, encoding="utf-8") as f:
+            arbre = ast.parse(f.read())
+        gal = next((n for n in ast.walk(arbre)
+                    if isinstance(n, ast.FunctionDef)
+                    and n.name == '_serve_gallery'), None)
+        self.assertIsNotNone(gal, "_serve_gallery introuvable")
+        avec_faits = avec_jour = les_deux = 0
+        for n in ast.walk(gal):
+            if not isinstance(n, ast.Dict):
+                continue
+            cles = {k.value for k in n.keys
+                    if isinstance(k, ast.Constant) and isinstance(k.value, str)}
+            if 'faits' in cles:
+                avec_faits += 1
+            if 'jour' in cles:
+                avec_jour += 1
+            if 'faits' in cles and 'jour' in cles:
+                les_deux += 1
+        self.assertEqual(avec_faits, 4,
+                         "les QUATRE modes de /files batissent un objet-photo")
+        self.assertEqual(les_deux, avec_faits,
                          "un mode de /files construit un objet-photo sans faits")
+        self.assertEqual(les_deux, avec_jour,
+                         "un objet-photo porte `jour` sans porter `faits`")
 
     def test_le_contexte_est_bati_une_seule_fois(self):
         self.assertEqual(self.src.count("fctx = _faits_ctx()"), 1)

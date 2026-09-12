@@ -1041,6 +1041,90 @@ COMPTÉ** : 1 020 avant, 40 après, sur un index d'essai de 1 020 clés. Un banc
 de performance qui ne mesurerait que le temps laisserait passer une fuite ;
 celui-ci mesure l'identité des réponses ET le nombre d'appels.
 
+### 3.18 La date précise, TROISIÈME calcul : la passe des marques
+— **livré le 12/09**
+
+Le § 3.13 en avait retiré un sur deux. Il en restait un **troisième**, et il
+ne se voyait pas : la passe des marques appelle `_sans_date_sure`, qui appelle
+`annee_fiable_depuis`, qui **recalcule `epoch_precis`** sur une photo dont la
+branche d'enrichissement venait d'établir la date quelques lignes plus haut.
+
+Le geste : les QUATRE branches rangent la date déjà calculée dans la fiche
+sous `'_ep'` ; la passe des marques la **retire** (`pop`) en tête, pour CHAQUE
+entrée, et la passe à `_sans_date_sure`. `pop` et pas `get` : une clé de
+travail qui resterait dans la fiche partirait dans le JSON de la page.
+
+**Une sentinelle est obligatoire ici**, et c'est le seul piège du chantier :
+`None` est une réponse LÉGITIME d'`epoch_precis` — « cette photo n'a pas de
+date sûre ». Un paramètre `ep=None` aurait donc voulu dire « pas de date »
+pour toutes les photos, et la page aurait changé d'avis en silence. D'où
+`recherche.A_CALCULER`, un objet dont la seule propriété est d'être lui-même.
+
+**Réobservé en réel**, `Photos Mike/2022` (2 519 photos), 5 chargements :
+
+| phase | avant | après |
+|---|---:|---:|
+| `marques` | 76 à 114 ms | **27 à 37 ms** |
+
+Le total de la page (633 à 820 ms ici) dépend de la charge de la machine —
+la campagne tourne — : ce sont les phases qui font foi, pas lui.
+
+**Contre-épreuve** (règle 11), trois questions posées à la mesure elle-même :
+
+- *la page a-t-elle changé ?* Les cinq chargements rendent **exactement
+  1 858 649 octets**, avant comme après.
+- *la clé de travail fuit-elle ?* Le texte de la page est cherché pour `_ep`
+  aux cinq chargements : **jamais**.
+- *la mesure est-elle FRAÎCHE ?* Reprise sur le serveur en cours
+  (`GET /api/serveur` : `code_a_jour` vrai), pas relue d'un relevé plus
+  ancien : `marques` **28,6 ms** de moyenne sur 5, delta d'horloge pris entre
+  deux lectures de `/api/perf`.
+
+Bancs : `test_galerie_enrichissement.py` passe à **24** (6 neufs : les quatre
+branches transportent la date, la clé est retirée pour chaque entrée, la même
+réponse avec ou sans date fournie, et le calcul a bien lieu quand rien n'est
+fourni).
+
+**Et le trou qui a permis tout ça.** `test_galerie_enrichissement.py` est
+resté **ROUGE à travers une livraison entière** sans que personne ne le lance :
+`git_agent.tests_pour` appariait les bancs par NOM (`x.py` → `test_x.py`), or
+ce banc lit `server.py` par l'arbre syntaxique, jamais par un `import` — aucun
+homonyme, aucune arête dans le graphe des modules. Une seconde règle est
+posée : **tout `test_*.py` dont le TEXTE cite un module touché**. Compté, pas
+estimé : **63 bancs du dépôt** étaient invisibles à la règle 1, dont 59 citent
+`server.py`. La règle 2 est donc large par construction — c'est un filet, pas
+un filtre, et sur-lancer est le bon côté de l'erreur.
+
+**Ce que le filet a ramené le jour même** — cinq bancs ROUGES depuis des
+livraisons entières, tous pour la même raison : ils lisaient le source par le
+TEXTE, et une écriture avait changé sans que le sens change.
+
+| banc | ce qu'il cherchait | rouge depuis |
+|---|---|---|
+| `test_faits_affichage` | `"'jour': _jour_de("` | § 3.13 |
+| `test_horloge_phases` | `_best_time(fkey or str(f), entry)` | § 3.13 |
+| `test_parcours_dossier` | `_lister_dossier` appelé par la page | § 3.16 |
+| `test_pkey_memoire` | `_pkey(k).startswith(pref)` | § 3.17 |
+| `test_ui_composants` | une doublure sans `_repondre` | (plus ancien) |
+
+Les cinq sont réécrits **sur l'ARBRE, pas sur le texte** — et deux disaient en
+plus le mauvais nombre : `test_faits_affichage` annonçait TROIS constructeurs
+d'objet-photo pour quatre modes, parce qu'il comptait un appel là où l'arbre
+compte un objet. Un banc qui s'accroche à une orthographe mesure
+l'orthographe.
+
+**Et un trou NOMMÉ dans le filet** : `test_tagging.py` n'est pas un banc, c'est
+une campagne de tagging miniature — GPU pris, XMP écrits dans cinq photos
+d'Uploads, et sa propre en-tête exige le serveur ARRÊTÉ. La règle 2 l'a tiré
+dès sa naissance et il a tourné une fois : rien de cassé (le journal du
+serveur est propre, l'index à 44 605), mais ~110 s de GPU volés à la campagne.
+`git_agent.BANCS_A_LA_MAIN` le tient dehors, **avec sa raison écrite** — une
+liste d'exclusions sans motif redevient un « au cas où » — et un banc vérifie
+que chaque nom exclu existe encore dans le dépôt : une exclusion qui ne
+désigne plus rien rouvre le filet en silence.
+
+Neuf bancs neufs dans `test_git_agent.py` (**54**).
+
 ## 4. Ce qui a été vérifié et qui va bien
 
 À ne pas rouvrir sans raison neuve :
@@ -1068,9 +1152,10 @@ et CPU/défauts par phase (§ 3.10, § 3.11).
 **Fait le 12/09** : la vue accélérée (§ 3.11), le ramasse-miettes gelé et
 espacé (§ 3.12), HTTP/1.1 et son instrument (§ 3.5), `Last-Modified` (§ 3.6),
 les trois redites de la galerie (§ 3.13), la page qui bâtissait 2 519 fiches
-pour en montrer 336 (§ 3.14), et le **cache de listage** (§ 3.15 pour la
-preuve, § 3.16 pour le geste). Et **§ 3.7 mesurée côté navigateur, puis
-écartée**.
+pour en montrer 336 (§ 3.14), le **cache de listage** (§ 3.15 pour la
+preuve, § 3.16 pour le geste), la vue consultée 2 519 fois au lieu de 44 605
+(§ 3.17) et le TROISIÈME calcul de la date précise (§ 3.18). Et **§ 3.7
+mesurée côté navigateur, puis écartée**.
 
 > **Un chiffre périmé corrigé le 12/09** : la reconstruction de `_key_index`
 > coûte **~40 ms**, pas 618 à 784. Ce dernier chiffre était celui d'AVANT la
@@ -1087,17 +1172,22 @@ preuve, § 3.16 pour le geste). Et **§ 3.7 mesurée côté navigateur, puis
 2. **La vue (§ 3.11)** : réécriture exacte livrée (×1,4–1,6) — la réobserver
    dans `comptes` de `/api/maint/status` ; puis la décision sur un cache à
    génération.
-3. **Ce qui reste dans `_serve_gallery`**, phases sur la page de 2 519 photos
-   après les § 3.13, 3.14 et 3.16 — **732 à 1 092 ms** au total, contre 1 493
-   à 1 870 hier :
-   - `enrichir` **275 à 481 ms**, du CPU pur : ~46 ms de `_resolve_key` (un
-     `Path` par photo, mémoïsable), ~90 de dates, le reste étant `_faits_pour`
-     et la fabrication des 2 519 dictionnaires ;
-   - `index` **41 à 67 ms** depuis le § 3.17 — le balayage n'y pèse plus que
-     30 à 49 ms, et le reste est le compte des mots-clés ;
-   - `marques` **76 à 114 ms** et `motifs` **57 à 79 ms**, deux post-passes qui
-     relisent `STORE.data` par photo ;
-   - `envoi` **84 ms**, `gabarit` **47 ms**, `parcours` **8 ms** (§ 3.16).
+3. **Ce qui reste dans `_serve_gallery`**, phases relevées le 12/09 à 10 h
+   sur la page de 2 519 photos, après les § 3.13, 3.14, 3.16, 3.17 et 3.18 —
+   **633 à 820 ms** au total, contre 1 493 à 1 870 hier. Moyennes sur 5
+   chargements, delta d'horloge :
+   - `enrichir` **325 ms**, du CPU pur, et c'est désormais le SEUL gros poste :
+     `enrichir.faits` **89 ms** (`_faits_pour`), `enrichir.dates` **76 ms**,
+     `enrichir.dossier` **40 ms** (le `Path(...)` de `_resolve_key`, un par
+     photo, mémoïsable), `enrichir.cle` **24 ms**, le reste étant la
+     fabrication des 2 519 dictionnaires ;
+   - `motifs` **70 ms**, la dernière post-passe qui relit `STORE.data` par
+     photo — `marques` est traitée (§ 3.18, 29 ms) ;
+   - `envoi` **74 ms**, `index` **47 ms** (§ 3.17), `parcours` **46 ms**,
+     `gabarit` **42 ms**, `json` **30 ms**, `prélude` **30 ms**,
+     `tagged_count` **20 ms**, `carte_cles` **13 ms**.
+   Aucun poste ne dépasse plus 100 ms hors `enrichir` : la suite est un
+   chantier de cent millisecondes à la fois, plus de gros caillou.
    La planche entière (§ 3.7) reste mesurée et écartée : le navigateur n'y est
    pour rien — mais le seuil qu'elle s'était fixé (le serveur sous la
    demi-seconde) se rapproche.

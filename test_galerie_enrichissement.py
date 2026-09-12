@@ -182,7 +182,11 @@ class LaPageNeFabriquePasCEQuElleVaJETER(unittest.TestCase):
                          % sorted(couverts))
 
     def test_le_parcours_ne_descend_plus_pour_rien(self):
-        self.assertIn('_lister_dossier(' + chr(10) + ' ' * 16
+        # `_lister_dossier_frais` depuis le cache de listage du 12/09 : ce banc
+        # est reste ROUGE une livraison entiere sans que personne le lance --
+        # l'agent git ne lance que les bancs des modules TOUCHES, et celui-la
+        # ne l'etait pas. Un banc qu'on ne lance pas ne mesure rien.
+        self.assertIn('_lister_dossier_frais(' + chr(10) + ' ' * 16
                       + 'folder, rec and not remplace_la_grille)',
                       self.src)
 
@@ -288,6 +292,80 @@ class UneSeuleDatePreciseParPhoto(unittest.TestCase):
                     if '_path_year(key)' in src and "e.get('mtime')" in src]
         self.assertEqual(porteurs, ['_best_time_depuis'],
                          'la suite de la regle est ecrite dans %r' % porteurs)
+
+
+class LaDatePreciseNEstPlusCALCULEETROISFOIS(unittest.TestCase):
+    """Le troisieme calcul etait dans la passe « marques » :
+    `_sans_date_sure` -> `_annee_fiable` -> `epoch_precis`, sur une photo dont
+    la branche venait de calculer la date pour `taken` ET pour `jour`.
+
+    Le point delicat n'est pas la performance, c'est la SENTINELLE : `None`
+    est une VALEUR legitime ici -- elle veut dire « pas de date precise ».
+    La confondre avec « pas fournie » ferait recalculer exactement les cas ou
+    il n'y a rien a trouver. Ces bancs COMPTENT les appels."""
+
+    def lecteur(self):
+        import recherche
+        appels = {'n': 0}
+
+        def epoch_precis(cle, entree):
+            appels['n'] += 1
+            return (entree or {}).get('precise')
+
+        def path_year_num(cle):
+            return 1994 if 'annee' in str(cle) else 0
+
+        return recherche.annee_fiable_depuis(epoch_precis, path_year_num), appels
+
+    def test_sans_date_fournie_il_CALCULE(self):
+        lire, appels = self.lecteur()
+        self.assertEqual(lire('p.jpg', {'precise': 0}), 1970)
+        self.assertEqual(appels['n'], 1)
+
+    def test_avec_la_date_fournie_il_NE_CALCULE_PAS(self):
+        lire, appels = self.lecteur()
+        import time as _t
+        ep = _t.mktime((2011, 5, 4, 12, 0, 0, 0, 0, -1))
+        self.assertEqual(lire('p.jpg', {}, ep), 2011)
+        self.assertEqual(appels['n'], 0, 'la date fournie a ete recalculee')
+
+    def test_None_FOURNI_veut_dire_pas_de_date_precise(self):
+        """Et pas « recalcule-la » : c'est tout le role de la sentinelle."""
+        lire, appels = self.lecteur()
+        self.assertEqual(lire('annee/p.jpg', {'precise': 123456789}, None),
+                         1994, "le repli annee du dossier n'a pas joue")
+        self.assertEqual(appels['n'], 0)
+
+    def test_la_meme_reponse_avec_ou_sans(self):
+        import recherche
+        for cle, e in (('p.jpg', {'precise': 1300000000}),
+                       ('p.jpg', {'precise': None}),
+                       ('annee/p.jpg', {'precise': None}),
+                       ('annee/p.jpg', {}),
+                       ('p.jpg', {})):
+            lire, _a = self.lecteur()
+            attendu = lire(cle, e)
+            lire2, _b = self.lecteur()
+            self.assertEqual(lire2(cle, e, (e or {}).get('precise')), attendu,
+                             'divergence sur %r %r' % (cle, e))
+        self.assertIsNot(recherche.A_CALCULER, None)
+
+    def test_les_QUATRE_branches_transportent_la_date(self):
+        src = _source_de('_serve_gallery')
+        self.assertEqual(src.count("'_ep':"), 4)
+
+    def test_la_cle_de_transport_ne_SURVIT_PAS_au_JSON(self):
+        """Elle est retiree pour CHAQUE entree, en tete de la passe -- pas
+        sous condition : une entree non visitee emporterait `_ep` dans la page
+        et le client verrait un champ interne."""
+        src = _source_de('_serve_gallery')
+        self.assertIn("_ep_connu = _fd.pop('_ep', recherche.A_CALCULER)", src)
+        i = src.index("for _fd in file_data:")
+        j = src.index("_ep_connu = _fd.pop('_ep'", i)
+        entre = src[i:j]
+        self.assertNotIn('continue', entre,
+                         'le retrait de `_ep` doit precede toute sortie de '
+                         'boucle')
 
 
 class LesDeuxDepuisRendentCEQueLesAnciensRendaient(unittest.TestCase):

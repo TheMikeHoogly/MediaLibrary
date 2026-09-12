@@ -373,23 +373,68 @@ def py_a_observer(chemins, graphe=None):
     return out
 
 
-def tests_pour(chemins, existe):
-    """Fichiers de test à lancer : ceux des modules touchés, plus les fichiers
-    de test modifiés eux-mêmes. `existe(nom)` dit si le fichier est là.
+# Des « test_*.py » qui ne sont PAS des bancs : ils font tourner la vraie
+# machine. Les lancer automatiquement à chaque livraison ne serait pas lent,
+# ce serait DANGEREUX. Trouvé le 12/09, quand la règle 2 les a tirés d'un
+# coup — le filet doit avoir ce trou-là, nommé et justifié, pas un « au cas
+# où ».
+BANCS_A_LA_MAIN = {
+    'test_tagging.py': "tague pour de vrai 5 photos d'Uploads (GPU, ecriture "
+                       "XMP, index) et demande le serveur ARRETE",
+}
+
+
+def tests_pour(chemins, existe, bancs=None, lire=None):
+    """Fichiers de test à lancer pour les modules touchés.
+
+    DEUX règles, et la seconde est née d'un trou observé le 12/09.
+    1. **L'homonyme** : `x.py` → `test_x.py`, plus tout `test_*.py` modifié.
+    2. **Le banc qui CITE le module** : `test_galerie_enrichissement.py` lit
+       `server.py` par l'arbre syntaxique, jamais par un `import` — aucun
+       homonyme, aucune arête dans le graphe. Il est resté **rouge à travers
+       une livraison entière** : `server.py` était touché, lui non, donc
+       personne ne l'a lancé. **63 bancs du dépôt sont dans ce cas** (compté
+       le 12/09, pas estimé) — dont 59 citent `server.py`, qu'une livraison
+       sur deux touche. La règle 2 est donc large par construction : elle
+       n'est pas un filtre fin, c'est un filet.
+
+    `bancs()` rend les `test_*.py` du projet, `lire(nom)` leur texte. Les deux
+    à None : la règle 1 seule, comme avant — un agent qui ne sait pas lire le
+    disque ne doit pas se taire, mais il ne doit pas non plus inventer.
+
+    `BANCS_A_LA_MAIN` est le seul trou du filet, et il est NOMMÉ : des
+    `test_*.py` qui font tourner la vraie machine (GPU, écriture dans les
+    photos, serveur arrêté exigé). Les lancer tout seuls ne serait pas lent,
+    ce serait dangereux.
 
     Un module sans test n'est pas un refus — la moitié du dépôt est ancienne.
-    C'est un fait à journaliser, pas une porte à fermer."""
+    C'est un fait à journaliser, pas une porte à fermer. Et sur-lancer est le
+    bon côté de l'erreur : un banc de trop coûte une seconde, un banc de moins
+    coûte une livraison rouge."""
     out = []
+    modules = []
     for c in chemins:
-        p = Path(c)
-        if p.suffix.lower() != '.py':
+        q = Path(c)
+        if q.suffix.lower() != '.py':
             continue
-        if p.name.startswith('test_'):
-            cible = p.name
+        if q.name.startswith('test_'):
+            cible = q.name
         else:
-            cible = 'test_' + p.name
-        if existe(cible) and cible not in out:
+            cible = 'test_' + q.name
+            modules.append(q.name)
+        if (existe(cible) and cible not in out
+                and cible not in BANCS_A_LA_MAIN):
             out.append(cible)
+    if modules and bancs is not None and lire is not None:
+        for nom in bancs():
+            if nom in out or nom in BANCS_A_LA_MAIN:
+                continue
+            try:
+                texte = lire(nom)
+            except Exception:                                # noqa: BLE001
+                continue
+            if any(m in texte for m in modules):
+                out.append(nom)
     return sorted(out)
 
 
@@ -503,7 +548,11 @@ def controler(projet, sc, chemins):
         notes.append("serveur à jour sur %d module(s)" % len(py))
 
     # ── contrôle 6 : les tests des modules touchés ──
-    tests = tests_pour(chemins, lambda n: (projet / n).exists())
+    tests = tests_pour(
+        chemins, lambda n: (projet / n).exists(),
+        bancs=lambda: sorted(q.name for q in Path(projet).glob('test_*.py')),
+        lire=lambda n: (Path(projet) / n).read_text(encoding='utf-8',
+                                                    errors='replace'))
     for t in tests:
         r = subprocess.run([_python(), t], cwd=str(projet), capture_output=True,
                            text=True, encoding='utf-8', errors='replace',

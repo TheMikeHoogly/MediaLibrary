@@ -43,10 +43,23 @@ def _noeud(nom):
 
 
 class FausseReponse:
-    """Un `self` de handler : juste ce que `_send_html` touche."""
+    """Un `self` de handler : juste ce que `_send_html` touche.
+
+    `_repondre` est la porte de sortie depuis que le serveur centralise
+    l'envoi (gzip, en-tetes, Vary). La doublure ne l'avait pas, donc ces cinq
+    bancs sont tombes en ERREUR sans que rien ne les lance (§ 3.18). Les
+    anciennes methodes restent : elles ne coutent rien et decrivent la
+    surface d'un handler."""
 
     def __init__(self):
         self.corps = None
+        self.code = None
+        self.ctype = None
+
+    def _repondre(self, code, corps, ctype=None, *a, **kw):
+        self.code = code
+        self.ctype = ctype
+        self.corps = corps.decode('utf-8') if isinstance(corps, bytes) else corps
 
     def send_response(self, code):
         self.code = code

@@ -24,6 +24,8 @@ from pathlib import Path
 
 import git_agent as ga
 
+PROJET = Path(__file__).resolve().parent
+
 # Le nom du bat porte un accent : il est ecrit ici en \u ASCII pour que ce
 # fichier reste lisible partout, comme les .bat eux-memes.
 BAT0 = '0 - D\u00e9marrer le serveur.bat'
@@ -141,6 +143,86 @@ class TestLectures(unittest.TestCase):
             ga.tests_pour(['faits_vue.py', 'test_faits_vue.py', 'ROADMAP.md',
                            'sans_test.py'], lambda n: n in presents),
             ['test_faits_vue.py'])
+
+    # ── le trou du 12/09 : un banc sans homonyme reste rouge en silence ──
+
+    def test_un_banc_qui_CITE_le_module_est_lance(self):
+        """`test_galerie_enrichissement.py` lit `server.py` par l'arbre
+        syntaxique, jamais par un `import` : aucun homonyme, aucune arete dans
+        le graphe. Il est reste ROUGE a travers une livraison entiere."""
+        textes = {
+            'test_galerie_enrichissement.py': "SOURCE = (HERE / 'server.py')",
+            'test_sans_rapport.py': "rien a voir",
+        }
+        self.assertEqual(
+            ga.tests_pour(['server.py'], lambda n: False,
+                          bancs=lambda: sorted(textes),
+                          lire=textes.get),
+            ['test_galerie_enrichissement.py'])
+
+    def test_sans_lecteur_la_regle_1_SEULE_sapplique(self):
+        """Un agent qui ne sait pas lire le disque ne doit pas inventer."""
+        self.assertEqual(ga.tests_pour(['server.py'], lambda n: False), [])
+
+    def test_un_banc_deja_retenu_n_est_pas_compte_deux_fois(self):
+        textes = {'test_server.py': "import server"}
+        self.assertEqual(
+            ga.tests_pour(['server.py'], lambda n: n in textes,
+                          bancs=lambda: sorted(textes), lire=textes.get),
+            ['test_server.py'])
+
+    def test_un_banc_MODIFIE_n_entraine_pas_tous_les_autres(self):
+        """Toucher un banc ne touche aucun module : la regle 2 ne doit pas
+        s'armer sur son propre nom."""
+        textes = {'test_a.py': "SOURCE = 'test_a.py'",
+                  'test_b.py': "citation de test_a.py"}
+        self.assertEqual(
+            ga.tests_pour(['test_a.py'], lambda n: n in textes,
+                          bancs=lambda: sorted(textes), lire=textes.get),
+            ['test_a.py'])
+
+    def test_un_banc_illisible_ne_fait_pas_tomber_la_livraison(self):
+        def lire(n):
+            raise OSError('disque')
+        self.assertEqual(
+            ga.tests_pour(['server.py'], lambda n: False,
+                          bancs=lambda: ['test_x.py'], lire=lire),
+            [])
+
+
+class TestBancsALaMain(unittest.TestCase):
+    """Le seul trou du filet, et il est NOMME. `test_tagging.py` tague pour de
+    vrai 5 photos d'Uploads : GPU pris, XMP ecrits, et sa propre entete exige
+    le serveur ARRETE. La regle 2 l'a tire le 12/09 des qu'elle est nee — le
+    lancer a chaque livraison ne serait pas lent, ce serait dangereux."""
+
+    def test_la_regle_2_ne_tire_pas_un_banc_a_la_main(self):
+        textes = {'test_tagging.py': "import server  # server.py",
+                  'test_normal.py': "SOURCE = 'server.py'"}
+        self.assertEqual(
+            ga.tests_pour(['server.py'], lambda n: False,
+                          bancs=lambda: sorted(textes), lire=textes.get),
+            ['test_normal.py'])
+
+    def test_la_regle_1_non_plus_meme_par_homonyme(self):
+        """Un `tagging.py` touche ne doit pas lancer `test_tagging.py` : le
+        danger ne vient pas de la regle qui l'a trouve."""
+        self.assertEqual(
+            ga.tests_pour(['tagging.py'], lambda n: True), [])
+
+    def test_chaque_exclusion_porte_sa_RAISON(self):
+        """Une liste d'exclusions sans motif redevient un « au cas ou » : le
+        prochain qui la lit ne saura pas s'il peut en retirer une ligne."""
+        self.assertTrue(ga.BANCS_A_LA_MAIN)
+        for nom, raison in ga.BANCS_A_LA_MAIN.items():
+            self.assertTrue(nom.startswith('test_') and nom.endswith('.py'))
+            self.assertGreater(len(raison), 20, nom)
+
+    def test_le_banc_exclu_existe_VRAIMENT_dans_le_depot(self):
+        """Une exclusion qui ne designe plus rien est un mensonge qui dort :
+        le fichier a pu etre renomme, et le filet se rouvre sans le dire."""
+        for nom in ga.BANCS_A_LA_MAIN:
+            self.assertTrue((PROJET / nom).exists(), nom)
 
 
 # ─────────── le contrôle 5 : QUI le serveur fait-il tourner ? ───────────

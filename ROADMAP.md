@@ -20,10 +20,11 @@ méthode dans `eval/METHODE.md` ; le chantier performance dans
 ## Ce qui commande tout : la campagne de retag
 
 Lancée le 05/09, modèle `qwen3.5:4b`, cible `qwen3.5:4b|v3fr|kb1`.
-**Relevé le 12/09 à 11h40** (`/api/maint/status` → `config.retag`) :
-**3 656 photos restantes**, 941 en file, **1 abandon**, ~14 s/photo →
-**elle finit dans la nuit du 12 au 13/09**. Index : 44 605 entrées,
-40 464 taguées, 354 personnes, 17 animaux, 40 583 visages.
+**Relevé le 12/09 à 12h15** (`/api/maint/status` → `config.retag`, la seule
+source juste — `counts.tagues` compte les photos taguées un jour, pas celles
+de CETTE passe) : **3 537 restantes**, 936 en file, **1 abandon**. 119 photos
+en 35 min → **~17,6 s/photo**, donc fin **au petit matin du 13/09**. Index :
+44 605 entrées, 354 personnes, 17 animaux, 40 583 visages.
 
 Tant qu'elle tourne : **le prompt est intouchable** (le prompt EST la version
 du pipeline — une phrase ajoutée rendrait candidates les 12 000 photos déjà
@@ -69,13 +70,14 @@ reproposé (le bloc PowerShell est dans l'historique de la session du 12/09).
 ## B. Ce qui avance pendant la campagne
 
 **B1. La performance — le plan vit dans `PERFORMANCE.md` § 5, pas ici.**
-État au 12/09 : la page `/files` d'un dossier de 2 519 photos est passée de
-**1 493–1 870 ms à 732–1 092 ms**, et la même page filtrée par un tag de
-**1 200 à 750 ms**. Ce qui reste, par ordre de poids : `enrichir` (275–481 ms
-de CPU), `index` (93–146 ms, c'est le § 3.8 écrit le 11/09 et jamais fait),
-puis `marques` et `motifs`, deux post-passes qui relisent `STORE.data` par
-photo. Compatible avec la campagne : chemin de service seulement, jamais le
-calcul IA.
+État au 12/09 à 10 h : la page `/files` d'un dossier de 2 519 photos est
+passée de **1 493–1 870 ms à 633–820 ms**, et la même page filtrée par un tag
+de **1 200 à 750 ms**. `index` (§ 3.17) et `marques` (§ 3.18) sont faites.
+**Il ne reste qu'un gros poste** : `enrichir`, 325 ms de CPU pur, dont 89 de
+`_faits_pour`, 76 de dates et 40 du `Path(...)` de `_resolve_key` ; puis
+`motifs` (70 ms), la dernière post-passe qui relit `STORE.data` par photo.
+Tout le reste est sous 75 ms. Compatible avec la campagne : chemin de service
+seulement, jamais le calcul IA.
 
 **B2. Le tri des dépôts, à éprouver.** Le premier tour est livré (A1). Ce qui
 reste dépend de l'usage : le **mur de 7 jours** est-il le bon ? faut-il un
@@ -200,6 +202,13 @@ fichiers (règle 2), donc hors de portée de tout réglage.
   déclarés redondants, **0 grief de niveau A** (`verifier_controles.py`).
 - **`[hidden]` gagne contre `display:` depuis le 12/09** (`ui/base.css`, sans
   `!important`). Ne pas reposer une rustine locale par page.
+- **`git_agent.tests_pour` lance aussi les bancs qui CITENT un module touché**
+  (12/09) : l'appariement par NOM seul laissait **63 bancs** invisibles, dont
+  59 citent `server.py` — **cinq étaient ROUGES**, tous accrochés à une
+  ORTHOGRAPHE du source qu'une correction avait changée ; réécrits sur
+  l'arbre. Large par construction : c'est un filet, pas un filtre. Son seul
+  trou est NOMMÉ (`BANCS_A_LA_MAIN`) : `test_tagging.py` tague pour de vrai et
+  veut le serveur arrêté.
 - **Stockage** : SQLite local WAL (**44 605 entrées**), embeddings BLOB,
   backup NAS snapshot + `backup_verify`.
 - **Reconnaissance** : SigLIP 2 (90 % r1) ; animaux 97,4 % r1 ; prototypes

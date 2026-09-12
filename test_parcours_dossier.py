@@ -331,15 +331,23 @@ class LaFonctionEstBienCELLEQueLeServeurAPPELLE(unittest.TestCase):
     vide. Le 10/09, une correction de cache posee sur deux chemins d'ecriture
     sur trois est passee verte pour exactement cette raison."""
 
-    def test_serve_gallery_appelle_lister_dossier(self):
+    def _appels(self, nom):
         for n in ast.walk(ARBRE):
-            if isinstance(n, ast.FunctionDef) and n.name == '_serve_gallery':
-                appels = {c.func.id for c in ast.walk(n)
-                          if isinstance(c, ast.Call)
-                          and isinstance(c.func, ast.Name)}
-                self.assertIn('_lister_dossier', appels)
-                return
-        self.fail('_serve_gallery introuvable')
+            if isinstance(n, ast.FunctionDef) and n.name == nom:
+                return {c.func.id for c in ast.walk(n)
+                        if isinstance(c, ast.Call)
+                        and isinstance(c.func, ast.Name)}
+        self.fail(nom + ' introuvable')
+
+    def test_serve_gallery_appelle_lister_dossier(self):
+        """La CHAINE, pas un nom : depuis le cache du 12/09 (§ 3.16), la page
+        appelle `_lister_dossier_frais`, qui appelle `_lister_dossier`. Ce
+        banc mesure `_lister_dossier` : si l'un des deux maillons saute, il
+        mesure le vide. La version d'avant n'exigeait que le nom direct —
+        elle est donc tombee ROUGE le jour du cache, et rien ne la lancait
+        (§ 3.18)."""
+        self.assertIn('_lister_dossier_frais', self._appels('_serve_gallery'))
+        self.assertIn('_lister_dossier', self._appels('_lister_dossier_frais'))
 
     def test_plus_aucun_rglob_ni_iterdir_dans_serve_gallery(self):
         """La correction ne vaut que si l'ancien chemin a DISPARU. Le laisser
