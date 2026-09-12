@@ -150,9 +150,13 @@ class TestLectures(unittest.TestCase):
         """`test_galerie_enrichissement.py` lit `server.py` par l'arbre
         syntaxique, jamais par un `import` : aucun homonyme, aucune arete dans
         le graphe. Il est reste ROUGE a travers une livraison entiere."""
+        # Du Python VALIDE des deux cotes : depuis la regle 3, un banc
+        # illisible est LANCE (graphe troue = doute = on lance), et un
+        # fragment de prose ferait passer ce banc-ci pour une preuve alors
+        # qu'il ne mesurerait que sa propre faute de fixture.
         textes = {
             'test_galerie_enrichissement.py': "SOURCE = (HERE / 'server.py')",
-            'test_sans_rapport.py': "rien a voir",
+            'test_sans_rapport.py': "x = 1  # rien a voir",
         }
         self.assertEqual(
             ga.tests_pour(['server.py'], lambda n: False,
@@ -188,6 +192,119 @@ class TestLectures(unittest.TestCase):
             ga.tests_pour(['server.py'], lambda n: False,
                           bancs=lambda: ['test_x.py'], lire=lire),
             [])
+
+
+class TestRegle3LImport(unittest.TestCase):
+    """La regle 2 cherche `x.py` : elle ne voit que les bancs qui lisent le
+    SOURCE. Celui qui fait `import x` ne cite jamais l'extension — et il est
+    reste dehors une livraison entiere de plus (12/09, `renommage_facts.py`
+    touche, trois bancs non lances). La regle 3 lit les IMPORTS sur l'arbre."""
+
+    def test_un_banc_qui_IMPORTE_le_module_est_lance(self):
+        textes = {'test_a.py': 'import renommage_facts\n',
+                  'test_b.py': 'from renommage_facts import path_years\n',
+                  'test_c.py': 'import autre_chose\n',
+                  'autre_chose.py': 'x = 1\n',
+                  'renommage_facts.py': 'x = 1\n'}
+        self.assertEqual(
+            ga.tests_pour(['renommage_facts.py'], lambda n: False,
+                          bancs=lambda: ['test_a.py', 'test_b.py',
+                                         'test_c.py'],
+                          lire=textes.get),
+            ['test_a.py', 'test_b.py'])
+
+    def test_un_banc_qui_l_atteint_par_UN_ETAGE_est_lance_aussi(self):
+        """Le cas qui a impose le GRAPHE plutot que l'import direct."""
+        textes = {'test_a.py': 'import milieu\n',
+                  'milieu.py': 'import renommage_facts\n',
+                  'renommage_facts.py': 'x = 1\n'}
+        self.assertEqual(
+            ga.tests_pour(['renommage_facts.py'], lambda n: False,
+                          bancs=lambda: ['test_a.py'], lire=textes.get),
+            ['test_a.py'])
+
+    def test_un_banc_qui_ne_l_atteint_PAS_reste_dehors(self):
+        """Le filet doit rester un filet, pas un drap : `test_renommage`
+        importe `renommage`, qui n'importe PAS `renommage_facts` — il n'a
+        rien a voir avec le module touche, et le lancer serait du bruit."""
+        textes = {'test_a.py': 'import renommage\n',
+                  'renommage.py': 'import re\n',
+                  'renommage_facts.py': 'x = 1\n'}
+        self.assertEqual(
+            ga.tests_pour(['renommage_facts.py'], lambda n: False,
+                          bancs=lambda: ['test_a.py'], lire=textes.get),
+            [])
+
+    def test_un_COMMENTAIRE_qui_cite_le_nom_ne_compte_pas(self):
+        """Sur l'ARBRE, pas sur le texte : sinon la regle 3 attraperait tout
+        banc qui PARLE du module, et le filet deviendrait un drap."""
+        textes = {'test_a.py': '# on parle de renommage_facts ici\nx = 1\n'}
+        self.assertEqual(
+            ga.tests_pour(['renommage_facts.py'], lambda n: False,
+                          bancs=lambda: sorted(textes), lire=textes.get),
+            [])
+
+    def test_un_import_RELATIF_fait_lancer_par_PRUDENCE(self):
+        """`from . import x` : le graphe ne sait pas ou il pointe, donc il est
+        TROUE — et un graphe troue fait lancer. La meme regle que partout
+        ailleurs dans cet agent (`py_a_observer`) : quand la lecture n'est pas
+        complete, on retombe sur le large."""
+        textes = {'test_a.py': 'from . import renommage_facts\n'}
+        self.assertEqual(
+            ga.tests_pour(['renommage_facts.py'], lambda n: False,
+                          bancs=lambda: sorted(textes), lire=textes.get),
+            ['test_a.py'])
+
+    def test_un_banc_ILLISIBLE_est_LANCE(self):
+        """Le doute fait lancer. Un banc qu'on ne sait pas lire, on ne sait
+        pas non plus s'il touche au module : le laisser dehors serait parier,
+        le lancer coute une seconde — et il rougira POUR SA RAISON."""
+        textes = {'test_a.py': 'def (((\n'}
+        self.assertEqual(
+            ga.tests_pour(['renommage_facts.py'], lambda n: False,
+                          bancs=lambda: sorted(textes), lire=textes.get),
+            ['test_a.py'])
+
+    def test_les_TROIS_regles_se_cumulent_sans_doublon(self):
+        textes = {'test_renommage_facts.py': 'import renommage_facts\n',
+                  'test_lit_le_source.py': "SRC = 'renommage_facts.py'\n",
+                  'test_importe.py': 'import renommage_facts\n',
+                  # Le module TOUCHE doit exister pour le graphe : un nom qui
+                  # ne se lit pas est un nom EXTERNE, pas une arete.
+                  'renommage_facts.py': 'x = 1\n'}
+        bancs = ['test_importe.py', 'test_lit_le_source.py',
+                 'test_renommage_facts.py']
+        self.assertEqual(
+            ga.tests_pour(['renommage_facts.py'],
+                          lambda n: n in textes and n.startswith('test_'),
+                          bancs=lambda: bancs, lire=textes.get),
+            ['test_importe.py', 'test_lit_le_source.py',
+             'test_renommage_facts.py'])
+
+    def test_un_banc_a_la_main_reste_dehors_meme_par_la_regle_3(self):
+        textes = {'test_tagging.py': 'import server\n'}
+        self.assertEqual(
+            ga.tests_pour(['server.py'], lambda n: False,
+                          bancs=lambda: sorted(textes), lire=textes.get),
+            [])
+
+    def test_sur_le_VRAI_depot_le_cas_qui_a_ouvert_la_regle(self):
+        """`renommage_facts.py` touche : UN seul banc etait lance le 12/09.
+
+        `test_faits_vue` ne l'atteint que par `faits_vue` — un etage. Et la
+        regle doit rester SERREE : `test_renommage` importe `renommage`, qui
+        n'importe pas `renommage_facts`, il n'a donc rien a y voir."""
+        bancs = sorted(q.name for q in PROJET.glob('test_*.py'))
+        pris = ga.tests_pour(
+            ['renommage_facts.py'], lambda n: (PROJET / n).exists(),
+            bancs=lambda: bancs,
+            lire=lambda n: (PROJET / n).read_text(encoding='utf-8',
+                                                 errors='replace'))
+        for attendu in ('test_faits_vue.py', 'test_plan_renommage.py',
+                        'test_miroir_dates.py'):
+            self.assertIn(attendu, pris)
+        self.assertNotIn('test_renommage.py', pris)
+        self.assertGreater(len(pris), 5)
 
 
 class TestBancsALaMain(unittest.TestCase):

@@ -216,9 +216,11 @@ fichiers (règle 2), donc hors de portée de tout réglage.
   (12/09) : l'appariement par NOM seul laissait **63 bancs** invisibles, dont
   59 citent `server.py` — **cinq étaient ROUGES**, tous accrochés à une
   ORTHOGRAPHE du source qu'une correction avait changée ; réécrits sur
-  l'arbre. Large par construction : c'est un filet, pas un filtre. Son seul
-  trou est NOMMÉ (`BANCS_A_LA_MAIN`) : `test_tagging.py` tague pour de vrai et
-  veut le serveur arrêté.
+  l'arbre. Une **règle 3** a suivi le jour même : le GRAPHE des imports, parce
+  que la 2 ne voyait pas le banc qui fait `import x` (`renommage_facts.py`
+  livré avec 1 banc sur 11). Large par construction : c'est un filet, pas un
+  filtre. Son seul trou est NOMMÉ (`BANCS_A_LA_MAIN`) : `test_tagging.py`
+  tague pour de vrai et veut le serveur arrêté.
 - **Stockage** : SQLite local WAL (**44 605 entrées**), embeddings BLOB,
   backup NAS snapshot + `backup_verify`.
 - **Reconnaissance** : SigLIP 2 (90 % r1) ; animaux 97,4 % r1 ; prototypes

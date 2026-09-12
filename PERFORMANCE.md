@@ -1297,6 +1297,22 @@ reste exclu de la lecture (« 119-1908_IMG.JPG » dans un dossier 2002 rend
 
 `test_miroir_dates.py` passe à **19**.
 
+**Et le filet s'est troué une fois de plus.** `renommage_facts.py` a été livré
+avec **un seul** des onze bancs qui l'atteignent : la règle 2 cherche `x.py`,
+donc elle ne voit que les bancs qui lisent le SOURCE — celui qui fait
+`import x` ne cite jamais l'extension. **Règle 3** : le GRAPHE des imports, lu
+depuis le banc par `graphe_du_serveur`, qui existait déjà pour une autre
+question. L'import DIRECT n'aurait pas suffi — `test_faits_vue` n'atteint
+`renommage_facts` que par `faits_vue`.
+
+Mesuré sur le vrai dépôt : `renommage_facts.py` **1 → 11** bancs,
+`store_sqlite.py` **3 → 24**, `faits_vue.py` **2 → 7**, `server.py` 69 → 70.
+Et la règle reste SERRÉE : `test_renommage` importe `renommage`, qui
+n'importe pas `renommage_facts` — il reste dehors, un banc le vérifie. J'avais
+d'abord écrit l'inverse dans la docstring (« trois bancs non lancés », dont
+celui-là) : c'était faux, et c'est la lecture du graphe qui l'a montré.
+`test_git_agent.py` passe à **63**.
+
 ## 4. Ce qui a été vérifié et qui va bien
 
 À ne pas rouvrir sans raison neuve :

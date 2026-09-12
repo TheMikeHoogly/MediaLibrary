@@ -389,7 +389,7 @@ def tests_pour(chemins, existe, bancs=None, lire=None):
 
     DEUX règles, et la seconde est née d'un trou observé le 12/09.
     1. **L'homonyme** : `x.py` → `test_x.py`, plus tout `test_*.py` modifié.
-    2. **Le banc qui CITE le module** : `test_galerie_enrichissement.py` lit
+    2. **Le banc qui CITE le module** (par son nom de FICHIER) : `test_galerie_enrichissement.py` lit
        `server.py` par l'arbre syntaxique, jamais par un `import` — aucun
        homonyme, aucune arête dans le graphe. Il est resté **rouge à travers
        une livraison entière** : `server.py` était touché, lui non, donc
@@ -401,6 +401,19 @@ def tests_pour(chemins, existe, bancs=None, lire=None):
     `bancs()` rend les `test_*.py` du projet, `lire(nom)` leur texte. Les deux
     à None : la règle 1 seule, comme avant — un agent qui ne sait pas lire le
     disque ne doit pas se taire, mais il ne doit pas non plus inventer.
+
+    3. **Le banc qui ATTEINT le module, directement ou non.** La règle 2
+       cherche `x.py` : elle ne voit que les bancs qui lisent le SOURCE, celui
+       qui fait `import x` ne cite jamais l'extension. Trou constaté le 12/09,
+       une livraison après la règle 2 : `renommage_facts.py` touché, **UN
+       seul banc lancé sur les onze qui l'atteignent**. C'est le GRAPHE, lu
+       par `graphe_du_serveur` depuis le banc — l'import direct seul laisserait
+       le trou ouvert d'un étage (`test_faits_vue` importe `faits_vue`, qui
+       importe `renommage_facts`). Sur l'arbre : un commentaire qui cite le
+       nom ne compte pas ; un graphe troué fait lancer.
+
+       Mesuré le 12/09 sur le vrai dépôt : `renommage_facts.py` 1 banc -> 11,
+       `store_sqlite.py` 3 -> 24, `faits_vue.py` 2 -> 7, `server.py` 69 -> 70.
 
     `BANCS_A_LA_MAIN` est le seul trou du filet, et il est NOMMÉ : des
     `test_*.py` qui font tourner la vraie machine (GPU, écriture dans les
@@ -425,6 +438,7 @@ def tests_pour(chemins, existe, bancs=None, lire=None):
         if (existe(cible) and cible not in out
                 and cible not in BANCS_A_LA_MAIN):
             out.append(cible)
+    stems = {m[:-3] for m in modules}
     if modules and bancs is not None and lire is not None:
         for nom in bancs():
             if nom in out or nom in BANCS_A_LA_MAIN:
@@ -434,8 +448,41 @@ def tests_pour(chemins, existe, bancs=None, lire=None):
             except Exception:                                # noqa: BLE001
                 continue
             if any(m in texte for m in modules):
-                out.append(nom)
+                out.append(nom)                              # règle 2
+            elif _atteint_un_de(nom, modules, _lire_ou_none(lire)):
+                out.append(nom)                              # règle 3
     return sorted(out)
+
+
+def _lire_ou_none(lire):
+    """`lire` qui lève -> `lire` qui rend None. C'est le contrat qu'attend
+    `graphe_du_serveur` : un nom qui ne se lit pas est un nom EXTERNE
+    (`json`, `torch`), pas une erreur."""
+    def _l(chemin):
+        try:
+            return lire(chemin)
+        except Exception:                                    # noqa: BLE001
+            return None
+    return _l
+
+
+def _atteint_un_de(banc, modules, lire0):
+    """Ce banc atteint-il l'un de ces modules, directement ou NON ?
+
+    Le graphe, pas l'import direct : `test_renommage` importe `renommage`,
+    qui importe `renommage_facts`. Le 12/09, `renommage_facts.py` a été livré
+    sans que ce banc tourne — il était vert (vérifié à la main), mais rien ne
+    le garantissait. Un import direct seul aurait laissé le trou ouvert d'un
+    étage.
+
+    `graphe_du_serveur` fait déjà exactement ce parcours, depuis n'importe
+    quel point d'entrée : ici c'est le banc. Un graphe TROUÉ (import
+    dynamique, import relatif) rend True — sur-lancer est le bon côté de
+    l'erreur."""
+    graphe, trou = graphe_du_serveur(lire0, racine=banc)
+    if trou:
+        return True
+    return any(m in graphe for m in modules)
 
 
 # ───────────────────────────── le monde extérieur ────────────────────────────

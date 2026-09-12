@@ -168,11 +168,12 @@ trois pages rustinaient déjà chacune de leur côté (corrigé dans `base.css`)
 - **Comparer phase par phase**, et **CPU contre temps écoulé** : c'est ce qui
   a montré que `parcours` était de l'attente (15,6 ms de CPU pour 692).
 - **Un banc peut être ROUGE sans que rien ne le lance** : `tests_pour`
-  appariait par NOM seul. Depuis le 12/09 il lance aussi tout `test_*.py` dont
-  le TEXTE cite un module touché — **63 bancs** étaient invisibles, dont 59
-  citent `server.py`, et **CINQ étaient rouges** depuis des livraisons
-  entières. Un `livrer` qui touche `server.py` lance donc beaucoup et dure
-  plusieurs minutes : c'est voulu. Son seul trou est nommé,
+  appariait par NOM seul. Depuis le 12/09, **trois règles** — l'homonyme, le
+  banc dont le TEXTE cite `x.py` (les bancs qui lisent le source : 63 étaient
+  invisibles, dont **CINQ rouges** depuis des livraisons entières), et le banc
+  qui ATTEINT le module par le GRAPHE des imports (`renommage_facts.py` livré
+  avec 1 banc sur 11). Un `livrer` qui touche `server.py` lance donc beaucoup
+  et dure plusieurs minutes : c'est voulu. Son seul trou est nommé,
   `git_agent.BANCS_A_LA_MAIN`.
 - **Un banc qui lit le source par le TEXTE mesure une orthographe.** Les cinq
   rouges cherchaient `'jour': _jour_de(`, `_pkey(k).startswith(pref)`… — le
