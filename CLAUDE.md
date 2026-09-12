@@ -101,6 +101,30 @@ décisions techniques. `FACE_USE_GPU=False` **volontaire** (VRAM prise par Ollam
    un banc : la visibilité se teste EN PREMIER, sinon un refus exact (« déjà
    dans un dossier privé ») confirme une existence à qui n'y a pas droit.
 
+11. **Une analyse n'est pas un fait : elle se CONTRE-VÉRIFIE avant de servir.**
+   La faute la plus coûteuse de ce projet n'est pas une erreur de code, c'est
+   une conclusion juste-en-apparence qu'on découvre fausse à l'itération
+   suivante. Quatre fois le 12/09, en une matinée : une sortie de banc LUE
+   AVANT la fin du run (95 s de banc, 30 s d'attente) a fait conclure deux
+   fois de suite à un échec, puis à une cause introuvable — le correctif
+   marchait ; un banc affirmait que `_serve_gallery` n'appelait plus
+   `_best_time`, il l'appelait dans TROIS autres branches ; un compteur posé
+   à 4 en valait 6, dont mon propre commentaire ; et une consigne donnée à
+   Mike sur Windows reposait sur un paquet « en attente » que DISM ne portait
+   pas. **Le réflexe à prendre** : énoncer la conclusion sous une forme
+   FALSIFIABLE (un nombre, un nom, un compte), puis lancer d'abord le contrôle
+   qui la ferait TOMBER — jamais celui qui la confirme. Trois conditions de
+   recevabilité, avant d'agir ou de l'écrire à Mike :
+   **(a) la mesure est-elle FRAÎCHE ?** un canal revenu à `rien`, un
+   horodatage, une taille — une sortie lue pendant qu'elle s'écrit répond sur
+   le run d'avant ; **(b) ai-je cherché les AUTRES portes ?** (règle n° 8) ;
+   **(c) d'où vient ce que je tiens pour acquis ?** une doc, un commentaire,
+   un `PROMPT_NOUVELLE_SESSION` disent l'intention DATÉE de leur auteur, pas
+   l'état — le 12/09 le plan écrit désignait `index` et un `resolve()` alors
+   que la mesure a désigné le parcours, deux fois plus lourd qu'eux réunis.
+   *Un résultat qui confirme ce que j'attendais est le moment de vérifier, pas
+   celui de conclure.*
+
 ## Fichiers
 
 | Fichier | Rôle |
@@ -169,6 +193,9 @@ coller.
 
 - **Un score parfait est une alarme, pas un succès** (deux bancs du projet ne
   mesuraient pas ce qu'ils prétendaient).
+- **Contre-vérifier AVANT de livrer une conclusion** (règle n° 11) : la
+  falsifier, pas la confirmer ; prouver la fraîcheur de la mesure ; nommer ce
+  qui n'est qu'hérité d'une doc.
 - **Une correction n'est acquise qu'une fois son effet observé en réel** — un
   proxy n'est pas le juge, et un banc qui n'a pas tourné n'est pas un banc :
   le 20/08, une conclusion tirée de deux échantillons est tombée dès que le

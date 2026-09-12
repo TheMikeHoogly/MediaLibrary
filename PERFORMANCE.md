@@ -908,7 +908,7 @@ donc **jeté**. Mesuré sur `Photos Mike/2022` filtré par `personne:Florine` :
 |---|---:|---:|
 | fiches bâties / affichées | 2 519 / 336 | **0 / 336** |
 | `enrichir` | 347 à 455 ms | **0,0 ms** |
-| `carte_cles` (reconstruction possible) | 620 à 870 ms | jamais demandée |
+| `carte_cles` (reconstruction possible) | ~40 ms | jamais demandée |
 | page entière (client, à chaud) | 1 087 à 1 249 ms | **719 à 860 ms** |
 
 Trois gestes : un drapeau `remplace_la_grille` posé dès que les quatre modes
@@ -963,6 +963,49 @@ n'écrit dans `\\NAS-Bremblens\home\Photos`, et il passera désormais
 uniquement par MediaLibrary — le serveur peut donc aussi invalider son propre
 cache sur ses propres écritures.
 
+### 3.16 Le cache de listage — **livré le 12/09**
+
+Le § 3.15 disait que la fraîcheur se vérifie pour 2 à 9 % du prix d'une
+énumération. C'est fait. `_lister_dossier` ne bouge pas — elle garde son
+oracle et ses 20 bancs — et note seulement, dans un paramètre additif, les
+dossiers qu'elle a LUS. `_lister_dossier_frais` décide, elle, si le listage
+précédent est encore vrai : un `stat` par dossier surveillé, et la même
+réponse tant qu'aucune date n'a bougé.
+
+**Réobservé en réel**, `Photos Mike/2022` (2 519 photos), 5 chargements, les
+cinq rendant **exactement 1 855 350 octets** :
+
+| phase | 12/09 matin | après |
+|---|---:|---:|
+| `parcours` | 378 ms | **5,6 · 22,2 · 7,4 · 8,3 ms** |
+| la page entière | 1 071 à 1 576 ms | **732 à 1 092 ms** |
+
+Le premier chargement après un redémarrage reste cher (`parcours` 5 891 ms ce
+jour-là, le partage et la machine étant froids) : le cache ne fabrique rien,
+il évite de refaire.
+
+**Contre-épreuve en production**, celle qui compte : `Photos Papa/1986`,
+pendant que le tagueur y travaille. Quatre chargements — 239 ms de parcours
+(construction), **12 ms** (cache servi), **522 ms** (le cache est TOMBÉ : le
+temporaire d'exiftool a changé la date du dossier), 70 ms. Le détecteur se déclenche
+donc bien à travers SMB, sur le vrai NAS, sans qu'on ait écrit un octet pour
+le prouver.
+
+**Les garde-fous**, tous tenus par un banc sur un VRAI arbre de fichiers
+(`test_listage_frais.py`, 14 bancs) : huit dossiers gardés au plus (chaque
+entrée porte ses `Path`) ; un arbre dont la vérification dépasse 40 % du
+parcours cesse d'être caché — **la règle se mesure au lieu de deviner un
+nombre maximum de dossiers** ; un filet de 300 s pour le seul trou du
+mécanisme (une écriture tombée PENDANT le parcours, ou dans la même seconde
+là où les dates n'ont qu'une seconde de résolution) ; et les dossiers
+surveillés sont EXACTEMENT ceux qu'`os.walk` a lus, élagués exclus — un
+fichier ajouté dans un sous-dossier fait bien tomber le cache, ce que
+surveiller la seule tête aurait manqué.
+
+**Aucune invalidation explicite n'est câblée**, et c'est délibéré : une
+écriture du serveur change la date du dossier comme n'importe quelle autre.
+Un crochet de plus serait une seconde vérité à tenir à jour.
+
 ## 4. Ce qui a été vérifié et qui va bien
 
 À ne pas rouvrir sans raison neuve :
@@ -988,8 +1031,17 @@ péage du GIL (§ 3.9), `/api/maint/status` en une passe (§ 3.4), sondes GC/GIL
 et CPU/défauts par phase (§ 3.10, § 3.11).
 
 **Fait le 12/09** : la vue accélérée (§ 3.11), le ramasse-miettes gelé et
-espacé (§ 3.12), HTTP/1.1 et son instrument (§ 3.5), `Last-Modified` (§ 3.6).
-Et **§ 3.7 mesurée côté navigateur, puis écartée**.
+espacé (§ 3.12), HTTP/1.1 et son instrument (§ 3.5), `Last-Modified` (§ 3.6),
+les trois redites de la galerie (§ 3.13), la page qui bâtissait 2 519 fiches
+pour en montrer 336 (§ 3.14), et le **cache de listage** (§ 3.15 pour la
+preuve, § 3.16 pour le geste). Et **§ 3.7 mesurée côté navigateur, puis
+écartée**.
+
+> **Un chiffre périmé corrigé le 12/09** : la reconstruction de `_key_index`
+> coûte **~40 ms**, pas 618 à 784. Ce dernier chiffre était celui d'AVANT la
+> mémoïsation du 11/09 — le § 2 ter le disait déjà (44 ms), pendant que le
+> commentaire du code et deux autres sections gardaient l'ancien. Les 620 à
+> 870 ms qu'on observe encore sont le PREMIER build après un démarrage.
 
 0. **Quand la campagne finit** : `/api/serveur` → `vignettes` passe à
    `fabrique` ; relancer `mesure_couverture_vignettes.py`.
@@ -1000,20 +1052,21 @@ Et **§ 3.7 mesurée côté navigateur, puis écartée**.
 2. **La vue (§ 3.11)** : réécriture exacte livrée (×1,4–1,6) — la réobserver
    dans `comptes` de `/api/maint/status` ; puis la décision sur un cache à
    génération.
-3. **Le cache de listage de dossier** (§ 3.15) : le détecteur coûte 2 % d'une
-   énumération et le NAS rapporte bien les dates — reste à le bâtir, avec la
-   règle de repli sur un arbre large et l'invalidation par le serveur sur ses
-   propres écritures. C'est ce qui ramènerait `parcours` de ~390 ms à ~7.
-4. **Ce qui reste dans `_serve_gallery`** après les redites du 12/09
-   (§ 3.13). Par ordre de poids, phases médianes sur la page de 2 519 photos :
-   `parcours` **378 ms** (attente SMB pure, une seule énumération désormais —
-   pour descendre, il faudrait un cache de listage, donc une décision sur la
-   fraîcheur), `enrichir` **390 ms** de CPU dont 46 de `_resolve_key` (un
-   `Path` par photo) et 90 de dates, `index` **125 ms** (§ 3.8 :
-   `_index_entries_under` peut se servir de `_key_index`), puis `marques`,
-   `motifs`, `envoi` et `gabarit`, 50 à 100 chacun. La planche entière
-   (§ 3.7) reste mesurée et écartée : le navigateur n'y est pour rien.
-6. **La planche entière (3.7)** : seulement avec une mesure côté navigateur.
+3. **Ce qui reste dans `_serve_gallery`**, phases sur la page de 2 519 photos
+   après les § 3.13, 3.14 et 3.16 — **732 à 1 092 ms** au total, contre 1 493
+   à 1 870 hier :
+   - `enrichir` **275 à 481 ms**, du CPU pur : ~46 ms de `_resolve_key` (un
+     `Path` par photo, mémoïsable), ~90 de dates, le reste étant `_faits_pour`
+     et la fabrication des 2 519 dictionnaires ;
+   - `index` **93 à 146 ms** — le § 3.8, écrit le 11/09 et toujours pas fait :
+     `_index_entries_under` peut se servir de `_key_index` ;
+   - `marques` **76 à 114 ms** et `motifs` **57 à 79 ms**, deux post-passes qui
+     relisent `STORE.data` par photo ;
+   - `envoi` **84 ms**, `gabarit` **47 ms**, `parcours` **8 ms** (§ 3.16).
+   La planche entière (§ 3.7) reste mesurée et écartée : le navigateur n'y est
+   pour rien — mais le seuil qu'elle s'était fixé (le serveur sous la
+   demi-seconde) se rapproche.
+4. **La planche entière (3.7)** : seulement avec une mesure côté navigateur.
 
 ---
 

@@ -3197,7 +3197,7 @@ def _is_hidden_path(p):
     return any(part.startswith(('.', '@', '#')) for part in Path(p).parts)
 
 
-def _lister_dossier(dossier, rec=False):
+def _lister_dossier(dossier, rec=False, dossiers_vus=None):
     """Les fichiers média et les sous-dossiers d'un dossier — en UNE passe.
 
     MESURÉ le 10/09 sur `Photos Mike/2022` (2 465 photos, partage SMB) :
@@ -3233,9 +3233,18 @@ def _lister_dossier(dossier, rec=False):
     changement vient d'économiser ; la photothèque n'en contient aucun.
     """
     fichiers, sous = [], []
+    if dossiers_vus is not None and not rec:
+        # Non récursif : seules les entrées du dossier demandé comptent.
+        dossiers_vus.append(str(dossier))
     if rec:
         premier = True
         for racine, dirs, noms in os.walk(dossier):
+            # `dossiers_vus` : les dossiers dont une entrée ajoutée, retirée
+            # ou renommée changerait CE listage — ceux que `os.walk` a
+            # réellement lus, donc sans les élagués. Sert au cache de
+            # listage (`_lister_dossier_frais`), et à rien d'autre ici.
+            if dossiers_vus is not None:
+                dossiers_vus.append(str(racine))
             # Élagage EN PLACE : `os.walk` lit `dirs` après la boucle pour
             # décider où descendre. Filtrer une copie ne l'élaguerait pas.
             dirs[:] = [d for d in dirs if not d.startswith(('.', '@', '#'))]
@@ -3274,6 +3283,83 @@ def _lister_dossier(dossier, rec=False):
                       and os.path.splitext(e.name)[1].lower() in MEDIA_EXT):
                     fichiers.append(Path(e.path))
     sous.sort(key=lambda x: x.name.lower())
+    return fichiers, sous
+
+
+# ─── Cache de listage : le dossier n'est relu que s'il a CHANGÉ ──────────
+# Un dossier voit sa date de modification changer dès qu'une entrée y est
+# ajoutée, retirée ou renommée — pas quand le CONTENU d'un fichier change.
+# MESURÉ le 12/09 (`mesure_enumeration_dossier.py`, variante S) :
+#
+#   `Photos Mike/2022`    2 dossiers    detecteur    6,8 ms   contre  343 ms
+#   `Photos Papa`       271 dossiers    detecteur  130,9 ms   contre 1 467 ms
+#
+# soit 2 % et 9 % du prix, et **0,48 ms par dossier**. Le cache n'a donc pas
+# à PARIER sur la fraîcheur : il la VÉRIFIE à chaque page.
+_LISTAGE = {}
+_LISTAGE_LOCK = threading.Lock()
+# Huit dossiers : la navigation va-et-vient entre quelques-uns, et chaque
+# entrée porte ses `Path` (2 500 pour `2022`).
+LISTAGE_MAX = 8
+# Filet, PAS le mécanisme. Le détecteur peut manquer une écriture tombée
+# PENDANT le parcours : la date lue après coup serait alors celle d'après le
+# changement, et l'entrée périmée se croirait valable jusqu'au changement
+# SUIVANT — qui, dans un dossier d'archive, peut ne jamais venir.
+LISTAGE_TTL_S = 300.0
+# Au-delà de cette part du parcours, vérifier coûte trop cher : on cesse de
+# cacher CE dossier-là plutôt que de deviner un nombre de dossiers maximum.
+LISTAGE_PART_MAX = 0.40
+
+
+def _listage_intact(entree):
+    """Vrai si aucun dossier surveillé n'a bougé depuis le listage."""
+    for d, m in entree['dates'].items():
+        try:
+            if os.stat(d).st_mtime != m:
+                return False
+        except OSError:
+            return False
+    return True
+
+
+def _lister_dossier_frais(dossier, rec=False):
+    """`_lister_dossier`, mais sans relire un dossier qui n'a pas changé.
+
+    La fonction qui LISTE et celle qui décide si le listage est encore vrai
+    sont séparées à dessein : la première a son oracle et ses 20 bancs depuis
+    le 10/09, et un cache n'a pas à venir s'asseoir dedans."""
+    cle = (str(dossier), bool(rec))
+    with _LISTAGE_LOCK:
+        e = _LISTAGE.get(cle)
+    if e is not None and time.time() - e['at'] <= LISTAGE_TTL_S:
+        t0 = time.perf_counter()
+        intact = _listage_intact(e)
+        verif_ms = (time.perf_counter() - t0) * 1000.0
+        if intact:
+            if verif_ms > e['parcours_ms'] * LISTAGE_PART_MAX:
+                # Arbre trop large : le détecteur ne vaut plus le parcours.
+                with _LISTAGE_LOCK:
+                    _LISTAGE.pop(cle, None)
+            return e['files'], e['subdirs']
+
+    vus = []
+    t0 = time.perf_counter()
+    fichiers, sous = _lister_dossier(dossier, rec, vus)
+    parcours_ms = (time.perf_counter() - t0) * 1000.0
+
+    dates, gardable = {}, True
+    for d in vus:
+        try:
+            dates[d] = os.stat(d).st_mtime
+        except OSError:
+            gardable = False
+            break
+    if gardable and dates:
+        with _LISTAGE_LOCK:
+            while len(_LISTAGE) >= LISTAGE_MAX:
+                _LISTAGE.pop(next(iter(_LISTAGE)))
+            _LISTAGE[cle] = {'dates': dates, 'files': fichiers, 'subdirs': sous,
+                             'parcours_ms': parcours_ms, 'at': time.time()}
     return fichiers, sous
 
 
@@ -3804,8 +3890,15 @@ def _key_index():
             # `fichiers.build_key_index(cles, _resolve_key)`, à l'identique
             # (même ordre, donc même gagnant quand deux clés se normalisent
             # pareil ; même clé écartée si elle lève) — mais la normalisation
-            # de chaque clé est mémoïsée. MESURÉ le 11/09 : 618 à 784 ms par
-            # reconstruction, VERROU TENU, une fois par minute (TTL) ; pendant
+            # de chaque clé est mémoïsée. **Les 618 à 784 ms mesurés le 11/09
+            # étaient CEUX D'AVANT la mémoïsation** — et le chiffre est resté
+            # ici, réécrit dans les docs, et répété à Mike deux fois le 12/09
+            # avant d'être remesuré. RÉALITÉ (12/09, index de 40 465 photos) :
+            # une reconstruction après expiration du TTL coûte **~40 ms**
+            # (phase 44 et 56 ms, contre 17 ms pour une lecture de cache) ;
+            # les 620 à 870 ms existent, mais c'est le PREMIER build après un
+            # démarrage, quand la mémoïsation est froide — une fois par
+            # démarrage, pas une fois par minute. Le verrou reste tenu pendant
             # ce temps toute vignette qui vérifie sa visibilité attend.
             carte = {}
             for k in list(INDEX_BRUT.keys()):
@@ -13384,7 +13477,7 @@ class Handler(BaseHTTPRequestHandler):
             # `rec` DESCEND dans l'arbre pour bâtir `files` ; quand la grille
             # est remplacée, seuls les sous-dossiers du premier niveau
             # servent — une passe non récursive les rend déjà tous.
-            files, subdirs = _lister_dossier(
+            files, subdirs = _lister_dossier_frais(
                 folder, rec and not remplace_la_grille)
         except OSError as e:
             self._send(500, str(e).encode(), 'text/plain')
@@ -13449,7 +13542,8 @@ class Handler(BaseHTTPRequestHandler):
         is_uploads = folder in (UPLOAD_DIR, UPLOAD_DIR.resolve())
         roots_g = media_roots()
         # UN instantané pour toute la boucle — et rien du tout quand il n'y a
-        # pas de boucle : sa reconstruction coûte 620 à 870 ms, VERROU TENU.
+        # pas de boucle : sa reconstruction coûte ~40 ms verrou tenu, et
+        # 620 à 870 ms au PREMIER build après un démarrage.
         carte_cles = None if remplace_la_grille else _key_index()
         ph.top('carte_cles')
         # Faits (date . lieu . noms) : le contexte des noms, lieux et

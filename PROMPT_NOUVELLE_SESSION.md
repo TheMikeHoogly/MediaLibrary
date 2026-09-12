@@ -1,10 +1,10 @@
-# Reprise — MediaLibrary, après la session du 12 septembre 2026 au matin
+# Reprise — MediaLibrary, après la session du 12 septembre 2026
 
 > **Ce fichier est ÉPHÉMÈRE.** Il décrit un état, pas des règles. Les règles
 > vivent dans `CLAUDE.md`, le plan dans `ROADMAP.md`, les verdicts dans
 > `eval/DECISIONS.md` et `docs/DECISIONS_OUTILLAGE.md`. **Les chiffres du
-> chantier performance sont dans `PERFORMANCE.md`** (§ 3.13 pour la galerie,
-> § 5 pour l'ordre).
+> chantier performance sont dans `PERFORMANCE.md`** (§ 3.13 à 3.16 pour la
+> galerie, § 5 pour l'ordre).
 
 ---
 
@@ -12,95 +12,92 @@
 
 > « concentre toi sur la performance (toujours en attendant la fin du
 > tagging). fais une analyse en profondeur, des tests utiles et intelligents »
-> — « sois le plus autonome possible, fais les tests, tu as accès aux folders
-> et à Chrome ».
+> — « sois le plus autonome possible ».
+
+Et, le 12/09 : **« fais en sorte d'implémenter une double-vérification
+systématique suite à une analyse »** → c'est la **règle n° 11 de `CLAUDE.md`**,
+née de quatre fautes de la même matinée. Elle a mordu dans l'heure : voir
+§ 2 ci-dessous.
 
 La campagne de retag commande toujours tout : GPU pris, **prompt
 intouchable**, fin attendue vers le **14/09**.
 
 ---
 
-## 1. Livré le 12/09 au matin
+## 1. Livré le 12/09 — la page `/files` divisée par deux
 
-**`_serve_gallery` : trois redites, la moitié du temps de la page.** Aucune ne
-calculait rien de neuf (détail et tableaux : `PERFORMANCE.md` § 3.13).
+`Photos Mike/2022`, 2 519 photos, récursif, réobservé en réel à chaque étape :
 
-| | avant | après |
+| | matin | soir |
 |---|---:|---:|
-| `parcours` (le dossier énuméré DEUX fois en récursif) | 715 ms | **378 ms** |
-| `enrichir.dossier` (le lien de dossier calculé par PHOTO) | 69 ms | **46 ms** |
-| `enrichir.dates` (la date précise demandée DEUX fois) | 108 ms | **90 ms** |
+| `parcours` | 715 ms | **8 ms** |
+| `enrichir` (mode navigation) | 455 ms | 275 à 481 ms |
+| `enrichir` (dès qu'un tag est coché) | 455 ms | **0,0 ms** |
+| la page entière | 1 493 à 1 870 ms | **732 à 1 092 ms** |
 
-Réobservé en réel, même page (2 519 photos), 5 chargements, campagne en cours.
-Les QUATRE branches qui remplissent `file_data` passent par les mêmes portes
-(`_lien_dossier_memo`, `_best_time_depuis`, `_jour_depuis`) — pas seulement
-celle qui avait été mesurée.
+Quatre gestes, chacun avec son banc et sa réobservation :
 
-**Puis la page qui bâtissait 2 519 fiches pour en montrer 336** (§ 3.14). Dès
-qu'un tag est sélectionné — ou en recherche, semblables, même jour — la grille
-est REMPLACÉE depuis l'index : le parcours du NAS et la boucle
-d'enrichissement travaillaient pour la corbeille. `enrichir` **455 → 0,0 ms**,
-la carte des clés n'est plus demandée, **1 200 → 750 ms** côté client. Le banc
-tient la prémisse (chaque mode remplace bien `file_data`) autant que le geste.
+1. **Le dossier de tête était énuméré DEUX fois** en récursif (§ 3.13).
+2. **Le lien de dossier était calculé par PHOTO** alors qu'il ne dépend que du
+   dossier ; **la date précise était demandée deux fois** par photo (§ 3.13).
+3. **La page bâtissait 2 519 fiches pour en montrer 336** dès qu'un tag est
+   coché — les quatre modes « la grille est un résultat » remplacent
+   `file_data` (§ 3.14).
+4. **Le cache de listage** (§ 3.15 la preuve, § 3.16 le geste) : un `stat` par
+   dossier surveillé dit si le listage est encore vrai, pour 2 à 9 % du prix
+   d'une énumération. `_lister_dossier` n'a pas bougé — elle garde son oracle
+   et ses 20 bancs ; `_lister_dossier_frais` décide. **Aucune invalidation
+   explicite n'est câblée** : une écriture du serveur change la date du
+   dossier comme n'importe quelle autre.
 
-38 bancs verts sur la machine.
+52 bancs verts sur la machine (20 + 18 + 14).
 
 ---
 
-## 2. L'état de la machine — Windows, et ce qui a failli tout casser
+## 2. La règle n° 11, et ce qu'elle a attrapé le jour même
 
-**KB5124008 (26200.9445) casse Plan9**, donc `device_bash`. C'est reconnu par
-Microsoft ET par Anthropic, le correctif est annoncé « dans un cumulatif
-suivant » (octobre, probablement). Au 12/09 : Mike l'a désinstallé, la machine
-tourne en **UBR 9278**, DISM ne porte aucun paquet 5124008, `device_bash`
-marche. **Windows Update est en pause jusqu'au 17.10.**
-
-- `Get-HotFix` MENT sur ce sujet (journal d'historique) : la vérité est
-  `(Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion').UBR`.
-- Le masquage du KB (`IsHidden`) n'a pas pu être posé : pause active, donc
-  rien n'est proposé, donc rien à masquer. **À refaire vers le 16.10**, si le
-  cumulatif d'octobre n'a pas corrigé Plan9.
+J'allais sortir la reconstruction de `_key_index` de son verrou, sur la foi
+d'un « 620 à 870 ms, une fois par minute » lu dans les docs — et répété deux
+fois à Mike. Remesuré : **~40 ms**. Le chiffre datait d'AVANT la mémoïsation
+du 11/09, le § 2 ter de `PERFORMANCE.md` portait déjà la bonne valeur (44 ms)
+pendant que le commentaire du code et deux autres sections gardaient
+l'ancienne. **Un chantier entier reposait sur un chiffre périmé.** Corrigé
+partout. Les 620–870 ms existent : c'est le PREMIER build après un démarrage.
 
 ---
 
 ## 3. Ce que la session suivante doit faire, dans l'ordre
 
-0. **Vérifier l'état réel** : `.git/logs/refs/heads/main` doit porter le
-   commit de la galerie — une doc décrit une intention, git dit ce qui est
-   fusionné. Et l'UBR (ci-dessus) avant de compter sur `device_bash`.
-1. **Le cache de listage de dossier** (§ 3.15) — instruit, pas encore bâti.
-   Il n'y a **pas de compromis à accepter** : le détecteur de fraîcheur (un
-   `stat` par dossier de l'arbre) coûte **6,8 ms contre 343**, soit 2 %, et le
-   NAS rapporte bien ces dates (observé, sans rien écrire). Ce qui reste à
-   décider est technique : la règle de repli quand l'arbre a trop de dossiers,
-   et l'invalidation par le serveur sur ses PROPRES écritures — Mike a dit le
-   12/09 que plus rien d'autre n'écrit dans `\\NAS-Bremblens\home\Photos`.
-   Gain attendu : `parcours` ~390 → ~7 ms.
-2. **La reconstruction de `_key_index`** : 620 à 870 ms **VERROU TENU**, une
-   fois par minute (TTL). Pendant ce temps toute vignette qui vérifie sa
-   visibilité attend. Bâtir hors verrou puis publier sous verrou, avec une
-   génération pour ne pas écraser une invalidation — et garder l'invalidation
-   EXPLICITE synchrone (un renommage ne doit pas servir une clé morte).
-3. **`index` (125 ms)** : le § 3.8, écrit depuis le 11/09 et jamais fait —
-   `_index_entries_under` peut se servir de `_key_index`.
-4. **Les 13,5 Go d'Ollama** : rien à faire pendant la campagne (choix de Mike
-   du 12/09). Après : un modèle qui tient dans les 4 Go de VRAM (`vision-eval`).
+0. **Vérifier l'état réel** : `.git/logs/refs/heads/main`, et l'UBR Windows
+   (§ 4) avant de compter sur `device_bash`.
+1. **`PERFORMANCE.md` § 5, point 3** — ce qui reste dans `_serve_gallery`, par
+   ordre de poids : `enrichir` (275–481 ms de CPU), `index` (93–146 ms, c'est
+   le § 3.8 écrit le 11/09 et jamais fait), `marques` et `motifs` (deux
+   post-passes qui relisent `STORE.data` par photo).
+2. **B5 du `ROADMAP` — l'auto-rangement**, demandé par Mike le 12/09 : rien de
+   commencé, et **une question lui appartient** (`Uploads` → `_A TRIER`
+   d'office, ou tri d'abord ?). Ma recommandation y est écrite. Zéro GPU.
+3. **Les 13,5 Go d'Ollama** : rien pendant la campagne (choix de Mike du
+   12/09). Après : un modèle qui tient dans les 4 Go de VRAM (`vision-eval`).
 
 ---
 
 ## 4. Les pièges
 
-- **`device_bash` marche** (12/09) et **le NAS est monté** dans la VM sous
-  `$HOME/mnt/Photos` — nouveau, `CLAUDE.md` dit encore le contraire. Les
-  MESURES, elles, restent l'affaire de l'agent de banc : la VM n'a ni les
-  latences de Windows ni le LAN.
-- **Un banc qui parse `server.py` fonction par fonction avec
-  `ast.get_source_segment` met 95 s** là où un découpage par lignes en met
-  1 : la fonction redécoupe les 755 Ko à chaque appel. Corrigé dans
-  `test_galerie_enrichissement.py` (95 s → 0,8 s).
-- **Canaux** : un ordre écrit DEUX fois relance le banc deux fois ; écrire
-  `rien`, puis l'ordre UNE fois, puis ATTENDRE que le canal repasse à `rien`
-  avant de lire la sortie — un banc de 95 s lu au bout de 30 en rend un vieux.
+- **Windows : KB5124008 (26200.9445) casse Plan9**, donc `device_bash`.
+  Reconnu par Microsoft et Anthropic, correctif annoncé « dans un cumulatif
+  suivant ». La machine tourne en **UBR 9278**, Windows Update est **en pause
+  jusqu'au 17.10**. `Get-HotFix` MENT sur ce sujet ; la vérité est
+  `(Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion').UBR`.
+  **Vers le 16.10** : masquer le KB (`IsHidden`) s'il est reproposé.
+- **`device_bash` marche et le NAS est monté** dans la VM sous
+  `$HOME/mnt/Photos` — `CLAUDE.md` dit encore le contraire. Les MESURES
+  restent l'affaire de l'agent de banc : la VM n'a ni les latences de Windows
+  ni le LAN.
+- **Canaux** : écrire `rien`, puis l'ordre UNE fois, puis ATTENDRE que le
+  canal repasse à `rien` avant de lire la sortie. Une sortie lue pendant
+  qu'elle s'écrit répond sur le run d'AVANT — deux conclusions fausses de
+  suite le 12/09.
 - **Chrome** : le serveur se regarde par là, jamais par le navigateur intégré.
   La racine du NAS est `dir=1`, pas `dir=0`.
 - **Comparer phase par phase**, et **CPU contre temps écoulé** : c'est ce qui

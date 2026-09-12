@@ -170,6 +170,34 @@ compromis à accepter — reste à le bâtir.
 Prochain : `PERFORMANCE.md` § 5. Compatible avec la campagne : chemin de
 service seulement, jamais le calcul IA.
 
+**B5. L'auto-rangement, et ce qu'`Uploads` est VRAIMENT — demandé par Mike le
+12/09, rien de commencé.** Le malentendu à lever d'abord : `Uploads` est né
+comme un **outil de transfert** (envoyer vite une image sur le PC depuis le
+réseau local ou le wifi), pas comme une antéchambre de la photothèque —
+« ce ne sont pas forcément des images que je veux ensuite garder en
+souvenir » (Mike). Une photo déposée là n'est donc PAS candidate au
+rangement par défaut.
+
+Sa question, telle qu'il la pose : **les dépôts d'`Uploads` doivent-ils passer
+dans `_A TRIER` pour être rangés, ou faut-il un tri AVANT ?**
+
+*Ma recommandation, à confirmer par lui* : le tri d'abord, et **rien ne bouge
+tout seul**. Un déplacement automatique vers `_A TRIER` transformerait
+silencieusement un transfert en souvenir — exactement ce qu'il dit ne pas
+vouloir, et le chemin de retour coûte plus cher que le geste évité. Le tri,
+c'est le **rappel à 7 jours** qu'il demande : tout dépôt d'`Uploads` plus vieux
+que 7 jours est présenté avec deux gestes — **garder** (il part dans
+`_A TRIER`, où la chaîne existante prend le relais : bats 26, 36, 38, 39) ou
+**effacer** (corbeille réversible, jamais une suppression sèche). Tant qu'il
+n'a pas répondu, le dépôt reste où il est : un rappel qui se périme tout seul
+n'est pas un rappel.
+
+À instruire avant d'écrire une ligne : où vit le rappel (une section de
+l'accueil, une page dédiée, un badge), ce qui fait foi pour l'âge (la date de
+dépôt, pas l'EXIF — une photo de 1984 déposée hier a un jour), et ce qu'on
+fait des dépôts déjà vieux le jour de la mise en service. Zéro GPU, zéro
+prompt : compatible avec la campagne.
+
 ### C. Quand la campagne s'arrête, et pas avant
 
 **C0. La mémoire de la machine, et donc le modèle de vision.** Tranché le
