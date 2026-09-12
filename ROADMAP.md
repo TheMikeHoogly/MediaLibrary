@@ -218,7 +218,15 @@ pour ne jamais dire par le seul clignotement.
   « 35 dépôts de plus de 7 jours » ne mesurait donc pas l'âge : il mesurait
   « ce que le tagueur n'a pas réécrit ».
 
-*Mes recommandations, à confirmer par Mike* : **(1)** noter au dépôt la date ET
+**Mike a dit oui aux trois le 12/09.** `-P` est **LIVRÉ et observé en réel**
+(verdict et preuve dans `eval/DECISIONS.md`) ; restent (1) et (3) à bâtir.
+Et **(3) change de forme** : la date de dépôt des 248 hérités n'est PAS perdue
+— la date de **création** du fichier a survécu (242 des 248 l'ont plus ancienne
+que leur date de modification ; les images d'`_Uploads` donnent 12/08 ×19,
+20/08 ×1, 01/09 ×193, ce que confirment les noms de fichiers). La règle des
+7 jours peut donc s'appliquer à eux comme aux autres.
+
+*Les recommandations, telles qu'elles ont été posées* : **(1)** noter au dépôt la date ET
 le compte déposant (le nom de session est déjà sous la main dans `_do_post`) —
 c'est ce qui rend la lampe PERSONNELLE, donc invisible pour les autres comptes,
 comme il le demande ; **(2)** ajouter **`-P`** aux arguments d'`exiftool`, qui

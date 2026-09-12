@@ -1593,15 +1593,39 @@ def _write_metadata_piexif(path, keywords, desc):
         return False
 
 
+# `-P` : ExifTool REND au fichier sa date de modification après avoir écrit.
+# Sans lui, chaque écriture de tags la remplace par l'instant de l'écriture.
+# MESURÉ le 12/09 sur `Photos Mike/2022`, même dossier, 400 fichiers : les
+# **vidéos, que le tagueur ne touche pas, portent 50 jours distincts de 2022**
+# — les vraies dates de l'appareil, préservées par la copie ; les **images,
+# taguées, en portent UN seul** : 2026-09-09. Et dans `_Uploads`, les 213
+# images sont toutes au 05/09, le jour où la campagne a commencé.
+#
+# Ce que ça coûte : rien. La détection de changement du scan compare le
+# `mtime` gardé en index à celui du disque — avec `-P`, nos propres écritures
+# cessent de la faire réagir, ce qui la rend plus juste, pas moins : elle
+# n'existe que pour repérer une modification venue d'AILLEURS. Le
+# `Last-Modified` des médias est déjà en `no-cache`.
+#
+# Ce que ça ne répare pas : les ~40 000 photos déjà réécrites. Leur date de
+# fichier est perdue — et on ne tentera PAS de la reconstruire depuis le nom
+# ou la date de création : une date fausse est pire qu'une date absente
+# (même raison que le garde-fou de la date de scan, `_epoch_precis`).
+EXIFTOOL_PRESERVE = "-P"
+
+
 def _run_exiftool(args, timeout=180):
     """Lance ExifTool via un argfile UTF-8 avec BOM — indispensable sous
-    Windows pour que les accents survivent au passage des arguments."""
+    Windows pour que les accents survivent au passage des arguments.
+
+    `-P` est posé ICI, en tête, et pas dans chacun des trois écrivains : un
+    quatrième arriverait sans lui. Sur une LECTURE il ne fait rien."""
     import tempfile
     argfile = None
     try:
         with tempfile.NamedTemporaryFile('w', suffix='.args', delete=False,
                                          encoding='utf-8-sig') as tf:
-            tf.write('\n'.join(args))
+            tf.write('\n'.join([EXIFTOOL_PRESERVE] + list(args)))
             argfile = tf.name
         return subprocess.run([str(EXIFTOOL), "-@", argfile],
                               capture_output=True, text=True,
