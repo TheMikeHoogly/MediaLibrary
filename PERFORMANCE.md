@@ -842,6 +842,61 @@ pire pause passe de 509 à 210 ms.** `test_gel_gc.py` (8 bancs) tient l'ordre
 d'appel, le fait que ce qui naît APRÈS reste ramassé, et qu'un interpréteur
 qui refuse ne fait pas tomber le serveur.
 
+### 3.13 `_serve_gallery` : trois redites dans la page — **livré le 12/09**
+
+Une fois le parcours corrigé le 10/09 (`os.scandir`), l'horloge de phases
+laissait 1,5 à 1,9 s pour 2 519 photos. Trois redites y tenaient la moitié du
+temps, et **aucune ne calculait quoi que ce soit de neuf**.
+
+**Le dossier de tête était énuméré DEUX fois** en mode récursif : `os.walk`
+le balayait, puis un second `os.scandir` redemandait ses sous-dossiers — que
+le premier tuple d'`os.walk` portait déjà. `mesure_enumeration_dossier.py`,
+4 tours alternés sur `Photos Mike/2022` :
+
+| | médiane | min | max | CPU |
+|---|---:|---:|---:|---:|
+| A, deux passes (l'écriture d'avant) | 692,0 ms | 666,8 | 791,6 | 15,6 ms |
+| B, une seule passe | **351,7 ms** | 337,6 | 393,0 | 15,6 ms |
+| C, la 2ᵉ passe seule | 368,4 ms | 350,1 | 398,6 | 7,8 ms |
+
+15,6 ms de CPU des deux côtés : c'est de l'**attente du partage**, pas du
+calcul. Identité prouvée chemin par chemin, 4 tours.
+
+**Le lien de dossier était calculé par PHOTO** alors que tout, dans
+`_folder_link_for_key`, passe par le dossier du chemin : 2 519 appels pour
+deux réponses. Mémoïsé par dossier, le temps d'une page
+(`_lien_dossier_memo`).
+
+**La date précise était demandée DEUX fois par photo** : `_best_time` puis
+`_jour_de`, chacun appelant `_epoch_precis` sur le même couple. Les deux
+gardent leur nom et délèguent à `_best_time_depuis` / `_jour_depuis`, qui
+prennent la date déjà calculée : la règle n'est recopiée nulle part.
+
+Les QUATRE branches qui remplissent `file_data` (navigation, tags, recherche /
+semblables, même jour) passent par les mêmes portes — corriger la première et
+s'arrêter là aurait laissé les trois autres payer deux fois (règle n° 8).
+
+**Réobservé en réel** après redémarrage, même page, 5 chargements, campagne en
+cours — phases médianes, en millisecondes :
+
+| phase | avant (11-12/09) | après (12/09) |
+|---|---:|---:|
+| `parcours` | 715 | **378** |
+| `enrichir.dossier` | 69 | **46** |
+| `enrichir.dates` | 108 | **90** |
+| total de la page | 1 493 à 1 870 | 1 071 à 1 576 |
+
+Le `parcours` tombe de 337 ms, exactement ce que le banc annonçait (340). Le
+reste d'`enrichir.dossier` est le `Path(...)` de `_resolve_key`, un par photo :
+c'est le prochain caillou, pas celui-ci. **Le total de la page dépend de la
+charge de la machine** (le tagging tourne) : ce sont les phases qui font foi,
+pas lui.
+
+Bancs : `test_parcours_dossier.py` (20, dont 4 neufs : le dossier de tête
+n'est lu qu'une fois, un dossier illisible lève toujours) et
+`test_galerie_enrichissement.py` (12 : les quatre branches, la clé de mémo qui
+ne peut pas confondre deux dossiers, l'écriture d'avant en oracle).
+
 ## 4. Ce qui a été vérifié et qui va bien
 
 À ne pas rouvrir sans raison neuve :
@@ -879,10 +934,15 @@ Et **§ 3.7 mesurée côté navigateur, puis écartée**.
 2. **La vue (§ 3.11)** : réécriture exacte livrée (×1,4–1,6) — la réobserver
    dans `comptes` de `/api/maint/status` ; puis la décision sur un cache à
    génération.
-3. **Ce qui reste dans `_serve_gallery`** : 1,5 à 1,9 s pour 2 519 photos,
-   dont ~140 ms de `index` et un `_pkey(Path(UPLOAD_DIR).resolve())` qui fait
-   un aller-retour SMB à chaque appel (§ 3.8). La planche entière (§ 3.7) est
-   mesurée et écartée : le navigateur n'y est pour rien.
+3. **Ce qui reste dans `_serve_gallery`** après les trois redites du 12/09
+   (§ 3.13). Par ordre de poids, phases médianes sur la page de 2 519 photos :
+   `parcours` **378 ms** (attente SMB pure, une seule énumération désormais —
+   pour descendre, il faudrait un cache de listage, donc une décision sur la
+   fraîcheur), `enrichir` **390 ms** de CPU dont 46 de `_resolve_key` (un
+   `Path` par photo) et 90 de dates, `index` **125 ms** (§ 3.8 :
+   `_index_entries_under` peut se servir de `_key_index`), puis `marques`,
+   `motifs`, `envoi` et `gabarit`, 50 à 100 chacun. La planche entière
+   (§ 3.7) reste mesurée et écartée : le navigateur n'y est pour rien.
 6. **La planche entière (3.7)** : seulement avec une mesure côté navigateur.
 
 ---
@@ -897,6 +957,7 @@ Et **§ 3.7 mesurée côté navigateur, puis écartée**.
 | `test_parcours_dossier.py` | 16 bancs : l'ancienne écriture sert d'oracle ; deux bancs comptent les `stat()` |
 | `mesure_couverture_vignettes.py` | combien de photos ont leur vignette 512 (sur `copie.db`, noms recalculés) |
 | `mesure_fabrication_vignette.py` | ce que coûte une vignette : lecture NAS contre décodage, et la variante `draft` |
+| `mesure_enumeration_dossier.py` | ce que coûte la SECONDE énumération du dossier de tête en mode récursif : trois variantes, tours alternés, et l'identité des réponses vérifiée chemin par chemin |
 | `mesure_peage_gil.py` | ce que coûte un `stat` quand des fils CPU tournent, selon la bascule du GIL et le minuteur de Windows ; et le débit CPU en face |
 | `mesure_corbeille.py` | la liste de la corbeille : `exists+is_dir+stat` contre un `stat`, sur le vrai journal |
 | `test_vignette_du_tagueur.py`, `test_vignettes_de_fond.py`, `test_corbeille_une_lecture.py` | 12, 15 et 4 bancs, chacun avec l'ancienne écriture en oracle |

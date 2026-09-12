@@ -240,6 +240,92 @@ class CeQueLeChangementEconomise(Arbre):
                         f'gain insuffisant : {vieux} -> {neuf} appels')
 
 
+def deux_passes(dossier, rec=False):
+    """L'ecriture du 10/09 au 12/09 : `os.walk` PUIS un second `os.scandir`
+    pour les sous-dossiers. Oracle du point mesure le 12/09 -- pas ma
+    relecture d'elle."""
+    fichiers, sous = [], []
+    if rec:
+        for racine, dirs, noms in os.walk(dossier):
+            dirs[:] = [d for d in dirs if not d.startswith(('.', '@', '#'))]
+            rp = Path(racine)
+            for n in noms:
+                if n.startswith(('.', '@', '#')):
+                    continue
+                if os.path.splitext(n)[1].lower() in MEDIA_EXT:
+                    fichiers.append(rp / n)
+        with os.scandir(dossier) as it:
+            for e in it:
+                if not e.name.startswith(('.', '@', '#')) and e.is_dir():
+                    sous.append(Path(e.path))
+    else:
+        with os.scandir(dossier) as it:
+            for e in it:
+                if e.name.startswith(('.', '@', '#')):
+                    continue
+                if e.is_dir():
+                    sous.append(Path(e.path))
+                elif (e.is_file()
+                      and os.path.splitext(e.name)[1].lower() in MEDIA_EXT):
+                    fichiers.append(Path(e.path))
+    sous.sort(key=lambda x: x.name.lower())
+    return fichiers, sous
+
+
+class LeDossierDeTeteNEstEnumereQuUneFois(Arbre):
+    """Une enumeration SMB de 2 519 entrees coute 368 ms. La deuxieme ne
+    rendait rien que la premiere n'ait deja vu -- et une optimisation qui ne
+    se compte pas est une intention (12/09)."""
+
+    def _compter_enum(self, cible, appel):
+        """Combien de fois CE dossier-la est enumere."""
+        n = {'v': 0}
+        vrai = os.scandir
+        vise = os.path.normcase(os.path.abspath(str(cible)))
+
+        def compte(chemin='.', *a, **k):
+            if os.path.normcase(os.path.abspath(str(chemin))) == vise:
+                n['v'] += 1
+            return vrai(chemin, *a, **k)
+
+        os.scandir = compte
+        try:
+            appel()
+        finally:
+            os.scandir = vrai
+        return n['v']
+
+    def test_deux_passes_hier_une_seule_aujourd_hui(self):
+        batir(self.d, ['IMG_1.jpg', 'IMG_2.jpg', 'ete/IMG_3.jpg', 'hiver/'])
+        vieux = self._compter_enum(self.d, lambda: deux_passes(self.d, True))
+        neuf = self._compter_enum(self.d, lambda: LISTER(self.d, True))
+        self.assertEqual(vieux, 2, "l'ecriture d'avant enumerait deux fois")
+        self.assertEqual(neuf, 1, 'le dossier de tete doit etre lu UNE fois')
+
+    def test_et_elle_rend_exactement_la_meme_chose(self):
+        batir(self.d, ['IMG_1.jpg', 'a/IMG_2.JPG', 'a/b/IMG_3.png',
+                       '.cache/IMG_4.jpg', '@eaDir/', 'Zoo/', 'note.txt'])
+        vf, vs = deux_passes(self.d, True)
+        nf, ns = LISTER(self.d, True)
+        self.assertEqual(sorted(str(x) for x in nf),
+                         sorted(str(x) for x in vf))
+        self.assertEqual([x.name for x in ns], [x.name for x in vs])
+
+    def test_le_mode_NON_recursif_n_a_pas_bouge(self):
+        batir(self.d, ['IMG_1.jpg', 'a/', 'note.txt'])
+        self.assertEqual(self._compter_enum(self.d,
+                                            lambda: LISTER(self.d, False)), 1)
+
+    def test_un_dossier_illisible_leve_encore(self):
+        """`os.walk` avale l'erreur et ne rend AUCUN tuple : sans le repli,
+        la page dirait « aucune photo » la ou elle doit dire pourquoi."""
+        manquant = self.d / 'ce-dossier-n-existe-pas'
+        with self.assertRaises(OSError):
+            LISTER(manquant, True)
+        with self.assertRaises(OSError):
+            LISTER(manquant, False)
+
+
 class LaFonctionEstBienCELLEQueLeServeurAPPELLE(unittest.TestCase):
     """Un banc qui mesure une fonction que la route n'appelle plus mesure le
     vide. Le 10/09, une correction de cache posee sur deux chemins d'ecriture

@@ -156,6 +156,13 @@ soir** : la machine PAGINE (`llama-server` à 13,7 Go après 60 h — fuite
 probable, `ollama stop` a rendu 2,5 Go ; à surveiller) et **la vue par
 utilisateur coûte ~3 µs par clé** sur toutes les lectures agrégées — plus trois
 défauts de correction dans cette vue (`fix/ecriture-sous-la-vue`).
+**12/09** : HTTP/1.1 et `Last-Modified` (120 connexions TCP → 0, une photo
+revue ne retransfère plus 1,6 Mo), le ramasse-miettes gelé et espacé (×3,8),
+la vue accélérée, la planche mesurée côté NAVIGATEUR puis écartée (10 ms de
+`JSON.parse` : les sept huitièmes sont serveur), et **trois redites dans
+`_serve_gallery`** — le dossier de tête énuméré deux fois (692 → 352 ms au
+banc, réobservé 715 → 378 en réel), le lien de dossier calculé par photo, la
+date précise demandée deux fois (§ 3.13).
 Prochain : `PERFORMANCE.md` § 5. Compatible avec la campagne : chemin de
 service seulement, jamais le calcul IA.
 

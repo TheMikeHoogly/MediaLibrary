@@ -1,9 +1,10 @@
-# Reprise — MediaLibrary, après la session du 11 septembre 2026 au soir
+# Reprise — MediaLibrary, après la session du 12 septembre 2026 au matin
 
 > **Ce fichier est ÉPHÉMÈRE.** Il décrit un état, pas des règles. Les règles
 > vivent dans `CLAUDE.md`, le plan dans `ROADMAP.md`, les verdicts dans
 > `eval/DECISIONS.md` et `docs/DECISIONS_OUTILLAGE.md`. **Les chiffres du
-> chantier performance sont dans `PERFORMANCE.md`** (§ 3.4, 3.10, 3.11, § 5).
+> chantier performance sont dans `PERFORMANCE.md`** (§ 3.13 pour la galerie,
+> § 5 pour l'ordre).
 
 ---
 
@@ -19,69 +20,77 @@ intouchable**, fin attendue vers le **14/09**.
 
 ---
 
-## 1. Livré le 11/09 au soir — sur `main`
+## 1. Livré le 12/09 au matin
 
-| Commit | Quoi | Observé |
-|---|---|---|
-| `2d40c26` | `/api/maint/status` : trois balayages → une passe ; sondes GC/GIL (`/api/serveur` → `sondes`) ; CPU du fil et défauts de page par phase (`/api/perf` → `derniers`) ; bancs `mesure_memoire`, `mesure_cpu`, `diagnostic_ollama_memoire`, `mesure_citations_cachees` | 280–560 → 200–460 ms |
-| `3c88b9e` | **correction** de la vue par utilisateur : une fiche réécrite garde ce que l'écrivain ne voyait pas (`restaurer_fiche`), `pop` sur la vue, `values`/`items` filtrés | listes Personnes/Animaux identiques octet pour octet ; exposition réelle 0 fiche |
-| `fix/vue-rapide` | prédicat de visibilité réécrit à l'identique, `filter()` natif, `mesure_vue.py` | sur les vraies clés : `len` ×1,66, `values` ×1,67, `items` ×1,44 ; comptes identiques |
-| `fix/rename-garde-les-auteurs` | `rename` transporte `auteurs` de la fiche absorbée : les jugements de Flo passaient au nom de celui qui renomme | bancs sur le vrai `SubjectStore` ; ancien code, 3 rouges |
-| `fix/gel-du-gc` | `gc.freeze()` des 505 000 objets permanents **et** `threshold2` à 100 | temps de collecte ÷3,8 (3,43 → 0,91 ms par seconde de service), pire pause 509 → 210 ms |
-| `feat/http-1-1` | `Content-Length` partout (instrument par l'arbre : 4 réponses nues corrigées), puis `protocol_version` et `timeout` | 120 vignettes : **120 connexions TCP → 4 puis 0**, médiane 14–20 → 11–13 ms ; 416 et plages vérifiés |
-| `feat/last-modified` | `Last-Modified` + 304 sur les médias, `no-cache` (les écritures XMP changent les fichiers) | photo de 1,6 Mo : **1 599 130 octets → 0**, 334 → 41 ms ; une plage reste un 206 |
+**`_serve_gallery` : trois redites, la moitié du temps de la page.** Aucune ne
+calculait rien de neuf (détail et tableaux : `PERFORMANCE.md` § 3.13).
+
+| | avant | après |
+|---|---:|---:|
+| `parcours` (le dossier énuméré DEUX fois en récursif) | 715 ms | **378 ms** |
+| `enrichir.dossier` (le lien de dossier calculé par PHOTO) | 69 ms | **46 ms** |
+| `enrichir.dates` (la date précise demandée DEUX fois) | 108 ms | **90 ms** |
+
+Réobservé en réel, même page (2 519 photos), 5 chargements, campagne en cours.
+Les QUATRE branches qui remplissent `file_data` passent par les mêmes portes
+(`_lien_dossier_memo`, `_best_time_depuis`, `_jour_depuis`) — pas seulement
+celle qui avait été mesurée. 32 bancs verts sur la machine.
 
 ---
 
-## 2. Ce que la session a appris
+## 2. L'état de la machine — Windows, et ce qui a failli tout casser
 
-1. **Le temps perdu n'était pas dans les routes.** Trois `len()` à 47 ms de
-   CPU : c'est la **vue par utilisateur**, ~3 µs par clé sur chaque lecture
-   agrégée dès qu'un compte est connecté.
-2. **La machine pagine** : 0,5 Go de RAM libre, `llama-server` à **13,5 Go
-   privés** (modèle déclaré 3,47 Go). `ollama stop` rend la place, elle est
-   reprise en vingt minutes : réservation, pas fuite lente.
-3. **Le GC complet gelait tout 348 ms toutes les ~100 s** — corrigé le 12/09
-   (§ 3.12) : il fallait le gel ET le seuil, le gel seul déplaçait le coût.
-4. **Le modèle de tagging n'a que 1,2–1,7 Go en VRAM** : le reste tourne sur
-   le CPU. La VRAM libre au chargement décide.
+**KB5124008 (26200.9445) casse Plan9**, donc `device_bash`. C'est reconnu par
+Microsoft ET par Anthropic, le correctif est annoncé « dans un cumulatif
+suivant » (octobre, probablement). Au 12/09 : Mike l'a désinstallé, la machine
+tourne en **UBR 9278**, DISM ne porte aucun paquet 5124008, `device_bash`
+marche. **Windows Update est en pause jusqu'au 17.10.**
+
+- `Get-HotFix` MENT sur ce sujet (journal d'historique) : la vérité est
+  `(Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion').UBR`.
+- Le masquage du KB (`IsHidden`) n'a pas pu être posé : pause active, donc
+  rien n'est proposé, donc rien à masquer. **À refaire vers le 16.10**, si le
+  cumulatif d'octobre n'a pas corrigé Plan9.
 
 ---
 
 ## 3. Ce que la session suivante doit faire, dans l'ordre
 
-0. **Vérifier l'état réel** : `.git/logs/refs/heads/main` doit finir sur le
-   dernier commit du tableau § 1 — une doc décrit une intention, git dit ce
-   qui est fusionné.
-1. **`device_bash` remarche** (Mike a retiré la mise à jour Windows le 11/09
-   au soir) — mais il tourne dans une VM **Linux** : il ne voit ni les
-   processus Windows, ni `localhost:11434`. Ollama, la RAM, le CPU : par
-   l'agent de banc. Et le pont écrit encore parfois une version périmée
-   (vu deux fois ce soir) : **vérifier par `sha1sum` en `device_bash`**.
-2. **Les 13,5 Go d'Ollama** : ni fuite lente (13,5 Go après 20 min), ni
-   mémoire épinglée par CUDA (`GGML_CUDA_NO_PINNED=1` essayé, 13,33 Go).
-   Le chiffre qui compte : **7,8 Go résidents** pour un modèle de 3,47 Go.
-   Rien à faire pendant la campagne — après, un modèle qui tient dans les
-   4 Go de VRAM (`vision-eval`). Tant que ça tient, la machine pagine.
-3. **`_serve_gallery`** : 1,5 à 1,9 s pour 2 519 photos. La planche entière
-   (§ 3.7) est mesurée et ÉCARTÉE — le navigateur n'y met que 10 ms de
-   `JSON.parse`. Ce qui reste est serveur : `index` (~140 ms) et
-   `_pkey(Path(UPLOAD_DIR).resolve())`, un aller-retour SMB par appel (§ 3.8).
+0. **Vérifier l'état réel** : `.git/logs/refs/heads/main` doit porter le
+   commit de la galerie — une doc décrit une intention, git dit ce qui est
+   fusionné. Et l'UBR (ci-dessus) avant de compter sur `device_bash`.
+1. **`PERFORMANCE.md` § 5, point 3** : ce qui reste dans `_serve_gallery`, par
+   ordre de poids. `parcours` (378 ms) est de l'attente SMB pure — pour
+   descendre il faut un **cache de listage de dossier**, donc une décision de
+   Mike sur la fraîcheur (une photo déposée à l'instant apparaîtrait avec un
+   retard). `index` (125 ms) est le § 3.8, déjà écrit et jamais fait.
+2. **La reconstruction de `_key_index`** : 620 à 870 ms **VERROU TENU**, une
+   fois par minute (TTL). Pendant ce temps toute vignette qui vérifie sa
+   visibilité attend. Bâtir hors verrou puis publier sous verrou, avec une
+   génération pour ne pas écraser une invalidation — et garder l'invalidation
+   EXPLICITE synchrone (un renommage ne doit pas servir une clé morte).
+3. **Les 13,5 Go d'Ollama** : rien à faire pendant la campagne (choix de Mike
+   du 12/09). Après : un modèle qui tient dans les 4 Go de VRAM (`vision-eval`).
 
 ---
 
 ## 4. Les pièges
 
-- **`device_bash`** : hors service depuis la mise à jour Windows du 08/09 ;
-  Mike l'a désinstallée le 11/09 au soir — **à revérifier**. Sans lui : éditer
-  dans la sandbox, écrire par le pont, **vérifier par `sha1`** après re-staging.
-- **Canaux** : un ordre écrit DEUX fois relance le banc deux fois (vu le 11/09) ;
-  pour un banc, écrire `rien`, puis l'ordre UNE fois, puis re-stager et
-  comparer la taille.
-- **Chrome** : un onglet resté inactif gèle (`Runtime.evaluate` 45 s) — en
-  ouvrir un neuf ; scripts de moins de 20 s. `crypto.subtle` absent (http).
-- **Comparer phase par phase**, et maintenant **CPU contre temps écoulé** :
-  c'est ce qui a départagé calcul, attente du disque et attente du GIL.
+- **`device_bash` marche** (12/09) et **le NAS est monté** dans la VM sous
+  `$HOME/mnt/Photos` — nouveau, `CLAUDE.md` dit encore le contraire. Les
+  MESURES, elles, restent l'affaire de l'agent de banc : la VM n'a ni les
+  latences de Windows ni le LAN.
+- **Un banc qui parse `server.py` fonction par fonction avec
+  `ast.get_source_segment` met 95 s** là où un découpage par lignes en met 1.
+  `test_galerie_enrichissement.py` en garde la trace — et reste lent pour une
+  raison NON trouvée : à chercher si le banc gêne.
+- **Canaux** : un ordre écrit DEUX fois relance le banc deux fois ; écrire
+  `rien`, puis l'ordre UNE fois, puis ATTENDRE que le canal repasse à `rien`
+  avant de lire la sortie — un banc de 95 s lu au bout de 30 en rend un vieux.
+- **Chrome** : le serveur se regarde par là, jamais par le navigateur intégré.
+  La racine du NAS est `dir=1`, pas `dir=0`.
+- **Comparer phase par phase**, et **CPU contre temps écoulé** : c'est ce qui
+  a montré que `parcours` était de l'attente (15,6 ms de CPU pour 692).
 - `server.py` : skill `monolith-surgery` ; UI : `photo-ui`.
 
 ---

@@ -2292,7 +2292,18 @@ def _best_time(key, e):
     survécu au garde-fou de la date de SCAN : la recherche datait déjà une photo
     de « Photos Papa\\1985 » de 1985, pendant que la galerie la classait en
     2006. 70 photos, une seule règle désormais."""
-    precise = _epoch_precis(key, e)
+    return _best_time_depuis(key, e, _epoch_precis(key, e))
+
+
+def _best_time_depuis(key, e, precise):
+    """`_best_time` quand la date PRÉCISE est déjà connue — la suite de la
+    règle, mot pour mot, et son unique propriétaire.
+
+    La galerie demandait deux fois la même date précise par photo (une pour
+    `taken`, une pour `jour`) : `_epoch_precis` lit l'EXIF gardé en index,
+    le nom du fichier et le garde-fou de la date de scan, deux fois pour le
+    même couple. Ce point d'entrée laisse l'appelant la calculer UNE fois
+    sans que la règle soit recopiée nulle part."""
     if precise:
         return precise
     py = _path_year(key)
@@ -3203,6 +3214,15 @@ def _lister_dossier(dossier, rec=False):
     DESCENDAIT dans `.thumbs` / `@eaDir` / `#recycle` avant de les écarter.
     Ici l'élagage se fait dans `dirs[:]`, donc ces dossiers ne sont jamais lus.
 
+    Et le dossier de tête n'est énuméré QU'UNE FOIS depuis le 12/09 : le
+    premier tuple d'`os.walk` porte déjà ses sous-dossiers, le `os.scandir`
+    qui les redemandait ne rendait rien de neuf. MESURÉ sur `Photos
+    Mike/2022` (2 519 photos, 4 tours alternés,
+    `mesure_enumeration_dossier.py`) : **692 ms à deux passes, 352 ms à une
+    seule**, la seconde passe seule en pesant 368 — 15,6 ms de CPU de part et
+    d'autre, donc de l'ATTENTE du partage, pas du calcul. Identité prouvée
+    chemin par chemin : mêmes fichiers, mêmes sous-dossiers.
+
     Rend `(fichiers, sous_dossiers)` : mêmes objets `Path`, mêmes filtres
     (`MEDIA_EXT`, noms commençant par `.`, `@` ou `#`) et même tri qu'avant.
 
@@ -3214,20 +3234,35 @@ def _lister_dossier(dossier, rec=False):
     """
     fichiers, sous = [], []
     if rec:
+        premier = True
         for racine, dirs, noms in os.walk(dossier):
             # Élagage EN PLACE : `os.walk` lit `dirs` après la boucle pour
             # décider où descendre. Filtrer une copie ne l'élaguerait pas.
             dirs[:] = [d for d in dirs if not d.startswith(('.', '@', '#'))]
             rp = Path(racine)
+            # Le PREMIER tuple est celui du dossier demandé — `os.walk`
+            # descend en tête — et son `dirs`, DÉJÀ élagué, EST la liste
+            # des sous-dossiers. La redemander par un second `os.scandir`
+            # coûtait une énumération SMB entière pour une réponse déjà
+            # reçue.
+            if premier:
+                sous = [rp / d for d in dirs]
+                premier = False
             for n in noms:
                 if n.startswith(('.', '@', '#')):
                     continue
                 if os.path.splitext(n)[1].lower() in MEDIA_EXT:
                     fichiers.append(rp / n)
-        with os.scandir(dossier) as it:
-            for e in it:
-                if not e.name.startswith(('.', '@', '#')) and e.is_dir():
-                    sous.append(Path(e.path))
+        if premier:
+            # `os.walk` avale en silence un dossier illisible : il ne rend
+            # AUCUN tuple. L'ancienne écriture levait alors l'`OSError` du
+            # `scandir`, que l'appelant rend en 500. Sans ce repli, une page
+            # vide dirait « ce dossier n'a pas de photos » à la place d'un
+            # refus — un refus doit nommer sa cause (CLAUDE.md n° 10).
+            with os.scandir(dossier) as it:
+                for e in it:
+                    if not e.name.startswith(('.', '@', '#')) and e.is_dir():
+                        sous.append(Path(e.path))
     else:
         with os.scandir(dossier) as it:
             for e in it:
@@ -3394,6 +3429,29 @@ def _folder_link_for_key(k, roots=None):
     return folder, gurl
 
 
+def _lien_dossier_memo(k, roots, memo):
+    """`_folder_link_for_key` mémoïsé par DOSSIER, le temps d'UNE page.
+
+    Tout, dans `_folder_link_for_key`, passe par `parent_orig` : deux photos
+    d'un même dossier rendent le même couple (libellé, lien). La galerie le
+    redemandait une fois PAR PHOTO — 2 519 appels pour deux réponses sur la
+    page mesurée du 12/09 (69 ms de la phase `enrichir.dossier`).
+
+    La clé est le chemin privé de son dernier segment, coupé sur les DEUX
+    séparateurs. Elle est plus FINE que la normalisation de `Path.as_posix()`
+    (« a/b/./x.jpg » garde son entrée propre) : deux chemins qui la partagent
+    ont donc bien la même réponse, et l'inverse ne coûte qu'un calcul de
+    plus. `memo` appartient à l'appelant — une page, pas le processus : un
+    cache qui survit à la requête survivrait aussi à un renommage de racine.
+    """
+    i = max(k.rfind('/'), k.rfind('\\'))
+    cd = k[:i] if i >= 0 else ''
+    v = memo.get(cd)
+    if v is None:
+        v = memo[cd] = _folder_link_for_key(k, roots)
+    return v
+
+
 def _random_photo(root):
     """Pioche une photo au hasard par marche aléatoire dans l'arborescence.
     Quasi instantané même sur des dizaines de milliers de photos (pas
@@ -3516,7 +3574,13 @@ def _jour_de(cle, entree):
     """« MM-JJ » d'une photo si sa date est PRÉCISE, sinon None. Sert aussi à
     la visionneuse : sans jour, le bouton « Même jour » se cache — on n'ouvre
     pas une porte sur une page qui n'a rien à montrer."""
-    ep = _epoch_precis(cle, entree)      # garde-fou de la date de SCAN compris
+    return _jour_depuis(_epoch_precis(cle, entree))
+
+
+def _jour_depuis(ep):
+    """`_jour_de` quand la date précise est déjà connue (garde-fou de la date
+    de SCAN compris, il est dans `_epoch_precis`). Même raison que
+    `_best_time_depuis` : la galerie la calcule une fois pour deux usages."""
     return meme_jour.cle_jour(ep) if ep is not None else None
 
 
@@ -13391,6 +13455,8 @@ class Handler(BaseHTTPRequestHandler):
         _pc = time.perf_counter
         _t_cle = _t_stat = _t_dossier = _t_dates = _t_faits = 0.0
         _n_stat = 0
+        # Un lien de dossier par DOSSIER, pas par photo (voir la boucle).
+        _liens_dossier = {}
         for f in files:
             _ta = _pc()
             # Clé d'index EXACTE (casse d'origine) : `f` vient d'un parcours de
@@ -13422,14 +13488,26 @@ class Handler(BaseHTTPRequestHandler):
             # (« Album/x.jpg ») et _folder_link_for_key ne la rattacherait à
             # aucune racine (lien vers la racine au lieu du sous-dossier).
             # _resolve_key préserve la casse d'origine de la clé NAS.
-            folder_lbl, gurl = _folder_link_for_key(
-                str(_resolve_key(fkey)) if fkey else str(f), roots_g)
+            _chemin = str(_resolve_key(fkey)) if fkey else str(f)
+            # Le lien de dossier ne dépend que du DOSSIER du chemin : tout
+            # passe par `parent_orig` dans `_folder_link_for_key`. Une page de
+            # 2 519 photos tirées de deux dossiers demandait 2 519 fois la
+            # même réponse — voir `_lien_dossier_memo`, qui porte la règle.
+            folder_lbl, gurl = _lien_dossier_memo(
+                _chemin, roots_g, _liens_dossier)
             _td = _pc()
             _t_dossier += _td - _tc
             # Sortis du littéral pour être chronométrés : mêmes arguments,
             # fonctions pures — le dictionnaire rendu est identique.
-            _taken = _best_time(fkey or str(f), entry)
-            _jour = _jour_de(fkey or str(f), entry)
+            # Et UNE seule date précise par photo : `_best_time` et `_jour_de`
+            # demandaient chacun la sienne, sur le même couple (clé, entrée),
+            # donc deux lectures de l'EXIF gardé et du nom de fichier là où
+            # une suffit. La règle, elle, n'est recopiée nulle part : les deux
+            # `_depuis` en sont la suite, et leurs anciens noms les appellent.
+            _cle_date = fkey or str(f)
+            _ep = _epoch_precis(_cle_date, entry)
+            _taken = _best_time_depuis(_cle_date, entry, _ep)
+            _jour = _jour_depuis(_ep)
             _te = _pc()
             _t_dates += _te - _td
             _faits = _faits_pour(fkey or str(f), entry, fctx)
@@ -13480,6 +13558,7 @@ class Handler(BaseHTTPRequestHandler):
             roots_cache = media_roots()
             fp = _pkey(folder)
             file_data = []
+            _liens = {}
             for k, e in entries:
                 if e.get('failed'):
                     continue
@@ -13493,7 +13572,8 @@ class Handler(BaseHTTPRequestHandler):
                     continue
                 kp = _pkey(k)
                 name = kp[len(fp) + 1:] if kp.startswith(fp + '/') else Path(k).name
-                folder_lbl, gurl = _folder_link_for_key(k, roots_cache)
+                folder_lbl, gurl = _lien_dossier_memo(k, roots_cache, _liens)
+                _epk = _epoch_precis(k, e)
                 file_data.append({
                     'name': name,
                     # Cle d'index : necessaire au filtre par motif et a la
@@ -13502,8 +13582,9 @@ class Handler(BaseHTTPRequestHandler):
                     'url': url,
                     'size': human_size(e.get('size') or 0),
                     'mtime': e.get('mtime') or 0,
-                    'taken': _best_time(k, e),   # date de prise (epoch) pour le tri chronologique
-                    'jour': _jour_de(k, e),
+                    # date de prise (epoch) pour le tri chronologique
+                    'taken': _best_time_depuis(k, e, _epk),
+                    'jour': _jour_depuis(_epk),
                     'faits': _faits_pour(k, e, fctx),
                     'kw': sorted(kws),
                     'gps': e.get('gps'),
@@ -13526,6 +13607,7 @@ class Handler(BaseHTTPRequestHandler):
             note_heavy_activity()
             roots_cache = media_roots()
             file_data = []
+            _liens = {}
             # Ce que la requête a COMPRIS et ce qu'elle a mis de côté : la page
             # `/files?q=` le taisait, alors que /api/search le dit depuis le
             # 15/08 — la même requête s'expliquait dans un canal et filtrait en
@@ -13561,15 +13643,16 @@ class Handler(BaseHTTPRequestHandler):
                     continue
                 kws = list(dict.fromkeys(
                     (e.get('kw_fr') or []) + (e.get('kw_en') or [])))
-                folder_lbl, gurl = _folder_link_for_key(k, roots_cache)
+                folder_lbl, gurl = _lien_dossier_memo(k, roots_cache, _liens)
+                _epk = _epoch_precis(k, e)
                 file_data.append({
                     'name': Path(k).name,
                     'key': k,
                     'url': url,
                     'size': human_size(e.get('size') or 0),
                     'mtime': e.get('mtime') or 0,
-                    'taken': _best_time(k, e),
-                    'jour': _jour_de(k, e),
+                    'taken': _best_time_depuis(k, e, _epk),
+                    'jour': _jour_depuis(_epk),
                     'faits': _faits_pour(k, e, fctx),
                     'kw': kws,
                     'gps': e.get('gps'),
@@ -13586,6 +13669,7 @@ class Handler(BaseHTTPRequestHandler):
         if jour_mode:
             roots_cache = media_roots()
             file_data = []
+            _liens = {}
             for _ep, k in jour_items[:1500]:
                 e = STORE.data.get(k) or {}
                 url = _url_for_key(k, roots_cache)
@@ -13593,7 +13677,7 @@ class Handler(BaseHTTPRequestHandler):
                     continue
                 kws = list(dict.fromkeys(
                     (e.get('kw_fr') or []) + (e.get('kw_en') or [])))
-                folder_lbl, gurl = _folder_link_for_key(k, roots_cache)
+                folder_lbl, gurl = _lien_dossier_memo(k, roots_cache, _liens)
                 file_data.append({
                     'name': Path(k).name,
                     'key': k,
@@ -13602,7 +13686,7 @@ class Handler(BaseHTTPRequestHandler):
                     'mtime': e.get('mtime') or 0,
                     'taken': _ep,
                     'annee': meme_jour.annee_de(_ep),
-                    'jour': _jour_de(k, e),
+                    'jour': _jour_depuis(_epoch_precis(k, e)),
                     'faits': _faits_pour(k, e, fctx),
                     'kw': kws,
                     'gps': e.get('gps'),
