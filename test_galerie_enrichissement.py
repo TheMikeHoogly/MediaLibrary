@@ -133,6 +133,76 @@ class LesQuatreBranchesPassentParLaMemePorte(unittest.TestCase):
         self.assertEqual(self.src.count('_liens = {}'), 3)
 
 
+class LaPageNeFabriquePasCEQuElleVaJETER(unittest.TestCase):
+    """Quand la grille est un RESULTAT (tags, recherche, semblables, meme
+    jour), `file_data` est REMPLACE : le parcours du NAS et la boucle
+    d'enrichissement travaillent pour la corbeille.
+
+    MESURE le 12/09 sur `Photos Mike/2022` filtre par `personne:Florine` :
+    2 519 fiches baties, 336 affichees, 840 ms sur une page de 1 200. Ces
+    bancs tiennent les trois gestes -- le drapeau, le parcours non recursif,
+    la boucle sautee -- ET la premisse dont ils dependent : que chaque mode
+    remplace bien `file_data`. Un garde-fou pose sur une premisse qu'on ne
+    verifie pas tombe le jour ou la premisse change."""
+
+    def setUp(self):
+        self.src = _source_de('_serve_gallery')
+
+    def test_le_drapeau_couvre_les_QUATRE_modes(self):
+        self.assertIn(
+            'remplace_la_grille = bool(sel or search_mode or sim_mode'
+            ' or jour_mode)', self.src)
+
+    def test_la_premisse_est_vraie_chaque_mode_remplace_bien(self):
+        """Le drapeau ne vaut que si CHAQUE mode remplace vraiment la
+        grille. Compte sur l'ARBRE, pas sur le texte : un commentaire qui
+        cite `file_data = []` n'est pas un remplacement, et un
+        `file_data = []` de repli (le filtre par motif qui echoue) n'est pas
+        un mode. Le premier jet de ce banc comptait les deux."""
+        fn = [n for n in ast.walk(ARBRE) if isinstance(n, ast.FunctionDef)
+              and n.name == '_serve_gallery'][0]
+        couverts = set()
+        for n in ast.walk(fn):
+            if not isinstance(n, ast.If):
+                continue
+            modes = {x.id for x in ast.walk(n.test) if isinstance(x, ast.Name)}
+            modes &= {'sel', 'search_mode', 'sim_mode', 'jour_mode'}
+            if not modes:
+                continue
+            if any(isinstance(b, ast.Assign)
+                   and any(isinstance(c, ast.Name) and c.id == 'file_data'
+                           for c in b.targets)
+                   and isinstance(b.value, ast.List) and not b.value.elts
+                   for b in n.body):
+                couverts |= modes
+        self.assertEqual(couverts,
+                         {'sel', 'search_mode', 'sim_mode', 'jour_mode'},
+                         'un mode ne remplace plus la grille, ou un mode neuf '
+                         'est apparu que le drapeau ne couvre pas : %r'
+                         % sorted(couverts))
+
+    def test_le_parcours_ne_descend_plus_pour_rien(self):
+        self.assertIn('_lister_dossier(' + chr(10) + ' ' * 16
+                      + 'folder, rec and not remplace_la_grille)',
+                      self.src)
+
+    def test_la_boucle_est_sautee(self):
+        self.assertIn('for f in (() if remplace_la_grille else files):',
+                      self.src)
+
+    def test_la_carte_des_cles_n_est_pas_rebatie_pour_rien(self):
+        """Sa reconstruction coute 620 a 870 ms VERROU TENU : la demander
+        pour une boucle qui ne tourne pas ferait attendre les vignettes."""
+        self.assertIn('carte_cles = None if remplace_la_grille else '
+                      '_key_index()', self.src)
+
+    def test_le_compteur_dit_ce_qui_a_ete_FAIT(self):
+        """Un compteur qui annonce 2 519 fichiers parcourus quand la boucle
+        n'a pas tourne est un compteur qui ment."""
+        self.assertIn('fichiers=(0 if remplace_la_grille else len(files))',
+                      self.src)
+
+
 class LaCleDeMemoNeConfondJamaisDeuxDossiers(unittest.TestCase):
     """Le seul vrai risque du memo : deux chemins de dossiers DIFFERENTS qui
     partagent la cle. L'inverse -- deux cles pour un meme dossier -- ne coute

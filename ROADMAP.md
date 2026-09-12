@@ -162,7 +162,11 @@ la vue accélérée, la planche mesurée côté NAVIGATEUR puis écartée (10 ms
 `JSON.parse` : les sept huitièmes sont serveur), et **trois redites dans
 `_serve_gallery`** — le dossier de tête énuméré deux fois (692 → 352 ms au
 banc, réobservé 715 → 378 en réel), le lien de dossier calculé par photo, la
-date précise demandée deux fois (§ 3.13).
+date précise demandée deux fois (§ 3.13) — puis **la page qui bâtissait
+2 519 fiches pour en montrer 336** dès qu'un tag est sélectionné (§ 3.14 :
+1 200 → 750 ms). La question du cache de listage est instruite (§ 3.15) : le
+détecteur de fraîcheur coûte **2 %** d'une énumération, il n'y a donc pas de
+compromis à accepter — reste à le bâtir.
 Prochain : `PERFORMANCE.md` § 5. Compatible avec la campagne : chemin de
 service seulement, jamais le calcul IA.
 

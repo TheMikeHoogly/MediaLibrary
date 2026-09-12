@@ -897,6 +897,72 @@ n'est lu qu'une fois, un dossier illisible lève toujours) et
 `test_galerie_enrichissement.py` (12 : les quatre branches, la clé de mémo qui
 ne peut pas confondre deux dossiers, l'écriture d'avant en oracle).
 
+### 3.14 La page bâtissait 2 519 fiches pour en montrer 336 — **livré le 12/09**
+
+Quatre modes font de la grille un **résultat** (tags, recherche, semblables,
+même jour) : chacun REMPLACE `file_data` par ce qu'il tire de l'index. Tout ce
+que le parcours du NAS et la boucle d'enrichissement fabriquaient avant était
+donc **jeté**. Mesuré sur `Photos Mike/2022` filtré par `personne:Florine` :
+
+| | avant | après |
+|---|---:|---:|
+| fiches bâties / affichées | 2 519 / 336 | **0 / 336** |
+| `enrichir` | 347 à 455 ms | **0,0 ms** |
+| `carte_cles` (reconstruction possible) | 620 à 870 ms | jamais demandée |
+| page entière (client, à chaud) | 1 087 à 1 249 ms | **719 à 860 ms** |
+
+Trois gestes : un drapeau `remplace_la_grille` posé dès que les quatre modes
+sont connus ; le parcours qui **ne descend plus** dans l'arbre quand seuls les
+sous-dossiers du premier niveau serviront (la barre de navigation) ; la boucle
+sautée. Et `fichiers` dans les phases dit **0** au lieu de 2 519 — un compteur
+qui annonce un parcours qui n'a pas eu lieu est un compteur qui ment.
+
+`parcours` reste à 390–590 ms ici : ce dossier n'a qu'un sous-dossier, la passe
+non récursive coûte donc autant que la marche. Le gain du non-récursif se
+verra sur un arbre profond (`Photos Papa`).
+
+Le banc tient la **prémisse** autant que le geste : il vérifie sur l'ARBRE que
+chacun des quatre modes remplace bien `file_data` — un garde-fou posé sur une
+prémisse qu'on ne vérifie pas tombe le jour où la prémisse change.
+
+### 3.15 La fraîcheur d'un listage se VÉRIFIE, elle ne se PARIE pas
+
+Question ouverte : cacher le listage d'un dossier pour ne plus payer les
+~350 ms d'énumération SMB à chaque page. Posée à Mike comme un compromis sur
+la fraîcheur, elle n'en est probablement pas un — **un dossier change de date
+de modification dès qu'une entrée y est ajoutée, retirée ou renommée**.
+
+Le coût du détecteur, mesuré (`mesure_enumeration_dossier.py`, variante S,
+4 tours alternés, `Photos Mike/2022`, 2 dossiers à surveiller) :
+
+| | médiane |
+|---|---:|
+| une énumération à une passe | 343 ms |
+| **le détecteur (2 `stat`)** | **6,8 ms** |
+
+**2 %.** Et le comportement, observé le 12/09 :
+
+- **NTFS** (`C:\Temp`, banc direct) : création OUI, renommage OUI, `mkdir` OUI,
+  **écriture dans un fichier NON**, fichier dans un SOUS-dossier **NON** (d'où
+  la nécessité de surveiller chaque dossier de l'arbre, pas seulement la tête).
+- **SMB, le vrai NAS** : observation PASSIVE pendant la campagne — la date de
+  `Photos Papa\1986` a bougé trois fois en 24 s (exiftool écrit un
+  `_exiftool_tmp` puis renomme : deux mouvements d'entrée), puis s'est figée
+  dès que le tagueur est descendu dans un sous-dossier, pendant que
+  `Photos Mike\2022`, inactif, gardait la sienne, vieille de deux jours. Le
+  partage rapporte donc bien ces dates. **Aucun fichier écrit pour le
+  prouver.**
+
+Conséquences pour le jour où le cache se fera : il sera **exact**, pas
+« probablement à jour » ; l'écriture des XMP par le tagueur ne l'invalide pas
+en soi, mais le temporaire d'exiftool SI — le cache sera donc inutile dans le
+dossier en cours de campagne, et bon partout ailleurs ; et le coût du
+détecteur croît avec le NOMBRE de dossiers de l'arbre, ce qui demande une
+règle de repli sur un arbre large. **Mike, 12/09** : rien d'autre que lui
+n'écrit dans `\\NAS-Bremblens\home\Photos`, et il passera désormais
+uniquement par MediaLibrary — le serveur peut donc aussi invalider son propre
+cache sur ses propres écritures.
+
 ## 4. Ce qui a été vérifié et qui va bien
 
 À ne pas rouvrir sans raison neuve :
@@ -934,7 +1000,11 @@ Et **§ 3.7 mesurée côté navigateur, puis écartée**.
 2. **La vue (§ 3.11)** : réécriture exacte livrée (×1,4–1,6) — la réobserver
    dans `comptes` de `/api/maint/status` ; puis la décision sur un cache à
    génération.
-3. **Ce qui reste dans `_serve_gallery`** après les trois redites du 12/09
+3. **Le cache de listage de dossier** (§ 3.15) : le détecteur coûte 2 % d'une
+   énumération et le NAS rapporte bien les dates — reste à le bâtir, avec la
+   règle de repli sur un arbre large et l'invalidation par le serveur sur ses
+   propres écritures. C'est ce qui ramènerait `parcours` de ~390 ms à ~7.
+4. **Ce qui reste dans `_serve_gallery`** après les redites du 12/09
    (§ 3.13). Par ordre de poids, phases médianes sur la page de 2 519 photos :
    `parcours` **378 ms** (attente SMB pure, une seule énumération désormais —
    pour descendre, il faudrait un cache de listage, donc une décision sur la
@@ -957,7 +1027,7 @@ Et **§ 3.7 mesurée côté navigateur, puis écartée**.
 | `test_parcours_dossier.py` | 16 bancs : l'ancienne écriture sert d'oracle ; deux bancs comptent les `stat()` |
 | `mesure_couverture_vignettes.py` | combien de photos ont leur vignette 512 (sur `copie.db`, noms recalculés) |
 | `mesure_fabrication_vignette.py` | ce que coûte une vignette : lecture NAS contre décodage, et la variante `draft` |
-| `mesure_enumeration_dossier.py` | ce que coûte la SECONDE énumération du dossier de tête en mode récursif : trois variantes, tours alternés, et l'identité des réponses vérifiée chemin par chemin |
+| `mesure_enumeration_dossier.py` | ce que coûte la SECONDE énumération du dossier de tête en mode récursif : trois variantes, tours alternés, l'identité des réponses vérifiée chemin par chemin — et (variante S) le prix d'un détecteur de fraîcheur par `stat` de dossier |
 | `mesure_peage_gil.py` | ce que coûte un `stat` quand des fils CPU tournent, selon la bascule du GIL et le minuteur de Windows ; et le débit CPU en face |
 | `mesure_corbeille.py` | la liste de la corbeille : `exists+is_dir+stat` contre un `stat`, sur le vrai journal |
 | `test_vignette_du_tagueur.py`, `test_vignettes_de_fond.py`, `test_corbeille_une_lecture.py` | 12, 15 et 4 bancs, chacun avec l'ancienne écriture en oracle |

@@ -136,6 +136,32 @@ def variante_c(dossier):
     return [], sous
 
 
+def arbre_des_dossiers(dossier):
+    """Les dossiers de l'arbre, tels que `_lister_dossier(rec=True)` les
+    traverse. C'est la liste exacte qu'un cache devrait surveiller."""
+    out = [str(dossier)]
+    for racine, dirs, _noms in os.walk(dossier):
+        dirs[:] = [d for d in dirs if not d.startswith(('.', '@', '#'))]
+        for d in dirs:
+            out.append(os.path.join(racine, d))
+    return out
+
+
+def variante_s(dossier, arbre):
+    """Le DETECTEUR : un `stat` par dossier de l'arbre, rien de plus.
+
+    Un dossier voit sa date de modification changer quand une entree y est
+    ajoutee, retiree ou renommee -- pas quand le CONTENU d'un fichier change
+    (l'ecriture des XMP par le tagueur, donc, ne la bouge pas). Si ce
+    detecteur coute une fraction de l'enumeration, un cache de listage n'a
+    plus besoin de PARIER sur la fraicheur : il la VERIFIE.
+
+    Ce banc mesure son cout. Il ne prouve PAS que le partage rapporte
+    fidelement ces dates : cela demande d'ecrire un fichier sur le NAS, et un
+    banc n'ecrit rien."""
+    return [(d, os.stat(d).st_mtime) for d in arbre]
+
+
 def chrono(fn, dossier):
     t0 = time.perf_counter()
     c0 = time.process_time()
@@ -162,13 +188,18 @@ def main(argv=None):
     print("Tours   : %d, alternes A B C" % a.tours)
     print("")
 
-    mesures = {'A': [], 'B': [], 'C': []}
-    cpus = {'A': [], 'B': [], 'C': []}
+    arbre = arbre_des_dossiers(dossier)
+    print("Arbre   : %d dossier(s) a surveiller" % len(arbre))
+    print("")
+
+    mesures = {'A': [], 'B': [], 'C': [], 'S': []}
+    cpus = {'A': [], 'B': [], 'C': [], 'S': []}
     ref_f = ref_s = None
     ecarts = []
 
     for tour in range(1, a.tours + 1):
-        for nom, fn in (('A', variante_a), ('B', variante_b), ('C', variante_c)):
+        for nom, fn in (('A', variante_a), ('B', variante_b), ('C', variante_c),
+                        ('S', lambda d: (variante_s(d, arbre), []))):
             ms, cpu, fichiers, sous = chrono(fn, dossier)
             mesures[nom].append(ms)
             cpus[nom].append(cpu)
@@ -189,9 +220,12 @@ def main(argv=None):
                                   "sous-dossiers (%r contre %r)" % (tour, gs, ref_s))
                 print("  tour %d  B %8.1f ms (%6.1f ms CPU)  %5d fichiers, "
                       "%d sous-dossiers" % (tour, ms, cpu, len(gf), len(gs)))
-            else:
+            elif nom == 'C':
                 print("  tour %d  C %8.1f ms (%6.1f ms CPU)  la 2e passe seule"
                       % (tour, ms, cpu))
+            else:
+                print("  tour %d  S %8.1f ms (%6.1f ms CPU)  le detecteur "
+                      "(%d stat)" % (tour, ms, cpu, len(arbre)))
         print("")
 
     def med(v):
@@ -200,7 +234,7 @@ def main(argv=None):
     print("--------------------------------------------------------------")
     print("                  mediane        min        max     CPU median")
     for nom, libelle in (('A', 'A actuelle  '), ('B', 'B une passe '),
-                         ('C', 'C 2e passe  ')):
+                         ('C', 'C 2e passe  '), ('S', 'S detecteur ')):
         v = mesures[nom]
         print("%s %9.1f ms %8.1f %10.1f %10.1f ms"
               % (libelle, med(v), min(v), max(v), med(cpus[nom])))
@@ -210,6 +244,12 @@ def main(argv=None):
     print("Economie mesuree : %.1f ms par page (%.0f %% du parcours), et la "
           "2e passe" % (ga - gb, 100.0 * (ga - gb) / ga if ga else 0.0))
     print("seule pese %.1f ms." % med(mesures['C']))
+    print("")
+    gs = med(mesures['S'])
+    print("Le detecteur (%d stat de dossier) pese %.1f ms, soit %.1f %% d'une"
+          % (len(arbre), gs, 100.0 * gs / gb if gb else 0.0))
+    print("enumeration a une passe. Un cache qui VERIFIE au lieu de PARIER")
+    print("couterait donc ce prix-la par page.")
     print("")
     if ecarts:
         print("ECART -- la variante B ne rend PAS la meme chose :")

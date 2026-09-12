@@ -13331,6 +13331,11 @@ class Handler(BaseHTTPRequestHandler):
         jourparam = (q.get('jour') or [''])[0].strip()
         jour_mode = (bool(jourparam) and not search_mode and not sim_mode
                      and not dirparam and not sel and not motif)
+        # Les quatre modes où la grille est un RÉSULTAT : plus bas, chacun
+        # REMPLACE `file_data` par ce qu'il tire de l'index. Tout ce que le
+        # parcours du NAS et la boucle d'enrichissement fabriquent d'ici là
+        # est alors jeté — il ne reste que les sous-dossiers, pour la barre.
+        remplace_la_grille = bool(sel or search_mode or sim_mode or jour_mode)
 
         if dirparam:
             roots = media_roots()
@@ -13376,7 +13381,11 @@ class Handler(BaseHTTPRequestHandler):
         ph.top('index')
 
         try:
-            files, subdirs = _lister_dossier(folder, rec)
+            # `rec` DESCEND dans l'arbre pour bâtir `files` ; quand la grille
+            # est remplacée, seuls les sous-dossiers du premier niveau
+            # servent — une passe non récursive les rend déjà tous.
+            files, subdirs = _lister_dossier(
+                folder, rec and not remplace_la_grille)
         except OSError as e:
             self._send(500, str(e).encode(), 'text/plain')
             return
@@ -13439,7 +13448,9 @@ class Handler(BaseHTTPRequestHandler):
         ph.top('barre')         # barre de dossiers + index du meme jour
         is_uploads = folder in (UPLOAD_DIR, UPLOAD_DIR.resolve())
         roots_g = media_roots()
-        carte_cles = _key_index()   # UN instantané pour toute la boucle
+        # UN instantané pour toute la boucle — et rien du tout quand il n'y a
+        # pas de boucle : sa reconstruction coûte 620 à 870 ms, VERROU TENU.
+        carte_cles = None if remplace_la_grille else _key_index()
         ph.top('carte_cles')
         # Faits (date . lieu . noms) : le contexte des noms, lieux et
         # racines est bati UNE fois pour la page entiere -- voir
@@ -13457,7 +13468,11 @@ class Handler(BaseHTTPRequestHandler):
         _n_stat = 0
         # Un lien de dossier par DOSSIER, pas par photo (voir la boucle).
         _liens_dossier = {}
-        for f in files:
+        # MESURÉ le 12/09, `Photos Mike/2022` filtré par `personne:Florine` :
+        # **2 519 fiches bâties, 336 affichées**, `parcours` + `enrichir` =
+        # 840 ms sur une page de 1 200 — et pas une ligne de ce travail ne
+        # survivait au `file_data = []` de la branche des tags.
+        for f in (() if remplace_la_grille else files):
             _ta = _pc()
             # Clé d'index EXACTE (casse d'origine) : `f` vient d'un parcours de
             # `folder`, donc d'un resolve() qui minuscule l'hôte SMB — un accès
@@ -13551,7 +13566,8 @@ class Handler(BaseHTTPRequestHandler):
         ph.ajoute('enrichir.dossier', _t_dossier)
         ph.ajoute('enrichir.dates', _t_dates)
         ph.ajoute('enrichir.faits', _t_faits)
-        ph.note(fichiers=len(files), stats_nas=_n_stat)
+        ph.note(fichiers=(0 if remplace_la_grille else len(files)),
+                stats_nas=_n_stat, grille_remplacee=remplace_la_grille)
         # sélection de tags active : résultats récursifs depuis l'index,
         # sans parcourir le NAS
         if sel:
