@@ -3084,11 +3084,32 @@ NAS_SCAN_CYCLES = 6
 TAG_DIRS_FILE = SCRIPT_DIR / "dossiers_a_taguer.txt"
 
 
+@lru_cache(maxsize=65536)
+def _cle_en_chemin(name):
+    """(Path, absolu ?) pour une clé — la moitié qui ne dépend QUE de la clé.
+
+    Mémoïsée (12/09) : `_resolve_key` était appelée une fois par photo dans la
+    galerie, et la construction du `Path` y pesait l'essentiel des 38 ms de
+    `enrichir.dossier`. Fonction pure d'une chaîne, bornée à 65 536 — l'index
+    en compte 44 605, il tient entier.
+
+    **`UPLOAD_DIR` est délibérément HORS de ce cache** : il se règle au
+    démarrage (`argv`) et des bancs le déplacent. Ce qui est mémoïsé ne dépend
+    que du nom ; la branche Uploads se recalcule à chaque appel, et un
+    déplacement du dossier est donc vu tout de suite."""
+    p = Path(name)
+    return p, p.is_absolute()
+
+
 def _resolve_key(name):
     """Clé d'index → chemin : nom simple = dossier Uploads,
     chemin absolu = dossier supplémentaire."""
-    p = Path(name)
-    return p if p.is_absolute() else UPLOAD_DIR / name
+    if isinstance(name, str):
+        p, absolu = _cle_en_chemin(name)
+    else:
+        p = Path(name)
+        absolu = p.is_absolute()
+    return p if absolu else UPLOAD_DIR / name
 
 
 def _safe_upload_rel(raw):

@@ -83,12 +83,13 @@ Neuf gestes, chacun avec son banc et sa réobservation :
    même lecture. Elle délègue à `renommage_facts.path_years`, mémoïsée par
    DOSSIER. Thème « date » : **85 → 52 ms**, `enrichir` **280 → 215 ms**.
 
-10. **`motifs` classait chaque photo DEUX fois** dès qu'un filtre était posé
-    (§ 3.22) — une pour compter, une pour filtrer, et les deux pouvaient donc
-    se contredire. Une seule liste désormais ; les deux moitiés de la règle
-    (dossier, nom) mémoïsées. **53 → 19 ms.** Trouvé au passage : `indice_nom`
-    découpait avec `Path`, qui ne coupe pas les `\` sous Linux — le motif se
-    cherchait dans le CHEMIN, faux dans les bancs seulement.
+10. **Deux derniers cailloux nommés** : `motifs` classait chaque photo DEUX
+    fois dès qu'un filtre était posé (§ 3.22, **53 → 15 ms** — et les deux
+    lectures pouvaient se contredire) ; le `Path` de `_resolve_key` était
+    construit une fois par photo (§ 3.23, `enrichir.dossier` **38 → 14 ms**).
+    Trouvé au passage : `indice_nom` découpait avec `Path`, qui ne coupe pas
+    les `\` sous Linux — le motif se cherchait dans le CHEMIN, faux dans les
+    bancs seulement.
 
 **70 bancs verts** à la livraison — ce sont les règles 2 et 3 qui les
 lancent tous (voir § 4), et il faut ~6 minutes.
@@ -143,10 +144,12 @@ trois pages rustinaient déjà chacune de leur côté (corrigé dans `base.css`)
    Par ordre : (a) `date_et_source` relit le `taken` crédible que
    `epoch_precis` vient de lire — même geste que le § 3.20 un étage plus haut,
    et **sans prémisse à vérifier** puisque la règle est maintenant unique ;
-   (b) le `Path(...)` de `_resolve_key` dans `enrichir.dossier` (34 ms,
-   mémoïsable) ; (c) `marques` (23 ms), la dernière passe qui relit vraiment
-   `STORE.data` par photo — `motifs` est faite (§ 3.22) et ne la relisait
-   PAS, contrairement à ce que ce point a dit deux fois.
+   (b) `marques` (~25 ms), la dernière passe qui relit vraiment `STORE.data`
+   par photo — `motifs` est faite (§ 3.22) et ne la relisait PAS,
+   contrairement à ce que ce point a dit deux fois ; le `Path(...)` de
+   `_resolve_key` est fait aussi (§ 3.23). **Le reste d'`enrichir` n'est plus
+   du travail refait** : ~90 ms pour fabriquer 2 519 dictionnaires, et rien ne
+   les réduira sans changer ce que la page transporte.
 2. **B5 — le tri des dépôts, à voir à l'usage** : le mur de 7 jours est-il le
    bon, faut-il un geste groupé pour les 248 hérités ? Ne rien changer avant
    que Mike s'en soit servi une fois.

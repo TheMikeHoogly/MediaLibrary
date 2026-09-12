@@ -1360,6 +1360,39 @@ court. Corrigé, avec le banc qui le nomme.
 
 `test_motifs_galerie.py` (15 bancs) est neuf.
 
+### 3.23 Le `Path` de `_resolve_key`, un par photo — **livré le 12/09**
+
+Le dernier caillou nommé du § 3.13 (« le prochain caillou, pas celui-ci »).
+`_resolve_key` construit un `Path` pour décider si la clé est absolue ; la
+galerie l'appelle une fois par photo, et c'était l'essentiel de
+`enrichir.dossier`.
+
+| | avant | après |
+|---|---:|---:|
+| `enrichir.dossier` | 38,3 ms | **13,8 ms** |
+
+La moitié mémoïsée est celle qui ne dépend QUE de la clé — `(Path, absolu ?)`.
+**`UPLOAD_DIR` reste dehors, délibérément** : il se règle au démarrage
+(`argv`), des bancs le déplacent, et s'il entrait dans le cache un
+déplacement du dossier serait ignoré jusqu'au redémarrage. Ce serait le pire
+mode de panne du projet : muet, et faisant viser un AUTRE fichier. Un banc
+déplace `UPLOAD_DIR` entre deux appels et vérifie que le second suit.
+
+`test_pkey_memoire.py` a rougi au premier `livrer` : son espace d'exécution
+chargeait `_resolve_key` mais pas `_cle_en_chemin`, et rendait donc une carte
+VIDE. **Le filet a fait son travail** — c'est la deuxième fois de la journée
+qu'un banc qui exécute une fonction extraite du source tombe parce que la
+fonction a gagné une dépendance (`time` dans `test_faits_affichage`, § 3.20).
+C'est le prix de ces bancs-là, et il est petit devant ce qu'ils tiennent.
+
+`test_resolve_key_memo.py` (7 bancs) est neuf, avec l'écriture d'avant en
+ORACLE sur sept formes de clé. **À lancer sous Windows** :
+`Path(r'\\NAS\x.jpg').is_absolute()` est FAUX sous Linux, et le banc y
+mesurerait la plateforme au lieu de la règle — même cas que
+`test_galerie_enrichissement.py`. La première écriture y est d'ailleurs
+tombée : `r'\\\\NAS\\Photos'` dans le source du banc, quatre barres, une UNC
+qui n'en est pas une. Le banc a eu raison contre moi.
+
 ## 4. Ce qui a été vérifié et qui va bien
 
 À ne pas rouvrir sans raison neuve :
@@ -1392,7 +1425,8 @@ preuve, § 3.16 pour le geste), la vue consultée 2 519 fois au lieu de 44 605
 (§ 3.17), le TROISIÈME calcul de la date précise (§ 3.18) et le lieu demandé
 2 519 fois pour deux réponses (§ 3.19) et les DEUX lecteurs de date réduits à
 un (§ 3.20), et les années du dossier relues quatre fois par photo
-(§ 3.21), et `motifs` classée deux fois par photo (§ 3.22). Et **§ 3.7
+(§ 3.21), `motifs` classée deux fois par photo (§ 3.22) et le `Path` de
+`_resolve_key` (§ 3.23). Et **§ 3.7
 mesurée côté navigateur, puis écartée**.
 
 > **Un chiffre périmé corrigé le 12/09** : la reconstruction de `_key_index`
@@ -1415,18 +1449,17 @@ mesurée côté navigateur, puis écartée**.
    total, contre 1 493 à 1 870 hier. La machine TAGUE pendant la mesure : le
    total varie de ±20 % d'un tour à l'autre et ne juge rien, **ce sont les
    sous-phases qui font foi**. Moyennes sur 4 chargements, delta d'horloge :
-   - `enrichir` **215 ms**, toujours le premier poste, mais plus aucun de ses
-     morceaux ne dépasse 50 ms : `enrichir.faits` **49** (dont `regle.date`
-     16 · `noms` 12 · `regle.noms` 5,7 · `regle.lieu` 4,1), `enrichir.dates`
-     **36**, `enrichir.dossier` **34** (le `Path(...)` de `_resolve_key`, un
-     par photo, mémoïsable), `enrichir.cle` **19** — et ~75 ms pour la
+   - `enrichir` **~240 ms**, toujours le premier poste : `enrichir.faits`
+     **54 à 64**, `enrichir.dates` **39 à 50**, `enrichir.cle` **21 à 26**,
+     `enrichir.dossier` **14** depuis le § 3.23 — et ~90 ms pour la
      fabrication des 2 519 dictionnaires eux-mêmes, que rien ne réduira sans
-     changer ce que la page transporte.
+     changer ce que la page transporte. **C'est désormais le plancher** : le
+     reste d'`enrichir` n'est plus du travail refait, c'est du travail.
    - **Le dernier reste du thème « date »** (51,6 ms en tout) :
      `date_et_source` relit le `taken` crédible que `epoch_precis` vient de
      lire. Même geste que les § 3.20 et 3.21 un étage plus haut, et **sans
      prémisse à vérifier** — la règle est désormais unique.
-   - `motifs` **19 ms** depuis le § 3.22 — et elle ne relit PAS `STORE.data`,
+   - `motifs` **13 à 17 ms** depuis le § 3.22 — et elle ne relit PAS `STORE.data`,
      contrairement à ce que ce paragraphe a dit deux fois : c'est une règle
      pure sur le chemin. `marques`, elle, lit bien la vue (§ 3.18, 23 ms).
    - `envoi` **73 ms**, `gabarit` **51 ms**, `parcours` **45 ms**,

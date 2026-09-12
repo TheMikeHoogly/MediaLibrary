@@ -101,8 +101,12 @@ class _Monde:
             '_KEY_IDX_LOCK': threading.Lock(), 'KEY_IDX_TTL': 60.0,
         }
         exec('PKEY_MEMO_MAX = 1 << 17', self.g)                        # noqa: S102
-        for nom in ('_pkey', '_pkey_chaine', '_pkey_de_cle', '_resolve_key',
-                    '_key_index'):
+        # `_cle_en_chemin` AVANT `_resolve_key` : depuis le 12/09 la seconde
+        # delegue a la premiere (§ 3.23). Un espace qui ne porterait pas les
+        # deux rendrait une carte VIDE — et ce banc mesurerait son propre
+        # espace au lieu de la regle.
+        for nom in ('_pkey', '_pkey_chaine', '_pkey_de_cle', '_cle_en_chemin',
+                    '_resolve_key', '_key_index'):
             src = _src(nom)
             if nom in ('_pkey_chaine', '_pkey_de_cle'):
                 src = '@lru_cache(maxsize=PKEY_MEMO_MAX)\n' + _sans_decorateur(src)
@@ -113,7 +117,9 @@ class _Monde:
         `fichiers.build_key_index(list(INDEX_BRUT.keys()), _resolve_key)` —
         le vrai code de `fichiers.py`, sous les règles de Windows."""
         f = _fichiers_windows(PureWindowsPath)
-        g = {'Path': PureWindowsPath, 'UPLOAD_DIR': UPLOAD}
+        g = {'Path': PureWindowsPath, 'UPLOAD_DIR': UPLOAD,
+             'lru_cache': lru_cache}
+        exec(_src('_cle_en_chemin'), g)                                # noqa: S102
         exec(_src('_resolve_key'), g)                                  # noqa: S102
         return f.build_key_index(list(index.keys()), g['_resolve_key'])
 
