@@ -192,11 +192,45 @@ que 7 jours est présenté avec deux gestes — **garder** (il part dans
 n'a pas répondu, le dépôt reste où il est : un rappel qui se périme tout seul
 n'est pas un rappel.
 
-À instruire avant d'écrire une ligne : où vit le rappel (une section de
-l'accueil, une page dédiée, un badge), ce qui fait foi pour l'âge (la date de
-dépôt, pas l'EXIF — une photo de 1984 déposée hier a un jour), et ce qu'on
-fait des dépôts déjà vieux le jour de la mise en service. Zéro GPU, zéro
-prompt : compatible avec la campagne.
+**Mike a tranché le 12/09** : ok pour le tri d'abord, rien ne bouge tout seul.
+Et le rappel est une **lampe clignotante à droite du nom d'utilisateur**, en
+haut à droite, qui mène à une **vue dédiée au tri des dépôts** — garder ou
+effacer. Il précise aussi la portée : **seuls Florine et lui habitent ici,
+l'outil d'upload est inutile à tous les autres** comptes.
+
+*Ce qui est déjà en place et rend le geste court* : l'entête a **UN** point de
+montage, `.appnav-moi`, bâti une fois par page par `ui/global.js` à partir
+d'un appel unique à `/api/moi`. La lampe n'a donc pas à toucher les douze
+gabarits ; `/api/moi` porte le compte, `global.js` allume. Et `ui/base.css`
+impose déjà de couper une animation quand l'utilisateur la refuse
+(`prefers-reduced-motion`) : la lampe devra porter un **nombre** à côté d'elle,
+pour ne jamais dire par le seul clignotement.
+
+**LE BLOCAGE, trouvé le 12/09 : la date de dépôt N'EXISTE PAS.** La règle des
+7 jours n'a rien sur quoi s'appuyer aujourd'hui.
+- La route `/upload` n'écrit **ni déposant ni date** — elle lit `file` et
+  `relpath`, rien d'autre. L'index n'a pas non plus de champ « vu le ».
+- Et le `mtime` du fichier ne vaut RIEN comme date de dépôt : `exiftool` est
+  appelé **sans `-P`**, donc chaque écriture de tags réécrit la date du
+  fichier. Preuve sur `_Uploads` : **les 213 images portent TOUTES le même
+  jour, le 05/09** — le début de la campagne de retag — et les **35 vidéos le
+  01/09**, parce que le tagueur ne les touche pas. Un premier comptage
+  « 35 dépôts de plus de 7 jours » ne mesurait donc pas l'âge : il mesurait
+  « ce que le tagueur n'a pas réécrit ».
+
+*Mes recommandations, à confirmer par Mike* : **(1)** noter au dépôt la date ET
+le compte déposant (le nom de session est déjà sous la main dans `_do_post`) —
+c'est ce qui rend la lampe PERSONNELLE, donc invisible pour les autres comptes,
+comme il le demande ; **(2)** ajouter **`-P`** aux arguments d'`exiftool`, qui
+dépasse ce chantier : le tagueur détruit aujourd'hui la date de fichier de
+TOUTE la photothèque, et `_best_time` s'appuie dessus en dernier recours ;
+**(3)** les **248 dépôts déjà là** n'ont plus de date récupérable — les traiter
+comme un lot hérité, à trier en une fois, hors de la règle des 7 jours.
+
+Reste à instruire une fois ces trois points tranchés : ce que « effacer » veut
+dire (corbeille réversible, jamais une suppression sèche) et ce que « garder »
+déclenche exactement dans `_A TRIER`. Zéro GPU, zéro prompt : compatible avec
+la campagne.
 
 ### C. Quand la campagne s'arrête, et pas avant
 
