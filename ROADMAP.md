@@ -77,9 +77,11 @@ et les lecteurs de date réduits à un seul, deux fois (§ 3.20 la date du nom,
 § 3.21 les années du dossier) sont faits — le thème « date » passe de 118 à
 **52 ms**. **Plus de gros caillou** : `enrichir` reste premier à 215 ms, mais
 aucun de ses morceaux ne dépasse 50 ms. Ce qui suit, par ordre : le dernier
-partage de lecture du `taken` (sans prémisse à vérifier désormais), `motifs`
-(53 ms) et le `Path(...)` de `_resolve_key` (34 ms). La machine tague pendant
-les mesures : ce sont les sous-phases qui font foi, pas le total. Compatible avec la campagne : chemin
+partage de lecture du `taken` (sans prémisse à vérifier désormais) et le
+`Path(...)` de `_resolve_key` (34 ms) — `motifs` est faite (§ 3.22, 53 → 19 ms,
+et elle ne relisait PAS la vue contrairement à ce que cette ligne a longtemps
+dit). La machine tague pendant les mesures : ce sont les sous-phases qui font
+foi, pas le total. Compatible avec la campagne : chemin
 de service seulement, jamais le calcul IA.
 
 **B2. Le tri des dépôts, à éprouver.** Le premier tour est livré (A1). Ce qui

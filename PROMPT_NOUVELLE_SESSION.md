@@ -83,8 +83,15 @@ Neuf gestes, chacun avec son banc et sa réobservation :
    même lecture. Elle délègue à `renommage_facts.path_years`, mémoïsée par
    DOSSIER. Thème « date » : **85 → 52 ms**, `enrichir` **280 → 215 ms**.
 
-**70 bancs verts** à la livraison — c'est la règle 2 qui les lance tous
-(voir § 4), et elle met ~6 minutes.
+10. **`motifs` classait chaque photo DEUX fois** dès qu'un filtre était posé
+    (§ 3.22) — une pour compter, une pour filtrer, et les deux pouvaient donc
+    se contredire. Une seule liste désormais ; les deux moitiés de la règle
+    (dossier, nom) mémoïsées. **53 → 19 ms.** Trouvé au passage : `indice_nom`
+    découpait avec `Path`, qui ne coupe pas les `\` sous Linux — le motif se
+    cherchait dans le CHEMIN, faux dans les bancs seulement.
+
+**70 bancs verts** à la livraison — ce sont les règles 2 et 3 qui les
+lancent tous (voir § 4), et il faut ~6 minutes.
 
 ---
 
@@ -136,9 +143,10 @@ trois pages rustinaient déjà chacune de leur côté (corrigé dans `base.css`)
    Par ordre : (a) `date_et_source` relit le `taken` crédible que
    `epoch_precis` vient de lire — même geste que le § 3.20 un étage plus haut,
    et **sans prémisse à vérifier** puisque la règle est maintenant unique ;
-   (b) `motifs` (53 ms), la dernière post-passe qui relit `STORE.data` par
-   photo — donc la VUE, le coût que le § 3.17 a retiré du balayage ; (c) le
-   `Path(...)` de `_resolve_key` dans `enrichir.dossier` (34 ms, mémoïsable).
+   (b) le `Path(...)` de `_resolve_key` dans `enrichir.dossier` (34 ms,
+   mémoïsable) ; (c) `marques` (23 ms), la dernière passe qui relit vraiment
+   `STORE.data` par photo — `motifs` est faite (§ 3.22) et ne la relisait
+   PAS, contrairement à ce que ce point a dit deux fois.
 2. **B5 — le tri des dépôts, à voir à l'usage** : le mur de 7 jours est-il le
    bon, faut-il un geste groupé pour les 248 hérités ? Ne rien changer avant
    que Mike s'en soit servi une fois.

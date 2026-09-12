@@ -1313,6 +1313,53 @@ d'abord écrit l'inverse dans la docstring (« trois bancs non lancés », dont
 celui-là) : c'était faux, et c'est la lecture du graphe qui l'a montré.
 `test_git_agent.py` passe à **63**.
 
+### 3.22 `motifs` : la classification faite deux fois, et jamais mise de côté
+— **livré le 12/09**
+
+Le § 5 annonçait `motifs` comme « la dernière post-passe qui relit
+`STORE.data` par photo ». **C'était faux, et je l'avais écrit deux fois.**
+Elle ne touche pas à la vue : elle appelle `interet.classer_regle(clé)`, une
+fonction pure du chemin. La phrase venait d'un rapprochement avec `marques`,
+pas d'une lecture. Corrigée ici.
+
+Ce qu'elle faisait vraiment, une fois lue :
+
+1. **Deux classifications par photo** dès qu'un filtre par motif est posé —
+   une pour COMPTER les motifs du bandeau, une pour FILTRER la grille. Le prix
+   n'est pas le pire : deux lectures de la même règle peuvent **diverger**, et
+   alors le bandeau annonce un compte que la grille ne montre pas. Le compte
+   et le filtre lisent désormais la même liste, bâtie une fois.
+2. **La moitié DOSSIER de la règle recalculée 2 519 fois** pour deux ou trois
+   réponses (un `PureWindowsPath`, puis une expression régulière par segment)
+   — même forme que les § 3.19 et 3.21. Mémoïsée par dossier.
+3. **La moitié NOM recalculée pour chaque photo à chaque page** : pure
+   fonction du nom nu, mémoïsée (65 536, le fonds tient dedans).
+
+| | avant | après |
+|---|---:|---:|
+| `motifs`, page de navigation | 52,7 ms | **19,3 ms** |
+| `motifs`, page filtrée par motif | 59,3 ms | **20,6 ms** |
+
+**Ce que la mesure NE dit pas** : ces chiffres sont à chaud. Un tout premier
+chargement, cache de noms vide, paie encore le plein tarif — le mémo ne
+fabrique rien, il évite de refaire (§ 3.16, même honnêteté).
+
+**La preuve du doublon n'est pas au chronomètre**, elle est dans la structure :
+la page filtrée coûte maintenant **la même chose** que la page de navigation,
+alors qu'elle faisait le double du travail. Et un banc compte les appels sur
+l'ARBRE — un seul site d'appel à `classer_regle` dans `_serve_gallery`.
+
+**Un défaut trouvé en chemin.** `indice_nom` découpait le nom avec `Path`, là
+où `classer_regle` disait explicitement, deux fonctions plus bas, qu'il faut
+`PureWindowsPath` « pour rester correct même exécuté sous Linux ». Sous
+Windows les deux sont identiques ; sous Linux, `Path(r'A\Screenshots\x.jpg').name`
+rend la chaîne ENTIÈRE — le motif se cherchait alors dans le chemin, et un
+dossier `Screenshots` faisait passer toutes ses photos pour des captures **par
+leur nom**. Invisible en production, faux dans les bancs : donc invisible tout
+court. Corrigé, avec le banc qui le nomme.
+
+`test_motifs_galerie.py` (15 bancs) est neuf.
+
 ## 4. Ce qui a été vérifié et qui va bien
 
 À ne pas rouvrir sans raison neuve :
@@ -1345,7 +1392,7 @@ preuve, § 3.16 pour le geste), la vue consultée 2 519 fois au lieu de 44 605
 (§ 3.17), le TROISIÈME calcul de la date précise (§ 3.18) et le lieu demandé
 2 519 fois pour deux réponses (§ 3.19) et les DEUX lecteurs de date réduits à
 un (§ 3.20), et les années du dossier relues quatre fois par photo
-(§ 3.21). Et **§ 3.7
+(§ 3.21), et `motifs` classée deux fois par photo (§ 3.22). Et **§ 3.7
 mesurée côté navigateur, puis écartée**.
 
 > **Un chiffre périmé corrigé le 12/09** : la reconstruction de `_key_index`
@@ -1379,8 +1426,9 @@ mesurée côté navigateur, puis écartée**.
      `date_et_source` relit le `taken` crédible que `epoch_precis` vient de
      lire. Même geste que les § 3.20 et 3.21 un étage plus haut, et **sans
      prémisse à vérifier** — la règle est désormais unique.
-   - `motifs` **53 ms**, la dernière post-passe qui relit `STORE.data` par
-     photo — `marques` est traitée (§ 3.18, 23 ms).
+   - `motifs` **19 ms** depuis le § 3.22 — et elle ne relit PAS `STORE.data`,
+     contrairement à ce que ce paragraphe a dit deux fois : c'est une règle
+     pure sur le chemin. `marques`, elle, lit bien la vue (§ 3.18, 23 ms).
    - `envoi` **73 ms**, `gabarit` **51 ms**, `parcours` **45 ms**,
      `index` **44 ms** (§ 3.17), `json` **24 ms**, `prélude` **22 ms**,
      `tagged_count` **13 ms**, `carte_cles` **11 ms**.

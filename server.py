@@ -14360,13 +14360,19 @@ class Handler(BaseHTTPRequestHandler):
         motif_counts = {}
         try:
             import interet
-            for _e in file_data:
-                _cat, _m = interet.classer_regle(_e.get('key', ''))
+            # UNE classification par photo. L'écriture d'avant en faisait DEUX
+            # dès qu'un filtre était posé : une pour compter, une pour filtrer,
+            # sur la même clé et avec la même réponse. Le compte et le filtre
+            # lisent désormais la même liste — et ne peuvent donc plus se
+            # contredire, ce qui vaut mieux que le temps gagné.
+            _cats = [interet.classer_regle(_e.get('key', ''))[0]
+                     for _e in file_data]
+            for _cat in _cats:
                 if _cat:
                     motif_counts[_cat] = motif_counts.get(_cat, 0) + 1
             if motif:
-                file_data = [_e for _e in file_data
-                             if interet.classer_regle(_e.get('key', ''))[0] == motif]
+                file_data = [_e for _e, _cat in zip(file_data, _cats)
+                             if _cat == motif]
         except Exception:                                     # noqa: BLE001
             motif_counts = {}
             if motif:

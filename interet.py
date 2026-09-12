@@ -25,7 +25,8 @@ INVARIANT DE SECURITE
 from __future__ import annotations
 
 import re
-from pathlib import Path
+from functools import lru_cache
+from pathlib import Path, PureWindowsPath
 
 # ── Categories de rebut (vocabulaire de TRIAGE, distinct du vocab de tagging) ──
 # On ne touche PAS vocabulaire_tags.txt : ces libelles servent la MESURE. Leur
@@ -76,17 +77,32 @@ _MOTIFS_NOM = [
 ]
 
 
+@lru_cache(maxsize=65536)
+def _indice_du_nom_nu(nom) -> tuple[str | None, str | None]:
+    """La regle, sur un nom NU — memoisee (12/09).
+
+    Fonction PURE d'une chaine, et la page la demandait pour chacune des
+    2 519 photos : une construction de chemin plus une expression reguliere
+    par motif connu. Borne a 65 536 : l'index en compte 44 605, il tient
+    entier."""
+    for cat, rx, motif in _MOTIFS_NOM:
+        if rx.search(nom):
+            return cat, motif
+    return None, None
+
+
 def indice_nom(nom_ou_chemin) -> tuple[str | None, str | None]:
     """Devine une categorie de rebut d'apres le seul NOM de fichier.
 
     Renvoie (categorie, motif_lisible) ou (None, None) si rien ne matche.
     Ne lit AUCUN octet du fichier. Deterministe.
     """
-    nom = Path(str(nom_ou_chemin)).name
-    for cat, rx, motif in _MOTIFS_NOM:
-        if rx.search(nom):
-            return cat, motif
-    return None, None
+    # `PureWindowsPath` et non `Path` : les cles du projet sont des chemins
+    # WINDOWS, et sous Linux `Path(r'A\\B\\x.jpg').name` rend la chaine
+    # ENTIERE — le motif se cherchait alors dans le chemin au lieu du nom.
+    # `classer_regle` disait deja cette raison ; cette moitie-ci l'ignorait
+    # (12/09). Sous Windows, rien ne change.
+    return _indice_du_nom_nu(PureWindowsPath(str(nom_ou_chemin)).name)
 
 
 # Dossiers dont le NOM identifie deja un rebut (capture/scan). Un rebut « pris par
@@ -95,20 +111,36 @@ def indice_nom(nom_ou_chemin) -> tuple[str | None, str | None]:
 _DOSSIER_REGLE = re.compile(r'screenshots?|captures?[ _]?d.?ecran|scans?', re.I)
 
 
-def classer_regle(key) -> tuple[str | None, str | None]:
-    """(categorie, motif) si `key` est un rebut attrapable par REGLE — nom de
-    fichier OU dossier du chemin (`\\Screenshots\\`, `\\Scans\\`...). Sinon
-    (None, None). Les cles du projet sont des chemins Windows : on decoupe avec
-    PureWindowsPath pour rester correct meme execute sous Linux (tests)."""
-    from pathlib import PureWindowsPath
-    cat, motif = indice_nom(key)
-    if cat:
-        return cat, motif
-    for p in PureWindowsPath(str(key)).parts[:-1]:
+@lru_cache(maxsize=16384)
+def _regle_du_dossier(dossier) -> tuple[str | None, str | None]:
+    """La moitie DOSSIER de `classer_regle` — memoise (12/09).
+
+    Elle ne depend que du dossier, et une page de 2 519 photos n'en porte que
+    deux ou trois : elle etait calculee 2 519 fois (un `PureWindowsPath`, puis
+    une expression reguliere par segment), et DEUX fois par photo des qu'un
+    filtre par motif etait pose. Borne a 16 384 : le fonds compte quelques
+    milliers de dossiers."""
+    for p in PureWindowsPath(str(dossier)).parts:
         if _DOSSIER_REGLE.search(str(p)):
             return ("document" if "scan" in str(p).lower() else "capture",
                     f"dossier {p}")
     return None, None
+
+
+def classer_regle(key) -> tuple[str | None, str | None]:
+    """(categorie, motif) si `key` est un rebut attrapable par REGLE — nom de
+    fichier OU dossier du chemin (`\\Screenshots\\`, `\\Scans\\`...). Sinon
+    (None, None). Les cles du projet sont des chemins Windows : on decoupe avec
+    PureWindowsPath pour rester correct meme execute sous Linux (tests).
+
+    Les DEUX moities sont pures ; celle du dossier est memoisee, parce qu'elle
+    est la seule des deux que des milliers de photos partagent."""
+    cat, motif = indice_nom(key)
+    if cat:
+        return cat, motif
+    s = str(key)
+    i = max(s.rfind('\\'), s.rfind('/'))
+    return _regle_du_dossier(s[:i] if i >= 0 else '')
 
 
 # ─────────────────────────── Score de flou ────────────────────────────────────
