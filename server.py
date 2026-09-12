@@ -4346,6 +4346,199 @@ def remplir_file_retag(label='campagne'):
     return n
 
 
+# ─── Les DÉPÔTS d'Uploads : quand, et par qui ───────────────────────
+# `Uploads` est né comme un outil de TRANSFERT — envoyer vite une image sur le
+# PC depuis le réseau local — pas comme une antichambre de la photothèque :
+# « ce ne sont pas forcément des images que je veux ensuite garder en
+# souvenir » (Mike, 12/09). Un dépôt attend donc une décision, et rien ne bouge
+# tout seul.
+#
+# **Il n'y a pas d'état « déjà trié » à tenir** : décider fait SORTIR le
+# fichier d'Uploads — vers `_A TRIER` si on le garde, vers la corbeille si on
+# l'efface. Ce qui reste dans Uploads est, par construction, ce qui attend.
+#
+# La date de dépôt est notée à l'arrivée depuis le 12/09. Pour les dépôts
+# antérieurs, elle se relit sur le fichier — mais **surtout pas son `mtime`** :
+# jusqu'au 12/09 le tagueur le réécrivait (les 213 images d'`_Uploads` étaient
+# toutes au 05/09, jour du début de la campagne). La date de **création**, elle,
+# a survécu : 242 des 248 l'ont plus ancienne que leur date de modification, et
+# elle tombe juste — 12/08 ×19, 20/08 ×1, 01/09 ×193, ce que confirment les
+# horodatages dans les noms de fichiers.
+DEPOTS_FILE = SCRIPT_DIR / "_depots_uploads.json"
+# Sept jours : le délai demandé par Mike. Au-delà, un dépôt n'est plus un
+# transfert en cours, c'est une chose oubliée.
+DEPOT_MUR_S = 7 * 86400
+_DEPOTS = {}
+_DEPOTS_LOCK = threading.Lock()
+
+
+def charger_depots():
+    """Reprend le carnet des dépôts. Silencieux s'il manque : un carnet
+    absent rend la main au fichier (date de création), pas une erreur."""
+    global _DEPOTS
+    try:
+        d = json.loads(DEPOTS_FILE.read_text(encoding='utf-8'))
+        if isinstance(d, dict):
+            with _DEPOTS_LOCK:
+                _DEPOTS = {k: v for k, v in d.items() if isinstance(v, dict)}
+            return True
+    except (OSError, ValueError):
+        pass
+    return False
+
+
+def sauver_depots():
+    """Écrit le carnet, atomiquement (tmp + replace) comme les index."""
+    try:
+        with _DEPOTS_LOCK:
+            brut = json.dumps(_DEPOTS, ensure_ascii=False)
+        tmp = DEPOTS_FILE.with_suffix('.json.tmp')
+        tmp.write_text(brut, encoding='utf-8')
+        os.replace(tmp, DEPOTS_FILE)
+        return True
+    except Exception as e:                                   # noqa: BLE001
+        print(f"  ⚠ Carnet des dépôts non sauvé : {e}")
+        return False
+
+
+def depot_noter(cle, par=None):
+    """Note l'arrivée d'un dépôt. Écrit tout de suite : un carnet qui attend
+    un arrêt propre perd ce qu'une coupure emporte."""
+    with _DEPOTS_LOCK:
+        _DEPOTS[cle] = {"le": time.time(), "par": par or None}
+    sauver_depots()
+
+
+def _date_arrivee_du_fichier(p):
+    """La date d'ARRIVÉE du fichier à cet endroit, ou None.
+
+    Sous Windows — la seule plate-forme où ce serveur tourne — `st_ctime` EST
+    la date de création, et une copie la fixe au moment de la copie. Ailleurs
+    c'est la date de changement d'inode, qui ne veut pas dire ça : on ne
+    l'utilise pas et on le dit."""
+    try:
+        st = p.stat()
+    except OSError:
+        return None
+    naissance = getattr(st, 'st_birthtime', None)
+    if naissance:
+        return naissance
+    if os.name == 'nt':
+        return st.st_ctime
+    return None
+
+
+def depot_le(cle, p):
+    """Quand ce dépôt est arrivé, et d'où on le sait :
+    `(epoch, 'carnet' | 'fichier' | 'inconnu')`."""
+    with _DEPOTS_LOCK:
+        note = _DEPOTS.get(cle)
+    if note and isinstance(note.get('le'), (int, float)):
+        return note['le'], 'carnet'
+    t = _date_arrivee_du_fichier(p)
+    if t:
+        return t, 'fichier'
+    return None, 'inconnu'
+
+
+def depots_a_trier(mur_s=None):
+    """Les dépôts d'Uploads qui attendent une décision, du plus ancien au plus
+    récent. Lecture seule, et le listage passe par le cache (§ 3.16)."""
+    mur = DEPOT_MUR_S if mur_s is None else mur_s
+    maintenant = time.time()
+    try:
+        fichiers, _sous = _lister_dossier_frais(UPLOAD_DIR, True)
+    except OSError:
+        return []
+    out = []
+    for f in fichiers:
+        rel = f.relative_to(UPLOAD_DIR)
+        cle = f.name if len(rel.parts) == 1 else rel.as_posix()
+        le, source = depot_le(cle, f)
+        if le is None or maintenant - le < mur:
+            continue
+        with _DEPOTS_LOCK:
+            note = _DEPOTS.get(cle) or {}
+        out.append({"cle": cle, "le": le, "source": source,
+                    "par": note.get('par'), "jours": int((maintenant - le) // 86400)})
+    out.sort(key=lambda d: d['le'])
+    return out
+
+
+# `/api/moi` est appelé à chaque page : la liste est donc mise en cache. Le
+# coût n'est pas le listage (il passe par le cache du § 3.16) mais le `stat`
+# par dépôt ANCIEN, celui dont la date d'arrivée se relit sur le fichier —
+# 248 le 12/09, et zéro pour tout ce qui arrive désormais. Le TTL n'est pas le
+# mécanisme : chaque décision invalide la vue, sinon la lampe mentirait
+# jusqu'à une minute après le geste qui vient de l'éteindre.
+_DEPOTS_VUE = {"at": 0.0, "liste": None}
+DEPOTS_VUE_TTL_S = 60.0
+
+
+def depots_vue_invalider():
+    _DEPOTS_VUE["liste"] = None
+
+
+def depots_vue_retirer(cle):
+    """Retire UN dépôt de la vue, sans la refaire.
+
+    Invalider ne suffit pas, et c'est mesuré (12/09, fichier témoin) : la vue
+    se refait depuis le listage, le listage vient de son propre cache, et
+    celui-ci peut encore porter le fichier pendant quelques secondes — le
+    client SMB de Windows garde les métadonnées d'un dossier en mémoire un
+    court instant, donc la date du dossier ne bouge pas tout de suite aux yeux
+    du serveur. La vue recachée pour 60 s portait alors un dépôt déjà parti,
+    et la lampe comptait un geste qu'on venait de faire.
+
+    Ici on sait EXACTEMENT ce qui est parti : on l'enlève, au lieu de
+    redemander au disque ce qu'on vient de lui dire."""
+    liste = _DEPOTS_VUE["liste"]
+    if liste is None:
+        return
+    _DEPOTS_VUE["liste"] = [d for d in liste if d.get('cle') != cle]
+
+
+def depots_vue():
+    """La liste des dépôts à trier, en cache court."""
+    liste, at = _DEPOTS_VUE["liste"], _DEPOTS_VUE["at"]
+    if liste is not None and time.time() - at <= DEPOTS_VUE_TTL_S:
+        return liste
+    liste = depots_a_trier()
+    _DEPOTS_VUE["liste"], _DEPOTS_VUE["at"] = liste, time.time()
+    return liste
+
+
+# Le carnet se reprend au chargement du module, là où ses fonctions existent :
+# le bloc de démarrage des comptes tourne 3 000 lignes plus haut.
+if charger_depots():
+    print(f"  📦 Dépôts : carnet repris, {len(_DEPOTS)} noté(s)")
+
+
+# Un dépôt qu'on GARDE part dans `_A TRIER`, où la chaîne de rangement
+# existante le reprend (bats 26, 36, 38, 39). Le nom vit ici, en UN endroit :
+# la page ne l'assemble pas — un second assemblage de la même règle finit
+# toujours par diverger.
+DOSSIER_A_TRIER = '_A TRIER'
+
+
+def cible_a_trier():
+    """`(idx, rel, chemin)` du dossier où part un dépôt gardé, ou None.
+
+    None n'est pas un détail d'implémentation : c'est ce qui fait ÉTEINDRE le
+    bouton « Garder » et dire pourquoi, au lieu de le laisser échouer à chaque
+    clic (CLAUDE.md n° 9)."""
+    cible = UPLOAD_DIR.parent / DOSSIER_A_TRIER
+    if not cible.is_dir():
+        return None
+    for i, (_label, root) in enumerate(media_roots()):
+        try:
+            rel = cible.relative_to(root)
+        except ValueError:
+            continue
+        return i, rel.as_posix() if rel.parts else '', cible
+    return None
+
+
 def scan_uploads(first=False, deep=False, nas=True):
     """Scan des racines : Uploads (plat) + dossiers à taguer (récursif).
 
@@ -7814,6 +8007,26 @@ APP_NAV_CSS = """<style id="appnav-css">
   .appnav-q kbd{display:none;}
   .netbusy{right:10px;bottom:10px;padding:8px 13px;font-size:12px;}
 }
+/* La LAMPE : des depots attendent une decision (demande de Mike, 12/09).
+   `--veilleuse` et rien d'autre : c'est exactement son sens, « en attente ».
+   Elle CLIGNOTE, mais elle ne dit JAMAIS par le seul clignotement -- le
+   nombre est ecrit a cote, et le lien porte son libelle hors-ecran. Le
+   plancher `prefers-reduced-motion` de base.css coupe l'animation ; ce qui
+   reste alors est un point orange et un compte, c'est-a-dire tout le
+   message. Cible : 44 px, comme tout ce qui se clique ici. */
+.appnav .lampe{display:inline-flex;align-items:center;gap:6px;
+  min-height:var(--touch);padding:0 10px;border-radius:var(--r-pill);
+  text-decoration:none;color:var(--veilleuse);
+  border:1px solid var(--veilleuse-d);background:transparent;}
+.appnav .lampe__o{width:10px;height:10px;border-radius:50%;
+  background:var(--veilleuse);box-shadow:0 0 0 0 var(--veilleuse);
+  animation:lampe 1.8s ease-out infinite;}
+.appnav .lampe__n{font-family:var(--f-donnees);font-size:var(--t-sm);}
+@keyframes lampe{
+  0%{box-shadow:0 0 0 0 rgba(255,122,26,.55);}
+  70%{box-shadow:0 0 0 7px rgba(255,122,26,0);}
+  100%{box-shadow:0 0 0 0 rgba(255,122,26,0);}
+}
 </style>"""
 
 APP_NAV_HTML = """<nav class="appnav">
@@ -7841,6 +8054,12 @@ APP_NAV_HTML = """<nav class="appnav">
     </button>
     <div class="moi-menu" id="moi-menu" role="menu" hidden></div>
   </div>
+  <a class="lampe" data-p="/tri" href="/tri" hidden
+     title="Des d&eacute;p&ocirc;ts attendent d'&ecirc;tre tri&eacute;s">
+    <span class="lampe__o" aria-hidden="true"></span>
+    <span class="lampe__n"></span>
+    <span class="hors-ecran">d&eacute;p&ocirc;t(s) &agrave; trier</span>
+  </a>
 </nav>
 <div class="netbusy" role="status" aria-live="polite" aria-hidden="true">
   <span class="netbusy__s" aria-hidden="true"></span><span>Traitement en cours&hellip;</span>
@@ -12679,9 +12898,18 @@ class Handler(BaseHTTPRequestHandler):
 
     def _serve_moi(self):
         nom = utilisateur_vu()
+        # Les dépôts qui attendent une décision : c'est ce que la lampe de
+        # l'entête allume. `/api/moi` est le seul appel que TOUTES les pages
+        # font déjà — la lampe n'en ajoute aucun.
+        try:
+            attente = depots_vue()
+        except Exception:                                     # noqa: BLE001
+            attente = []
         self._send(200, json.dumps(
             {"nom": nom, "admin": bool(nom and COMPTES.est_admin(nom)),
-             "porte": COMPTES.actifs(), "prive": _prive_url(nom)},
+             "porte": COMPTES.actifs(), "prive": _prive_url(nom),
+             "depots": {"a_trier": len(attente),
+                        "jours": attente[0]['jours'] if attente else 0}},
             ensure_ascii=False).encode(), 'application/json')
 
     def _serve_comptes(self):
@@ -12890,6 +13118,12 @@ class Handler(BaseHTTPRequestHandler):
 
         elif path == '/sensibles':
             self._send_html(ui_page('sensibles'))
+
+        elif path == '/api/tri':
+            self._serve_tri()
+
+        elif path == '/tri':
+            self._send_html(ui_page('tri'))
 
         elif path == '/eval':
             self._serve_eval_page()
@@ -13101,6 +13335,90 @@ class Handler(BaseHTTPRequestHandler):
         dup = _upload_dup_by_hash(taille, empreinte.lower())
         self._send(200, b'SKIP' if dup is not None else b'OK', 'text/plain')
 
+    def _serve_tri(self):
+        """La liste des dépôts qui attendent une décision.
+
+        `url` est calculée ICI, comme pour `/sensibles` : la refaire en JS
+        ferait un second assemblage de la même règle. `garder_refus` dit
+        POURQUOI le geste « Garder » ne peut pas aboutir, ou '' — la page
+        éteint alors le bouton et affiche la raison."""
+        cible = cible_a_trier()
+        refus = '' if cible else (
+            "Le dossier « %s » n'existe pas à côté d'Uploads : un dépôt "
+            "gardé n'aurait nulle part où aller." % DOSSIER_A_TRIER)
+        items = []
+        for d in depots_vue():
+            chemin = UPLOAD_DIR / d['cle']
+            items.append({
+                'cle': d['cle'],
+                'nom': Path(d['cle']).name,
+                'url': _url_for_key(d['cle']) or '',
+                'le': time.strftime('%Y-%m-%d', time.localtime(d['le'])),
+                'jours': d['jours'],
+                'par': d['par'] or '',
+                # D'où vient la date : le carnet (notée à l'arrivée, exacte) ou
+                # le fichier (sa date de création, pour les dépôts d'avant le
+                # 12/09). La page le DIT : une date approchée qui se donne pour
+                # exacte est pire qu'une date approchée qui s'annonce.
+                'source': d['source'],
+                'video': 1 if chemin.suffix.lower() in VIDEO_EXT else 0,
+            })
+        self._send(200, json.dumps(
+            {'items': items, 'mur_jours': int(DEPOT_MUR_S // 86400),
+             'garder_refus': refus,
+             'garder_vers': (DOSSIER_A_TRIER if cible else '')},
+            ensure_ascii=False).encode(), 'application/json')
+
+    def _api_tri_decider(self, path):
+        """Garder (→ `_A TRIER`) ou effacer (→ corbeille réversible) UN dépôt.
+
+        Les deux gestes passent par `fichiers.py`, le même module que la vue
+        Dossiers : ni suppression sèche, ni déplacement écrit ici."""
+        d = self._read_json_body()
+        cle, geste = (d.get('cle') or ''), (d.get('geste') or '')
+        if geste not in ('garder', 'effacer'):
+            self._send(400, json.dumps(
+                {"ok": False, "error": "Geste inconnu."},
+                ensure_ascii=False).encode(), 'application/json')
+            return
+        tgt = _key_to_target(cle)
+        if not tgt:
+            self._send(200, json.dumps(
+                {"ok": False, "error": "Ce dépôt n'est plus là."},
+                ensure_ascii=False).encode(), 'application/json')
+            return
+        idx, rel = tgt
+        ops = file_ops()
+        try:
+            with FILE_OPS_LOCK:
+                if geste == 'effacer':
+                    res = ops.delete(idx, rel, UPLOAD_DIR)
+                else:
+                    cible = cible_a_trier()
+                    if not cible:
+                        raise fichiers.FileOpError(
+                            "Le dossier « %s » n'existe pas à côté "
+                            "d'Uploads." % DOSSIER_A_TRIER)
+                    res = ops.move(idx, rel, cible[0], cible[1], UPLOAD_DIR)
+            # Le carnet n'est PAS purgé : il enregistre une ARRIVÉE, pas une
+            # attente. L'attente, c'est « le fichier est encore dans
+            # Uploads », et rien d'autre. Retirer l'entrée ici paraît propre
+            # et casse l'annulation : observé le 12/09 sur un fichier témoin
+            # — après `garder` puis `undo`, le dépôt revenait dans Uploads
+            # mais disparaissait de la liste, faute de date. Une entrée dont
+            # le fichier est parti ne coûte qu'une ligne de JSON, et personne
+            # ne la relit.
+            depots_vue_retirer(cle)
+            self._send(200, json.dumps({"ok": True, **res},
+                       ensure_ascii=False).encode(), 'application/json')
+        except fichiers.FileOpRefus as e:
+            print(f"  ⛔ {utilisateur_vu()} : /api/tri/decider refusé — {e}")
+            self._send(200, json.dumps({"ok": False, "error": str(e)},
+                       ensure_ascii=False).encode(), 'application/json')
+        except fichiers.FileOpError as e:
+            self._send(200, json.dumps({"ok": False, "error": str(e)},
+                       ensure_ascii=False).encode(), 'application/json')
+
     def _serve_sensibles(self):
         """Ce que la machine a mis de côté, et qui attend un verdict humain.
 
@@ -13274,6 +13592,10 @@ class Handler(BaseHTTPRequestHandler):
         if path.startswith('/api/files/'):
             self._do_files_post(path)
             return
+        if path == '/api/tri/decider':
+            note_heavy_activity()
+            self._api_tri_decider(path)
+            return
         if path.startswith('/api/corbeille/'):
             self._do_corbeille_post(path)
             return
@@ -13404,6 +13726,10 @@ class Handler(BaseHTTPRequestHandler):
 
         print(f"  ✓ Saved {dest} ({human_size(len(data))})")
         _upload_size_map_add(dest)   # dédoublonnage des fichiers suivants du même album
+        # Quand, et par qui. C'est la SEULE date de dépôt fiable : celle du
+        # fichier se relit après coup, celle-ci est vraie par construction.
+        depot_noter(key, utilisateur_vu())
+        depots_vue_invalider()
 
         # → file d'attente du tagging IA (clé relative si sous-dossier)
         if dest.suffix.lower() in IMAGE_EXT:

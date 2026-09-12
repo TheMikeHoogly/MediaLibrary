@@ -3904,5 +3904,35 @@
   ],
   "ts": 1789019488.7060556,
   "par": "Mike"
+ },
+ {
+  "op": "delete",
+  "src": "\\\\NAS-Bremblens\\home\\Photos\\_Uploads\\_test_claude_tri.jpg",
+  "dst": "\\\\NAS-Bremblens\\home\\Photos\\.corbeille-effacements\\20260912-110805-223\\_test_claude_tri.jpg",
+  "idx": 0,
+  "keys": [],
+  "ts": 1789204086.793142,
+  "expire": 1804756086.793142,
+  "par": "Mike"
+ },
+ {
+  "op": "delete",
+  "src": "\\\\NAS-Bremblens\\home\\Photos\\_Uploads\\_test_claude_tri.jpg",
+  "dst": "\\\\NAS-Bremblens\\home\\Photos\\.corbeille-effacements\\20260912-110928-623\\_test_claude_tri.jpg",
+  "idx": 0,
+  "keys": [],
+  "ts": 1789204169.87472,
+  "expire": 1804756169.87472,
+  "par": "Mike"
+ },
+ {
+  "op": "delete",
+  "src": "\\\\NAS-Bremblens\\home\\Photos\\_Uploads\\_test_claude_tri.jpg",
+  "dst": "\\\\NAS-Bremblens\\home\\Photos\\.corbeille-effacements\\20260912-111422-970\\_test_claude_tri.jpg",
+  "idx": 0,
+  "keys": [],
+  "ts": 1789204464.156199,
+  "expire": 1804756464.156199,
+  "par": "Mike"
  }
 ]

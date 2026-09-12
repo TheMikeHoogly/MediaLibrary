@@ -66,6 +66,26 @@ partout. Les 620–870 ms existent : c'est le PREMIER build après un démarrage
 
 ---
 
+## 2 bis. Livré aussi le 12/09 — hors performance
+
+**`exiftool -P`** : le tagueur ne détruit plus la date des fichiers. La preuve
+tenait dans un seul dossier — les vidéos de `2022`, qu'il ne touche pas,
+portaient 50 jours distincts de 2022 ; les images taguées, un seul jour.
+Observé en réel : une photo taguée sous les yeux du banc garde sa date.
+Verdict et chiffres dans `eval/DECISIONS.md`.
+
+**Le tri des dépôts d'Uploads** (`ROADMAP` B5) : la lampe dans l'entête, la
+page `/tri`, la date et le déposant notés à l'arrivée, et les deux gestes —
+garder (→ `_A TRIER`) et effacer (→ corbeille, annulable). **248 dépôts
+attendent une décision de Mike**, le plus ancien depuis 30 jours. Trois choses
+apprises en l'éprouvant, toutes dans les bancs :
+- le carnet enregistre une **ARRIVÉE**, pas une attente — le purger à la
+  décision cassait l'annulation ;
+- une décision **retire** le dépôt de la vue au lieu de la refaire : le client
+  SMB de Windows garde les métadonnées d'un dossier quelques secondes, et la
+  lampe comptait encore un geste qu'on venait de faire ;
+- `Uploads` n'a **pas** d'état « déjà trié » : décider fait sortir le fichier.
+
 ## 3. Ce que la session suivante doit faire, dans l'ordre
 
 0. **Vérifier l'état réel** : `.git/logs/refs/heads/main`, et l'UBR Windows
@@ -74,9 +94,9 @@ partout. Les 620–870 ms existent : c'est le PREMIER build après un démarrage
    ordre de poids : `enrichir` (275–481 ms de CPU), `index` (93–146 ms, c'est
    le § 3.8 écrit le 11/09 et jamais fait), `marques` et `motifs` (deux
    post-passes qui relisent `STORE.data` par photo).
-2. **B5 du `ROADMAP` — l'auto-rangement**, demandé par Mike le 12/09 : rien de
-   commencé, et **une question lui appartient** (`Uploads` → `_A TRIER`
-   d'office, ou tri d'abord ?). Ma recommandation y est écrite. Zéro GPU.
+2. **B5 — le tri des dépôts, à voir à l'usage** : le mur de 7 jours est-il le
+   bon, faut-il un geste groupé pour les 248 hérités ? Ne rien changer avant
+   que Mike s'en soit servi une fois.
 3. **Les 13,5 Go d'Ollama** : rien pendant la campagne (choix de Mike du
    12/09). Après : un modèle qui tient dans les 4 Go de VRAM (`vision-eval`).
 

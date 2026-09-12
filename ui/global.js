@@ -320,6 +320,7 @@
       z.querySelector('.moi-bouton').setAttribute(
         'aria-label', 'Mon compte : ' + d.nom);
       z.hidden = false;
+      allumerLampe(d);
       z.querySelector('.moi-bouton').addEventListener('click', function () {
         if (MENU_OUVERT) fermerMenu(); else ouvrirMenu();
       });
@@ -332,6 +333,24 @@
         if (ev.key === 'Escape' && MENU_OUVERT) { fermerMenu(); }
       });
     }).catch(function () { /* sans identite, la barre reste telle quelle */ });
+  }
+
+  /* La LAMPE des depots : allumee par la MEME reponse que le nom d'utilisateur.
+     `/api/moi` est le seul appel que toutes les pages font deja -- la lampe
+     n'en ajoute aucun, et elle ne peut pas se desynchroniser du compte.
+
+     Elle ne s'allume que s'il y a quelque chose a decider : une lampe qui
+     brille en permanence cesse d'etre lue (meme raison que l'onglet
+     Sensibles, demande de Mike le 06/09). */
+  function allumerLampe(d) {
+    var l = document.querySelector('.appnav .lampe');
+    var n = (d && d.depots && d.depots.a_trier) || 0;
+    if (!l || !n) return;
+    l.querySelector('.lampe__n').textContent = n;
+    l.setAttribute('aria-label',
+      n + ' depot(s) en attente de tri, le plus ancien depuis '
+      + ((d.depots.jours || 0) + ' jour(s)'));
+    l.hidden = false;
   }
 
   /* L'onglet « Sensibles » ne s'affiche QUE s'il y a quelque chose a juger.

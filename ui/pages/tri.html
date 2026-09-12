@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Trier les depots</title>
+<!--UI:components-->
+<style>
+/* Surface de TRAVAIL : on decide, donc papier pour le texte, salle pour les
+   photos. Tokens seuls, aucune valeur en dur. */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+.bar { display: flex; align-items: center; gap: var(--e-3);
+       padding: var(--e-3) var(--e-4); background: var(--salle-2);
+       border-bottom: var(--trait); flex-wrap: wrap; font-size: var(--t-sm); }
+.bar h1 { font: 600 var(--t-lg)/1.2 var(--f-affichage); letter-spacing: -0.01em;
+          color: var(--texte); }
+.bar .sp { margin-left: auto; }
+.compte { font-family: var(--f-donnees); color: var(--texte); }
+
+.feuille { background: var(--papier); color: var(--texte-papier);
+           border-radius: var(--r-md); padding: var(--e-4);
+           margin: var(--e-3) var(--e-4); max-width: 900px;
+           box-shadow: 0 1px 0 var(--papier-2), 0 8px 24px #0008; }
+.feuille p + p { margin-top: var(--e-2); }
+.feuille .aide { color: var(--graphite-p); font-size: var(--t-sm);
+                 line-height: 1.5; }
+.feuille kbd { font-family: var(--f-donnees); font-size: var(--t-xs);
+               border: 1px solid var(--papier-2); border-radius: var(--r-sm);
+               padding: 1px 5px; }
+
+#liste { padding: 0 var(--e-4) var(--e-8); max-width: 900px; }
+.depot { display: grid; grid-template-columns: minmax(0, 180px) minmax(0, 1fr);
+         gap: var(--e-4); align-items: start; padding: var(--e-4) 0;
+         border-bottom: var(--trait); }
+@media (max-width: 640px) { .depot { grid-template-columns: 1fr; } }
+/* `loading="lazy"` : la lecon du 08/09 sur /sensibles -- 213 vignettes
+   demandees d'un coup au NAS avaient gele un moteur de rendu. */
+.depot .vue { background: var(--salle); border-radius: var(--r-sm);
+              line-height: 0; overflow: hidden; }
+.depot .vue img { width: 100%; aspect-ratio: 1; object-fit: contain;
+                  display: block; background: var(--salle); }
+.depot h2 { font: 600 var(--t-md)/1.3 var(--f-affichage);
+            letter-spacing: -0.01em; color: var(--texte);
+            overflow-wrap: anywhere; }
+.depot .faits { margin-top: var(--e-2); color: var(--graphite);
+                font-size: var(--t-sm); line-height: 1.6; }
+.depot .faits .donnee { color: var(--texte); }
+.depot .actes { display: flex; gap: var(--e-2); flex-wrap: wrap;
+                margin-top: var(--e-3); }
+.depot[data-fait="1"] { opacity: 0.45; }
+.vide { margin: var(--e-6) var(--e-4); max-width: 68ch; color: var(--graphite);
+        line-height: 1.6; }
+.vide b { color: var(--texte); }
+</style>
+</head>
+<body>
+<!--APPNAV-->
+
+<div class="bar">
+  <h1>Depots a trier</h1>
+  <span class="compte" id="compte"></span>
+  <span class="sp"></span>
+  <button class="btn btn--discret" id="annuler" type="button" hidden>
+    Annuler le dernier geste <kbd>Z</kbd>
+  </button>
+</div>
+
+<div class="feuille" id="explication" hidden>
+  <p id="intro"></p>
+  <p class="aide">
+    <b>Garder</b> range le fichier dans <b id="vers"></b>, ou la chaine de
+    rangement le reprendra. <b>Effacer</b> le met a la corbeille : rien n'est
+    supprime pour de bon, et le dernier geste s'annule.
+  </p>
+  <p class="aide">
+    Au clavier : <kbd>G</kbd> garder &middot; <kbd>X</kbd> effacer &middot;
+    <kbd>Z</kbd> annuler. Les touches agissent sur le depot ou se trouve le
+    curseur, sinon sur le premier de la liste.
+  </p>
+  <p class="aide" id="refus" hidden></p>
+</div>
+
+<div id="liste"></div>
+<div class="vide" id="vide" hidden></div>
+
+<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+<script>
+(function () {
+  'use strict';
+  var ETAT = { items: [], mur: 7, refus: '', vers: '' };
+
+  function $(id) { return document.getElementById(id); }
+
+  function dire(texte) {
+    var t = $('toast');
+    t.textContent = texte;
+    t.hidden = false;
+    clearTimeout(dire._h);
+    dire._h = setTimeout(function () { t.hidden = true; }, 6000);
+  }
+
+  function bouton(classe, libelle, touche) {
+    var b = document.createElement('button');
+    b.type = 'button';
+    b.className = classe;
+    b.textContent = libelle;
+    if (touche) {
+      var k = document.createElement('kbd');
+      k.textContent = touche;
+      k.setAttribute('aria-hidden', 'true');
+      b.appendChild(document.createTextNode(' '));
+      b.appendChild(k);
+    }
+    return b;
+  }
+
+  function ligneFaits(it) {
+    // La PROVENANCE de la date est dite : notee a l'arrivee (exacte) ou relue
+    // sur le fichier (sa date de creation). Une date approchee qui se donne
+    // pour exacte est pire qu'une date approchee qui s'annonce.
+    var bouts = ['<span class="donnee">' + it.le + '</span>'
+                 + ' &middot; il y a <span class="donnee">' + it.jours
+                 + '</span> jour(s)'];
+    if (it.source === 'fichier') {
+      bouts.push('date de creation du fichier, le depot n’a pas ete note');
+    }
+    if (it.par) { bouts.push('depose par ' + it.par); }
+    if (it.video) { bouts.push('video'); }
+    return bouts.join('<br>');
+  }
+
+  function carte(it) {
+    var d = document.createElement('section');
+    d.className = 'depot';
+    d.dataset.cle = it.cle;
+
+    var vue = document.createElement('div');
+    vue.className = 'vue';
+    if (it.url && !it.video) {
+      var img = document.createElement('img');
+      img.loading = 'lazy';
+      img.src = it.url;
+      img.alt = '';           /* decorative : le nom est ecrit a cote */
+      vue.appendChild(img);
+    }
+    d.appendChild(vue);
+
+    var col = document.createElement('div');
+    var h = document.createElement('h2');
+    h.textContent = it.nom;
+    col.appendChild(h);
+    var f = document.createElement('p');
+    f.className = 'faits';
+    f.innerHTML = ligneFaits(it);
+    col.appendChild(f);
+
+    var actes = document.createElement('div');
+    actes.className = 'actes';
+    var g = bouton('btn btn--confirmer', 'Garder', 'G');
+    if (ETAT.refus) {
+      g.disabled = true;
+      g.title = ETAT.refus;
+    } else {
+      g.addEventListener('click', function () { decider(d, 'garder'); });
+    }
+    var x = bouton('btn btn--destructif', 'Effacer', 'X');
+    x.addEventListener('click', function () { decider(d, 'effacer'); });
+    var o = document.createElement('a');
+    o.className = 'btn btn--discret';
+    o.href = it.url || '#';
+    o.target = '_blank';
+    o.rel = 'noopener';
+    o.textContent = 'Ouvrir';
+    actes.appendChild(g);
+    actes.appendChild(x);
+    if (it.url) { actes.appendChild(o); }
+    col.appendChild(actes);
+    d.appendChild(col);
+    return d;
+  }
+
+  function decider(carteEl, geste) {
+    if (carteEl.dataset.fait === '1') { return; }
+    carteEl.dataset.fait = '1';
+    fetch('/api/tri/decider', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ cle: carteEl.dataset.cle, geste: geste })
+    }).then(function (r) { return r.json(); }).then(function (res) {
+      if (!res || !res.ok) {
+        carteEl.dataset.fait = '';
+        dire((res && res.error) || 'Le geste n’a pas abouti.');
+        return;
+      }
+      carteEl.remove();
+      $('annuler').hidden = false;
+      compter(-1);
+      dire(geste === 'garder'
+        ? 'Garde : le fichier est parti dans ' + ETAT.vers + '.'
+        : 'Efface : le fichier est a la corbeille, annulable.');
+    }).catch(function () {
+      carteEl.dataset.fait = '';
+      dire('Le serveur n’a pas repondu. Reessayer.');
+    });
+  }
+
+  function annuler() {
+    fetch('/api/files/undo', { method: 'POST',
+      headers: { 'Content-Type': 'application/json' }, body: '{}' })
+      .then(function (r) { return r.json(); }).then(function (res) {
+        if (!res || !res.ok) {
+          dire((res && res.error) || 'Rien a annuler.');
+          return;
+        }
+        dire('Geste annule. La liste se recharge.');
+        setTimeout(charger, 400);
+      }).catch(function () { dire('Le serveur n’a pas repondu.'); });
+  }
+
+  function compter(delta) {
+    var n = $('liste').querySelectorAll('.depot').length;
+    $('compte').textContent = n + ' en attente';
+    if (!n) { vide(); }
+    if (delta) { /* le compte se relit du DOM : il ne peut pas deriver */ }
+  }
+
+  function vide() {
+    $('liste').hidden = true;
+    var v = $('vide');
+    v.innerHTML = '<b>Rien n’attend de decision.</b><br>'
+      + 'Les depots apparaissent ici quand ils sejournent dans Uploads depuis '
+      + 'plus de ' + ETAT.mur + ' jours. Uploads est un outil de transfert : '
+      + 'ce qui y reste longtemps n’a jamais ete range, ni jete.';
+    v.hidden = false;
+  }
+
+  function rendre(d) {
+    ETAT.items = d.items || [];
+    ETAT.mur = d.mur_jours || 7;
+    ETAT.refus = d.garder_refus || '';
+    ETAT.vers = d.garder_vers || '';
+    var l = $('liste');
+    l.innerHTML = '';
+    if (!ETAT.items.length) { vide(); $('explication').hidden = true; return; }
+    $('vide').hidden = true;
+    l.hidden = false;
+    $('explication').hidden = false;
+    $('intro').textContent = ETAT.items.length
+      + ' depot(s) attendent une decision : ils sont dans Uploads depuis plus de '
+      + ETAT.mur + ' jours.';
+    $('vers').textContent = ETAT.vers || '(indisponible)';
+    if (ETAT.refus) {
+      $('refus').textContent = ETAT.refus;
+      $('refus').hidden = false;
+    }
+    ETAT.items.forEach(function (it) { l.appendChild(carte(it)); });
+    compter(0);
+  }
+
+  function charger() {
+    fetch('/api/tri').then(function (r) { return r.json(); }).then(rendre)
+      .catch(function () {
+        dire('La liste n’a pas pu etre lue. Recharger la page.');
+      });
+  }
+
+  function courant() {
+    var a = document.activeElement;
+    while (a && a !== document.body) {
+      if (a.classList && a.classList.contains('depot')) { return a; }
+      a = a.parentNode;
+    }
+    return $('liste').querySelector('.depot:not([data-fait="1"])');
+  }
+
+  document.addEventListener('keydown', function (ev) {
+    if (ev.ctrlKey || ev.altKey || ev.metaKey) { return; }
+    var t = ev.target;
+    if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA')) { return; }
+    var k = ev.key.toLowerCase();
+    if (k === 'z') { ev.preventDefault(); annuler(); return; }
+    if (k !== 'g' && k !== 'x') { return; }
+    var c = courant();
+    if (!c) { return; }
+    if (k === 'g' && ETAT.refus) { dire(ETAT.refus); return; }
+    ev.preventDefault();
+    decider(c, k === 'g' ? 'garder' : 'effacer');
+  });
+
+  $('annuler').addEventListener('click', annuler);
+  charger();
+}());
+</script>
+</body>
+</html>

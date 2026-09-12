@@ -170,8 +170,14 @@ compromis à accepter — reste à le bâtir.
 Prochain : `PERFORMANCE.md` § 5. Compatible avec la campagne : chemin de
 service seulement, jamais le calcul IA.
 
-**B5. L'auto-rangement, et ce qu'`Uploads` est VRAIMENT — demandé par Mike le
-12/09, rien de commencé.** Le malentendu à lever d'abord : `Uploads` est né
+**B5. L'auto-rangement — PREMIER TOUR LIVRÉ le 12/09.** La lampe, la page de
+tri, l'enregistrement du dépôt et les deux gestes tournent et ont été
+**observés en réel** sur un fichier témoin : garder → `_A TRIER`, annuler,
+effacer → corbeille, et le compte de la lampe tombe à l'instant du geste.
+**248 dépôts attendent** une décision de Mike, le plus ancien depuis 30 jours.
+Ce qui reste : le voir à l'usage, et décider si le mur de 7 jours est le bon.
+
+*Le contexte, conservé :* Le malentendu à lever d'abord : `Uploads` est né
 comme un **outil de transfert** (envoyer vite une image sur le PC depuis le
 réseau local ou le wifi), pas comme une antéchambre de la photothèque —
 « ce ne sont pas forcément des images que je veux ensuite garder en
