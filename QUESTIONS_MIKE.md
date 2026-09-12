@@ -6,7 +6,41 @@
 > `eval/DECISIONS.md` si elle tranche, dans `docs/DECISIONS_OUTILLAGE.md` si
 > elle touche l'outillage, dans `ROADMAP.md` si elle priorise.
 > Protocole : `CLAUDE.md`, « Traite autonome ».
->
+
+---
+
+## La galerie envoie 1,86 Mo d'un coup — on pagine ? (12/09)
+
+**Le chantier des redites est fini.** La page de `Photos Mike/2022` (2 519
+photos) est passée de 1 493–1 870 ms à **544–763 ms**, en retirant douze
+calculs refaits (`PERFORMANCE.md` § 3.13 à 3.23). Ce qui reste n'est plus du
+travail refait : c'est du travail.
+
+Et le plus gros poste hors calcul est maintenant **`envoi` : 93 ms pour
+1,86 Mo** sur le réseau local, plus ~90 ms pour fabriquer les 2 519 fiches
+et 31 ms pour les sérialiser. **Le prochain gain sérieux n'est pas une
+mémoïsation de plus, c'est d'envoyer MOINS.** Et ça change ce que tu vois,
+donc ça ne se décide pas dans ton dos.
+
+Les trois formes possibles :
+
+- **(a) Ne rien changer.** 600 ms pour un dossier de 2 519 photos, c'est déjà
+  trois fois mieux qu'hier, et la planche entière reste scrollable d'un trait.
+- **(b) Pagination classique** (500 photos par page, un bouton « suivantes »).
+  Simple, prévisible — mais elle coupe le geste « je scrolle toute l'année ».
+- **(c) Chargement à la demande** : la page rend les 300 premières fiches,
+  le reste arrive en scrollant. Le scroll continu est préservé, la première
+  image s'affiche presque tout de suite. Plus de travail côté client, et il
+  faut décider ce que deviennent le tri et les filtres (ils doivent rester
+  faits par le SERVEUR, sinon ils ne portent que sur ce qui est chargé).
+
+**Ma recommandation : (c)**, mais **pas avant que tu l'aies dit** — et pas
+pendant la campagne. C'est la seule qui ne retire rien à l'usage.
+
+**En attendant** : rien n'est touché. La page reste telle quelle.
+
+---
+
 > **Vidée le 12/09** : « les 13,5 Go du moteur d'Ollama ». Mike a essayé (a)
 > — `GGML_CUDA_NO_PINNED=1` — qui est **écarté par la mesure** (13,33 Go
 > après 17 min contre 13,53 sans), puis a tranché **(b) : on vit avec**
