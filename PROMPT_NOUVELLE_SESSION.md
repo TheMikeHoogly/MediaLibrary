@@ -86,6 +86,13 @@ apprises en l'éprouvant, toutes dans les bancs :
   lampe comptait encore un geste qu'on venait de faire ;
 - `Uploads` n'a **pas** d'état « déjà trié » : décider fait sortir le fichier.
 
+La vue est un **tableau** depuis le même jour (tri, filtre nom/dossier,
+sélection multiple, gestes groupés, annulation du lot). Deux défauts trouvés
+en le regardant tourner, tous deux hors de ce chantier : `_url_for_key` ne
+servait aucune clé d'Uploads **en sous-dossier** — 193 dépôts sur 248 sans
+vignette — et `[hidden]` perdait contre le `display:` des composants, ce que
+trois pages rustinaient déjà chacune de leur côté (corrigé dans `base.css`).
+
 ## 3. Ce que la session suivante doit faire, dans l'ordre
 
 0. **Vérifier l'état réel** : `.git/logs/refs/heads/main`, et l'UBR Windows

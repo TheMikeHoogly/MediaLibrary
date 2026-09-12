@@ -35,7 +35,8 @@ ARBRE = ast.parse(SOURCE)
 LIGNES = SOURCE.splitlines()
 
 FONCTIONS = ('charger_depots', 'sauver_depots', 'depot_noter',
-             '_date_arrivee_du_fichier', 'depot_le', 'depots_a_trier',
+             '_arrivee_de_stat', '_date_arrivee_du_fichier',
+             'depot_le', 'depots_a_trier',
              'depots_vue', 'depots_vue_invalider', 'depots_vue_retirer',
              'cible_a_trier')
 CONSTANTES = ('DEPOT_MUR_S', '_DEPOTS', '_DEPOTS_LOCK', '_DEPOTS_VUE',
@@ -267,6 +268,44 @@ class OuPartUnDepotQuOnGarde(unittest.TestCase):
         ailleurs.mkdir()
         m = module(self.uploads, racines=[('Autre', ailleurs)])
         self.assertIsNone(m.cible_a_trier())
+
+
+class LaVignetteDUnDepotEnSOUSDOSSIER(unittest.TestCase):
+    """Trouve en regardant la page : 193 des 248 depots arrivaient SANS
+    vignette. Tous venaient d'un telephone, donc de `Camera/`, et
+    `_url_for_key` prenait toute cle contenant un separateur pour un chemin
+    NAS. La galerie ne pouvait pas le voir : elle calcule son URL elle-meme.
+
+    La regle qui decide est celle de `_resolve_key` : une cle d'Uploads est
+    RELATIVE, une cle de dossier supplementaire est ABSOLUE."""
+
+    def module(self):
+        import urllib
+        import urllib.parse                                    # noqa: F401
+        from functools import lru_cache
+        from pathlib import PurePath
+        m = types.ModuleType('urls')
+        m.__dict__.update({
+            'urllib': urllib, 'Path': Path, 'PurePath': PurePath,
+            'lru_cache': lru_cache, 'PKEY_MEMO_MAX': 1 << 17,
+            'media_roots': lambda: [('NAS', Path('/nas/Photos'))]})
+        for nom in ('_pkey_chaine', '_pkey', '_url_for_key'):
+            exec(source_de(nom), m.__dict__)                    # noqa: S102
+        return m
+
+    def test_une_cle_relative_AVEC_sous_dossier_a_une_url(self):
+        m = self.module()
+        self.assertEqual(m._url_for_key('Camera/20260531_222739.jpg'),
+                         '/uploads/Camera/20260531_222739.jpg')
+
+    def test_une_cle_relative_simple_n_a_pas_change(self):
+        m = self.module()
+        self.assertEqual(m._url_for_key('photo.jpg'), '/uploads/photo.jpg')
+
+    def test_les_caracteres_sont_echappes(self):
+        m = self.module()
+        self.assertEqual(m._url_for_key('Mes photos/a b.jpg'),
+                         '/uploads/Mes%20photos/a%20b.jpg')
 
 
 class LaChaineEstBRANCHEE(unittest.TestCase):

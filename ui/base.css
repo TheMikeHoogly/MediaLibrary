@@ -76,3 +76,14 @@ body {
   clip-path: inset(50%);
   white-space: nowrap;
 }
+
+/* `hidden` doit gagner contre le `display:` d'un composant. Sans cette ligne,
+   un `.btn` (inline-flex) ou une barre (flex) reste A L'ECRAN malgre
+   l'attribut, et le code qui l'a cache croit l'avoir cache. Trois pages
+   avaient deja leur rustine locale -- gallery, sensibles, subjects -- et la
+   page de tri a refait exactement la meme erreur le 12/09 : la barre de
+   selection annoncait « 0 selectionne(s) » et le bouton « Annuler » s'offrait
+   avant le premier geste. C'est un defaut de SYSTEME, il se corrige une fois.
+   PAS de `!important` : une page qui veut vraiment montrer un element cache
+   (les tags du lightbox au survol) garde la main par sa specificite. */
+[hidden] { display: none; }

@@ -175,6 +175,12 @@ tri, l'enregistrement du dépôt et les deux gestes tournent et ont été
 **observés en réel** sur un fichier témoin : garder → `_A TRIER`, annuler,
 effacer → corbeille, et le compte de la lampe tombe à l'instant du geste.
 **248 dépôts attendent** une décision de Mike, le plus ancien depuis 30 jours.
+La vue est devenue un **TABLEAU** le même jour, à sa demande : tri sur cinq
+colonnes, filtre par nom ET par dossier, sélection multiple (`Maj`+clic,
+`Ctrl`+`A`), gestes groupés et annulation du LOT entier. En l'éprouvant :
+`_url_for_key` ne servait aucune clé d'Uploads en sous-dossier — **193 des 248
+dépôts arrivaient sans vignette**, et la galerie ne pouvait pas le voir parce
+qu'elle calcule son URL elle-même.
 Ce qui reste : le voir à l'usage, et décider si le mur de 7 jours est le bon.
 
 *Le contexte, conservé :* Le malentendu à lever d'abord : `Uploads` est né

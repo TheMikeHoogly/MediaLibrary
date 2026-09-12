@@ -3642,9 +3642,19 @@ def _tag_index():
 
 
 def _url_for_key(k, roots=None):
-    """URL servable pour une clé d'index, quelle que soit sa racine."""
-    if '/' not in _pkey(k):
-        return '/uploads/' + urllib.parse.quote(k)
+    """URL servable pour une clé d'index, quelle que soit sa racine.
+
+    Une clé d'Uploads est RELATIVE (« x.jpg », mais aussi « Camera/x.jpg »
+    depuis que le scan descend dans les sous-dossiers) ; une clé de dossier
+    supplémentaire est ABSOLUE. C'est la règle de `_resolve_key`, et c'est
+    elle qui décide — **pas la présence d'un « / »**. L'ancienne écriture
+    prenait toute clé contenant un séparateur pour un chemin NAS, ne lui
+    trouvait aucune racine et rendait `None` : **193 des 248 dépôts** — tous
+    ceux déposés depuis un téléphone dans `Camera/` — arrivaient sans
+    vignette sur la page de tri (12/09). La galerie ne le voyait pas : elle
+    calcule son URL elle-même, dans `url_for`."""
+    if not Path(k).is_absolute():
+        return '/uploads/' + urllib.parse.quote(Path(k).as_posix())
     kp = _pkey(k)
     if roots is None:
         roots = media_roots()
@@ -4409,23 +4419,27 @@ def depot_noter(cle, par=None):
     sauver_depots()
 
 
-def _date_arrivee_du_fichier(p):
-    """La date d'ARRIVÉE du fichier à cet endroit, ou None.
+def _arrivee_de_stat(st):
+    """La date d'ARRIVÉE lue dans un `stat` déjà pris, ou None.
 
     Sous Windows — la seule plate-forme où ce serveur tourne — `st_ctime` EST
     la date de création, et une copie la fixe au moment de la copie. Ailleurs
     c'est la date de changement d'inode, qui ne veut pas dire ça : on ne
     l'utilise pas et on le dit."""
-    try:
-        st = p.stat()
-    except OSError:
-        return None
     naissance = getattr(st, 'st_birthtime', None)
     if naissance:
         return naissance
     if os.name == 'nt':
         return st.st_ctime
     return None
+
+
+def _date_arrivee_du_fichier(p):
+    """La date d'ARRIVÉE du fichier à cet endroit, ou None."""
+    try:
+        return _arrivee_de_stat(p.stat())
+    except OSError:
+        return None
 
 
 def depot_le(cle, p):
@@ -4454,13 +4468,26 @@ def depots_a_trier(mur_s=None):
     for f in fichiers:
         rel = f.relative_to(UPLOAD_DIR)
         cle = f.name if len(rel.parts) == 1 else rel.as_posix()
-        le, source = depot_le(cle, f)
-        if le is None or maintenant - le < mur:
+        # UN seul `stat` par dépôt : il porte la date d'arrivée ET la taille.
+        # Deux visites du disque par fichier, sur un partage SMB, c'est le
+        # défaut que le § 3.13 vient de corriger ailleurs.
+        try:
+            st = f.stat()
+        except OSError:
             continue
         with _DEPOTS_LOCK:
             note = _DEPOTS.get(cle) or {}
+        le = note.get('le')
+        source = 'carnet'
+        if not isinstance(le, (int, float)):
+            le, source = _arrivee_de_stat(st), 'fichier'
+        if le is None:
+            continue
+        if maintenant - le < mur:
+            continue
         out.append({"cle": cle, "le": le, "source": source,
-                    "par": note.get('par'), "jours": int((maintenant - le) // 86400)})
+                    "par": note.get('par'), "taille": st.st_size,
+                    "jours": int((maintenant - le) // 86400)})
     out.sort(key=lambda d: d['le'])
     return out
 
@@ -13355,7 +13382,18 @@ class Handler(BaseHTTPRequestHandler):
             items.append({
                 'cle': d['cle'],
                 'nom': Path(d['cle']).name,
+                # Le sous-dossier d'Uploads, s'il y en a un : 193 des 248
+                # dépôts du 12/09 viennent de `Camera/`, c'est le groupe le
+                # plus utile à filtrer d'un coup.
+                'dossier': Path(d['cle']).parent.as_posix()
+                           if '/' in d['cle'] else '',
                 'url': _url_for_key(d['cle']) or '',
+                # La VIGNETTE, pas l'original : 248 lignes qui chargeraient
+                # chacune 2 à 6 Mo depuis le NAS, c'est l'audit O1 refait à
+                # l'identique. `/api/thumb` rend 512 px avec cache disque, et
+                # redirige vers l'original quand il ne sait pas (vidéo, HEIC).
+                'vignette': '/api/thumb?key=' + urllib.parse.quote(
+                    d['cle'], safe=''),
                 'le': time.strftime('%Y-%m-%d', time.localtime(d['le'])),
                 'jours': d['jours'],
                 'par': d['par'] or '',
@@ -13364,6 +13402,7 @@ class Handler(BaseHTTPRequestHandler):
                 # 12/09). La page le DIT : une date approchée qui se donne pour
                 # exacte est pire qu'une date approchée qui s'annonce.
                 'source': d['source'],
+                'taille': d.get('taille') or 0,
                 'video': 1 if chemin.suffix.lower() in VIDEO_EXT else 0,
             })
         self._send(200, json.dumps(
@@ -13372,55 +13411,106 @@ class Handler(BaseHTTPRequestHandler):
              'garder_vers': (DOSSIER_A_TRIER if cible else '')},
             ensure_ascii=False).encode(), 'application/json')
 
-    def _api_tri_decider(self, path):
-        """Garder (→ `_A TRIER`) ou effacer (→ corbeille réversible) UN dépôt.
-
-        Les deux gestes passent par `fichiers.py`, le même module que la vue
-        Dossiers : ni suppression sèche, ni déplacement écrit ici."""
-        d = self._read_json_body()
-        cle, geste = (d.get('cle') or ''), (d.get('geste') or '')
-        if geste not in ('garder', 'effacer'):
-            self._send(400, json.dumps(
-                {"ok": False, "error": "Geste inconnu."},
-                ensure_ascii=False).encode(), 'application/json')
-            return
+    def _tri_un_geste(self, ops, cle, geste):
+        """UN dépôt, sous verrou déjà tenu. Lève `FileOpError`/`FileOpRefus`."""
         tgt = _key_to_target(cle)
         if not tgt:
-            self._send(200, json.dumps(
-                {"ok": False, "error": "Ce dépôt n'est plus là."},
+            raise fichiers.FileOpError("Ce dépôt n'est plus là.")
+        idx, rel = tgt
+        if geste == 'effacer':
+            return ops.delete(idx, rel, UPLOAD_DIR)
+        cible = cible_a_trier()
+        if not cible:
+            raise fichiers.FileOpError(
+                "Le dossier « %s » n'existe pas à côté d'Uploads."
+                % DOSSIER_A_TRIER)
+        return ops.move(idx, rel, cible[0], cible[1], UPLOAD_DIR)
+
+    def _api_tri_decider(self, path):
+        """Garder (→ `_A TRIER`) ou effacer (→ corbeille réversible) UN dépôt
+        ou PLUSIEURS.
+
+        Les deux gestes passent par `fichiers.py`, le même module que la vue
+        Dossiers : ni suppression sèche, ni déplacement écrit ici.
+
+        Une sélection ne s'arrête PAS au premier échec : chaque dépôt a son
+        sort, et la réponse dit lesquels sont partis et lesquels ont refusé.
+        Un lot de cinquante qui capote sur le troisième et laisse l'utilisateur
+        deviner où il en est serait pire que cinquante clics."""
+        d = self._read_json_body()
+        geste = d.get('geste') or ''
+        cles = d.get('cles')
+        if not isinstance(cles, list):
+            cles = [d.get('cle') or '']
+        cles = [c for c in cles if isinstance(c, str) and c]
+        if geste not in ('garder', 'effacer') or not cles:
+            self._send(400, json.dumps(
+                {"ok": False, "error": "Geste ou sélection manquante."},
                 ensure_ascii=False).encode(), 'application/json')
             return
-        idx, rel = tgt
+        # Plafond : au-delà, une requête tient le verrou des fichiers trop
+        # longtemps et la page ne sait plus quoi afficher. La sélection se
+        # découpe côté page, qui sait où elle en est.
+        if len(cles) > 200:
+            self._send(400, json.dumps(
+                {"ok": False, "error": "Trop de dépôts d'un coup (200 au plus)."},
+                ensure_ascii=False).encode(), 'application/json')
+            return
         ops = file_ops()
-        try:
-            with FILE_OPS_LOCK:
-                if geste == 'effacer':
-                    res = ops.delete(idx, rel, UPLOAD_DIR)
-                else:
-                    cible = cible_a_trier()
-                    if not cible:
-                        raise fichiers.FileOpError(
-                            "Le dossier « %s » n'existe pas à côté "
-                            "d'Uploads." % DOSSIER_A_TRIER)
-                    res = ops.move(idx, rel, cible[0], cible[1], UPLOAD_DIR)
-            # Le carnet n'est PAS purgé : il enregistre une ARRIVÉE, pas une
-            # attente. L'attente, c'est « le fichier est encore dans
-            # Uploads », et rien d'autre. Retirer l'entrée ici paraît propre
-            # et casse l'annulation : observé le 12/09 sur un fichier témoin
-            # — après `garder` puis `undo`, le dépôt revenait dans Uploads
-            # mais disparaissait de la liste, faute de date. Une entrée dont
-            # le fichier est parti ne coûte qu'une ligne de JSON, et personne
-            # ne la relit.
+        faits, erreurs = [], []
+        with FILE_OPS_LOCK:
+            for cle in cles:
+                try:
+                    self._tri_un_geste(ops, cle, geste)
+                    faits.append(cle)
+                except fichiers.FileOpRefus as e:
+                    print(f"  ⛔ {utilisateur_vu()} : /api/tri refusé — {e}")
+                    erreurs.append({"cle": cle, "error": str(e)})
+                except fichiers.FileOpError as e:
+                    erreurs.append({"cle": cle, "error": str(e)})
+        # Le carnet n'est PAS purgé : il enregistre une ARRIVÉE, pas une
+        # attente. L'attente, c'est « le fichier est encore dans Uploads », et
+        # rien d'autre. Retirer l'entrée ici paraît propre et casse
+        # l'annulation : observé le 12/09 sur un fichier témoin — après
+        # `garder` puis `undo`, le dépôt revenait dans Uploads mais
+        # disparaissait de la liste, faute de date. Une entrée dont le fichier
+        # est parti ne coûte qu'une ligne de JSON, et personne ne la relit.
+        for cle in faits:
             depots_vue_retirer(cle)
-            self._send(200, json.dumps({"ok": True, **res},
-                       ensure_ascii=False).encode(), 'application/json')
-        except fichiers.FileOpRefus as e:
-            print(f"  ⛔ {utilisateur_vu()} : /api/tri/decider refusé — {e}")
-            self._send(200, json.dumps({"ok": False, "error": str(e)},
-                       ensure_ascii=False).encode(), 'application/json')
-        except fichiers.FileOpError as e:
-            self._send(200, json.dumps({"ok": False, "error": str(e)},
-                       ensure_ascii=False).encode(), 'application/json')
+        self._send(200, json.dumps(
+            {"ok": bool(faits) or not erreurs, "faits": faits,
+             "erreurs": erreurs,
+             "error": erreurs[0]['error'] if erreurs and not faits else ""},
+            ensure_ascii=False).encode(), 'application/json')
+
+    def _api_tri_annuler(self):
+        """Annule les `n` derniers gestes, du plus récent au plus ancien.
+
+        Un lot de cinquante effacés n'a pas UN geste à annuler mais cinquante :
+        un bouton « Annuler » qui n'en déferait qu'un serait un bouton qui
+        ment. On dépile jusqu'au premier refus, et on DIT où on s'est
+        arrêté."""
+        d = self._read_json_body()
+        try:
+            n = int(d.get('n') or 1)
+        except (TypeError, ValueError):
+            n = 1
+        n = max(1, min(n, 200))
+        ops = file_ops()
+        annules, arret = 0, ''
+        with FILE_OPS_LOCK:
+            for _ in range(n):
+                try:
+                    ops.undo(UPLOAD_DIR)
+                    annules += 1
+                except (fichiers.FileOpError, fichiers.FileOpRefus) as e:
+                    arret = str(e)
+                    break
+        depots_vue_invalider()
+        self._send(200, json.dumps(
+            {"ok": annules > 0, "annules": annules, "arret": arret,
+             "error": arret if not annules else ""},
+            ensure_ascii=False).encode(), 'application/json')
 
     def _serve_sensibles(self):
         """Ce que la machine a mis de côté, et qui attend un verdict humain.
@@ -13598,6 +13688,10 @@ class Handler(BaseHTTPRequestHandler):
         if path == '/api/tri/decider':
             note_heavy_activity()
             self._api_tri_decider(path)
+            return
+        if path == '/api/tri/annuler':
+            note_heavy_activity()
+            self._api_tri_annuler()
             return
         if path.startswith('/api/corbeille/'):
             self._do_corbeille_post(path)
