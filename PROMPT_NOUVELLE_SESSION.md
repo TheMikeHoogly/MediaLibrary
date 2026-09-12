@@ -34,14 +34,15 @@ C du `ROADMAP` s'ouvre tout de suite après.
 
 | | matin | soir |
 |---|---:|---:|
-| `parcours` | 715 ms | **46 ms** (8 ms cache chaud) |
-| `index` | 112 à 136 ms | **47 ms** |
-| `marques` | 76 à 114 ms | **29 ms** |
-| `enrichir` (mode navigation) | 455 ms | 325 ms |
+| `parcours` | 715 ms | **50 ms** (8 ms cache chaud) |
+| `index` | 112 à 136 ms | **53 ms** |
+| `marques` | 76 à 114 ms | **28 ms** |
+| le thème « date » | 118 ms | **85 ms** |
+| `enrichir` (mode navigation) | 455 ms | **280 ms** |
 | `enrichir` (dès qu'un tag est coché) | 455 ms | **0,0 ms** |
-| la page entière | 1 493 à 1 870 ms | **633 à 820 ms** |
+| la page entière | 1 493 à 1 870 ms | **687 à 795 ms** |
 
-Six gestes, chacun avec son banc et sa réobservation :
+Huit gestes, chacun avec son banc et sa réobservation :
 
 1. **Le dossier de tête était énuméré DEUX fois** en récursif (§ 3.13).
 2. **Le lien de dossier était calculé par PHOTO** alors qu'il ne dépend que du
@@ -68,6 +69,14 @@ Six gestes, chacun avec son banc et sa réobservation :
    `enrichir.faits.regle.lieu` **31,3 → 5,8 ms**. Et **c'est l'instrument qui
    a désigné la cible** : j'allais parier sur la date, les § 3.13 et 3.18 y
    ayant déjà trouvé deux redites. C'eût été le mauvais chantier.
+
+8. **Deux lecteurs pour une seule règle de date** (§ 3.20) :
+   `server._fname_time` et `faits_vue.epoch_du_nom` étaient déclarés miroirs
+   et ne l'étaient pas tout à fait. `mesure_miroir_dates.py` : **0 désaccord
+   sur 44 966 fichiers**, mais une heure IMPOSSIBLE (« 250000 ») basculait au
+   jour SUIVANT d'un côté. `_fname_time` délègue, la règle STRICTE survit, la
+   lecture est mémoïsée par nom nu — le thème « date » passe de **118 à
+   85 ms**.
 
 **69 bancs verts** à la livraison — c'est la règle 2 qui les lance tous
 (voir § 4), et elle met ~6 minutes.
@@ -117,16 +126,14 @@ trois pages rustinaient déjà chacune de leur côté (corrigé dans `base.css`)
 
 0. **Vérifier l'état réel** : `.git/logs/refs/heads/main`, et l'UBR Windows
    (§ 4) avant de compter sur `device_bash`.
-1. **`PERFORMANCE.md` § 5, point 3 — les DATES, 118 ms.** C'est le plus gros
-   thème restant (`enrichir.dates` 86 + `enrichir.faits.regle.date` 32).
-   `epoch_precis` rend le **minimum** du `taken` et de la date du NOM ;
-   `date_et_source` rend le `taken` **en priorité** : règles DIFFÉRENTES sur
-   les MÊMES deux lectures. Passer `_ep` à la seconde serait un défaut muet —
-   ce qui se partage, ce sont les lectures. **Commencer par le banc** qui
-   compare `server._fname_time` et `renommage_facts.fname_datetime` sur un
-   corpus : « miroir déclaré » n'est pas « miroir mesuré ». Ensuite `motifs`
-   (67 ms, la dernière post-passe qui relit `STORE.data` par photo) et le
-   `Path(...)` de `_resolve_key` (48 ms, mémoïsable).
+1. **`PERFORMANCE.md` § 5, point 3 — il n'y a plus de gros caillou.**
+   `enrichir` reste premier (280 ms) mais aucun morceau ne dépasse 60 ms.
+   Par ordre : (a) `date_et_source` relit le `taken` crédible que
+   `epoch_precis` vient de lire — même geste que le § 3.20 un étage plus haut,
+   et **sans prémisse à vérifier** puisque la règle est maintenant unique ;
+   (b) `motifs` (63 ms), la dernière post-passe qui relit `STORE.data` par
+   photo — donc la VUE, le coût que le § 3.17 a retiré du balayage ; (c) le
+   `Path(...)` de `_resolve_key` dans `enrichir.dossier` (41 ms, mémoïsable).
 2. **B5 — le tri des dépôts, à voir à l'usage** : le mur de 7 jours est-il le
    bon, faut-il un geste groupé pour les 248 hérités ? Ne rien changer avant
    que Mike s'en soit servi une fois.

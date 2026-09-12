@@ -70,16 +70,16 @@ reproposé (le bloc PowerShell est dans l'historique de la session du 12/09).
 ## B. Ce qui avance pendant la campagne
 
 **B1. La performance — le plan vit dans `PERFORMANCE.md` § 5, pas ici.**
-État au 12/09 à 13 h : la page `/files` d'un dossier de 2 519 photos est
-passée de **1 493–1 870 ms à ~700–900 ms**, et la même page filtrée par un tag
-de **1 200 à 750 ms**. `index` (§ 3.17), `marques` (§ 3.18) et le lieu
-(§ 3.19) sont faits. **Le plus gros thème restant, ce sont les DATES**
-(118 ms : `enrichir.dates` 86 + `regle.date` 32), deux règles distinctes sur
-les mêmes lectures brutes — et le chantier commence par un banc qui prouve que
-`server._fname_time` et `renommage_facts.fname_datetime` sont bien les
-miroirs qu'on déclare. Puis `motifs` (67 ms) et le `Path(...)` de
-`_resolve_key` (48 ms). La machine tague pendant les mesures : ce sont les
-sous-phases qui font foi, pas le total. Compatible avec la campagne : chemin
+État au 12/09 à 13 h 30 : la page `/files` d'un dossier de 2 519 photos est
+passée de **1 493–1 870 ms à ~690–800 ms**, et la même page filtrée par un tag
+de **1 200 à 750 ms**. `index` (§ 3.17), `marques` (§ 3.18), le lieu (§ 3.19)
+et les DEUX lecteurs de date réduits à un (§ 3.20) sont faits — le thème
+« date » passe de 118 à **85 ms**. **Plus de gros caillou** : `enrichir`
+reste premier à 280 ms, mais aucun de ses morceaux ne dépasse 60 ms. Ce qui
+suit, par ordre : le dernier partage de lecture du `taken` (sans prémisse à
+vérifier désormais), `motifs` (63 ms) et le `Path(...)` de `_resolve_key`
+(41 ms). La machine tague pendant les mesures : ce sont les sous-phases qui
+font foi, pas le total. Compatible avec la campagne : chemin
 de service seulement, jamais le calcul IA.
 
 **B2. Le tri des dépôts, à éprouver.** Le premier tour est livré (A1). Ce qui
@@ -205,6 +205,12 @@ fichiers (règle 2), donc hors de portée de tout réglage.
   déclarés redondants, **0 grief de niveau A** (`verifier_controles.py`).
 - **`[hidden]` gagne contre `display:` depuis le 12/09** (`ui/base.css`, sans
   `!important`). Ne pas reposer une rustine locale par page.
+- **UNE seule règle lit la date dans un nom de fichier** (12/09) :
+  `server._fname_time` délègue à `faits_vue.epoch_du_nom`, mémoïsée. Les deux
+  lecteurs étaient déclarés miroirs et ne l'étaient pas tout à fait — une
+  heure impossible basculait au jour SUIVANT d'un côté.
+  `mesure_miroir_dates.py` : **0 désaccord sur 44 966 fichiers**, mais le cas
+  limite existe, et c'est la règle STRICTE qui a été retenue.
 - **`git_agent.tests_pour` lance aussi les bancs qui CITENT un module touché**
   (12/09) : l'appariement par NOM seul laissait **63 bancs** invisibles, dont
   59 citent `server.py` — **cinq étaient ROUGES**, tous accrochés à une

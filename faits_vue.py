@@ -339,11 +339,28 @@ def lieu_pour(cle, lieux=None, racines=(), gps_place=None, memo=None):
 
 # ──────────────────────────────── date ────────────────────────────────
 
-def epoch_du_nom(cle):
-    """Epoch de la date lue dans le NOM du fichier, ou None. Passe par
-    `renommage_facts.fname_datetime` : miroir déclaré de `server._fname_time`,
-    une seule règle pour la prod et pour les bancs."""
-    nom = str(cle).replace('\\', '/').rsplit('/', 1)[-1]
+@lru_cache(maxsize=65536)
+def _epoch_du_nom_nu(nom):
+    """La règle, sur un nom de fichier NU — mémoïsée.
+
+    Fonction PURE d'une chaîne : deux photos du même nom donnent la même
+    réponse, aujourd'hui et demain. La page la demandait DEUX fois par photo
+    (une fois par `epoch_precis`, une fois par `date_et_source`) sur 2 519
+    photos ; le cache la rend une fois par NOM, pour la vie du processus.
+    Borné à 65 536 — l'index en compte 44 605, donc il tient entier, et un
+    fonds qui doublerait dégraderait au lieu de gonfler.
+
+    Le cache porte sur le nom NU, pas sur la clé : deux copies d'une photo
+    dans deux dossiers portent la même date de nom, et c'est la même réponse.
+
+    **Le sens ne bouge pas** : `server._fname_time` faisait la même lecture
+    avec UNE différence, mesurée le 12/09 par `mesure_miroir_dates.py` — une
+    heure INVALIDE (« 250000 ») y était passée à `mktime`, qui NORMALISE et
+    peut basculer au jour SUIVANT ; ici elle est REJETÉE et la date retombe à
+    midi. **0 désaccord sur les 44 966 fichiers du fonds**, et c'est la règle
+    stricte qui survit : normaliser en silence une heure impossible en un
+    autre JOUR est un défaut muet, retomber à midi est une dégradation qui se
+    voit."""
     d8, hms = fname_datetime(nom)
     if not d8:
         return None
@@ -353,6 +370,17 @@ def epoch_du_nom(cle):
                             h, m, s, 0, 0, -1))
     except (ValueError, OverflowError):
         return None
+
+
+def epoch_du_nom(cle):
+    """Epoch de la date lue dans le NOM du fichier, ou None. Passe par
+    `renommage_facts.fname_datetime` : **la** règle du projet pour cette
+    lecture — `server._fname_time` lui délègue depuis le 12/09, il n'y a plus
+    de second lecteur à tenir d'accord.
+
+    Les DEUX séparateurs coupent : une clé du NAS porte des `\\`, une clé
+    d'Uploads des `/`."""
+    return _epoch_du_nom_nu(str(cle).replace('\\', '/').rsplit('/', 1)[-1])
 
 
 def date_credible(cle, epoch):

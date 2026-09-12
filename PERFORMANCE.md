@@ -1189,6 +1189,67 @@ miroirs — `server._fname_time` et `renommage_facts.fname_datetime` — et
 **« miroir déclaré » n'est pas « miroir mesuré »** : le chantier commence par
 un banc qui les compare sur un corpus, pas par une fusion.
 
+### 3.20 Deux lecteurs pour une seule règle de date — **livré le 12/09**
+
+Le § 3.19 laissait les dates en tête : `enrichir.dates` 86,5 ms +
+`enrichir.faits.regle.date` 31,8 = **118 ms**, le plus gros thème de la page.
+Les deux lisent les MÊMES deux sources — le `taken` crédible et la date écrite
+dans le NOM — et en tirent des réponses volontairement différentes :
+`epoch_precis` rend le **minimum** des deux, `date_et_source` rend le `taken`
+**en priorité**. Passer l'une à l'autre serait un défaut muet ; ce qui se
+partage, ce sont les LECTURES.
+
+Or la lecture du nom passait par **deux portes** : `server._fname_time` et
+`faits_vue.epoch_du_nom` (via `renommage_facts.fname_datetime`). Chacune avec
+sa propre expression régulière, et chacune déclarée « miroir » de l'autre dans
+sa docstring. **« Miroir déclaré » n'est pas « miroir mesuré »** : avant de
+fusionner quoi que ce soit, un banc.
+
+**`mesure_miroir_dates.py`**, deux moitiés. Les CAS LIMITES d'abord — tirés de
+la lecture du source, pas d'une intuition, et chacun avec la prédiction qu'il
+vérifie. Le corpus RÉEL ensuite, `\\NAS-Bremblens\home\Photos` en entier :
+
+| | |
+|---|---:|
+| fichiers média comparés | **44 966** |
+| désaccords | **0** |
+| dont jour différent | **0** |
+
+Mais la divergence EXISTE, et le banc la montre : une heure **impossible** dans
+le nom (« 20180101_**250000** »). `_fname_time` la passait à `mktime`, qui
+NORMALISE — la photo basculait au **jour suivant** ; `fname_datetime` la
+rejetait et retombait à midi. Aucun fichier du fonds ne porte le cas, mais
+c'est **la** raison de ne pas fusionner à l'aveugle : la question n'est pas
+« sont-elles égales ? », c'est « laquelle survit ? ».
+
+**La stricte survit.** Normaliser en silence une heure impossible en un AUTRE
+JOUR est un défaut muet — et le jour décide du bouton « Même jour ».
+Retomber à midi est une dégradation qui se voit. `_fname_time` **délègue**
+désormais, et la lecture est mémoïsée par NOM NU (`lru_cache`, 65 536 — le
+fonds entier tient dedans) : deux copies d'une photo dans deux dossiers, c'est
+la même date de nom, et la page la demandait deux fois par photo.
+
+| | avant | après |
+|---|---:|---:|
+| `enrichir.dates` | 86,5 ms | **58,2 ms** |
+| `enrichir.faits.regle.date` | 31,8 ms | **26,5 ms** |
+| **le thème « date »** | **118,3 ms** | **84,7 ms** |
+| `enrichir` | 349,3 ms | **279,5 ms** |
+
+**La contre-épreuve** : les quatre chargements rendent **1 858 649 octets**,
+inchangés depuis le 12/09 au matin — et les dates sont DANS la page. Le banc
+de corpus est rejouable et retombera en désaccord le jour où quelqu'un
+rouvrira un second lecteur ; `test_miroir_dates.py` (11 bancs) tient la
+délégation **sur les APPELS de l'arbre** — sa première écriture cherchait
+`mktime` dans le texte et tombait rouge sur la DOCSTRING, qui raconte
+justement l'ancienne règle. La faute du § 3.18, refaite le jour même, et
+attrapée par la règle 11.
+
+**Ce qui reste du thème « date »** : `date_et_source` relit encore le `taken`
+crédible que `epoch_precis` vient de lire. C'est le même geste qu'ici, un
+étage plus haut, et il n'a plus de prémisse à vérifier — la règle est
+désormais unique.
+
 ## 4. Ce qui a été vérifié et qui va bien
 
 À ne pas rouvrir sans raison neuve :
@@ -1219,7 +1280,8 @@ les trois redites de la galerie (§ 3.13), la page qui bâtissait 2 519 fiches
 pour en montrer 336 (§ 3.14), le **cache de listage** (§ 3.15 pour la
 preuve, § 3.16 pour le geste), la vue consultée 2 519 fois au lieu de 44 605
 (§ 3.17), le TROISIÈME calcul de la date précise (§ 3.18) et le lieu demandé
-2 519 fois pour deux réponses (§ 3.19). Et **§ 3.7
+2 519 fois pour deux réponses (§ 3.19) et les DEUX lecteurs de date réduits à
+un (§ 3.20). Et **§ 3.7
 mesurée côté navigateur, puis écartée**.
 
 > **Un chiffre périmé corrigé le 12/09** : la reconstruction de `_key_index`
@@ -1237,26 +1299,27 @@ mesurée côté navigateur, puis écartée**.
 2. **La vue (§ 3.11)** : réécriture exacte livrée (×1,4–1,6) — la réobserver
    dans `comptes` de `/api/maint/status` ; puis la décision sur un cache à
    génération.
-3. **Ce qui reste dans `_serve_gallery`**, phases relevées le 12/09 à 13 h
-   sur la page de 2 519 photos, après les § 3.13 à 3.19 — **672 à 905 ms** au
+3. **Ce qui reste dans `_serve_gallery`**, phases relevées le 12/09 à 13 h 30
+   sur la page de 2 519 photos, après les § 3.13 à 3.20 — **687 à 795 ms** au
    total, contre 1 493 à 1 870 hier. La machine TAGUE pendant la mesure : le
    total varie de ±20 % d'un tour à l'autre et ne juge rien, **ce sont les
    sous-phases qui font foi**. Moyennes sur 4 chargements, delta d'horloge :
-   - **Les dates, 118 ms — le plus gros thème** : `enrichir.dates` 86,5 et
-     `enrichir.faits.regle.date` 31,8. Deux règles distinctes (minimum contre
-     priorité) sur les MÊMES deux lectures brutes. Prémisse à mesurer avant
-     tout geste : `server._fname_time` et `renommage_facts.fname_datetime`
-     sont déclarés miroirs, pas prouvés tels (§ 3.19, dernier paragraphe).
-   - `enrichir` **349 ms** au total, dont `enrichir.dossier` **48 ms** (le
-     `Path(...)` de `_resolve_key`, un par photo, mémoïsable), `enrichir.cle`
-     **27 ms**, `enrichir.faits.noms` 17, `regle.noms` 8 — et ~90 ms pour la
+   - `enrichir` **280 ms**, toujours le premier poste, mais plus aucun de ses
+     morceaux ne dépasse 60 ms : `enrichir.dates` **58**, `enrichir.faits`
+     **65** (dont `regle.date` 26,5 · `regle.noms` 6,6 · `regle.lieu` 4,9 ·
+     `noms` 14), `enrichir.dossier` **41** (le `Path(...)` de `_resolve_key`,
+     un par photo, mémoïsable), `enrichir.cle` **22** — et ~90 ms pour la
      fabrication des 2 519 dictionnaires eux-mêmes, que rien ne réduira sans
      changer ce que la page transporte.
-   - `motifs` **67 ms**, la dernière post-passe qui relit `STORE.data` par
-     photo — `marques` est traitée (§ 3.18, 31 ms).
-   - `envoi` **77 ms**, `parcours` **63 ms**, `index` **56 ms** (§ 3.17),
-     `gabarit` **48 ms**, `json` **33 ms**, `prélude` **25 ms**,
-     `tagged_count` **18 ms**, `carte_cles` **11 ms**.
+   - **Le dernier reste du thème « date »** : `date_et_source` relit le
+     `taken` crédible que `epoch_precis` vient de lire. Même geste que le
+     § 3.20, un étage plus haut, et **sans prémisse à vérifier** — la règle
+     est désormais unique.
+   - `motifs` **63 ms**, la dernière post-passe qui relit `STORE.data` par
+     photo — `marques` est traitée (§ 3.18, 28 ms).
+   - `envoi` **74 ms**, `index` **53 ms** (§ 3.17), `parcours` **50 ms**,
+     `gabarit` **49 ms**, `prélude` **50 ms**, `json` **32 ms**,
+     `tagged_count` **19 ms**, `carte_cles` **12 ms**.
    Aucun poste ne dépasse plus 100 ms hors `enrichir` : la suite est un
    chantier de cent millisecondes à la fois, plus de gros caillou.
    La planche entière (§ 3.7) reste mesurée et écartée : le navigateur n'y est

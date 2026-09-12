@@ -2227,21 +2227,32 @@ def _parse_exif_dt(s):
         return None
 
 
+# La règle de la date lue dans un NOM de fichier vit dans `faits_vue`, et
+# `_fname_time` lui délègue (12/09). Import au niveau du module : le module
+# est une feuille (re, time, functools, tagging_meta, renommage_facts), il ne
+# tire ni torch ni insightface, et `_fname_time` est sur le chemin chaud de la
+# galerie — un `import` par photo y serait une taxe pour rien.
+import faits_vue
+
+
 def _fname_time(name):
     """Date encodée dans le nom de fichier (20181211_230148, IMG_20181227…).
-    Renvoie un timestamp epoch ou None."""
-    m = re.search(r'(19\d{2}|20\d{2})[-_.]?(\d{2})[-_.]?(\d{2})'
-                  r'(?:[-_ .T]?(\d{2})[-_.]?(\d{2})[-_.]?(\d{2}))?', name)
-    if not m:
-        return None
-    y, mo, d = int(m.group(1)), int(m.group(2)), int(m.group(3))
-    if not (1990 <= y <= 2100 and 1 <= mo <= 12 and 1 <= d <= 31):
-        return None
-    hh, mm, ss = int(m.group(4) or 12), int(m.group(5) or 0), int(m.group(6) or 0)
-    try:
-        return time.mktime((y, mo, d, hh, mm, ss, 0, 0, -1))
-    except (ValueError, OverflowError):
-        return None
+    Renvoie un timestamp epoch ou None.
+
+    **Délègue depuis le 12/09.** Ce corps portait sa propre expression
+    régulière et sa propre règle d'heure, et `faits_vue.epoch_du_nom` la
+    sienne : deux lecteurs que les docstrings déclaraient miroirs, et que
+    personne n'avait comparés. `mesure_miroir_dates.py` les a mesurés —
+    **0 désaccord sur les 44 966 fichiers du fonds**, mais une divergence
+    RÉELLE sur les cas limites : une heure impossible (« 250000 ») partait
+    ici dans `mktime`, qui la NORMALISE et fait basculer au jour SUIVANT,
+    pendant que l'autre la rejetait et retombait à midi. C'est la règle
+    STRICTE qui survit : un jour changé en silence est un défaut muet.
+
+    Le gain de vitesse vient avec : `faits_vue` mémoïse la lecture par NOM, et
+    la page la demandait deux fois par photo (`epoch_precis` puis
+    `date_et_source`)."""
+    return faits_vue.epoch_du_nom(name)
 
 
 # Plancher des années lues dans un CHEMIN. 1990 était la valeur d'origine : elle
