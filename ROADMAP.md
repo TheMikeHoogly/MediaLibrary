@@ -70,16 +70,16 @@ reproposé (le bloc PowerShell est dans l'historique de la session du 12/09).
 ## B. Ce qui avance pendant la campagne
 
 **B1. La performance — le plan vit dans `PERFORMANCE.md` § 5, pas ici.**
-État au 12/09 à 13 h 30 : la page `/files` d'un dossier de 2 519 photos est
-passée de **1 493–1 870 ms à ~690–800 ms**, et la même page filtrée par un tag
+État au 12/09 à 13 h 50 : la page `/files` d'un dossier de 2 519 photos est
+passée de **1 493–1 870 ms à 560–636 ms**, et la même page filtrée par un tag
 de **1 200 à 750 ms**. `index` (§ 3.17), `marques` (§ 3.18), le lieu (§ 3.19)
-et les DEUX lecteurs de date réduits à un (§ 3.20) sont faits — le thème
-« date » passe de 118 à **85 ms**. **Plus de gros caillou** : `enrichir`
-reste premier à 280 ms, mais aucun de ses morceaux ne dépasse 60 ms. Ce qui
-suit, par ordre : le dernier partage de lecture du `taken` (sans prémisse à
-vérifier désormais), `motifs` (63 ms) et le `Path(...)` de `_resolve_key`
-(41 ms). La machine tague pendant les mesures : ce sont les sous-phases qui
-font foi, pas le total. Compatible avec la campagne : chemin
+et les lecteurs de date réduits à un seul, deux fois (§ 3.20 la date du nom,
+§ 3.21 les années du dossier) sont faits — le thème « date » passe de 118 à
+**52 ms**. **Plus de gros caillou** : `enrichir` reste premier à 215 ms, mais
+aucun de ses morceaux ne dépasse 50 ms. Ce qui suit, par ordre : le dernier
+partage de lecture du `taken` (sans prémisse à vérifier désormais), `motifs`
+(53 ms) et le `Path(...)` de `_resolve_key` (34 ms). La machine tague pendant
+les mesures : ce sont les sous-phases qui font foi, pas le total. Compatible avec la campagne : chemin
 de service seulement, jamais le calcul IA.
 
 **B2. Le tri des dépôts, à éprouver.** Le premier tour est livré (A1). Ce qui
@@ -205,12 +205,13 @@ fichiers (règle 2), donc hors de portée de tout réglage.
   déclarés redondants, **0 grief de niveau A** (`verifier_controles.py`).
 - **`[hidden]` gagne contre `display:` depuis le 12/09** (`ui/base.css`, sans
   `!important`). Ne pas reposer une rustine locale par page.
-- **UNE seule règle lit la date dans un nom de fichier** (12/09) :
-  `server._fname_time` délègue à `faits_vue.epoch_du_nom`, mémoïsée. Les deux
-  lecteurs étaient déclarés miroirs et ne l'étaient pas tout à fait — une
-  heure impossible basculait au jour SUIVANT d'un côté.
-  `mesure_miroir_dates.py` : **0 désaccord sur 44 966 fichiers**, mais le cas
-  limite existe, et c'est la règle STRICTE qui a été retenue.
+- **UNE seule règle lit la date dans un nom de fichier, UNE seule lit les
+  années du dossier** (12/09) : `server._fname_time` et `server._path_years`
+  délèguent à `faits_vue.epoch_du_nom` et `renommage_facts.path_years`, toutes
+  deux mémoïsées. Les lecteurs étaient déclarés miroirs sans jamais avoir été
+  comparés. `mesure_miroir_dates.py`, deux couples, **0 désaccord sur 44 966
+  fichiers** — mais un cas limite réel côté nom (une heure impossible
+  basculait au jour SUIVANT), tranché en faveur de la règle STRICTE.
 - **`git_agent.tests_pour` lance aussi les bancs qui CITENT un module touché**
   (12/09) : l'appariement par NOM seul laissait **63 bancs** invisibles, dont
   59 citent `server.py` — **cinq étaient ROUGES**, tous accrochés à une

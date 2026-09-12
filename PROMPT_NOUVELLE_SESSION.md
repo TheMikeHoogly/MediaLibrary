@@ -37,12 +37,12 @@ C du `ROADMAP` s'ouvre tout de suite après.
 | `parcours` | 715 ms | **50 ms** (8 ms cache chaud) |
 | `index` | 112 à 136 ms | **53 ms** |
 | `marques` | 76 à 114 ms | **28 ms** |
-| le thème « date » | 118 ms | **85 ms** |
-| `enrichir` (mode navigation) | 455 ms | **280 ms** |
+| le thème « date » | 118 ms | **52 ms** |
+| `enrichir` (mode navigation) | 455 ms | **215 ms** |
 | `enrichir` (dès qu'un tag est coché) | 455 ms | **0,0 ms** |
-| la page entière | 1 493 à 1 870 ms | **687 à 795 ms** |
+| la page entière | 1 493 à 1 870 ms | **560 à 636 ms** |
 
-Huit gestes, chacun avec son banc et sa réobservation :
+Neuf gestes, chacun avec son banc et sa réobservation :
 
 1. **Le dossier de tête était énuméré DEUX fois** en récursif (§ 3.13).
 2. **Le lien de dossier était calculé par PHOTO** alors qu'il ne dépend que du
@@ -78,7 +78,12 @@ Huit gestes, chacun avec son banc et sa réobservation :
    lecture est mémoïsée par nom nu — le thème « date » passe de **118 à
    85 ms**.
 
-**69 bancs verts** à la livraison — c'est la règle 2 qui les lance tous
+9. **Les ANNÉES du dossier étaient relues jusqu'à QUATRE fois par photo**
+   (§ 3.21) — et `server._path_years` était la **cinquième écriture** de la
+   même lecture. Elle délègue à `renommage_facts.path_years`, mémoïsée par
+   DOSSIER. Thème « date » : **85 → 52 ms**, `enrichir` **280 → 215 ms**.
+
+**70 bancs verts** à la livraison — c'est la règle 2 qui les lance tous
 (voir § 4), et elle met ~6 minutes.
 
 ---
@@ -127,13 +132,13 @@ trois pages rustinaient déjà chacune de leur côté (corrigé dans `base.css`)
 0. **Vérifier l'état réel** : `.git/logs/refs/heads/main`, et l'UBR Windows
    (§ 4) avant de compter sur `device_bash`.
 1. **`PERFORMANCE.md` § 5, point 3 — il n'y a plus de gros caillou.**
-   `enrichir` reste premier (280 ms) mais aucun morceau ne dépasse 60 ms.
+   `enrichir` reste premier (215 ms) mais aucun morceau ne dépasse 50 ms.
    Par ordre : (a) `date_et_source` relit le `taken` crédible que
    `epoch_precis` vient de lire — même geste que le § 3.20 un étage plus haut,
    et **sans prémisse à vérifier** puisque la règle est maintenant unique ;
-   (b) `motifs` (63 ms), la dernière post-passe qui relit `STORE.data` par
+   (b) `motifs` (53 ms), la dernière post-passe qui relit `STORE.data` par
    photo — donc la VUE, le coût que le § 3.17 a retiré du balayage ; (c) le
-   `Path(...)` de `_resolve_key` dans `enrichir.dossier` (41 ms, mémoïsable).
+   `Path(...)` de `_resolve_key` dans `enrichir.dossier` (34 ms, mémoïsable).
 2. **B5 — le tri des dépôts, à voir à l'usage** : le mur de 7 jours est-il le
    bon, faut-il un geste groupé pour les 248 hérités ? Ne rien changer avant
    que Mike s'en soit servi une fois.

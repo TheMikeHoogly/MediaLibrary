@@ -32,6 +32,7 @@ import time
 import unittest
 
 import faits_vue
+import renommage_facts
 
 SERVER = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'server.py')
 
@@ -49,36 +50,56 @@ def _noeud(nom):
 
 def _charge(nom):
     """La fonction de prod, executee dans un espace minimal."""
-    espace = {'faits_vue': faits_vue, 'time': time}
+    espace = {'faits_vue': faits_vue, 'renommage_facts': renommage_facts,
+              'time': time}
     exec(compile(ast.Module(body=[_noeud(nom)], type_ignores=[]),
                  SERVER, 'exec'), espace)
     return espace[nom]
 
 
+def _appels_du_corps(nom):
+    """Les fonctions APPELEES par `nom`, docstring exclue.
+
+    Sur les appels de l'arbre, pas sur le texte : la premiere ecriture de ce
+    banc cherchait `mktime` dans `ast.unparse(...)` et tombait ROUGE sur la
+    DOCSTRING, qui raconte justement l'ancienne regle. C'est la faute du
+    § 3.18, refaite le jour meme — un banc qui lit du texte mesure du texte."""
+    corps = _noeud(nom).body
+    if (corps and isinstance(corps[0], ast.Expr)
+            and isinstance(corps[0].value, ast.Constant)):
+        corps = corps[1:]
+    appels = set()
+    for n in corps:
+        for c in ast.walk(n):
+            if isinstance(c, ast.Call):
+                appels.add(ast.unparse(c.func))
+    return appels
+
+
 FNAME_TIME = _charge('_fname_time')
+PATH_YEARS = _charge('_path_years')
 
 
 class IlNYAPlusQuUnLecteur(unittest.TestCase):
 
     def test_fname_time_delegue_et_ne_relit_plus_rien(self):
-        """Sur les APPELS de l'arbre, pas sur le texte.
-
-        La premiere ecriture de ce banc cherchait `mktime` dans
-        `ast.unparse(...)` — et tombait ROUGE sur la DOCSTRING, qui raconte
-        justement l'ancienne regle. C'est la faute du § 3.18, refaite le jour
-        meme : un banc qui lit du texte mesure du texte."""
-        corps = _noeud('_fname_time').body
-        # La docstring dehors : elle a le droit de nommer ce qu'elle raconte.
-        if (corps and isinstance(corps[0], ast.Expr)
-                and isinstance(corps[0].value, ast.Constant)):
-            corps = corps[1:]
-        appels = set()
-        for n in corps:
-            for c in ast.walk(n):
-                if isinstance(c, ast.Call):
-                    appels.add(ast.unparse(c.func))
-        self.assertEqual(appels, {'faits_vue.epoch_du_nom'},
+        self.assertEqual(_appels_du_corps('_fname_time'),
+                         {'faits_vue.epoch_du_nom'},
                          'un SECOND lecteur est revenu dans _fname_time')
+
+    def test_path_years_delegue_aussi(self):
+        """La CINQUIEME ecriture de la meme lecture, retiree le 12/09."""
+        self.assertEqual(_appels_du_corps('_path_years'),
+                         {'renommage_facts.path_years'},
+                         'un SECOND lecteur est revenu dans _path_years')
+
+    def test_les_deux_portes_des_ANNEES_rendent_la_meme_chose(self):
+        for cle in (r'\\NAS\Photos\2005-2010\2008\x.jpg',
+                    r'A\2016\119-1908_IMG.JPG', 'A/2016/y.jpg',
+                    'x.jpg', '', r'\\NAS\Photos\sans annee\z.jpg',
+                    r'A\1850\vieux.jpg', r'A\2200\futur.jpg'):
+            self.assertEqual(PATH_YEARS(cle), renommage_facts.path_years(cle),
+                             cle)
 
     def test_les_deux_portes_rendent_la_meme_chose(self):
         for nom in ('20181211_230148.jpg', 'IMG_20181227.jpg', '20180101.jpg',
@@ -158,6 +179,55 @@ class LaMemoireNeChangePasLaReponse(unittest.TestCase):
         self.assertIsNone(faits_vue.epoch_du_nom('rien_du_tout.jpg'))
         self.assertIsNone(faits_vue.epoch_du_nom('rien_du_tout.jpg'))
         self.assertEqual(faits_vue._epoch_du_nom_nu.cache_info().misses, 1)
+
+
+class LesAnneesDuDossierSontMemoisees(unittest.TestCase):
+    """Meme geste que pour la date du nom, et pour la meme raison : la lecture
+    ne depend que du DOSSIER, et la page la demandait jusqu'a QUATRE fois par
+    photo (`date_credible` sur le `taken`, puis sur la date du nom, des deux
+    cotes de la regle)."""
+
+    def test_deux_photos_du_MEME_dossier_ne_coutent_qu_une_lecture(self):
+        renommage_facts._annees_du_dossier.cache_clear()
+        renommage_facts.path_years(r'\\NAS\Photos\2016\a.jpg')
+        renommage_facts.path_years(r'\\NAS\Photos\2016\b.jpg')
+        renommage_facts.path_years(r'\\NAS\Photos\2016\c.jpg')
+        self.assertEqual(
+            renommage_facts._annees_du_dossier.cache_info().misses, 1)
+
+    def test_l_appelant_ne_peut_pas_ABIMER_le_cache(self):
+        """`path_years` rend un `set` ; s'il rendait l'objet memoise, un
+        appelant qui y ajoute une annee la donnerait a toutes les photos du
+        dossier. Le cache garde un `frozenset`, la porte rend une copie."""
+        a = renommage_facts.path_years(r'A\2016\y.jpg')
+        a.add(1999)
+        self.assertEqual(renommage_facts.path_years(r'A\2016\y.jpg'), {2016})
+
+    def test_path_year_singulier_lit_la_MEME_source(self):
+        """Deux portes sur le meme cache : `path_year` ne doit pas refaire sa
+        propre lecture, sinon la sixieme ecriture renait ici."""
+        renommage_facts._annees_du_dossier.cache_clear()
+        renommage_facts.path_years(r'A\2005-2010\2008\x.jpg')
+        self.assertEqual(renommage_facts.path_year(r'A\2005-2010\2008\y.jpg'),
+                         '2005')
+        self.assertEqual(
+            renommage_facts._annees_du_dossier.cache_info().misses, 1)
+
+    def test_le_cache_est_BORNE(self):
+        info = renommage_facts._annees_du_dossier.cache_info()
+        self.assertIsNotNone(info.maxsize)
+        self.assertGreaterEqual(info.maxsize, 4096)
+
+    def test_les_DEUX_barres_coupent(self):
+        ref = {2016}
+        for cle in (r'A\2016\y.jpg', 'A/2016/y.jpg', r'A/2016\y.jpg'):
+            self.assertEqual(renommage_facts.path_years(cle), ref, cle)
+
+    def test_le_NOM_de_fichier_reste_exclu(self):
+        """« 119-1908_IMG.JPG » dans un dossier 2002 : le 1908 ne doit pas
+        entrer, sinon la photo recule de 94 ans (mesure du 14/08)."""
+        self.assertEqual(renommage_facts.path_years(r'A\2002\119-1908_IMG.JPG'),
+                         {2002})
 
 
 if __name__ == '__main__':

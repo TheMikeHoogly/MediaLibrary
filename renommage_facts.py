@@ -34,6 +34,7 @@ Politique de DATE (micro-décision, à valider) :
 
 import re
 import unicodedata
+from functools import lru_cache
 from pathlib import PurePosixPath, PureWindowsPath
 
 # Date + heure eventuelle dans un nom (« 20260608_083049868 », « IMG_20181227 »).
@@ -85,10 +86,7 @@ def path_year(key):
     UNIQUEMENT, en EXCLUANT le nom de fichier. Un numéro de séquence comme
     « IMG_1998 » n'est pas une année : le scanner ferait passer 1998 avant le
     vrai dossier (2007) via `min()`, d'où une date fausse au renommage."""
-    k = str(key).replace('\\', '/')
-    dossier = k.rsplit('/', 1)[0] if '/' in k else ''
-    yrs = [int(y) for y in _PATH_YEAR.findall(dossier)
-           if ANNEE_CHEMIN_MIN <= int(y) <= ANNEE_CHEMIN_MAX]
+    yrs = _annees_du_dossier(_dossier_de(key))
     return f"{min(yrs):04d}" if yrs else None
 
 
@@ -100,16 +98,39 @@ def path_year(key):
 ECART_ANNEE_TOLERE = 1
 
 
+def _dossier_de(key):
+    """Le chemin PRIVE de son dernier segment, les deux barres coupant."""
+    k = str(key).replace('\\', '/')
+    return k.rsplit('/', 1)[0] if '/' in k else ''
+
+
+@lru_cache(maxsize=32768)
+def _annees_du_dossier(dossier):
+    """Les annees d'UN dossier — memoise (12/09).
+
+    Fonction PURE d'une chaine, et **le dossier est la seule chose qui
+    compte** : les 2 519 photos d'une page en partagent deux ou trois. La
+    page demandait ces annees jusqu'a QUATRE fois par photo (`date_credible`
+    sur le `taken` puis sur la date du nom, des deux cotes de la regle).
+    Borne a 32 768 : le fonds compte quelques milliers de dossiers, il tient
+    entier, et un fonds qui exploserait degraderait au lieu de gonfler."""
+    return frozenset(int(y) for y in _PATH_YEAR.findall(dossier)
+                     if ANNEE_CHEMIN_MIN <= int(y) <= ANNEE_CHEMIN_MAX)
+
+
 def path_years(key):
     """Ensemble des annees PLAUSIBLES lues dans les DOSSIERS du chemin (jamais
     le nom de fichier — voir `path_year`). `path_year` en rend la plus ancienne ;
     ici on les rend TOUTES, parce qu'un dossier peut porter une plage
     (« Photos 2005-2010\\2008\\… ») et que comparer a la seule plus ancienne
-    ferait reculer la photo de trois ans."""
-    k = str(key).replace('\\', '/')
-    dossier = k.rsplit('/', 1)[0] if '/' in k else ''
-    return set(int(y) for y in _PATH_YEAR.findall(dossier)
-               if ANNEE_CHEMIN_MIN <= int(y) <= ANNEE_CHEMIN_MAX)
+    ferait reculer la photo de trois ans.
+
+    **La** regle du projet pour cette lecture depuis le 12/09 :
+    `server._path_years` lui delegue, apres mesure (`mesure_miroir_dates.py`,
+    couple 2 : 0 desaccord sur 44 966 fichiers). Rend un `set` NEUF a chaque
+    appel — l'ensemble memoise est un `frozenset`, que l'appelant ne peut pas
+    modifier par accident."""
+    return set(_annees_du_dossier(_dossier_de(key)))
 
 
 def date_de_scan_presumee(annee, annees_chemin):

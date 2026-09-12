@@ -1250,6 +1250,53 @@ crédible que `epoch_precis` vient de lire. C'est le même geste qu'ici, un
 étage plus haut, et il n'a plus de prémisse à vérifier — la règle est
 désormais unique.
 
+### 3.21 Les années du dossier, relues quatre fois par photo
+— **livré le 12/09**
+
+Le § 3.20 avait laissé un reste nommé. En le mesurant, un cinquième
+lecteur : `server._path_years` **recopiait** `renommage_facts.path_years` —
+même expression régulière, mêmes bornes, mêmes barres normalisées dans
+l'autre sens. Deux écritures, aucune comparaison.
+
+`mesure_miroir_dates.py` porte donc **deux couples** depuis le même balayage,
+sur les 44 966 fichiers du fonds :
+
+| couple | lecteurs | désaccords |
+|---|---|---:|
+| 1 | `_fname_time` / `faits_vue.epoch_du_nom` | **0** |
+| 2 | `_path_years` / `renommage_facts.path_years` | **0** |
+
+Le couple 2 n'a pas de cas limite à trancher, contrairement au couple 1 : les
+deux écritures sont équivalentes ligne à ligne. Ce qui restait, c'était le
+risque **qu'une borne bouge d'un seul côté** — `ANNEE_CHEMIN_MIN` existe en
+double, et l'histoire du projet dit ce que ça coûte (la descente de 1990 à
+1900, le 14/08, a dû être faite à deux endroits).
+
+**Et la lecture ne dépend que du DOSSIER.** `date_credible` la demande pour
+CHAQUE date précise candidate — le `taken`, puis la date du nom — et elle est
+appelée des deux côtés de la règle : jusqu'à **quatre fois par photo**, pour
+2 519 photos qui ne portent que deux ou trois dossiers. Mémoïsée par dossier
+(`lru_cache`, 32 768), et `path_year` (singulier) lit le même cache : un banc
+le vérifie, sinon la sixième écriture renaît là.
+
+| | § 3.19 | § 3.20 | après |
+|---|---:|---:|---:|
+| `enrichir.dates` | 86,5 ms | 58,2 ms | **35,6 ms** |
+| `enrichir.faits.regle.date` | 31,8 ms | 26,5 ms | **16,0 ms** |
+| **le thème « date »** | **118,3** | **84,7** | **51,6 ms** |
+| `enrichir` | 349,3 ms | 279,5 ms | **214,6 ms** |
+| la page entière | 672–905 ms | 687–795 ms | **560–636 ms** |
+
+**La contre-épreuve** : page toujours **1 858 649 octets**, identique depuis
+le matin ; le cache rend un `set` NEUF à chaque appel (l'ensemble mémoïsé est
+un `frozenset`) — **un banc ajoute une année au résultat et vérifie que le
+dossier ne l'a pas gardée**, parce qu'un cache qui prête son objet donne la
+faute d'un appelant à toutes les photos du dossier ; et le nom de fichier
+reste exclu de la lecture (« 119-1908_IMG.JPG » dans un dossier 2002 rend
+{2002} — sans quoi la photo recule de 94 ans, mesure du 14/08).
+
+`test_miroir_dates.py` passe à **19**.
+
 ## 4. Ce qui a été vérifié et qui va bien
 
 À ne pas rouvrir sans raison neuve :
@@ -1281,7 +1328,8 @@ pour en montrer 336 (§ 3.14), le **cache de listage** (§ 3.15 pour la
 preuve, § 3.16 pour le geste), la vue consultée 2 519 fois au lieu de 44 605
 (§ 3.17), le TROISIÈME calcul de la date précise (§ 3.18) et le lieu demandé
 2 519 fois pour deux réponses (§ 3.19) et les DEUX lecteurs de date réduits à
-un (§ 3.20). Et **§ 3.7
+un (§ 3.20), et les années du dossier relues quatre fois par photo
+(§ 3.21). Et **§ 3.7
 mesurée côté navigateur, puis écartée**.
 
 > **Un chiffre périmé corrigé le 12/09** : la reconstruction de `_key_index`
@@ -1299,29 +1347,29 @@ mesurée côté navigateur, puis écartée**.
 2. **La vue (§ 3.11)** : réécriture exacte livrée (×1,4–1,6) — la réobserver
    dans `comptes` de `/api/maint/status` ; puis la décision sur un cache à
    génération.
-3. **Ce qui reste dans `_serve_gallery`**, phases relevées le 12/09 à 13 h 30
-   sur la page de 2 519 photos, après les § 3.13 à 3.20 — **687 à 795 ms** au
+3. **Ce qui reste dans `_serve_gallery`**, phases relevées le 12/09 à 13 h 50
+   sur la page de 2 519 photos, après les § 3.13 à 3.21 — **560 à 636 ms** au
    total, contre 1 493 à 1 870 hier. La machine TAGUE pendant la mesure : le
    total varie de ±20 % d'un tour à l'autre et ne juge rien, **ce sont les
    sous-phases qui font foi**. Moyennes sur 4 chargements, delta d'horloge :
-   - `enrichir` **280 ms**, toujours le premier poste, mais plus aucun de ses
-     morceaux ne dépasse 60 ms : `enrichir.dates` **58**, `enrichir.faits`
-     **65** (dont `regle.date` 26,5 · `regle.noms` 6,6 · `regle.lieu` 4,9 ·
-     `noms` 14), `enrichir.dossier` **41** (le `Path(...)` de `_resolve_key`,
-     un par photo, mémoïsable), `enrichir.cle` **22** — et ~90 ms pour la
+   - `enrichir` **215 ms**, toujours le premier poste, mais plus aucun de ses
+     morceaux ne dépasse 50 ms : `enrichir.faits` **49** (dont `regle.date`
+     16 · `noms` 12 · `regle.noms` 5,7 · `regle.lieu` 4,1), `enrichir.dates`
+     **36**, `enrichir.dossier` **34** (le `Path(...)` de `_resolve_key`, un
+     par photo, mémoïsable), `enrichir.cle` **19** — et ~75 ms pour la
      fabrication des 2 519 dictionnaires eux-mêmes, que rien ne réduira sans
      changer ce que la page transporte.
-   - **Le dernier reste du thème « date »** : `date_et_source` relit le
-     `taken` crédible que `epoch_precis` vient de lire. Même geste que le
-     § 3.20, un étage plus haut, et **sans prémisse à vérifier** — la règle
-     est désormais unique.
-   - `motifs` **63 ms**, la dernière post-passe qui relit `STORE.data` par
-     photo — `marques` est traitée (§ 3.18, 28 ms).
-   - `envoi` **74 ms**, `index` **53 ms** (§ 3.17), `parcours` **50 ms**,
-     `gabarit` **49 ms**, `prélude` **50 ms**, `json` **32 ms**,
-     `tagged_count` **19 ms**, `carte_cles` **12 ms**.
-   Aucun poste ne dépasse plus 100 ms hors `enrichir` : la suite est un
-   chantier de cent millisecondes à la fois, plus de gros caillou.
+   - **Le dernier reste du thème « date »** (51,6 ms en tout) :
+     `date_et_source` relit le `taken` crédible que `epoch_precis` vient de
+     lire. Même geste que les § 3.20 et 3.21 un étage plus haut, et **sans
+     prémisse à vérifier** — la règle est désormais unique.
+   - `motifs` **53 ms**, la dernière post-passe qui relit `STORE.data` par
+     photo — `marques` est traitée (§ 3.18, 23 ms).
+   - `envoi` **73 ms**, `gabarit` **51 ms**, `parcours` **45 ms**,
+     `index` **44 ms** (§ 3.17), `json` **24 ms**, `prélude` **22 ms**,
+     `tagged_count` **13 ms**, `carte_cles` **11 ms**.
+   Aucun poste ne dépasse plus 75 ms hors `enrichir` : la suite est un
+   chantier de cinquante millisecondes à la fois, plus de gros caillou.
    La planche entière (§ 3.7) reste mesurée et écartée : le navigateur n'y est
    pour rien — mais le seuil qu'elle s'était fixé (le serveur sous la
    demi-seconde) se rapproche.

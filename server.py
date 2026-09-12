@@ -2227,12 +2227,14 @@ def _parse_exif_dt(s):
         return None
 
 
-# La règle de la date lue dans un NOM de fichier vit dans `faits_vue`, et
-# `_fname_time` lui délègue (12/09). Import au niveau du module : le module
-# est une feuille (re, time, functools, tagging_meta, renommage_facts), il ne
-# tire ni torch ni insightface, et `_fname_time` est sur le chemin chaud de la
-# galerie — un `import` par photo y serait une taxe pour rien.
+# Les règles de LECTURE des dates (celle du nom de fichier, celles du dossier)
+# vivent dans `faits_vue` et `renommage_facts` ; `_fname_time` et
+# `_path_years` leur délèguent (12/09). Import au niveau du module : ce sont
+# des feuilles (re, time, functools, tagging_meta), elles ne tirent ni torch ni
+# insightface, et les deux fonctions sont sur le chemin chaud de la galerie —
+# un `import` par photo y serait une taxe pour rien.
 import faits_vue
+import renommage_facts
 
 
 def _fname_time(name):
@@ -2287,11 +2289,17 @@ def _path_years(key):
     fichiers (Photos Papa, Photos Flo, 2010, _A TRIER) : 38 photos tirées en
     arrière par leur nom, et AUCUNE ne perd son repli en excluant le nom — une
     date vraiment portée par le nom passe de toute façon avant, par
-    `_fname_time` (`_best_time`, branche 1)."""
-    k = str(key).replace('/', '\\')
-    dossiers = k.rsplit('\\', 1)[0] if '\\' in k else ''
-    return {int(y) for y in re.findall(r'(?<!\d)(19\d{2}|20\d{2})(?!\d)', dossiers)
-            if ANNEE_CHEMIN_MIN <= int(y) <= ANNEE_CHEMIN_MAX}
+    `_fname_time` (`_best_time`, branche 1).
+
+    **Délègue depuis le 12/09**, comme `_fname_time` (§ 3.20). Ce corps
+    portait la CINQUIÈME écriture de la même lecture — même expression
+    régulière, mêmes bornes, mêmes barres normalisées dans l'autre sens.
+    `mesure_miroir_dates.py` (couple 2) a comparé les deux sur les 44 966
+    fichiers du fonds : **0 désaccord**. Ce qui restait, c'était le risque
+    qu'une borne bouge d'un seul côté. La lecture est mémoïsée par DOSSIER
+    là-bas : la page la demandait jusqu'à quatre fois par photo, et 2 519
+    photos ne portent que deux ou trois dossiers."""
+    return renommage_facts.path_years(key)
 
 
 def _path_year_num(key):

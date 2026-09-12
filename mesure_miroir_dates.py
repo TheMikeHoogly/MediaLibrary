@@ -76,24 +76,33 @@ def dejeton(v):
     return v
 
 
-def charger_fname_time():
-    """`server._fname_time`, extraite du SOURCE par l'arbre syntaxique.
+def charger(noms):
+    """Des fonctions de `server.py`, extraites du SOURCE par l'arbre
+    syntaxique. Un banc qui recopierait une fonction mesurerait sa copie.
 
-    Un banc qui recopierait la fonction mesurerait sa copie."""
+    `faits_vue` et `renommage_facts` sont dans l'espace parce que les
+    fonctions extraites leur DELEGUENT (12/09). Le jour ou l'une d'elles
+    retrouvera un corps a elle, elle cessera d'en avoir besoin -- et ce banc
+    redeviendra une VRAIE comparaison de deux regles. C'est exactement ce
+    qu'on veut qu'il soit."""
     import re                                               # noqa: F401
-    # `faits_vue` est dans l'espace parce que `_fname_time` LUI DELEGUE depuis
-    # le 12/09. Le jour ou quelqu'un lui rendra un corps a lui, la fonction
-    # extraite cessera d'en avoir besoin -- et ce banc redeviendra une VRAIE
-    # comparaison de deux regles. C'est exactement ce qu'on veut qu'il soit.
-    espace = {'re': re, 'time': time, 'faits_vue': faits_vue}
+    import renommage_facts                                  # noqa: F401
+    espace = {'re': re, 'time': time, 'faits_vue': faits_vue,
+              'renommage_facts': renommage_facts,
+              'ANNEE_CHEMIN_MIN': 1900, 'ANNEE_CHEMIN_MAX': 2100}
     with io.open(SERVER, encoding='utf-8') as f:
         arbre = ast.parse(f.read())
+    trouves = {}
     for n in arbre.body:
-        if isinstance(n, ast.FunctionDef) and n.name == '_fname_time':
+        if isinstance(n, ast.FunctionDef) and n.name in noms:
             exec(compile(ast.Module(body=[n], type_ignores=[]),
                          str(SERVER), 'exec'), espace)
-            return espace['_fname_time']
-    raise AssertionError('_fname_time introuvable dans server.py')
+            trouves[n.name] = espace[n.name]
+    manquants = set(noms) - set(trouves)
+    if manquants:
+        raise AssertionError('introuvables dans server.py : %s'
+                             % sorted(manquants))
+    return trouves
 
 
 def jour_de(epoch):
@@ -181,25 +190,47 @@ def verifier_contre_exemples(fname_time):
 # ─────────────────────────── le corpus reel ───────────────────────────
 
 def parcourir(racine, limite):
-    """Les noms de fichiers media sous `racine`, sans suivre les corbeilles."""
+    """Les CHEMINS des fichiers media sous `racine`, sans suivre les
+    corbeilles. Le chemin entier, pas le nom : le second couple de lecteurs
+    compare les annees du DOSSIER."""
     n = 0
     for dossier, sous, fichiers in os.walk(racine):
         sous[:] = [d for d in sous if not d.startswith('.')]
         for f in fichiers:
             if Path(f).suffix.lower() in MEDIA_EXT:
-                yield f
+                yield os.path.join(dossier, f)
                 n += 1
                 if limite and n >= limite:
                     return
 
 
-def mesurer_corpus(racine, limite, fname_time):
+def mesurer_corpus(racine, limite, fname_time, path_years_a=None):
+    """Les DEUX couples de lecteurs, sur le meme balayage.
+
+    Couple 1, la date du NOM : `server._fname_time` contre
+    `faits_vue.epoch_du_nom`.
+    Couple 2, les ANNEES du DOSSIER : `server._path_years` contre
+    `renommage_facts.path_years`. Meme question, meme forme de reponse :
+    deux ecritures declarees miroirs que personne n'avait comparees."""
+    import renommage_facts
     accords = desaccords = sans_date = 0
     jours_differents = 0
+    an_accords = an_desaccords = 0
+    an_exemples = []
     exemples = []
     vus = 0
-    for nom in parcourir(racine, limite):
+    for chemin in parcourir(racine, limite):
         vus += 1
+        if path_years_a is not None:
+            ya, yb = path_years_a(chemin), renommage_facts.path_years(chemin)
+            if ya == yb:
+                an_accords += 1
+            else:
+                an_desaccords += 1
+                if len(an_exemples) < 20:
+                    an_exemples.append({'cle': chemin, 'a': sorted(ya),
+                                        'b': sorted(yb)})
+        nom = os.path.basename(chemin)
         a, b = comparer(nom, fname_time)
         if a is None and b is None:
             sans_date += 1
@@ -217,7 +248,8 @@ def mesurer_corpus(racine, limite, fname_time):
                              'jour_a': ja, 'jour_b': jb})
     return {'vus': vus, 'accords': accords, 'desaccords': desaccords,
             'sans_date': sans_date, 'jours_differents': jours_differents,
-            'exemples': exemples}
+            'exemples': exemples, 'an_accords': an_accords,
+            'an_desaccords': an_desaccords, 'an_exemples': an_exemples}
 
 
 def main(argv=None):
@@ -231,7 +263,8 @@ def main(argv=None):
                     help='nombre max de fichiers (0 = tous)')
     a = ap.parse_args(argv)
 
-    fname_time = charger_fname_time()
+    fns = charger(('_fname_time', '_path_years'))
+    fname_time, path_years_a = fns['_fname_time'], fns['_path_years']
 
     print('=' * 74)
     print('LES CONTRE-EXEMPLES  (ce que la LECTURE du source predit)')
@@ -269,8 +302,11 @@ def main(argv=None):
     print('LE CORPUS REEL  —  %s' % racine)
     print('=' * 74)
     t0 = time.time()
-    r = mesurer_corpus(racine, a.limite, fname_time)
+    r = mesurer_corpus(racine, a.limite, fname_time, path_years_a)
     print('fichiers media vus      : %d  (%.1f s)' % (r['vus'], time.time() - t0))
+    print('')
+    print('COUPLE 1 — la date du NOM')
+    print('  `server._fname_time` contre `faits_vue.epoch_du_nom`')
     print('  accords               : %d' % r['accords'])
     print('    dont aucune date    : %d' % r['sans_date'])
     print('  DESACCORDS            : %d' % r['desaccords'])
@@ -279,16 +315,24 @@ def main(argv=None):
         print('    %-44s A=%s (%s)  B=%s (%s)' %
               (e['nom'][:44], e['a'], e['jour_a'], e['b'], e['jour_b']))
     if not r['desaccords']:
-        print('\nAucun desaccord sur ce corpus. Les cas limites EXISTENT '
-              '(voir plus haut),')
-        print('mais aucun nom du fonds ne les porte : partager les lectures '
-              'est alors SUR,')
-        print('a condition de choisir explicitement laquelle des deux regles '
-              'd heure survit.')
+        print('\n  -> aucun desaccord sur la date du NOM.')
     else:
-        print('\nDes desaccords REELS : toute fusion des deux lectures change '
-              'la reponse')
-        print('pour ces fichiers-la. Trancher AVANT de toucher au code.')
+        print('\n  -> des desaccords REELS sur la date du NOM : toute fusion '
+              'change la reponse')
+        print('     pour ces fichiers-la. Trancher AVANT de toucher au code.')
+
+    print('')
+    print('COUPLE 2 — les ANNEES du DOSSIER')
+    print('  `server._path_years` contre `renommage_facts.path_years`')
+    print('  accords               : %d' % r['an_accords'])
+    print('  DESACCORDS            : %d' % r['an_desaccords'])
+    for e in r['an_exemples']:
+        print('    %-60s A=%s  B=%s' % (e['cle'][-60:], e['a'], e['b']))
+    if not r['an_desaccords']:
+        print('  -> aucun desaccord sur les annees du dossier.')
+    else:
+        print('  -> des desaccords REELS : ne rien fusionner avant de '
+              'trancher.')
     return 0 if not faux else 1
 
 
