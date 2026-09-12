@@ -674,11 +674,14 @@ donc presque rien** tant que la page coûte 1,5 s à fabriquer. Le point est
 CLOS jusqu'à ce que le serveur descende sous la demi-seconde ; alors il se
 rouvrira, et cette mesure sera à refaire.
 
-### 3.8 `_pkey` construit un `Path` par appel
+### 3.8 `_pkey` construit un `Path` par appel — **CLOS le 12/09, et le plan
+était faux** (voir § 3.17)
 
-264 ms par balayage complet, ×12 pour rien. `_index_entries_under` peut se
-servir de `_key_index()` — déjà bâtie, déjà en cache, déjà invalidée
-correctement — au lieu de renormaliser 44 121 clés.
+264 ms par balayage complet, ×12 pour rien. Le plan écrit ici le 11/09 disait :
+« `_index_entries_under` peut se servir de `_key_index()` ». **Non** — cette
+carte porte une AUTRE normalisation (`fichiers.norm(_resolve_key(k))`), et
+surtout le coût n'était plus là : `_pkey` est mémoïsé depuis le 11/09 au soir,
+et ce qui restait était la VUE par utilisateur. Mesuré avant de corriger.
 
 **Attention** : ne pas changer `_pkey` lui-même. `Path(p).as_posix()` et
 `str(p).replace('\\','/')` ne sont **pas** équivalents sur les cas tordus
@@ -1006,6 +1009,38 @@ surveiller la seule tête aurait manqué.
 écriture du serveur change la date du dossier comme n'importe quelle autre.
 Un crochet de plus serait une seconde vérité à tenir à jour.
 
+### 3.17 La phase `index` : la vue consultée 44 605 fois pour 2 519 réponses
+— **livré le 12/09**
+
+Le § 3.8 désignait un coupable depuis le 11/09. **Avant de le croire, deux
+sous-phases** (`index.balayage`, `index.tags`), posées et lues sur la vraie
+page :
+
+| | avant | après |
+|---|---:|---:|
+| `index.balayage` (44 605 clés) | 101 à 118 ms | **30 à 49 ms** |
+| `index.tags` (2 519 entrées) | 11 à 18 ms | 10 à 18 ms |
+| `index` | 112 à 136 ms | **41 à 67 ms** |
+| la page entière | 783 à 1 113 ms | **697 à 834 ms** |
+
+Le balayage portait 88 % de la phase — et **pas pour la raison écrite**.
+`_pkey` est mémoïsé depuis le 11/09 ; ce qui coûtait, c'est
+`STORE.data.items()` : `STORE.data` est la **vue par utilisateur**, ~3 µs par
+clé (§ 3.11), soit 44 605 × 3 = 134 ms — exactement ce que l'horloge lisait.
+
+La correction : **balayer l'index BRUT, et ne demander à la vue que les clés
+retenues**. Elle reste l'autorité — `VueFiltree.get` applique le MÊME
+prédicat que `items()`, une entrée qu'elle cache n'entre pas — mais on la
+consulte 2 519 fois au lieu de 44 605.
+
+`test_index_sous_dossier.py` (8 bancs) tient les deux moitiés : l'ancienne
+écriture sert d'ORACLE avec la vraie `VueFiltree` de `visibilite.py` (dossier
+du NAS, dossier dont le nom préfixe un autre, racine Uploads, dossier vide,
+entrée cachée dedans et dehors), **et le nombre d'appels au prédicat est
+COMPTÉ** : 1 020 avant, 40 après, sur un index d'essai de 1 020 clés. Un banc
+de performance qui ne mesurerait que le temps laisserait passer une fuite ;
+celui-ci mesure l'identité des réponses ET le nombre d'appels.
+
 ## 4. Ce qui a été vérifié et qui va bien
 
 À ne pas rouvrir sans raison neuve :
@@ -1058,8 +1093,8 @@ preuve, § 3.16 pour le geste). Et **§ 3.7 mesurée côté navigateur, puis
    - `enrichir` **275 à 481 ms**, du CPU pur : ~46 ms de `_resolve_key` (un
      `Path` par photo, mémoïsable), ~90 de dates, le reste étant `_faits_pour`
      et la fabrication des 2 519 dictionnaires ;
-   - `index` **93 à 146 ms** — le § 3.8, écrit le 11/09 et toujours pas fait :
-     `_index_entries_under` peut se servir de `_key_index` ;
+   - `index` **41 à 67 ms** depuis le § 3.17 — le balayage n'y pèse plus que
+     30 à 49 ms, et le reste est le compte des mots-clés ;
    - `marques` **76 à 114 ms** et `motifs` **57 à 79 ms**, deux post-passes qui
      relisent `STORE.data` par photo ;
    - `envoi` **84 ms**, `gabarit` **47 ms**, `parcours` **8 ms** (§ 3.16).

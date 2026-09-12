@@ -20,7 +20,9 @@ née de quatre fautes de la même matinée. Elle a mordu dans l'heure : voir
 § 2 ci-dessous.
 
 La campagne de retag commande toujours tout : GPU pris, **prompt
-intouchable**, fin attendue vers le **14/09**.
+intouchable**. **Relevé le 12/09 à 11h40 : 3 656 photos restantes**, ~14 s
+chacune → elle finit dans la **nuit du 12 au 13/09**. La section C du
+`ROADMAP` s'ouvre donc tout de suite après.
 
 ---
 
@@ -98,9 +100,10 @@ trois pages rustinaient déjà chacune de leur côté (corrigé dans `base.css`)
 0. **Vérifier l'état réel** : `.git/logs/refs/heads/main`, et l'UBR Windows
    (§ 4) avant de compter sur `device_bash`.
 1. **`PERFORMANCE.md` § 5, point 3** — ce qui reste dans `_serve_gallery`, par
-   ordre de poids : `enrichir` (275–481 ms de CPU), `index` (93–146 ms, c'est
-   le § 3.8 écrit le 11/09 et jamais fait), `marques` et `motifs` (deux
-   post-passes qui relisent `STORE.data` par photo).
+   ordre de poids : `enrichir` (275–481 ms de CPU), puis `marques` et `motifs`,
+   **deux post-passes qui relisent `STORE.data` par photo** — donc la VUE, le
+   même coût que celui que le § 3.17 vient de retirer du balayage. C'est le
+   prochain caillou, et il est déjà identifié.
 2. **B5 — le tri des dépôts, à voir à l'usage** : le mur de 7 jours est-il le
    bon, faut-il un geste groupé pour les 248 hérités ? Ne rien changer avant
    que Mike s'en soit servi une fois.

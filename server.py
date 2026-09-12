@@ -3868,19 +3868,38 @@ def _jour_resoudre(param):
 
 def _index_entries_under(folder):
     """Entrées de l'index situées sous un dossier (récursif), sans toucher
-    au système de fichiers."""
+    au système de fichiers.
+
+    **Le balayage se fait sur l'index BRUT ; la VUE ne décide que sur les
+    clés retenues.** Elle reste l'autorité — `VueFiltree.get` applique le même
+    prédicat que `items()`, donc une entrée qu'elle cache n'entre pas — mais
+    on ne la consulte plus 44 605 fois pour en garder 2 519.
+
+    MESURÉ le 12/09, sous-phases `index.balayage` / `index.tags` posées pour
+    l'occasion : le balayage pesait **101 à 118 ms** des 112 à 136 ms de la
+    phase, le compte des mots-clés 11 à 18. Et le coût n'était pas `_pkey`
+    (mémoïsé depuis le 11/09) : c'est la vue, ~3 µs par clé (§ 3.11)
+    — 44 605 × 3 µs = 134 ms, ce que l'horloge lisait. Le plan écrit le 11/09
+    (§ 3.8) disait « se servir de `_key_index` » : cette carte-là porte une
+    AUTRE normalisation (`fichiers.norm(_resolve_key(k))`), elle n'aurait pas
+    répondu à la question posée."""
     fp = _pkey(folder)
     up = _pkey(UPLOAD_DIR)
-    out = []
-    if fp == up or fp == _pkey(Path(UPLOAD_DIR).resolve()):
-        for k, e in list(STORE.data.items()):
-            if '/' not in _pkey(k):  # clés simples = racine Uploads
-                out.append((k, e))
-        return out
+    vue = STORE.data
+    racine = fp == up or fp == _pkey(Path(UPLOAD_DIR).resolve())
     pref = fp + '/'
-    for k, e in list(STORE.data.items()):
-        if _pkey(k).startswith(pref):
-            out.append((k, e))
+    out = []
+    for k in list(INDEX_BRUT.keys()):
+        kp = _pkey(k)
+        if racine:
+            if '/' in kp:        # clés simples = racine Uploads
+                continue
+        elif not kp.startswith(pref):
+            continue
+        e = vue.get(k)
+        if e is None:
+            continue
+        out.append((k, e))
     return out
 
 
@@ -13910,7 +13929,14 @@ class Handler(BaseHTTPRequestHandler):
 
         ph.top('prelude')       # arguments + resolve()/is_dir() du dossier
         # tags du dossier ET de ses sous-dossiers, depuis l'index (instantané)
+        # DEUX temps dans cette phase, et le plan écrit le 11/09 n'en désignait
+        # qu'un : le BALAYAGE des 44 605 clés de l'index, puis le COMPTE des
+        # mots-clés sur les seules entrées retenues. Chronométrés séparément
+        # depuis le 12/09 — corriger celui qu'on n'a pas mesuré, c'est ce qui
+        # avait désigné `index` à la place de `parcours` (règle n° 11).
+        _t_idx = time.perf_counter()
         entries = _index_entries_under(folder)
+        _t_bal = time.perf_counter()
         tag_counts = {}
         for _k, _e in entries:
             if _e.get('failed'):
@@ -13919,6 +13945,9 @@ class Handler(BaseHTTPRequestHandler):
                 tag_counts[t] = tag_counts.get(t, 0) + 1
         top_tags = sorted(tag_counts.items(), key=lambda kv: (-kv[1], kv[0]))[:60]
         ph.top('index')
+        ph.ajoute('index.balayage', _t_bal - _t_idx)
+        ph.ajoute('index.tags', time.perf_counter() - _t_bal)
+        ph.note(index_cles=len(STORE.data), index_retenues=len(entries))
 
         try:
             # `rec` DESCEND dans l'arbre pour bâtir `files` ; quand la grille
