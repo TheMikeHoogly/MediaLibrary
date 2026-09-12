@@ -1444,17 +1444,24 @@ mesurée côté navigateur, puis écartée**.
 2. **La vue (§ 3.11)** : réécriture exacte livrée (×1,4–1,6) — la réobserver
    dans `comptes` de `/api/maint/status` ; puis la décision sur un cache à
    génération.
-3. **Ce qui reste dans `_serve_gallery`**, phases relevées le 12/09 à 13 h 50
-   sur la page de 2 519 photos, après les § 3.13 à 3.21 — **560 à 636 ms** au
-   total, contre 1 493 à 1 870 hier. La machine TAGUE pendant la mesure : le
+3. **Ce qui reste dans `_serve_gallery`**, phases relevées le 12/09 à 14 h 45
+   sur la page de 2 519 photos, après les § 3.13 à 3.23 — **544 à 763 ms** au
+   total (6 chargements, serveur fraîchement redémarré), contre 1 493 à 1 870
+   hier. Le PREMIER chargement, lui, coûte encore **2,5 s** : partage et caches
+   froids — aucun mémo ne fabrique, ils évitent de refaire (§ 3.16). La machine TAGUE pendant la mesure : le
    total varie de ±20 % d'un tour à l'autre et ne juge rien, **ce sont les
    sous-phases qui font foi**. Moyennes sur 4 chargements, delta d'horloge :
-   - `enrichir` **~240 ms**, toujours le premier poste : `enrichir.faits`
-     **54 à 64**, `enrichir.dates` **39 à 50**, `enrichir.cle` **21 à 26**,
-     `enrichir.dossier` **14** depuis le § 3.23 — et ~90 ms pour la
+   - `enrichir` **220 ms**, toujours le premier poste : `enrichir.faits`
+     **55** (dont `regle.date` 18 · `noms` 13 · `regle.noms` 6 ·
+     `regle.lieu` 5), `enrichir.dates` **42**, `enrichir.cle` **21**,
+     `enrichir.dossier` **12** depuis le § 3.23 — et ~90 ms pour la
      fabrication des 2 519 dictionnaires eux-mêmes, que rien ne réduira sans
      changer ce que la page transporte. **C'est désormais le plancher** : le
      reste d'`enrichir` n'est plus du travail refait, c'est du travail.
+   - Le tout dernier partage possible : `date_et_source` relit le `taken`
+     crédible que `epoch_precis` vient de lire (~15 ms au plus). Petit, et
+     il porte le piège du § 3.20 — minimum contre priorité : ce qui se
+     partage, ce sont les lectures, jamais la réponse.
    - **Le dernier reste du thème « date »** (51,6 ms en tout) :
      `date_et_source` relit le `taken` crédible que `epoch_precis` vient de
      lire. Même geste que les § 3.20 et 3.21 un étage plus haut, et **sans
@@ -1462,11 +1469,17 @@ mesurée côté navigateur, puis écartée**.
    - `motifs` **13 à 17 ms** depuis le § 3.22 — et elle ne relit PAS `STORE.data`,
      contrairement à ce que ce paragraphe a dit deux fois : c'est une règle
      pure sur le chemin. `marques`, elle, lit bien la vue (§ 3.18, 23 ms).
-   - `envoi` **73 ms**, `gabarit` **51 ms**, `parcours` **45 ms**,
-     `index` **44 ms** (§ 3.17), `json` **24 ms**, `prélude` **22 ms**,
-     `tagged_count` **13 ms**, `carte_cles` **11 ms**.
-   Aucun poste ne dépasse plus 75 ms hors `enrichir` : la suite est un
-   chantier de cinquante millisecondes à la fois, plus de gros caillou.
+   - `envoi` **93 ms**, `parcours` **51 ms**, `index` **51 ms** (§ 3.17),
+     `gabarit` **44 ms**, `prélude` **36 ms**, `json` **31 ms**,
+     `tagged_count` **27 ms**, `marques` **27 ms**, `carte_cles` **19 ms**,
+     `motifs` **15 ms**.
+   Aucun poste ne dépasse plus 95 ms hors `enrichir`, et le plus gros hors
+   calcul est `envoi` — 1,86 Mo sur le réseau local. **La page a changé de
+   nature** : ce n'était plus un problème de redites depuis le § 3.23, c'est
+   maintenant un problème de TAILLE. Le prochain gain sérieux n'est pas une
+   mémoïsation de plus, c'est envoyer moins (pagination, ou une planche qui
+   ne transporte pas les 2 519 fiches d'un coup) — et ça, c'est une décision
+   de produit, pas d'optimisation.
    La planche entière (§ 3.7) reste mesurée et écartée : le navigateur n'y est
    pour rien — mais le seuil qu'elle s'était fixé (le serveur sous la
    demi-seconde) se rapproche.

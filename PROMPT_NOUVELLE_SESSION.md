@@ -139,17 +139,23 @@ trois pages rustinaient déjà chacune de leur côté (corrigé dans `base.css`)
 
 0. **Vérifier l'état réel** : `.git/logs/refs/heads/main`, et l'UBR Windows
    (§ 4) avant de compter sur `device_bash`.
-1. **`PERFORMANCE.md` § 5, point 3 — il n'y a plus de gros caillou.**
-   `enrichir` reste premier (215 ms) mais aucun morceau ne dépasse 50 ms.
+1. **Le chantier des REDITES est fini** (§ 3.13 à 3.23). La page est à
+   **544–763 ms** contre 1 493–1 870 hier, et ce qui reste n'est plus du
+   travail refait. `enrichir` reste premier (220 ms) mais aucun morceau ne
+   dépasse 55 ms. **Le plus gros poste hors calcul est maintenant `envoi`**
+   (93 ms, 1,86 Mo sur le LAN) : le prochain gain sérieux est d'envoyer
+   MOINS — pagination, ou une planche qui ne transporte pas 2 519 fiches
+   d'un coup. **C'est une décision de produit : la poser à Mike, ne pas la
+   prendre.**
    Par ordre : (a) `date_et_source` relit le `taken` crédible que
    `epoch_precis` vient de lire — même geste que le § 3.20 un étage plus haut,
    et **sans prémisse à vérifier** puisque la règle est maintenant unique ;
-   (b) `marques` (~25 ms), la dernière passe qui relit vraiment `STORE.data`
-   par photo — `motifs` est faite (§ 3.22) et ne la relisait PAS,
-   contrairement à ce que ce point a dit deux fois ; le `Path(...)` de
-   `_resolve_key` est fait aussi (§ 3.23). **Le reste d'`enrichir` n'est plus
-   du travail refait** : ~90 ms pour fabriquer 2 519 dictionnaires, et rien ne
-   les réduira sans changer ce que la page transporte.
+   Les petits restes, si on y tient : `marques` (~27 ms, la dernière passe
+   qui relit vraiment `STORE.data` par photo) et le dernier partage de lecture
+   du `taken` (~15 ms, avec le piège du § 3.20 : minimum contre priorité, on
+   partage les lectures, jamais la réponse). Et le PREMIER chargement après un
+   redémarrage coûte encore **2,5 s** — partage et caches froids ; aucun mémo
+   ne fabrique, ils évitent de refaire.
 2. **B5 — le tri des dépôts, à voir à l'usage** : le mur de 7 jours est-il le
    bon, faut-il un geste groupé pour les 248 hérités ? Ne rien changer avant
    que Mike s'en soit servi une fois.

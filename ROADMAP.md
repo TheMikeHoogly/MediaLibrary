@@ -70,6 +70,13 @@ reproposé (le bloc PowerShell est dans l'historique de la session du 12/09).
 ## B. Ce qui avance pendant la campagne
 
 **B1. La performance — le plan vit dans `PERFORMANCE.md` § 5, pas ici.**
+**Le chantier des redites est FINI** (§ 3.13 à 3.23) : ce qui reste dans la
+page n'est plus du travail refait. Le prochain gain sérieux n'est pas une
+mémoïsation de plus, c'est **envoyer moins** — `envoi` (93 ms) est devenu le
+plus gros poste hors calcul, pour 1,86 Mo sur le réseau local. Pagination, ou
+une planche qui ne transporte pas les 2 519 fiches d'un coup : **c'est une
+décision de produit, à prendre avec Mike**, pas une optimisation à faire dans
+son dos.
 État au 12/09 à 13 h 50 : la page `/files` d'un dossier de 2 519 photos est
 passée de **1 493–1 870 ms à 560–636 ms**, et la même page filtrée par un tag
 de **1 200 à 750 ms**. `index` (§ 3.17), `marques` (§ 3.18), le lieu (§ 3.19)
