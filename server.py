@@ -7921,7 +7921,10 @@ APP_NAV_CSS = """<style id="appnav-css">
    Pastille = surface papier, comme l'onglet actif : le vocabulaire << vous
    etes ici >> vaut aussi pour << vous etes vous >>. Aucune couleur inventee
    par personne -- un accent a un SENS dans ce systeme, il ne decore pas. */
-.appnav-moi{position:relative;}
+/* Le nom et la LAMPE forment UN groupe : la barre se replie sur plusieurs
+   lignes quand la fenetre est etroite, et la lampe demandee « a droite du nom »
+   s'etait retrouvee seule sur la ligne du dessous (vu le 12/09 a 1023 px). */
+.appnav-moi{position:relative;display:flex;align-items:center;gap:var(--e-1);}
 .moi-bouton{display:inline-flex;align-items:center;gap:var(--e-2);
   min-height:var(--touch);padding:0 var(--e-2) 0 var(--e-1);border:var(--trait);
   border-radius:var(--r-pill);background:var(--salle-3);color:var(--texte);
@@ -8014,9 +8017,9 @@ APP_NAV_CSS = """<style id="appnav-css">
    plancher `prefers-reduced-motion` de base.css coupe l'animation ; ce qui
    reste alors est un point orange et un compte, c'est-a-dire tout le
    message. Cible : 44 px, comme tout ce qui se clique ici. */
-.appnav .lampe{display:inline-flex;align-items:center;gap:6px;
-  min-height:var(--touch);padding:0 10px;border-radius:var(--r-pill);
-  text-decoration:none;color:var(--veilleuse);
+.appnav .lampe{display:inline-flex;align-items:center;gap:5px;
+  min-height:var(--touch);padding:0 var(--e-2);border-radius:var(--r-pill);
+  text-decoration:none;color:var(--veilleuse);flex-shrink:0;
   border:1px solid var(--veilleuse-d);background:transparent;}
 .appnav .lampe__o{width:10px;height:10px;border-radius:50%;
   background:var(--veilleuse);box-shadow:0 0 0 0 var(--veilleuse);
@@ -8053,13 +8056,13 @@ APP_NAV_HTML = """<nav class="appnav">
       <span class="moi-nom"></span>
     </button>
     <div class="moi-menu" id="moi-menu" role="menu" hidden></div>
+    <a class="lampe" data-p="/tri" href="/tri" hidden
+       title="Des d&eacute;p&ocirc;ts attendent d'&ecirc;tre tri&eacute;s">
+      <span class="lampe__o" aria-hidden="true"></span>
+      <span class="lampe__n"></span>
+      <span class="hors-ecran">d&eacute;p&ocirc;t(s) &agrave; trier</span>
+    </a>
   </div>
-  <a class="lampe" data-p="/tri" href="/tri" hidden
-     title="Des d&eacute;p&ocirc;ts attendent d'&ecirc;tre tri&eacute;s">
-    <span class="lampe__o" aria-hidden="true"></span>
-    <span class="lampe__n"></span>
-    <span class="hors-ecran">d&eacute;p&ocirc;t(s) &agrave; trier</span>
-  </a>
 </nav>
 <div class="netbusy" role="status" aria-live="polite" aria-hidden="true">
   <span class="netbusy__s" aria-hidden="true"></span><span>Traitement en cours&hellip;</span>

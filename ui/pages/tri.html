@@ -60,7 +60,7 @@
   <h1>Depots a trier</h1>
   <span class="compte" id="compte"></span>
   <span class="sp"></span>
-  <button class="btn btn--discret" id="annuler" type="button" hidden>
+  <button class="btn" id="annuler" type="button" hidden>
     Annuler le dernier geste <kbd>Z</kbd>
   </button>
 </div>
@@ -167,7 +167,9 @@
     var x = bouton('btn btn--destructif', 'Effacer', 'X');
     x.addEventListener('click', function () { decider(d, 'effacer'); });
     var o = document.createElement('a');
-    o.className = 'btn btn--discret';
+    /* `.btn--discret` a son texte en `--texte-papier` : fait pour une
+       feuille, illisible sur la salle (vu a l'ecran le 12/09). */
+    o.className = 'btn';
     o.href = it.url || '#';
     o.target = '_blank';
     o.rel = 'noopener';
