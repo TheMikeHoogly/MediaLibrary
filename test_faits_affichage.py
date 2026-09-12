@@ -23,6 +23,7 @@ dans un espace de noms où les stores sont des doublures.
 import ast
 import io
 import os
+import time
 import unittest
 
 import ui_gabarits
@@ -65,6 +66,10 @@ def _espace(people, pets, index, lieux=None, gps=None, racines=()):
         'lieux_connus': lambda: (lieux or {}),
         'gps_places_connus': lambda: (gps or {}),
         'media_roots': lambda: racines,
+        # `_faits_pour` chronometre ses deux moities depuis le 12/09 : le
+        # module qu'il utilise doit etre dans l'espace, sinon ce banc tombe
+        # sur un `NameError` qui ne dit rien de la regle qu'il teste.
+        'time': time,
     }
     return _charger(('_autorite_des_noms', '_noms_fusionnes', '_faits_ctx',
                      '_faits_pour', '_noms_attendus', '_cles_portant'), esp)

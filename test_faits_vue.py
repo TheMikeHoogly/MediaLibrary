@@ -102,6 +102,111 @@ class TestLieuPour(unittest.TestCase):
                          (None, None))
 
 
+class TestMemoDuLieu(unittest.TestCase):
+    """Le lieu par le CHEMIN ne depend que du DOSSIER : `lieux_du_chemin`
+    ecarte le dernier segment. Une page de 2 519 photos tirees de deux
+    dossiers demandait donc 2 519 fois la meme reponse — 31,3 ms mesurees le
+    12/09. Le memo ne doit RIEN changer a la reponse, et ne doit JAMAIS
+    confondre deux dossiers."""
+
+    def _compteur(self):
+        """`lieu_par_segments` remplacee par un compteur qui delegue."""
+        vrai = faits_vue.lieu_par_segments
+        appels = []
+
+        def compte(cle, lieux, racines, **kw):
+            appels.append(cle)
+            return vrai(cle, lieux, racines, **kw)
+        return vrai, compte, appels
+
+    def test_la_meme_reponse_avec_ou_sans_memo(self):
+        """L'ORACLE : l'ecriture d'avant, sur chaque cas du fichier."""
+        cas = [cle('Barcelone', 'a.jpg'), cle('Barcelone', 'b.jpg'),
+               cle('Inconnu', 'c.jpg'), cle('Espagne', 'Barcelone', 'd.jpg'),
+               cle('Cousins&Cousines', 'e.jpg'), cle('Orbe', 'f.jpg'),
+               cle('Vallorbe', 'g.jpg'), 'x.jpg']
+        memo = {}
+        for k in cas:
+            self.assertEqual(faits_vue.lieu_pour(k, LIEUX, RACINES, None, memo),
+                             faits_vue.lieu_pour(k, LIEUX, RACINES, None),
+                             k)
+
+    def test_deux_photos_du_MEME_dossier_ne_coutent_qu_un_calcul(self):
+        vrai, compte, appels = self._compteur()
+        memo = {}
+        faits_vue.lieu_par_segments = compte
+        try:
+            for nom in ('a.jpg', 'b.jpg', 'c.jpg'):
+                faits_vue.lieu_pour(cle('Barcelone', nom), LIEUX, RACINES,
+                                    None, memo)
+        finally:
+            faits_vue.lieu_par_segments = vrai
+        self.assertEqual(len(appels), 1, appels)
+
+    def test_sans_memo_chaque_photo_paye_ENCORE(self):
+        """La premisse du gain : sans le memo, c'est bien N calculs. Un banc
+        qui ne mesure que l'apres ne prouve pas qu'il y avait un avant."""
+        vrai, compte, appels = self._compteur()
+        faits_vue.lieu_par_segments = compte
+        try:
+            for nom in ('a.jpg', 'b.jpg', 'c.jpg'):
+                faits_vue.lieu_pour(cle('Barcelone', nom), LIEUX, RACINES, None)
+        finally:
+            faits_vue.lieu_par_segments = vrai
+        self.assertEqual(len(appels), 3)
+
+    def test_deux_dossiers_DIFFERENTS_ne_se_confondent_jamais(self):
+        memo = {}
+        self.assertEqual(
+            faits_vue.lieu_pour(cle('Barcelone', 'a.jpg'), LIEUX, RACINES,
+                                None, memo), ('Barcelone', 'chemin'))
+        self.assertEqual(
+            faits_vue.lieu_pour(cle('Orbe', 'a.jpg'), LIEUX, RACINES,
+                                None, memo), ('Orbe', 'chemin'))
+        self.assertEqual(
+            faits_vue.lieu_pour(cle('Inconnu', 'a.jpg'), LIEUX, RACINES,
+                                None, memo), (None, None))
+
+    def test_un_dossier_dont_le_nom_PREFIXE_un_autre(self):
+        """`Orbe` prefixe `Orbe2`. Couper sur le SEPARATEUR, pas sur la
+        longueur : c'est la faute que `_lien_dossier_memo` a failli faire."""
+        memo = {}
+        a = faits_vue.lieu_pour(cle('Orbe', 'x.jpg'), LIEUX, RACINES, None, memo)
+        b = faits_vue.lieu_pour(cle('Orbe2', 'x.jpg'), LIEUX, RACINES, None, memo)
+        self.assertEqual(a, ('Orbe', 'chemin'))
+        self.assertEqual(b, faits_vue.lieu_pour(cle('Orbe2', 'x.jpg'),
+                                                LIEUX, RACINES, None))
+        self.assertEqual(len(memo), 2)
+
+    def test_le_GPS_reste_HORS_du_memo(self):
+        """Le GPS est par PHOTO. S'il entrait dans un memo par dossier, la
+        photo geolocalisee d'un dossier donnerait son lieu a ses voisines."""
+        memo = {}
+        self.assertEqual(
+            faits_vue.lieu_pour(cle('Barcelone', 'a.jpg'), LIEUX, RACINES,
+                                'Madrid', memo), ('Madrid', 'gps'))
+        self.assertEqual(memo, {})
+        self.assertEqual(
+            faits_vue.lieu_pour(cle('Barcelone', 'b.jpg'), LIEUX, RACINES,
+                                None, memo), ('Barcelone', 'chemin'))
+
+    def test_les_DEUX_barres_coupent(self):
+        """Une cle d'Uploads porte des `/`, une cle du NAS des `\\`."""
+        self.assertEqual(faits_vue.dossier_de_la_cle('Album/sous/x.jpg'),
+                         'Album/sous')
+        self.assertEqual(faits_vue.dossier_de_la_cle('A\\B\\x.jpg'), 'A\\B')
+        self.assertEqual(faits_vue.dossier_de_la_cle('A\\B/x.jpg'), 'A\\B')
+        self.assertEqual(faits_vue.dossier_de_la_cle('x.jpg'), '')
+
+    def test_une_cle_NUE_a_la_racine_des_uploads_a_sa_propre_entree(self):
+        """Dossier vide : elle ne doit pas tomber dans l'entree d'un autre."""
+        memo = {}
+        self.assertEqual(faits_vue.lieu_pour('x.jpg', LIEUX, RACINES, None,
+                                             memo),
+                         faits_vue.lieu_pour('x.jpg', LIEUX, RACINES, None))
+        self.assertIn('', memo)
+
+
 class TestDate(unittest.TestCase):
 
     def test_taken_prime(self):

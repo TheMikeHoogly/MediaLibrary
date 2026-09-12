@@ -70,14 +70,17 @@ reproposé (le bloc PowerShell est dans l'historique de la session du 12/09).
 ## B. Ce qui avance pendant la campagne
 
 **B1. La performance — le plan vit dans `PERFORMANCE.md` § 5, pas ici.**
-État au 12/09 à 10 h : la page `/files` d'un dossier de 2 519 photos est
-passée de **1 493–1 870 ms à 633–820 ms**, et la même page filtrée par un tag
-de **1 200 à 750 ms**. `index` (§ 3.17) et `marques` (§ 3.18) sont faites.
-**Il ne reste qu'un gros poste** : `enrichir`, 325 ms de CPU pur, dont 89 de
-`_faits_pour`, 76 de dates et 40 du `Path(...)` de `_resolve_key` ; puis
-`motifs` (70 ms), la dernière post-passe qui relit `STORE.data` par photo.
-Tout le reste est sous 75 ms. Compatible avec la campagne : chemin de service
-seulement, jamais le calcul IA.
+État au 12/09 à 13 h : la page `/files` d'un dossier de 2 519 photos est
+passée de **1 493–1 870 ms à ~700–900 ms**, et la même page filtrée par un tag
+de **1 200 à 750 ms**. `index` (§ 3.17), `marques` (§ 3.18) et le lieu
+(§ 3.19) sont faits. **Le plus gros thème restant, ce sont les DATES**
+(118 ms : `enrichir.dates` 86 + `regle.date` 32), deux règles distinctes sur
+les mêmes lectures brutes — et le chantier commence par un banc qui prouve que
+`server._fname_time` et `renommage_facts.fname_datetime` sont bien les
+miroirs qu'on déclare. Puis `motifs` (67 ms) et le `Path(...)` de
+`_resolve_key` (48 ms). La machine tague pendant les mesures : ce sont les
+sous-phases qui font foi, pas le total. Compatible avec la campagne : chemin
+de service seulement, jamais le calcul IA.
 
 **B2. Le tri des dépôts, à éprouver.** Le premier tour est livré (A1). Ce qui
 reste dépend de l'usage : le **mur de 7 jours** est-il le bon ? faut-il un

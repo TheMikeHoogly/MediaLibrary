@@ -296,13 +296,44 @@ def lieu_par_segments(cle, lieux, racines=(), **options):
     return l[0] if l else None
 
 
-def lieu_pour(cle, lieux=None, racines=(), gps_place=None):
+def dossier_de_la_cle(cle):
+    """La clé PRIVÉE de son dernier segment — son DOSSIER, quelle que soit la
+    barre qui le sépare.
+
+    Les deux séparateurs comptent : une clé du NAS porte des `\\`, une clé
+    d'Uploads des `/`, et `Path().parent` ne coupe que celui de la plateforme.
+    C'est le même raisonnement que `server._lien_dossier_memo` (§ 3.13) : deux
+    dossiers différents ne doivent JAMAIS tomber sur la même entrée."""
+    s = str(cle)
+    i = max(s.rfind('\\'), s.rfind('/'))
+    return s[:i] if i >= 0 else ''
+
+
+def lieu_pour(cle, lieux=None, racines=(), gps_place=None, memo=None):
     """(libellé, source) du lieu. Le GPS précalculé prime sur le chemin : 6 595
     photos ont un `gps_place` que leur dossier ignore (décision du 15/08).
-    Renvoie (None, None) si rien."""
+    Renvoie (None, None) si rien.
+
+    `memo` : un dict que l'APPELANT fournit et jette avec sa requête. Le lieu
+    par le chemin ne dépend que du DOSSIER — `lieux_du_chemin` écarte le
+    dernier segment — donc une page de 2 519 photos tirées de deux dossiers
+    demandait 2 519 fois la même réponse. MESURÉ le 12/09 : 31,3 ms des 74,4
+    de `enrichir.faits.regle`, le plus gros des trois gestes. Même geste que
+    `server._lien_dossier_memo` pour la même raison.
+
+    Le GPS reste HORS du memo : il est par PHOTO, pas par dossier. Le mémo ne
+    porte donc que la branche « chemin »."""
     if gps_place:
         return gps_place, 'gps'
-    lieu = lieu_par_segments(cle, lieux or {}, racines)
+    if memo is None:
+        lieu = lieu_par_segments(cle, lieux or {}, racines)
+    else:
+        d = dossier_de_la_cle(cle)
+        if d in memo:
+            lieu = memo[d]
+        else:
+            lieu = lieu_par_segments(cle, lieux or {}, racines)
+            memo[d] = lieu
     return (lieu, 'chemin') if lieu else (None, None)
 
 
@@ -380,16 +411,41 @@ def date_et_source(cle, entree):
 # ─────────────────────────────── la vue ───────────────────────────────
 
 def assertions(cle, entree, especes=None, gps_place=None, lieux=None,
-               racines=(), noms_attendus=None):
+               racines=(), noms_attendus=None, chrono=None, memo_lieu=None):
     """Dict d'assertions attendu par `tagging_meta.faits_structures`, assemblé
     depuis la SEULE mémoire.
 
     `noms_attendus` : les tags qui font AUTORITÉ maintenant (voir l'en-tête du
-    module). `None` = repli sur les mots-clés de l'entrée d'index."""
-    kw = noms_attendus if noms_attendus is not None else names_from_entry(entree)
-    persons, animals = tagging_meta.noms_depuis_kw(kw)
-    lieu, lieu_src = lieu_pour(cle, lieux, racines, gps_place)
-    date_txt, date_src = date_et_source(cle, entree)
+    module). `None` = repli sur les mots-clés de l'entrée d'index.
+
+    `memo_lieu` : un dict par REQUÊTE, passé tel quel à `lieu_pour` — voir
+    là-bas. None = rien n'est mémoïsé, comportement d'avant.
+
+    `chrono` : un dict `{'noms':0.0,'lieu':0.0,'date':0.0}` que la fonction
+    ALIMENTE, ou None. C'est l'instrument, pas un comportement : sans lui, pas
+    un appel d'horloge. Posé le 12/09 parce que la phase `enrichir.faits`
+    pesait 84 ms dont 65 ICI, sans dire lequel des trois gestes coûte —
+    et un chantier posé sur un coupable supposé est un chantier perdu
+    (§ 3.17, § 5)."""
+    if chrono is None:
+        kw = (noms_attendus if noms_attendus is not None
+              else names_from_entry(entree))
+        persons, animals = tagging_meta.noms_depuis_kw(kw)
+        lieu, lieu_src = lieu_pour(cle, lieux, racines, gps_place, memo_lieu)
+        date_txt, date_src = date_et_source(cle, entree)
+    else:
+        _t0 = time.perf_counter()
+        kw = (noms_attendus if noms_attendus is not None
+              else names_from_entry(entree))
+        persons, animals = tagging_meta.noms_depuis_kw(kw)
+        _t1 = time.perf_counter()
+        lieu, lieu_src = lieu_pour(cle, lieux, racines, gps_place, memo_lieu)
+        _t2 = time.perf_counter()
+        date_txt, date_src = date_et_source(cle, entree)
+        _t3 = time.perf_counter()
+        chrono['noms'] = chrono.get('noms', 0.0) + (_t1 - _t0)
+        chrono['lieu'] = chrono.get('lieu', 0.0) + (_t2 - _t1)
+        chrono['date'] = chrono.get('date', 0.0) + (_t3 - _t2)
     return {'key': cle, 'persons': persons, 'animals': animals,
             'species': sorted(especes or []),
             'lieu': lieu, 'lieu_src': lieu_src,

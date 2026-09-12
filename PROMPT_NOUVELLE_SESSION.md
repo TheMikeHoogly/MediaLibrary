@@ -62,8 +62,15 @@ Six gestes, chacun avec son banc et sa réobservation :
    `pop` pour chaque entrée. Sentinelle `recherche.A_CALCULER` obligatoire —
    `None` est une réponse légitime d'`epoch_precis`.
 
-84 bancs verts sur la machine (20 + 24 + 14 + 3 + 25 + 8 et `test_git_agent`
-à 50).
+7. **Le LIEU était demandé 2 519 fois pour deux réponses** (§ 3.19) : il ne
+   dépend que du DOSSIER, comme le lien de dossier du § 3.13. Mémo par
+   requête dans `lieu_pour`, GPS laissé dehors (il est par photo) —
+   `enrichir.faits.regle.lieu` **31,3 → 5,8 ms**. Et **c'est l'instrument qui
+   a désigné la cible** : j'allais parier sur la date, les § 3.13 et 3.18 y
+   ayant déjà trouvé deux redites. C'eût été le mauvais chantier.
+
+**69 bancs verts** à la livraison — c'est la règle 2 qui les lance tous
+(voir § 4), et elle met ~6 minutes.
 
 ---
 
@@ -110,14 +117,16 @@ trois pages rustinaient déjà chacune de leur côté (corrigé dans `base.css`)
 
 0. **Vérifier l'état réel** : `.git/logs/refs/heads/main`, et l'UBR Windows
    (§ 4) avant de compter sur `device_bash`.
-1. **`PERFORMANCE.md` § 5, point 3** — il ne reste qu'UN gros poste dans
-   `_serve_gallery` : `enrichir`, **325 ms de CPU pur**, dont `enrichir.faits`
-   89 ms (`_faits_pour`), `enrichir.dates` 76 ms, `enrichir.dossier` 40 ms (le
-   `Path(...)` de `_resolve_key`, un par photo, mémoïsable). Puis `motifs`
-   (70 ms), **la dernière post-passe qui relit `STORE.data` par photo** — donc
-   la VUE, le même coût que celui que le § 3.17 a retiré du balayage. Tout le
-   reste est sous 75 ms : la suite est un chantier de cent millisecondes à la
-   fois.
+1. **`PERFORMANCE.md` § 5, point 3 — les DATES, 118 ms.** C'est le plus gros
+   thème restant (`enrichir.dates` 86 + `enrichir.faits.regle.date` 32).
+   `epoch_precis` rend le **minimum** du `taken` et de la date du NOM ;
+   `date_et_source` rend le `taken` **en priorité** : règles DIFFÉRENTES sur
+   les MÊMES deux lectures. Passer `_ep` à la seconde serait un défaut muet —
+   ce qui se partage, ce sont les lectures. **Commencer par le banc** qui
+   compare `server._fname_time` et `renommage_facts.fname_datetime` sur un
+   corpus : « miroir déclaré » n'est pas « miroir mesuré ». Ensuite `motifs`
+   (67 ms, la dernière post-passe qui relit `STORE.data` par photo) et le
+   `Path(...)` de `_resolve_key` (48 ms, mémoïsable).
 2. **B5 — le tri des dépôts, à voir à l'usage** : le mur de 7 jours est-il le
    bon, faut-il un geste groupé pour les 248 hérités ? Ne rien changer avant
    que Mike s'en soit servi une fois.

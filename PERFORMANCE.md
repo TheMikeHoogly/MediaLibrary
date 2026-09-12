@@ -1125,6 +1125,70 @@ désigne plus rien rouvre le filet en silence.
 
 Neuf bancs neufs dans `test_git_agent.py` (**54**).
 
+### 3.19 `enrichir.faits` : le LIEU demandé 2 519 fois pour deux réponses
+— **livré le 12/09**
+
+Le § 5 désignait `enrichir` comme le dernier gros poste, et `enrichir.faits`
+comme son plus lourd morceau (84 ms sur 325). **Rien ne disait LEQUEL des
+gestes coûtait** — et j'allais parier sur la date, parce que les § 3.13 et
+3.18 y avaient déjà trouvé deux redites. C'eût été le mauvais chantier.
+
+Deux instruments avant toute correction. D'abord deux sous-phases dans
+`_faits_pour` (l'autorité des noms / la règle partagée), puis, la règle
+désignée, un `chrono` optionnel dans `faits_vue.assertions` qui sépare ses
+trois gestes. Sans `chrono`, pas un appel d'horloge : l'instrument est une
+option, pas un comportement.
+
+| | avant | après |
+|---|---:|---:|
+| `enrichir.faits.regle.lieu` | **31,3 ms** | **5,8 ms** |
+| `enrichir.faits.regle.date` | 28,6 ms | 31,8 ms |
+| `enrichir.faits.regle.noms` | 6,9 ms | 8,0 ms |
+| `enrichir.faits` | 95 ms | **78 ms** |
+
+**Le lieu par le chemin ne dépend que du DOSSIER** — `lieux_du_chemin` écarte
+le dernier segment, explicitement (`parts[:-1]`). Une page de 2 519 photos
+tirées de deux dossiers demandait donc 2 519 fois la même réponse. C'est
+exactement la faute que le § 3.13 avait corrigée pour le LIEN de dossier, à
+un autre étage — et le geste est le même : un mémo par requête, jeté avec
+elle, jamais un cache global (`lieux_connus()` change quand Mike ajoute un
+lieu).
+
+Le mémo est dans `lieu_pour`, pas autour : la règle garde un seul
+propriétaire. **Le GPS reste dehors** — il est par PHOTO (6 595 photos ont un
+`gps_place` que leur dossier ignore), et un mémo par dossier lui donnerait le
+lieu d'une voisine. Un banc le tient pour lui-même.
+
+**La contre-épreuve** (règle 11) :
+
+- *la page a-t-elle changé ?* Les quatre chargements rendent **1 858 649
+  octets**, exactement comme avant la correction — et les `faits` sont DANS
+  la page : l'oracle est la réponse elle-même, pas un proxy.
+- *le gain est-il réel ou du bruit ?* La machine tague pendant la mesure, donc
+  le total de la page ne juge rien (758 → 790 ms, dans les deux sens selon le
+  tour). Ce sont les sous-phases qui font foi, et une seule a bougé.
+- *y avait-il bien un AVANT ?* Un banc compte les appels à
+  `lieu_par_segments` : **3 sans mémo, 1 avec**, sur trois photos du même
+  dossier. Un banc qui ne mesure que l'après ne prouve pas qu'il y avait un
+  avant.
+
+`test_faits_vue.py` passe à **60** (8 neufs : l'oracle sur huit clés, le
+compte d'appels dans les deux sens, deux dossiers qui ne se confondent pas,
+un dossier dont le nom préfixe un autre, le GPS hors du mémo, les deux barres
+qui coupent, la clé nue d'Uploads).
+
+**Ce qui reste, et sa prémisse à vérifier** : les dates pèsent maintenant
+`enrichir.dates` 86,5 + `regle.date` 31,8 = **118 ms**, le plus gros thème de
+la page. Les deux calculent les mêmes deux lectures brutes — le `taken`
+crédible et la date lue dans le NOM — puis en tirent des réponses
+DIFFÉRENTES : `epoch_precis` rend le **minimum** des deux, `date_et_source`
+rend le `taken` **en priorité**. Elles ne sont donc pas substituables, et
+passer `_ep` à la seconde serait un défaut muet. Ce qui est partageable, ce
+sont les deux lectures. Mais elles passent par deux portes déclarées
+miroirs — `server._fname_time` et `renommage_facts.fname_datetime` — et
+**« miroir déclaré » n'est pas « miroir mesuré »** : le chantier commence par
+un banc qui les compare sur un corpus, pas par une fusion.
+
 ## 4. Ce qui a été vérifié et qui va bien
 
 À ne pas rouvrir sans raison neuve :
@@ -1154,7 +1218,8 @@ espacé (§ 3.12), HTTP/1.1 et son instrument (§ 3.5), `Last-Modified` (§ 3.6)
 les trois redites de la galerie (§ 3.13), la page qui bâtissait 2 519 fiches
 pour en montrer 336 (§ 3.14), le **cache de listage** (§ 3.15 pour la
 preuve, § 3.16 pour le geste), la vue consultée 2 519 fois au lieu de 44 605
-(§ 3.17) et le TROISIÈME calcul de la date précise (§ 3.18). Et **§ 3.7
+(§ 3.17), le TROISIÈME calcul de la date précise (§ 3.18) et le lieu demandé
+2 519 fois pour deux réponses (§ 3.19). Et **§ 3.7
 mesurée côté navigateur, puis écartée**.
 
 > **Un chiffre périmé corrigé le 12/09** : la reconstruction de `_key_index`
@@ -1172,20 +1237,26 @@ mesurée côté navigateur, puis écartée**.
 2. **La vue (§ 3.11)** : réécriture exacte livrée (×1,4–1,6) — la réobserver
    dans `comptes` de `/api/maint/status` ; puis la décision sur un cache à
    génération.
-3. **Ce qui reste dans `_serve_gallery`**, phases relevées le 12/09 à 10 h
-   sur la page de 2 519 photos, après les § 3.13, 3.14, 3.16, 3.17 et 3.18 —
-   **633 à 820 ms** au total, contre 1 493 à 1 870 hier. Moyennes sur 5
-   chargements, delta d'horloge :
-   - `enrichir` **325 ms**, du CPU pur, et c'est désormais le SEUL gros poste :
-     `enrichir.faits` **89 ms** (`_faits_pour`), `enrichir.dates` **76 ms**,
-     `enrichir.dossier` **40 ms** (le `Path(...)` de `_resolve_key`, un par
-     photo, mémoïsable), `enrichir.cle` **24 ms**, le reste étant la
-     fabrication des 2 519 dictionnaires ;
-   - `motifs` **70 ms**, la dernière post-passe qui relit `STORE.data` par
-     photo — `marques` est traitée (§ 3.18, 29 ms) ;
-   - `envoi` **74 ms**, `index` **47 ms** (§ 3.17), `parcours` **46 ms**,
-     `gabarit` **42 ms**, `json` **30 ms**, `prélude` **30 ms**,
-     `tagged_count` **20 ms**, `carte_cles` **13 ms**.
+3. **Ce qui reste dans `_serve_gallery`**, phases relevées le 12/09 à 13 h
+   sur la page de 2 519 photos, après les § 3.13 à 3.19 — **672 à 905 ms** au
+   total, contre 1 493 à 1 870 hier. La machine TAGUE pendant la mesure : le
+   total varie de ±20 % d'un tour à l'autre et ne juge rien, **ce sont les
+   sous-phases qui font foi**. Moyennes sur 4 chargements, delta d'horloge :
+   - **Les dates, 118 ms — le plus gros thème** : `enrichir.dates` 86,5 et
+     `enrichir.faits.regle.date` 31,8. Deux règles distinctes (minimum contre
+     priorité) sur les MÊMES deux lectures brutes. Prémisse à mesurer avant
+     tout geste : `server._fname_time` et `renommage_facts.fname_datetime`
+     sont déclarés miroirs, pas prouvés tels (§ 3.19, dernier paragraphe).
+   - `enrichir` **349 ms** au total, dont `enrichir.dossier` **48 ms** (le
+     `Path(...)` de `_resolve_key`, un par photo, mémoïsable), `enrichir.cle`
+     **27 ms**, `enrichir.faits.noms` 17, `regle.noms` 8 — et ~90 ms pour la
+     fabrication des 2 519 dictionnaires eux-mêmes, que rien ne réduira sans
+     changer ce que la page transporte.
+   - `motifs` **67 ms**, la dernière post-passe qui relit `STORE.data` par
+     photo — `marques` est traitée (§ 3.18, 31 ms).
+   - `envoi` **77 ms**, `parcours` **63 ms**, `index` **56 ms** (§ 3.17),
+     `gabarit` **48 ms**, `json` **33 ms**, `prélude` **25 ms**,
+     `tagged_count` **18 ms**, `carte_cles` **11 ms**.
    Aucun poste ne dépasse plus 100 ms hors `enrichir` : la suite est un
    chantier de cent millisecondes à la fois, plus de gros caillou.
    La planche entière (§ 3.7) reste mesurée et écartée : le navigateur n'y est

@@ -3813,7 +3813,15 @@ def _faits_ctx():
     except Exception:                             # noqa: BLE001
         gps = {}
     return {'attendus': attendus, 'exclus': exclus, 'canon': canon,
-            'lieux': lieux, 'gps': gps, 'racines': media_roots()}
+            'lieux': lieux, 'gps': gps, 'racines': media_roots(),
+            # Les deux compteurs de `_faits_pour`. Ils sont ICI, dans le
+            # contexte d'UNE page, et pas dans un global : deux requêtes
+            # simultanées ne peuvent pas mélanger leurs mesures.
+            '_t_noms': 0.0, '_t_regle': 0.0,
+            '_chrono': {'noms': 0.0, 'lieu': 0.0, 'date': 0.0},
+            # Le lieu par le CHEMIN ne dépend que du dossier : mémoïsé pour la
+            # durée d'UNE page, jeté avec elle (§ 3.13, même raisonnement).
+            '_memo_lieu': {}}
 
 
 def _faits_pour(cle, entree, ctx):
@@ -3829,14 +3837,27 @@ def _faits_pour(cle, entree, ctx):
     alors l'ecran qui ment sur ce que le moteur a compris.
 
     `ctx` vient de `_faits_ctx()`. Rend None quand la photo ne porte AUCUN des
-    trois : mieux vaut ne rien afficher qu'une ligne vide."""
+    trois : mieux vaut ne rien afficher qu'une ligne vide.
+
+    **Deux compteurs** (`_t_noms`, `_t_regle`) s'accumulent dans `ctx` quand il
+    en porte : la phase `enrichir.faits` pesait 89 ms sur 325, et un chiffre
+    global ne dit pas LEQUEL des deux gestes coûte. Même méthode qu'au § 3.17,
+    où deux sous-phases ont montré que le coupable écrit depuis la veille
+    n'était pas le bon."""
     import faits_vue
     e = entree if isinstance(entree, dict) else {}
+    _t0 = time.perf_counter() if '_t_noms' in ctx else None
     kw = _noms_fusionnes(cle, e, ctx['attendus'], ctx['exclus'],
                          ctx.get('canon'))
+    if _t0 is not None:
+        _t1 = time.perf_counter()
+        ctx['_t_noms'] += _t1 - _t0
     a = faits_vue.assertions(cle, e, gps_place=ctx['gps'].get(cle),
                              lieux=ctx['lieux'], racines=ctx['racines'],
-                             noms_attendus=kw)
+                             noms_attendus=kw, chrono=ctx.get('_chrono'),
+                             memo_lieu=ctx.get('_memo_lieu'))
+    if _t0 is not None:
+        ctx['_t_regle'] += time.perf_counter() - _t1
     noms = list(a['persons']) + list(a['animals'])
     if not (a['date'] or a['lieu'] or noms):
         return None
@@ -14139,6 +14160,14 @@ class Handler(BaseHTTPRequestHandler):
         ph.ajoute('enrichir.dossier', _t_dossier)
         ph.ajoute('enrichir.dates', _t_dates)
         ph.ajoute('enrichir.faits', _t_faits)
+        # Les deux moitiés de `enrichir.faits` : l'autorité des noms d'un côté,
+        # la règle partagée (`faits_vue.assertions`) de l'autre.
+        ph.ajoute('enrichir.faits.noms', fctx.get('_t_noms', 0.0))
+        ph.ajoute('enrichir.faits.regle', fctx.get('_t_regle', 0.0))
+        _chr = fctx.get('_chrono') or {}
+        ph.ajoute('enrichir.faits.regle.noms', _chr.get('noms', 0.0))
+        ph.ajoute('enrichir.faits.regle.lieu', _chr.get('lieu', 0.0))
+        ph.ajoute('enrichir.faits.regle.date', _chr.get('date', 0.0))
         ph.note(fichiers=(0 if remplace_la_grille else len(files)),
                 stats_nas=_n_stat, grille_remplacee=remplace_la_grille)
         # sélection de tags active : résultats récursifs depuis l'index,
