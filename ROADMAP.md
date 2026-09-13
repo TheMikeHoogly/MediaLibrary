@@ -10,27 +10,43 @@ méthode dans `eval/METHODE.md` ; le chantier performance dans
 > **Ce fichier se relit en entier en début de session.** Un jalon qui porte
 > « FAIT » dans son titre n'est plus une priorité : il sort d'ici et reste
 > dans git. Un carnet dont les trois quarts sont finis n'ordonne plus rien —
-> il l'a été deux fois, le 05/09 et le 09/09.
+> il l'a été trois fois, les 05/09, 09/09 et **13/09**.
 
-> **`N:\\Photos` se connecte à chaque session** — règle dans `CLAUDE.md`
+> **`N:\Photos` se connecte à chaque session** — règle dans `CLAUDE.md`
 > (« Tester en réel »), depuis le 29/08.
 
 ---
 
-## Ce qui commande tout : la campagne de retag
+## La campagne est FINIE — et c'est ce qui change tout
 
-Lancée le 05/09, modèle `qwen3.5:4b`, cible `qwen3.5:4b|v3fr|kb1`.
-**Relevé le 12/09 à 12h15** (`/api/maint/status` → `config.retag`, la seule
-source juste — `counts.tagues` compte les photos taguées un jour, pas celles
-de CETTE passe) : **3 537 restantes**, 936 en file, **1 abandon**. 119 photos
-en 35 min → **~17,6 s/photo**, donc fin **au petit matin du 13/09**. Index :
-44 605 entrées, 354 personnes, 17 animaux, 40 583 visages.
+Lancée le 05/09, finie **dans la nuit du 12 au 13/09**. Relevé le 13/09 à
+15 h, chiffres pris sur la machine et non sur une doc :
 
-Tant qu'elle tourne : **le prompt est intouchable** (le prompt EST la version
-du pipeline — une phrase ajoutée rendrait candidates les 12 000 photos déjà
-refaites), le GPU est pris, et on ne fait que ce qui n'a besoin ni du GPU, ni
-du prompt, ni du serveur arrêté. **Quand elle s'arrête, la section C s'ouvre
-— et elle s'ouvre bientôt.**
+| | |
+|---|---:|
+| photos portant `qwen3.5:4b\|v3fr\|kb1` | **40 525 / 40 525** |
+| abandons | **1** (voir B4) |
+| vignettes de grille présentes | **40 525 — 100 %** |
+| GPU | **0 %**, 3 773 Mo libres sur 4 096 |
+| RAM disponible | **5,2 Go (33 %)**, défauts durs ≈ 0 |
+
+**Trois contraintes tombent en même temps**, et c'est la vraie nouvelle :
+le **prompt redevient touchable**, le **GPU est rendu**, et la **machine ne
+pagine plus** — elle vivait sur 0,5 Go libre depuis une semaine
+(`PERFORMANCE.md` § 3.10). Tout ce qui attendait « après la campagne » est
+ouvert d'un coup ; la difficulté n'est plus d'attendre, c'est de CHOISIR.
+
+**Deux garde-fous ont tenu, vérifiés le 13/09 et pas supposés :**
+
+- **L'élargissement FR→EN n'est pas mort en silence.** Le retag FR seul a bien
+  vidé `kw_en` — **0 sur 40 525 photos**, mesuré. Le dictionnaire appris n'a
+  donc plus une paire (`appris: 0`) et l'élargissement aurait disparu SANS
+  UNE LIGNE D'ERREUR. Le gel du 05/09 (`dico_fr_en.json`, tranché par Mike)
+  le sert : `source: gelé`, **3 862 paires**, une recherche française
+  continue de voir l'anglais. **C'est le garde-fou qui valait le plus cher de
+  tout le projet** : il défendait +0,075 de rappel contre une panne muette.
+- **`exiftool -P`** (12/09) : le tagueur a réécrit 40 000 XMP pendant la nuit
+  sans détruire une date de fichier.
 
 ---
 
@@ -38,12 +54,14 @@ du prompt, ni du serveur arrêté. **Quand elle s'arrête, la section C s'ouvre
 
 **A1. Trier les 248 dépôts d'`Uploads`.** La lampe de l'entête y mène
 (`/tri`), le tableau se trie et se filtre, la sélection multiple et les gestes
-groupés fonctionnent. Le plus ancien attend depuis 30 jours. **Rien ne bouge
-sans lui** : c'est le principe du chantier.
+groupés fonctionnent. Le plus ancien attend depuis **31 jours**. **Rien ne
+bouge sans lui** : c'est le principe du chantier, et c'est le seul point de la
+roadmap qui n'ait pas avancé d'un pas depuis le 12/09.
 
-**A2. La dernière photo sensible.** Le chantier 18 est clos pour l'essentiel
-(213 triées le 09/09) ; il en reste **une**. L'onglet n'apparaît que s'il y a
-quelque chose à juger.
+**A2. La dernière photo sensible — probablement close.** `/api/sensibles`
+répond **0 en attente de verdict** le 13/09. La liste est PAR UTILISATEUR :
+seul Mike, en ouvrant l'onglet, peut confirmer qu'il n'en reste vraiment
+aucune. Si l'onglet n'apparaît pas, il n'y a rien — et ce jalon sort d'ici.
 
 **A3. Lire la page `/aide`.** Posée et vérifiée. Ce qui reste n'est pas une
 tâche mais un jugement : c'est sa famille qui lira ce texte.
@@ -65,82 +83,118 @@ reproposé (le bloc PowerShell est dans l'historique de la session du 12/09).
 `Get-HotFix` MENT sur ce sujet ; la vérité est
 `(Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion').UBR`.
 
+**A6. Les deux gestes git que je ne peux pas faire.** L'agent ne connaît que
+`ping`, `commit` et `livrer` : `git rm --cached _collage6.py _collage7.py`
+(ignorés mais suivis) passe par `27 - Git.bat`. Rien d'urgent, mais ça ne
+partira pas tout seul.
+
 ---
 
-## B. Ce qui avance pendant la campagne
+## B. Ce que la fin de la campagne vient d'ouvrir
 
-**B1. La performance — le plan vit dans `PERFORMANCE.md` § 5, pas ici.**
-**Le chantier des redites est FINI** (§ 3.13 à 3.23) : ce qui reste dans la
-page n'est plus du travail refait. Le prochain gain sérieux n'est pas une
-mémoïsation de plus, c'est **envoyer moins** — `envoi` (93 ms) est devenu le
-plus gros poste hors calcul, pour 1,86 Mo sur le réseau local. Pagination, ou
-une planche qui ne transporte pas les 2 519 fiches d'un coup : **c'est une
-décision de produit, à prendre avec Mike**, pas une optimisation à faire dans
-son dos.
-État au 12/09 à 13 h 50 : la page `/files` d'un dossier de 2 519 photos est
-passée de **1 493–1 870 ms à 560–636 ms**, et la même page filtrée par un tag
-de **1 200 à 750 ms**. `index` (§ 3.17), `marques` (§ 3.18), le lieu (§ 3.19)
-et les lecteurs de date réduits à un seul, deux fois (§ 3.20 la date du nom,
-§ 3.21 les années du dossier) sont faits — le thème « date » passe de 118 à
-**52 ms**. **Plus de gros caillou** : `enrichir` reste premier à 215 ms, mais
-aucun de ses morceaux ne dépasse 50 ms. Ce qui suit, par ordre : le dernier
-partage de lecture du `taken` (~20 ms, sans prémisse à vérifier désormais).
-`motifs` (§ 3.22, 53 → 15 ms — et elle ne relisait PAS la vue, contrairement à
-ce que cette ligne a longtemps dit) et le `Path(...)` de `_resolve_key`
-(§ 3.23, 38 → 14 ms) sont faits. **Le reste d'`enrichir` n'est plus du travail
-refait, c'est du travail** : fabriquer 2 519 dictionnaires coûte ~90 ms et rien
-ne les réduira sans changer ce que la page transporte. La machine tague pendant
-les mesures : ce sont les sous-phases qui font foi, pas le total. Compatible avec la campagne : chemin
-de service seulement, jamais le calcul IA.
+Par ordre de valeur, et non de facilité. Les quatre premiers étaient
+**empêchés**, pas reportés.
 
-**B2. Le tri des dépôts, à éprouver.** Le premier tour est livré (A1). Ce qui
-reste dépend de l'usage : le **mur de 7 jours** est-il le bon ? faut-il un
-geste groupé pour le lot hérité ? Ne rien changer avant que Mike s'en soit
-servi une fois.
+**B1. Le bilan de la campagne.** Première passe officielle du fonds entier :
+elle mérite son compte rendu, mesuré et pas supposé. Ce qu'on sait déjà, et
+qui n'est pas le bilan : 40 525 photos, 1 abandon, 100 % de vignettes. Ce
+qu'on ne sait pas : **ce que `v3fr|kb1` a changé** par rapport à ce qui
+existait avant. `mesure_retag_gain.py` existe pour ça.
 
-**B3. L'ordre inverse maintenance / scan — À MOITIÉ FERMÉ.** Depuis le 07/09
+**B2. Le modèle de vision — la question redevient un CHOIX.** La décision du
+12/09 (« on vit avec les 13,5 Go d'Ollama ») est **périmée par la fin de la
+campagne** : le moteur a rendu la mémoire, il ne reste rien de lui dans le
+relevé du 13/09, et la RAM libre est passée de 0,5 à 5,2 Go. Le sujet n'est
+donc plus « la machine pagine », c'est « **quel modèle pour la PROCHAINE
+passe** » — un qui tient entièrement dans les 4 Go de VRAM ne reprendra pas
+7,8 Go en RAM. Protocole `vision-eval` ; changer de modèle est un changement
+de pipeline, donc une campagne de plus.
+
+**B3. La question au tagueur sur les documents sensibles.** Elle était
+**empêchée**, pas reportée : la toucher pendant la campagne aurait rendu
+candidates les 12 000 photos déjà refaites. Le prompt est de nouveau
+touchable — et toute modification relance une passe complète. À instruire
+AVANT d'écrire une ligne : est-ce que ça vaut une campagne ?
+
+**B4. L'abandon, et ce qu'il cache.** `Photos Mike\2018\08 Août\
+20180805_095733.jpg` porte `retag_fail` avec le message **« another row
+available »**. Trois choses, dans l'ordre où elles comptent :
+1. **La photo va bien.** Elle est taguée — 7 mots-clés, description, faits —
+   et son `pipe` est à jour. Le drapeau est une cicatrice, pas un trou.
+2. **Le message n'est pas du modèle, c'est de SQLite.** Un `step()` qui rend
+   une ligne là où l'appelant attendait la fin. C'est un défaut de LECTURE
+   concurrente sous charge, pas une photo difficile.
+3. **Donc ça peut recommencer, et plus fort.** Une passe de 40 000 photos l'a
+   déclenché une fois. Le chercher maintenant, à froid, coûte moins cher que
+   de le revoir sur une campagne de nuit.
+
+**B5. Re-mesurer les Motion Photos arrivées depuis le 03/09** — demande le
+serveur arrêté, donc impossible pendant la campagne, trivial maintenant.
+
+**B6. Le reste d'audit : O8 et O9.** Matmul par visage et backfill sémantique
+— les deux touchent des boucles de CALCUL, donc le GPU : c'est maintenant
+qu'elles sont mesurables. **O15 est outillé** : les trois caches de vignettes
+pèsent 722 Mo dont **541 Mo d'orphelins**, et `51 - Purger les vignettes
+orphelines.bat` attend un geste de Mike ; la réversibilité y est la
+RÉGÉNÉRATION, pas une corbeille. **À re-mesurer d'abord** : le chiffre date
+d'avant que la campagne pose 40 000 vignettes.
+
+**B7. L'ordre inverse maintenance / scan — à moitié fermé.** Depuis le 07/09
 la maintenance se reporte aussi quand un balayage NAS tourne
 (`SCAN_NAS_EN_COURS`) : c'était la cause directe des 85 minutes de GPU à zéro
 du 06/09. **Reste l'ordre inverse** : une étape lourde déjà partie, puis le
-scan qui arrive dessus. Non mesuré, non corrigé.
+scan qui arrive dessus. Non mesuré, non corrigé — et sans campagne pour
+brouiller la mesure, c'est le bon moment.
 
-**B4. Le reste d'audit : O8 et O9.** Matmul par visage et backfill sémantique
-— les deux touchent des boucles de CALCUL, donc **après** la campagne.
-**O15 est outillé** : les trois caches de vignettes pèsent 722 Mo dont
-**541 Mo d'orphelins**, et `51 - Purger les vignettes orphelines.bat` attend
-un geste de Mike ; la réversibilité y est la RÉGÉNÉRATION, pas une corbeille.
-
-**B5. Les dettes nommées, petites et sûres** : `git rm --cached _collage6.py
-_collage7.py` (ignorés mais suivis) ; le libellé du bat 32.
+**B8. Le tri des dépôts, à éprouver.** Ce qui reste dépend de l'usage : le
+**mur de 7 jours** est-il le bon ? faut-il un geste groupé pour le lot
+hérité ? Ne rien changer avant que Mike s'en soit servi une fois (A1).
 
 ---
 
-## C. Quand la campagne s'arrête — c'est imminent
+## C. La performance — le chantier des redites est CLOS
 
-**C0. Les vignettes de grille.** `/api/serveur` → `vignettes` dit
-« attend la fin du tagging » ; il passera à `fabrique`. Relancer alors
-`mesure_couverture_vignettes.py` : 98 % du fonds n'avait pas de vignette de
-grille au 11/09, le tagueur en pose une au passage depuis, et le fil de fond
-prend le reste.
+Le détail vit dans `PERFORMANCE.md` § 3.13 à 3.23 et § 5, pas ici. Ce qui
+compte pour ordonner :
 
-**C1. La mémoire de la machine, et donc le modèle de vision.** Tranché le
-12/09 : pendant la campagne on vit avec les **13,5 Go privés dont 7,8
-résidents** du moteur d'Ollama, qui laissent 0,5 Go de RAM libre et font
-paginer le serveur (`PERFORMANCE.md` § 3.10). La piste CUDA est écartée par la
-mesure. GPU libéré, la question redevient un choix de MODÈLE : celui qui tient
-entièrement dans les 4 Go de VRAM ne garde pas 7,8 Go en RAM — protocole
-`vision-eval`, et changer de modèle est un changement de pipeline.
+**C1. Ce qui est acquis.** La page `/files` d'un dossier de 2 519 photos est
+passée de **1 493–1 870 ms à 544–763 ms** (12/09), en retirant **douze calculs
+refaits** : le dossier énuméré deux fois, le lien de dossier par photo, la
+date précise calculée trois fois, la vue consultée 44 605 fois pour 2 519
+réponses, le lieu demandé 2 519 fois pour deux réponses, les années du dossier
+relues quatre fois par photo, la classification de motif faite deux fois, le
+`Path` de `_resolve_key`. Chacun avec sa mesure avant/après et son banc.
 
-**C2. La question au tagueur sur les documents sensibles.** Pas reportée par
-prudence : **empêchée** tant que la campagne tourne — la toucher rouvrirait
-12 000 photos déjà refaites.
+**C2. Ce qui reste n'est plus du travail refait, c'est du travail.**
+`enrichir` reste le premier poste (220 ms) mais aucun de ses morceaux ne
+dépasse 55 ms, et ~90 ms vont à fabriquer les 2 519 dictionnaires eux-mêmes.
+Deux petits restes nommés, sans urgence : le dernier partage de lecture du
+`taken` (~15 ms, avec le piège du § 3.20 — minimum contre priorité : on
+partage les lectures, jamais la réponse) et `marques` (~27 ms).
 
-**C3. Re-mesurer les Motion Photos arrivées depuis le 03/09** — demande le
-serveur arrêté.
+**C3. LE PROCHAIN GAIN EST DÉCIDÉ — chargement à la demande.** Le plus gros
+poste hors calcul est devenu `envoi` : **93 ms pour 1,86 Mo** sur le réseau
+local. Le gain n'est plus une mémoïsation, c'est **envoyer moins**. Trois
+formes ont été posées à Mike le 12/09 ; **il a tranché le 13/09 : (c), le
+chargement à la demande** — la page rend les 300 premières fiches, le reste
+arrive en scrollant. C'est la seule des trois qui ne retire rien à l'usage.
 
-**C4. Le bilan de la campagne** : ce que `qwen3.5:4b|v3fr|kb1` a changé,
-mesuré et pas supposé. C'est la première passe officielle du fonds, elle
-mérite son compte rendu — et elle a **1 abandon** à expliquer.
+Ce que la décision engage, et qu'il faut instruire AVANT de coder :
+- **Le tri et les filtres restent faits par le SERVEUR.** S'ils passaient au
+  client, ils ne porteraient que sur ce qui est déjà chargé — une grille qui
+  ment sur ce qu'elle a trié est pire que lente.
+- **Les quatre modes « la grille est un résultat »** (tags, recherche,
+  semblables, même jour) remplacent déjà `file_data` (§ 3.14) : la pagination
+  doit se poser DERRIÈRE eux, pas à côté.
+- **`window.Vignettes` existe déjà** (IntersectionObserver + file plafonnée à
+  4 requêtes) : le chargement à la demande s'y branche, il ne le refait pas.
+- **Un compteur qui ment est le mode de panne de ce projet.** Le bandeau doit
+  dire le total RÉEL, pas ce qui est chargé.
+
+**C4. Le premier chargement reste cher** : ~2,5 s après un redémarrage,
+partage et caches froids. Aucun mémo ne fabrique quoi que ce soit, ils évitent
+de refaire. Ce n'est pas un défaut, c'est la nature d'un cache — mais c'est ce
+que Mike voit en ouvrant le matin.
 
 ---
 
@@ -180,7 +234,9 @@ production double déjà les hallucinations, adopté sur un 25-15.
 **Reste ouvert (05/09)** : `qwen3.5:4b` a été retenu sur une comparaison qui a
 mesuré l'apport réel mais **pas en aveugle** et sur un tirage CIBLÉ de
 8 photos difficiles, pas un A/B comme celui qui a adopté v2ctx. À reprendre
-avec la rigueur complète, ou à accepter tel quel — choix de Mike.
+avec la rigueur complète, ou à accepter tel quel — choix de Mike. **Le fonds
+entier porte maintenant ce modèle** (13/09) : la question n'est plus « fallait-il
+le choisir » mais « qu'est-ce qui mériterait la campagne SUIVANTE » (B2).
 
 **Ouvrir la médiathèque à TOUTE LA FAMILLE, avec la vie privée au centre.**
 Aujourd'hui l'outil est pour Mike et Flo (deux comptes, et ce sont les deux
@@ -232,8 +288,8 @@ fichiers (règle 2), donc hors de portée de tout réglage.
   livré avec 1 banc sur 11). Large par construction : c'est un filet, pas un
   filtre. Son seul trou est NOMMÉ (`BANCS_A_LA_MAIN`) : `test_tagging.py`
   tague pour de vrai et veut le serveur arrêté.
-- **Stockage** : SQLite local WAL (**44 605 entrées**), embeddings BLOB,
-  backup NAS snapshot + `backup_verify`.
+- **Stockage** : SQLite local WAL (**44 665 entrées**, 119 772 vecteurs),
+  embeddings BLOB, backup NAS snapshot + `backup_verify`.
 - **Reconnaissance** : SigLIP 2 (90 % r1) ; animaux 97,4 % r1 ; prototypes
   multiples ; vérif d'espèce.
 - **Nommage** : attribution unifiée personnes+animaux (multi-noms, annulation
@@ -266,7 +322,18 @@ fichiers (règle 2), donc hors de portée de tout réglage.
   noms/date/lieu structurés et sourcés (`faits`), noms JAMAIS via le prompt ;
   `TAGGING_PIPELINE_VERSION` estampillée (`pipe`) ; 1 lecture exiftool/photo ;
   **`exiftool -P` depuis le 12/09** — le tagueur ne détruit plus la date des
-  fichiers.
+  fichiers. **Le fonds ENTIER porte `qwen3.5:4b|v3fr|kb1` depuis la nuit du
+  12 au 13/09** : 40 525 photos, 1 abandon.
+- **Les vignettes de grille sont à 100 %** (13/09, `mesure_couverture_
+  vignettes.py` sur les quatre fonds) — elles manquaient sur 98 % du fonds le
+  11/09. Le tagueur en a posé une au passage ; le fil de fond n'a pas eu à
+  rattraper quoi que ce soit. Les **4 133 vidéos** sont hors de ce compte.
+- **Le gel du dictionnaire FR→EN a tenu** (posé le 05/09, observé le 13/09) :
+  le retag FR seul a vidé `kw_en` sur **40 525 photos sur 40 525**, le
+  dictionnaire appris est tombé à **0 paire**, et l'élargissement sert
+  désormais les **3 862 paires GELÉES** (`source: gelé`). Sans ce garde-fou la
+  recherche élargie serait morte sans une ligne d'erreur. **Ne pas « nettoyer »
+  `dico_fr_en.json`** : c'est la seule copie de cette matière.
 - **Index / vecteurs** : cascade `forget_everywhere` au scan — pilotée par
   l'index, donc aveugle à une clé déjà oubliée (21/08) ; re-clé complet
   (22/08) : `rekey_everywhere` transporte les DÉCISIONS humaines des fiches

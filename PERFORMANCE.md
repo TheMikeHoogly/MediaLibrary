@@ -740,6 +740,16 @@ tagging est au même temps, zéro traceback.
 
 ### 3.10 La machine PAGINE — `llama-server` tenait 13,7 Go (11/09 au soir)
 
+> **PÉRIMÉ DEPUIS LE 13/09, et c'est la fin de la campagne qui l'a périmé.**
+> Relevé le 13/09 à 15 h, campagne terminée : **plus aucune trace d'Ollama**
+> dans les quinze plus gros processus, **RAM disponible 5,2 Go (33 %)** contre
+> 0,4–0,8 pendant, **défauts durs ≈ 0**. Le moteur rend la mémoire quand il
+> n'a plus rien à faire. Tout ce qui suit décrit donc l'état PENDANT une
+> campagne — c'est-à-dire l'état qui reviendra à la prochaine, et la raison
+> pour laquelle le choix du modèle (`ROADMAP.md` § B2) se pose avant elle et
+> pas après. **Ne pas citer ces chiffres comme l'état du jour.**
+
+
 Écartés d'abord, instruments posés pour ça (`sondes.py`, lues dans
 `/api/serveur` → `sondes`) : le **ramasse-miettes** (0–1 ms pendant les
 requêtes ; mais une collecte complète de **230–430 ms toutes les ~40 s**,
