@@ -99,8 +99,33 @@ partira pas tout seul.
 
 ## B. Ce que la fin de la campagne vient d'ouvrir
 
-Par ordre de valeur, et non de facilité. Les quatre premiers étaient
-**empêchés**, pas reportés.
+**L'analyse du 13/09 au soir : ce ne sont pas huit chantiers, c'est UNE
+décision et trois travaux.**
+
+Quatre des items ci-dessous (B2 le modèle, B3 le prompt sensible, et ce que
+B1 et B4 apportent comme matière) ne sont pas indépendants : ils convergent
+tous sur **une seule question, « faut-il une PROCHAINE campagne, et avec
+quoi ? »**. Une campagne, c'est une nuit de GPU, 40 000 XMP réécrits, et
+l'effacement de l'état d'avant — donc tout ce qui doit changer dans le
+pipeline doit changer **en même temps**, ou pas du tout. Les instruire
+séparément ferait courir le risque de deux campagnes là où une suffit.
+
+**Le reste est du travail ordinaire**, qui ne dépend de personne : la fenêtre
+de maintenance (B7), les mesures qui demandaient le serveur arrêté (B5, B6), et
+la grille à la demande (section C). C'est là que je peux avancer seul.
+
+Dans l'ordre où je le ferais :
+
+| | quoi | qui décide | coût |
+|---|---|---|---|
+| 1 | **La grille à la demande** (§ C3) | décidé — Mike a tranché | gros |
+| 2 | **La fenêtre du recensement** (B7) | moi | moyen |
+| 3 | **Préparer la décision « prochaine campagne »** (B1·B2·B3·B4) | **Mike**, après que j'aie mesuré | moyen |
+| 4 | B5, B6 : ce qui demandait le serveur arrêté ou le GPU | moi | petit |
+| 5 | **La copie hors site** (§ D1) | **Mike** | à lui seul |
+
+**Ce qui n'est dans aucune ligne** : les 248 dépôts (A1). Rien ne les
+débloque que lui.
 
 **B1. Le bilan de la campagne — et ce qu'on ne pourra PAS mesurer.** Première
 passe officielle du fonds entier : 40 525 photos, 1 abandon, 100 % de
@@ -128,11 +153,22 @@ porte aujourd'hui :
 
 Couverture parfaite : pas une photo sans mots-clés ni description. **Le chiffre
 qui interroge est le dernier** : deux tiers du vocabulaire n'apparaissent
-qu'une fois (« carrelage beige », « campagne andine »). C'est de la
-description riche, et c'est très bien pour une recherche par le SENS — mais un
-mot-clé vu une fois ne sera jamais une facette de filtre utile, et il ne peut
-pas non plus apprendre une paire FR→EN. **À instruire** : les facettes
-doivent-elles se bâtir sur la fréquence plutôt que sur la liste brute ?
+qu'une fois (« carrelage beige », « campagne andine »).
+
+**J'ai d'abord cru y voir un chantier — c'est faux, vérifié.** Les facettes de
+la galerie sont DÉJÀ bâties sur la fréquence : `_serve_gallery` trie les
+mots-clés du dossier par nombre et n'en garde que les **60 premiers**. Les
+28 774 mots vus une fois n'atteignent donc jamais la barre de filtres. La
+recherche par le SENS passe par les vecteurs, pas par les mots. Et le
+dictionnaire FR→EN est gelé. **Conséquence mécanique : aucune.**
+
+Ce que ce chiffre est vraiment : **la signature de `v3fr`**. Ce prompt demande
+de la description, pas des étiquettes — et il la produit. C'est donc le
+**point de comparaison** du jour où un autre prompt sera envisagé (B2), pas un
+problème à corriger. Mesuré au passage, si la question revient : un seuil à
+**3 occurrences** garderait 9 857 mots (22 % du vocabulaire) tout en couvrant
+**83 % des occurrences**, et seulement **315 photos** sur 40 525 se
+retrouveraient sans aucun mot au-dessus du seuil.
 
 **Leçon pour la prochaine campagne : copier la base AVANT de la lancer** —
 quatre secondes (`mesure_copie_base.py`), et c'est la seule fenêtre.
@@ -163,6 +199,26 @@ available »**. Trois choses, dans l'ordre où elles comptent :
 3. **Donc ça peut recommencer, et plus fort.** Une passe de 40 000 photos l'a
    déclenché une fois. Le chercher maintenant, à froid, coûte moins cher que
    de le revoir sur une campagne de nuit.
+
+**B1·B2·B3·B4 → LA décision, et ce qu'il faut poser sur la table avant.**
+Ces quatre-là ne se tranchent qu'ensemble. Ce que je dois produire pour que
+Mike puisse décider en une fois — et rien de plus :
+
+1. **Ce que coûte une campagne**, en clair : 40 525 photos × ~17,6 s = **~8 h
+   de GPU**, la machine qui repagine (0,5 Go de RAM libre), le prompt figé
+   pendant ce temps. Le chiffre est connu, il suffit de le rappeler.
+2. **Ce qu'un autre modèle donnerait**, mesuré en aveugle sur un tirage A/B —
+   pas sur 8 photos choisies, la faute nommée dans « Pistes ouvertes ». Sans
+   cette mesure, changer de modèle est un pari à 8 heures.
+3. **Ce que la question « documents sensibles » ajouterait au prompt**, et sur
+   combien de photos elle changerait quelque chose. Une phrase de prompt qui
+   touche 50 photos ne vaut pas une campagne ; une qui en touche 5 000, oui.
+4. **Le verrou à poser AVANT de lancer quoi que ce soit** : copier la base
+   (`mesure_copie_base.py`, quatre secondes). C'est la seule fenêtre, et on
+   l'a manquée la fois précédente (B1).
+
+**Tant que ces quatre points ne sont pas sur une seule page, ne rien proposer
+à Mike** : une décision à 8 heures de GPU ne se prend pas sur une intuition.
 
 **B5. Re-mesurer les Motion Photos arrivées depuis le 03/09** — demande le
 serveur arrêté, donc impossible pendant la campagne, trivial maintenant.
@@ -219,15 +275,20 @@ instrument qui l'a permis :
   intacte : ce n'est pas du calcul, c'est de **l'attente SMB** (même signature
   que le `parcours` de la galerie, 15 ms de CPU pour 692 ms). Et le plafond de
   trois reports laisse partir le scan NAS **par-dessus** l'étape lourde :
-  l'énumération qui prend d'ordinaire **305 s** en était à **22 minutes** ce
-  jour-là. **La concurrence coûte cher, c'est mesuré.**
+  l'énumération qui prend d'ordinaire **305 s** a mis **2 100 s** ce soir-là,
+  chiffre final lu dans le journal. **Sept fois plus cher, c'est mesuré deux
+  fois.**
 - **Ce que j'avais écrit et qui est FAUX.** J'en avais conclu que les deux
   balayages se ralentissaient « d'un facteur quatre ». L'observation suivante
   dit le contraire : `recensement_doublons.py` a mis **8 min** pendant que le
-  scan tournait, et **plus de 27 min** en tournant SEUL, une demi-heure plus
-  tard. Hypothèse non vérifiée : le scan venait d'énumérer le fonds, donc le
-  cache de métadonnées SMB était CHAUD. **Ce n'est qu'une hypothèse** — la
-  durée de cette étape varie du simple au triple et personne ne sait pourquoi.
+  scan tournait, et **40 min exactement** en tournant seul, une demi-heure plus
+  tard (mesuré à la minute : départ 18h02, `recensement.json` réécrit à 18h43).
+  Hypothèse non vérifiée : le scan venait d'énumérer le fonds, donc le cache de
+  métadonnées SMB était CHAUD. **Ce n'est qu'une hypothèse** — la durée varie
+  d'un facteur CINQ et personne ne sait pourquoi.
+- **Et l'étape ne s'arrête pas quand son fichier est écrit** : `recensement.json`
+  est réécrit à 40 min, mais le sous-processus tenait encore le drapeau à
+  50 min. Le fichier n'est donc pas le signal de fin — la ligne de journal, si.
 
 **La question à instruire n'est donc pas « le plafond de trois est-il bon ? »
 mais « de quoi dépend la durée de cette étape ? »** — sans cette réponse, tout
@@ -261,14 +322,39 @@ Deux petits restes nommés, sans urgence : le dernier partage de lecture du
 `taken` (~15 ms, avec le piège du § 3.20 — minimum contre priorité : on
 partage les lectures, jamais la réponse) et `marques` (~27 ms).
 
-**C3. LE PROCHAIN GAIN EST DÉCIDÉ — chargement à la demande.** Le plus gros
-poste hors calcul est devenu `envoi` : **93 ms pour 1,86 Mo** sur le réseau
-local. Le gain n'est plus une mémoïsation, c'est **envoyer moins**. Trois
-formes ont été posées à Mike le 12/09 ; **il a tranché le 13/09 : (c), le
-chargement à la demande** — la page rend les 300 premières fiches, le reste
-arrive en scrollant. C'est la seule des trois qui ne retire rien à l'usage.
+**C3. LE CHARGEMENT À LA DEMANDE — décidé par Mike, et la mesure du 13/09 au
+soir change ce qu'il faut construire.**
 
-Ce que la décision engage, et qu'il faut instruire AVANT de coder :
+J'avais dit à Mike « le prochain gain, c'est d'envoyer moins » sur la foi
+d'`envoi` = 93 ms pour 1,86 Mo. **C'était vrai pour un DOSSIER ; c'est faux
+pour le pire cas.** Mesuré ce soir sur la page du fonds ENTIER
+(`dir=1&rec=1`, ~46 000 photos, 33,7 Mo) :
+
+| | dossier de 2 519 photos | fonds ENTIER |
+|---|---:|---:|
+| total | ~0,6 s | **25 s** (112 s à froid) |
+| `parcours` (marche SMB) | 50 ms — cache | **18,2 s — 72 %** |
+| `enrichir` | 220 ms | 3,5 s |
+| `envoi` | 93 ms | **1,1 s — 4 %** |
+| `index` (les MÊMES photos, lues dans l'index) | 45 ms | **0,48 s** |
+
+**Deux choses tombent de ce tableau.** La première : sur le pire cas, envoyer
+ne coûte rien — c'est **la marche sur le NAS** qui coûte tout. Une pagination
+qui ne bornerait que le RENDU laisserait donc le premier écran attendre 18 s.
+La seconde, et c'est la piste : **l'index connaît les mêmes photos et répond
+38 fois plus vite** (0,48 s contre 18,2). `_index_entries_under` le fait déjà
+pour compter les mots-clés.
+
+**La question à instruire n'est donc pas « combien de fiches par page » mais
+« la grille d'un dossier RÉCURSIF doit-elle encore marcher sur le NAS ? »**
+La marche existe pour une raison — elle voit les fichiers que l'index ignore
+encore. Trois réponses possibles, à trancher sur mesure : la garder mais
+bornée à la première page ; la remplacer par l'index et laisser le scan de
+fond découvrir les nouveaux ; ou la garder pour un dossier simple et prendre
+l'index dès que `rec=1`. **Ne rien coder avant d'avoir répondu à celle-là.**
+
+Le reste de ce que la décision engage, inchangé :
+
 - **Le tri et les filtres restent faits par le SERVEUR.** S'ils passaient au
   client, ils ne porteraient que sur ce qui est déjà chargé — une grille qui
   ment sur ce qu'elle a trié est pire que lente.
@@ -280,6 +366,11 @@ Ce que la décision engage, et qu'il faut instruire AVANT de coder :
 - **Un compteur qui ment est le mode de panne de ce projet.** Le bandeau doit
   dire le total RÉEL, pas ce qui est chargé.
 
+**Mise en garde sur ces chiffres** : ils ont été pris pendant qu'un recensement
+tenait le NAS. Ils donnent la FORME du problème (la marche domine, l'index est
+deux ordres de grandeur moins cher), pas des valeurs à citer. **Les reprendre
+au calme avant de dimensionner quoi que ce soit.**
+
 **C4. Le premier chargement reste cher** : ~2,5 s après un redémarrage,
 partage et caches froids. Aucun mémo ne fabrique quoi que ce soit, ils évitent
 de refaire. Ce n'est pas un défaut, c'est la nature d'un cache — mais c'est ce
@@ -290,6 +381,11 @@ que Mike voit en ouvrant le matin.
 ## D. Fin de projet
 
 **D1. La copie hors site — repoussée en fin de roadmap par Mike le 09/09.**
+**Le risque a grossi le 13/09 sans que personne ne le décide** : la campagne a
+réécrit **40 000 fichiers XMP** sur le NAS en une nuit. Les mots-clés, les
+noms, les descriptions de tout le fonds n'existent qu'à un seul endroit, et ils
+viennent d'être touchés en masse. Ce n'est pas un argument nouveau, c'est le
+même — mais il pèse plus lourd qu'il y a une semaine.
 Le choix est le sien. Ce qui reste vrai sans être répété à chaque session :
 après l'effacement de l'extrait Takeout, le NAS est le **seul exemplaire** des
 ~40 000 photos, et un NAS chez soi ne protège ni du feu, ni du vol, ni d'une
