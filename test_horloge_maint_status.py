@@ -135,7 +135,13 @@ def _serve_maint_status(self):
         'maint': {'auto': MAINTENANCE_AUTO, 'paused': MAINT_PAUSED,
                   'every_s': MAINTENANCE_EVERY, 'autonomy': _m.AUTONOMY,
                   'intervals': _m.INTERVALS, 'state': load('maintenance_state.json') or {},
-                  'report': summ(load('maintenance_report.json'))},
+                  'report': summ(load('maintenance_report.json')),
+                  # Ajoute le 13/09 dans la prod ET ici : cet ORACLE est
+                  # l'ecriture d'avant, et il ne vaut que s'il suit les
+                  # AJOUTS deliberes. Le laisser en arriere ferait rougir le
+                  # banc sur un changement voulu, et on prendrait l'habitude
+                  # de le faire taire.
+                  'lourde': maint_lourde_etat()},
         'recensement': summ(load('recensement.json')),
         'plan': summ(load('plan_rangement.json')),
         'plan_annee': (lambda pa: {
@@ -303,6 +309,10 @@ def _monde(tmp, sonde_neuve=False, vecteurs_ko=False, cible='v3'):
         'FACE_LAST_ENGINE': '', 'FACE_APP_GPU': None, 'FACE_GPU_ERROR': None,
         'FACE_USE_GPU': False,
         'MAINT_LOOP_STATE': {'tour': 3}, 'scan_nas_en_cours': lambda: False,
+        # L'etape lourde en cours, exposee depuis le 13/09. Troisieme fois de
+        # la semaine qu'un banc qui EXECUTE une fonction extraite tombe parce
+        # que la fonction a gagne une dependance : l'espace doit suivre.
+        'maint_lourde_etat': lambda: {'n': 0, 'depuis': None, 'secondes': None},
         'REGISTRE': types.SimpleNamespace(resume=lambda: {'actif': True, 'retraits': 2}),
         'BACKUP_VERIFY_STATE': {'ok': True},
         'BACKFILL_STATE': {'dates': {'etat': 'fini'}, 'gps': {'etat': 'fini'}},

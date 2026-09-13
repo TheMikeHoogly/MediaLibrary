@@ -186,7 +186,14 @@ class TestLeRattrapageNeTuePlus(unittest.TestCase):
             'STORE': self,
             'print': self.notes.append,
         }
-        mod = ast.Module(body=[_fonction('_marquer_echec')], type_ignores=[])
+        # `_motif_lisible` AVANT : `_marquer_echec` lui delegue depuis le
+        # 13/09. Sans elle dans l'espace, le `NameError` tombait DANS le `try`
+        # de la fonction, etait avale par son propre rattrapage, et le banc
+        # rougissait a l'endroit du controle positif. Quatrieme fois de la
+        # semaine qu'un banc qui EXECUTE une fonction extraite tombe parce que
+        # la fonction a gagne une dependance.
+        mod = ast.Module(body=[_fonction('_motif_lisible'),
+                               _fonction('_marquer_echec')], type_ignores=[])
         ast.fix_missing_locations(mod)
         exec(compile(mod, 'server.py', 'exec'), self.espace)
         self.marquer = self.espace['_marquer_echec']
@@ -204,6 +211,11 @@ class TestLeRattrapageNeTuePlus(unittest.TestCase):
         self.assertFalse(self.marquer("photo.jpg", "peu importe"),
                          "l'echec doit se DIRE non note, pas se taire")
         self.assertTrue(self.notes, "rien n'a ete dit sur la console")
+        # La note doit nommer le VERROU. Sans ce controle, ce banc passait au
+        # vert le 13/09 pour une TOUTE AUTRE raison (un `NameError` avale par
+        # le meme rattrapage) -- un faux vert derriere un vrai rouge.
+        self.assertTrue(any('locked' in str(n) for n in self.notes),
+                        "la note doit nommer la cause : %r" % (self.notes,))
 
     def test_quand_l_index_repond_la_note_est_ecrite(self):
         """Contrôle POSITIF : un rattrapage qui avale tout, y compris le

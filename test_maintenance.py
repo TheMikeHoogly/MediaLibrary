@@ -299,12 +299,155 @@ def check_le_drapeau_lourd_compte_au_lieu_de_basculer():
     check(not en_cours(), "un `fin` en trop ne rend pas le compteur negatif")
 
 
+def check_une_etape_lourde_dit_quand_elle_FINIT():
+    """MESURE du 13/09 : le recensement a annonce son depart a 16h43 et plus
+    rien pendant 40 minutes. Pour savoir s'il tournait encore il fallait
+    croiser le journal, `maintenance_report.json` et `recensement.json`.
+    Une etape qui dit << je pars >> et jamais << j'arrive >> est le mode de
+    panne que ce projet paye le plus cher."""
+    print("0 septies) une etape lourde dit sa FIN, sa DUREE et son VERDICT")
+    # UN DOSSIER NEUF PAR SCENARIO. `run_cycle` ecrit `state.json` : reutiliser
+    # le meme temporaire rendait les cycles suivants VIDES (plus rien de du),
+    # donc leurs journaux vides -- et un banc qui cherche l'ABSENCE d'une ligne
+    # serait alors passe au vert sans avoir rien mesure. Trouve en ecrivant ce
+    # banc, le 13/09.
+    faits = []
+
+    def neuf(prefixe, cls=None, **kw):
+        d = Path(tempfile.mkdtemp(prefix=prefixe))
+        faits.append(d)
+        return (cls or FakeSv)(d, **kw)
+
+    try:
+        sv = neuf("maint_fin_", autonomy={'recensement': 'auto'})
+        M.run_cycle(sv, now=time.time())
+        fins = [l for l in sv.logs if l.startswith('recensement : terminee en ')]
+        check(len(fins) == 1, "la fin est DITE, une seule fois : %r" % (sv.logs,))
+        check(' s' in fins[0] or ' min ' in fins[0], "elle porte une DUREE")
+
+        print("   et elle la dit AUSSI quand l'etape casse")
+
+        class SvQuiCasse(FakeSv):
+            def run_readonly(self, args):
+                raise RuntimeError('le NAS a disparu')
+
+        sv2 = neuf("maint_casse_", SvQuiCasse, autonomy={'recensement': 'auto'})
+        leve = False
+        try:
+            M.run_cycle(sv2, now=time.time())
+        except RuntimeError:
+            leve = True
+        check(leve, "l'exception n'est pas avalee -- elle remonte")
+        fins2 = [l for l in sv2.logs if l.startswith('recensement : interrompue')]
+        check(len(fins2) == 1,
+              "une etape qui LEVE le dit au lieu de disparaitre : %r" % (sv2.logs,))
+
+        print("   un code de retour non nul est DIT, pas seulement classe")
+
+        class SvQuiEchoue(FakeSv):
+            def run_readonly(self, args):
+                self.readonly_calls.append(args)
+                return 3
+
+        sv3 = neuf("maint_echec_", SvQuiEchoue, autonomy={'recensement': 'auto'})
+        M.run_cycle(sv3, now=time.time())
+        check(any('ECHEC (code 3)' in l for l in sv3.logs),
+              "le code de retour du recensement est dans le journal")
+        check(any("plan de rangement n'a PAS ete lance" in l for l in sv3.logs),
+              "et le journal dit la CONSEQUENCE : le plan est saute avec lui")
+        check(not any('plan de rangement (lecture seule)' in l for l in sv3.logs),
+              "le plan n'annonce pas un depart qui n'a pas eu lieu")
+        check(len(sv3.readonly_calls) == 1,
+              "le plan n'est effectivement pas lance apres un recensement KO")
+
+        print("   les DEUX sous-processus annoncent le leur, separement")
+        sv5 = neuf("maint_deux_", autonomy={'recensement': 'auto'})
+        M.run_cycle(sv5, now=time.time())
+        check(any(l.startswith('recensement : lu en ') for l in sv5.logs),
+              "le recensement dit sa propre duree")
+        check(any(l.startswith('plan de rangement : bati en ') for l in sv5.logs),
+              "le plan dit la sienne -- mesure le 13/09 : 9 min contre 22, "
+              "une seule ligne pour les deux ne disait pas ou on en etait")
+
+        print("   une etape LEGERE ne bavarde pas pour rien")
+        # Les LOURDES coupees : sinon elles tournent aussi (dossier neuf =
+        # tout est du) et le banc ne mesurerait pas ce qu'il croit.
+        sv4 = neuf("maint_legere_", autonomy={'recensement': 'off',
+                                              'dedup': 'off',
+                                              'rename': 'propose'})
+        M.run_cycle(sv4, now=time.time())
+        check(sv4.logs, "le cycle a bien FAIT quelque chose (sinon ce banc "
+                        "mesurerait le vide)")
+        check(not any(' : terminee en ' in l for l in sv4.logs),
+              "seules les etapes LOURDES annoncent leur fin : %r" % (sv4.logs,))
+    finally:
+        for d in faits:
+            shutil.rmtree(d, ignore_errors=True)
+
+
+def check_la_duree_se_lit_a_l_oeil():
+    """Un journal se lit a l'oeil : << 2412 s >> ne dit pas la meme chose que
+    << 40 min 12 s >> a quelqu'un qui se demande si une etape part en vrille."""
+    print("0 octies) la duree est ecrite en clair")
+    check(M._duree(0) == '0 s', "zero")
+    check(M._duree(59) == '59 s', "sous la minute : en secondes")
+    check(M._duree(60) == '1 min 00 s', "la minute pile")
+    check(M._duree(2412) == '40 min 12 s', "la vraie mesure du 13/09")
+    check(M._duree(3600) == '1 h 00 min', "l'heure pile")
+    check(M._duree(4050) == '1 h 07 min', "au-dela de l'heure : les secondes ne servent plus")
+    check(M._duree(-5) == '0 s', "une horloge qui recule ne fabrique pas une duree negative")
+
+
+def check_l_etape_lourde_en_cours_est_INTERROGEABLE():
+    """Le journal dit ce qui s'est PASSE. `/api/maint/status` doit dire ce qui
+    se passe MAINTENANT : le rapport de cycle, lui, n'est ecrit qu'a la FIN --
+    donc muet pendant l'etape la plus longue, celle sur laquelle on se pose la
+    question."""
+    print("0 nonies) l'etape lourde en cours se lit dans /api/maint/status")
+    ici = Path(__file__).resolve().parent
+    src = ici.joinpath('server.py').read_text(encoding='utf-8')
+    arbre = ast.parse(src)
+    noms = {n.name for n in ast.walk(arbre) if isinstance(n, ast.FunctionDef)}
+    check('maint_lourde_etat' in noms, "la sonde existe")
+    check("'lourde': maint_lourde_etat()" in src,
+          "et elle est BRANCHEE dans la reponse de /api/maint/status")
+    check('MAINT_LOURDE_DEPUIS = None' in src,
+          "le depuis retombe a None quand plus rien ne tourne")
+    # Rejoue la mecanique du `depuis` sans importer le serveur.
+    lock, n, depuis = __import__('threading').Lock(), [0], [None]
+    def debut():
+        with lock:
+            if n[0] == 0:
+                depuis[0] = 1000.0
+            n[0] += 1
+    def fin():
+        with lock:
+            n[0] = max(0, n[0] - 1)
+            if n[0] == 0:
+                depuis[0] = None
+    debut()
+    t1 = depuis[0]
+    debut()
+    check(depuis[0] == t1,
+          "une SECONDE etape lourde ne rajeunit pas le depart de la premiere")
+    fin()
+    check(depuis[0] == t1, "et la premiere qui finit ne l'efface pas non plus")
+    fin()
+    check(depuis[0] is None, "les deux finies : plus rien ne tourne, plus de depart")
+
+
 def main():
     check_scan_nas_fait_ceder_la_maintenance()
     print()
     check_l_autre_moitie_du_garde_fou()
     print()
     check_le_drapeau_lourd_compte_au_lieu_de_basculer()
+    print()
+    check_une_etape_lourde_dit_quand_elle_FINIT()
+    print()
+    check_la_duree_se_lit_a_l_oeil()
+    print()
+    check_l_etape_lourde_en_cours_est_INTERROGEABLE()
     print()
     check_cablage_refus_standalone()
     print()

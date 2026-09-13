@@ -66,14 +66,21 @@ aucune. Si l'onglet n'apparaît pas, il n'y a rien — et ce jalon sort d'ici.
 **A3. Lire la page `/aide`.** Posée et vérifiée. Ce qui reste n'est pas une
 tâche mais un jugement : c'est sa famille qui lira ce texte.
 
-**A4. Le ménage — deux restes.** Au prochain lancement du bat 50 :
-**47 fichiers / 34,8 Mo** (34 journaux d'annulation de plus de 30 jours, 7
-rapports périmés, 6 reliquats de quarantaine). Puis **une décision** sur les
-**283 Mo** de `_to_delete\menage_20260908\_avant_deplacement\photos.db` — une
-copie de la base, que le veto retient parce que l'instrument ne sait pas la
-distinguer de la base vivante. Enfin, vider `_corbeille_menage\` à la main
-après quelques jours. **Et trois `_test_claude_tri.jpg` de 160 octets** dans
-la corbeille : mes témoins du 12/09, à purger.
+**A4. Le ménage — ce qui reste VRAIMENT (revérifié le 13/09).** Cette entrée
+annonçait une décision sur les **283 Mo** de
+`_to_delete\menage_20260908\_avant_deplacement\photos.db` : **le fichier
+n'existe plus**, `_to_delete\` pèse aujourd'hui **14 Mo** et ne contient plus
+aucune base. La décision a donc été prise sans moi — et je l'ai recopiée deux
+fois sans la vérifier. Ce qui reste, mesuré :
+
+- **`_corbeille_menage\` : 63 Mo**, à vider à la main quand Mike juge le délai
+  passé. C'est le vrai gisement.
+- `_corbeille_session\` : 5,5 Mo.
+- Le prochain bat 50 proposera de nouveau ce qu'il trouvera : **ne pas citer de
+  chiffre ici**, l'instrument le dira, et les deux fois où un chiffre a été
+  recopié dans cette roadmap il était faux.
+- Les trois `_test_claude_tri.jpg` de 160 octets (mes témoins du 12/09) ne sont
+  plus dans le dépôt ; s'ils traînent encore, c'est dans la corbeille du NAS.
 
 **A5. Windows : ne pas laisser revenir KB5124008.** Il casse Plan9, donc
 `device_bash` (reconnu par Microsoft et Anthropic ; correctif annoncé « dans
@@ -95,11 +102,40 @@ partira pas tout seul.
 Par ordre de valeur, et non de facilité. Les quatre premiers étaient
 **empêchés**, pas reportés.
 
-**B1. Le bilan de la campagne.** Première passe officielle du fonds entier :
-elle mérite son compte rendu, mesuré et pas supposé. Ce qu'on sait déjà, et
-qui n'est pas le bilan : 40 525 photos, 1 abandon, 100 % de vignettes. Ce
-qu'on ne sait pas : **ce que `v3fr|kb1` a changé** par rapport à ce qui
-existait avant. `mesure_retag_gain.py` existe pour ça.
+**B1. Le bilan de la campagne — et ce qu'on ne pourra PAS mesurer.** Première
+passe officielle du fonds entier : 40 525 photos, 1 abandon, 100 % de
+vignettes. Reste la vraie question : **ce que `v3fr|kb1` a changé**.
+
+**Mauvaise nouvelle, vérifiée le 13/09** : il n'existe plus d'instantané
+d'AVANT. La copie de 283 Mo était la dernière (A4) et elle a été effacée ;
+`photos.db.bak` est un roulement rafraîchi toutes les heures. `mesure_retag_
+gain.py`, lui, compare deux GÉNÉRATIONS de pipeline dans le même index — or
+les 40 525 photos portent désormais la même. **Le lancer maintenant ne
+mesurerait plus que le bruit du modèle.**
+
+**Le bilan DESCRIPTIF, lui, est fait** (13/09, sur la copie) — ce que le fonds
+porte aujourd'hui :
+
+| | |
+|---|---:|
+| photos taguées | **40 525** (+ 4 133 vidéos, 8 illisibles) |
+| sans aucun mot-clé | **0** |
+| sans description | **0** |
+| mots-clés par photo | médiane **6**, moyenne 6,9, de 3 à 23 |
+| au moins un fait | **99,7 %** — date 99,2, personne 44,1, lieu 28,2, espèce 10,3 |
+| vocabulaire | **44 744 mots-clés distincts** pour 280 315 occurrences |
+| vus UNE seule fois | **28 774 — 64,3 % du vocabulaire** |
+
+Couverture parfaite : pas une photo sans mots-clés ni description. **Le chiffre
+qui interroge est le dernier** : deux tiers du vocabulaire n'apparaissent
+qu'une fois (« carrelage beige », « campagne andine »). C'est de la
+description riche, et c'est très bien pour une recherche par le SENS — mais un
+mot-clé vu une fois ne sera jamais une facette de filtre utile, et il ne peut
+pas non plus apprendre une paire FR→EN. **À instruire** : les facettes
+doivent-elles se bâtir sur la fréquence plutôt que sur la liste brute ?
+
+**Leçon pour la prochaine campagne : copier la base AVANT de la lancer** —
+quatre secondes (`mesure_copie_base.py`), et c'est la seule fenêtre.
 
 **B2. Le modèle de vision — la question redevient un CHOIX.** La décision du
 12/09 (« on vit avec les 13,5 Go d'Ollama ») est **périmée par la fin de la
@@ -139,12 +175,53 @@ orphelines.bat` attend un geste de Mike ; la réversibilité y est la
 RÉGÉNÉRATION, pas une corbeille. **À re-mesurer d'abord** : le chiffre date
 d'avant que la campagne pose 40 000 vignettes.
 
-**B7. L'ordre inverse maintenance / scan — à moitié fermé.** Depuis le 07/09
-la maintenance se reporte aussi quand un balayage NAS tourne
-(`SCAN_NAS_EN_COURS`) : c'était la cause directe des 85 minutes de GPU à zéro
-du 06/09. **Reste l'ordre inverse** : une étape lourde déjà partie, puis le
-scan qui arrive dessus. Non mesuré, non corrigé — et sans campagne pour
-brouiller la mesure, c'est le bon moment.
+**B7. L'ordre inverse maintenance / scan — FERMÉ, et je l'ai vu tourner.**
+Cette ligne disait « non mesuré, non corrigé » ; **c'était faux**, et je
+l'avais recopiée sans la vérifier en réorganisant la roadmap deux heures plus
+tôt. Le garde-fou existe des DEUX côtés depuis longtemps :
+`maint_lourde_en_cours()` fait reporter le volet NAS du scan, avec un plafond
+de trois tours (`NAS_REPORTS_MAX`) pour qu'une maintenance qui n'en finit pas
+n'affame pas l'indexation. **Observé en production le 13/09** : trois reports
+à 17h05, 17h10, 17h15, puis « ▶ scan NAS repris apres 3 report(s) » à 17h20.
+
+**Ce que cette vérification a trouvé, en revanche** : le recensement avait
+annoncé son départ à 16h43 et **plus rien pendant quarante minutes** — ni fin,
+ni durée, ni verdict. Pour savoir s'il tournait encore il fallait croiser le
+journal, `maintenance_report.json` (écrit seulement à la FIN du cycle) et la
+date de `recensement.json`. Et les codes de retour des deux sous-processus
+partaient dans un JSON que personne n'ouvre : **un recensement qui ÉCHOUE
+emportait le plan de rangement avec lui, en silence.** C'est le mode de panne
+que ce projet paye le plus cher (les backfills EXIF morts pendant des mois).
+Corrigé le 13/09 : toute étape lourde dit sa fin, sa durée en clair et son
+verdict — **y compris quand elle lève** —, la conséquence d'un échec est dite
+(« le plan n'a PAS été lancé »), et `/api/maint/status` porte `maint.lourde`
+(ce qui tourne MAINTENANT, et depuis quand — lu à 23,6 min pendant que
+j'écrivais ces lignes). Bancs dans `test_maintenance.py`.
+
+**Et le découpage que la mesure a imposé** : « recensement + plan » est en fait
+DEUX sous-processus très inégaux — `recensement_doublons.py` a mis **9 min**,
+`plan_rangement.py` en était à **23 et tournait encore**. Une seule ligne pour
+les deux ne disait pas dans quelle moitié on était, ce qui est justement la
+question devant une étape qui dure. Chacune annonce désormais la sienne.
+
+**Ce qui reste ouvert, et qui est né de là** : le recensement n'a pas abouti
+depuis le **06/09**. Il est dû tous les 7 jours, il dure **plus de 40 minutes**,
+et **chaque redémarrage du serveur le tue** — or le protocole de livraison en
+impose un à chaque changement de `server.py`. Une journée de travail à mon
+rythme suffit à le rendre impossible. Deux pistes : lui laisser une fenêtre (ne
+pas livrer pendant qu'il tourne — `maint.lourde` le dit maintenant), ou le
+rendre REPRENABLE.
+
+**Et une mesure qui change la question** : pendant qu'il tourne, le CPU est à
+**0 %** et la RAM intacte. Ce n'est pas un calcul, c'est de **l'attente SMB** —
+même signature que le `parcours` de la galerie (15 ms de CPU pour 692 ms).
+Or le plafond de trois reports laisse partir le scan NAS **par-dessus** lui :
+observé le 13/09, l'énumération qui prend d'ordinaire 305 s en était à
+**22 minutes** sans avoir fini, et le recensement à 24. **La vraie question
+n'est donc pas « faut-il reporter ? » mais « le plafond de trois est-il le bon
+compromis ? »** — 15 minutes d'attente, puis deux balayages SMB qui se
+ralentissent l'un l'autre d'un facteur quatre. À mesurer avant de toucher au
+chiffre : c'est un réglage, et les réglages de ce projet se mesurent.
 
 **B8. Le tri des dépôts, à éprouver.** Ce qui reste dépend de l'usage : le
 **mur de 7 jours** est-il le bon ? faut-il un geste groupé pour le lot

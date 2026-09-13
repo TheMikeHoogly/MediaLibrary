@@ -204,6 +204,20 @@ def apply_pending_dedup(sv):
     return c
 
 
+def _duree(s):
+    """Une duree en clair. « 2 s », « 4 min 12 s », « 1 h 07 min ».
+
+    En clair et pas en secondes : un journal se lit a l'oeil, et « 2412 s » ne
+    dit pas la meme chose que « 40 min 12 s » a quelqu'un qui se demande si une
+    etape est partie en vrille."""
+    s = int(max(0, s))
+    if s < 60:
+        return f"{s} s"
+    if s < 3600:
+        return f"{s // 60} min {s % 60:02d} s"
+    return f"{s // 3600} h {(s % 3600) // 60:02d} min"
+
+
 # ── un cycle ──────────────────────────────────────────────────────────────────
 
 def run_cycle(sv, now=None):
@@ -241,14 +255,47 @@ def run_cycle(sv, now=None):
             _debut = getattr(sv, 'etape_lourde_debut', None)
             if _debut is not None:
                 _debut()
+        # MESURE du 13/09 : le recensement a annonce son depart a 16h43 et plus
+        # rien pendant 40 minutes -- ni fin, ni duree, ni verdict. Pour savoir
+        # s'il tournait encore il fallait croiser TROIS fichiers. Une etape qui
+        # dit << je pars >> et jamais << j'arrive >> est le mode de panne que ce
+        # projet paye le plus cher (les backfills EXIF morts en silence pendant
+        # des mois). Elle le dit desormais, et elle le dit AUSSI quand elle
+        # casse.
+        _t0 = time.time()
+        _verdict = 'interrompue'
         try:
 
             if step == 'recensement':
                 # lecture seule -> sous-processus (aucun conflit d'index)
-                sv.log("recensement + plan (lecture seule)…")
+                # DEUX sous-processus tres inegaux, mesure le 13/09 :
+                # `recensement_doublons.py` a mis 9 minutes, `plan_rangement.py`
+                # plus de 22. Une seule ligne pour les deux ne disait pas dans
+                # QUELLE moitie on etait -- et c'est toujours la question qu'on
+                # se pose devant une etape qui dure. Chacune annonce donc la
+                # sienne.
+                sv.log("recensement (lecture seule)…")
+                _t1 = time.time()
                 r1 = sv.run_readonly(['recensement_doublons.py'])
-                r2 = sv.run_readonly(['plan_rangement.py']) if r1 == 0 else 1
+                sv.log(f"recensement : lu en {_duree(time.time() - _t1)}"
+                       + ("" if r1 == 0 else f" — ECHEC (code {r1})"))
+                if r1 == 0:
+                    sv.log("plan de rangement (lecture seule)…")
+                    _t2 = time.time()
+                    r2 = sv.run_readonly(['plan_rangement.py'])
+                    sv.log(f"plan de rangement : bati en "
+                           f"{_duree(time.time() - _t2)}"
+                           + ("" if r2 == 0 else f" — ECHEC (code {r2})"))
+                else:
+                    r2 = 1
                 lance[step] = {'recensement': r1, 'plan': r2}
+                # Le CONSEQUENT, pas seulement le code : un recensement qui
+                # echoue emporte le plan avec lui, et c'est ca qu'il faut lire
+                # dans le journal. Les codes de retour, eux, partaient dans un
+                # JSON que personne n'ouvre.
+                if r1 != 0:
+                    sv.log("le plan de rangement n'a PAS ete lance — il "
+                           "attend un recensement qui aboutisse")
             elif step == 'dedup':
                 if mode == 'auto':
                     lance[step] = apply_pending_dedup(sv)
@@ -271,6 +318,7 @@ def run_cycle(sv, now=None):
                 lance[step] = 'propose'
 
             state[step] = now
+            _verdict = 'terminee'
         finally:
             # Dans le `finally` : une etape qui plante ne doit pas laisser
             # le scan NAS en retrait pour toujours -- meme regle, et meme
@@ -279,6 +327,12 @@ def run_cycle(sv, now=None):
                 _fin = getattr(sv, 'etape_lourde_fin', None)
                 if _fin is not None:
                     _fin()
+            # La ligne de fin est DANS le `finally`, pour la meme raison que le
+            # drapeau : une etape qui leve doit le DIRE, pas disparaitre. Le
+            # verdict passe a 'terminee' seulement apres la derniere ligne utile
+            # du `try` -- lue ici, il est donc juste dans les deux cas.
+            if _lourde:
+                sv.log(f"{step} : {_verdict} en {_duree(time.time() - _t0)}")
 
     _save_state(sv.paths['state'], state)
     rapport = {'dernier_cycle': time.strftime('%Y-%m-%d %H:%M:%S'),

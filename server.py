@@ -2802,6 +2802,39 @@ def _classe_fichier(path):
         return None
 
 
+def _motif_lisible(raison, limite=200):
+    """Un motif d'échec qui se DIAGNOSTIQUE — le type, le message, et l'endroit.
+
+    MESURE du 13/09 : la campagne a laissé UN abandon sur 40 525 photos, et
+    tout ce qu'il en restait dans l'index était la chaîne « another row
+    available ». C'est un message de SQLite (`sqlite3_errstr(SQLITE_ROW)`),
+    donc ni le modèle ni la photo — mais impossible de dire d'où il venait :
+    ni le TYPE de l'exception, ni la ligne. Une heure de lecture de code n'a
+    pas suffi à le reproduire, et la photo, elle, allait bien.
+
+    D'où cette fonction : la PROCHAINE occurrence nommera sa propre cause.
+    `sqlite3.OperationalError: another row available @ store_sqlite.py:311`
+    dit en dix mots ce que le symptôme seul ne dira jamais — c'est la règle du
+    projet (« diagnostiquer par la cause, pas par le symptôme »), appliquée
+    aux échecs qu'on garde en base.
+
+    Une chaîne passe telle quelle : les motifs écrits à la main
+    (« timeout Ollama x3 ») sont déjà des causes."""
+    if not isinstance(raison, BaseException):
+        return str(raison)[:limite]
+    nom = type(raison).__name__
+    mod = type(raison).__module__
+    if mod and mod not in ('builtins', '__main__'):
+        nom = f"{mod}.{nom}"
+    ou = ''
+    tb = getattr(raison, '__traceback__', None)
+    while tb is not None:                    # la DERNIÈRE frame : celle qui lève
+        import os as _os
+        ou = f" @ {_os.path.basename(tb.tb_frame.f_code.co_filename)}:{tb.tb_lineno}"
+        tb = tb.tb_next
+    return f"{nom}: {raison}{ou}"[:limite]
+
+
 def _marquer_echec(name, raison, classe=None):
     """Note l'échec d'un fichier dans l'index — sans JAMAIS tuer son appelant.
 
@@ -2817,7 +2850,7 @@ def _marquer_echec(name, raison, classe=None):
     regrettable ; mourir en essayant de le noter fait perdre tout le reste.
     Renvoie True si la note est passée, False si l'index était indisponible."""
     try:
-        entry = {"failed": True, "error": str(raison)[:200], "at": time.time()}
+        entry = {"failed": True, "error": _motif_lisible(raison), "at": time.time()}
         if classe:
             # La CLASSE, pas seulement le message : « contenu perdu » et
             # « hoquet SMB » se lisaient pareil sur /sante, donc se traitaient
@@ -2851,7 +2884,7 @@ def _echec_retag(name, raison):
             return False
         e = dict(e)
         e['retag_fail'] = retag_cible() or TAGGING_PIPELINE_VERSION
-        e['retag_error'] = str(raison)[:200]
+        e['retag_error'] = _motif_lisible(raison)
         e['retag_at'] = time.time()
         STORE.set(name, e)
         print(f"  ✗ Retag {name} abandonné ({str(raison)[:80]}) — "
@@ -7397,24 +7430,44 @@ def scan_nas_en_cours():
 # l'une l'autre.
 MAINT_LOURDE_LOCK = threading.Lock()
 MAINT_LOURDE_EN_COURS = 0
+# DEPUIS QUAND la plus ancienne etape lourde en cours travaille. Le compteur
+# seul dit QU'une etape parcourt le fonds ; il ne dit pas si elle est partie il
+# y a dix secondes ou quarante minutes -- et c'est exactement la question qu'on
+# se pose quand on regarde (13/09 : pour y repondre il fallait croiser trois
+# fichiers). Remis a None quand le compteur retombe a zero.
+MAINT_LOURDE_DEPUIS = None
 
 
 def maint_lourde_debut():
-    global MAINT_LOURDE_EN_COURS
+    global MAINT_LOURDE_EN_COURS, MAINT_LOURDE_DEPUIS
     with MAINT_LOURDE_LOCK:
+        if MAINT_LOURDE_EN_COURS == 0:
+            MAINT_LOURDE_DEPUIS = time.time()
         MAINT_LOURDE_EN_COURS += 1
 
 
 def maint_lourde_fin():
-    global MAINT_LOURDE_EN_COURS
+    global MAINT_LOURDE_EN_COURS, MAINT_LOURDE_DEPUIS
     with MAINT_LOURDE_LOCK:
         MAINT_LOURDE_EN_COURS = max(0, MAINT_LOURDE_EN_COURS - 1)
+        if MAINT_LOURDE_EN_COURS == 0:
+            MAINT_LOURDE_DEPUIS = None
 
 
 def maint_lourde_en_cours():
     """Vrai si une etape lourde de maintenance parcourt le fonds."""
     with MAINT_LOURDE_LOCK:
         return MAINT_LOURDE_EN_COURS > 0
+
+
+def maint_lourde_etat():
+    """{'n': combien, 'depuis': epoch|None, 'secondes': float|None} — pour
+    `/api/maint/status`. Le journal dit ce qui s'est PASSE ; ceci dit ce qui se
+    passe MAINTENANT, et depuis combien de temps."""
+    with MAINT_LOURDE_LOCK:
+        n, depuis = MAINT_LOURDE_EN_COURS, MAINT_LOURDE_DEPUIS
+    return {'n': n, 'depuis': depuis,
+            'secondes': (time.time() - depuis) if depuis else None}
 
 
 # Combien de tours au plus le volet NAS accepte d'etre reporte. Sans plafond,
@@ -15918,7 +15971,11 @@ class Handler(BaseHTTPRequestHandler):
         maint = {'auto': MAINTENANCE_AUTO, 'paused': MAINT_PAUSED,
                  'every_s': MAINTENANCE_EVERY, 'autonomy': _m.AUTONOMY,
                  'intervals': _m.INTERVALS, 'state': load('maintenance_state.json') or {},
-                 'report': summ(load('maintenance_report.json'))}
+                 'report': summ(load('maintenance_report.json')),
+                 # Ce qui tourne MAINTENANT : le rapport, lui, n'est ecrit qu'a
+                 # la FIN du cycle, donc il est muet pendant l'etape la plus
+                 # longue -- celle sur laquelle on se pose la question.
+                 'lourde': maint_lourde_etat()}
         recensement = summ(load('recensement.json'))
         plan = summ(load('plan_rangement.json'))
         plan_annee = (lambda pa: {
