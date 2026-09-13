@@ -52,11 +52,11 @@ ouvert d'un coup ; la difficulté n'est plus d'attendre, c'est de CHOISIR.
 
 ## A. Ce qui appartient à Mike
 
-**A1. Trier les 248 dépôts d'`Uploads`.** La lampe de l'entête y mène
-(`/tri`), le tableau se trie et se filtre, la sélection multiple et les gestes
-groupés fonctionnent. Le plus ancien attend depuis **31 jours**. **Rien ne
-bouge sans lui** : c'est le principe du chantier, et c'est le seul point de la
-roadmap qui n'ait pas avancé d'un pas depuis le 12/09.
+**A1. Les 248 dépôts d'`Uploads` — TRIÉS le 13/09.** `_Uploads` est vide
+(un `Thumbs.db`). Mike a gardé 236 fichiers, puis passé le bat 36 puis le
+bat 26. Vérifié sur le disque le 13/09 à 21 h 30 : la racine de `_A TRIER`
+est descendue de **174 à 22 entrées**. Ce que le tri a laissé derrière lui
+n'appartient plus à cette ligne mais à **A7**.
 
 **A2. La dernière photo sensible — probablement close.** `/api/sensibles`
 répond **0 en attente de verdict** le 13/09. La liste est PAR UTILISATEUR :
@@ -90,6 +90,33 @@ reproposé (le bloc PowerShell est dans l'historique de la session du 12/09).
 `Get-HotFix` MENT sur ce sujet ; la vérité est
 `(Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion').UBR`.
 
+**A7. Ce que le tri du 13/09 a laissé — trois tas, et deux décisions.**
+Mesuré sur le disque le 13/09 à 21 h 30, pas déduit.
+
+- **19 vidéos dans la racine de `_A TRIER`, toutes des doublons — vérifiés.**
+  14 ont la même taille que leur homonyme du fonds, tête et milieu identiques
+  (seule la remorque de métadonnées diffère) ; les 5 autres ont le **fonds plus
+  LONG** (+4 ms à **+1,43 s**), même codec, même résolution, même débit — la
+  copie d'`_A TRIER` est tronquée. **Dans les 19 cas la copie du fonds est la
+  bonne.** Le bat 36 ne sait pas les voir : il compare par
+  `exiftool -ImageDataHash`, donc des images. Elles resteront là tant que
+  personne ne les efface — ou tant que le bat 36 ne sait pas comparer une
+  vidéo (B8).
+- **68 copies « Google porte mieux » retirées sans arbitrage — réversible
+  jusqu'au ~13/10.** Le bat 36 descend dans le sous-dossier d'arbitrage. Son
+  verdict n'est pas faux : `ImageDataHash` est EXACT, l'image est identique à
+  l'octet près. L'écart de taille (souvent ×2) est du HORS-image — **60 des 68
+  portent une vidéo Motion Photo**, 8 autre chose. C'est cohérent avec la
+  décision debout (bats 42/43 : on retire la partie vidéo, on garde l'image),
+  mais elle a été prise par un outil et non par l'arbitrage. **Décision de
+  Mike** : laisser la corbeille se vider au bat 24, ou
+  `deplacer_doublons_atrier.py --undo` (remet la dernière fournée — les 106,
+  pas seulement les 68).
+- **18 fichiers restent dans `Google porte mieux`** (2024 : 3, 2025 : 12,
+  2026 : 3) : l'arbitrage que personne n'a encore fait. Deux par deux, à l'œil.
+- Deux déchets qu'aucun plan ne verra jamais (extensions hors médias) :
+  `Thumbs.db` et `1000142357_20260812_223550_4377.jpg_original`.
+
 **A6. Les deux gestes git que je ne peux pas faire.** L'agent ne connaît que
 `ping`, `commit` et `livrer` : `git rm --cached _collage6.py _collage7.py`
 (ignorés mais suivis) passe par `27 - Git.bat`. Rien d'urgent, mais ça ne
@@ -110,22 +137,27 @@ l'effacement de l'état d'avant — donc tout ce qui doit changer dans le
 pipeline doit changer **en même temps**, ou pas du tout. Les instruire
 séparément ferait courir le risque de deux campagnes là où une suffit.
 
-**Le reste est du travail ordinaire**, qui ne dépend de personne : la fenêtre
-de maintenance (B7), les mesures qui demandaient le serveur arrêté (B5, B6), et
-la grille à la demande (section C). C'est là que je peux avancer seul.
+**Le reste est du travail ordinaire**, qui ne dépend de personne : la marche
+du NAS et la grille à la demande (section C), `_A TRIER` par propriétaire (B8),
+et les mesures qui demandaient le serveur arrêté (B5, B6). C'est là que je peux
+avancer seul.
 
 Dans l'ordre où je le ferais :
 
 | | quoi | qui décide | coût |
 |---|---|---|---|
-| 1 | **La grille à la demande** (§ C3) | décidé — Mike a tranché | gros |
-| 2 | **La fenêtre du recensement** (B7) | moi | moyen |
-| 3 | **Préparer la décision « prochaine campagne »** (B1·B2·B3·B4) | **Mike**, après que j'aie mesuré | moyen |
-| 4 | B5, B6 : ce qui demandait le serveur arrêté ou le GPU | moi | petit |
-| 5 | **La copie hors site** (§ D1) | **Mike** | à lui seul |
+| 1 | **Couper la marche du NAS** sur la grille récursive (§ C3) | décidé — la mesure du 13/09 tranche | moyen |
+| 2 | **Le chargement à la demande** (§ C3), APRÈS le 1 | décidé — Mike a tranché | gros |
+| 3 | **`_A TRIER` par propriétaire** + les trois défauts voisins (B8) | décidé — Mike, 13/09 | petit |
+| 4 | **Préparer la décision « prochaine campagne »** (B1·B2·B3·B4) | **Mike**, après que j'aie mesuré | moyen |
+| 5 | B5, B6 : ce qui demandait le serveur arrêté ou le GPU | moi | petit |
+| 6 | **La copie hors site** (§ D1) | **Mike** | à lui seul |
 
-**Ce qui n'est dans aucune ligne** : les 248 dépôts (A1). Rien ne les
-débloque que lui.
+*B7 (la fenêtre du recensement) a quitté ce tableau : il est allé au bout tout
+seul en 1 h 09 le 13/09.*
+
+**Ce qui n'est dans aucune ligne** : ce que le tri du 13/09 a laissé (A7) —
+deux décisions qui n'appartiennent qu'à Mike, dont une **expire au ~13/10**.
 
 **B1. Le bilan de la campagne — et ce qu'on ne pourra PAS mesurer.** Première
 passe officielle du fonds entier : 40 525 photos, 1 abandon, 100 % de
@@ -254,11 +286,62 @@ verdict — **y compris quand elle lève** —, la conséquence d'un échec est 
 (ce qui tourne MAINTENANT, et depuis quand — lu à 23,6 min pendant que
 j'écrivais ces lignes). Bancs dans `test_maintenance.py`.
 
+**Et il est allé au bout — pour la première fois depuis le 06/09.** Observé
+le 13/09 : départ 18 h 02, `recensement : lu en 1 h 09 min`, puis
+`plan de rangement : bâti en 0 s`, puis `recensement : terminée en 1 h 09 min`
+à 19 h 11 57. La ligne de FIN écrite le matin même a donc fait ses preuves en
+production, et le chiffre corrige les deux relevés partiels d'avant (40 min
+seul, 8 min à chaud) : **le recensement complet coûte 1 h 09**, et le plan
+qui le suit ne coûte rien. Le recensement du 19 h 11 est enregistré :
+44 666 fichiers, **274,7 Go**, 1 093 sans date, 15 groupes de doublons.
+**Ce jalon n'est plus une priorité** — il descend au rang de fait acquis.
+
 **Et le découpage que la mesure a imposé** : « recensement + plan » est en fait
 DEUX sous-processus très inégaux — `recensement_doublons.py` a mis **9 min**,
 `plan_rangement.py` en était à **23 et tournait encore**. Une seule ligne pour
 les deux ne disait pas dans quelle moitié on était, ce qui est justement la
 question devant une étape qui dure. Chacune annonce désormais la sienne.
+
+**B8. `_A TRIER` PAR PROPRIÉTAIRE — décidé par Mike le 13/09, pas construit.**
+Et la moitié existe déjà : `rangement_annee.base_du_fonds()` porte la règle
+dans sa propre docstring — « `Photos Flo/_A TRIER` : on range chez lui — c'est
+la boîte de réception par propriétaire ». Vérifié en exécutant la fonction :
+
+    /Photos/_A TRIER/x.jpg            -> /Photos/Photos Mike/2012/x.jpg
+    /Photos/Photos Flo/_A TRIER/x.jpg -> /Photos/Photos Flo/2012/x.jpg
+    /Photos/Photos Papa/A TRIER/x.jpg -> /Photos/Photos Papa/2012/x.jpg
+
+**Le chemin EST le propriétaire** : rien à stocker dans l'index, et `ATRI_RE`
+tolère déjà `_A TRIER`, `A TRIER`, `_A_TRIER`. Ce qui manque est du côté
+DÉPÔT : `cible_a_trier()` code en dur `UPLOAD_DIR.parent / '_A TRIER'`, la
+racine, qui retombe sur le propriétaire du fonds. **Aujourd'hui, si Flo garde
+un dépôt, il finit dans `Photos Mike\<année>`, en silence.** L'identité est
+pourtant déjà captée : `noter_depot()` écrit `{"le":…, "par": <nom>}`, et les
+comptes existent (Mike admin, Flo).
+
+**Ce que je construirais**, dans cet ordre :
+
+1. **`cible_a_trier(nom)`** — défaut = le dossier du compte connecté s'il
+   existe, sinon la racine, choix modifiable dans `/tri`. **UN seul endroit**,
+   comme l'exige le commentaire déjà posé au-dessus de `DOSSIER_A_TRIER`
+   (« un second assemblage de la même règle finit toujours par diverger »).
+2. **Exclure `Google porte mieux` du plan d'année** : `rangement_annee`
+   descend récursivement dans `_A TRIER` et met donc la salle d'arbitrage dans
+   le plan — 86 faux déplacements à chaque passage du bat 26, et le jour où
+   une cible serait libre il classerait une photo jamais arbitrée.
+3. **L'exclure aussi du bat 36** (`verifier_doublons_atrier`) : c'est ce qui a
+   résolu tout seul l'arbitrage des 68 (A7). Même dossier, même règle, deux
+   outils : la règle doit vivre en un endroit que les deux lisent.
+4. **Le bat 36 et les vidéos** : `ImageDataHash` ne les voit pas, donc les 19
+   doublons d'A7 sont increvables. Une comparaison de flux (durée + taille +
+   empreinte tête/milieu) suffirait — c'est exactement ce que j'ai fait à la
+   main pour les qualifier.
+
+**Le découpage utilisateur n'est PAS « par compte »** mais « par dossier
+propriétaire » : `Photos Papa` n'a pas de compte. Et **le déposant est un
+défaut, jamais un verdict** — une photo que Flo dépose de l'album de Papa
+appartient à `Photos Papa`. `_Uploads` reste unique et partagé : c'est une
+piste d'atterrissage, la dupliquer multiplierait le scan pour rien.
 
 **Ce qui reste ouvert, et qui est né de là** : le recensement n'a pas abouti
 depuis le **06/09**. Il est dû tous les 7 jours, il dure **plus de 40 minutes**,
@@ -330,19 +413,19 @@ d'`envoi` = 93 ms pour 1,86 Mo. **C'était vrai pour un DOSSIER ; c'est faux
 pour le pire cas.** Mesuré ce soir sur la page du fonds ENTIER
 (`dir=1&rec=1`, ~46 000 photos, 33,7 Mo) :
 
-| | dossier de 2 519 photos | fonds ENTIER |
-|---|---:|---:|
-| total | ~0,6 s | **25 s** (112 s à froid) |
-| `parcours` (marche SMB) | 50 ms — cache | **18,2 s — 72 %** |
-| `enrichir` | 220 ms | 3,5 s |
-| `envoi` | 93 ms | **1,1 s — 4 %** |
-| `index` (les MÊMES photos, lues dans l'index) | 45 ms | **0,48 s** |
+| | dossier de 2 519 | fonds ENTIER, NAS occupé | fonds ENTIER, **NAS libre** |
+|---|---:|---:|---:|
+| total | ~0,6 s | 25,2 s | **23,4 s** |
+| `parcours` (marche SMB) | 50 ms — cache | 18,2 s | **16,8 s — 72 %** |
+| `enrichir` | 220 ms | 3,5 s | 3,4 s — 15 % |
+| `envoi` | 93 ms | 1,1 s | 1,0 s — 4 % |
+| `index` (les MÊMES photos, lues dans l'index) | 45 ms | 0,48 s | **0,31 s** |
 
 **Deux choses tombent de ce tableau.** La première : sur le pire cas, envoyer
 ne coûte rien — c'est **la marche sur le NAS** qui coûte tout. Une pagination
 qui ne bornerait que le RENDU laisserait donc le premier écran attendre 18 s.
 La seconde, et c'est la piste : **l'index connaît les mêmes photos et répond
-38 fois plus vite** (0,48 s contre 18,2). `_index_entries_under` le fait déjà
+54 fois plus vite** (0,31 s contre 16,8). `_index_entries_under` le fait déjà
 pour compter les mots-clés.
 
 **La question à instruire n'est donc pas « combien de fiches par page » mais
@@ -366,10 +449,31 @@ Le reste de ce que la décision engage, inchangé :
 - **Un compteur qui ment est le mode de panne de ce projet.** Le bandeau doit
   dire le total RÉEL, pas ce qui est chargé.
 
-**Mise en garde sur ces chiffres** : ils ont été pris pendant qu'un recensement
-tenait le NAS. Ils donnent la FORME du problème (la marche domine, l'index est
-deux ordres de grandeur moins cher), pas des valeurs à citer. **Les reprendre
-au calme avant de dimensionner quoi que ce soit.**
+**La mise en garde est levée — reprise au calme le 13/09 à 19 h 22.** Les
+premiers chiffres avaient été pris pendant qu'un recensement tenait le NAS ;
+celui-ci s'est terminé à 19 h 11 (B7) et la page a été rechargée dix minutes
+plus tard. **La contention n'expliquait que 1,4 s sur 18.** La marche est donc
+bien le coût, et le détail qui tranche est ailleurs : sur ces 16,8 s de marche,
+le CPU n'en consomme que **1,1 s** — **94 % d'attente pure**. Aucune
+optimisation de code ne touchera ça ; seule une marche plus courte, ou pas de
+marche du tout, le fera.
+
+**Ce que cela impose comme ORDRE** — c'est la vraie conclusion de la mesure :
+
+1. **couper la marche d'abord** (servir la grille récursive depuis l'index,
+   marche réduite au dossier courant ou reléguée au scan de fond) :
+   23,4 s → **~7 s**, sans toucher à l'affichage ;
+2. **le chargement à la demande ensuite**, qui attaque alors `enrichir`
+   (3,4 s, le seul poste qui grandit avec le nombre de fiches rendues) :
+   ~7 s → **~1 s**.
+
+Dans l'autre ordre, le chargement à la demande seul ne gagne que les ~2 s de
+charge utile sur 23 — un gros chantier pour 9 % de la page. **Le contrôle qui
+ouvre le chantier** : l'index porte 44 665 clés, la marche a trouvé 44 666
+fichiers — **un écart d'UN fichier**, et il coûte 16,8 s à chaque page.
+Identifier ce fichier, et dire ce que la marche apporte que l'index n'a pas
+(présence, `mtime`/taille pour les dates), est le premier quart d'heure de la
+prochaine séance.
 
 **C4. Le premier chargement reste cher** : ~2,5 s après un redémarrage,
 partage et caches froids. Aucun mémo ne fabrique quoi que ce soit, ils évitent

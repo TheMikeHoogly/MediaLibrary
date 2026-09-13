@@ -1403,6 +1403,43 @@ mesurerait la plateforme au lieu de la règle — même cas que
 tombée : `r'\\\\NAS\\Photos'` dans le source du banc, quatre barres, une UNC
 qui n'en est pas une. Le banc a eu raison contre moi.
 
+### 3.24 Le pire cas : la MARCHE, et 94 % d'attente — mesuré le 13/09
+
+Tout le § 3 mesure la page d'un DOSSIER (2 519 photos). Le pire cas réel est
+la grille du fonds entier, `dir=1&rec=1` : ~46 000 photos, 33,7 Mo de page.
+Mesurée deux fois, une fois pendant qu'un recensement tenait le NAS (18 h 56)
+et une fois dix minutes après sa fin (19 h 22) :
+
+| phase | NAS occupé | **NAS libre** | CPU |
+|---|---:|---:|---:|
+| total | 25,2 s | **23,4 s** | 7,7 s |
+| `parcours` | 18,2 s | **16,8 s — 72 %** | **1,1 s** |
+| `enrichir` | 3,5 s | 3,4 s — 15 % | 3,4 s |
+| `gabarit` + `json` + `envoi` | 2,3 s | 2,2 s — 9 % | 2,2 s |
+| `index` | 0,48 s | **0,31 s** | 0,31 s |
+
+**Deux faits, et ils commandent la suite.**
+
+1. **La contention n'expliquait que 1,4 s sur 18.** La marche est donc le coût,
+   pas un artefact de la mesure.
+2. **`parcours` consomme 16,8 s d'horloge pour 1,1 s de CPU** — 94 % d'attente
+   SMB. C'est la signature d'un poste qu'aucune mémoïsation n'atteint : il n'y
+   a rien à ne pas refaire, il y a à ne pas attendre.
+
+**Ce que ça corrige dans ce document.** Le § 5 conclut « le prochain gain, c'est
+d'envoyer moins ». C'est vrai pour un dossier — `envoi` y est le premier poste
+hors calcul — et **faux pour le pire cas**, où l'envoi pèse 4 %. La conclusion
+ne se généralise pas d'une page à l'autre : elle était mesurée sur 2 519
+photos et elle ne vaut que là.
+
+**Et le repère qui ouvre le chantier** : l'index porte 44 665 clés, la marche a
+trouvé 44 666 fichiers. **Un écart d'UN fichier**, payé 16,8 s à chaque page,
+quand l'index répond en 0,31 s — **54 fois moins cher**. La suite est dans
+`ROADMAP.md` § C3 : la question à trancher n'est pas la taille d'une page,
+c'est si une grille récursive doit encore marcher sur le NAS.
+
+---
+
 ## 4. Ce qui a été vérifié et qui va bien
 
 À ne pas rouvrir sans raison neuve :
