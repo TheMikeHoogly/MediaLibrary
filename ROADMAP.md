@@ -212,16 +212,28 @@ rythme suffit à le rendre impossible. Deux pistes : lui laisser une fenêtre (n
 pas livrer pendant qu'il tourne — `maint.lourde` le dit maintenant), ou le
 rendre REPRENABLE.
 
-**Et une mesure qui change la question** : pendant qu'il tourne, le CPU est à
-**0 %** et la RAM intacte. Ce n'est pas un calcul, c'est de **l'attente SMB** —
-même signature que le `parcours` de la galerie (15 ms de CPU pour 692 ms).
-Or le plafond de trois reports laisse partir le scan NAS **par-dessus** lui :
-observé le 13/09, l'énumération qui prend d'ordinaire 305 s en était à
-**22 minutes** sans avoir fini, et le recensement à 24. **La vraie question
-n'est donc pas « faut-il reporter ? » mais « le plafond de trois est-il le bon
-compromis ? »** — 15 minutes d'attente, puis deux balayages SMB qui se
-ralentissent l'un l'autre d'un facteur quatre. À mesurer avant de toucher au
-chiffre : c'est un réglage, et les réglages de ce projet se mesurent.
+**Deux mesures, dont une qui m'a contredit dans l'heure** — et c'est le nouvel
+instrument qui l'a permis :
+
+- **Ce qui est SÛR.** Pendant l'étape lourde, le CPU est à **0 %** et la RAM
+  intacte : ce n'est pas du calcul, c'est de **l'attente SMB** (même signature
+  que le `parcours` de la galerie, 15 ms de CPU pour 692 ms). Et le plafond de
+  trois reports laisse partir le scan NAS **par-dessus** l'étape lourde :
+  l'énumération qui prend d'ordinaire **305 s** en était à **22 minutes** ce
+  jour-là. **La concurrence coûte cher, c'est mesuré.**
+- **Ce que j'avais écrit et qui est FAUX.** J'en avais conclu que les deux
+  balayages se ralentissaient « d'un facteur quatre ». L'observation suivante
+  dit le contraire : `recensement_doublons.py` a mis **8 min** pendant que le
+  scan tournait, et **plus de 27 min** en tournant SEUL, une demi-heure plus
+  tard. Hypothèse non vérifiée : le scan venait d'énumérer le fonds, donc le
+  cache de métadonnées SMB était CHAUD. **Ce n'est qu'une hypothèse** — la
+  durée de cette étape varie du simple au triple et personne ne sait pourquoi.
+
+**La question à instruire n'est donc pas « le plafond de trois est-il bon ? »
+mais « de quoi dépend la durée de cette étape ? »** — sans cette réponse, tout
+réglage du plafond serait un chiffre choisi à l'aveugle. L'instrument pour y
+répondre existe maintenant : chaque moitié annonce sa durée à chaque passage,
+il suffit d'en lire quelques-unes.
 
 **B8. Le tri des dépôts, à éprouver.** Ce qui reste dépend de l'usage : le
 **mur de 7 jours** est-il le bon ? faut-il un geste groupé pour le lot
