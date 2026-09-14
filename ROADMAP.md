@@ -140,11 +140,28 @@ Mesuré sur le disque le 13/09 à 21 h 30, pas déduit.
   ce sont les **1 814** faux positifs du strip Motion Photo ; ces 13 viennent
   des **99 autres**, que rien n'a jamais résolus.
 
-  **Geste, si Mike valide** : la copie de Google devient la canonique — la
-  version du fonds part à la corbeille, celle de la salle prend sa place et se
-  range par année. Rien n'existe pour le faire : la salle est désormais inerte
-  pour les outils (c'est le but), donc ça se fait à la main ou avec un
-  `appliquer_` à écrire.
+  **La page `/arbitrage` pose les deux versions côte à côte** (14/09, demandée
+  par Mike). Lecture seule, aucun bouton : le geste « la version de Google
+  devient la canonique » n'existe pas encore, et un bouton qui ne peut pas
+  aboutir est une promesse que l'interface ne tient pas (règle 9). Tout vient
+  de l'index — la durée d'une vidéo y est déjà écrite par le scan — le seul
+  aller-retour NAS est un `exists()` par fichier, qui dit quand Mike a déjà
+  effacé dans la salle au lieu d'afficher une vignette cassée.
+
+  **Et elle a montré, au premier regard, ce que trois mesures n'avaient pas
+  dit** : sur les images, la copie de Google s'affiche **RETOURNÉE À 180°** et
+  celle du NAS à l'endroit. C'est ce que `ImageDataHash` appelait « image
+  différente ». L'explication la plus simple — **non vérifiée** : la copie du
+  NAS a été ré-encodée avec la rotation appliquée (d'où 765 Ko contre 2 Mo),
+  celle de Google garde les octets d'origine et son drapeau d'orientation.
+  Si c'est ça, **Google porte plus GROS mais pas mieux** sur les images, et le
+  verdict s'inverse par rapport aux vidéos.
+
+  **Geste, si Mike valide** : pour les vidéos, la copie de Google devient la
+  canonique — la version du fonds part à la corbeille, celle de la salle prend
+  sa place et se range par année. Rien n'existe pour le faire : la salle est
+  désormais inerte pour les outils (c'est le but), donc ça se fait à la main
+  ou avec un `appliquer_` à écrire.
 - **Les 19 vidéos en double** ci-dessus ne sont plus increvables : le bat 36
   sait les comparer (B8). Celles dont le fonds porte une version plus longue
   attendent un geste explicite, `--videos-tronquees` — le verdict est écrit,
@@ -603,6 +620,32 @@ réapparaît pas.
 ---
 
 ## Pistes ouvertes par Mike (22/08) — à instruire, pas encore priorisées
+
+**P1 (14/09). Une VEILLE qui montre les photos.** Quand un compte est connecté
+et que rien ne bouge pendant **5 minutes**, la page passe en plein écran et
+déroule une galerie ALÉATOIRE de SES photos. Deux choses à instruire avant
+d'écrire une ligne : (a) « ses photos » = ce que la VUE lui rend
+(`visibilite.filtre`), donc jamais le `PRIVE` d'un autre — c'est la même règle
+que partout, et c'est la seule qui rende la veille montrable dans un salon ;
+(b) le fond travaille (tagging, scan, vignettes) et l'UI a la priorité
+(`LAST_HEAVY_AT`) : une veille qui charge une photo toutes les 6 secondes ne
+doit pas réveiller le NAS en continu — `/api/random` et `/api/playlist`
+existent déjà, et `window.Vignettes` aussi. Reste à trancher : la veille
+reprend-elle où elle en était, et que fait-elle sur un compte qui n'a aucune
+photo à lui.
+
+**P2 (14/09). Une DÉMO de bienvenue, et l'e-mail qui va avec.** Objectif de
+Mike : partager la photothèque avec sa famille quand elle sera finie. Il faut
+donc, pour un nouveau venu qui n'a jamais rien installé : comment on se
+connecte, comment on **dépose** des photos ou un dossier entier, comment on
+**nomme** un visage ou un animal, et comment on **cherche** par le sens dans
+ce à quoi on a accès. Deux livrables distincts, et ils ne s'écrivent pas
+pareil : une **démo dans le produit** (la page `/aide` existe déjà — la
+question est si elle suffit, ou s'il faut un parcours guidé qui se lance au
+premier login) et un **e-mail** court, sans jargon, qui donne l'adresse, le
+compte, et trois gestes. **À écrire en dernier** : un mode d'emploi rédigé
+avant que l'interface soit figée décrit une interface qui n'existera plus.
+
 
 **Tirer plus d'intelligence du LLM local À MATÉRIEL CONSTANT.** Le plafond de
 4 Go de VRAM ne bouge pas, et « modèle plus gros » est PARQUÉ pour cette

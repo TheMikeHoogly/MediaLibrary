@@ -13347,6 +13347,10 @@ class Handler(BaseHTTPRequestHandler):
             self._send_html(ui_page('residu'))
         elif path == '/api/residu/list':
             self._serve_residu_list()
+        elif path == '/arbitrage':
+            self._send_html(ui_page('arbitrage'))
+        elif path == '/api/arbitrage/list':
+            self._serve_arbitrage_list()
 
         elif path == '/api/status':
             self._serve_status()
@@ -13656,6 +13660,83 @@ class Handler(BaseHTTPRequestHandler):
              # LEQUEL. La page affiche ce texte tel quel.
              'garder_vers': (cible[1] if cible else '')},
             ensure_ascii=False).encode(), 'application/json')
+
+    def _serve_arbitrage_list(self):
+        """Les paires de la SALLE D'ARBITRAGE, côte à côte.
+
+        Le bat 33 dépose sous `_A TRIER\\Google porte mieux\\<année>` ce que
+        Google détient en version PLUS GROSSE que le NAS — « un dossier à
+        part, pour qu'on sache qu'ils attendent un arbitrage ». Depuis le
+        14/09 les outils le laissent tranquille (`rangement_annee`), ce qui
+        veut dire que **rien n'en sort tant qu'un humain n'a pas regardé**.
+        Cette page est ce regard : deux vignettes l'une à côté de l'autre, et
+        les trois chiffres qui décident.
+
+        Tout vient de l'INDEX, y compris la durée des vidéos (le scan l'écrit
+        à l'indexation) : aucun exiftool, aucune lecture de média. Le seul
+        aller-retour NAS est un `exists()` par fichier — il y en a treize, et
+        il gagne sa place : Mike efface dans la salle au fur et à mesure, et
+        une vignette cassée sans un mot ferait chercher un défaut là où il
+        n'y a qu'un fichier déjà traité.
+
+        L'appariement se fait par NOM DE FICHIER, la même règle que le
+        bat 36 — le bat 33 ne renomme pas ce qu'il rapatrie. Une salle sans
+        jumeau n'est pas une erreur : c'est une photo que le NAS n'a pas du
+        tout, et la page le DIT au lieu d'afficher un cadre vide.
+
+        Lecture seule : cette route ne déplace rien et n'efface rien."""
+        import rangement_annee as _ra
+        vue = STORE.data
+        roots = media_roots()
+        salle, par_nom = [], {}
+        for k, e in list(vue.items()):
+            if _ra.est_arbitrage(k):
+                salle.append((k, e))
+            else:
+                par_nom.setdefault(_pkey(Path(k).name), []).append((k, e))
+
+        def cote(cle, e):
+            chemin = _resolve_key(cle)
+            try:
+                existe = os.path.exists(chemin)
+            except OSError:
+                existe = False
+            return {
+                'key': cle,
+                'url': _url_for_key(cle, roots) or '',
+                'vignette': '/api/thumb?key=' + urllib.parse.quote(cle, safe=''),
+                'dossier': Path(cle).parent.name,
+                'taille': e.get('size') or 0,
+                'taille_h': human_size(e.get('size') or 0),
+                # La durée est DANS l'index : le scan l'écrit pour toute vidéo
+                # (`{video: True, duree, taken}`). Rien à mesurer ici.
+                'duree': e.get('duree') if e.get('video') else None,
+                'existe': 1 if existe else 0,
+            }
+
+        paires = []
+        for cle, e in salle:
+            jumeaux = par_nom.get(_pkey(Path(cle).name)) or []
+            g = cote(cle, e)
+            d = cote(*jumeaux[0]) if jumeaux else None
+            paires.append({
+                'nom': Path(cle).name,
+                'video': 1 if e.get('video') else 0,
+                'annee': Path(cle).parent.name,
+                'google': g, 'nas': d,
+                'ecart_octets': (g['taille'] - d['taille']) if d else None,
+                'ecart_duree': (round(g['duree'] - d['duree'], 2)
+                                if d and g['duree'] is not None
+                                and d['duree'] is not None else None),
+            })
+        # Les vidéos d'abord : c'est là que l'écart est tranchant (une durée),
+        # alors que deux images demandent l'œil.
+        paires.sort(key=lambda x: (-x['video'], x['nom']))
+        self._send(200, json.dumps(
+            {'ok': True, 'n': len(paires),
+             'salles': list(_ra.SALLES_ARBITRAGE),
+             'paires': paires}, ensure_ascii=False).encode(),
+            'application/json')
 
     def _tri_un_geste(self, ops, cle, geste):
         """UN dépôt, sous verrou déjà tenu. Lève `FileOpError`/`FileOpRefus`."""

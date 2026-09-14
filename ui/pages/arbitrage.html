@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>La salle d arbitrage</title>
+<!--UI:components-->
+<style>
+/* Deux versions d une meme photo, l une a cote de l autre : la PAIRE est
+   l unite, pas le fichier. Les deux vignettes ont donc la meme hauteur et la
+   meme largeur de colonne — comparer deux images qui ne sont pas au meme
+   gabarit, c est comparer deux cadrages. Tokens seuls.
+   background / color / font de <body> vivent dans ui/base.css. */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+.bar { display: flex; align-items: center; gap: var(--e-3);
+       padding: var(--e-3) var(--e-4); background: var(--salle-2);
+       border-bottom: var(--trait); flex-wrap: wrap; font-size: var(--t-sm); }
+.bar h1 { font: 600 var(--t-lg)/1.2 var(--f-affichage); letter-spacing: -0.01em;
+          color: var(--texte); }
+.bar .sp { margin-left: auto; }
+.compte { font-family: var(--f-donnees); color: var(--texte); }
+
+.feuille { background: var(--papier); color: var(--texte-papier);
+           border-radius: var(--r-md); padding: var(--e-3) var(--e-4);
+           margin: var(--e-3) var(--e-4); max-width: 900px;
+           box-shadow: 0 1px 0 var(--papier-2), 0 8px 24px #0008;
+           font-size: var(--t-sm); line-height: 1.55; }
+.feuille b { font-weight: 600; }
+.feuille .aide { color: var(--graphite-p); }
+
+.liste { padding: 0 var(--e-4) var(--e-8); }
+
+.paire { border: var(--trait); border-radius: var(--r-md);
+         background: var(--salle-2); margin-bottom: var(--e-4);
+         overflow: hidden; }
+.paire > header { display: flex; align-items: baseline; gap: var(--e-3);
+                  flex-wrap: wrap; padding: var(--e-2) var(--e-3);
+                  border-bottom: var(--trait); }
+.paire > header .nom { font-family: var(--f-donnees); color: var(--texte);
+                       font-size: var(--t-sm); }
+.paire > header .an { color: var(--graphite); font-size: var(--t-xs); }
+.paire > header .verdict { margin-left: auto; font-family: var(--f-donnees);
+                           font-size: var(--t-xs); color: var(--graphite); }
+.paire > header .verdict.tranche { color: var(--veilleuse); }
+
+/* Deux colonnes egales, qui passent l une sous l autre au telephone. Pas de
+   nombre de colonnes en dur : c est la largeur disponible qui decide. */
+/* Pas de nombre de colonnes en dur : c est la largeur qui decide, et les
+   deux versions passent l une sous l autre au telephone. */
+.duo { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+       gap: var(--e-3); padding: var(--e-3); }
+.cote { background: var(--salle); border: var(--trait);
+        border-radius: var(--r-sm); padding: var(--e-3); }
+.cote > h3 { font: 600 var(--t-xs)/1 var(--f-texte); text-transform: uppercase;
+             letter-spacing: 0.04em; color: var(--graphite);
+             margin-bottom: var(--e-2); }
+.cote.gagne > h3 { color: var(--veilleuse); }
+/* PAS `.vue` : c est la cellule CARREE de la planche contact, et
+   `components.css` lui pose `aspect-ratio: 1`. Reutiliser son nom ici donnait
+   une boite carree ou une photo en portrait tenait sur un cinquieme de la
+   largeur -- vu a l ecran, pas releve a la lecture. Un composant canonique se
+   reutilise ou se laisse tranquille, il ne se redecore pas.
+   Ici la boite est HAUTE : on compare deux versions d une meme image, donc
+   elle doit etre aussi grande que l ecran le permet, et `contain` (jamais
+   `cover`) parce qu un recadrage cacherait justement ce qu on vient voir. */
+.regard { display: block; background: var(--salle-3); border-radius: var(--r-sm);
+          line-height: 0; min-height: var(--touch); }
+.regard img { width: 100%; height: min(56vh, 620px); object-fit: contain;
+              display: block; border-radius: var(--r-sm); }
+.regard:focus-visible { outline: 2px solid var(--veilleuse); outline-offset: 2px; }
+dl { display: grid; grid-template-columns: auto 1fr; gap: var(--e-1) var(--e-3);
+     margin-top: var(--e-2); font-size: var(--t-xs); }
+dt { color: var(--graphite); }
+dd { font-family: var(--f-donnees); color: var(--texte); }
+.absent { color: var(--encre); font-size: var(--t-xs); margin-top: var(--e-2);
+          line-height: 1.5; }
+.seul { padding: var(--e-3); color: var(--graphite); font-size: var(--t-sm);
+        line-height: 1.5; }
+.vide { padding: var(--e-6) var(--e-4); color: var(--graphite);
+        font-size: var(--t-sm); line-height: 1.6; max-width: 62ch; }
+.vide b { color: var(--texte); }
+
+:focus-visible { outline: 2px solid var(--veilleuse); outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important;
+                           transition-duration: 0.01ms !important; }
+}
+</style>
+</head>
+<body>
+<!--APPNAV-->
+<div class="bar">
+  <h1>La salle d&rsquo;arbitrage</h1>
+  <span class="sp"></span>
+  <span class="compte" id="compte">&hellip;</span>
+</div>
+
+<section class="feuille">
+  <p>Le bat 33 d&eacute;pose ici ce que <b>Google d&eacute;tient en version plus
+  grosse</b> que le NAS. La question n&rsquo;est pas laquelle p&egrave;se le
+  plus &mdash; on le sait &mdash; mais <b>si l&rsquo;octet en plus est de
+  l&rsquo;image</b> ou seulement de la remorque de m&eacute;tadonn&eacute;es.</p>
+  <p class="aide">Depuis le 14/09, aucun outil ne touche &agrave; ce dossier :
+  ni le rangement par ann&eacute;e, ni le d&eacute;doublonnage. Rien n&rsquo;en
+  sort tant que personne n&rsquo;a regard&eacute;. Cette page ne d&eacute;place
+  et n&rsquo;efface rien : elle pose les deux versions c&ocirc;te &agrave;
+  c&ocirc;te. Cliquer une vignette ouvre le fichier entier.</p>
+</section>
+
+<div class="liste" id="liste"><p class="vide">Chargement&hellip;</p></div>
+
+<script>
+function esc(s){return (s||'').replace(/[&<>"]/g,function(c){
+  return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+
+function duree(v){
+  if (v === null || v === undefined) return null;
+  var m = Math.floor(v / 60), s = v - m * 60;
+  return (m ? m + ' min ' : '') + s.toFixed(1).replace('.', ',') + ' s';
+}
+
+// Le VERDICT que la page peut tenir toute seule, et rien de plus : une duree
+// est un fait, « la meilleure image » est un jugement. Pour une video, l ecart
+// de duree tranche ; pour une image, il faut l oeil, et la page le dit.
+function verdict(p){
+  if (!p.nas) return {t: 'le NAS ne l a pas du tout', fort: true};
+  if (p.video && p.ecart_duree !== null){
+    if (p.ecart_duree > 0.5)
+      return {t: 'le NAS est plus court de ' + duree(p.ecart_duree),
+              fort: true, gagne: 'google'};
+    if (p.ecart_duree < -0.5)
+      return {t: 'le NAS est plus long de ' + duree(-p.ecart_duree),
+              fort: true, gagne: 'nas'};
+    return {t: 'meme duree — l ecart est hors-image', fort: false};
+  }
+  return {t: 'a l oeil', fort: false};
+}
+
+function cote(titre, c, gagne){
+  if (!c) return '';
+  var l = '<div class="cote' + (gagne ? ' gagne' : '') + '">' +
+    '<h3>' + esc(titre) + '</h3>';
+  if (c.existe){
+    l += '<a class="regard" href="' + esc(c.url) + '">' +
+         '<img loading="lazy" src="' + esc(c.vignette) + '" alt="' +
+         esc(titre) + '"></a>';
+  } else {
+    l += '<p class="absent">Ce fichier n&rsquo;est plus sur le disque. ' +
+         'L&rsquo;index le porte encore : il se mettra &agrave; jour au ' +
+         'prochain balayage du NAS.</p>';
+  }
+  l += '<dl><dt>Taille</dt><dd>' + esc(c.taille_h) + '</dd>';
+  if (c.duree !== null && c.duree !== undefined)
+    l += '<dt>Dur&eacute;e</dt><dd>' + esc(duree(c.duree)) + '</dd>';
+  l += '<dt>Dossier</dt><dd>' + esc(c.dossier) + '</dd></dl></div>';
+  return l;
+}
+
+function rendre(d){
+  var l = document.getElementById('liste');
+  var paires = d.paires || [];
+  document.getElementById('compte').textContent =
+    paires.length + (paires.length > 1 ? ' paires' : ' paire');
+  if (!paires.length){
+    l.innerHTML = '<p class="vide"><b>La salle est vide.</b> Rien n&rsquo;attend ' +
+      'd&rsquo;arbitrage : ou bien le bat 33 n&rsquo;a rien rapatri&eacute;, ou ' +
+      'bien tout a d&eacute;j&agrave; &eacute;t&eacute; trait&eacute;.</p>';
+    return;
+  }
+  var h = '';
+  paires.forEach(function(p){
+    var v = verdict(p);
+    h += '<article class="paire"><header>' +
+      '<span class="nom">' + esc(p.nom) + '</span>' +
+      '<span class="an">' + esc(p.annee) + '</span>' +
+      '<span class="verdict' + (v.fort ? ' tranche' : '') + '">' +
+      esc(v.t) + '</span></header>';
+    if (!p.nas){
+      h += '<div class="duo">' + cote('Chez Google', p.google, true) + '</div>' +
+        '<p class="seul">Aucun fichier de ce nom dans le fonds : il n&rsquo;y a ' +
+        'rien &agrave; comparer, cette photo se range comme une autre.</p>';
+    } else {
+      h += '<div class="duo">' +
+        cote('Chez Google', p.google, v.gagne === 'google') +
+        cote('Sur le NAS', p.nas, v.gagne === 'nas') + '</div>';
+    }
+    h += '</article>';
+  });
+  l.innerHTML = h;
+}
+
+fetch('/api/arbitrage/list').then(function(r){ return r.json(); })
+  .then(rendre)
+  .catch(function(e){
+    document.getElementById('liste').innerHTML =
+      '<p class="vide"><b>La liste n&rsquo;a pas pu &ecirc;tre lue.</b> ' +
+      esc(String(e)) + ' &mdash; recharger la page.</p>';
+  });
+</script>
+</body>
+</html>
