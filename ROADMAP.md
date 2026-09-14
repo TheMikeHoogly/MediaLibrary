@@ -112,56 +112,26 @@ Mesuré sur le disque le 13/09 à 21 h 30, pas déduit.
   Mike** : laisser la corbeille se vider au bat 24, ou
   `deplacer_doublons_atrier.py --undo` (remet la dernière fournée — les 106,
   pas seulement les 68).
-- **Ce qui reste dans `Google porte mieux` : MESURÉ le 14/09 au soir, et le
-  verdict n'est pas celui qu'on attendait.** Ils ne risquent plus d'être
-  tranchés par un outil (B8) : le plan d'année en comptait 18 dans ses
-  déplacements, il les laisse et le dit (`arbitrage`). Restent **13 fichiers
-  sur le disque** (Mike a effacé les 3 de `2024` et 2 de `2026` le 14/09 ;
-  l'index les portait encore au moment de la mesure). Chacun a **exactement un
-  jumeau** dans `Photos Mike\<année>` — `mesure_salle_arbitrage.py` les pose
-  côte à côte :
-
-  | | salle | fonds | verdict |
-  |---|---:|---:|---|
-  | **9 vidéos** | 25 à 204 Mo | 15 à 131 Mo | **le NAS est TRONQUÉ** |
-  | **4 images** | 2,3 à 4,4 Mo | 0,8 à 3,9 Mo | image différente, à l'œil |
-
-  **Les vidéos ne sont pas un faux positif : Google porte vraiment mieux.**
-  Durées mesurées, salle contre fonds : 42,6 s / 33,5 · **111,6 / 71,6** ·
-  24,3 / 15,8 · 17,9 / 11,0 · 24,3 / 16,0 · **25,3 / 13,2** · 82,0 / 60,0 —
-  sept sont amputées de 25 à 50 %. Deux seulement sont marginales :
-  `20250814_214518` (28,40 contre 28,39 s, +385 Ko de conteneur) et
-  `20250815_000138` (+2,6 s). **La cause de la troncature n'est pas
-  établie** ; aucun outil du projet ne raccourcit un `.mp4` (le bat 42 ne
-  touche que des `.jpg`, et aucun de ces neuf noms n'est dans
-  `strip_motionphoto_manifeste.json`).
-
-  **Ce n'est donc PAS « on a déjà traité ça ».** Ce qui a été traité le 08/09,
-  ce sont les **1 814** faux positifs du strip Motion Photo ; ces 13 viennent
-  des **99 autres**, que rien n'a jamais résolus.
-
-  **La page `/arbitrage` pose les deux versions côte à côte** (14/09, demandée
-  par Mike). Lecture seule, aucun bouton : le geste « la version de Google
-  devient la canonique » n'existe pas encore, et un bouton qui ne peut pas
-  aboutir est une promesse que l'interface ne tient pas (règle 9). Tout vient
-  de l'index — la durée d'une vidéo y est déjà écrite par le scan — le seul
-  aller-retour NAS est un `exists()` par fichier, qui dit quand Mike a déjà
-  effacé dans la salle au lieu d'afficher une vignette cassée.
-
-  **Et elle a montré, au premier regard, ce que trois mesures n'avaient pas
-  dit** : sur les images, la copie de Google s'affiche **RETOURNÉE À 180°** et
-  celle du NAS à l'endroit. C'est ce que `ImageDataHash` appelait « image
-  différente ». L'explication la plus simple — **non vérifiée** : la copie du
-  NAS a été ré-encodée avec la rotation appliquée (d'où 765 Ko contre 2 Mo),
-  celle de Google garde les octets d'origine et son drapeau d'orientation.
-  Si c'est ça, **Google porte plus GROS mais pas mieux** sur les images, et le
-  verdict s'inverse par rapport aux vidéos.
-
-  **Geste, si Mike valide** : pour les vidéos, la copie de Google devient la
-  canonique — la version du fonds part à la corbeille, celle de la salle prend
-  sa place et se range par année. Rien n'existe pour le faire : la salle est
-  désormais inerte pour les outils (c'est le but), donc ça se fait à la main
-  ou avec un `appliquer_` à écrire.
+- **`Google porte mieux` est VIDE — arbitrage CLOS le 14/09 au soir.** Mike a
+  tout effacé après avoir vu les paires dans `/arbitrage`, et il a donné la
+  cause qu'aucune mesure ne pouvait connaître : **les retouches sont les
+  siennes**. Les images du NAS sont ré-encodées à l'endroit (d'où 765 Ko contre
+  2 Mo, et « image différente » au hash), et le NAS gagne. Contrôlé sur le
+  disque : le dossier n'existe plus (404), `_A TRIER` n'a plus aucun
+  sous-dossier, `mesure_salle_arbitrage.py` trouve les 13 fichiers absents.
+  **Une question reste ouverte** (`QUESTIONS_MIKE.md`) : les 9 vidéos effacées
+  étaient 25 à 50 % PLUS LONGUES que celles du fonds — coupe volontaire, ou
+  versions longues perdues ?
+- **L'index porte encore les 13 clés** : la grille récursive est servie par
+  l'index depuis ce matin, donc elle les montre jusqu'au prochain balayage du
+  NAS (un tour sur six, ~30 min). C'est le seul coût visible de ce changement,
+  et il s'efface tout seul. Mesuré ce soir : `_A TRIER` rend **19 fichiers au
+  disque** (passe non récursive) contre 32 dans la vue récursive.
+- **Ce qui reste dans `_A TRIER` se range par le BAT 26, jamais tout seul.**
+  La maintenance BÂTIT le plan (`docs/plan_rangement_annee.json`, autonomie
+  `rangement: propose`) ; elle ne l'applique pas — appliquer DÉPLACE des
+  fichiers, et ce geste appartient à Mike. Plan du 14/09 au soir : **19
+  déplacements**, 0 conflit, 0 sans date, tous vers `Photos Mike\<année>`.
 - **Les 19 vidéos en double** ci-dessus ne sont plus increvables : le bat 36
   sait les comparer (B8). Celles dont le fonds porte une version plus longue
   attendent un geste explicite, `--videos-tronquees` — le verdict est écrit,
@@ -169,10 +139,12 @@ Mesuré sur le disque le 13/09 à 21 h 30, pas déduit.
 - Deux déchets qu'aucun plan ne verra jamais (extensions hors médias) :
   `Thumbs.db` et `1000142357_20260812_223550_4377.jpg_original`.
 
-**A6. Les deux gestes git que je ne peux pas faire.** L'agent ne connaît que
-`ping`, `commit` et `livrer` : `git rm --cached _collage6.py _collage7.py`
-(ignorés mais suivis) passe par `27 - Git.bat`. Rien d'urgent, mais ça ne
-partira pas tout seul.
+**A6. Les gestes git que je ne peux pas faire.** L'agent ne connaît que
+`ping`, `commit` et `livrer` ; le reste passe par `27 - Git.bat`. Deux
+détachements en attente, sans urgence, mais ils ne partiront pas tout seuls :
+`git rm --cached _collage6.py _collage7.py` (ignorés mais suivis) et
+`git rm -r --cached _to_delete` (deux fichiers y sont entrés avant que le
+dossier soit ignoré).
 
 ---
 
@@ -189,27 +161,43 @@ l'effacement de l'état d'avant — donc tout ce qui doit changer dans le
 pipeline doit changer **en même temps**, ou pas du tout. Les instruire
 séparément ferait courir le risque de deux campagnes là où une suffit.
 
-**Le reste est du travail ordinaire**, qui ne dépend de personne : la marche
-du NAS (§ C3, livrée le 14/09) et la grille à la demande, `_A TRIER` par
-propriétaire (B8, livré le 14/09), et les mesures qui demandaient le serveur
-arrêté (B5, B6). C'est là que je peux avancer seul.
+**Le reste est du travail ordinaire**, qui ne dépend de personne : la grille
+à la demande (§ C3), et les mesures qui demandaient le serveur arrêté ou le
+GPU (B5, B6). C'est là que je peux avancer seul — la marche du NAS et
+`_A TRIER` par propriétaire, qui étaient dans cette liste, ont été livrés le
+14/09.
 
-Dans l'ordre où je le ferais :
+Dans l'ordre où je le ferais, **reclassé le 14/09 au soir** :
 
 | | quoi | qui décide | coût |
 |---|---|---|---|
-| 1 | **Couper la marche du NAS** sur la grille récursive (§ C3) | décidé — la mesure du 13/09 tranche | moyen |
-| 2 | **Le chargement à la demande** (§ C3), APRÈS le 1 | décidé — Mike a tranché | gros |
-| 3 | ~~**`_A TRIER` par propriétaire** + les trois défauts voisins (B8)~~ | **LIVRÉ le 14/09** | fait |
-| 4 | **Préparer la décision « prochaine campagne »** (B1·B2·B3·B4) | **Mike**, après que j'aie mesuré | moyen |
-| 5 | B5, B6 : ce qui demandait le serveur arrêté ou le GPU | moi | petit |
-| 6 | **La copie hors site** (§ D1) | **Mike** | à lui seul |
+| — | ~~Couper la marche du NAS (§ C3)~~ | **LIVRÉ 14/09** — 23,4 s → 6,5 s | fait |
+| — | ~~`_A TRIER` par propriétaire + les défauts voisins (B8)~~ | **LIVRÉ 14/09** | fait |
+| **1** | **Unifier les CINQ producteurs de fiches** (§ C3) | moi | 1 h |
+| **2** | **Le chargement à la demande** (§ C3), APRÈS le 1 | décidé — Mike | gros |
+| **3** | **B5, B6** : ce qui demandait le serveur arrêté ou le GPU | moi | petit |
+| **4** | **Préparer la décision « prochaine campagne »** (B1·B2·B3·B4) | **Mike**, après que j'aie mesuré | moyen |
+| **5** | **La veille en plein écran** (P1, demandé le 14/09) | Mike a demandé, reste à instruire | moyen |
+| **6** | **La copie hors site** (§ D1) | **Mike** | à lui seul |
+| **7** | **La démo de bienvenue et son e-mail** (P2) | Mike a demandé — **en DERNIER** | moyen |
 
-*B7 (la fenêtre du recensement) a quitté ce tableau : il est allé au bout tout
-seul en 1 h 09 le 13/09.*
+**Pourquoi 1 avant 2.** La pagination devra se poser DERRIÈRE les cinq
+producteurs de `file_data` (navigation, tags, recherche/semblables, même jour,
+grille indexée). Seul le cinquième passe par `_fiche_depuis_cle` ; les quatre
+autres construisent la leur à la main, à l'identique. Les unifier d'abord
+coûte une heure et évite de câbler cinq fois le même mécanisme — puis de le
+corriger cinq fois.
 
-**Ce qui n'est dans aucune ligne** : ce que le tri du 13/09 a laissé (A7) —
-deux décisions qui n'appartiennent qu'à Mike, dont une **expire au ~13/10**.
+**Pourquoi 7 en dernier, et c'est une règle, pas une préférence.** Un mode
+d'emploi écrit avant que l'interface soit figée décrit une interface qui
+n'existera plus. La démo et l'e-mail se rédigent quand la veille (5) et le
+chargement à la demande (2) sont posés, pas avant.
+
+**Ce qui appartient à Mike et n'attend que lui** : le plan de rangement des
+19 fichiers d'`_A TRIER` (bat 26), les deux détachements git (A6), les 63 Mo
+de `_corbeille_menage` (A4), la fenêtre de réversibilité des 68 copies qui se
+ferme **vers le 13/10** (A7), et le KB Windows à masquer **vers le 16/10**
+(A5).
 
 **B1. Le bilan de la campagne — et ce qu'on ne pourra PAS mesurer.** Première
 passe officielle du fonds entier : 40 525 photos, 1 abandon, 100 % de
