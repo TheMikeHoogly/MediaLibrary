@@ -73,9 +73,15 @@ n'existe plus**, `_to_delete\` pèse aujourd'hui **14 Mo** et ne contient plus
 aucune base. La décision a donc été prise sans moi — et je l'ai recopiée deux
 fois sans la vérifier. Ce qui reste, mesuré :
 
-- **`_corbeille_menage\` : 63 Mo**, à vider à la main quand Mike juge le délai
-  passé. C'est le vrai gisement.
-- `_corbeille_session\` : 5,5 Mo.
+- **VIDÉES le 14/09 au soir, à la demande de Mike** : `_corbeille_menage\`
+  (63 Mo), `_to_delete\` (14 Mo) et `_corbeille_session\` (10 Mo) —
+  **87 Mo**. Ce qui RESTE, et qui ne doit pas partir : les journaux
+  d'annulation `_corbeille_doublons_atrier.jsonl` (la réversibilité des 106
+  retraits, fenêtre ouverte jusque vers le **13/10**) et `fichiers_undo.json`,
+  plus `_corbeille_copies\` (164 Ko, le journal du bat 33).
+- **La corbeille des PHOTOS, elle, n'a pas été touchée** : 255 entrées,
+  603 Mo, rétention 180 jours. Ce sont des photos que Mike a effacées ; les
+  purger est irréversible et c'est le bat 24, son geste.
 - Le prochain bat 50 proposera de nouveau ce qu'il trouvera : **ne pas citer de
   chiffre ici**, l'instrument le dira, et les deux fois où un chiffre a été
   recopié dans cette roadmap il était faux.
@@ -131,7 +137,16 @@ Mesuré sur le disque le 13/09 à 21 h 30, pas déduit.
   La maintenance BÂTIT le plan (`docs/plan_rangement_annee.json`, autonomie
   `rangement: propose`) ; elle ne l'applique pas — appliquer DÉPLACE des
   fichiers, et ce geste appartient à Mike. Plan du 14/09 au soir : **19
-  déplacements**, 0 conflit, 0 sans date, tous vers `Photos Mike\<année>`.
+  déplacements**, tous vers `Photos Mike\<année>` — et **les 19 cibles sont
+  DÉJÀ PRISES**, ce qui explique les collisions que Mike a vues.
+- **Ce que ces 19 collisions sont VRAIMENT** (`verifier_plan_annee.py`,
+  14/09) : **14 doublons** (même flux que le fichier déjà rangé — le bat 36
+  les retire vers la corbeille réversible), **4 voisins** (même durée à la
+  centième, 0,4 à 0,7 % d'écart de taille : les octets diffèrent, la vidéo
+  non — à regarder, pas à jeter) et **1 vraiment différent**,
+  `20260731_232718.mp4` (35,81 s ici contre 37,24 s dans le fonds : deux
+  fichiers distincts, à renommer, jamais à écraser). **Aucune n'autorise un
+  effacement à l'aveugle**, et le bat 26 le dit maintenant AVANT l'aperçu.
 - **Les 19 vidéos en double** ci-dessus ne sont plus increvables : le bat 36
   sait les comparer (B8). Celles dont le fonds porte une version plus longue
   attendent un geste explicite, `--videos-tronquees` — le verdict est écrit,

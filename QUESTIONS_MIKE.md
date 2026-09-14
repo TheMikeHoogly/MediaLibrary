@@ -1,41 +1,6 @@
 # Questions en attente de Mike
 
-## Ouverte — **les 9 vidéos de `Google porte mieux`** (14/09)
-
-Tu as effacé toute la salle d'arbitrage après avoir vu les paires, et tu as
-donné la cause pour les IMAGES : les retouches sont les tiennes, le NAS gagne.
-C'est net et c'est clos.
-
-**Les 9 VIDÉOS, elles, n'étaient pas dans ce cas.** Mesuré avant l'effacement
-(`mesure_salle_arbitrage.py`, durées lues par exiftool) : la copie de Google
-était **25 à 50 % plus longue** que celle du fonds.
-
-| fichier | Google | NAS |
-|---|---:|---:|
-| `20250510_213412.mp4` | 42,6 s | 33,5 s |
-| `20250510_213701.mp4` | **111,6 s** | **71,6 s** |
-| `20250510_214847.mp4` | 24,3 s | 15,8 s |
-| `20250717_212635.mp4` | 17,9 s | 11,0 s |
-| `20250814_203639.mp4` | 24,3 s | 16,0 s |
-| `20250814_213911.mp4` | **25,3 s** | **13,2 s** |
-| `20250814_214518.mp4` | 28,40 s | 28,39 s |
-| `20250814_222300.mp4` | 82,0 s | 60,0 s |
-| `20250815_000138.mp4` | 64,9 s | 62,3 s |
-
-**La question** : ces coupes sont-elles de toi, comme les rotations — auquel
-cas tout est en ordre et cette entrée se vide — ou les versions longues
-sont-elles parties sans que tu l'aies voulu ?
-
-**Ma recommandation** : ouvrir deux ou trois de ces vidéos dans
-`Photos Mike\2025` et regarder si elles finissent là où tu les as coupées. Si
-oui, rien à faire. Sinon, deux endroits où chercher **avant que ça expire** :
-la corbeille du NAS (`#recycle` sur le partage, si elle est activée) et
-l'extrait du Takeout, s'il n'a pas été effacé par le bat 49. **La corbeille de
-l'application ne les a pas** — vérifié, aucune entrée depuis la salle, tu les
-as effacées depuis Windows.
-
-**En attendant** : je ne touche à rien. Aucun outil ne peut plus les
-ressusciter et aucun ne va les chercher.
+**Aucune question ouverte au 14/09 au soir.**
 
 ---
 
@@ -45,6 +10,13 @@ ressusciter et aucun ne va les chercher.
 > `eval/DECISIONS.md` si elle tranche, dans `docs/DECISIONS_OUTILLAGE.md` si
 > elle touche l'outillage, dans `ROADMAP.md` si elle priorise.
 > Protocole : `CLAUDE.md`, « Traite autonome ».
+>
+> **Vidée le 14/09 au soir** : « les 9 vidéos de la salle étaient 25 à 50 %
+> plus longues chez Google — coupe volontaire, ou versions longues perdues ? »
+> Mike : **« oui, les coupes étaient de moi, tout est en ordre »**. Rien n'est
+> perdu, et le verdict de la salle est complet : pour les images comme pour
+> les vidéos, **c'est le NAS qui porte la bonne version**, parce que c'est lui
+> qui porte le travail de Mike.
 >
 > **Vidée le 14/09** : « la salle d'arbitrage ». Mike a regardé les paires
 > dans `/arbitrage` et tranché : **les retouches sont les siennes**, le NAS

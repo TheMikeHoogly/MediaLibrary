@@ -23,7 +23,8 @@ bat 36 qui sait enfin comparer une vidéo ; la page **`/arbitrage`**.
 celles du fonds.
 
 Index : **44 471 clés**, 0 file d'attente, vignettes à jour, 0 cycle
-inexpliqué. `main` à jour, arbre de travail propre.
+inexpliqué. `main` à jour, arbre de travail propre, **87 Mo de corbeilles
+locales vidées** — les journaux d'annulation, eux, sont intacts.
 
 ---
 
@@ -122,7 +123,14 @@ n'existera plus).
   `NAS_SCAN_CYCLES`) — et, symétriquement, une photo effacée y reste visible
   jusque-là. Son propre dossier, lui, est à jour tout de suite.
 - **Le rangement par année ne s'applique JAMAIS tout seul** : la maintenance
-  bâtit le plan, le bat 26 l'applique. C'est voulu.
+  bâtit le plan, le bat 26 l'applique. C'est voulu. Et le bat 26 commence
+  désormais par `verifier_plan_annee.py`, qui JUGE les collisions au lieu de
+  les compter : **une collision n'est pas une permission d'effacer**.
+- **Un instrument qui tranche au-delà de ce qu'il mesure est pire qu'un
+  instrument muet.** `verifier_plan_annee` classait « deux vidéos distinctes »
+  quatre fichiers de MÊME durée à la centième et 0,5 % d'écart de taille. D'où
+  le verdict `VOISIN` et ses deux garde-fous : une borne de 5 % sur la taille,
+  et le refus de voisiner deux durées INCONNUES — deux zéros sont égaux.
 - **Le recensement dure 1 h 09** et **chaque redémarrage le tue**. Avant de
   livrer en rafale : `maint.lourde` dans `/api/maint/status`.
 - **Deux balayages SMB simultanés** : l'énumération passe de 305 s à 2 100 s.

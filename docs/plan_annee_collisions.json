@@ -1,0 +1,108 @@
+{
+ "genere_le": "2026-09-14 22:40:00",
+ "plan": "C:\\Prog\\Claude\\MediaLibrary\\docs\\plan_rangement_annee.json",
+ "libres": 0,
+ "par_verdict": {
+  "doublon": [
+   {
+    "src": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\20260731_192338.mp4",
+    "dst": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\20260731_192338.mp4",
+    "pourquoi": "meme flux que la cible : doublon"
+   },
+   {
+    "src": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\20260731_192902.mp4",
+    "dst": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\20260731_192902.mp4",
+    "pourquoi": "meme flux que la cible : doublon"
+   },
+   {
+    "src": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\20260731_215905.mp4",
+    "dst": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\20260731_215905.mp4",
+    "pourquoi": "meme flux que la cible : doublon"
+   },
+   {
+    "src": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\20260731_221329.mp4",
+    "dst": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\20260731_221329.mp4",
+    "pourquoi": "meme flux que la cible : doublon"
+   },
+   {
+    "src": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\20260808_202231.mp4",
+    "dst": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\20260808_202231.mp4",
+    "pourquoi": "meme flux que la cible : doublon"
+   },
+   {
+    "src": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\20260808_202458.mp4",
+    "dst": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\20260808_202458.mp4",
+    "pourquoi": "meme flux que la cible : doublon"
+   },
+   {
+    "src": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\20260808_202553.mp4",
+    "dst": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\20260808_202553.mp4",
+    "pourquoi": "meme flux que la cible : doublon"
+   },
+   {
+    "src": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\20260808_204527.mp4",
+    "dst": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\20260808_204527.mp4",
+    "pourquoi": "meme flux que la cible : doublon"
+   },
+   {
+    "src": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\20260809_011118.mp4",
+    "dst": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\20260809_011118.mp4",
+    "pourquoi": "meme flux que la cible : doublon"
+   },
+   {
+    "src": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\20260813_142104.mp4",
+    "dst": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\20260813_142104.mp4",
+    "pourquoi": "meme flux que la cible : doublon"
+   },
+   {
+    "src": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\20260821_194435.mp4",
+    "dst": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\20260821_194435.mp4",
+    "pourquoi": "meme flux que la cible : doublon"
+   },
+   {
+    "src": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\20260821_194634.mp4",
+    "dst": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\20260821_194634.mp4",
+    "pourquoi": "meme flux que la cible : doublon"
+   },
+   {
+    "src": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\20260821_194712.mp4",
+    "dst": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\20260821_194712.mp4",
+    "pourquoi": "meme flux que la cible : doublon"
+   },
+   {
+    "src": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\20260822_153033.mp4",
+    "dst": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\20260822_153033.mp4",
+    "pourquoi": "meme flux que la cible : doublon"
+   }
+  ],
+  "voisin": [
+   {
+    "src": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\20260731_223501.mp4",
+    "dst": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\20260731_223501.mp4",
+    "pourquoi": "MEME DUREE, 0.5 % de taille d ecart -- le meme film, conteneur different ? ici 121.5 Mo / 66.36 s, dans le fonds 122.1 Mo / 66.36 s"
+   },
+   {
+    "src": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\20260731_224032.mp4",
+    "dst": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\20260731_224032.mp4",
+    "pourquoi": "MEME DUREE, 0.4 % de taille d ecart -- le meme film, conteneur different ? ici 89.4 Mo / 48.86 s, dans le fonds 89.8 Mo / 48.86 s"
+   },
+   {
+    "src": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\20260731_234145.mp4",
+    "dst": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\20260731_234145.mp4",
+    "pourquoi": "MEME DUREE, 0.7 % de taille d ecart -- le meme film, conteneur different ? ici 107.2 Mo / 58.62 s, dans le fonds 107.9 Mo / 58.62 s"
+   },
+   {
+    "src": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\20260801_000719.mp4",
+    "dst": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\20260801_000719.mp4",
+    "pourquoi": "MEME DUREE, 0.5 % de taille d ecart -- le meme film, conteneur different ? ici 45.7 Mo / 24.90 s, dans le fonds 45.9 Mo / 24.90 s"
+   }
+  ],
+  "different": [
+   {
+    "src": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\20260731_232718.mp4",
+    "dst": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\20260731_232718.mp4",
+    "pourquoi": "DUREES differentes -- ici 65.7 Mo / 35.81 s, dans le fonds 68.5 Mo / 37.24 s"
+   }
+  ]
+ }
+}
