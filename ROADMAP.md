@@ -188,13 +188,19 @@ Dans l'ordre où je le ferais, **reclassé le 14/09 au soir** :
 |---|---|---|---|
 | — | ~~Couper la marche du NAS (§ C3)~~ | **LIVRÉ 14/09** — 23,4 s → 6,5 s | fait |
 | — | ~~`_A TRIER` par propriétaire + les défauts voisins (B8)~~ | **LIVRÉ 14/09** | fait |
-| **1** | **Unifier les CINQ producteurs de fiches** (§ C3) | moi | 1 h |
+| **0** | **LE TIRAGE EN AVEUGLE** : deux modèles × deux prompts, qui répond à B2 ET B3 | moi — c'est ce qui occupe le GPU | moyen |
+| **1** | **Unifier les CINQ producteurs de fiches** (§ C3) — pendant que le tirage tourne | moi | 1 h |
 | **2** | **Le chargement à la demande** (§ C3), APRÈS le 1 | décidé — Mike | gros |
 | **3** | **B5, B6** : ce qui demandait le serveur arrêté ou le GPU | moi | petit |
-| **4** | **Préparer la décision « prochaine campagne »** (B1·B2·B3·B4) | **Mike**, après que j'aie mesuré | moyen |
+| **4** | ~~Préparer la décision « prochaine campagne »~~ → **passe en 0** | Mike a dit oui aux 8 h le 14/09 | — |
 | **5** | **La veille en plein écran** (P1, demandé le 14/09) | Mike a demandé, reste à instruire | moyen |
 | **6** | **La copie hors site** (§ D1) | **Mike** | à lui seul |
 | **7** | **La démo de bienvenue et son e-mail** (P2) | Mike a demandé — **en DERNIER** | moyen |
+
+**Pourquoi 0 d'abord.** Il tourne sur le GPU pendant des dizaines de minutes
+et n'occupe personne : c'est le seul point du tableau qui se LANCE puis se
+laisse travailler. Le 1 se code à côté. Et il débloque la seule décision que
+Mike ne peut pas prendre sans moi.
 
 **Pourquoi 1 avant 2.** La pagination devra se poser DERRIÈRE les cinq
 producteurs de `file_data` (navigation, tags, recherche/semblables, même jour,
@@ -304,8 +310,28 @@ Mike puisse décider en une fois — et rien de plus :
    (`mesure_copie_base.py`, quatre secondes). C'est la seule fenêtre, et on
    l'a manquée la fois précédente (B1).
 
-**Tant que ces quatre points ne sont pas sur une seule page, ne rien proposer
-à Mike** : une décision à 8 heures de GPU ne se prend pas sur une intuition.
+**MIKE A DIT OUI AUX 8 HEURES — le 14/09 au soir.** Le COÛT est accepté ; le
+CONTENU ne l'est pas, et c'est à moi de le produire. Ce que ça change : le
+point 1 ci-dessus tombe (il était connu, il est validé), le point 4 est
+trivial, et **il reste les points 2 et 3, tous deux à MESURER**. Tant qu'ils
+ne sont pas sur la table, il n'y a rien à lui proposer — « oui aux 8 heures »
+n'est pas « oui à ce modèle-là avec ce prompt-là ».
+
+**Le point 3 est à moitié mesuré, le 14/09 au soir.** Sur les 44 459 entrées,
+**23 photos** (0,05 %) portent aujourd'hui un mot-clé qui les rendrait
+candidates à la question « document sensible » — 13 « carte bancaire », 4
+« facture », 3 « certificat medical », et une poignée d'autres. Toutes sont
+déjà passées par `qwen3.5:4b|v3fr|kb1`. **Mais 23 est un PLANCHER, pas la
+réponse** : `candidat_sensible` lit le vocabulaire que le prompt ACTUEL a
+produit, alors que la question ajoutée servirait précisément à trouver ce
+qu'il ne nomme pas. Ce qui manque est donc l'écart : sur un tirage neutre,
+combien de photos le prompt AVEC la question signale-t-il que celui d'AUJOURD'HUI
+laisse passer ?
+
+**Et c'est la même expérience que le point 2.** Un seul tirage en aveugle,
+deux modèles × deux prompts, répond aux deux questions à la fois — c'est ce
+que la prochaine séance doit lancer en premier, parce que c'est ce qui occupe
+le GPU pendant que le reste se code.
 
 **B5. Re-mesurer les Motion Photos arrivées depuis le 03/09** — demande le
 serveur arrêté, donc impossible pendant la campagne, trivial maintenant.

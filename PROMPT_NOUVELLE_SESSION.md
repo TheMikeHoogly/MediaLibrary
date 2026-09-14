@@ -17,10 +17,13 @@ bat 36 qui sait enfin comparer une vidéo ; la page **`/arbitrage`**.
 
 **Un compte par propriétaire** : Mike (admin), Flo, **Papa** (créé le 14/09).
 
-**La salle d'arbitrage est close et vide** — Mike a tranché, les retouches
-étaient les siennes. **Une seule question lui appartient encore**, dans
-`QUESTIONS_MIKE.md` : les 9 vidéos effacées étaient 25 à 50 % plus longues que
-celles du fonds.
+**La salle d'arbitrage est close et vide** — Mike a tranché : les retouches,
+rotations comme coupes, étaient les siennes. Pour les images comme pour les
+vidéos, **c'est le NAS qui porte la bonne version**. Une copie plus grosse
+n'est pas une copie meilleure.
+
+**Mike a accepté les 8 heures de GPU d'une prochaine campagne** — le coût,
+pas le contenu. Voir § 1.
 
 Index : **44 471 clés**, 0 file d'attente, vignettes à jour, 0 cycle
 inexpliqué. `main` à jour, arbre de travail propre, **87 Mo de corbeilles
@@ -30,19 +33,64 @@ locales vidées** — les journaux d'annulation, eux, sont intacts.
 
 ## 1. Par où commencer
 
-**Le tableau de priorités a été reclassé le 14/09 au soir** (`ROADMAP.md` § B).
-Les deux premiers points sont pour moi et ne dépendent de personne :
+**Mike a dit OUI aux 8 heures de GPU d'une prochaine campagne** (14/09 au
+soir). Le COÛT est accepté ; **le CONTENU ne l'est pas**, et c'est à moi de le
+produire. « Oui aux 8 heures » n'est pas « oui à ce modèle-là avec ce
+prompt-là ». Il reste deux choses à mesurer, et **une seule expérience répond
+aux deux**.
 
-**1. Unifier les CINQ producteurs de fiches — une heure, à faire d'abord.**
-`file_data` est bâti à cinq endroits : navigation, tags, recherche/semblables,
+### 0. LE TIRAGE EN AVEUGLE — à lancer en premier, il occupe le GPU
+
+**Deux modèles × deux prompts sur le MÊME tirage aléatoire.** Ce qu'il
+tranche :
+
+- **quel modèle** — référence en place `qwen3.5:4b|v3fr|kb1`, 11,3 s/photo,
+  3,4 Go de VRAM (`modele.txt` porte l'historique : `qwen3-vl:4b` déborde,
+  `qwen3.5:2b` casse le format) ;
+- **ce que la question « document sensible » ajouterait** — mesuré le 14/09 :
+  **23 photos sur 44 459** (0,05 %) sont candidates aujourd'hui, dont 13
+  « carte bancaire ». **C'est un PLANCHER** : `candidat_sensible` lit le
+  vocabulaire du prompt ACTUEL, or la question sert à trouver ce qu'il ne
+  nomme pas. Ce qui décide est l'ÉCART entre les deux prompts sur un tirage
+  neutre.
+
+**Le protocole est dans la skill `vision-eval`, et il n'est pas négociable** :
+hypothèse écrite AVANT de mesurer, jeu de validation figé issu du corpus réel
+et versionné dans `eval/`, VRAM mesurée EN INFÉRENCE (pas la taille annoncée),
+comparaison contre le pipeline EN PLACE, décision écrite.
+
+**Ce qui existe et ce qui manque.** `mesure_modele_vision.py` compare déjà
+deux modèles Ollama avec le prompt de prod — mais il est conçu pour **un petit
+lot CIBLÉ**, « quelques clés précises, pas un tirage aléatoire ». Or la
+roadmap exige l'inverse : **« mesuré en aveugle sur un tirage A/B — pas sur 8
+photos choisies, la faute nommée dans Pistes ouvertes »**. C'est donc le
+premier geste : lui donner un tirage aléatoire reproductible (graine fixée,
+clés versionnées dans `eval/`) et la seconde dimension du prompt. Compter
+aussi ce que la skill impose et que le script ne fait pas encore : la
+COHÉRENCE inter-photos d'une même scène, et le taux de sortie malformée
+(`_salvage_tags` / `parse_tags`).
+
+**Ordre de grandeur** : 200 photos × 2 modèles × 2 prompts × ~12 s ≈ **2 h 40
+de GPU**. À lancer par l'agent banc, puis on code pendant ce temps.
+
+**Le verrou, AVANT de lancer quoi que ce soit qui écrive** :
+`python mesure_copie_base.py` — quatre secondes. C'est la seule fenêtre pour
+avoir un AVANT, et elle a été manquée la fois précédente : le bilan de la
+campagne du 05/09 n'a jamais pu être fait faute d'instantané.
+
+### 1. Pendant que le tirage tourne : unifier les CINQ producteurs de fiches
+
+`file_data` est bâti à cinq endroits — navigation, tags, recherche/semblables,
 même jour, et la grille indexée du 14/09. Seul le dernier passe par
 `_fiche_depuis_cle` ; les quatre autres recopient la même construction. La
-pagination devra se poser DERRIÈRE les cinq — les unifier avant évite de
-câbler cinq fois le même mécanisme, puis de le corriger cinq fois.
+pagination devra se poser DERRIÈRE les cinq : les unifier avant coûte une
+heure et évite de câbler cinq fois le même mécanisme, puis de le corriger cinq
+fois.
 
-**2. Le chargement à la demande** (`ROADMAP.md` § C3, décidé par Mike le
-13/09). **Sa cible a changé** depuis que la marche est coupée : `enrichir`
-n'existe plus sur cette page. Ce qui reste, mesuré le 14/09 :
+### 2. Ensuite : le chargement à la demande
+
+`ROADMAP.md` § C3, décidé par Mike le 13/09. **Sa cible a changé** depuis que
+la marche est coupée : `enrichir` n'existe plus sur cette page.
 
 | poste | ms | ce que c'est |
 |---|---:|---|
@@ -57,18 +105,15 @@ La page est **bornée par le CPU** (6,25 s de CPU pour 6,52 s d'horloge) : il
 n'y a plus d'attente à retirer. Borner le nombre de fiches **BÂTIES** attaque
 le premier poste.
 
-Ensuite : B5/B6 (petites mesures), puis préparer la décision « prochaine
-campagne » — **UNE décision qui appartient à Mike**, et `ROADMAP.md` § B liste
-les quatre choses à poser sur la table avant d'en parler. **Ne rien proposer
-tant qu'elles n'y sont pas.**
+**Puis** : B5/B6 (petites mesures), la **veille en plein écran** (P1), la
+copie hors site (D1, à Mike), et **en dernier** la démo de bienvenue et son
+e-mail (P2) — un mode d'emploi écrit avant que l'interface soit figée décrit
+une interface qui n'existera plus.
 
-**Deux demandes neuves de Mike (14/09), instruites dans « Pistes ouvertes »** :
-une **veille en plein écran** après 5 minutes d'inactivité (P1) et une **démo
-de bienvenue + l'e-mail** pour sa famille (P2, **en dernier** : un mode
-d'emploi écrit avant que l'interface soit figée décrit une interface qui
-n'existera plus).
-
----
+**Ce qui n'attend que Mike** : le bat 26 pour les 19 fichiers d'`_A TRIER`
+(14 doublons, 4 voisins, 1 différent — voir § 3), les deux détachements git
+(A6), la fenêtre de réversibilité des 68 copies qui se ferme **vers le 13/10**,
+et le KB Windows à masquer **vers le 16/10**.
 
 ## 2. Ce que les trois livraisons du 14/09 ont mis dans le code
 

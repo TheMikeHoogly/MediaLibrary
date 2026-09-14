@@ -1,6 +1,32 @@
 # Questions en attente de Mike
 
-**Aucune question ouverte au 14/09 au soir.**
+## Répondue à MOITIÉ — la prochaine campagne (14/09 au soir)
+
+Mike : **« ok pour les 8h GPU aussi ».** Le COÛT est accepté. **Le CONTENU ne
+l'est pas**, et ce n'est pas à lui de le produire : « oui aux 8 heures » n'est
+pas « oui à ce modèle-là avec ce prompt-là ».
+
+Ce que je lui dois avant qu'il tranche, et rien de plus :
+
+1. **Quel modèle.** Un tirage EN AVEUGLE sur le corpus réel, pas huit photos
+   choisies — c'est la faute nommée dans « Pistes ouvertes ». Référence :
+   `qwen3.5:4b|v3fr|kb1`, 11,3 s/photo, 3,4 Go de VRAM.
+2. **Ce que la question « document sensible » ajouterait.** Mesuré le 14/09 :
+   **23 photos** (0,05 %) sont candidates aujourd'hui. **C'est un plancher** —
+   `candidat_sensible` lit le vocabulaire du prompt ACTUEL, or la question
+   sert justement à trouver ce qu'il ne nomme pas. L'écart se mesure sur le
+   même tirage.
+
+**Ma recommandation, et elle tient en une ligne** : une seule expérience —
+deux modèles × deux prompts sur le MÊME tirage aléatoire — répond aux deux.
+Tant qu'elle n'a pas tourné, je ne propose rien.
+
+**En attendant** : rien n'est lancé. Et le verrou d'avant-campagne est écrit
+en tête de la prochaine séance — `mesure_copie_base.py`, quatre secondes.
+C'est la seule fenêtre, et elle a été manquée la fois précédente.
+
+---
+
 
 ---
 
