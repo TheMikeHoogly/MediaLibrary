@@ -112,11 +112,39 @@ Mesuré sur le disque le 13/09 à 21 h 30, pas déduit.
   Mike** : laisser la corbeille se vider au bat 24, ou
   `deplacer_doublons_atrier.py --undo` (remet la dernière fournée — les 106,
   pas seulement les 68).
-- **18 fichiers restent dans `Google porte mieux`** (2024 : 3, 2025 : 12,
-  2026 : 3) : l'arbitrage que personne n'a encore fait. Deux par deux, à l'œil.
-  **Ils ne risquent plus d'être tranchés par un outil** (B8, 14/09) : le plan
-  d'année en comptait 18 dans ses déplacements, il les laisse désormais et le
-  dit (`arbitrage: 18`).
+- **Ce qui reste dans `Google porte mieux` : MESURÉ le 14/09 au soir, et le
+  verdict n'est pas celui qu'on attendait.** Ils ne risquent plus d'être
+  tranchés par un outil (B8) : le plan d'année en comptait 18 dans ses
+  déplacements, il les laisse et le dit (`arbitrage`). Restent **13 fichiers
+  sur le disque** (Mike a effacé les 3 de `2024` et 2 de `2026` le 14/09 ;
+  l'index les portait encore au moment de la mesure). Chacun a **exactement un
+  jumeau** dans `Photos Mike\<année>` — `mesure_salle_arbitrage.py` les pose
+  côte à côte :
+
+  | | salle | fonds | verdict |
+  |---|---:|---:|---|
+  | **9 vidéos** | 25 à 204 Mo | 15 à 131 Mo | **le NAS est TRONQUÉ** |
+  | **4 images** | 2,3 à 4,4 Mo | 0,8 à 3,9 Mo | image différente, à l'œil |
+
+  **Les vidéos ne sont pas un faux positif : Google porte vraiment mieux.**
+  Durées mesurées, salle contre fonds : 42,6 s / 33,5 · **111,6 / 71,6** ·
+  24,3 / 15,8 · 17,9 / 11,0 · 24,3 / 16,0 · **25,3 / 13,2** · 82,0 / 60,0 —
+  sept sont amputées de 25 à 50 %. Deux seulement sont marginales :
+  `20250814_214518` (28,40 contre 28,39 s, +385 Ko de conteneur) et
+  `20250815_000138` (+2,6 s). **La cause de la troncature n'est pas
+  établie** ; aucun outil du projet ne raccourcit un `.mp4` (le bat 42 ne
+  touche que des `.jpg`, et aucun de ces neuf noms n'est dans
+  `strip_motionphoto_manifeste.json`).
+
+  **Ce n'est donc PAS « on a déjà traité ça ».** Ce qui a été traité le 08/09,
+  ce sont les **1 814** faux positifs du strip Motion Photo ; ces 13 viennent
+  des **99 autres**, que rien n'a jamais résolus.
+
+  **Geste, si Mike valide** : la copie de Google devient la canonique — la
+  version du fonds part à la corbeille, celle de la salle prend sa place et se
+  range par année. Rien n'existe pour le faire : la salle est désormais inerte
+  pour les outils (c'est le but), donc ça se fait à la main ou avec un
+  `appliquer_` à écrire.
 - **Les 19 vidéos en double** ci-dessus ne sont plus increvables : le bat 36
   sait les comparer (B8). Celles dont le fonds porte une version plus longue
   attendent un geste explicite, `--videos-tronquees` — le verdict est écrit,
