@@ -1432,11 +1432,61 @@ hors calcul — et **faux pour le pire cas**, où l'envoi pèse 4 %. La conclusi
 ne se généralise pas d'une page à l'autre : elle était mesurée sur 2 519
 photos et elle ne vaut que là.
 
-**Et le repère qui ouvre le chantier** : l'index porte 44 665 clés, la marche a
-trouvé 44 666 fichiers. **Un écart d'UN fichier**, payé 16,8 s à chaque page,
-quand l'index répond en 0,31 s — **54 fois moins cher**. La suite est dans
-`ROADMAP.md` § C3 : la question à trancher n'est pas la taille d'une page,
-c'est si une grille récursive doit encore marcher sur le NAS.
+**Et le repère qui ouvrait le chantier** : l'index portait 44 665 clés, la
+marche 44 666 fichiers — « un écart d'UN fichier », payé 16,8 s à chaque page
+quand l'index répond en 0,31 s (**54 fois moins cher**). Cet écart **n'était
+pas un fichier** : voir § 3.25, où le contrôle l'a fait tomber avant qu'une
+ligne soit écrite.
+
+### 3.25 La marche coupée : 23,4 s → 6,5 s — livré le 14/09
+
+**Le contrôle d'abord, la conclusion ensuite.** Avant de toucher au code,
+`mesure_ecart_index_marche.py` (famille `mesure_`, lançable au banc) a posé
+les deux ensembles côte à côte : un snapshot cohérent de la base (API
+`backup`, source en `mode=ro`) d'un côté, la MÊME marche que
+`_lister_dossier(rec=True)` — `os.walk`, élagage `.` `@` `#`, `MEDIA_EXT` —
+de l'autre. Deux fois, à dix heures d'intervalle :
+
+| | index | disque | marche seule | index seul |
+|---|---:|---:|---:|---:|
+| 13/09 22 h 32 | 44 483 | 44 483 | **0** | **0** |
+| 14/09 08 h 49 | 44 477 | 44 477 | **0** | **0** |
+
+**L'écart d'« un fichier » était un écart de COMPTEURS, pas de fichiers** :
+`index_cles` note `len(STORE.data)`, c'est-à-dire la **vue** — et la seule
+photo d'un `PRIVE` qui n'appartient pas à celui qui regarde n'y est pas. La
+marche, elle, compte le disque. Six clés de moins entre les deux mesures : la
+maintenance de 3 h 23 a déplacé six vidéos en double vers
+`.corbeille-rangement` (`rekey` +6/−6) et le scan de 3 h 50 les a retirées
+(`scan:disparus`). Tout se recoupe à l'unité.
+
+**Ce que la marche apportait vraiment** : voir un fichier AVANT que le scan de
+fond ne l'indexe (un tour sur six, ~30 min) et son `stat()` pour les dates
+(43 ms sur 23 s). La grille récursive échange ce délai contre 16 s ; le
+dossier COURANT garde sa marche — non récursive, cachée, et c'est là qu'on
+regarde après avoir déposé une photo. Le bandeau le dit AVANT (règle n° 9).
+
+**Mesuré en réel, page du fonds entier `dir=1&rec=1`, serveur redémarré :**
+
+| phase | avant (13/09, NAS libre) | avant (14/09, 22 h 31) | **après** |
+|---|---:|---:|---:|
+| total | 23,4 s | 20,5 s | **6,5 s** (8,0 s à froid) |
+| `parcours` | 16,8 s | 11,7 s | **48 ms** |
+| `enrichir` | 3,4 s | 4,4 s | **0** (remplacé) |
+| `mode_index` | — | — | 3,2 s |
+| `gabarit` + `json` + `envoi` | 2,2 s | 2,3 s | 2,3 s |
+| `stats_nas` (allers-retours SMB) | — | 1 | **0** |
+
+**La page est devenue bornée par le CPU** : 6,25 s de CPU pour 6,52 s
+d'horloge. Il n'y a plus d'attente à retirer — le reste est du travail, et
+c'est le chargement à la demande qui l'attaquera (`ROADMAP.md` § C3).
+
+**Et le compte est le MÊME** : 44 468 fiches rendues, 8 écartées, et le
+compteur dit désormais laquelle des deux causes — `ecartees_abimees=8`,
+`ecartees_sans_url=0`. Ce sont les huit images abîmées (`failed`) que le
+chemin du NAS écartait déjà, une par une, depuis toujours. Le premier jet du
+compteur n'en donnait qu'UN, nommé `index_sans_url` : il aurait fait chercher
+huit racines manquantes qui n'existent pas.
 
 ---
 

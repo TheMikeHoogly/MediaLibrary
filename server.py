@@ -3738,6 +3738,75 @@ def _url_for_key(k, roots=None):
     return None
 
 
+def _nom_relatif(k, prefixe=None):
+    """Le nom AFFICHÉ d'une clé dans une grille : son chemin sous le dossier
+    ouvert, dans sa casse d'ORIGINE.
+
+    La grille récursive montre `2004/Noel/x.jpg`, pas `x.jpg` : sans le
+    chemin, trois cents `IMG_0001.jpg` venus de dossiers différents se
+    ressemblent tous. Le parcours du NAS l'obtenait par
+    `f.relative_to(folder)` ; une CLÉ d'index ne peut pas emprunter ce
+    chemin-là — `Path.relative_to` compare les segments tels quels, et la clé
+    garde la casse du NAS (« \\NAS-Bremblens\… ») quand `folder` sort d'un
+    `resolve()` qui MINUSCULE le nom d'hôte SMB. La comparaison se fait donc
+    sur `_pkey`, et la découpe sur la chaîne d'ORIGINE, au même décalage.
+
+    Ce décalage n'est le même que si `as_posix()` et `lower()` conservent la
+    longueur — vrai pour un séparateur échangé, vrai pour l'ASCII, FAUX pour
+    quelques caractères Unicode (« İ ».lower() en rend deux). D'où le
+    contrôle de longueur : s'il tombe, on rend le nom nu plutôt qu'une
+    découpe décalée d'un caractère. Aucun nom du fonds n'est dans ce cas ;
+    c'est le genre de supposition qui se vérifie au lieu de se croire."""
+    nom = Path(k).name
+    if not prefixe:
+        return nom
+    kp = _pkey(k)
+    brut = str(k).replace('\\', '/')
+    if len(brut) != len(kp) or not kp.startswith(prefixe + '/'):
+        return nom
+    return brut[len(prefixe) + 1:]
+
+
+def _fiche_depuis_cle(k, e, fctx, roots, memo_liens, prefixe=None):
+    """La fiche de galerie d'UNE entrée d'index — sans toucher au disque.
+
+    C'est la forme que le client attend, et elle est bâtie ici par les mêmes
+    fonctions que la boucle d'enrichissement : `_epoch_precis` une fois, dont
+    `_best_time_depuis` et `_jour_depuis` sont la suite ; `_lien_dossier_memo`
+    par DOSSIER ; `_faits_pour` sur le contexte partagé de la page.
+
+    Rend `None` quand la clé n'a pas d'URL servable — une racine retirée de
+    `dossiers_a_taguer.txt` laisse ses clés dans l'index, et une fiche sans
+    URL serait une vignette cassée.
+
+    La taille et la date viennent de l'ENTRÉE, jamais d'un `stat()` : c'est
+    tout l'intérêt: 44 483 `stat()` sur SMB, c'est la marche qu'on vient de
+    couper. Une entrée sans `size` affiche 0 plutôt que d'aller le demander.
+    """
+    url = _url_for_key(k, roots)
+    if url is None:
+        return None
+    folder_lbl, gurl = _lien_dossier_memo(k, roots, memo_liens)
+    ep = _epoch_precis(k, e)
+    return {
+        'name': _nom_relatif(k, prefixe),
+        'key': k,
+        'url': url,
+        'size': human_size(e.get('size') or 0),
+        'mtime': e.get('mtime') or 0,
+        'taken': _best_time_depuis(k, e, ep),
+        'jour': _jour_depuis(ep),
+        '_ep': ep,
+        'faits': _faits_pour(k, e, fctx),
+        'kw': list(dict.fromkeys(
+            (e.get('kw_fr') or []) + (e.get('kw_en') or []))),
+        'gps': e.get('gps'),
+        'desc': e.get('desc', ''),
+        'folder': folder_lbl,
+        'gurl': gurl,
+    }
+
+
 # ─── « Même jour, autres années » : index MM-JJ en mémoire ───────────────────
 # Moteur pur et testé dans meme_jour.py (import léger : re + time). Bâti sur
 # les dates PRÉCISES uniquement — jamais le repli « année du dossier », qui
@@ -14063,15 +14132,37 @@ class Handler(BaseHTTPRequestHandler):
         ph.ajoute('index.tags', time.perf_counter() - _t_bal)
         ph.note(index_cles=len(STORE.data), index_retenues=len(entries))
 
+        # LA MARCHE NE DESCEND PLUS — 13/09 au soir. Le parcours récursif du
+        # NAS coûtait 16,8 s sur la page du fonds entier (44 483 fichiers),
+        # dont **1,1 s de CPU** : 94 % d'attente SMB, que nulle mémoïsation
+        # n'atteint. L'index connaît les MÊMES photos et répond en 0,31 s.
+        # Le contrôle qui a ouvert le chantier a été fait avant d'écrire une
+        # ligne (`mesure_ecart_index_marche.py`, 13/09 22 h 32, snapshot
+        # cohérent de la base + la même marche que `_lister_dossier`) :
+        # **44 483 clés sous la racine, 44 483 fichiers sur le disque, 0 d'un
+        # côté, 0 de l'autre**. L'écart d'« UN fichier » que la mesure de la
+        # veille montrait n'était pas un fichier : `index_cles` compte la VUE
+        # (`len(STORE.data)`), la marche compte le disque, et la seule photo
+        # d'un `PRIVE` qui n'est pas le sien manquait à la première.
+        #
+        # Ce que la marche apportait vraiment : voir un fichier AVANT que le
+        # scan de fond ne l'indexe (un tour sur six, ~30 min — NAS_SCAN_CYCLES)
+        # et son `stat()` pour les dates (43 ms sur 23 s). La grille récursive
+        # échange donc ce délai contre 16 s ; le dossier COURANT, lui, garde sa
+        # marche — elle est non récursive, cachée, et c'est là qu'on regarde
+        # après avoir déposé une photo. Le bandeau le DIT (règle n° 9 : une
+        # promesse que l'outil ne tient pas doit s'annoncer avant, pas se
+        # découvrir après).
+        grille_indexee = rec and not remplace_la_grille
         try:
-            # `rec` DESCEND dans l'arbre pour bâtir `files` ; quand la grille
-            # est remplacée, seuls les sous-dossiers du premier niveau
-            # servent — une passe non récursive les rend déjà tous.
-            files, subdirs = _lister_dossier_frais(
-                folder, rec and not remplace_la_grille)
+            # Non récursive, TOUJOURS : elle ne sert plus qu'aux sous-dossiers
+            # du premier niveau (la barre) et, hors mode récursif, à la grille.
+            files, subdirs = _lister_dossier_frais(folder, False)
         except OSError as e:
             self._send(500, str(e).encode(), 'text/plain')
             return
+        if grille_indexee:
+            files = ()
         ph.top('parcours')
 
         # barre de navigation par dossiers
@@ -14094,6 +14185,13 @@ class Handler(BaseHTTPRequestHandler):
             fparts.append('<a class="btn btn--nav" href="/files?dir='
                           + urllib.parse.quote(cur, safe='/')
                           + '">&#128257; Ce dossier seul</a>')
+        if grille_indexee:
+            # Ce que la page NE montre pas, dit AVANT qu'on le cherche.
+            fparts.append(
+                '<span class="fetiquette">&#128269; Vue d\'ensemble servie '
+                'par l\'index : une photo déposée à l\'instant dans un '
+                'sous-dossier y paraît au prochain scan (30 min au plus). '
+                'Son propre dossier, lui, la montre tout de suite.</span>')
         elif subdirs:
             fparts.append('<a class="btn btn--nav" href="/files?dir='
                           + urllib.parse.quote(cur, safe='/')
@@ -14134,7 +14232,8 @@ class Handler(BaseHTTPRequestHandler):
         # UN instantané pour toute la boucle — et rien du tout quand il n'y a
         # pas de boucle : sa reconstruction coûte ~40 ms verrou tenu, et
         # 620 à 870 ms au PREMIER build après un démarrage.
-        carte_cles = None if remplace_la_grille else _key_index()
+        carte_cles = (None if (remplace_la_grille or grille_indexee)
+                      else _key_index())
         ph.top('carte_cles')
         # Faits (date . lieu . noms) : le contexte des noms, lieux et
         # racines est bati UNE fois pour la page entiere -- voir
@@ -14263,6 +14362,36 @@ class Handler(BaseHTTPRequestHandler):
         ph.ajoute('enrichir.faits.regle.date', _chr.get('date', 0.0))
         ph.note(fichiers=(0 if remplace_la_grille else len(files)),
                 stats_nas=_n_stat, grille_remplacee=remplace_la_grille)
+        # GRILLE RÉCURSIVE : les mêmes photos, lues dans l'index (13/09).
+        # `entries` est DÉJÀ là — la phase `index` l'a bâtie pour compter les
+        # mots-clés du dossier, et elle passe par la VUE : une photo qu'un
+        # `PRIVE` cache à cet utilisateur n'y est pas. C'est cette vue-là qui
+        # fait autorité, pas le disque.
+        if grille_indexee:
+            roots_cache = media_roots()
+            pref = _pkey(folder)
+            file_data = []
+            _liens = {}
+            _abimees = _sans_url = 0
+            for k, e in entries:
+                if e.get('failed'):
+                    _abimees += 1
+                    continue    # image endommagée : on ne l'affiche pas
+                fiche = _fiche_depuis_cle(k, e, fctx, roots_cache, _liens, pref)
+                if fiche is None:
+                    _sans_url += 1
+                    continue
+                file_data.append(fiche)
+            # Le compteur dit ce qui a été FAIT : la boucle du NAS n'a pas
+            # tourné, celle-ci oui. Et il dit les DEUX causes d'écart
+            # séparément : un seul nombre « écartées » aurait laissé croire
+            # à huit racines manquantes là où ce sont huit images abîmées,
+            # écartées depuis toujours — le chemin du NAS en écartait
+            # exactement autant.
+            ph.note(fichiers=len(file_data), grille_indexee=True,
+                    ecartees_abimees=_abimees, ecartees_sans_url=_sans_url)
+            ph.top('mode_index')
+
         # sélection de tags active : résultats récursifs depuis l'index,
         # sans parcourir le NAS
         if sel:

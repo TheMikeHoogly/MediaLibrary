@@ -181,6 +181,14 @@
 | Écrire `None` pour tout un lot ExifTool | **REJETÉ** (13/08) | Un lot raté (NAS muet) est indiscernable d'un vide : on n'écrit que si ExifTool a PARLÉ. |
 | Planchers 1990 restants ; plafond 2100 | **PARKÉ chiffré** (15 et 19/08) | 0 et 7 photos, couplés ; `22082010141.jpg` se lit « 2082 » — 72 en base, coût 0. |
 
+## Ce que la galerie LIT — le NAS ou l'index
+
+| Idée / piste | Verdict | Raison |
+|---|---|---|
+| **La grille RÉCURSIVE (`rec=1`) est servie par l'INDEX, plus par une marche sur le NAS** | **ADOPTÉ, OBSERVÉ** (14/09) | Trois branches étaient sur la table depuis le 13/09 : marche bornée à la première page, tout à l'index, ou **marche pour un dossier simple et index dès `rec=1`**. La troisième est prise. **La prémisse du chantier est tombée avant le code** : « l'index porte 44 665 clés, la marche 44 666, trouver ce fichier » — `mesure_ecart_index_marche.py` a comparé les deux ensembles pour de vrai, deux fois à dix heures d'intervalle : **0 fichier d'un côté, 0 de l'autre**. L'écart était entre deux COMPTEURS (`index_cles` note la VUE, qui cache la photo d'un `PRIVE` qui n'est pas le vôtre), pas entre deux ensembles. Ce que la marche apportait : le délai du scan de fond (~30 min) et le `stat()` des dates (43 ms sur 23 s) — échangés contre **16 secondes**. Observé après redémarrage, fonds entier : **23,4 s → 6,5 s**, `parcours` 16,8 s → **48 ms**, `stats_nas` 0, **44 468 fiches, les mêmes**, 8 images abîmées écartées comme avant. La page est désormais bornée par le CPU (6,25 s de CPU pour 6,52 s d'horloge) : il n'y a plus d'attente à retirer. Le délai est DIT par un bandeau sur la page (règle n° 9) ; le dossier COURANT garde sa marche, non récursive et cachée, parce que c'est là qu'on regarde après avoir déposé une photo. |
+| **Tout à l'index, y compris le dossier courant** | **REJETÉ** (14/09) | Gain nul (la marche non récursive coûte ~50 ms, cachée) contre une régression visible : une photo qu'on vient de déposer disparaîtrait du dossier qu'on est en train de regarder jusqu'au prochain scan. |
+| **Marche bornée à la première page** | **REJETÉ** (14/09) | Elle garde l'attente SMB exactement là où elle se voit — au premier écran — pour économiser un parcours dont on a prouvé qu'il n'apporte aucun fichier. |
+
 ## Interface
 
 > Sorti le 07/09 dans **`eval/DECISIONS_UI.md`** (découpage par

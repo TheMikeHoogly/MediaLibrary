@@ -428,13 +428,13 @@ La seconde, et c'est la piste : **l'index connaît les mêmes photos et répond
 54 fois plus vite** (0,31 s contre 16,8). `_index_entries_under` le fait déjà
 pour compter les mots-clés.
 
-**La question à instruire n'est donc pas « combien de fiches par page » mais
-« la grille d'un dossier RÉCURSIF doit-elle encore marcher sur le NAS ? »**
-La marche existe pour une raison — elle voit les fichiers que l'index ignore
-encore. Trois réponses possibles, à trancher sur mesure : la garder mais
-bornée à la première page ; la remplacer par l'index et laisser le scan de
-fond découvrir les nouveaux ; ou la garder pour un dossier simple et prendre
-l'index dès que `rec=1`. **Ne rien coder avant d'avoir répondu à celle-là.**
+**La question posée était « la grille d'un dossier RÉCURSIF doit-elle encore
+marcher sur le NAS ? » — RÉPONDUE le 14/09, troisième branche** : la marche
+est gardée pour un dossier simple (non récursive, cachée, ~50 ms) et l'index
+prend la main dès `rec=1`. La deuxième branche (tout à l'index) aurait rendu
+invisible une photo qu'on vient de déposer dans le dossier qu'on regarde ; la
+première (marche bornée à la première page) aurait gardé l'attente SMB au
+premier écran, là où elle se voit.
 
 Le reste de ce que la décision engage, inchangé :
 
@@ -458,22 +458,32 @@ le CPU n'en consomme que **1,1 s** — **94 % d'attente pure**. Aucune
 optimisation de code ne touchera ça ; seule une marche plus courte, ou pas de
 marche du tout, le fera.
 
-**Ce que cela impose comme ORDRE** — c'est la vraie conclusion de la mesure :
+**L'ORDRE qui tombait de cette mesure — étape 1 FAITE le 14/09.**
 
-1. **couper la marche d'abord** (servir la grille récursive depuis l'index,
-   marche réduite au dossier courant ou reléguée au scan de fond) :
-   23,4 s → **~7 s**, sans toucher à l'affichage ;
-2. **le chargement à la demande ensuite**, qui attaque alors `enrichir`
-   (3,4 s, le seul poste qui grandit avec le nombre de fiches rendues) :
-   ~7 s → **~1 s**.
+1. ~~couper la marche~~ **LIVRÉ** : la grille récursive est servie par
+   l'index, `_lister_dossier_frais` ne rend plus que les sous-dossiers du
+   premier niveau. **23,4 s → 6,5 s** (8,0 s à froid), `parcours` 16,8 s →
+   **48 ms**, zéro aller-retour SMB. Le détail et les contre-mesures :
+   `PERFORMANCE.md` § 3.25.
+2. **le chargement à la demande — c'est le point suivant, et sa cible a
+   changé.** `enrichir` n'existe plus sur cette page ; ce qui reste est
+   `mode_index` **3,2 s** (bâtir 44 468 dictionnaires depuis l'index), puis
+   `envoi` 1,1 s, `gabarit` 0,7 s, `json` 0,45 s, `marques` 0,43 s. La page
+   est désormais **bornée par le CPU** — 6,25 s de CPU pour 6,52 s d'horloge —
+   donc borner le nombre de fiches BÂTIES attaque enfin le vrai poste. Ce que
+   la décision engage (tri et filtres côté serveur, pagination derrière les
+   quatre modes, `window.Vignettes`, un compteur qui dit le total réel) est
+   inchangé ; s'y ajoute le cinquième producteur de fiches, `grille_indexee`.
 
-Dans l'autre ordre, le chargement à la demande seul ne gagne que les ~2 s de
-charge utile sur 23 — un gros chantier pour 9 % de la page. **Le contrôle qui
-ouvre le chantier** : l'index porte 44 665 clés, la marche a trouvé 44 666
-fichiers — **un écart d'UN fichier**, et il coûte 16,8 s à chaque page.
-Identifier ce fichier, et dire ce que la marche apporte que l'index n'a pas
-(présence, `mtime`/taille pour les dates), est le premier quart d'heure de la
-prochaine séance.
+**Le contrôle qui ouvrait le chantier a FAIT TOMBER sa propre prémisse.**
+« L'index porte 44 665 clés, la marche 44 666 : trouver ce fichier » —
+`mesure_ecart_index_marche.py` a comparé les deux ensembles pour de vrai, deux
+fois : **0 fichier d'un côté, 0 de l'autre**. L'écart était entre deux
+COMPTEURS (`index_cles` note la VUE, qui cache la photo d'un `PRIVE` qui n'est
+pas le vôtre), pas entre deux ensembles de fichiers. Ce que la marche apportait
+vraiment : le délai du scan de fond (~30 min) et le `stat()` des dates (43 ms
+sur 23 s). C'est ce délai qu'on a échangé contre 16 secondes, et le bandeau de
+la page le dit.
 
 **C4. Le premier chargement reste cher** : ~2,5 s après un redémarrage,
 partage et caches froids. Aucun mémo ne fabrique quoi que ce soit, ils évitent

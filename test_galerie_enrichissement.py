@@ -32,6 +32,8 @@ from pathlib import Path, PurePath
 HERE = Path(__file__).resolve().parent
 SOURCE = (HERE / 'server.py').read_text(encoding='utf-8')
 ARBRE = ast.parse(SOURCE)
+GALERIE = [n for n in ast.walk(ARBRE) if isinstance(n, ast.FunctionDef)
+           and n.name == '_serve_gallery'][0]
 
 
 # La source de CHAQUE fonction, decoupee UNE fois. `ast.get_source_segment`
@@ -128,9 +130,19 @@ class LesQuatreBranchesPassentParLaMemePorte(unittest.TestCase):
 
     def test_chaque_memo_est_neuf_a_chaque_page(self):
         """Un memo qui survivrait a la requete survivrait a un renommage de
-        racine : les quatre dictionnaires sont crees DANS la fonction."""
+        racine : les CINQ dictionnaires sont crees DANS la fonction --
+        quatre depuis le 13/09, ou la grille recursive est devenue le
+        cinquieme producteur de fiches.
+
+        Compte sur l'ARBRE : un `_liens = {}` cite dans un commentaire
+        n'est pas une creation, et c'est exactement l'erreur qu'un
+        `str.count` ne sait pas voir."""
         self.assertEqual(self.src.count('_liens_dossier = {}'), 1)
-        self.assertEqual(self.src.count('_liens = {}'), 3)
+        neufs = [n for n in ast.walk(GALERIE) if isinstance(n, ast.Assign)
+                 and any(isinstance(c, ast.Name) and c.id == '_liens'
+                         for c in n.targets)
+                 and isinstance(n.value, ast.Dict) and not n.value.keys]
+        self.assertEqual(len(neufs), 4)
 
 
 class LaPageNeFabriquePasCEQuElleVaJETER(unittest.TestCase):
@@ -181,14 +193,18 @@ class LaPageNeFabriquePasCEQuElleVaJETER(unittest.TestCase):
                          'est apparu que le drapeau ne couvre pas : %r'
                          % sorted(couverts))
 
-    def test_le_parcours_ne_descend_plus_pour_rien(self):
-        # `_lister_dossier_frais` depuis le cache de listage du 12/09 : ce banc
-        # est reste ROUGE une livraison entiere sans que personne le lance --
-        # l'agent git ne lance que les bancs des modules TOUCHES, et celui-la
-        # ne l'etait pas. Un banc qu'on ne lance pas ne mesure rien.
-        self.assertIn('_lister_dossier_frais(' + chr(10) + ' ' * 16
-                      + 'folder, rec and not remplace_la_grille)',
-                      self.src)
+    def test_le_parcours_ne_descend_PLUS_JAMAIS(self):
+        """Depuis le 13/09 au soir la marche ne descend pour PERSONNE : la
+        grille recursive est servie par l'index (16,8 s contre 0,31 s), et
+        `_lister_dossier_frais` ne rend plus que les sous-dossiers du premier
+        niveau. Mesure sur l'ARBRE : un texte dirait l'orthographe de
+        l'appel, pas la valeur passee."""
+        appels = [n for n in ast.walk(GALERIE) if isinstance(n, ast.Call)
+                  and isinstance(n.func, ast.Name)
+                  and n.func.id == '_lister_dossier_frais']
+        self.assertEqual(len(appels), 1, 'un second parcours est apparu')
+        self.assertEqual([ast.unparse(a) for a in appels[0].args],
+                         ['folder', 'False'])
 
     def test_la_boucle_est_sautee(self):
         self.assertIn('for f in (() if remplace_la_grille else files):',
@@ -197,8 +213,48 @@ class LaPageNeFabriquePasCEQuElleVaJETER(unittest.TestCase):
     def test_la_carte_des_cles_n_est_pas_rebatie_pour_rien(self):
         """Sa reconstruction coute 620 a 870 ms VERROU TENU : la demander
         pour une boucle qui ne tourne pas ferait attendre les vignettes."""
-        self.assertIn('carte_cles = None if remplace_la_grille else '
-                      '_key_index()', self.src)
+        self.assertIn('carte_cles = (None if (remplace_la_grille or '
+                      'grille_indexee)', self.src)
+
+    def test_le_mode_INDEXE_remplace_lui_aussi_la_grille(self):
+        """La grille recursive est un CINQUIEME producteur de `file_data`, et
+        le drapeau des quatre autres ne le couvre pas -- il ne peut pas : il
+        dit que la boucle du NAS travaillerait pour rien, alors qu'ici c'est
+        le PARCOURS qui n'a pas eu lieu. Ce que ce banc tient, c'est qu'il
+        REMPLACE (`file_data = []`) au lieu de s'ajouter."""
+        vus = []
+        for n in ast.walk(GALERIE):
+            if not isinstance(n, ast.If):
+                continue
+            if {x.id for x in ast.walk(n.test)
+                    if isinstance(x, ast.Name)} != {'grille_indexee'}:
+                continue
+            vus.append(any(
+                isinstance(b, ast.Assign)
+                and any(isinstance(c, ast.Name) and c.id == 'file_data'
+                        for c in b.targets)
+                and isinstance(b.value, ast.List) and not b.value.elts
+                for b in n.body))
+        self.assertIn(True, vus,
+                      'aucun `if grille_indexee:` ne remplace `file_data`')
+
+    def test_le_mode_INDEXE_ne_marche_pas_sur_le_NAS(self):
+        """Tout l'interet : zero `stat()`, zero `os.walk`. La fiche sort de
+        l'ENTREE. Un `f.stat()` glisse ici rendrait les 44 483 allers-retours
+        SMB qu'on vient de couper, sans que la page change d'un pixel."""
+        fiche = [n for n in ast.walk(ARBRE) if isinstance(n, ast.FunctionDef)
+                 and n.name == '_fiche_depuis_cle'][0]
+        interdits = {'stat', 'is_file', 'iterdir', 'scandir', 'walk',
+                     'relative_to', '_lister_dossier', '_lister_dossier_frais'}
+        vus = set()
+        for n in ast.walk(fiche):
+            if isinstance(n, ast.Call):
+                f = n.func
+                nom = f.attr if isinstance(f, ast.Attribute) else getattr(
+                    f, 'id', '')
+                if nom in interdits:
+                    vus.add(nom)
+        self.assertEqual(vus, set(), 'la fiche touche au disque : %r' % vus)
 
     def test_le_compteur_dit_ce_qui_a_ete_FAIT(self):
         """Un compteur qui annonce 2 519 fichiers parcourus quand la boucle
