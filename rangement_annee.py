@@ -32,6 +32,36 @@ DOSSIER_FONDS = "Photos Mike"
 PROPRIETAIRE_RE = re.compile(r'^photos\s+\S', re.I)
 
 
+# ─── Les SALLES D'ARBITRAGE : ce qui attend un verdict HUMAIN ───────────────
+# Le bat 33 rapatrie sous `_A TRIER\Google porte mieux\<annee>` les photos que
+# Google detient en meilleure version -- « un dossier a part, pour qu'on sache
+# qu'ils attendent un arbitrage », dit le bat lui-meme. Or tout ce qui est sous
+# `_A TRIER` est, pour les outils, du materiel a ranger ou a dedoublonner : le
+# 13/09 le bat 36 a donc TRANCHE TOUT SEUL l'arbitrage de 68 photos, et le plan
+# d'annee les aurait classees le jour ou une cible se serait liberee.
+#
+# La regle vit ICI, en UN endroit, et le bat 36 la LIT : deux outils qui
+# regardent le meme dossier ne peuvent pas avoir chacun leur idee de ce qu'il
+# est. `Takeout Google`, l'autre depot du bat 32, n'est PAS une salle : ce
+# sont des photos absentes du fonds, qui doivent bien etre rangees.
+SALLES_ARBITRAGE = ('Google porte mieux',)
+
+
+def est_arbitrage(chemin):
+    """Ce chemin traverse-t-il une salle d'arbitrage ?
+
+    La protection nomme la PLACE, pas seulement le nom (CLAUDE.md n. 7) : le
+    segment doit venir APRES un `_A TRIER`. Un dossier « Google porte mieux »
+    range ailleurs dans le fonds est une photo comme une autre ; seule la
+    salle ouverte sous une boite de reception attend un verdict."""
+    parts = [str(p).strip() for p in Path(chemin).parts]
+    i = _atri_index(parts)
+    if i is None:
+        return False
+    salles = {s.strip().lower() for s in SALLES_ARBITRAGE}
+    return any(p.lower() in salles for p in parts[i + 1:])
+
+
 def base_du_fonds(base):
     """Sous quel dossier ranger ce qui sort de `<base>/_A TRIER`.
 
@@ -70,6 +100,11 @@ def cible(abspath, ts):
     idx = _atri_index(p.parts)
     if idx is None:
         return None
+    # Une salle d'arbitrage n'est pas du materiel a ranger. Le controle est
+    # ici EN PLUS de celui de `construire_plan` : un angle mort a rarement une
+    # seule porte (CLAUDE.md n. 8), et `cible` est appelee d'ailleurs.
+    if est_arbitrage(p):
+        return None
     base = Path(*p.parts[:idx]) if idx > 0 else Path(p.anchor or ".")
     an = annee_de(ts)
     dst_dir = base_du_fonds(base) / (str(an) if an else SANS_DATE)
@@ -83,15 +118,21 @@ def construire_plan(items):
       - conflits   : [{key, src, dst}] dont la cible entre en COLLISION avec un
                      autre move du plan (meme dossier + meme nom) — a trancher,
       - sans_date  : nb ranges dans _SANS_DATE,
+      - arbitrage  : nb LAISSES dans une salle d'arbitrage (jamais ranges),
       - par_annee  : {annee: n}, total_a_ranger.
     Les collisions avec un fichier DEJA sur le disque sont, elles, refusees au
     moment de l'application (la primitive de deplacement ne recouvre jamais)."""
     moves, conflits = [], []
-    deja = 0
+    deja = arbitrage = 0
     vus = {}                       # dst normalise -> key (collisions internes)
     par_annee = Counter()
     sans_date = 0
     for key, abspath, ts in items:
+        if est_arbitrage(abspath):
+            # COMPTE, pas seulement ecarte : une regle qu'on ne mesure pas
+            # n'est pas un plancher, c'est un voeu (CLAUDE.md n. 8).
+            arbitrage += 1
+            continue
         r = cible(abspath, ts)
         if r is None:
             continue
@@ -113,4 +154,4 @@ def construire_plan(items):
                       'annee': an or SANS_DATE})
     return {'moves': moves, 'deja': deja, 'conflits': conflits,
             'sans_date': sans_date, 'par_annee': dict(sorted(par_annee.items())),
-            'total_a_ranger': len(moves)}
+            'arbitrage': arbitrage, 'total_a_ranger': len(moves)}

@@ -1,4 +1,4 @@
-# Reprise — MediaLibrary, après la nuit du 13 au 14 septembre 2026
+# Reprise — MediaLibrary, après la journée du 14 septembre 2026
 
 > **Ce fichier est ÉPHÉMÈRE.** Il décrit un état, pas des règles. Les règles
 > vivent dans `CLAUDE.md`, le plan dans `ROADMAP.md`, les verdicts dans
@@ -9,26 +9,22 @@
 
 ## 0. L'état, en dix lignes
 
-**La grille récursive ne marche plus sur le NAS** (livré le 14/09 au matin).
-`/files?dir=1&rec=1` est passée de **23,4 s à 6,5 s** (8,0 s à froid) :
-`parcours` 16,8 s → **48 ms**, zéro aller-retour SMB, le même compte de
-photos. La page est désormais **bornée par le CPU** — 6,25 s de CPU pour
-6,52 s d'horloge. Détail : `PERFORMANCE.md` § 3.25.
+**Deux livraisons le 14/09.** Le matin, la marche du NAS coupée sur la grille
+récursive : `/files?dir=1&rec=1` passe de **23,4 s à 6,5 s**, `parcours`
+16,8 s → **48 ms**, zéro aller-retour SMB (`PERFORMANCE.md` § 3.25). Le soir,
+**`_A TRIER` par propriétaire** et les défauts voisins (`ROADMAP.md` § B8).
 
-**La campagne de retag est finie** (nuit du 12 au 13) ; les 248 dépôts
-d'`Uploads` sont triés (13/09, par Mike). Index au 14/09 08 h 49 :
-**44 477 clés**, 44 468 fiches affichées, 8 images abîmées écartées, 0 clé
-sans fichier, 0 fichier hors index, 0 cycle inexpliqué.
-
-`main` porte la livraison du 14/09 (contrôler `.git/logs/refs/heads/main`).
+La campagne de retag est finie (nuit du 12 au 13), les 248 dépôts d'`Uploads`
+sont triés (13/09, par Mike). Index : **44 477 clés**, 0 clé sans fichier,
+0 fichier hors index, 0 cycle inexpliqué.
 
 ---
 
 ## 1. Par où commencer
 
-**Le point suivant est le CHARGEMENT À LA DEMANDE** (`ROADMAP.md` § C3,
-décidé par Mike le 13/09) — et sa cible a changé depuis qu'il a été décidé.
-`enrichir` n'existe plus sur cette page. Ce qui reste :
+**Le CHARGEMENT À LA DEMANDE** (`ROADMAP.md` § C3, décidé par Mike le 13/09).
+Sa cible a changé depuis la coupe de la marche : `enrichir` n'existe plus sur
+cette page. Ce qui reste, mesuré le 14/09 :
 
 | poste | ms | ce que c'est |
 |---|---:|---|
@@ -39,69 +35,89 @@ décidé par Mike le 13/09) — et sa cible a changé depuis qu'il a été déci
 | `marques` | 431 | |
 | `index` | 285 | balayage + comptage des mots-clés |
 
-Borner le nombre de fiches **BÂTIES** attaque enfin le premier poste. Ce que
-la décision engage est inchangé (tri et filtres côté SERVEUR, pagination
-DERRIÈRE les quatre modes « la grille est un résultat », `window.Vignettes`
-réutilisé, un compteur qui dit le total RÉEL) — s'y ajoute un **cinquième**
-producteur de fiches, `grille_indexee`.
+Borner le nombre de fiches **BÂTIES** attaque enfin le premier poste. La page
+est bornée par le CPU (6,25 s de CPU pour 6,52 s d'horloge) : il n'y a plus
+d'attente à retirer.
 
-Le reste du tableau de priorités est dans `ROADMAP.md` § B. **UNE décision
-appartient toujours à Mike** : « faut-il une prochaine campagne, et avec
-quoi ? » — § B liste les quatre choses à poser sur la table avant d'en parler.
-**Ne rien proposer tant qu'elles n'y sont pas.**
+**Un préalable d'une heure, à faire d'abord** : les CINQ producteurs de fiches
+(navigation, tags, recherche/semblables, même jour, grille indexée) construisent
+chacun la leur. Seul le cinquième passe par `_fiche_depuis_cle`. La pagination
+devra se poser DERRIÈRE les cinq — les unifier avant évite de câbler cinq fois
+le même mécanisme.
 
----
-
-## 2. Ce que le changement du 14/09 a mis dans le code
-
-- `_nom_relatif(k, prefixe)` — le chemin relatif d'une clé **dans sa casse
-  d'origine**. `Path.relative_to` ne peut pas servir : la clé garde la casse
-  du NAS, `folder` sort d'un `resolve()` qui MINUSCULE l'hôte SMB. La
-  comparaison se fait sur `_pkey`, la découpe sur la chaîne d'origine, avec un
-  contrôle de longueur (« İ ».lower() rend deux caractères).
-- `_fiche_depuis_cle(k, e, fctx, roots, memo, prefixe)` — la fiche de galerie
-  d'une entrée, **sans toucher au disque**. C'est le **cinquième** producteur
-  de `file_data`, après tags / recherche / semblables / même jour. Les quatre
-  autres construisent encore la leur à la main : les y faire passer est un
-  candidat évident, non fait faute de mesure.
-- `_serve_gallery` : `grille_indexee = rec and not remplace_la_grille`,
-  `_lister_dossier_frais(folder, False)` **toujours** (les sous-dossiers de la
-  barre), `carte_cles` non bâtie quand elle ne sert pas.
-- Bancs : `test_grille_indexee.py` (15, exécutés — pas du texte),
-  `test_galerie_enrichissement.py` mis à l'arbre plutôt qu'au `str.count`.
-- `mesure_ecart_index_marche.py` — compare index et disque fichier par
-  fichier, sur un snapshot cohérent. À relancer avant toute conclusion sur
-  « ce que l'index ignore ».
+**UNE décision appartient toujours à Mike** : « faut-il une prochaine campagne,
+et avec quoi ? » — `ROADMAP.md` § B liste les quatre choses à poser sur la
+table. **Ne rien proposer tant qu'elles n'y sont pas.**
 
 ---
 
-## 3. Les pièges (inchangés, sauf mention)
+## 2. Ce que les deux livraisons du 14/09 ont mis dans le code
 
-- **La grille récursive vient de l'INDEX** : une photo déposée à l'instant
-  dans un SOUS-dossier n'y paraît qu'au prochain scan (un tour sur six,
-  ~30 min — `NAS_SCAN_CYCLES`). Son propre dossier la montre tout de suite.
-  Le bandeau de la page le dit ; si ce délai gêne un jour, la porte est
-  `NAS_SCAN_CYCLES`, pas le retour de la marche.
+**Matin — la grille récursive vient de l'index**
+- `_nom_relatif(k, prefixe)` : le chemin relatif d'une clé **dans sa casse
+  d'origine** (`Path.relative_to` ne peut pas servir, la clé garde la casse du
+  NAS et `folder` sort d'un `resolve()` qui minuscule l'hôte SMB).
+- `_fiche_depuis_cle(...)` : la fiche de galerie d'une entrée, **sans toucher
+  au disque**. Cinquième producteur de `file_data`.
+- `grille_indexee = rec and not remplace_la_grille` ;
+  `_lister_dossier_frais(folder, False)` TOUJOURS.
+- Une photo déposée dans un SOUS-dossier n'apparaît dans la vue récursive
+  qu'au prochain scan (~30 min, `NAS_SCAN_CYCLES`) ; son propre dossier la
+  montre tout de suite, et le bandeau de la page le dit.
+
+**Soir — `_A TRIER` par propriétaire**
+- `auteurs.dossier_de(nom)` : l'inverse **contrôlé par aller-retour** de
+  `proprietaire_de`. Un nom de compte qui porte un séparateur ne fabrique pas
+  de chemin.
+- `server.dossier_a_trier_de(utilisateur)` / `cible_a_trier(utilisateur)` :
+  la boîte du compte connecté si son dossier existe, sinon la racine — qui
+  est celle de l'admin (`visibilite.chez_soi`). La boîte d'un propriétaire se
+  CRÉE au premier dépôt (`FileOps.mkdir`) ; **l'ancre, jamais**.
+- `rangement_annee.SALLES_ARBITRAGE` / `est_arbitrage(chemin)` : la règle vit
+  là, et le bat 36 la LIT. Ancrée sur la PLACE (après un `_A TRIER`), pas sur
+  le nom. Le plan compte ce qu'il laisse (`arbitrage`).
+- `verifier_doublons_atrier` : compare aussi les VIDÉOS (empreinte tête+milieu
+  + durée), avec deux verdicts séparés — `videos_confirmes` retirables,
+  `videos_tronquees` derrière `--videos-tronquees`.
+- `exiftool_json(...)` : **fichier d'arguments UTF-8**, plus aucun chemin sur
+  la ligne de commande (voir § 3).
+
+---
+
+## 3. Les pièges
+
+- **exiftool et les chemins accentués** : passés sur la ligne de commande, ils
+  arrivent mutilés (« File not found », une entrée de moins dans le lot,
+  aucune erreur). **8,4 % du fonds** est concerné. Tout appel à exiftool passe
+  désormais par `exiftool_json` et son fichier d'arguments. Si un nouvel appel
+  est écrit ailleurs, il doit faire pareil — `docs/DECISIONS_OUTILLAGE.md`.
+- **Un banc qui INJECTE une lecture ne tient que la règle.** Les durées vidéo
+  étaient injectées ; c'est en allant les chercher pour de vrai que le défaut
+  ci-dessus est apparu. Quand une règle dépend d'un outil externe, une mesure
+  doit lire cet outil au moins une fois sur de vraies données.
+- **La grille récursive vient de l'INDEX** (voir § 2).
 - **Le recensement dure 1 h 09** et **chaque redémarrage le tue**. Avant de
   livrer en rafale : `maint.lourde` dans `/api/maint/status`.
 - **Deux balayages SMB simultanés** : l'énumération passe de 305 s à 2 100 s.
 - **Un outil qui descend récursivement dans `_A TRIER` traverse la salle
-  d'arbitrage.**
+  d'arbitrage** — la règle existe maintenant (`est_arbitrage`), un outil neuf
+  doit la lire au lieu d'en écrire une deuxième.
 - **Windows : KB5124008 casse Plan9**, donc `device_bash`. UBR **9278**,
   Windows Update en pause jusqu'au 17.10. `Get-HotFix` MENT ; la vérité est
   `(Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion').UBR`.
   **Vers le 16.10** : masquer le KB s'il est reproposé.
 - **La VM n'atteint pas le LAN** : tout ce qui interroge le serveur passe par
-  l'agent de banc ou par **Chrome** (`http://192.168.0.13:8080`). Le NAS est
-  monté sous `$HOME/mnt/Photos`.
+  l'agent de banc ou par **Chrome** (`http://192.168.0.13:8080`).
 - **Chrome, jamais le navigateur intégré** (demande de Mike, 13/09).
-- **Git : jamais depuis la VM**, même en lecture apparente — écrire `livrer`
-  dans `_commande_git.txt`, et LIRE `.git/logs/*` à la main.
-- **Canaux** : écrire `rien`, puis l'ordre UNE fois, puis ATTENDRE le retour à
-  `rien`. `_banc_sortie.txt` porte un EN-TÊTE qui dit de quel banc il vient.
-- **Un `livrer` qui touche `server.py` lance ~73 bancs et dure ~6 minutes.**
+- **Git : jamais depuis la VM**, même en lecture apparente. Écrire `livrer`
+  dans `_commande_git.txt`, et LIRE `.git/logs/*` à la main. Les préfixes de
+  branche admis sont `feat|fix|chore|docs|test` — `perf/` a été refusé.
+- **Canaux** : écrire `rien`, puis l'ordre UNE fois, puis ATTENDRE. L'agent
+  git consomme l'ordre AVANT de travailler : le canal revenu à `rien` ne veut
+  pas dire « fini », c'est `_etat_git.json` qui le dit (~6 min si `server.py`
+  est touché).
 - **Un banc qui lit le source par le TEXTE mesure une orthographe** — écrire
-  sur l'ARBRE (`ast`). Deux des bancs cassés ce matin l'étaient pour ça.
+  sur l'ARBRE (`ast`).
 - `server.py` : skill `monolith-surgery` ; UI : `photo-ui`.
 
 ---
@@ -111,8 +127,9 @@ quoi ? » — § B liste les quatre choses à poser sur la table avant d'en parl
 Éditer → redémarrer (`uptime_s` > 60 d'abord) → **observer en réel** →
 `SESSION_COMMIT.txt` → `livrer` → **vérifier dans `.git/logs/refs/heads/main`**.
 
-Et, après toute analyse : **la contre-vérifier** (règle 11). Elle a encore
-travaillé cette nuit, et deux fois dans le bon sens : la prémisse du chantier
-(« un fichier manque à l'index ») est TOMBÉE sous son propre contrôle avant
-qu'une ligne soit écrite, et le premier compteur de la nouvelle branche
-mentait — un seul nombre pour deux causes — avant d'être scindé.
+Et, après toute analyse : **la contre-vérifier** (règle 11). Elle a travaillé
+trois fois le 14/09, et chaque fois elle a rapporté quelque chose : la prémisse
+du chantier de la marche est tombée avant le code (« un fichier manque à
+l'index » : 0 d'un côté, 0 de l'autre) ; un compteur qui mélangeait deux causes
+a été scindé avant d'être lu ; et un banc qui injectait une lecture a masqué,
+jusqu'à ce qu'on aille lire pour de vrai, un défaut qui touchait 8,4 % du fonds.

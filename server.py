@@ -4730,21 +4730,62 @@ if charger_depots():
 DOSSIER_A_TRIER = '_A TRIER'
 
 
-def cible_a_trier():
-    """`(idx, rel, chemin)` du dossier où part un dépôt gardé, ou None.
+def dossier_a_trier_de(utilisateur=None):
+    """Le chemin ABSOLU de la boîte de réception de `utilisateur`.
+
+    **Le chemin EST le propriétaire** (chantier 17) : ce qui sort de
+    `Photos Flo/_A TRIER` redescend chez Flo, `rangement_annee.base_du_fonds()`
+    le fait déjà et c'est la moitié qui existait. Ce qui manquait est ici, du
+    côté DÉPÔT : la cible était codée en dur sur la racine, donc **un dépôt
+    gardé par Flo finissait dans `Photos Mike\\<année>`, en silence**.
+
+    La règle, décidée par Mike le 13/09 : la boîte du dossier propriétaire du
+    compte connecté s'il existe, sinon la racine — et la racine, là où
+    personne n'est chez soi, est celle de l'admin (`visibilite.chez_soi`).
+    Le déposant est un DÉFAUT, jamais un verdict : une photo que Flo dépose de
+    l'album de Papa appartient à `Photos Papa`, et c'est le rangement qui le
+    dira, pas ce choix-ci.
+
+    Le nom du dossier vient d'`auteurs.dossier_de`, l'inverse contrôlé de
+    `proprietaire_de` : « Photos » + un nom de compte ne s'assemble pas ici."""
+    racine = UPLOAD_DIR.parent
+    dossier = _auteurs.dossier_de(utilisateur) if utilisateur else None
+    if dossier:
+        chez_lui = racine / dossier
+        if chez_lui.is_dir():
+            return chez_lui / DOSSIER_A_TRIER
+    return racine / DOSSIER_A_TRIER
+
+
+def cible_a_trier(utilisateur=None):
+    """`(idx, rel, chemin, a_creer)` du dossier où part un dépôt gardé, ou None.
 
     None n'est pas un détail d'implémentation : c'est ce qui fait ÉTEINDRE le
     bouton « Garder » et dire pourquoi, au lieu de le laisser échouer à chaque
-    clic (CLAUDE.md n° 9)."""
-    cible = UPLOAD_DIR.parent / DOSSIER_A_TRIER
-    if not cible.is_dir():
+    clic (CLAUDE.md n° 9). Et c'est pour la même raison que `a_creer` existe
+    plutôt qu'un refus : aucun `Photos <Nom>/_A TRIER` n'existe aujourd'hui
+    (mesuré le 14/09 : la racine en a un, les trois dossiers propriétaires
+    n'en ont aucun). Refuser tant qu'il manque rendrait le bouton de Flo mort
+    à vie ; la boîte se crée au premier dépôt gardé, par `FileOps.mkdir`, donc
+    journalisée comme tout le reste."""
+    # L'ANCRE d'abord, et elle ne se crée jamais : `_A TRIER` à côté
+    # d'Uploads fait partie du plan du NAS. Absente, ce n'est pas une boîte
+    # qui manque, c'est `dossier_uploads.txt` qui désigne le mauvais endroit —
+    # et en fabriquer une là planterait une seconde salle de tri ailleurs.
+    if not (UPLOAD_DIR.parent / DOSSIER_A_TRIER).is_dir():
+        return None
+    cible = dossier_a_trier_de(utilisateur)
+    # La boîte d'un PROPRIÉTAIRE, elle, se crée : son parent `Photos <Nom>`
+    # existe, c'est la preuve qu'on est au bon endroit.
+    a_creer = not cible.is_dir()
+    if a_creer and not cible.parent.is_dir():
         return None
     for i, (_label, root) in enumerate(media_roots()):
         try:
             rel = cible.relative_to(root)
         except ValueError:
             continue
-        return i, rel.as_posix() if rel.parts else '', cible
+        return i, rel.as_posix() if rel.parts else '', cible, a_creer
     return None
 
 
@@ -13574,7 +13615,7 @@ class Handler(BaseHTTPRequestHandler):
         ferait un second assemblage de la même règle. `garder_refus` dit
         POURQUOI le geste « Garder » ne peut pas aboutir, ou '' — la page
         éteint alors le bouton et affiche la raison."""
-        cible = cible_a_trier()
+        cible = cible_a_trier(utilisateur_vu())
         refus = '' if cible else (
             "Le dossier « %s » n'existe pas à côté d'Uploads : un dépôt "
             "gardé n'aurait nulle part où aller." % DOSSIER_A_TRIER)
@@ -13610,7 +13651,10 @@ class Handler(BaseHTTPRequestHandler):
         self._send(200, json.dumps(
             {'items': items, 'mur_jours': int(DEPOT_MUR_S // 86400),
              'garder_refus': refus,
-             'garder_vers': (DOSSIER_A_TRIER if cible else '')},
+             # Le chemin RELATIF, pas le seul nom du dossier : depuis que
+             # la boîte dépend de qui regarde, « _A TRIER » ne dit plus
+             # LEQUEL. La page affiche ce texte tel quel.
+             'garder_vers': (cible[1] if cible else '')},
             ensure_ascii=False).encode(), 'application/json')
 
     def _tri_un_geste(self, ops, cle, geste):
@@ -13621,11 +13665,19 @@ class Handler(BaseHTTPRequestHandler):
         idx, rel = tgt
         if geste == 'effacer':
             return ops.delete(idx, rel, UPLOAD_DIR)
-        cible = cible_a_trier()
+        cible = cible_a_trier(utilisateur_vu())
         if not cible:
             raise fichiers.FileOpError(
                 "Le dossier « %s » n'existe pas à côté d'Uploads."
                 % DOSSIER_A_TRIER)
+        if cible[3]:
+            # La boîte du propriétaire n'existe pas encore : on la crée, par
+            # la primitive journalisée, jamais par un `mkdir` écrit ici.
+            # `move` exige une destination qui existe, et un lot de cinquante
+            # ne doit pas la créer cinquante fois — d'où le re-contrôle.
+            parent, _, nom = cible[1].rpartition('/')
+            if not cible[2].is_dir():
+                ops.mkdir(cible[0], parent, nom or DOSSIER_A_TRIER)
         return ops.move(idx, rel, cible[0], cible[1], UPLOAD_DIR)
 
     def _api_tri_decider(self, path):

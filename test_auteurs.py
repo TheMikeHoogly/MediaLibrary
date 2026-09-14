@@ -24,6 +24,36 @@ class Proprietaire(unittest.TestCase):
         self.assertIsNone(A.proprietaire_de(None))
 
 
+class DossierDe(unittest.TestCase):
+    """L'INVERSE de `proprietaire_de`, et il vit colle a elle : le jour ou
+    deux endroits assemblent « Photos » + un nom chacun de leur cote, l'un des
+    deux se trompera d'espace ou de separateur. Sert a la boite de reception
+    par proprietaire (`server.dossier_a_trier_de`)."""
+
+    def test_le_nom_donne_le_dossier(self):
+        self.assertEqual(A.dossier_de('Flo'), 'Photos Flo')
+        self.assertEqual(A.dossier_de('Mike'), 'Photos Mike')
+        self.assertEqual(A.dossier_de('Papa'), 'Photos Papa')
+
+    def test_l_aller_retour_se_referme(self):
+        for nom in ('Flo', 'Mike', 'Papa', 'Jean-Luc', "O'Brien", 'Anne Marie'):
+            self.assertEqual(A.proprietaire_de(A.dossier_de(nom)), nom, nom)
+
+    def test_les_espaces_autour_ne_comptent_pas(self):
+        self.assertEqual(A.dossier_de('  Flo  '), 'Photos Flo')
+
+    def test_un_nom_vide_ne_donne_AUCUN_dossier(self):
+        for vide in ('', '   ', None):
+            self.assertIsNone(A.dossier_de(vide), repr(vide))
+
+    def test_un_nom_qui_porte_un_SEPARATEUR_est_refuse(self):
+        """C'est la porte que l'aller-retour referme : « a/b » donnerait
+        « Photos a/b », dont `proprietaire_de` ne tire que « a ». Un nom de
+        compte n'est pas un nom de dossier tant qu'il n'a pas fait ce tour."""
+        for mauvais in ('a/b', 'a\\b', '../..', 'Flo/PRIVE'):
+            self.assertIsNone(A.dossier_de(mauvais), mauvais)
+
+
 class Idents(unittest.TestCase):
     def test_aller_retour(self):
         for champ, cle, i in (('faces', P_MIKE, 3), ('exclude', P_FLO, None),

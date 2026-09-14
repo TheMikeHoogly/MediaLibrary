@@ -69,6 +69,9 @@ def main(argv=None):
     ap.add_argument('--undo', action='store_true')
     ap.add_argument('--homonymes-differents', action='store_true',
                     help='retire aussi les homonymes a image differente (decision humaine)')
+    ap.add_argument('--videos-tronquees', action='store_true',
+                    help='retire aussi les videos dont le FONDS porte une '
+                         'version plus longue (decision humaine)')
     a = ap.parse_args(argv)
 
     if a.undo:
@@ -81,6 +84,29 @@ def main(argv=None):
     confirmes = list(rap.get('confirmes', []))
     print('%s : %d doublon(s) confirme(s) a retirer (%s revue ignoree(s))'
           % ('APPLICATION' if a.appliquer else 'DRY-RUN', len(confirmes), len(rap.get('revue', []))))
+    # Les VIDEOS au meme flux sont des doublons comme les autres : meme
+    # taille, meme debut, meme milieu, seule la remorque de metadonnees
+    # differe. Elles rejoignent donc le retrait ordinaire -- reversible, la
+    # corbeille se vide au bat 24.
+    vc = list(rap.get('videos_confirmes') or [])
+    if vc:
+        print('+ %d video(s) au MEME flux que leur homonyme du fonds' % len(vc))
+        confirmes += [dict(e, motif='meme flux video') for e in vc]
+    # Celles dont le fonds porte une version PLUS LONGUE attendent un geste :
+    # dire « celle-ci est tronquee » est un jugement sur laquelle des deux
+    # copies vaut, et un outil qui tranche un arbitrage a coute 68 photos le
+    # 13/09.
+    vt = list(rap.get('videos_tronquees') or [])
+    if a.videos_tronquees:
+        if not vt:
+            print('Aucune video tronquee dans le rapport.')
+        print('+ %d video(s) tronquee(s) (decision humaine, --videos-tronquees)'
+              % len(vt))
+        confirmes += [dict(e, motif='video tronquee, fonds plus long')
+                      for e in vt]
+    elif vt:
+        print('  (%d video(s) tronquee(s) IGNOREE(S) : --videos-tronquees pour '
+              'les retirer aussi)' % len(vt))
     if a.homonymes_differents:
         hd = rap.get('homonymes_differents')
         if hd is None:

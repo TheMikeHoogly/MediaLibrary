@@ -59,6 +59,10 @@ def main():
     check(p['par_annee'].get(2020) == 2 and p['par_annee'].get(2019) == 1
           and p['par_annee'].get(2018) == 1, "repartition par annee (k1+k6 en 2020, k7 en conflit)")
     check(p['total_a_ranger'] == len(p['moves']), "total coherent")
+    check('arbitrage' in p and p['arbitrage'] == 0,
+          "le plan COMPTE les salles d'arbitrage laissees (zero ici, et un "
+          "zero se lit « regarde, il n'y en avait pas ») — la regle et ses "
+          "formes voisines sont tenues par test_arbitrage_atrier.py")
     # aucune cle inventee, aucune perte : chaque move a src+dst+annee
     check(all(m.get('src') and m.get('dst') and m.get('annee') for m in p['moves']),
           "chaque move a provenance complete (src, dst, annee)")

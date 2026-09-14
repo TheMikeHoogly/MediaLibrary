@@ -43,6 +43,14 @@ def _extraire(noms):
     return trouve
 
 
+def _methode(nom):
+    """Le source d UNE methode du routeur, decoupe sur l ARBRE."""
+    for noeud in ast.walk(ARBRE):
+        if isinstance(noeud, ast.FunctionDef) and noeud.name == nom:
+            return ast.get_source_segment(SOURCE, noeud)
+    raise AssertionError("methode absente de server.py : " + nom)
+
+
 class Cablage(unittest.TestCase):
     """Le squelette existe et est branche -- avant de tester ce qu'il FAIT."""
 
@@ -54,13 +62,28 @@ class Cablage(unittest.TestCase):
         self.assertIn("self._do_upload_check()", SOURCE)
 
     def test_le_gestionnaire_valide_taille_et_hash_avant_de_repondre(self):
-        self.assertIn("def _do_upload_check(self):", SOURCE)
-        bloc = SOURCE[SOURCE.index("def _do_upload_check(self):"):]
-        bloc = bloc[:bloc.index("\n    def _do_post(self):")]
+        """Ce controle REPOND, il n ecrit pas : c est une question, pas un
+        depot.
+
+        La decoupe se fait sur l ARBRE. Elle se faisait sur le TEXTE, de
+        `def _do_upload_check` jusqu au prochain `def _do_post` -- c est-a-dire
+        sur une VINGTAINE de methodes du routeur, tout ce qui se trouvait
+        entre les deux. Le banc passait par chance et il est devenu rouge le
+        14/09 sur un `ops.mkdir` ecrit dans `_tri_un_geste`, une methode qui
+        n a rien a voir avec l upload. Un banc qui dit « cette fonction
+        n ecrit pas » doit regarder CETTE fonction."""
+        bloc = _methode("_do_upload_check")
         self.assertIn("_upload_dup_by_hash(", bloc)
         # Jamais d'ecriture : ce controle ne fait que repondre SKIP/OK.
         for mot in ("write_bytes", "write_text", "open(", ".mkdir("):
             self.assertNotIn(mot, bloc)
+
+    def test_la_decoupe_ne_ramasse_QUE_la_methode_visee(self):
+        """Le garde-fou du garde-fou : si la decoupe se remettait a ramasser
+        ses voisines, le banc redeviendrait un banc qui passe par chance."""
+        bloc = _methode("_do_upload_check")
+        self.assertTrue(bloc.lstrip().startswith("def _do_upload_check(self):"))
+        self.assertEqual(bloc.count("\n    def "), 0, bloc[-200:])
 
     def test_le_client_fait_le_precontrole_avant_lenvoi(self):
         html = (HERE / "ui" / "pages" / "upload.html").read_text(encoding="utf-8")

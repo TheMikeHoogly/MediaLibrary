@@ -29,6 +29,8 @@ import types
 import unittest
 from pathlib import Path
 
+import auteurs as _auteurs
+
 HERE = Path(__file__).resolve().parent
 SOURCE = (HERE / 'server.py').read_text(encoding='utf-8')
 ARBRE = ast.parse(SOURCE)
@@ -38,7 +40,7 @@ FONCTIONS = ('charger_depots', 'sauver_depots', 'depot_noter',
              '_arrivee_de_stat', '_date_arrivee_du_fichier',
              'depot_le', 'depots_a_trier',
              'depots_vue', 'depots_vue_invalider', 'depots_vue_retirer',
-             'cible_a_trier')
+             'dossier_a_trier_de', 'cible_a_trier')
 CONSTANTES = ('DEPOT_MUR_S', '_DEPOTS', '_DEPOTS_LOCK', '_DEPOTS_VUE',
               'DEPOTS_VUE_TTL_S', 'DOSSIER_A_TRIER')
 
@@ -57,6 +59,10 @@ def module(dossier, racines=()):
         'threading': threading, 'Path': Path,
         'SCRIPT_DIR': dossier, 'UPLOAD_DIR': dossier,
         'media_roots': lambda: list(racines),
+        # La boite d'un proprietaire se nomme par `auteurs.dossier_de` : le
+        # VRAI module, pas un bouchon. Un bouchon ici prouverait que le banc
+        # sait ecrire « Photos Flo », pas que le serveur le sait.
+        '_auteurs': _auteurs,
     })
 
     def lister(d, rec=False):
@@ -257,10 +263,74 @@ class OuPartUnDepotQuOnGarde(unittest.TestCase):
         m = module(self.uploads, racines=[('Photos', self.racine)])
         cible = m.cible_a_trier()
         self.assertIsNotNone(cible)
-        idx, rel, chemin = cible
+        idx, rel, chemin, a_creer = cible
         self.assertEqual(idx, 0)
         self.assertEqual(rel, '_A TRIER')
         self.assertTrue(chemin.is_dir())
+        self.assertFalse(a_creer)
+
+    # ── La boite est celle du PROPRIETAIRE (13/09, decide par Mike) ────────
+    # Avant : la cible etait codee en dur sur la racine, et
+    # `rangement_annee.base_du_fonds` renvoie la racine vers « Photos Mike ».
+    # Donc un depot garde par Flo finissait chez Mike, SANS un mot.
+
+    def test_le_depot_de_Flo_part_dans_la_boite_de_Flo(self):
+        (self.racine / '_A TRIER').mkdir()
+        (self.racine / 'Photos Flo').mkdir()
+        m = module(self.uploads, racines=[('Photos', self.racine)])
+        idx, rel, chemin, a_creer = m.cible_a_trier('Flo')
+        self.assertEqual(rel, 'Photos Flo/_A TRIER')
+        self.assertTrue(a_creer, "la boite n'existe pas encore : a creer")
+        self.assertEqual(chemin, self.racine / 'Photos Flo' / '_A TRIER')
+
+    def test_une_boite_deja_la_n_est_pas_annoncee_a_creer(self):
+        (self.racine / '_A TRIER').mkdir()
+        (self.racine / 'Photos Flo' / '_A TRIER').mkdir(parents=True)
+        m = module(self.uploads, racines=[('Photos', self.racine)])
+        self.assertFalse(m.cible_a_trier('Flo')[3])
+
+    def test_sans_dossier_proprietaire_on_retombe_sur_la_racine(self):
+        """`Photos Papa` n'a pas de compte, et un compte peut n'avoir pas de
+        dossier : le decoupage est par DOSSIER proprietaire, pas par compte.
+        La racine, la ou personne n'est chez soi, est celle de l'admin."""
+        (self.racine / '_A TRIER').mkdir()
+        m = module(self.uploads, racines=[('Photos', self.racine)])
+        self.assertEqual(m.cible_a_trier('Inconnu')[1], '_A TRIER')
+
+    def test_sans_personne_de_connecte_on_retombe_sur_la_racine(self):
+        (self.racine / '_A TRIER').mkdir()
+        m = module(self.uploads, racines=[('Photos', self.racine)])
+        self.assertEqual(m.cible_a_trier(None)[1], '_A TRIER')
+
+    def test_un_nom_de_compte_ne_peut_pas_fabriquer_un_CHEMIN(self):
+        """`auteurs.dossier_de` referme la porte par l'aller-retour : un nom
+        qui porte un separateur ne redonne pas le meme nom, donc pas de
+        dossier -- et le depot retombe sur la racine au lieu d'atterrir dans
+        un dossier choisi par le nom du compte."""
+        (self.racine / '_A TRIER').mkdir()
+        m = module(self.uploads, racines=[('Photos', self.racine)])
+        for mauvais in ('../..', 'a/b', '  ', 'Flo/PRIVE'):
+            self.assertEqual(m.cible_a_trier(mauvais)[1], '_A TRIER', mauvais)
+
+    def test_l_ancre_manquante_eteint_le_bouton_MEME_pour_un_proprietaire(self):
+        """Pas de `_A TRIER` a cote d'Uploads : ce n'est pas une boite qui
+        manque, c'est `dossier_uploads.txt` qui designe le mauvais endroit.
+        En creer une chez Flo y planterait une seconde salle de tri."""
+        (self.racine / 'Photos Flo').mkdir()
+        m = module(self.uploads, racines=[('Photos', self.racine)])
+        self.assertIsNone(m.cible_a_trier('Flo'))
+
+    def test_ce_qui_sort_de_la_boite_de_Flo_redescend_CHEZ_ELLE(self):
+        """La premisse de tout le decoupage, et elle n'est pas dans ce
+        module : si `rangement_annee` renvoyait la boite de Flo vers
+        « Photos Mike », deplacer le depot ne ferait que retarder l'erreur."""
+        import rangement_annee as ra
+        from datetime import datetime
+        dst = ra.cible(str(self.racine / 'Photos Flo' / '_A TRIER' / 'x.jpg'),
+                       datetime(2021, 6, 1, 12, 0).timestamp())
+        self.assertIsNotNone(dst)
+        self.assertEqual(Path(dst[1]).parent,
+                         self.racine / 'Photos Flo' / '2021')
 
     def test_hors_de_toute_racine_connue_la_cible_est_None(self):
         (self.racine / '_A TRIER').mkdir()

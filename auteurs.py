@@ -63,6 +63,31 @@ def proprietaire_de(chemin):
     return None
 
 
+def dossier_de(nom):
+    """Le dossier propriétaire de `nom` : « Flo » → « Photos Flo ». None si le
+    nom n'en donne pas un.
+
+    C'est l'INVERSE exact de `proprietaire_de`, et il vit collé à elle pour
+    que les deux sens ne puissent pas diverger — le reste du projet n'a
+    jamais eu à fabriquer ce nom, et le jour où deux endroits l'assemblent
+    chacun de leur côté, l'un des deux se trompera de séparateur ou d'espace.
+
+    Le contrôle EST l'aller-retour : on construit, puis on relit avec
+    `proprietaire_de`, et on ne rend le dossier que si elle retrouve le nom de
+    départ. Ce n'est pas une politesse — c'est ce qui referme la porte sur un
+    nom de compte qui porterait un séparateur (« a/b » donnerait
+    « Photos a/b », dont `proprietaire_de` ne tire que « a ») ou sur un nom
+    vide. Un nom de compte n'est pas un nom de dossier tant qu'il n'a pas
+    fait ce tour-là."""
+    nom = str(nom or '').strip()
+    if not nom:
+        return None
+    dossier = 'Photos ' + nom
+    if proprietaire_de(dossier) != nom:
+        return None
+    return dossier
+
+
 def ident(champ, cle, idx=None):
     """La clé d'`auteurs` d'une décision."""
     if champ == 'faces':

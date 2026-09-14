@@ -114,6 +114,13 @@ Mesuré sur le disque le 13/09 à 21 h 30, pas déduit.
   pas seulement les 68).
 - **18 fichiers restent dans `Google porte mieux`** (2024 : 3, 2025 : 12,
   2026 : 3) : l'arbitrage que personne n'a encore fait. Deux par deux, à l'œil.
+  **Ils ne risquent plus d'être tranchés par un outil** (B8, 14/09) : le plan
+  d'année en comptait 18 dans ses déplacements, il les laisse désormais et le
+  dit (`arbitrage: 18`).
+- **Les 19 vidéos en double** ci-dessus ne sont plus increvables : le bat 36
+  sait les comparer (B8). Celles dont le fonds porte une version plus longue
+  attendent un geste explicite, `--videos-tronquees` — le verdict est écrit,
+  il n'est pas appliqué.
 - Deux déchets qu'aucun plan ne verra jamais (extensions hors médias) :
   `Thumbs.db` et `1000142357_20260812_223550_4377.jpg_original`.
 
@@ -138,9 +145,9 @@ pipeline doit changer **en même temps**, ou pas du tout. Les instruire
 séparément ferait courir le risque de deux campagnes là où une suffit.
 
 **Le reste est du travail ordinaire**, qui ne dépend de personne : la marche
-du NAS et la grille à la demande (section C), `_A TRIER` par propriétaire (B8),
-et les mesures qui demandaient le serveur arrêté (B5, B6). C'est là que je peux
-avancer seul.
+du NAS (§ C3, livrée le 14/09) et la grille à la demande, `_A TRIER` par
+propriétaire (B8, livré le 14/09), et les mesures qui demandaient le serveur
+arrêté (B5, B6). C'est là que je peux avancer seul.
 
 Dans l'ordre où je le ferais :
 
@@ -148,7 +155,7 @@ Dans l'ordre où je le ferais :
 |---|---|---|---|
 | 1 | **Couper la marche du NAS** sur la grille récursive (§ C3) | décidé — la mesure du 13/09 tranche | moyen |
 | 2 | **Le chargement à la demande** (§ C3), APRÈS le 1 | décidé — Mike a tranché | gros |
-| 3 | **`_A TRIER` par propriétaire** + les trois défauts voisins (B8) | décidé — Mike, 13/09 | petit |
+| 3 | ~~**`_A TRIER` par propriétaire** + les trois défauts voisins (B8)~~ | **LIVRÉ le 14/09** | fait |
 | 4 | **Préparer la décision « prochaine campagne »** (B1·B2·B3·B4) | **Mike**, après que j'aie mesuré | moyen |
 | 5 | B5, B6 : ce qui demandait le serveur arrêté ou le GPU | moi | petit |
 | 6 | **La copie hors site** (§ D1) | **Mike** | à lui seul |
@@ -302,7 +309,60 @@ DEUX sous-processus très inégaux — `recensement_doublons.py` a mis **9 min**
 les deux ne disait pas dans quelle moitié on était, ce qui est justement la
 question devant une étape qui dure. Chacune annonce désormais la sienne.
 
-**B8. `_A TRIER` PAR PROPRIÉTAIRE — décidé par Mike le 13/09, pas construit.**
+**B8. `_A TRIER` PAR PROPRIÉTAIRE — LIVRÉ le 14/09.** Les quatre points sont
+faits, et un cinquième est sorti du quatrième. Ce qui a été observé en réel :
+
+- **La boîte suit le compte connecté.** `/api/tri` répond désormais
+  `garder_vers: Photos Mike/_A TRIER` pour Mike — avant, tout partait dans la
+  racine, donc chez Mike, **y compris ce que Flo gardait**. La boîte d'un
+  propriétaire se crée au premier dépôt (`FileOps.mkdir`, journalisé) ;
+  l'ANCRE (`_A TRIER` à côté d'Uploads) ne se crée jamais, son absence dit que
+  `dossier_uploads.txt` désigne le mauvais endroit. Le nom du dossier vient
+  d'`auteurs.dossier_de`, l'inverse **contrôlé par aller-retour** de
+  `proprietaire_de` : un nom de compte portant un séparateur ne fabrique pas
+  de chemin.
+- **La salle d'arbitrage est protégée, et la règle vit en UN endroit**
+  (`rangement_annee.est_arbitrage`, que le bat 36 LIT). Mesuré avant/après sur
+  le plan réel : **37 déplacements dont 18 sous `Google porte mieux`** →
+  **19 déplacements, `arbitrage: 18`, zéro sous la salle**. Les 18 sont
+  exactement les 18 d'A7. La protection nomme la PLACE, pas le nom (règle 7) :
+  un `Google porte mieux` rangé ailleurs dans le fonds reste une photo comme
+  une autre.
+- **Le bat 36 sait comparer une vidéo** : empreinte tête+milieu (la remorque
+  de métadonnées ne doit pas empêcher de reconnaître un doublon) et durée
+  exiftool. Deux verdicts séparés — `videos_confirmes` (même flux) rejoint le
+  retrait ordinaire, `videos_tronquees` (le fonds est plus long) attend
+  `--videos-tronquees`. **Un outil ne tranche pas un arbitrage** : c'est ce
+  qui a coûté 68 photos le 13/09.
+- **LE CINQUIÈME, trouvé en vérifiant le quatrième — et il dépassait les
+  vidéos.** Les chemins partaient à exiftool sur la LIGNE DE COMMANDE, où un
+  chemin accentué arrive mutilé : « File not found », une entrée de moins dans
+  le lot, **aucune erreur**. Une photo accentuée n'avait donc pas d'empreinte,
+  ne trouvait jamais sa canonique, et tombait dans `homonymes_differents` — la
+  liste que `--homonymes-differents` peut RETIRER. **3 714 clés sur 44 477,
+  8,4 % du fonds**, portent un caractère hors ASCII. Corrigé par un fichier
+  d'arguments UTF-8 (`-@`), et MESURÉ des deux côtés
+  (`mesure_exiftool_accents.py`) : sur 8 accentués, **0 empreinte avant, 8
+  après** ; sur 8 ASCII, **8 et 8** — l'écart désigne la ligne de commande, pas
+  exiftool. Un fichier sans empreinte est désormais COMPTÉ et nommé.
+
+**Ce que ça laisse à Mike.** Ses propres dépôts partent maintenant dans
+`Photos Mike/_A TRIER` et non plus dans la racine : même destination finale
+après rangement, mais **deux boîtes à regarder** au lieu d'une tant que la
+racine n'est pas vidée. Dire un mot si la racine lui va mieux — c'est une
+ligne. Et le sélecteur de destination dans `/tri` (« le déposant est un
+défaut, jamais un verdict ») n'est PAS fait : le défaut est juste pour les
+deux comptes, et un contrôle qui ne sert jamais est un contrôle de trop tant
+que personne n'en a eu besoin.
+
+**Trouvé au passage, à lui signaler** : `Photos Flo\2016 Indonésie\Voyage
+Indonésie\Voyage Indonésie (2).mp4` est **illisible** — exiftool répond
+« File format error », 44 040 192 octets, soit 42 Mio ronds : un transfert
+tronqué. Il n'était pas visible avant parce que son chemin est accentué.
+
+---
+
+**B8 (l'analyse d'origine, 13/09) — décidé par Mike, pas construit.**
 Et la moitié existe déjà : `rangement_annee.base_du_fonds()` porte la règle
 dans sa propre docstring — « `Photos Flo/_A TRIER` : on range chez lui — c'est
 la boîte de réception par propriétaire ». Vérifié en exécutant la fonction :
