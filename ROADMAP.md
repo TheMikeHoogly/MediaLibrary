@@ -297,12 +297,23 @@ available »**. Trois choses, dans l'ordre où elles comptent :
 Ces quatre-là ne se tranchent qu'ensemble. Ce que je dois produire pour que
 Mike puisse décider en une fois — et rien de plus :
 
-1. **Ce que coûte une campagne**, en clair : 40 525 photos × ~17,6 s = **~8 h
-   de GPU**, la machine qui repagine (0,5 Go de RAM libre), le prompt figé
-   pendant ce temps. Le chiffre est connu, il suffit de le rappeler.
+1. **Ce que coûte une campagne — le chiffre était FAUX d'un facteur 25, et
+   il a été corrigé le 15/09.** Cette ligne disait « 40 525 photos × ~17,6 s
+   = **~8 h de GPU** ». La multiplication ne tient pas : 40 525 × 17,6 s =
+   **713 240 s = 198 h = 8,3 JOURS**. Ce n'étaient pas huit heures, c'étaient
+   huit **jours** — une erreur d'unité, recopiée telle quelle à chaque
+   relecture. **Et la réalité le confirme** : la campagne a été lancée le
+   05/09 et finie dans la nuit du 12 au 13/09, soit **7,5 jours = 180 h**,
+   c'est-à-dire **16,0 s/photo** — à 10 % du chiffre écrit. Les deux se
+   recoupent ; seule l'unité était fausse.
+   **Le plancher mesuré le 15/09** (tirage en aveugle, modèle chaud, sans
+   vignettes ni XMP ni scan concurrent) : `qwen3.5:4b` à **9,6 s/photo**, soit
+   **4,5 jours** au mieux ; `qwen3-vl:2b` à **3,2 s/photo**, soit **1,5 jour**.
+   Une campagne n'est donc jamais une nuit : c'est une SEMAINE pendant
+   laquelle le prompt est figé et le GPU pris.
 2. **Ce qu'un autre modèle donnerait**, mesuré en aveugle sur un tirage A/B —
    pas sur 8 photos choisies, la faute nommée dans « Pistes ouvertes ». Sans
-   cette mesure, changer de modèle est un pari à 8 heures.
+   cette mesure, changer de modèle est un pari à plusieurs JOURS.
 3. **Ce que la question « documents sensibles » ajouterait au prompt**, et sur
    combien de photos elle changerait quelque chose. Une phrase de prompt qui
    touche 50 photos ne vaut pas une campagne ; une qui en touche 5 000, oui.
@@ -310,8 +321,11 @@ Mike puisse décider en une fois — et rien de plus :
    (`mesure_copie_base.py`, quatre secondes). C'est la seule fenêtre, et on
    l'a manquée la fois précédente (B1).
 
-**MIKE A DIT OUI AUX 8 HEURES — le 14/09 au soir.** Le COÛT est accepté ; le
-CONTENU ne l'est pas, et c'est à moi de le produire. Ce que ça change : le
+**MIKE A DIT OUI AUX « 8 HEURES » — le 14/09 au soir. Mais les 8 heures
+n'existent pas : ce sont 8 JOURS** (point 1 ci-dessous, corrigé le 15/09).
+Son « oui » porte donc sur un coût qui n'est pas le vrai, et **c'est à lui de
+le reprendre en connaissance de cause**. Le CONTENU, lui, restait de toute
+façon à produire, et c'est mon travail. Ce que ça change : le
 point 1 ci-dessus tombe (il était connu, il est validé), le point 4 est
 trivial, et **il reste les points 2 et 3, tous deux à MESURER**. Tant qu'ils
 ne sont pas sur la table, il n'y a rien à lui proposer — « oui aux 8 heures »
@@ -328,10 +342,34 @@ qu'il ne nomme pas. Ce qui manque est donc l'écart : sur un tirage neutre,
 combien de photos le prompt AVEC la question signale-t-il que celui d'AUJOURD'HUI
 laisse passer ?
 
-**Et c'est la même expérience que le point 2.** Un seul tirage en aveugle,
-deux modèles × deux prompts, répond aux deux questions à la fois — c'est ce
-que la prochaine séance doit lancer en premier, parce que c'est ce qui occupe
-le GPU pendant que le reste se code.
+**LE TIRAGE A TOURNÉ — 15/09 au matin, 240 lignes, 60 photos × 2 modèles ×
+2 prompts** (`mesure_tirage_aveugle.py`, jeu gelé dans
+`eval/tirage_aveugle.json`, graine 20260915, tiré sur 40 320 images). Ce qu'il
+dit, et ce qu'il ne dit pas :
+
+| | `qwen3.5:4b` (prod) | `qwen3-vl:2b` (l'ancien) |
+|---|---:|---:|
+| médiane par photo | **9,6 s** | **3,2 s** |
+| sorties malformées | **0 / 120** | **0 / 120** |
+| mots-clés (médiane) | 6 | 7 |
+| description (médiane) | 98 car. | 130 car. |
+
+- **Le modèle de prod est TROIS FOIS plus lent que celui qu'il a remplacé.**
+  C'est le prix payé le 05/09, et il n'avait jamais été chiffré côté campagne.
+- **Aucune sortie malformée, ni d'un côté ni de l'autre** : le taux de JSON
+  cassé, que la skill `vision-eval` propose comme discriminant, ne discrimine
+  rien ici. `_salvage_tags` n'a servi à personne sur ces 240 appels.
+- **Le signal « document personnel » n'est PAS mesurable sur ce tirage** :
+  filet 0, question explicite 0 (`qwen3.5:4b`) et 1 (`qwen3-vl:2b`), accord
+  entre modèles 0. C'est attendu — 23 candidates sur 44 459, soit 0,05 %,
+  donnent 0,03 photo espérée sur 60. **Un tirage UNIFORME ne peut pas répondre
+  à cette question** : il faut tirer dans la population CANDIDATE et dans son
+  voisinage, pas dans le fonds entier. C'est le prochain geste, et il est
+  petit.
+- **Ce que le tirage ne dit pas** : lequel tague MIEUX. Sans étiquettes
+  humaines, « mieux » n'est pas une mesure. Les 240 lignes sont là pour
+  alimenter une **page de préférence en aveugle** — deux listes de mots-clés
+  pour la même photo, sans dire laquelle vient de qui.
 
 **B5. Re-mesurer les Motion Photos arrivées depuis le 03/09** — demande le
 serveur arrêté, donc impossible pendant la campagne, trivial maintenant.

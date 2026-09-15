@@ -39,46 +39,46 @@ produire. « Oui aux 8 heures » n'est pas « oui à ce modèle-là avec ce
 prompt-là ». Il reste deux choses à mesurer, et **une seule expérience répond
 aux deux**.
 
-### 0. LE TIRAGE EN AVEUGLE — à lancer en premier, il occupe le GPU
+### 0. LE TIRAGE A TOURNÉ — ce qui reste à en tirer
 
-**Deux modèles × deux prompts sur le MÊME tirage aléatoire.** Ce qu'il
-tranche :
+**240 lignes, 60 photos × 2 modèles × 2 prompts** (15/09 au matin). Le jeu est
+**gelé** dans `eval/tirage_aveugle.json` (graine 20260915) et les réponses dans
+`docs/tirage_aveugle.jsonl` — **aucune mesure à refaire**, et tout modèle
+futur se branche sur les MÊMES photos.
 
-- **quel modèle** — référence en place `qwen3.5:4b|v3fr|kb1`, 11,3 s/photo,
-  3,4 Go de VRAM (`modele.txt` porte l'historique : `qwen3-vl:4b` déborde,
-  `qwen3.5:2b` casse le format) ;
-- **ce que la question « document sensible » ajouterait** — mesuré le 14/09 :
-  **23 photos sur 44 459** (0,05 %) sont candidates aujourd'hui, dont 13
-  « carte bancaire ». **C'est un PLANCHER** : `candidat_sensible` lit le
-  vocabulaire du prompt ACTUEL, or la question sert à trouver ce qu'il ne
-  nomme pas. Ce qui décide est l'ÉCART entre les deux prompts sur un tirage
-  neutre.
+| | `qwen3.5:4b` (prod) | `qwen3-vl:2b` (l'ancien) |
+|---|---:|---:|
+| médiane par photo | **9,6 s** | **3,2 s** |
+| sorties malformées | 0 / 120 | 0 / 120 |
 
-**Le protocole est dans la skill `vision-eval`, et il n'est pas négociable** :
-hypothèse écrite AVANT de mesurer, jeu de validation figé issu du corpus réel
-et versionné dans `eval/`, VRAM mesurée EN INFÉRENCE (pas la taille annoncée),
-comparaison contre le pipeline EN PLACE, décision écrite.
+**Ce qui est tombé au passage, et qui compte plus que le reste** : les « 8 h de
+GPU » d'une campagne étaient **8 JOURS**. 40 525 × 17,6 s = 198 h. La campagne
+du 05/09 a duré 7,5 jours, ce qui recoupe exactement. **Question rouverte dans
+`QUESTIONS_MIKE.md`** : son « oui » tient-il pour une SEMAINE ?
 
-**Ce qui existe et ce qui manque.** `mesure_modele_vision.py` compare déjà
-deux modèles Ollama avec le prompt de prod — mais il est conçu pour **un petit
-lot CIBLÉ**, « quelques clés précises, pas un tirage aléatoire ». Or la
-roadmap exige l'inverse : **« mesuré en aveugle sur un tirage A/B — pas sur 8
-photos choisies, la faute nommée dans Pistes ouvertes »**. C'est donc le
-premier geste : lui donner un tirage aléatoire reproductible (graine fixée,
-clés versionnées dans `eval/`) et la seconde dimension du prompt. Compter
-aussi ce que la skill impose et que le script ne fait pas encore : la
-COHÉRENCE inter-photos d'une même scène, et le taux de sortie malformée
-(`_salvage_tags` / `parse_tags`).
+**Les deux gestes qui restent, et ils sont petits :**
 
-**Ordre de grandeur** : 200 photos × 2 modèles × 2 prompts × ~12 s ≈ **2 h 40
-de GPU**. À lancer par l'agent banc, puis on code pendant ce temps.
+1. **La page de préférence en aveugle.** Deux listes de mots-clés pour la même
+   photo, sans dire laquelle vient de qui, Mike tranche. C'est la SEULE façon
+   de répondre à « lequel tague mieux » — sans étiquettes humaines, « mieux »
+   n'est pas une mesure. Les 240 réponses sont déjà là. Modèle de page :
+   `/tranche` et `/residu`, qui font exactement ce geste.
+   **L'enjeu réel** : si `qwen3-vl:2b` tague aussi bien, la décision n'est plus
+   « quel nouveau modèle » mais « revenir à celui qui va 3× plus vite », et la
+   campagne passe de 4,5 jours à 1,5.
+2. **Un tirage CIBLÉ pour le signal « document personnel ».** L'uniforme ne
+   pouvait pas répondre : 23 candidates sur 44 459 donnent 0,03 photo espérée
+   sur 60, et on en a trouvé 1. Tirer dans la population candidate et son
+   voisinage — `tagging_meta.candidat_sensible` la définit déjà.
 
-**Le verrou, AVANT de lancer quoi que ce soit qui écrive** :
-`python mesure_copie_base.py` — quatre secondes. C'est la seule fenêtre pour
-avoir un AVANT, et elle a été manquée la fois précédente : le bilan de la
-campagne du 05/09 n'a jamais pu être fait faute d'instantané.
+**À savoir avant d'y toucher** : `REGLES_JSON` exige DÉJÀ des mots-clés
+génériques pour un document, et le commentaire du chantier 18 dit que « le
+signal est DÉJÀ dans l'index : repérer les candidats ne demande ni GPU, ni
+changement de prompt, donc pas de campagne à refaire ». La question n'est donc
+pas « faut-il en parler au modèle » mais « une question EXPLICITE trouve-t-elle
+ce que la consigne générique laisse passer ».
 
-### 1. Pendant que le tirage tourne : unifier les CINQ producteurs de fiches
+### 1. Unifier les CINQ producteurs de fiches
 
 `file_data` est bâti à cinq endroits — navigation, tags, recherche/semblables,
 même jour, et la grille indexée du 14/09. Seul le dernier passe par

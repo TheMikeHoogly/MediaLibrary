@@ -141,6 +141,11 @@ docs/plan_rangement_annee.md
 # Le verdict des collisions de ce plan-ci (verifier_plan_annee.py) :
 # une mesure DATEE de cette machine, qui se refait en douze secondes.
 docs/plan_annee_collisions.json
+# Les 240 reponses du tirage en aveugle : une mesure DATEE de cette
+# machine, 400 Ko de tags bruts, refaisable par le banc. Le TIRAGE
+# lui-meme (eval/tirage_aveugle.json) est versionne, lui : c'est le
+# jeu fige, et deux mesures ne se comparent que sur les memes photos.
+docs/tirage_aveugle.jsonl
 docs/undo_annee_*.json
 # Journaux d'annulation des photos perdues (etat machine, pas source).
 docs/undo_perdues_*.json
