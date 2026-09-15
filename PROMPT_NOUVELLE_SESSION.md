@@ -10,8 +10,8 @@
 
 ## 0. L'état, en dix lignes
 
-**15/09 au soir** : les producteurs de fiches sont unifiés (§ 1) — le
-prochain pas est le chargement à la demande.
+**15/09 au soir** : producteurs de fiches unifiés, puis fiches légères sur
+la grille du fonds entier (6,6 s → 3,7 s). Prochain pas : B5/B6.
 
 **Trois livraisons le 14/09.** La marche du NAS coupée sur la grille récursive
 (`/files?dir=1&rec=1` : **23,4 s → 6,5 s**, `parcours` 16,8 s → **48 ms**) ;
@@ -60,25 +60,15 @@ sa casse d'origine. Banc : `UnSeulProducteurDeFichesPourLIndex`.
 **Piège connu** : `test_deux_racines_dont_l_une_prefixe_l_autre` échoue sous
 Linux (chemin Windows), avant comme après — il ne vaut que sous Windows.
 
-### 2. MAINTENANT : le chargement à la demande
+### 2. ~~Le chargement à la demande~~ — LIVRÉ 15/09 au soir
 
-`ROADMAP.md` § C3, décidé par Mike le 13/09. **Sa cible a changé** depuis que
-la marche est coupée : `enrichir` n'existe plus sur cette page.
+Mike a choisi les **fiches légères** (pas la pagination, parquée) : la
+grille du fonds entier passe de **6,6 s à 3,7 s** et de 33,6 à 20,0 Mo.
+`_fiche_legere` + `POST /api/fiches` (`CHAMPS_DIFFERES`) + `completer()`
+dans `gallery.html`. Union vérifiée identique sur 44 450 fiches. Visionneuse
+sur une photo jamais chargée : « (…) » puis la bonne fiche.
 
-| poste | ms | ce que c'est |
-|---|---:|---|
-| `mode_index` | 3 164 | bâtir 44 468 dictionnaires depuis l'index |
-| `envoi` | 1 117 | 33,6 Mo sur le fil |
-| `gabarit` | 712 | rendu HTML |
-| `json` | 452 | sérialisation |
-| `marques` | 431 | |
-| `index` | 285 | balayage + comptage des mots-clés |
-
-La page est **bornée par le CPU** (6,25 s de CPU pour 6,52 s d'horloge) : il
-n'y a plus d'attente à retirer. Borner le nombre de fiches **BÂTIES** attaque
-le premier poste.
-
-**Puis** : B5/B6 (petites mesures), la **veille en plein écran** (P1), la
+**Maintenant** : B5/B6 (petites mesures), la **veille en plein écran** (P1), la
 copie hors site (D1, à Mike), et **en dernier** la démo de bienvenue et son
 e-mail (P2) — un mode d'emploi écrit avant que l'interface soit figée décrit
 une interface qui n'existera plus.

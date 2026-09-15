@@ -190,7 +190,7 @@ Dans l'ordre où je le ferais, **reclassé le 14/09 au soir** :
 | — | ~~Le tirage en aveugle~~ | **FAIT 15/09** — 240 lignes, jeu gelé | fait |
 | — | ~~La prochaine campagne~~ | **ABANDONNÉE 15/09** par Mike — pas de candidat | — |
 | — | ~~Unifier les producteurs de fiches (§ C3)~~ | **LIVRÉ 15/09** — 4 sur 5, voir ci-dessous | fait |
-| **2** | **Le chargement à la demande** (§ C3), APRÈS le 1 | décidé — Mike | gros |
+| — | ~~Le chargement à la demande (§ C3)~~ | **LIVRÉ 15/09** — fiches légères, 6,6 s → 3,7 s | fait |
 | **3** | **B5, B6** : ce qui demandait le serveur arrêté ou le GPU | moi | petit |
 | **5** | **La veille en plein écran** (P1, demandé le 14/09) | Mike a demandé, reste à instruire | moyen |
 | **6** | **La copie hors site** (§ D1) | **Mike** | à lui seul |
@@ -781,7 +781,17 @@ fonds entier `dir=1&rec=1`, 3 chargements, moyennes) : `url` **789 ms**,
 (`reste`) **577** — 3,03 s sur 3,09. **Aucun poste ne domine** : différer un
 seul champ ne gagne qu'un quart. Et tout ce qui suit la boucle croît avec le
 nombre de fiches : `motifs` 405, `marques` 406, `json` 458, `gabarit` 672,
-`envoi` 1 069. Total 6,6 s. Le choix de découpe est posé à Mike.
+`envoi` 1 069. Total 6,6 s.
+
+**LIVRÉ le 15/09 au soir — Mike a choisi les FICHES LÉGÈRES** (verdict dans
+`eval/DECISIONS_UI.md`) : `_fiche_legere` sur la grille indexée,
+`CHAMPS_DIFFERES` par `POST /api/fiches`, `completer()` côté client (seule
+porte : observateur de la planche, visionneuse, diaporama). Mesuré en réel :
+**`mode_index` 915 ms, total 3,7 s** (4 chargements), page 20,0 Mo ;
+complément ~30 ms par lot de 200 (217 appels sur 227 sous 30 ms) ; union
+légère + complément identique à l'ancienne fiche sur les 44 450. Ce qui reste
+proportionnel au fonds : `index` 0,4 s, `motifs` 0,4, `marques` 0,4, `gabarit`
+0,4, `envoi` 0,8 — la vraie pagination est parquée.
 
 **Le contrôle qui ouvrait le chantier a FAIT TOMBER sa propre prémisse.**
 « L'index porte 44 665 clés, la marche 44 666 : trouver ce fichier » —
