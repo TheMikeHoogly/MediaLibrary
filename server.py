@@ -3767,7 +3767,8 @@ def _nom_relatif(k, prefixe=None):
     return brut[len(prefixe) + 1:]
 
 
-def _fiche_depuis_cle(k, e, fctx, roots, memo_liens, prefixe=None):
+def _fiche_depuis_cle(k, e, fctx, roots, memo_liens, prefixe=None,
+                      chrono=None):
     """La fiche de galerie d'UNE entrée d'index — sans toucher au disque.
 
     C'est la forme que le client attend, et elle est bâtie ici par les mêmes
@@ -3783,6 +3784,9 @@ def _fiche_depuis_cle(k, e, fctx, roots, memo_liens, prefixe=None):
     tout l'intérêt: 44 483 `stat()` sur SMB, c'est la marche qu'on vient de
     couper. Une entrée sans `size` affiche 0 plutôt que d'aller le demander.
     """
+    if chrono is not None:
+        return _fiche_chronometree(k, e, fctx, roots, memo_liens, prefixe,
+                                   chrono)
     url = _url_for_key(k, roots)
     if url is None:
         return None
@@ -3805,6 +3809,51 @@ def _fiche_depuis_cle(k, e, fctx, roots, memo_liens, prefixe=None):
         'folder': folder_lbl,
         'gurl': gurl,
     }
+
+
+def _fiche_chronometree(k, e, fctx, roots, memo_liens, prefixe, chrono):
+    """MESURE (15/09) : la même fiche que `_fiche_depuis_cle`, découpée en
+    postes cumulés dans `chrono` (secondes). Sert à choisir ce que le
+    chargement à la demande doit différer ; le banc
+    `LaFicheChronometreeRendLaMemeFiche` tient l'égalité des deux sorties."""
+    pc = time.perf_counter
+    t0 = pc()
+    url = _url_for_key(k, roots)
+    t1 = pc()
+    chrono['url'] = chrono.get('url', 0.0) + (t1 - t0)
+    if url is None:
+        return None
+    folder_lbl, gurl = _lien_dossier_memo(k, roots, memo_liens)
+    t2 = pc()
+    ep = _epoch_precis(k, e)
+    taken = _best_time_depuis(k, e, ep)
+    jour = _jour_depuis(ep)
+    t3 = pc()
+    faits = _faits_pour(k, e, fctx)
+    t4 = pc()
+    fiche = {
+        'name': _nom_relatif(k, prefixe),
+        'key': k,
+        'url': url,
+        'size': human_size(e.get('size') or 0),
+        'mtime': e.get('mtime') or 0,
+        'taken': taken,
+        'jour': jour,
+        '_ep': ep,
+        'faits': faits,
+        'kw': list(dict.fromkeys(
+            (e.get('kw_fr') or []) + (e.get('kw_en') or []))),
+        'gps': e.get('gps'),
+        'desc': e.get('desc', ''),
+        'folder': folder_lbl,
+        'gurl': gurl,
+    }
+    t5 = pc()
+    chrono['dossier'] = chrono.get('dossier', 0.0) + (t2 - t1)
+    chrono['dates'] = chrono.get('dates', 0.0) + (t3 - t2)
+    chrono['faits'] = chrono.get('faits', 0.0) + (t4 - t3)
+    chrono['reste'] = chrono.get('reste', 0.0) + (t5 - t4)
+    return fiche
 
 
 # ─── « Même jour, autres années » : index MM-JJ en mémoire ───────────────────
@@ -14506,11 +14555,13 @@ class Handler(BaseHTTPRequestHandler):
             file_data = []
             _liens = {}
             _abimees = _sans_url = 0
+            _chrono_fiche = {}
             for k, e in entries:
                 if e.get('failed'):
                     _abimees += 1
                     continue    # image endommagée : on ne l'affiche pas
-                fiche = _fiche_depuis_cle(k, e, fctx, roots_cache, _liens, pref)
+                fiche = _fiche_depuis_cle(k, e, fctx, roots_cache, _liens, pref,
+                                          chrono=_chrono_fiche)
                 if fiche is None:
                     _sans_url += 1
                     continue
@@ -14521,6 +14572,8 @@ class Handler(BaseHTTPRequestHandler):
             # à huit racines manquantes là où ce sont huit images abîmées,
             # écartées depuis toujours — le chemin du NAS en écartait
             # exactement autant.
+            for _poste, _s in _chrono_fiche.items():
+                ph.ajoute('mode_index.' + _poste, _s)
             ph.note(fichiers=len(file_data), grille_indexee=True,
                     ecartees_abimees=_abimees, ecartees_sans_url=_sans_url)
             ph.top('mode_index')

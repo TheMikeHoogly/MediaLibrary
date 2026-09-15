@@ -90,6 +90,9 @@ def _atelier():
     ns['_faits_pour'] = lambda k, e, ctx: ('FAITS', k, ctx)
     exec(_source_de('_nom_relatif'), ns)
     exec(_source_de('_fiche_depuis_cle'), ns)
+    import time as _time
+    ns['time'] = _time
+    exec(_source_de('_fiche_chronometree'), ns)
     return ns
 
 
@@ -246,6 +249,30 @@ class LaPageNInterrogePlusLeNAS(unittest.TestCase):
                         vus.add(appel)
             self.assertEqual(vus, set(), '%s touche au disque : %r' % (nom, vus))
 
+
+
+class LaFicheChronometreeRendLaMemeFiche(unittest.TestCase):
+    """Un instrument qui change ce qu'il mesure ment : avec ou sans
+    `chrono`, la fiche est la MEME, et les cinq postes sont remplis."""
+
+    def test_meme_fiche_et_postes_remplis(self):
+        cas = [(RACINE + r'\Photos Papa\2004\x.jpg',
+                {'size': 5, 'ep': 3, 'kw_fr': ['a'], 'kw_en': ['a', 'b']}),
+               (RACINE + r'\p.jpg', {}),
+               (RACINE + r'\SANS_URL.jpg', {'size': 1})]
+        chrono = {}
+        for k, e in cas:
+            self.assertEqual(FICHE(k, e, 'C', [], {}, PREF, chrono=chrono),
+                             FICHE(k, e, 'C', [], {}, PREF))
+        self.assertEqual(set(chrono),
+                         {'url', 'dossier', 'dates', 'faits', 'reste'})
+        self.assertTrue(all(v >= 0 for v in chrono.values()))
+
+    def test_sans_url_seul_le_poste_url_compte(self):
+        chrono = {}
+        self.assertIsNone(FICHE(RACINE + r'\SANS_URL.jpg', {}, 'C', [], {},
+                                PREF, chrono=chrono))
+        self.assertEqual(set(chrono), {'url'})
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

@@ -775,6 +775,14 @@ marche du tout, le fera.
    quatre modes, `window.Vignettes`, un compteur qui dit le total réel) est
    inchangé ; s'y ajoute le cinquième producteur de fiches, `grille_indexee`.
 
+**Le détail de `mode_index` — mesuré le 15/09 au soir** (`_fiche_chronometree`,
+fonds entier `dir=1&rec=1`, 3 chargements, moyennes) : `url` **789 ms**,
+`dates` **686**, `faits` **887**, `dossier` 86, le dictionnaire lui-même
+(`reste`) **577** — 3,03 s sur 3,09. **Aucun poste ne domine** : différer un
+seul champ ne gagne qu'un quart. Et tout ce qui suit la boucle croît avec le
+nombre de fiches : `motifs` 405, `marques` 406, `json` 458, `gabarit` 672,
+`envoi` 1 069. Total 6,6 s. Le choix de découpe est posé à Mike.
+
 **Le contrôle qui ouvrait le chantier a FAIT TOMBER sa propre prémisse.**
 « L'index porte 44 665 clés, la marche 44 666 : trouver ce fichier » —
 `mesure_ecart_index_marche.py` a comparé les deux ensembles pour de vrai, deux
