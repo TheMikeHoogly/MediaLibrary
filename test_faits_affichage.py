@@ -223,8 +223,31 @@ class TestCablage(unittest.TestCase):
                 avec_jour += 1
             if 'faits' in cles and 'jour' in cles:
                 les_deux += 1
-        self.assertEqual(avec_faits, 4,
-                         "les QUATRE modes de /files batissent un objet-photo")
+        # Depuis le 15/09 : un litteral dans la page (la navigation, qui
+        # part du disque) et un dans `_fiche_depuis_cle`, que les QUATRE
+        # modes lus dans l'index appellent. Les deux sont comptes.
+        fiche = next((x for x in ast.walk(arbre)
+                      if isinstance(x, ast.FunctionDef)
+                      and x.name == '_fiche_depuis_cle'), None)
+        self.assertIsNotNone(fiche, "_fiche_depuis_cle introuvable")
+        appels = sum(1 for x in ast.walk(gal) if isinstance(x, ast.Call)
+                     and isinstance(x.func, ast.Name)
+                     and x.func.id == '_fiche_depuis_cle')
+        self.assertEqual(appels, 4,
+                         "les quatre modes de l'index passent par la fiche")
+        for n in ast.walk(fiche):
+            if not isinstance(n, ast.Dict):
+                continue
+            cles = {k.value for k in n.keys
+                    if isinstance(k, ast.Constant) and isinstance(k.value, str)}
+            if 'faits' in cles:
+                avec_faits += 1
+            if 'jour' in cles:
+                avec_jour += 1
+            if 'faits' in cles and 'jour' in cles:
+                les_deux += 1
+        self.assertEqual(avec_faits, 2,
+                         "la navigation et la fiche batissent un objet-photo")
         self.assertEqual(les_deux, avec_faits,
                          "un mode de /files construit un objet-photo sans faits")
         self.assertEqual(les_deux, avec_jour,

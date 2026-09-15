@@ -118,15 +118,23 @@ class LesQuatreBranchesPassentParLaMemePorte(unittest.TestCase):
     def test_plus_aucun_appel_direct_au_lien_de_dossier(self):
         self.assertEqual(self.src.count('_folder_link_for_key('), 0,
                          'une branche appelle encore le lien sans memo')
-        self.assertEqual(self.src.count('_lien_dossier_memo('), 4,
-                         'les quatre branches doivent passer par le memo')
+        # Depuis le 15/09 : la navigation (disque) appelle le memo
+        # elle-meme ; les QUATRE producteurs lus dans l'index (grille
+        # indexee, tags, recherche, meme jour) passent par
+        # `_fiche_depuis_cle`, qui l'appelle une fois pour tous.
+        self.assertEqual(self.src.count('_lien_dossier_memo('), 1,
+                         'une branche recopie encore la fiche')
+        self.assertEqual(self.src.count('_fiche_depuis_cle('), 4,
+                         'les quatre modes de l index passent par la fiche')
+        self.assertIn('_lien_dossier_memo(', _src('_fiche_depuis_cle'))
 
     def test_plus_aucune_date_precise_demandee_deux_fois(self):
         """Tant qu'une branche appelle `_best_time` ou `_jour_de`, elle relit
         l'EXIF et le nom de fichier une seconde fois pour rien."""
         self.assertEqual(self.src.count('_best_time('), 0)
         self.assertEqual(self.src.count('_jour_de('), 0)
-        self.assertEqual(self.src.count('_epoch_precis('), 4)
+        self.assertEqual(self.src.count('_epoch_precis('), 1)
+        self.assertEqual(_src('_fiche_depuis_cle').count('_epoch_precis('), 1)
 
     def test_chaque_memo_est_neuf_a_chaque_page(self):
         """Un memo qui survivrait a la requete survivrait a un renommage de
@@ -408,7 +416,10 @@ class LaDatePreciseNEstPlusCALCULEETROISFOIS(unittest.TestCase):
 
     def test_les_QUATRE_branches_transportent_la_date(self):
         src = _source_de('_serve_gallery')
-        self.assertEqual(src.count("'_ep':"), 4)
+        # Un seul litteral dans la page (la navigation) ; les quatre
+        # modes de l'index le recoivent de `_fiche_depuis_cle`.
+        self.assertEqual(src.count("'_ep':"), 1)
+        self.assertEqual(_src('_fiche_depuis_cle').count("'_ep':"), 1)
 
     def test_la_cle_de_transport_ne_SURVIT_PAS_au_JSON(self):
         """Elle est retiree pour CHAQUE entree, en tete de la passe -- pas
@@ -472,3 +483,18 @@ class LesDeuxDepuisRendentCEQueLesAnciensRendaient(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)
+
+
+class UnSeulProducteurDeFichesPourLIndex(unittest.TestCase):
+    """15/09 : `file_data` etait bati par CINQ litteraux. Il n'en reste
+    qu'un dans `_serve_gallery` -- la navigation, qui part du DISQUE --
+    et la pagination (ROADMAP C3) se posera derriere `_fiche_depuis_cle`.
+    Compte sur l'ARBRE : un dictionnaire portant `gurl` est une fiche."""
+
+    def test_un_seul_litteral_de_fiche_dans_la_page(self):
+        fn = [n for n in ast.walk(ARBRE) if isinstance(n, ast.FunctionDef)
+              and n.name == '_serve_gallery'][0]
+        fiches = [n for n in ast.walk(fn) if isinstance(n, ast.Dict)
+                  and any(isinstance(c, ast.Constant) and c.value == 'gurl'
+                          for c in n.keys)]
+        self.assertEqual(len(fiches), 1, 'une fiche est recopiee')

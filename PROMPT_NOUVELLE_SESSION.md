@@ -10,6 +10,9 @@
 
 ## 0. L'état, en dix lignes
 
+**15/09 au soir** : les producteurs de fiches sont unifiés (§ 1) — le
+prochain pas est le chargement à la demande.
+
 **Trois livraisons le 14/09.** La marche du NAS coupée sur la grille récursive
 (`/files?dir=1&rec=1` : **23,4 s → 6,5 s**, `parcours` 16,8 s → **48 ms**) ;
 **`_A TRIER` par propriétaire** avec la salle d'arbitrage protégée et le
@@ -46,16 +49,18 @@ B1·B2·B3·B4 est dissous, et la première tâche est celle-ci :
 > vrai levier serait matériel** : 8 Go de VRAM ouvriraient Qwen3-VL 8B. Ne pas
 > rouvrir le sujet sans cette carte.
 
-### 1. Unifier les CINQ producteurs de fiches
+### 1. ~~Unifier les producteurs de fiches~~ — LIVRÉ 15/09 au soir
 
-`file_data` est bâti à cinq endroits — navigation, tags, recherche/semblables,
-même jour, et la grille indexée du 14/09. Seul le dernier passe par
-`_fiche_depuis_cle` ; les quatre autres recopient la même construction. La
-pagination devra se poser DERRIÈRE les cinq : les unifier avant coûte une
-heure et évite de câbler cinq fois le même mécanisme, puis de le corriger cinq
-fois.
+Les quatre producteurs lus dans l'index passent par `_fiche_depuis_cle`
+(écarts : tags → `kw` trié ; même jour → `taken` du jour + `annee`). Reste un
+seul littéral, la navigation d'un dossier, qui part du disque. Avant/après
+réel identique champ à champ, sauf `name` en mode tags, qui sort enfin dans
+sa casse d'origine. Banc : `UnSeulProducteurDeFichesPourLIndex`.
 
-### 2. Ensuite : le chargement à la demande
+**Piège connu** : `test_deux_racines_dont_l_une_prefixe_l_autre` échoue sous
+Linux (chemin Windows), avant comme après — il ne vaut que sous Windows.
+
+### 2. MAINTENANT : le chargement à la demande
 
 `ROADMAP.md` § C3, décidé par Mike le 13/09. **Sa cible a changé** depuis que
 la marche est coupée : `enrichir` n'existe plus sur cette page.

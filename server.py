@@ -14540,32 +14540,15 @@ class Handler(BaseHTTPRequestHandler):
                       else all(t in kws for t in sel))
                 if not ok:
                     continue
-                url = _url_for_key(k, roots_cache)
-                if not url:
+                # Même producteur que la grille indexée (15/09) : le nom
+                # relatif sort désormais dans la casse d'origine, comme là-bas.
+                fiche = _fiche_depuis_cle(k, e, fctx, roots_cache, _liens, fp)
+                if fiche is None:
                     continue
-                kp = _pkey(k)
-                name = kp[len(fp) + 1:] if kp.startswith(fp + '/') else Path(k).name
-                folder_lbl, gurl = _lien_dossier_memo(k, roots_cache, _liens)
-                _epk = _epoch_precis(k, e)
-                file_data.append({
-                    'name': name,
-                    # Cle d'index : necessaire au filtre par motif et a la
-                    # suppression par cle (meme role que dans le chemin nav).
-                    'key': k,
-                    'url': url,
-                    'size': human_size(e.get('size') or 0),
-                    'mtime': e.get('mtime') or 0,
-                    # date de prise (epoch) pour le tri chronologique
-                    'taken': _best_time_depuis(k, e, _epk),
-                    'jour': _jour_depuis(_epk),
-                    '_ep': _epk,
-                    'faits': _faits_pour(k, e, fctx),
-                    'kw': sorted(kws),
-                    'gps': e.get('gps'),
-                    'desc': e.get('desc', ''),
-                    'folder': folder_lbl,
-                    'gurl': gurl,
-                })
+                # Seul écart de ce mode : les mots-clés triés, pas dans
+                # l'ordre de l'entrée — le client l'a toujours reçu ainsi.
+                fiche['kw'].sort()
+                file_data.append(fiche)
             ph.top('mode_tags')
 
         detail_q = {}
@@ -14612,29 +14595,10 @@ class Handler(BaseHTTPRequestHandler):
                 e = STORE.get(k) or {}
                 if e.get('failed'):
                     continue
-                url = _url_for_key(k, roots_cache)
-                if not url:
-                    continue
-                kws = list(dict.fromkeys(
-                    (e.get('kw_fr') or []) + (e.get('kw_en') or [])))
-                folder_lbl, gurl = _lien_dossier_memo(k, roots_cache, _liens)
-                _epk = _epoch_precis(k, e)
-                file_data.append({
-                    'name': Path(k).name,
-                    'key': k,
-                    'url': url,
-                    'size': human_size(e.get('size') or 0),
-                    'mtime': e.get('mtime') or 0,
-                    'taken': _best_time_depuis(k, e, _epk),
-                    'jour': _jour_depuis(_epk),
-                    '_ep': _epk,
-                    'faits': _faits_pour(k, e, fctx),
-                    'kw': kws,
-                    'gps': e.get('gps'),
-                    'desc': e.get('desc', ''),
-                    'folder': folder_lbl,
-                    'gurl': gurl,
-                })
+                # Nom nu : la recherche traverse toutes les racines.
+                fiche = _fiche_depuis_cle(k, e, fctx, roots_cache, _liens)
+                if fiche is not None:
+                    file_data.append(fiche)
             ph.top('mode_recherche')
 
         # « Même jour » : la grille devient la journée, du plus ANCIEN au plus
@@ -14647,30 +14611,15 @@ class Handler(BaseHTTPRequestHandler):
             _liens = {}
             for _ep, k in jour_items[:1500]:
                 e = STORE.data.get(k) or {}
-                url = _url_for_key(k, roots_cache)
-                if not url:
+                fiche = _fiche_depuis_cle(k, e, fctx, roots_cache, _liens)
+                if fiche is None:
                     continue
-                kws = list(dict.fromkeys(
-                    (e.get('kw_fr') or []) + (e.get('kw_en') or [])))
-                folder_lbl, gurl = _lien_dossier_memo(k, roots_cache, _liens)
-                _epj = _epoch_precis(k, e)
-                file_data.append({
-                    'name': Path(k).name,
-                    'key': k,
-                    'url': url,
-                    'size': human_size(e.get('size') or 0),
-                    'mtime': e.get('mtime') or 0,
-                    'taken': _ep,
-                    'annee': meme_jour.annee_de(_ep),
-                    'jour': _jour_depuis(_epj),
-                    '_ep': _epj,
-                    'faits': _faits_pour(k, e, fctx),
-                    'kw': kws,
-                    'gps': e.get('gps'),
-                    'desc': e.get('desc', ''),
-                    'folder': folder_lbl,
-                    'gurl': gurl,
-                })
+                # Les deux écarts de ce mode : la date est CELLE du jour
+                # (celle qui a classé la photo ici), et l'année est portée
+                # par la vignette.
+                fiche['taken'] = _ep
+                fiche['annee'] = meme_jour.annee_de(_ep)
+                file_data.append(fiche)
             # Bandeau bâti sur ce qui est RÉELLEMENT rendu (après le plafond et
             # après les clés sans URL servable) : un compteur qui annonce plus
             # que ce qu'on voit est un compteur qui ment.

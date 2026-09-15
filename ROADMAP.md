@@ -189,19 +189,24 @@ Dans l'ordre où je le ferais, **reclassé le 14/09 au soir** :
 | — | ~~`_A TRIER` par propriétaire + les défauts voisins (B8)~~ | **LIVRÉ 14/09** | fait |
 | — | ~~Le tirage en aveugle~~ | **FAIT 15/09** — 240 lignes, jeu gelé | fait |
 | — | ~~La prochaine campagne~~ | **ABANDONNÉE 15/09** par Mike — pas de candidat | — |
-| **1** | **Unifier les CINQ producteurs de fiches** (§ C3) | moi | 1 h |
+| — | ~~Unifier les producteurs de fiches (§ C3)~~ | **LIVRÉ 15/09** — 4 sur 5, voir ci-dessous | fait |
 | **2** | **Le chargement à la demande** (§ C3), APRÈS le 1 | décidé — Mike | gros |
 | **3** | **B5, B6** : ce qui demandait le serveur arrêté ou le GPU | moi | petit |
 | **5** | **La veille en plein écran** (P1, demandé le 14/09) | Mike a demandé, reste à instruire | moyen |
 | **6** | **La copie hors site** (§ D1) | **Mike** | à lui seul |
 | **7** | **La démo de bienvenue et son e-mail** (P2) | Mike a demandé — **en DERNIER** | moyen |
 
-**Pourquoi 1 avant 2.** La pagination devra se poser DERRIÈRE les cinq
-producteurs de `file_data` (navigation, tags, recherche/semblables, même jour,
-grille indexée). Seul le cinquième passe par `_fiche_depuis_cle` ; les quatre
-autres construisent la leur à la main, à l'identique. Les unifier d'abord
-coûte une heure et évite de câbler cinq fois le même mécanisme — puis de le
-corriger cinq fois.
+**Le 1 est livré (15/09).** Les QUATRE producteurs qui lisent l'INDEX —
+grille indexée, tags, recherche/semblables, même jour — passent par
+`_fiche_depuis_cle` ; il ne reste qu'un littéral de fiche dans
+`_serve_gallery`, la navigation d'UN dossier, qui part du DISQUE (`url_for(f)`,
+`stat` de repli) et n'a pas vocation à être paginée. Écarts gardés, un par
+mode : tags → `kw` trié ; même jour → `taken` du jour + `annee`. Contrôlé en
+réel avant/après sur quatre pages (tags 5 727, recherche 1 500, semblables
+200, même jour 126) : **identiques champ à champ**, sauf `name` en mode tags —
+l'ancien code le rendait EN MINUSCULES (tranche de `_pkey`), il sort
+désormais dans sa casse d'origine (5 727 sur 5 727, écart de casse seul).
+La pagination (2) se pose derrière `_fiche_depuis_cle`.
 
 **Pourquoi 7 en dernier, et c'est une règle, pas une préférence.** Un mode
 d'emploi écrit avant que l'interface soit figée décrit une interface qui
