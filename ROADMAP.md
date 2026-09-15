@@ -168,13 +168,12 @@ dossier soit ignoré).
 **L'analyse du 13/09 au soir : ce ne sont pas huit chantiers, c'est UNE
 décision et trois travaux.**
 
-Quatre des items ci-dessous (B2 le modèle, B3 le prompt sensible, et ce que
-B1 et B4 apportent comme matière) ne sont pas indépendants : ils convergent
-tous sur **une seule question, « faut-il une PROCHAINE campagne, et avec
-quoi ? »**. Une campagne, c'est une nuit de GPU, 40 000 XMP réécrits, et
-l'effacement de l'état d'avant — donc tout ce qui doit changer dans le
-pipeline doit changer **en même temps**, ou pas du tout. Les instruire
-séparément ferait courir le risque de deux campagnes là où une suffit.
+Les items B1 à B4 convergeaient tous sur **une seule question, « faut-il une
+PROCHAINE campagne, et avec quoi ? »** — et cette question est **CLOSE depuis
+le 15/09** : il n'y a pas de candidat qui vaille une semaine de GPU (voir
+ci-dessous). Une campagne, c'était sept jours de GPU, 40 000 XMP réécrits et
+l'effacement de l'état d'avant. Ce qui reste de B1 à B4 est de la matière
+écrite, plus un chantier en attente.
 
 **Le reste est du travail ordinaire**, qui ne dépend de personne : la grille
 à la demande (§ C3), et les mesures qui demandaient le serveur arrêté ou le
@@ -188,19 +187,14 @@ Dans l'ordre où je le ferais, **reclassé le 14/09 au soir** :
 |---|---|---|---|
 | — | ~~Couper la marche du NAS (§ C3)~~ | **LIVRÉ 14/09** — 23,4 s → 6,5 s | fait |
 | — | ~~`_A TRIER` par propriétaire + les défauts voisins (B8)~~ | **LIVRÉ 14/09** | fait |
-| **0** | **LE TIRAGE EN AVEUGLE** : deux modèles × deux prompts, qui répond à B2 ET B3 | moi — c'est ce qui occupe le GPU | moyen |
-| **1** | **Unifier les CINQ producteurs de fiches** (§ C3) — pendant que le tirage tourne | moi | 1 h |
+| — | ~~Le tirage en aveugle~~ | **FAIT 15/09** — 240 lignes, jeu gelé | fait |
+| — | ~~La prochaine campagne~~ | **ABANDONNÉE 15/09** par Mike — pas de candidat | — |
+| **1** | **Unifier les CINQ producteurs de fiches** (§ C3) | moi | 1 h |
 | **2** | **Le chargement à la demande** (§ C3), APRÈS le 1 | décidé — Mike | gros |
 | **3** | **B5, B6** : ce qui demandait le serveur arrêté ou le GPU | moi | petit |
-| **4** | ~~Préparer la décision « prochaine campagne »~~ → **passe en 0** | Mike a dit oui aux 8 h le 14/09 | — |
 | **5** | **La veille en plein écran** (P1, demandé le 14/09) | Mike a demandé, reste à instruire | moyen |
 | **6** | **La copie hors site** (§ D1) | **Mike** | à lui seul |
 | **7** | **La démo de bienvenue et son e-mail** (P2) | Mike a demandé — **en DERNIER** | moyen |
-
-**Pourquoi 0 d'abord.** Il tourne sur le GPU pendant des dizaines de minutes
-et n'occupe personne : c'est le seul point du tableau qui se LANCE puis se
-laisse travailler. Le 1 se code à côté. Et il débloque la seule décision que
-Mike ne peut pas prendre sans moi.
 
 **Pourquoi 1 avant 2.** La pagination devra se poser DERRIÈRE les cinq
 producteurs de `file_data` (navigation, tags, recherche/semblables, même jour,
@@ -219,6 +213,135 @@ chargement à la demande (2) sont posés, pas avant.
 de `_corbeille_menage` (A4), la fenêtre de réversibilité des 68 copies qui se
 ferme **vers le 13/10** (A7), et le KB Windows à masquer **vers le 16/10**
 (A5).
+
+**B1. Le bilan de la campagne — et ce qu'on ne pourra PAS mesurer.** Première
+passe officielle du fonds entier : 40 525 photos, 1 abandon, 100 % de
+vignettes. Reste la vraie question : **ce que `v3fr|kb1` a changé**.
+
+**Mauvaise nouvelle, vérifiée le 13/09** : il n'existe plus d'instantané
+d'AVANT. La copie de 283 Mo était la dernière (A4) et elle a été effacée ;
+`photos.db.bak` est un roulement rafraîchi toutes les heures. `mesure_retag_
+gain.py`, lui, compare deux GÉNÉRATIONS de pipeline dans le même index — or
+les 40 525 photos portent désormais la même. **Le lancer maintenant ne
+mesurerait plus que le bruit du modèle.**
+
+**Le bilan DESCRIPTIF, lui, est fait** (13/09, sur la copie) — ce que le fonds
+porte aujourd'hui :
+
+| | |
+|---|---:|
+| photos taguées | **40 525** (+ 4 133 vidéos, 8 illisibles) |
+| sans aucun mot-clé | **0** |
+| sans description | **0** |
+| mots-clés par photo | médiane **6**, moyenne 6,9, de 3 à 23 |
+| au moins un fait | **99,7 %** — date 99,2, personne 44,1, lieu 28,2, espèce 10,3 |
+| vocabulaire | **44 744 mots-clés distincts** pour 280 315 occurrences |
+| vus UNE seule fois | **28 774 — 64,3 % du vocabulaire** |
+
+Couverture parfaite : pas une photo sans mots-clés ni description. **Le chiffre
+qui interroge est le dernier** : deux tiers du vocabulaire n'apparaissent
+qu'une fois (« carrelage beige », « campagne andine »).
+
+**J'ai d'abord cru y voir un chantier — c'est faux, vérifié.** Les facettes de
+la galerie sont DÉJÀ bâties sur la fréquence : `_serve_gallery` trie les
+mots-clés du dossier par nombre et n'en garde que les **60 premiers**. Les
+28 774 mots vus une fois n'atteignent donc jamais la barre de filtres. La
+recherche par le SENS passe par les vecteurs, pas par les mots. Et le
+dictionnaire FR→EN est gelé. **Conséquence mécanique : aucune.**
+
+Ce que ce chiffre est vraiment : **la signature de `v3fr`**. Ce prompt demande
+de la description, pas des étiquettes — et il la produit. C'est donc le
+**point de comparaison** du jour où un autre prompt sera envisagé (B2), pas un
+problème à corriger. Mesuré au passage, si la question revient : un seuil à
+**3 occurrences** garderait 9 857 mots (22 % du vocabulaire) tout en couvrant
+**83 % des occurrences**, et seulement **315 photos** sur 40 525 se
+retrouveraient sans aucun mot au-dessus du seuil.
+
+**Leçon pour la prochaine campagne : copier la base AVANT de la lancer** —
+quatre secondes (`mesure_copie_base.py`), et c'est la seule fenêtre.
+
+**B2. Le modèle de vision — la question redevient un CHOIX.** La décision du
+12/09 (« on vit avec les 13,5 Go d'Ollama ») est **périmée par la fin de la
+campagne** : le moteur a rendu la mémoire, il ne reste rien de lui dans le
+relevé du 13/09, et la RAM libre est passée de 0,5 à 5,2 Go. Le sujet n'est
+donc plus « la machine pagine », c'est « **quel modèle pour la PROCHAINE
+passe** » — un qui tient entièrement dans les 4 Go de VRAM ne reprendra pas
+7,8 Go en RAM. Protocole `vision-eval` ; changer de modèle est un changement
+de pipeline, donc une campagne de plus.
+
+**B3. La question au tagueur sur les documents sensibles.** Elle était
+**empêchée**, pas reportée : la toucher pendant la campagne aurait rendu
+candidates les 12 000 photos déjà refaites. Le prompt est de nouveau
+touchable — et toute modification relance une passe complète. À instruire
+AVANT d'écrire une ligne : est-ce que ça vaut une campagne ?
+
+**B4. L'abandon, et ce qu'il cache.** `Photos Mike\2018\08 Août\
+20180805_095733.jpg` porte `retag_fail` avec le message **« another row
+available »**. Trois choses, dans l'ordre où elles comptent :
+1. **La photo va bien.** Elle est taguée — 7 mots-clés, description, faits —
+   et son `pipe` est à jour. Le drapeau est une cicatrice, pas un trou.
+2. **Le message n'est pas du modèle, c'est de SQLite.** Un `step()` qui rend
+   une ligne là où l'appelant attendait la fin. C'est un défaut de LECTURE
+   concurrente sous charge, pas une photo difficile.
+3. **Donc ça peut recommencer, et plus fort.** Une passe de 40 000 photos l'a
+   déclenché une fois. Le chercher maintenant, à froid, coûte moins cher que
+   de le revoir sur une campagne de nuit.
+
+**B1·B2·B3·B4 → LA décision, et ce qu'il faut poser sur la table avant.**
+Ces quatre-là ne se tranchent qu'ensemble. Ce que je dois produire pour que
+Mike puisse décider en une fois — et rien de plus :
+
+1. **Ce que coûte une campagne — le chiffre était FAUX d'un facteur 25, et
+   il a été corrigé le 15/09.** Cette ligne disait « 40 525 photos × ~17,6 s
+   = **~8 h de GPU** ». La multiplication ne tient pas : 40 525 × 17,6 s =
+   **713 240 s = 198 h = 8,3 JOURS**. Ce n'étaient pas huit heures, c'étaient
+   huit **jours** — une erreur d'unité, recopiée telle quelle à chaque
+   relecture. **Et la réalité le confirme** : la campagne a été lancée le
+   05/09 et finie dans la nuit du 12 au 13/09, soit **7,5 jours = 180 h**,
+   c'est-à-dire **16,0 s/photo** — à 10 % du chiffre écrit. Les deux se
+   recoupent ; seule l'unité était fausse.
+   **Le plancher mesuré le 15/09** (tirage en aveugle, modèle chaud, sans
+   vignettes ni XMP ni scan concurrent) : `qwen3.5:4b` à **9,6 s/photo**, soit
+   **4,5 jours** au mieux ; `qwen3-vl:2b` à **3,2 s/photo**, soit **1,5 jour**.
+   Une campagne n'est donc jamais une nuit : c'est une SEMAINE pendant
+   laquelle le prompt est figé et le GPU pris.
+2. **Ce qu'un autre modèle donnerait**, mesuré en aveugle sur un tirage A/B —
+   pas sur 8 photos choisies, la faute nommée dans « Pistes ouvertes ». Sans
+   cette mesure, changer de modèle est un pari à plusieurs JOURS.
+3. **Ce que la question « documents sensibles » ajouterait au prompt**, et sur
+   combien de photos elle changerait quelque chose. Une phrase de prompt qui
+   touche 50 photos ne vaut pas une campagne ; une qui en touche 5 000, oui.
+4. **Le verrou à poser AVANT de lancer quoi que ce soit** : copier la base
+   (`mesure_copie_base.py`, quatre secondes). C'est la seule fenêtre, et on
+   l'a manquée la fois précédente (B1).
+
+**LA PROCHAINE CAMPAGNE EST ABANDONNÉE — tranché par Mike le 15/09.**
+« Soit tu trouves un superbe candidat, soit on oublie. » Il n'y en a pas.
+
+**Pourquoi, en trois lignes.** Le plafond de **4 Go de VRAM** est la contrainte
+qui décide, pas le choix du modèle. Ce qui tient dedans en septembre 2026 est
+une famille de voisins : `qwen3.5:4b` (en place), `qwen3-vl:4b` (essayé,
+écarté), `qwen3-vl:2b` (l'ancien), `gemma3:4b` (jamais essayé ici),
+`minicpm-v4.6` (classe téléphone). Ce qui serait vraiment au-dessus —
+Qwen3-VL 8B, Gemma 4 26B — demande **6 à 18 Go** : c'est un autre GPU, pas un
+autre modèle. Échanger un petit modèle contre un petit modèle de la même
+classe coûterait **une semaine** de GPU et de prompt figé, sans le moindre
+indice de gain.
+
+**Ce que ça referme** : B1, B2, B3 et B4 cessent d'être un bloc en attente.
+Le bilan de la campagne (B1) reste écrit ; le modèle (B2) est clos ; la
+question « documents sensibles » (B3) n'a plus de véhicule — et elle n'en
+avait pas besoin, `REGLES_JSON` exige déjà des mots-clés génériques et le
+filet du chantier 18 les lit sans GPU ; l'abandon isolé (B4) reste un défaut
+de lecture concurrente SQLite à chercher à froid, sans rapport avec une
+campagne.
+
+**Ce qui reste disponible sans rien relancer** : `gemma3:4b` sur le tirage
+**gelé** coûte un `ollama pull` et dix minutes — 60 photos, pas 40 525.
+L'instrument (`mesure_tirage_aveugle.py`) et le jeu
+(`eval/tirage_aveugle.json`) sont là, et tout modèle futur s'y branche sur
+les mêmes photos. **Et le seul vrai levier serait matériel** : 8 Go de VRAM
+ouvriraient une classe entière. C'est une décision de Mike, pas un chantier.
 
 **B1. Le bilan de la campagne — et ce qu'on ne pourra PAS mesurer.** Première
 passe officielle du fonds entier : 40 525 photos, 1 abandon, 100 % de

@@ -1,4 +1,4 @@
-# Reprise — MediaLibrary, après la journée du 14 septembre 2026
+# Reprise — MediaLibrary, après la journée du 15 septembre 2026
 
 > **Ce fichier est ÉPHÉMÈRE.** Il décrit un état, pas des règles. Les règles
 > vivent dans `CLAUDE.md`, le plan dans `ROADMAP.md`, les verdicts dans
@@ -22,8 +22,11 @@ rotations comme coupes, étaient les siennes. Pour les images comme pour les
 vidéos, **c'est le NAS qui porte la bonne version**. Une copie plus grosse
 n'est pas une copie meilleure.
 
-**Mike a accepté les 8 heures de GPU d'une prochaine campagne** — le coût,
-pas le contenu. Voir § 1.
+**La prochaine campagne de retag est ABANDONNÉE** (Mike, 15/09 au soir). Les
+« 8 heures de GPU » qu'il avait acceptées étaient **8 JOURS** — une erreur
+d'unité de ma part, corrigée par la mesure. Remis devant le vrai prix, il a
+tranché : *« soit tu trouves un superbe candidat qui vaudrait la peine, soit on
+oublie »*. **Il n'y en a pas** sous 4 Go de VRAM. Voir § 1.
 
 Index : **44 471 clés**, 0 file d'attente, vignettes à jour, 0 cycle
 inexpliqué. `main` à jour, arbre de travail propre, **87 Mo de corbeilles
@@ -33,50 +36,15 @@ locales vidées** — les journaux d'annulation, eux, sont intacts.
 
 ## 1. Par où commencer
 
-**Mike a dit OUI aux 8 heures de GPU d'une prochaine campagne** (14/09 au
-soir). Le COÛT est accepté ; **le CONTENU ne l'est pas**, et c'est à moi de le
-produire. « Oui aux 8 heures » n'est pas « oui à ce modèle-là avec ce
-prompt-là ». Il reste deux choses à mesurer, et **une seule expérience répond
-aux deux**.
+**Il n'y a plus de chantier « modèle ».** La campagne est abandonnée, le bloc
+B1·B2·B3·B4 est dissous, et la première tâche est celle-ci :
 
-### 0. LE TIRAGE A TOURNÉ — ce qui reste à en tirer
-
-**240 lignes, 60 photos × 2 modèles × 2 prompts** (15/09 au matin). Le jeu est
-**gelé** dans `eval/tirage_aveugle.json` (graine 20260915) et les réponses dans
-`docs/tirage_aveugle.jsonl` — **aucune mesure à refaire**, et tout modèle
-futur se branche sur les MÊMES photos.
-
-| | `qwen3.5:4b` (prod) | `qwen3-vl:2b` (l'ancien) |
-|---|---:|---:|
-| médiane par photo | **9,6 s** | **3,2 s** |
-| sorties malformées | 0 / 120 | 0 / 120 |
-
-**Ce qui est tombé au passage, et qui compte plus que le reste** : les « 8 h de
-GPU » d'une campagne étaient **8 JOURS**. 40 525 × 17,6 s = 198 h. La campagne
-du 05/09 a duré 7,5 jours, ce qui recoupe exactement. **Question rouverte dans
-`QUESTIONS_MIKE.md`** : son « oui » tient-il pour une SEMAINE ?
-
-**Les deux gestes qui restent, et ils sont petits :**
-
-1. **La page de préférence en aveugle.** Deux listes de mots-clés pour la même
-   photo, sans dire laquelle vient de qui, Mike tranche. C'est la SEULE façon
-   de répondre à « lequel tague mieux » — sans étiquettes humaines, « mieux »
-   n'est pas une mesure. Les 240 réponses sont déjà là. Modèle de page :
-   `/tranche` et `/residu`, qui font exactement ce geste.
-   **L'enjeu réel** : si `qwen3-vl:2b` tague aussi bien, la décision n'est plus
-   « quel nouveau modèle » mais « revenir à celui qui va 3× plus vite », et la
-   campagne passe de 4,5 jours à 1,5.
-2. **Un tirage CIBLÉ pour le signal « document personnel ».** L'uniforme ne
-   pouvait pas répondre : 23 candidates sur 44 459 donnent 0,03 photo espérée
-   sur 60, et on en a trouvé 1. Tirer dans la population candidate et son
-   voisinage — `tagging_meta.candidat_sensible` la définit déjà.
-
-**À savoir avant d'y toucher** : `REGLES_JSON` exige DÉJÀ des mots-clés
-génériques pour un document, et le commentaire du chantier 18 dit que « le
-signal est DÉJÀ dans l'index : repérer les candidats ne demande ni GPU, ni
-changement de prompt, donc pas de campagne à refaire ». La question n'est donc
-pas « faut-il en parler au modèle » mais « une question EXPLICITE trouve-t-elle
-ce que la consigne générique laisse passer ».
+> **Ce qui reste acquis, et ne se refait pas** : le tirage de 60 photos est
+> GELÉ (`eval/tirage_aveugle.json`, graine 20260915) et ses 240 réponses sont
+> dans `docs/tirage_aveugle.jsonl`. Tout modèle futur se branche sur les MÊMES
+> photos — un `ollama pull` et dix minutes, 60 photos, pas 40 525. **Le seul
+> vrai levier serait matériel** : 8 Go de VRAM ouvriraient Qwen3-VL 8B. Ne pas
+> rouvrir le sujet sans cette carte.
 
 ### 1. Unifier les CINQ producteurs de fiches
 

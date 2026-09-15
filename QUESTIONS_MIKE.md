@@ -1,41 +1,6 @@
 # Questions en attente de Mike
 
-## OUVERTE — **les « 8 heures » n'existent pas : ce sont 8 JOURS** (15/09)
-
-Tu as dit oui à 8 heures de GPU. **Le chiffre était faux, et c'est moi qui te
-l'avais donné.** La ligne de `ROADMAP.md` disait « 40 525 photos × ~17,6 s =
-~8 h de GPU ». La multiplication ne tient pas :
-
-    40 525 × 17,6 s = 713 240 s = 198 h = 8,3 JOURS
-
-Une erreur d'unité, recopiée telle quelle à chaque relecture. **Et la réalité
-le confirme** : la dernière campagne a été lancée le 05/09 et finie dans la
-nuit du 12 au 13/09 — **7,5 jours**, soit 16,0 s/photo, à 10 % du chiffre
-écrit. Les deux se recoupent ; seule l'unité était fausse.
-
-**Le plancher, mesuré ce matin** sur le tirage en aveugle, modèle chaud, sans
-vignettes ni XMP ni scan concurrent :
-
-| modèle | par photo | une campagne entière |
-|---|---:|---:|
-| `qwen3.5:4b` (prod) | 9,6 s | **4,5 jours** |
-| `qwen3-vl:2b` (l'ancien) | 3,2 s | **1,5 jour** |
-
-**La question** : est-ce que ton « oui » tient pour **une semaine** de GPU pris
-et de prompt figé, et non pour une nuit ? C'est la même décision, ce n'est pas
-le même prix.
-
-**Ma recommandation** : ne rien relancer avant d'avoir la page de préférence
-en aveugle. Si `qwen3-vl:2b` tague aussi bien que `qwen3.5:4b` — et le tirage
-ne permet PAS d'en décider, il faut ton œil — alors la vraie décision n'est
-plus « quel nouveau modèle » mais « revenir à celui qui va trois fois plus
-vite », et la campagne tombe de 4,5 jours à 1,5.
-
-**En attendant** : rien n'est lancé. Le tirage est gelé
-(`eval/tirage_aveugle.json`), ses 240 réponses sont enregistrées, et elles
-serviront telles quelles à la page de préférence — aucune mesure à refaire.
-
----
+**Aucune question ouverte.** (15/09 au soir)
 
 ---
 
@@ -46,11 +11,23 @@ serviront telles quelles à la page de préférence — aucune mesure à refaire
 > elle touche l'outillage, dans `ROADMAP.md` si elle priorise.
 > Protocole : `CLAUDE.md`, « Traite autonome ».
 >
+> **Vidée le 15/09 au soir** : « ton oui aux 8 heures tient-il pour une
+> SEMAINE ? » Mike : **« oublie. on ne va pas passer 8 jours de plus a
+> mesurer un ancien modele. soit tu trouves un superbe candidat qui vaudrait
+> la peine, soit on oublie »**. Recherche faite : sous 4 Go de VRAM, le champ
+> de septembre 2026 est `qwen3.5:4b` (en place), `qwen3-vl:4b` (déjà écarté :
+> débordement, ~3× plus lent), `qwen3-vl:2b` (l'ancien), `gemma3:4b` et
+> `minicpm-v4.6` (1 B). Tout ce qui est franchement meilleur — Qwen3-VL 8B,
+> Gemma 4 26B — demande une AUTRE carte. **Il n'y a pas de candidat superbe :
+> le plafond de 4 Go est la contrainte, pas le choix du modèle.** La campagne
+> est ABANDONNÉE ; la page de préférence en aveugle et le tirage ciblé
+> tombent avec elle. Verdict dans `eval/DECISIONS.md`.
+>
 > **Vidée le 15/09** : « ok pour ta recommandation » — l'expérience unique,
 > deux modèles × deux prompts sur le même tirage. **Elle a tourné** : 240
 > lignes, 0 sortie malformée, `qwen3.5:4b` à 9,6 s/photo contre 3,2 s pour
 > `qwen3-vl:2b`. Elle a aussi fait tomber le chiffre des « 8 heures » —
-> question rouverte ci-dessus. Détail dans `ROADMAP.md` § B.
+> tranché par l'entrée ci-dessus. Détail dans `ROADMAP.md` § B.
 >
 > **Vidée le 14/09 au soir** : « les 9 vidéos de la salle étaient 25 à 50 %
 > plus longues chez Google — coupe volontaire, ou versions longues perdues ? »
