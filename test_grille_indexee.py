@@ -57,6 +57,14 @@ def _source_de(nom):
     return ''.join(LIGNES[n.lineno - 1:n.end_lineno])
 
 
+def _constante(nom):
+    for x in ARBRE.body:
+        if isinstance(x, ast.Assign) and any(
+                isinstance(c, ast.Name) and c.id == nom for c in x.targets):
+            return ast.literal_eval(x.value)
+    raise AssertionError('constante absente de server.py : %s' % nom)
+
+
 def _atelier():
     """Un espace de noms ou les fonctions extraites ont leurs dependances.
 
@@ -93,6 +101,8 @@ def _atelier():
     import time as _time
     ns['time'] = _time
     exec(_source_de('_fiche_chronometree'), ns)
+    exec(_source_de('_fiche_legere'), ns)
+    ns['CHAMPS_DIFFERES'] = _constante('CHAMPS_DIFFERES')
     return ns
 
 
@@ -273,6 +283,46 @@ class LaFicheChronometreeRendLaMemeFiche(unittest.TestCase):
         self.assertIsNone(FICHE(RACINE + r'\SANS_URL.jpg', {}, 'C', [], {},
                                 PREF, chrono=chrono))
         self.assertEqual(set(chrono), {'url'})
+
+
+class LaFicheLegerePlusSonComplement(unittest.TestCase):
+    """15/09 : la grille du fonds entier envoie des fiches LEGERES, et
+    `/api/fiches` rend le reste. Leur union doit etre la fiche entiere --
+    un champ oublie des deux cotes serait une colonne vide sans erreur."""
+
+    def setUp(self):
+        self.legere = ATELIER['_fiche_legere']
+        self.differes = ATELIER['CHAMPS_DIFFERES']
+
+    def test_legere_plus_complement_egale_entiere(self):
+        for k, e in ((RACINE + r'\Photos Papa\2004\x.jpg',
+                      {'size': 5, 'mtime': 7, 'ep': 3, 'gps': [1, 2],
+                       'desc': 'd', 'kw_fr': ['a'], 'kw_en': ['a', 'b']}),
+                     (RACINE + r'\p.jpg', {})):
+            entiere = FICHE(k, e, 'C', [], {}, PREF)
+            union = dict(self.legere(k, e, PREF))
+            union.update({c: entiere[c] for c in self.differes})
+            self.assertEqual(union, entiere)
+
+    def test_les_deux_parts_ne_se_recouvrent_pas(self):
+        leg = set(self.legere(RACINE + r'\p.jpg', {}, PREF))
+        self.assertFalse(leg & set(self.differes))
+
+    def test_la_legere_ne_fabrique_ni_url_ni_faits(self):
+        """Tout l'interet : ces trois appels pesaient 1,76 s sur 3,09."""
+        fn = [n for n in ast.walk(ARBRE) if isinstance(n, ast.FunctionDef)
+              and n.name == '_fiche_legere'][0]
+        appels = {x.func.id for x in ast.walk(fn)
+                  if isinstance(x, ast.Call) and isinstance(x.func, ast.Name)}
+        self.assertFalse(appels & {'_url_for_key', '_lien_dossier_memo',
+                                   '_faits_pour'})
+
+    def test_une_cle_sans_URL_reste_dans_la_legere(self):
+        """Le tri se fait sur la legere : la cle sans URL y est, et c'est
+        `/api/fiches` qui la dit `url: null`."""
+        k = RACINE + r'\SANS_URL.jpg'
+        self.assertIsNone(FICHE(k, {}, 'C', [], {}, PREF))
+        self.assertEqual(self.legere(k, {}, PREF)['key'], k)
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

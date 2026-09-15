@@ -424,6 +424,59 @@ __FOLDERS__
 <script>
 (function() {
   var FILES = __FILE_JSON__;
+  // FICHES LEGERES (15/09, grille du fonds entier) : FILES ne porte que ce
+  // qui sert a trier, filtrer et compter. L'URL, la taille, le dossier et
+  // les faits arrivent par /api/fiches, par lots, quand une vignette
+  // approche de l'ecran ou qu'une photo s'ouvre -- `completer` est la seule
+  // porte. Hors de cette grille, les fiches sont entieres et `completer`
+  // rappelle tout de suite.
+  var LEGER = __LEGER__ === 1;
+  var enAttente = {}, fileLot = [], lotT = null;
+  function estComplete(f) { return !LEGER || f.url !== undefined; }
+  function completer(f, cb) {
+    if (estComplete(f)) { cb(); return; }
+    var k = f.key;
+    if (!enAttente[k]) { enAttente[k] = {fs: [], cbs: []}; fileLot.push(k); }
+    if (enAttente[k].fs.indexOf(f) < 0) enAttente[k].fs.push(f);
+    enAttente[k].cbs.push(cb);
+    if (!lotT) lotT = setTimeout(envoyerLot, 30);
+  }
+  function envoyerLot() {
+    lotT = null;
+    var lot = fileLot.splice(0, 200);
+    if (!lot.length) return;
+    if (fileLot.length) lotT = setTimeout(envoyerLot, 0);
+    fetch('/api/fiches', {method: 'POST',
+                          headers: {'Content-Type': 'application/json'},
+                          body: JSON.stringify({cles: lot})})
+      .then(function(r) { if (!r.ok) throw new Error(r.status); return r.json(); })
+      .then(function(j) {
+        var fiches = j.fiches || {};
+        lot.forEach(function(k) {
+          var att = enAttente[k];
+          delete enAttente[k];
+          if (!att) return;
+          var d = fiches[k];
+          att.fs.forEach(function(f) {
+            // Cle inconnue de ce compte, ou sans URL servable : `url` vaut
+            // '' -- la case se masque comme une image endommagee.
+            f.url = (d && d.url) || '';
+            f.size = d ? d.size : '';
+            f.folder = d ? d.folder : '';
+            f.gurl = d ? d.gurl : '';
+            f.faits = d ? d.faits : null;
+          });
+          att.cbs.forEach(function(cb) { try { cb(); } catch (e) {} });
+        });
+      })
+      .catch(function() {
+        // Rien n'est marque complet : le prochain passage redemandera. On le
+        // DIT -- une visionneuse vide sans un mot se lit comme une panne.
+        lot.forEach(function(k) { delete enAttente[k]; });
+        if (typeof gToast === 'function')
+          gToast('Le serveur n a pas r\u00e9pondu (d\u00e9tails des photos).', false);
+      });
+  }
   var INITIAL_TAGGED = __TAGGED__;
   var REC = __REC__;
   var HASSUBS = __HASSUBS__;
@@ -1008,6 +1061,21 @@ __FOLDERS__
       entries.forEach(function(e) {
         if (e.isIntersecting) {
           var img = e.target.querySelector('img');
+          var fc = e.target._fiche;
+          if (fc && !estComplete(fc)) {
+            completer(fc, function() {
+              if (img) img.dataset.fb = fc.url || '';
+              var zf = e.target.querySelector('.faits[hidden]');
+              var h = faitsHtml(fc, false);
+              if (zf && h) { zf.innerHTML = h; zf.hidden = false; }
+              // L'image a pu echouer AVANT l'arrivee de son URL de secours.
+              if (img && img.dataset.attend) {
+                delete img.dataset.attend;
+                if (fc.url) img.src = fc.url;
+                else { var c0 = img.closest('.cell'); if (c0) c0.style.display = 'none'; }
+              }
+            });
+          }
           if (img && img.dataset.src) {
             img.onload = function() { img.classList.add('loaded'); };
             img.onerror = function() {
@@ -1018,6 +1086,9 @@ __FOLDERS__
                 img.src = fb;
                 return;
               }
+              // Fiche legere pas encore completee : on attend son URL.
+              var fcx = img.closest('.cell') && img.closest('.cell')._fiche;
+              if (fcx && !estComplete(fcx)) { img.dataset.attend = '1'; return; }
               var c = img.closest('.cell');
               if (c) c.style.display = 'none';
             };
@@ -1040,7 +1111,7 @@ __FOLDERS__
       var cap = f.desc || '';
       var fh = faitsHtml(f, false);
       cell.innerHTML = '<div class="ph"><img data-src="' + thumbUrl(f, 512)
-                     + '" data-fb="' + esc(f.url) + '" alt="" title="' + esc(f.name) + '">'
+                     + '" data-fb="' + esc(f.url || '') + '" alt="" title="' + esc(f.name) + '">'
                      // `annee` n'est envoye qu'en mode « meme jour » : c'est la
                      // que le millesime porte le recit (2008, 2011, 2019).
                      + (f.annee ? '<span class="an">' + f.annee + '</span>' : '')
@@ -1050,6 +1121,9 @@ __FOLDERS__
                      // chaque vignette couterait 43 064 fois la hauteur d'un
                      // fait absent.
                      + (fh ? '<div class="faits">' + fh + '</div>' : '')
+                     // Fiche legere : la ligne de faits s'ecrit a l'arrivee
+                     // du complement (voir l'observateur), a cette place.
+                     + (estComplete(f) ? '' : '<div class="faits" hidden></div>')
                      + '<div class="caption' + (cap ? '' : ' empty') + '">'
                      + (cap ? esc(cap) : 'pas encore analysée') + '</div>';
       // Ouvrir une photo etait un geste de SOURIS uniquement : la planche
@@ -1073,6 +1147,7 @@ __FOLDERS__
         // `preventDefault` elle fait defiler la page sous la photo.
         if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openLb(i); }
       };
+      cell._fiche = f;
       grid.appendChild(cell);
       observer.observe(cell);
     });
@@ -1119,6 +1194,16 @@ __FOLDERS__
   }
   function showLb() {
     var f = visible[lbIdx];
+    if (!estComplete(f)) {
+      // On n'affiche pas l'ANCIENNE photo sous le nom de la nouvelle.
+      var i0 = document.getElementById('lb-img');
+      i0.hidden = false; i0.removeAttribute('src');
+      document.getElementById('lb-name').textContent = f.name + '  (\u2026)';
+      completer(f, function() {
+        if (visible[lbIdx] === f && estComplete(f)) showLb();
+      });
+      return;
+    }
     var img = document.getElementById('lb-img'), vid = document.getElementById('lb-video');
     if (f.video) {
       // Une video se LIT : <video controls>, l'original en flux (Range gere
@@ -1536,6 +1621,9 @@ __FOLDERS__
     };
     document.getElementById('ss-name').textContent = (ssPaused ? '⏸ ' : '') + f.name;
     ssSetFolder(f);
+    if (!estComplete(f)) completer(f, function() {
+      if (visible[ssOrder[ssIdx]] === f) ssSetFolder(f);
+    });
 
     ssStartFill();
     if (!ssPaused) {

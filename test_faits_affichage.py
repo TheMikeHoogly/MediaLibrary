@@ -233,8 +233,19 @@ class TestCablage(unittest.TestCase):
         appels = sum(1 for x in ast.walk(gal) if isinstance(x, ast.Call)
                      and isinstance(x.func, ast.Name)
                      and x.func.id == '_fiche_depuis_cle')
-        self.assertEqual(appels, 4,
-                         "les quatre modes de l'index passent par la fiche")
+        # Trois modes batissent la fiche entiere ; la grille du fonds entier
+        # la recoit en deux temps (fiche legere, puis `/api/fiches`, qui
+        # appelle le meme producteur -- `_serve_fiches`).
+        self.assertEqual(appels, 3,
+                         "les modes de l'index passent par la fiche")
+        fiches = next((x for x in ast.walk(arbre)
+                       if isinstance(x, ast.FunctionDef)
+                       and x.name == '_serve_fiches'), None)
+        self.assertIsNotNone(fiches, "_serve_fiches introuvable")
+        self.assertTrue(any(isinstance(x, ast.Call)
+                            and isinstance(x.func, ast.Name)
+                            and x.func.id == '_fiche_depuis_cle'
+                            for x in ast.walk(fiches)))
         for n in ast.walk(fiche):
             if not isinstance(n, ast.Dict):
                 continue

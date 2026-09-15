@@ -124,8 +124,11 @@ class LesQuatreBranchesPassentParLaMemePorte(unittest.TestCase):
         # `_fiche_depuis_cle`, qui l'appelle une fois pour tous.
         self.assertEqual(self.src.count('_lien_dossier_memo('), 1,
                          'une branche recopie encore la fiche')
-        self.assertEqual(self.src.count('_fiche_depuis_cle('), 4,
-                         'les quatre modes de l index passent par la fiche')
+        # La grille du fonds entier bat des fiches LEGERES (15/09) ; les
+        # trois autres modes de l'index batissent la fiche entiere.
+        self.assertEqual(self.src.count('_fiche_depuis_cle('), 3,
+                         'les modes de l index passent par la fiche')
+        self.assertEqual(self.src.count('_fiche_legere('), 1)
         self.assertIn('_lien_dossier_memo(', _src('_fiche_depuis_cle'))
 
     def test_plus_aucune_date_precise_demandee_deux_fois(self):

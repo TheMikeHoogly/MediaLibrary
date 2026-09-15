@@ -3811,6 +3811,40 @@ def _fiche_depuis_cle(k, e, fctx, roots, memo_liens, prefixe=None,
     }
 
 
+# Les champs qu'une fiche LÉGÈRE ne porte pas : le client les demande à
+# `/api/fiches` quand la vignette approche de l'écran (décision de Mike,
+# 15/09 au soir). Une fiche légère plus son complément = la fiche entière ;
+# le banc `LaFicheLegerePlusSonComplement` tient l'égalité.
+CHAMPS_DIFFERES = ('url', 'size', 'folder', 'gurl', 'faits')
+
+
+def _fiche_legere(k, e, prefixe=None):
+    """Ce que la grille du fonds entier doit connaître de TOUTES ses photos
+    pour trier, filtrer et compter côté client : nom, clé, dates, mots-clés,
+    GPS, description. Rien de ce qui ne sert qu'à AFFICHER une vignette.
+
+    MESURÉ le 15/09 sur 44 468 fiches : l'URL (789 ms), le lien de dossier
+    (86 ms) et les faits (887 ms) pesaient 1,76 s des 3,09 s de la boucle, et
+    le client n'en lit aucun avant qu'une vignette soit à l'écran.
+
+    Pas de contrôle d'URL ici : il ne coûte que parce qu'il FABRIQUE l'URL.
+    Une clé sans URL servable est rendue `url: null` par `/api/fiches`, et le
+    client masque la case comme il masque une image endommagée."""
+    ep = _epoch_precis(k, e)
+    return {
+        'name': _nom_relatif(k, prefixe),
+        'key': k,
+        'mtime': e.get('mtime') or 0,
+        'taken': _best_time_depuis(k, e, ep),
+        'jour': _jour_depuis(ep),
+        '_ep': ep,
+        'kw': list(dict.fromkeys(
+            (e.get('kw_fr') or []) + (e.get('kw_en') or []))),
+        'gps': e.get('gps'),
+        'desc': e.get('desc', ''),
+    }
+
+
 def _fiche_chronometree(k, e, fctx, roots, memo_liens, prefixe, chrono):
     """MESURE (15/09) : la même fiche que `_fiche_depuis_cle`, découpée en
     postes cumulés dans `chrono` (secondes). Sert à choisir ce que le
@@ -3984,6 +4018,9 @@ def _noms_fusionnes(cle, entree, attendus, exclus, canon=None):
 # 200 est le plafond d'une page de resultats cote MCP : au-dela, c'est un
 # parcours, pas un affichage.
 MAX_FAITS = 200
+# Complément des fiches légères (`/api/fiches`) : le client envoie des lots
+# de 200 ; 500 laisse la marge sans ouvrir la porte à tout le fonds.
+MAX_FICHES = 500
 
 
 def _faits_ctx():
@@ -14059,6 +14096,9 @@ class Handler(BaseHTTPRequestHandler):
         if path == '/api/assign':
             self._do_assign()
             return
+        if path == '/api/fiches':
+            self._serve_fiches()
+            return
         if path == '/api/undo':
             data = self._read_json_body()
             libelle = annuler(data.get('jeton'))
@@ -14425,6 +14465,7 @@ class Handler(BaseHTTPRequestHandler):
         fctx = _faits_ctx()
         ph.top('faits_ctx')
         file_data = []
+        fiches_legeres = False
         # Sous-phases de la boucle : cinq accumulateurs, six `perf_counter`
         # par fichier (~1 ms pour 2 465 photos). `enrichir.stat` compte aussi
         # ses APPELS — c'est un aller-retour NAS par photo absente de l'index.
@@ -14554,28 +14595,24 @@ class Handler(BaseHTTPRequestHandler):
             pref = _pkey(folder)
             file_data = []
             _liens = {}
-            _abimees = _sans_url = 0
-            _chrono_fiche = {}
+            _abimees = 0
+            # Fiches LÉGÈRES (15/09) : le reste arrive par `/api/fiches`
+            # quand la vignette approche. Le compte des clés sans URL
+            # servable passe donc à cette route-là (`sans_url`).
+            fiches_legeres = True
             for k, e in entries:
                 if e.get('failed'):
                     _abimees += 1
                     continue    # image endommagée : on ne l'affiche pas
-                fiche = _fiche_depuis_cle(k, e, fctx, roots_cache, _liens, pref,
-                                          chrono=_chrono_fiche)
-                if fiche is None:
-                    _sans_url += 1
-                    continue
-                file_data.append(fiche)
+                file_data.append(_fiche_legere(k, e, pref))
             # Le compteur dit ce qui a été FAIT : la boucle du NAS n'a pas
             # tourné, celle-ci oui. Et il dit les DEUX causes d'écart
             # séparément : un seul nombre « écartées » aurait laissé croire
             # à huit racines manquantes là où ce sont huit images abîmées,
             # écartées depuis toujours — le chemin du NAS en écartait
             # exactement autant.
-            for _poste, _s in _chrono_fiche.items():
-                ph.ajoute('mode_index.' + _poste, _s)
             ph.note(fichiers=len(file_data), grille_indexee=True,
-                    ecartees_abimees=_abimees, ecartees_sans_url=_sans_url)
+                    ecartees_abimees=_abimees, fiches_legeres=True)
             ph.top('mode_index')
 
         # sélection de tags active : résultats récursifs depuis l'index,
@@ -14771,6 +14808,7 @@ class Handler(BaseHTTPRequestHandler):
                 .replace('__FOLDERS__', folders_html)
                 .replace('__MOTIFS__', json.dumps(
                     {'counts': motif_counts, 'sel': motif}, ensure_ascii=False))
+                .replace('__LEGER__', '1' if fiches_legeres else '0')
                 .replace('__FILE_JSON__', _file_json)
                 .replace('__TAGGED__', _tagged)
                 .replace('__REC__', '1' if rec else '0')
@@ -14792,6 +14830,7 @@ class Handler(BaseHTTPRequestHandler):
                       else 'jour' if jour_mode else 'tags' if sel
                       else 'dossier'),
                 rec=bool(rec), rendues=len(file_data),
+                legeres=fiches_legeres,
                 car_json=len(_file_json), car_page=len(page))
         _phases_note(ph)
 
@@ -14990,6 +15029,48 @@ class Handler(BaseHTTPRequestHandler):
             })
         self._send(200, json.dumps(
             {'results': sortie, 'encodee': True, 'key': cle},
+            ensure_ascii=False).encode(), 'application/json')
+
+    def _serve_fiches(self):
+        """Le COMPLÉMENT des fiches légères de la grille (15/09) : pour des
+        clés désignées, les champs `CHAMPS_DIFFERES`, bâtis par
+        `_fiche_depuis_cle` — le même producteur que la page, donc la même
+        réponse.
+
+        POST {"cles": [...]} ; MAX_FICHES au plus par appel (le client envoie
+        des lots de 200). La VUE décide en premier : une clé que ce compte ne
+        voit pas est rendue dans `inconnues`, exactement comme une clé
+        absente — rien ne dit qu'elle existe. Une clé visible sans URL
+        servable est rendue avec `url: null` et comptée dans `sans_url`.
+        `mesure` porte les postes de `_fiche_chronometree` (ms) : c'est le
+        coût réel du complément, lu sans banc."""
+        data = self._read_json_body()
+        cles = data.get('cles') if isinstance(data, dict) else None
+        if not isinstance(cles, list) or not cles:
+            self._send(400, json.dumps(
+                {'error': 'corps attendu : {"cles": [...]}, %d au plus'
+                          % MAX_FICHES}, ensure_ascii=False).encode(),
+                'application/json')
+            return
+        cles = [c for c in cles if isinstance(c, str) and c][:MAX_FICHES]
+        ctx = _faits_ctx()
+        roots = media_roots()
+        memo, chrono = {}, {}
+        fiches, inconnues, sans_url = {}, [], 0
+        for k in cles:
+            e = STORE.data.get(k)
+            if e is None:
+                inconnues.append(k)
+                continue
+            f = _fiche_depuis_cle(k, e, ctx, roots, memo, chrono=chrono)
+            if f is None:
+                sans_url += 1
+                fiches[k] = {c: None for c in CHAMPS_DIFFERES}
+                continue
+            fiches[k] = {c: f[c] for c in CHAMPS_DIFFERES}
+        self._send(200, json.dumps(
+            {'fiches': fiches, 'inconnues': inconnues, 'sans_url': sans_url,
+             'mesure': {p: round(v * 1000.0, 2) for p, v in chrono.items()}},
             ensure_ascii=False).encode(), 'application/json')
 
     def _serve_faits(self):
