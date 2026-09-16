@@ -41,7 +41,7 @@ un compte par propriétaire (Mike admin, Flo, Papa).
 
 **Ce qui n'attend que Mike** : le bat 36 pour les 14 doublons d'`_A TRIER`
 (+ regarder 4 voisins, renommer `20260731_232718.mp4`), le bat 24 (corbeille,
-dont les 24 `_original`), les deux détachements git (A6), la fenêtre des
+dont les 24 `_original`), la fenêtre des
 68 copies (**vers le 13/10**), le KB Windows (**vers le 16/10**), et couper
 « Photo animée » sur le téléphone.
 

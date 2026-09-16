@@ -161,11 +161,11 @@ Mesuré sur le disque le 13/09 à 21 h 30, pas déduit.
   `Thumbs.db` et `1000142357_20260812_223550_4377.jpg_original`.
 
 **A6. Les gestes git que je ne peux pas faire.** L'agent ne connaît que
-`ping`, `commit` et `livrer` ; le reste passe par `27 - Git.bat`. Deux
-détachements en attente, sans urgence, mais ils ne partiront pas tout seuls :
-`git rm --cached _collage6.py _collage7.py` (ignorés mais suivis) et
-`git rm -r --cached _to_delete` (deux fichiers y sont entrés avant que le
-dossier soit ignoré).
+`ping`, `commit` et `livrer` ; le reste passe par `27 - Git.bat`. **Les deux
+détachements (`_collage6/7.py`, `_to_delete`) sont DÉJÀ FAITS** — constaté le
+16/09 en lisant `.git/index` (541 entrées, aucune des deux ; `server.py` et
+les fichiers du jour y sont, donc la lecture est juste), `_to_delete/`
+n'existe plus. Rien à faire.
 
 ---
 
@@ -220,7 +220,7 @@ n'existera plus. La démo et l'e-mail se rédigent quand la veille (5) et le
 chargement à la demande (2) sont posés, pas avant.
 
 **Ce qui appartient à Mike et n'attend que lui** : le bat 36 pour les 14
-doublons d'`_A TRIER` (+ 4 voisins à regarder, 1 à renommer), les deux détachements git (A6), les 63 Mo
+doublons d'`_A TRIER` (+ 4 voisins à regarder, 1 à renommer), les 63 Mo
 de `_corbeille_menage` (A4), la fenêtre de réversibilité des 68 copies qui se
 ferme **vers le 13/10** (A7), et le KB Windows à masquer **vers le 16/10**
 (A5).

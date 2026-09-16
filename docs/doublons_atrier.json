@@ -1,490 +1,119 @@
 {
- "genere_le": "2026-09-13 21:12:31",
- "confirmes": [
-  {
-   "dup": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\20260601_152532.jpg",
-   "canonique": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\20260601_152532.jpg"
-  },
-  {
-   "dup": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\20260601_152602.jpg",
-   "canonique": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\20260601_152602.jpg"
-  },
-  {
-   "dup": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\20260731_205952.jpg",
-   "canonique": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\20260731_205952.jpg"
-  },
-  {
-   "dup": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\20260731_205958.jpg",
-   "canonique": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\20260731_205958.jpg"
-  },
-  {
-   "dup": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\20260802_101820.jpg",
-   "canonique": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\20260802_101820.jpg"
-  },
-  {
-   "dup": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\20260802_101859.jpg",
-   "canonique": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\20260802_101859.jpg"
-  },
-  {
-   "dup": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\20260802_143319.jpg",
-   "canonique": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\20260802_143319.jpg"
-  },
-  {
-   "dup": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\20260808_202225.jpg",
-   "canonique": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\20260808_202225.jpg"
-  },
-  {
-   "dup": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\20260808_204503.jpg",
-   "canonique": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\20260808_204503.jpg"
-  },
-  {
-   "dup": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\20260808_204508.jpg",
-   "canonique": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\20260808_204508.jpg"
-  },
-  {
-   "dup": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\20260808_204509.jpg",
-   "canonique": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\20260808_204509.jpg"
-  },
-  {
-   "dup": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\20260809_001031.jpg",
-   "canonique": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\20260809_001031.jpg"
-  },
-  {
-   "dup": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\20260809_140933.jpg",
-   "canonique": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\20260809_140933.jpg"
-  },
-  {
-   "dup": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\20260812_201237.jpg",
-   "canonique": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\20260812_201237.jpg"
-  },
-  {
-   "dup": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\20260812_201359.jpg",
-   "canonique": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\20260812_201359.jpg"
-  },
-  {
-   "dup": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\20260813_120409.jpg",
-   "canonique": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\20260813_120409.jpg"
-  },
-  {
-   "dup": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\20260813_120419.jpg",
-   "canonique": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\20260813_120419.jpg"
-  },
-  {
-   "dup": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\20260813_120422.jpg",
-   "canonique": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\20260813_120422.jpg"
-  },
-  {
-   "dup": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\20260813_131125.jpg",
-   "canonique": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\20260813_131125.jpg"
-  },
-  {
-   "dup": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\20260813_131128.jpg",
-   "canonique": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\20260813_131128.jpg"
-  },
-  {
-   "dup": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\20260813_142059.jpg",
-   "canonique": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\20260813_142059.jpg"
-  },
-  {
-   "dup": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\20260813_142145.jpg",
-   "canonique": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\20260813_142145.jpg"
-  },
-  {
-   "dup": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\20260813_142603.jpg",
-   "canonique": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\20260813_142603.jpg"
-  },
-  {
-   "dup": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\20260813_142609.jpg",
-   "canonique": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\20260813_142609.jpg"
-  },
-  {
-   "dup": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\20260815_142500.jpg",
-   "canonique": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\20260815_142500.jpg"
-  },
-  {
-   "dup": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\20260815_152414.jpg",
-   "canonique": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\20260815_152414.jpg"
-  },
-  {
-   "dup": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\20260815_152418.jpg",
-   "canonique": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\20260815_152418.jpg"
-  },
-  {
-   "dup": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\20260815_191522.jpg",
-   "canonique": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\20260815_191522.jpg"
-  },
-  {
-   "dup": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\20260815_201912.jpg",
-   "canonique": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\20260815_201912.jpg"
-  },
-  {
-   "dup": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\20260818_073305.jpg",
-   "canonique": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\20260818_073305.jpg"
-  },
-  {
-   "dup": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\20260823_124332.jpg",
-   "canonique": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\20260823_124332.jpg"
-  },
-  {
-   "dup": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\20260823_131747.jpg",
-   "canonique": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\20260823_131747.jpg"
-  },
-  {
-   "dup": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\20260823_131802.jpg",
-   "canonique": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\20260823_131802.jpg"
-  },
-  {
-   "dup": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\20260823_145423.jpg",
-   "canonique": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\20260823_145423.jpg"
-  },
-  {
-   "dup": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\20260823_145433.jpg",
-   "canonique": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\20260823_145433.jpg"
-  },
-  {
-   "dup": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\20260824_192732.jpg",
-   "canonique": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\20260824_192732.jpg"
-  },
-  {
-   "dup": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\20260824_192859.jpg",
-   "canonique": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\20260824_192859.jpg"
-  },
-  {
-   "dup": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\20260824_192903.jpg",
-   "canonique": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\20260824_192903.jpg"
-  },
-  {
-   "dup": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\Google porte mieux\\2008\\DSC00668.JPG",
-   "canonique": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2008\\DSC00668.JPG"
-  },
-  {
-   "dup": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\Google porte mieux\\2009\\26.jpg",
-   "canonique": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2009\\26.jpg"
-  },
-  {
-   "dup": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\Google porte mieux\\2009\\39.jpg",
-   "canonique": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2009\\39.jpg"
-  },
-  {
-   "dup": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\Google porte mieux\\2009\\51.jpg",
-   "canonique": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2009\\51.jpg"
-  },
-  {
-   "dup": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\Google porte mieux\\2010\\4.JPG",
-   "canonique": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2010\\4.JPG"
-  },
-  {
-   "dup": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\Google porte mieux\\2024\\20240331_140247.jpg",
-   "canonique": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20240331_140247.jpg"
-  },
-  {
-   "dup": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\Google porte mieux\\2024\\20240510_172508.jpg",
-   "canonique": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20240510_172508.jpg"
-  },
-  {
-   "dup": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\Google porte mieux\\2024\\20240511_112538.jpg",
-   "canonique": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20240511_112538.jpg"
-  },
-  {
-   "dup": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\Google porte mieux\\2024\\20240511_113445.jpg",
-   "canonique": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20240511_113445.jpg"
-  },
-  {
-   "dup": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\Google porte mieux\\2024\\20240524_124351.jpg",
-   "canonique": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20240524_124351.jpg"
-  },
-  {
-   "dup": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\Google porte mieux\\2024\\20240524_173547.jpg",
-   "canonique": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20240524_173547.jpg"
-  },
-  {
-   "dup": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\Google porte mieux\\2024\\20240528_154920.jpg",
-   "canonique": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20240528_154920.jpg"
-  },
-  {
-   "dup": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\Google porte mieux\\2024\\20240528_172822.jpg",
-   "canonique": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20240528_172822.jpg"
-  },
-  {
-   "dup": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\Google porte mieux\\2024\\20240530_173740.jpg",
-   "canonique": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20240530_173740.jpg"
-  },
-  {
-   "dup": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\Google porte mieux\\2024\\20240606_091220.jpg",
-   "canonique": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20240606_091220.jpg"
-  },
-  {
-   "dup": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\Google porte mieux\\2024\\20240606_200626.jpg",
-   "canonique": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20240606_200626.jpg"
-  },
-  {
-   "dup": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\Google porte mieux\\2024\\20240607_091417.jpg",
-   "canonique": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20240607_091417.jpg"
-  },
-  {
-   "dup": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\Google porte mieux\\2024\\20240703_125851.jpg",
-   "canonique": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20240703_125851.jpg"
-  },
-  {
-   "dup": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\Google porte mieux\\2024\\20240711_082208.jpg",
-   "canonique": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20240711_082208.jpg"
-  },
-  {
-   "dup": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\Google porte mieux\\2024\\20240713_145303.jpg",
-   "canonique": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20240713_145303.jpg"
-  },
-  {
-   "dup": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\Google porte mieux\\2024\\20240716_175647.jpg",
-   "canonique": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20240716_175647.jpg"
-  },
-  {
-   "dup": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\Google porte mieux\\2024\\20240717_205619.jpg",
-   "canonique": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20240717_205619.jpg"
-  },
-  {
-   "dup": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\Google porte mieux\\2024\\20240718_102200.jpg",
-   "canonique": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20240718_102200.jpg"
-  },
-  {
-   "dup": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\Google porte mieux\\2024\\20240719_210442.jpg",
-   "canonique": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20240719_210442.jpg"
-  },
-  {
-   "dup": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\Google porte mieux\\2024\\20240720_114736.jpg",
-   "canonique": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20240720_114736.jpg"
-  },
-  {
-   "dup": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\Google porte mieux\\2024\\20240720_152935.jpg",
-   "canonique": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20240720_152935.jpg"
-  },
-  {
-   "dup": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\Google porte mieux\\2024\\20240721_122802.jpg",
-   "canonique": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20240721_122802.jpg"
-  },
-  {
-   "dup": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\Google porte mieux\\2024\\20240724_113409.jpg",
-   "canonique": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20240724_113409.jpg"
-  },
-  {
-   "dup": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\Google porte mieux\\2024\\20240724_125807.jpg",
-   "canonique": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20240724_125807.jpg"
-  },
-  {
-   "dup": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\Google porte mieux\\2024\\20240724_132432.jpg",
-   "canonique": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20240724_132432.jpg"
-  },
-  {
-   "dup": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\Google porte mieux\\2024\\20240724_133027.jpg",
-   "canonique": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20240724_133027.jpg"
-  },
-  {
-   "dup": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\Google porte mieux\\2024\\20240724_134129.jpg",
-   "canonique": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20240724_134129.jpg"
-  },
-  {
-   "dup": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\Google porte mieux\\2024\\20240724_135501.jpg",
-   "canonique": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20240724_135501.jpg"
-  },
-  {
-   "dup": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\Google porte mieux\\2024\\20240724_135911.jpg",
-   "canonique": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20240724_135911.jpg"
-  },
-  {
-   "dup": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\Google porte mieux\\2024\\20240724_135912.jpg",
-   "canonique": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20240724_135912.jpg"
-  },
-  {
-   "dup": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\Google porte mieux\\2024\\20240724_140115.jpg",
-   "canonique": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20240724_140115.jpg"
-  },
-  {
-   "dup": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\Google porte mieux\\2024\\20240724_141607.jpg",
-   "canonique": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20240724_141607.jpg"
-  },
-  {
-   "dup": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\Google porte mieux\\2024\\20240724_141901.jpg",
-   "canonique": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20240724_141901.jpg"
-  },
-  {
-   "dup": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\Google porte mieux\\2024\\20240724_142550.jpg",
-   "canonique": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20240724_142550.jpg"
-  },
-  {
-   "dup": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\Google porte mieux\\2024\\20240726_070233.jpg",
-   "canonique": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20240726_070233.jpg"
-  },
-  {
-   "dup": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\Google porte mieux\\2024\\20240727_105328.jpg",
-   "canonique": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20240727_105328.jpg"
-  },
-  {
-   "dup": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\Google porte mieux\\2024\\20240727_110202.jpg",
-   "canonique": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20240727_110202.jpg"
-  },
-  {
-   "dup": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\Google porte mieux\\2024\\20240727_113224.jpg",
-   "canonique": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20240727_113224.jpg"
-  },
-  {
-   "dup": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\Google porte mieux\\2024\\20240728_111709.jpg",
-   "canonique": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20240728_111709.jpg"
-  },
-  {
-   "dup": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\Google porte mieux\\2024\\20240728_141539.jpg",
-   "canonique": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20240728_141539.jpg"
-  },
-  {
-   "dup": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\Google porte mieux\\2024\\20240728_141542.jpg",
-   "canonique": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20240728_141542.jpg"
-  },
-  {
-   "dup": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\Google porte mieux\\2024\\20240728_141711.jpg",
-   "canonique": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20240728_141711.jpg"
-  },
-  {
-   "dup": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\Google porte mieux\\2024\\20240730_093707.jpg",
-   "canonique": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20240730_093707.jpg"
-  },
-  {
-   "dup": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\Google porte mieux\\2024\\20240806_140940.jpg",
-   "canonique": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20240806_140940.jpg"
-  },
-  {
-   "dup": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\Google porte mieux\\2024\\20240820_194900.jpg",
-   "canonique": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20240820_194900.jpg"
-  },
-  {
-   "dup": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\Google porte mieux\\2024\\20240820_200049.jpg",
-   "canonique": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20240820_200049.jpg"
-  },
-  {
-   "dup": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\Google porte mieux\\2024\\20240820_200108.jpg",
-   "canonique": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20240820_200108.jpg"
-  },
-  {
-   "dup": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\Google porte mieux\\2024\\20240821_201115.jpg",
-   "canonique": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20240821_201115.jpg"
-  },
-  {
-   "dup": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\Google porte mieux\\2024\\20240904_084355.jpg",
-   "canonique": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20240904_084355.jpg"
-  },
-  {
-   "dup": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\Google porte mieux\\2024\\20240928_191804.jpg",
-   "canonique": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20240928_191804.jpg"
-  },
-  {
-   "dup": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\Google porte mieux\\2024\\20241008_170828.jpg",
-   "canonique": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20241008_170828.jpg"
-  },
-  {
-   "dup": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\Google porte mieux\\2024\\20241008_170831.jpg",
-   "canonique": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20241008_170831.jpg"
-  },
-  {
-   "dup": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\Google porte mieux\\2024\\20241011_233035.jpg",
-   "canonique": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20241011_233035.jpg"
-  },
-  {
-   "dup": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\Google porte mieux\\2024\\20241014_103224.jpg",
-   "canonique": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20241014_103224.jpg"
-  },
-  {
-   "dup": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\Google porte mieux\\2024\\20241102_182559.jpg",
-   "canonique": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20241102_182559.jpg"
-  },
-  {
-   "dup": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\Google porte mieux\\2025\\20250114_213511.jpg",
-   "canonique": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2025\\20250114_213511.jpg"
-  },
-  {
-   "dup": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\Google porte mieux\\2025\\20250201_141126.jpg",
-   "canonique": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2025\\20250201_141126.jpg"
-  },
-  {
-   "dup": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\Google porte mieux\\2025\\20250201_160227.jpg",
-   "canonique": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2025\\20250201_160227.jpg"
-  },
-  {
-   "dup": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\Google porte mieux\\2025\\20250201_192153.jpg",
-   "canonique": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2025\\20250201_192153.jpg"
-  },
-  {
-   "dup": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\Google porte mieux\\2025\\20250303_162026.jpg",
-   "canonique": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2025\\20250303_162026.jpg"
-  },
-  {
-   "dup": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\Google porte mieux\\2025\\20250407_171532.jpg",
-   "canonique": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2025\\20250407_171532.jpg"
-  },
-  {
-   "dup": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\Google porte mieux\\2025\\20250408_154908.jpg",
-   "canonique": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2025\\20250408_154908.jpg"
-  },
-  {
-   "dup": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\Google porte mieux\\2025\\20250420_205613.jpg",
-   "canonique": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2025\\20250420_205613.jpg"
-  }
- ],
+ "genere_le": "2026-09-16 20:38:06",
+ "confirmes": [],
  "revue": [],
- "image_differente": [
-  "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\Google porte mieux\\2024\\20240723_154641.jpg",
-  "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\Google porte mieux\\2024\\20240726_140643.jpg",
-  "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\Google porte mieux\\2024\\20240727_113109.jpg",
-  "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\Google porte mieux\\2025\\20250822_171430.jpg",
-  "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\Google porte mieux\\2025\\20251228_181330.jpg",
-  "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\Google porte mieux\\2025\\20251228_181343.jpg",
-  "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\Google porte mieux\\2026\\20260109_080043.jpg",
-  "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\Google porte mieux\\2026\\20260709_185049.jpg",
-  "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\Google porte mieux\\2026\\20260709_185109.jpg"
- ],
- "homonymes_differents": [
+ "image_differente": [],
+ "homonymes_differents": [],
+ "sans_homonyme": [],
+ "arbitrage_laisse": [],
+ "videos_confirmes": [
   {
-   "dup": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\Google porte mieux\\2024\\20240723_154641.jpg",
-   "homonyme": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20240723_154641.jpg",
-   "noms_manquants": []
+   "dup": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\20260731_192338.mp4",
+   "canonique": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\20260731_192338.mp4",
+   "duree_dup": 61.784,
+   "duree_canonique": 61.784
   },
   {
-   "dup": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\Google porte mieux\\2024\\20240726_140643.jpg",
-   "homonyme": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20240726_140643.jpg",
-   "noms_manquants": []
+   "dup": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\20260731_192902.mp4",
+   "canonique": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\20260731_192902.mp4",
+   "duree_dup": 24.971,
+   "duree_canonique": 24.971
   },
   {
-   "dup": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\Google porte mieux\\2024\\20240727_113109.jpg",
-   "homonyme": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2024\\20240727_113109.jpg",
-   "noms_manquants": []
+   "dup": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\20260731_215905.mp4",
+   "canonique": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\20260731_215905.mp4",
+   "duree_dup": 28.578,
+   "duree_canonique": 28.578
   },
   {
-   "dup": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\Google porte mieux\\2025\\20250822_171430.jpg",
-   "homonyme": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2025\\20250822_171430.jpg",
-   "noms_manquants": []
+   "dup": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\20260731_221329.mp4",
+   "canonique": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\20260731_221329.mp4",
+   "duree_dup": 23.579,
+   "duree_canonique": 23.579
   },
   {
-   "dup": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\Google porte mieux\\2025\\20251228_181330.jpg",
-   "homonyme": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2025\\20251228_181330.jpg",
-   "noms_manquants": []
+   "dup": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\20260808_202231.mp4",
+   "canonique": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\20260808_202231.mp4",
+   "duree_dup": 31.242,
+   "duree_canonique": 31.242
   },
   {
-   "dup": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\Google porte mieux\\2025\\20251228_181343.jpg",
-   "homonyme": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2025\\20251228_181343.jpg",
-   "noms_manquants": []
+   "dup": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\20260808_202458.mp4",
+   "canonique": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\20260808_202458.mp4",
+   "duree_dup": 29.977,
+   "duree_canonique": 29.977
   },
   {
-   "dup": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\Google porte mieux\\2026\\20260109_080043.jpg",
-   "homonyme": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\20260109_080043.jpg",
-   "noms_manquants": []
+   "dup": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\20260808_202553.mp4",
+   "canonique": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\20260808_202553.mp4",
+   "duree_dup": 65.443,
+   "duree_canonique": 65.443
   },
   {
-   "dup": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\Google porte mieux\\2026\\20260709_185049.jpg",
-   "homonyme": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\20260709_185049.jpg",
-   "noms_manquants": []
+   "dup": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\20260808_204527.mp4",
+   "canonique": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\20260808_204527.mp4",
+   "duree_dup": 108.067,
+   "duree_canonique": 108.067
   },
   {
-   "dup": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\Google porte mieux\\2026\\20260709_185109.jpg",
-   "homonyme": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\20260709_185109.jpg",
-   "noms_manquants": []
+   "dup": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\20260809_011118.mp4",
+   "canonique": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\20260809_011118.mp4",
+   "duree_dup": 6.886,
+   "duree_canonique": 6.886
+  },
+  {
+   "dup": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\20260813_142104.mp4",
+   "canonique": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\20260813_142104.mp4",
+   "duree_dup": 32.331,
+   "duree_canonique": 32.331
+  },
+  {
+   "dup": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\20260821_194435.mp4",
+   "canonique": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\20260821_194435.mp4",
+   "duree_dup": 36.717,
+   "duree_canonique": 36.717
+  },
+  {
+   "dup": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\20260821_194634.mp4",
+   "canonique": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\20260821_194634.mp4",
+   "duree_dup": 34.125,
+   "duree_canonique": 34.125
+  },
+  {
+   "dup": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\20260821_194712.mp4",
+   "canonique": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\20260821_194712.mp4",
+   "duree_dup": 7.71,
+   "duree_canonique": 7.71
+  },
+  {
+   "dup": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\20260822_153033.mp4",
+   "canonique": "\\\\NAS-Bremblens\\home\\Photos\\Photos Mike\\2026\\20260822_153033.mp4",
+   "duree_dup": 11.938,
+   "duree_canonique": 11.938
   }
  ],
- "sans_homonyme": [],
- "octets_liberables": 677034039
+ "videos_tronquees": [],
+ "videos_gardees": [
+  {
+   "dup": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\20260731_223501.mp4",
+   "pourquoi": "flux different"
+  },
+  {
+   "dup": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\20260731_224032.mp4",
+   "pourquoi": "flux different"
+  },
+  {
+   "dup": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\20260731_232718.mp4",
+   "pourquoi": "flux different"
+  },
+  {
+   "dup": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\20260731_234145.mp4",
+   "pourquoi": "flux different"
+  },
+  {
+   "dup": "\\\\NAS-Bremblens\\home\\Photos\\_A TRIER\\20260801_000719.mp4",
+   "pourquoi": "flux different"
+  }
+ ],
+ "octets_liberables": 0
 }
