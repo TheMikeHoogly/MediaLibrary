@@ -147,6 +147,12 @@ Mesuré sur le disque le 13/09 à 21 h 30, pas déduit.
   `20260731_232718.mp4` (35,81 s ici contre 37,24 s dans le fonds : deux
   fichiers distincts, à renommer, jamais à écraser). **Aucune n'autorise un
   effacement à l'aveugle**, et le bat 26 le dit maintenant AVANT l'aperçu.
+  **Mike a passé le bat 26 le 16/09** : mêmes 14/4/1, 19 sautés — et le bat
+  avait ARRÊTÉ le serveur pour rien et rejoué deux fois « 19 skip » (règle 9).
+  Corrigé le jour même : `verifier_plan_annee` rend **3** quand rien ne peut
+  bouger, et le bat s'arrête là, serveur allumé. **Reste à Mike** : le bat 36
+  pour les 14 doublons, un regard sur les 4 voisins, et renommer
+  `20260731_232718.mp4`.
 - **Les 19 vidéos en double** ci-dessus ne sont plus increvables : le bat 36
   sait les comparer (B8). Celles dont le fonds porte une version plus longue
   attendent un geste explicite, `--videos-tronquees` — le verdict est écrit,
@@ -192,7 +198,7 @@ Dans l'ordre où je le ferais, **reclassé le 14/09 au soir** :
 | — | ~~Unifier les producteurs de fiches (§ C3)~~ | **LIVRÉ 15/09** — 4 sur 5, voir ci-dessous | fait |
 | — | ~~Le chargement à la demande (§ C3)~~ | **LIVRÉ 15/09** — fiches légères, 6,6 s → 3,7 s | fait |
 | — | ~~B5, B6~~ | **MESURÉS 16/09** — 26 Motion Photos ; O8/O9 clos | fait |
-| — | ~~La veille en plein écran (P1)~~ | **LIVRÉE 16/09** — trois réglages à confirmer (`QUESTIONS_MIKE.md`) | fait |
+| — | ~~La veille en plein écran (P1)~~ | **LIVRÉE 16/09** — réglages confirmés par Mike, lieu ajouté | fait |
 | **6** | **La copie hors site** (§ D1) | **Mike** | à lui seul |
 | **7** | **La démo de bienvenue et son e-mail** (P2) | Mike a demandé — **en DERNIER** | moyen |
 
@@ -213,8 +219,8 @@ d'emploi écrit avant que l'interface soit figée décrit une interface qui
 n'existera plus. La démo et l'e-mail se rédigent quand la veille (5) et le
 chargement à la demande (2) sont posés, pas avant.
 
-**Ce qui appartient à Mike et n'attend que lui** : le plan de rangement des
-19 fichiers d'`_A TRIER` (bat 26), les deux détachements git (A6), les 63 Mo
+**Ce qui appartient à Mike et n'attend que lui** : le bat 36 pour les 14
+doublons d'`_A TRIER` (+ 4 voisins à regarder, 1 à renommer), les deux détachements git (A6), les 63 Mo
 de `_corbeille_menage` (A4), la fenêtre de réversibilité des 68 copies qui se
 ferme **vers le 13/10** (A7), et le KB Windows à masquer **vers le 16/10**
 (A5).
@@ -505,8 +511,9 @@ Motion Photos, 0,09 Go de vidéo**, toutes chez Mike (2021 : 4 — les
 dont les arrivées du 12/08). **Mike a passé le bat 42 le 16/09** : 24 strippées,
 0 ratée ; le banc relancé en voit 24 CHANGÉES et **il en reste 2** (deux
 `google` de plus de 8 Mo que le bat 42 a sautées). Le vrai correctif reste
-le réglage « Photo animée » du téléphone ; le bat 43 (purge des `_original`)
-attend que Mike ait regardé les stills.
+le réglage « Photo animée » du téléphone. **Bat 43 passé le 16/09** : les 24
+`_original` en quarantaine (`.corbeille-rangement\strip_motionphoto_20260916_091750`,
+0,16 Go, manifeste) — le bat 24 les purgera avec la corbeille.
 **Le premier chiffre était FAUX, deux fois** : la relance a d'abord rendu
 2 420, le compte du 01/09 recopié de son cache. (1) Le cache ne regardait
 jamais si le fichier avait changé → `--frais` (re-stat, compteur d'étendue :
@@ -540,7 +547,10 @@ encore `photo_thumbs` (le bat n'aurait rendu que 0,3 Mo sur 107 — règle 9),
 et l'âge d'une vignette de photo était le mtime RECOPIÉ de la photo, donc le
 plancher de 7 jours ne protégeait rien : l'âge est maintenant la date de
 création du fichier. Aperçu réel (VM, copie de 1 min) : 3 126 fichiers,
-102,6 Mo.
+102,6 Mo. **Bat 51 passé par Mike le 16/09** : 2 778 vignettes, 90,3 Mo
+(`docs/undo_vignettes_20260916_084208.json`) ; relancé à 09:17, il ne
+trouve plus rien de plus vieux que 7 jours (98,9 % / 100 % / 100 % de noms
+reconnus).
 
 **B7. L'ordre inverse maintenance / scan — FERMÉ, et je l'ai vu tourner.**
 Cette ligne disait « non mesuré, non corrigé » ; **c'était faux**, et je
@@ -880,6 +890,9 @@ Elle ne part pas si l'onglet est caché, si une vidéo joue, si le diaporama
 de la galerie tourne ou si quelque chose est déjà en plein écran ; le geste
 qui la réveille est AVALÉ (un « X » sur /tri ne rejette rien). Pas de reprise
 (nouveau tirage à chaque fois) ; un compte sans photo n'a pas de veille.
+**Confirmé par Mike le 16/09**, avec un ajout : la légende porte le LIEU
+(« Paris · septembre 2025 », `_faits_pour`, 38 photos sur 120 en ont un
+dans le tirage observé, 215 ms pour 120).
 **Trois pièges vus à l'écran, pas par les bancs** : le plein écran exige
 d'être demandé AVANT le `fetch` ; le passage en plein écran émet un
 `pointermove` qui refermait la veille à 2,3 s (on compte `movementX/Y`) ;

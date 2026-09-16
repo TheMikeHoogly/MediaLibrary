@@ -33,12 +33,21 @@ echo --------------------------------------------------------------
 echo.
 
 "%PY%" verifier_plan_annee.py
+if errorlevel 3 goto RIEN_A_RANGER
 if errorlevel 2 goto SANS_VERDICT
 
 echo.
 choice /c ON /n /m "Continuer vers l'apercu du rangement ? [O]ui / [N]on : "
 if errorlevel 2 goto FIN
 goto APERCU
+
+:RIEN_A_RANGER
+echo.
+echo   Rien ne peut etre range : le plan est vide, ou chaque cible
+echo   est deja prise. Le serveur n est PAS arrete.
+echo   Doublons : bat 36. Voisins et differents : a regarder, puis
+echo   renommer - le detail est dans plan_annee_collisions.json.
+goto FIN
 
 :SANS_VERDICT
 echo.

@@ -1,4 +1,4 @@
-# Reprise — MediaLibrary, après le 16 septembre 2026 (matin)
+# Reprise — MediaLibrary, après le 16 septembre 2026
 
 > **Ce fichier est ÉPHÉMÈRE.** Il décrit un état, pas des règles. Les règles
 > vivent dans `CLAUDE.md`, le plan dans `ROADMAP.md`, les verdicts dans
@@ -9,19 +9,17 @@
 
 ## 0. L'état, en dix lignes
 
-**16/09, trois livraisons.**
-1. **B5/B6 mesurés.** 26 vraies Motion Photos (le banc en voyait 2 420 : cache
-   jamais revérifié → `--frais` ; XMP laissé par le strip → `xmp-residuel`).
-   Mike a passé le **bat 42** : 24 strippées, **il en reste 2** (> 8 Mo,
-   sautées). Le **bat 43** (purge des `_original`) attend son coup d'œil.
-   O8/O9 **clos par la mesure** (curateur : 3,5 s par passe).
-2. **Bat 51 réparé avant usage** : lit une COPIE fraîche (< 30 min, jamais
-   `photos.db`), traite les trois caches, juge l'âge sur la CRÉATION du
-   fichier. ~103 Mo à rendre — **Mike le lance**.
-3. **P1, la veille : livrée, vue tourner** (calque après 5 min, « Lancer la
-   veille » dans le menu du compte → vrai plein écran). Trois réglages à
-   confirmer dans `QUESTIONS_MIKE.md`. Au passage, **`/api/random` ne cite
-   plus le `PRIVE` d'un autre**.
+**16/09, quatre livraisons, et Mike a passé les bats 42, 43, 51 et 26.**
+1. **B5/B6 mesurés.** 26 vraies Motion Photos → bat 42 : 24 strippées, **il
+   en reste 2** (> 8 Mo, sautées) ; bat 43 : les 24 `_original` en
+   quarantaine. O8/O9 **clos par la mesure**.
+2. **Bat 51 réparé puis passé** : copie fraîche, trois caches, âge de
+   création. 2 778 vignettes / 90 Mo rendus ; plus rien de vieux à purger.
+3. **P1, la veille : livrée, confirmée par Mike, lieu ajouté** (« Paris ·
+   septembre 2025 »). `/api/random` ne cite plus le `PRIVE` d'un autre.
+4. **Bat 26** : 19 cibles prises sur 19 (14 doublons, 4 voisins,
+   1 différent). Il arrêtait le serveur pour rien : il s'arrête maintenant
+   AVANT (`verifier_plan_annee` rend 3).
 
 Acquis des jours d'avant, qui ne se refont pas : campagne de retag
 ABANDONNÉE (pas de candidat sous 4 Go, tirage de 60 photos gelé) ; grille
@@ -32,21 +30,20 @@ un compte par propriétaire (Mike admin, Flo, Papa).
 
 ## 1. Par où commencer
 
-1. **Lire `QUESTIONS_MIKE.md`** : la réponse de Mike sur la veille (30 min /
-   pas de reprise / légende) — une constante par réglage dans `ui/global.js`.
-2. **Si Mike a lancé le bat 51** : relancer
-   `mesure_caches_vignettes.py --base copie.db` (après
-   `mesure_copie_base.py`) et consigner le reste d'orphelins.
-3. **P2, la démo de bienvenue et son e-mail** — c'est le dernier item
-   « produit » de la feuille de route, et il devait venir EN DERNIER : la
-   veille est la dernière brique d'interface demandée. Commencer par relire
-   `/aide` à l'écran (Chrome) et lister ce qu'un nouveau venu ne trouve pas.
-4. **D1, la copie hors site** : à Mike seul.
+1. **P2, la démo de bienvenue et son e-mail** — le dernier item « produit »,
+   et son heure est venue : la veille était la dernière brique d'interface
+   demandée. Relire `/aide` DANS CHROME, lister ce qu'un nouveau venu (Flo,
+   Papa) ne trouve pas : se connecter, déposer une photo ou un dossier,
+   nommer un visage ou un animal, chercher par le sens. Puis décider avec
+   Mike : `/aide` enrichie, ou parcours guidé au premier login. L'e-mail
+   s'écrit EN DERNIER, court, sans jargon : adresse, compte, trois gestes.
+2. **D1, la copie hors site** : à Mike seul — le lui rappeler une fois.
 
-**Ce qui n'attend que Mike** : bat 51, bat 43 (après les stills), bat 26
-pour les 19 fichiers d'`_A TRIER`, les deux détachements git (A6), la
-fenêtre de réversibilité des 68 copies (**vers le 13/10**), le KB Windows à
-masquer (**vers le 16/10**), et couper « Photo animée » sur le téléphone.
+**Ce qui n'attend que Mike** : le bat 36 pour les 14 doublons d'`_A TRIER`
+(+ regarder 4 voisins, renommer `20260731_232718.mp4`), le bat 24 (corbeille,
+dont les 24 `_original`), les deux détachements git (A6), la fenêtre des
+68 copies (**vers le 13/10**), le KB Windows (**vers le 16/10**), et couper
+« Photo animée » sur le téléphone.
 
 ---
 

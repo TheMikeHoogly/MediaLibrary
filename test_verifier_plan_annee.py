@@ -206,5 +206,66 @@ class LeBat26LeLANCE(unittest.TestCase):
                 self.assertFalse(l.endswith('('), ligne)
 
 
+class RienNePeutBouger(unittest.TestCase):
+    """16/09 : 19 cibles prises sur 19, et le bat 26 coupait quand meme le
+    serveur. Le code RIEN (3) le fait s'arreter avant."""
+
+    def _plan(self, d, moves):
+        p = Path(d) / 'plan.json'
+        p.write_text(json.dumps({'moves': moves}), encoding='utf-8')
+        return str(p)
+
+    def test_plan_vide(self):
+        with tempfile.TemporaryDirectory() as d:
+            self.assertEqual(P.main(['--plan', self._plan(d, [])]), P.RIEN)
+
+    def test_toutes_prises_sans_exiftool(self):
+        with tempfile.TemporaryDirectory() as d:
+            dst = Path(d) / 'pris.jpg'
+            dst.write_bytes(b'x')
+            vrai = P.V.exiftool
+            P.V.exiftool = lambda: None
+            try:
+                code = P.main(['--plan', self._plan(d, [{'src': str(Path(d) / 's.jpg'),
+                                                         'dst': str(dst)}])])
+            finally:
+                P.V.exiftool = vrai
+            self.assertEqual(code, P.RIEN)
+
+    def test_une_libre_sans_exiftool_reste_2(self):
+        with tempfile.TemporaryDirectory() as d:
+            dst = Path(d) / 'pris.jpg'
+            dst.write_bytes(b'x')
+            vrai = P.V.exiftool
+            P.V.exiftool = lambda: None
+            try:
+                code = P.main(['--plan', self._plan(d, [
+                    {'src': 'a.jpg', 'dst': str(dst)},
+                    {'src': 'b.jpg', 'dst': str(Path(d) / 'libre.jpg')}])])
+            finally:
+                P.V.exiftool = vrai
+            self.assertEqual(code, 2)
+
+    def test_aucune_collision_zero(self):
+        with tempfile.TemporaryDirectory() as d:
+            ancien = P.RAPPORT
+            P.RAPPORT = Path(d) / 'r.json'
+            try:
+                code = P.main(['--plan', self._plan(d, [
+                    {'src': 'a.jpg', 'dst': str(Path(d) / 'libre.jpg')}])])
+            finally:
+                P.RAPPORT = ancien
+            self.assertEqual(code, 0)
+
+    def test_le_bat_lit_3_AVANT_2(self):
+        bat = (Path(__file__).resolve().parent / '26 - Ranger par annee.bat'
+               ).read_text(encoding='ascii')
+        self.assertLess(bat.index('if errorlevel 3 goto RIEN_A_RANGER'),
+                        bat.index('if errorlevel 2 goto SANS_VERDICT'))
+        rien = bat[bat.index(':RIEN_A_RANGER'):bat.index(':SANS_VERDICT')]
+        self.assertIn('goto FIN', rien)
+        self.assertNotIn('commande_serveur', rien)
+
+
 if __name__ == '__main__':
     unittest.main(verbosity=2)

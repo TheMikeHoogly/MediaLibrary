@@ -155,6 +155,13 @@ def comparer(src, dst, exe, hashes, durees, noms):
     return DOUBLON, 'meme %s que la cible : doublon' % quoi
 
 
+# Code de sortie « rien ne peut bouger » (16/09). Le bat 26 le lit pour
+# s'arreter AVANT d'arreter le serveur : le 16/09, 19 cibles sur 19 etaient
+# prises, et le bat a quand meme coupe le serveur puis rejoue deux fois
+# « 19 skip » -- une etape qui ne pouvait pas aboutir (regle 9).
+RIEN = 3
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser()
     ap.add_argument('--plan', default=str(PLAN_DEFAUT))
@@ -167,7 +174,7 @@ def main(argv=None):
           % (len(moves), age / 60))
     if not moves:
         print('VERDICT : rien a ranger.')
-        return 0
+        return RIEN
 
     prises = [m for m in moves if os.path.exists(m['dst'])]
     libres = len(moves) - len(prises)
@@ -182,7 +189,7 @@ def main(argv=None):
     exe = V.exiftool()
     if not exe:
         print('exiftool ABSENT : les collisions ne peuvent pas etre jugees.')
-        return 2
+        return RIEN if libres == 0 else 2
 
     images, videos = [], []
     for m in prises:
@@ -243,6 +250,11 @@ def main(argv=None):
              len(par_verdict.get(ILLISIBLE) or [])))
     print('Une collision n est PAS une permission d effacer.')
     _ecrire(par_verdict, libres, a.plan)
+    if libres == 0:
+        print()
+        print('RIEN NE PEUT BOUGER : toutes les cibles sont prises. Le rangement')
+        print('sauterait les %d -- inutile d arreter le serveur pour ca.' % len(prises))
+        return RIEN
     return 0
 
 

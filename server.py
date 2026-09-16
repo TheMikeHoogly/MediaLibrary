@@ -16659,10 +16659,24 @@ class Handler(BaseHTTPRequestHandler):
                 if isinstance(e, dict) and not e.get('failed') and not e.get('video')
                 and os.path.splitext(k)[1].lower() in IMAGE_EXT]
         tirees = random.sample(cles, min(n, len(cles)))
+        # Le LIEU (Mike, 16/09) : la même vue que la galerie (`_faits_pour`),
+        # pas un deuxième assemblage. Un lieu qui échoue n'éteint pas la veille.
+        try:
+            ctx = _faits_ctx()
+        except Exception:                                     # noqa: BLE001
+            ctx = None
         items = []
         for k in tirees:
             e = STORE.data.get(k) or {}
-            items.append({'k': k, 't': _best_time(k, e) or 0})
+            it = {'k': k, 't': _best_time(k, e) or 0}
+            if ctx is not None:
+                try:
+                    f = _faits_pour(k, e, ctx) or {}
+                    if f.get('lieu'):
+                        it['l'] = f['lieu']
+                except Exception:                             # noqa: BLE001
+                    pass
+            items.append(it)
         self._send(200, json.dumps({'items': items, 'total': len(cles)},
                                    ensure_ascii=False).encode(), 'application/json')
 

@@ -61,11 +61,14 @@ class Faux:
         self.envoye = (code, json.loads(corps))
 
 
-def veille(data, qui='mike', n='120'):
+def veille(data, qui='mike', n='120', casse=''):
     ns = {'urllib': urllib, 'json': json, 'os': os, 'random': random,
           'IMAGE_EXT': {'.jpg', '.png'}, 'VEILLE_TIRAGE_MAX': 400,
           'utilisateur_vu': lambda: qui,
           '_best_time': lambda k, e: e.get('t', 0),
+          '_faits_ctx': lambda: (1 / 0) if casse == 'ctx' else {},
+          '_faits_pour': lambda k, e, c: ((1 / 0) if casse == 'pour'
+                                          else {'lieu': e.get('l')}),
           'STORE': type('S', (), {'data': data})()}
     exec(compile(ast.Module([_noeud('_serve_veille')], []), str(SERVER), 'exec'), ns)
     f = Faux('/api/veille?n=' + n)
@@ -85,6 +88,18 @@ class LaRoute(unittest.TestCase):
         self.assertEqual(sorted(i['k'] for i in d['items']), ['a.jpg', 'f.JPG'])
         self.assertEqual(d['total'], 2)
         self.assertEqual([i['t'] for i in d['items'] if i['k'] == 'a.jpg'], [5])
+
+    def test_le_lieu_de_la_galerie_accompagne_la_photo(self):
+        _c, d = veille({'a.jpg': {'l': 'Lausanne'}, 'b.jpg': {}})
+        par = {i['k']: i for i in d['items']}
+        self.assertEqual(par['a.jpg']['l'], 'Lausanne')
+        self.assertNotIn('l', par['b.jpg'])
+
+    def test_un_lieu_en_panne_n_eteint_pas_la_veille(self):
+        for casse in ('ctx', 'pour'):
+            _c, d = veille({'a.jpg': {'l': 'X'}}, casse=casse)
+            self.assertEqual([i['k'] for i in d['items']], ['a.jpg'])
+            self.assertNotIn('l', d['items'][0])
 
     def test_n_est_borne_et_sans_remise(self):
         data = {'p%d.jpg' % i: {} for i in range(1000)}
@@ -128,6 +143,9 @@ class LeClient(unittest.TestCase):
         i = GLOBAL_JS.index('if (!d || !d.nom) return;')
         self.assertGreater(GLOBAL_JS.index('Veille.armer()'), i)
         self.assertEqual(GLOBAL_JS.count('Veille.armer()'), 1)
+
+    def test_la_legende_porte_le_lieu(self):
+        self.assertIn('[it.l, dateDe(it.t)]', GLOBAL_JS)
 
     def test_la_vignette_porte_veille_1_et_la_taille_1600(self):
         self.assertIn("'/api/thumb?s=1600&veille=1&key='", GLOBAL_JS)

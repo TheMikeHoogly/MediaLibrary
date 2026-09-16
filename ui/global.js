@@ -472,7 +472,8 @@
         apres.src = img.src;
         apres.classList.add('on'); avant.classList.remove('on');
         var dt = calque.querySelector('.veille__date');
-        dt.textContent = dateDe(it.t);
+        // « Lausanne · août 2021 » : le lieu d'abord, c'est lui qu'on cherche.
+        dt.textContent = [it.l, dateDe(it.t)].filter(Boolean).join(' \u00b7 ');
         dt.hidden = !dt.textContent;
         pas = setTimeout(suivante, PAS);
       };
