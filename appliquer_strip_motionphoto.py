@@ -64,13 +64,14 @@ def exiftool():
 
 def candidats(rapport):
     """[(chemin, entree)] des vraies Motion du compte, tries — jamais les
-    `sef-sans-video`, jamais un fichier deja accompagne de son `_original`
+    `sef-sans-video` ni les `xmp-residuel` (MM.NON_MOTION), jamais un fichier
+    deja accompagne de son `_original`
     (etat (1) deja atteint, par ce script ou par l'ancien `repair_file`)."""
     out = []
     for k, ent in sorted(rapport.get('fichiers', {}).items()):
         if not isinstance(ent, dict) or 'err' in ent:
             continue
-        if MM.genre_effectif(ent) in (None, 'sef-sans-video'):
+        if MM.genre_effectif(ent) in (None,) + MM.NON_MOTION:
             continue
         out.append((k, ent))
     return out

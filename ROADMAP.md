@@ -191,7 +191,7 @@ Dans l'ordre où je le ferais, **reclassé le 14/09 au soir** :
 | — | ~~La prochaine campagne~~ | **ABANDONNÉE 15/09** par Mike — pas de candidat | — |
 | — | ~~Unifier les producteurs de fiches (§ C3)~~ | **LIVRÉ 15/09** — 4 sur 5, voir ci-dessous | fait |
 | — | ~~Le chargement à la demande (§ C3)~~ | **LIVRÉ 15/09** — fiches légères, 6,6 s → 3,7 s | fait |
-| **3** | **B5, B6** : ce qui demandait le serveur arrêté ou le GPU | moi | petit |
+| — | ~~B5, B6~~ | **MESURÉS 16/09** — 26 Motion Photos ; O8/O9 clos | fait |
 | **5** | **La veille en plein écran** (P1, demandé le 14/09) | Mike a demandé, reste à instruire | moyen |
 | **6** | **La copie hors site** (§ D1) | **Mike** | à lui seul |
 | **7** | **La démo de bienvenue et son e-mail** (P2) | Mike a demandé — **en DERNIER** | moyen |
@@ -499,16 +499,39 @@ dit, et ce qu'il ne dit pas :
   alimenter une **page de préférence en aveugle** — deux listes de mots-clés
   pour la même photo, sans dire laquelle vient de qui.
 
-**B5. Re-mesurer les Motion Photos arrivées depuis le 03/09** — demande le
-serveur arrêté, donc impossible pendant la campagne, trivial maintenant.
+**B5. Les Motion Photos depuis le 03/09 — MESURÉ le 16/09.** **26 vraies
+Motion Photos, 0,09 Go de vidéo**, toutes chez Mike (2021 : 4 — les
+`Sandra (5x).jpeg` rapatriées par le bat 32 ; 2024 : 12 ; 2025 : 1 ; 2026 : 9,
+dont les arrivées du 12/08). Le bat 42 peut les ramasser quand Mike le veut ;
+le vrai correctif reste le réglage « Photo animée » du téléphone.
+**Le premier chiffre était FAUX, deux fois** : la relance a d'abord rendu
+2 420, le compte du 01/09 recopié de son cache. (1) Le cache ne regardait
+jamais si le fichier avait changé → `--frais` (re-stat, compteur d'étendue :
+39 079 fichiers sur 39 871 avaient bougé, la campagne de retag ayant réécrit
+les XMP). (2) **Le strip retire la vidéo mais LAISSE le XMP qui l'annonce** :
+454 fichiers annonçaient 4 Mo de vidéo dans 1 Mo de fichier, 1 950 autres
+un `MotionPhoto=1` sans aucune boîte. Genre `xmp-residuel` (**2 404**) : le
+XMP ne compte que si une boîte `ftyp` plausible est là. (3) Le rapport
+gardait 1 162 entrées de fichiers sortis de l'index, que le bat 42 lisait
+aussi — le rapport ne garde plus que l'index, et le bat 42 lit la liste
+`NON_MOTION` du banc au lieu de la sienne. Reste connu : 2 fichiers `google`
+de plus de 8 Mo sans taille sont re-sondés à chaque passe (sans effet).
 
-**B6. Le reste d'audit : O8 et O9.** Matmul par visage et backfill sémantique
-— les deux touchent des boucles de CALCUL, donc le GPU : c'est maintenant
-qu'elles sont mesurables. **O15 est outillé** : les trois caches de vignettes
-pèsent 722 Mo dont **541 Mo d'orphelins**, et `51 - Purger les vignettes
-orphelines.bat` attend un geste de Mike ; la réversibilité y est la
-RÉGÉNÉRATION, pas une corbeille. **À re-mesurer d'abord** : le chiffre date
-d'avant que la campagne pose 40 000 vignettes.
+**B6. Le reste d'audit — O8 et O9 CLOS PAR LA MESURE (16/09).**
+**O8** (`mesure_curateur.py`, sous Windows, 65 203 visages, 592 prototypes) :
+la passe ADD coûte **3,5 s**, pas « des minutes ». Le calcul en bloc est
+identique (65 203/65 203, écart 6e-7) et 2,6× plus rapide : 2 s gagnées
+toutes les 240 s, soit ~1 % d'un cœur. **Ne vaut pas la chirurgie du
+monolithe** ; le banc reste si la file grossit. **O9** (mesuré sur la copie) :
+le recalcul `deja`+`reste` coûte 90–160 ms par lot de 16, la reconstruction
+de la matrice 0,24 s — sous 1 % d'un encodage. Rien à faire.
+**O15 re-mesuré** (`mesure_caches_vignettes.py --base copie.db`, nouveau :
+il ouvrait `photos.db`, règle 4) : le bat 51 a DÉJÀ tourné le 10/09 (deux
+journaux `docs/undo_vignettes_20260910_*`). Il reste **106,7 Mo
+d'orphelins** sur 1 552 Mo (3 194 vignettes de photos renommées ou
+dédoublonnées). Pas urgent ; le bat 51 quand Mike veut. **Autre porte
+connue** : `appliquer_purge_vignettes.py` ouvre encore `photos.db` par
+`open_store` — à traiter comme le banc le jour où on y touche.
 
 **B7. L'ordre inverse maintenance / scan — FERMÉ, et je l'ai vu tourner.**
 Cette ligne disait « non mesuré, non corrigé » ; **c'était faux**, et je

@@ -160,6 +160,133 @@ class Candidats(unittest.TestCase):
             M.charger_cles('photos.db')
 
 
+class XmpResiduel(unittest.TestCase):
+    """15/09 : le strip laisse le XMP. 454 fichiers annoncaient une video
+    plus grosse que le fichier lui-meme."""
+
+    def _f(self, d, data):
+        p = Path(d) / 'x.jpg'
+        p.write_bytes(data)
+        return str(p)
+
+    def test_video_annoncee_plus_grosse_que_le_fichier(self):
+        with tempfile.TemporaryDirectory() as d:
+            corps = xmp(b'MicroVideo="1" MicroVideoOffset="4441609"')
+            ent = M.sonder(self._f(d, corps), 1 << 20)
+            self.assertEqual(ent['g'], 'xmp-residuel')
+            self.assertNotIn('v', ent)
+            self.assertEqual(ent.get('xr'), 1)
+            self.assertEqual(M.genre_effectif(ent), 'xmp-residuel')
+
+    def test_offset_plausible_mais_pas_de_ftyp(self):
+        with tempfile.TemporaryDirectory() as d:
+            corps = xmp(b'MotionPhoto="1" MicroVideoOffset="100"') + b'\x00' * 200
+            ent = M.sonder(self._f(d, corps), 1 << 20)
+            self.assertEqual(ent['g'], 'xmp-residuel')
+
+    def test_vraie_video_verifiee(self):
+        with tempfile.TemporaryDirectory() as d:
+            corps = xmp(b'MicroVideo="1" MicroVideoOffset="3016"')
+            ent = M.sonder(self._f(d, corps + MP4), 1 << 20)
+            self.assertEqual((ent['g'], ent['v'], ent.get('xv')), ('google', 3016, 1))
+            self.assertNotIn('xr', ent)
+
+    def test_les_deux_residuel_devient_sef(self):
+        with tempfile.TemporaryDirectory() as d:
+            corps = xmp(b'MicroVideo="1" MicroVideoOffset="999999"') + b'SEFH' + b'SEFT'
+            ent = M.sonder(self._f(d, corps), 1 << 20)
+            self.assertEqual(M.genre_effectif(ent), 'sef-sans-video')
+
+    def test_google_sans_offset_et_sans_boite(self):
+        with tempfile.TemporaryDirectory() as d:
+            ent = M.sonder(self._f(d, xmp(b'MotionPhoto="1"')), 1 << 20)
+            self.assertEqual(ent['g'], 'xmp-residuel')
+
+    def test_google_sans_offset_fichier_plus_grand_que_la_fenetre(self):
+        with tempfile.TemporaryDirectory() as d:
+            corps = xmp(b'MotionPhoto="1"') + b'\x00' * 5000
+            ent = M.sonder(self._f(d, corps), 1024)
+            self.assertEqual(ent['g'], 'google')  # inconnu : on ne conclut pas
+
+    def test_cache_xmp_non_verifie_est_resonde(self):
+        with tempfile.TemporaryDirectory() as d:
+            ancien = M.RAPPORT
+            M.RAPPORT = Path(d) / 'r.json'
+            try:
+                M.ecrire_cache({'a': {'t': 1, 'm': 1, 'g': 'google', 'v': 9, 'me': 'xmp'},
+                                'b': {'t': 1, 'm': 1, 'g': 'google', 'v': 9, 'me': 'xmp', 'xv': 1},
+                                'c': {'t': 1, 'm': 1, 'g': None},
+                                'd': {'t': 1, 'm': 1, 'g': 'google'},
+                                'e': {'t': 1, 'm': 1, 'g': 'xmp-residuel', 'xr': 1}}, {})
+                self.assertEqual(set(M.charger_cache()), {'b', 'c', 'e'})
+            finally:
+                M.RAPPORT = ancien
+
+    def test_le_strip_ne_prend_pas_les_residuels(self):
+        import appliquer_strip_motionphoto as S
+        rap = {'fichiers': {'a': {'g': 'xmp-residuel', 't': 1}, 'b': {'g': 'google', 'v': 5},
+                            'c': {'g': 'samsung'}}}
+        self.assertEqual([k for k, _ in S.candidats(rap)], ['b'])
+
+
+class RapportLimiteALIndex(unittest.TestCase):
+    def test_entree_hors_index_retiree(self):
+        with tempfile.TemporaryDirectory() as d:
+            ancien = M.RAPPORT
+            M.RAPPORT = Path(d) / 'r.json'
+            try:
+                f = Path(d) / 'a.jpg'
+                f.write_bytes(STILL)
+                db = Path(d) / 'copie.db'
+                cx = sqlite3.connect(db)
+                cx.execute('CREATE TABLE tags (k TEXT PRIMARY KEY, v TEXT)')
+                cx.execute('INSERT INTO tags VALUES (?, ?)', (str(f), '{}'))
+                cx.commit()
+                cx.close()
+                M.ecrire_cache({M.nk(Path(d) / 'parti.jpg'):
+                                {'t': 9, 'm': 9, 'g': 'les-deux', 'v': 5, 'me': 'fenetre', 'fv': 2}}, {})
+                self.assertEqual(M.main(['--base', str(db)]), 0)
+                rap = json.loads(M.RAPPORT.read_text(encoding='utf-8'))
+                self.assertEqual(set(rap['fichiers']), {M.nk(f)})
+            finally:
+                M.RAPPORT = ancien
+
+
+class Fraicheur(unittest.TestCase):
+    """15/09 : un cache jamais re-verifie a rendu le compte d'AVANT le strip."""
+
+    def test_strip_invalide_l_entree(self):
+        with tempfile.TemporaryDirectory() as d:
+            f = Path(d) / 'a.jpg'
+            f.write_bytes(STILL + MP4 + b'\x00' * 40 + b'SEFT')
+            ent = M.sonder(str(f), 1 << 20)
+            self.assertTrue(ent.get('v'))
+            g = Path(d) / 'b.jpg'
+            g.write_bytes(STILL)
+            h = Path(d) / 'c.jpg'
+            fichiers = {M.nk(f): dict(ent), M.nk(g): M.sonder(str(g), 1 << 20),
+                        M.nk(h): {'err': 'x', 'nom': 'c.jpg'}}
+            h.write_bytes(STILL)
+            # le strip : meme mtime (exiftool -P), taille plus petite
+            st = os.stat(f)
+            f.write_bytes(STILL)
+            os.utime(f, (st.st_atime, st.st_mtime))
+            disparu = Path(d) / 'z.jpg'
+            fichiers[M.nk(disparu)] = {'t': 1, 'm': 1, 'g': None}
+            r = M.perimees(fichiers, [str(f), str(g), str(h), str(disparu)], 2)
+            self.assertEqual(r, (4, 1, 2, 1))
+            self.assertEqual(set(fichiers), {M.nk(g)})
+
+    def test_mtime_seul_invalide(self):
+        with tempfile.TemporaryDirectory() as d:
+            f = Path(d) / 'a.jpg'
+            f.write_bytes(STILL)
+            fichiers = {M.nk(f): M.sonder(str(f), 1 << 20)}
+            st = os.stat(f)
+            os.utime(f, (st.st_atime, st.st_mtime + 10))
+            self.assertEqual(M.perimees(fichiers, [str(f)]), (1, 0, 1, 0))
+
+
 class Divers(unittest.TestCase):
     def test_annee_depuis_le_chemin(self):
         self.assertEqual(M.annee_de(r'N:\Photos\Photos Flo\2022\x.jpg'), '2022')

@@ -1,4 +1,4 @@
-# Reprise — MediaLibrary, après la journée du 15 septembre 2026
+# Reprise — MediaLibrary, après le matin du 16 septembre 2026
 
 > **Ce fichier est ÉPHÉMÈRE.** Il décrit un état, pas des règles. Les règles
 > vivent dans `CLAUDE.md`, le plan dans `ROADMAP.md`, les verdicts dans
@@ -10,8 +10,14 @@
 
 ## 0. L'état, en dix lignes
 
+**16/09 au matin** : B5/B6 MESURÉS. **26 vraies Motion Photos** (0,09 Go) —
+le banc en voyait 2 420 : cache jamais revérifié (`--frais`) et XMP laissé
+par le strip (`xmp-residuel`, 2 404). O8/O9 clos par la mesure (3,5 s par
+passe de curateur). O15 : 106,7 Mo d'orphelins, bat 51 quand Mike veut.
+Prochain pas : **la veille en plein écran (P1)**.
+
 **15/09 au soir** : producteurs de fiches unifiés, puis fiches légères sur
-la grille du fonds entier (6,6 s → 3,7 s). Prochain pas : B5/B6.
+la grille du fonds entier (6,6 s → 3,7 s).
 
 **Trois livraisons le 14/09.** La marche du NAS coupée sur la grille récursive
 (`/files?dir=1&rec=1` : **23,4 s → 6,5 s**, `parcours` 16,8 s → **48 ms**) ;
@@ -68,7 +74,7 @@ grille du fonds entier passe de **6,6 s à 3,7 s** et de 33,6 à 20,0 Mo.
 dans `gallery.html`. Union vérifiée identique sur 44 450 fiches. Visionneuse
 sur une photo jamais chargée : « (…) » puis la bonne fiche.
 
-**Maintenant** : B5/B6 (petites mesures), la **veille en plein écran** (P1), la
+**Maintenant** : ~~B5/B6~~ (FAIT 16/09), la **veille en plein écran** (P1), la
 copie hors site (D1, à Mike), et **en dernier** la démo de bienvenue et son
 e-mail (P2) — un mode d'emploi écrit avant que l'interface soit figée décrit
 une interface qui n'existera plus.
@@ -107,6 +113,11 @@ et le KB Windows à masquer **vers le 16/10**.
 ---
 
 ## 3. Les pièges
+
+- **Un rapport de sonde est un CACHE** : `docs/motion_photos.json` ne se
+  croit qu'avec `--frais`, et le bat 42 le lit tel quel. Relancer le banc
+  (5 passes de 480 s, `--fils 4`) avant tout bat 42.
+- **Le XMP d'une Motion Photo survit au strip** : ne jamais compter sur lui.
 
 - **exiftool et les chemins accentués** : passés sur la ligne de commande, ils
   arrivent mutilés (« File not found », une entrée de moins dans le lot,

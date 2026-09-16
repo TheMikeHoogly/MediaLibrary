@@ -35,8 +35,13 @@ Il n'efface RIEN. Il rend un compte et, avec `--liste`, ecrit la liste des
 orphelines pour qu'un outil de purge — ecrit apres, et separement — ait de quoi
 travailler.
 
-  python mesure_caches_vignettes.py
-  python mesure_caches_vignettes.py --liste _vignettes_orphelines.json
+  python mesure_caches_vignettes.py --base copie.db
+  python mesure_caches_vignettes.py --base copie.db --liste _vignettes_orphelines.json
+
+`--base` (15/09) : l'index se lit dans une COPIE, en lecture seule. Sans lui,
+le banc ouvre `photos.db` par `open_store`, qui pose ses PRAGMA et ses
+`CREATE TABLE IF NOT EXISTS` sur la base du serveur -- la regle 4 l'interdit.
+Le chemin sans `--base` reste pour les outils qui l'appelaient, et le DIT.
 """
 
 import argparse
@@ -82,6 +87,23 @@ def noms_vivants(tags, faces, animals):
             'animal_thumbs': animal}
 
 
+def lire_copie(base):
+    """(tags, faces, animaux) d'une COPIE, en lecture seule. Seules les CLES
+    et les `bbox` servent : les vecteurs ne sont pas lus."""
+    import sqlite3
+    if Path(base).name == 'photos.db':
+        print('REFUS : ce banc lit une COPIE (mesure_copie_base.py), jamais photos.db')
+        sys.exit(2)
+    cx = sqlite3.connect('file:%s?mode=ro' % Path(base).resolve().as_posix(), uri=True)
+    try:
+        tags = {k: None for (k,) in cx.execute('SELECT k FROM tags')}
+        faces = {k: json.loads(v) for k, v in cx.execute('SELECT k, v FROM faces')}
+        animaux = {k: json.loads(v) for k, v in cx.execute('SELECT k, v FROM animals')}
+    finally:
+        cx.close()
+    return tags, faces, animaux
+
+
 def inventorier(dossier):
     """(n, octets, plus_vieux_jours) — un seul `scandir`, pas de `stat` en
     plus : ces dossiers portent des dizaines de milliers d'entrees."""
@@ -107,15 +129,22 @@ def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.split('\n')[1])
     ap.add_argument('--liste', default='',
                     help='ecrire la liste des orphelines dans ce JSON')
+    ap.add_argument('--base', default='',
+                    help='COPIE de la base (mesure_copie_base.py) -- recommande')
     a = ap.parse_args(argv)
 
-    from store_sqlite import open_store
-    if not (RACINE / 'photos.db').exists():
-        print('  photos.db absente.')
-        return 2
-    tags = open_store(RACINE / 'tags_index.json', RACINE, None).data
-    faces = open_store(RACINE / 'faces_index.json', RACINE, None).data
-    animaux = open_store(RACINE / 'animals_index.json', RACINE, None).data
+    if a.base:
+        tags, faces, animaux = lire_copie(a.base)
+        print('  index lu dans la COPIE %s (lecture seule)' % a.base)
+    else:
+        from store_sqlite import open_store
+        if not (RACINE / 'photos.db').exists():
+            print('  photos.db absente.')
+            return 2
+        print('  ATTENTION : sans --base, photos.db est ouverte (regle 4)')
+        tags = open_store(RACINE / 'tags_index.json', RACINE, None).data
+        faces = open_store(RACINE / 'faces_index.json', RACINE, None).data
+        animaux = open_store(RACINE / 'animals_index.json', RACINE, None).data
 
     vivants = noms_vivants(tags, faces, animaux)
 

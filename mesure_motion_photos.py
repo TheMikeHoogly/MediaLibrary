@@ -22,13 +22,19 @@ Un fichier detecte SANS taille XMP passe par une FENETRE de queue (8 Mo par
 defaut) : premier `ftyp` (debut du MP4), remonte au `FF D9` (fin du still) —
 comme `verifier_strip_motionphoto.offset_video`, sans lire le fichier entier.
 
-REPRENABLE : cache par fichier (re-sonder un fichier MODIFIE = supprimer
-le rapport) dans `docs/motion_photos.json` —
+REPRENABLE : cache par fichier dans `docs/motion_photos.json` —
 le canal du banc tue a 600 s, relancer jusqu'a « TERMINE ». `--pause-s` menage
 la machine (surchauffe du 30-31/08).
 
     mesure_motion_photos.py --base copie.db [--budget-s 450] [--pause-s 0.05]
                             [--limite N] [--fenetre-mo 8] [--exemples 10]
+                            [--frais]
+
+`--frais` (15/09) : le cache ne regardait JAMAIS si le fichier avait change.
+Apres le strip du 03/09, une relance a rendu 2 420 Motion Photos -- le chiffre
+du 01/09, recopie de son propre cache. `--frais` re-stat chaque entree et
+re-sonde celle dont la taille ou le mtime a bouge ; le compteur d'etendue
+(examinees / identiques / changees / disparues) est imprime a chaque passe.
 """
 import argparse
 import json
@@ -85,6 +91,11 @@ def annee_de(cle):
     return m.group(1) if m else '????'
 
 
+# Ce que le compte ECARTE : ni l'un ni l'autre n'a de video a reprendre. Les
+# outils qui ECRIVENT (bat 42) lisent cette liste -- une seule porte.
+NON_MOTION = ('sef-sans-video', 'xmp-residuel')
+
+
 def genre_effectif(ent):
     """Le genre au moment du COMPTE : un `SEFT` sans mp4 trouve n'est pas une
     Motion Photo — c'est un trailer SEF de metadonnees Samsung (568 vus chez
@@ -92,6 +103,8 @@ def genre_effectif(ent):
     g = ent.get('g')
     if g == 'samsung' and not ent.get('v'):
         return 'sef-sans-video'
+    if g == 'xmp-residuel':
+        return 'xmp-residuel'
     return g
 
 
@@ -182,6 +195,25 @@ def sonder(chemin, fenetre_o):
             queue = tete
         genre, video_o = detecter(tete, queue)
         methode = 'xmp' if video_o else None
+        residuel = False
+        if video_o:
+            # 15/09 : le strip (`-trailer:all=`) retire la video mais LAISSE le
+            # XMP qui la declare. 454 fichiers de 2021 annoncaient 4 Mo de
+            # video dans 1 Mo de fichier. Le XMP dit une intention ; seule une
+            # vraie boite `ftyp` a l'offset annonce dit qu'elle est la.
+            # Tolerance de 64 octets autour de l'offset annonce : les
+            # conventions (padding du Container v2) varient d'un telephone a
+            # l'autre ; un fichier strippe, lui, n'a plus AUCUNE boite.
+            if video_o >= taille:
+                ok = False
+            else:
+                base = max(0, taille - video_o - 64)
+                f.seek(base)
+                fen = f.read(256)
+                ok = any(_ftyp_plausible(fen, i) for i in range(len(fen))
+                         if fen.startswith(b'ftyp', i))
+            if not ok:
+                residuel, video_o, methode = True, None, None
         if genre and video_o is None:
             if (genre == 'samsung' and b'SEFH' in queue
                     and b'MotionPhoto_Data' not in queue):
@@ -191,9 +223,20 @@ def sonder(chemin, fenetre_o):
                 f.seek(base)
                 video_o = taille_video_fenetre(f.read(), base, taille)
                 methode = 'fenetre' if video_o else None
+                # La fenetre a couvert TOUT le fichier et n'a trouve aucune
+                # boite : le XMP Google ment (strip passe). 1 427 fichiers de
+                # 2024-2025 le 15/09, comptes « sans taille » jusque-la.
+                if video_o is None and base == 0 and genre in ('google', 'les-deux'):
+                    residuel = True
         suspect = (genre is None and queue[-2:] != b'\xff\xd9'
                    and b'ftyp' in queue)
+    if residuel and not video_o:
+        genre = {'google': 'xmp-residuel', 'les-deux': 'samsung'}.get(genre, genre)
     ent = {'t': taille, 'm': int(st.st_mtime), 'g': genre}
+    if residuel:
+        ent['xr'] = 1
+    if methode == 'xmp':
+        ent['xv'] = 1  # taille XMP VERIFIEE par la boite ftyp
     if video_o:
         ent['v'] = int(video_o)
         ent['me'] = methode
@@ -202,6 +245,33 @@ def sonder(chemin, fenetre_o):
     if suspect:
         ent['s'] = 1
     return ent
+
+
+def perimees(fichiers, cles, fils=1):
+    """Retire du cache les entrees dont le fichier a CHANGE depuis la sonde.
+
+    Rend (examinees, identiques, changees, disparues). Une entree en erreur
+    est re-sondee aussi : l'erreur d'hier n'est pas un fait d'aujourd'hui."""
+    def st(cle):
+        try:
+            s = os.stat(cle)
+            return cle, (s.st_size, int(s.st_mtime))
+        except OSError:
+            return cle, None
+    a_voir = [c for c in cles if nk(c) in fichiers]
+    ident = chg = disp = 0
+    with cf.ThreadPoolExecutor(max_workers=max(1, fils)) as ex:
+        for cle, tm in ex.map(st, a_voir):
+            ent = fichiers[nk(cle)]
+            if tm is None:
+                disp += 1
+                del fichiers[nk(cle)]
+            elif 'err' in ent or (ent.get('t'), ent.get('m')) != tm:
+                chg += 1
+                del fichiers[nk(cle)]
+            else:
+                ident += 1
+    return len(a_voir), ident, chg, disp
 
 
 def charger_cles(base):
@@ -223,8 +293,11 @@ def charger_cache():
         d = json.loads(RAPPORT.read_text(encoding='utf-8'))
         if d.get('version') == VERSION and isinstance(d.get('fichiers'), dict):
             return {k: e for k, e in d['fichiers'].items()
-                    if not (isinstance(e, dict) and e.get('me') == 'fenetre'
-                            and e.get('fv') != 2)}
+                    if not (isinstance(e, dict) and (
+                        (e.get('me') == 'fenetre' and e.get('fv') != 2)
+                        or (e.get('me') == 'xmp' and not e.get('xv'))
+                        or (e.get('g') in ('google', 'les-deux')
+                            and not e.get('v') and not e.get('xr'))))}
     except (OSError, ValueError):
         pass
     return {}
@@ -248,6 +321,8 @@ def main(argv=None):
     ap.add_argument('--fenetre-mo', type=int, default=8)
     ap.add_argument('--exemples', type=int, default=10)
     ap.add_argument('--fils', type=int, default=1)
+    ap.add_argument('--frais', action='store_true',
+                    help='re-stat le cache et re-sonde ce qui a change')
     a = ap.parse_args(argv)
     t0 = time.monotonic()
     fenetre_o = a.fenetre_mo * (1 << 20)
@@ -257,9 +332,14 @@ def main(argv=None):
     fichiers = charger_cache()
     if fichiers:
         print('cache : %d entrees reprises (%s)' % (len(fichiers), RAPPORT.name), flush=True)
+    if a.frais and fichiers:
+        ex_, id_, ch_, di_ = perimees(fichiers, cles, max(4, a.fils))
+        print('frais : %d examinees, %d identiques, %d CHANGEES, %d disparues (%.0f s)'
+              % (ex_, id_, ch_, di_, time.monotonic() - t0), flush=True)
 
     a_faire = [c for c in cles if fichiers.get(nk(c)) is None]
     faits, absents, erreurs = 0, 0, 0
+    motion_passe = 0
     interrompu = False
 
     def une(cle):
@@ -291,6 +371,8 @@ def main(argv=None):
                         print('  erreur %s : %s' % (ent['nom'], ent['err']), flush=True)
                     continue
                 faits += 1
+                if genre_effectif(ent) not in (None,) + NON_MOTION:
+                    motion_passe += 1
                 if faits % 500 == 0:
                     print('  ... %d sondes cette passe (%.0f s)' % (faits, time.monotonic() - t0), flush=True)
             if time.monotonic() - t0 > a.budget_s or (a.limite and faits >= a.limite):
@@ -326,7 +408,7 @@ def main(argv=None):
         if not g:
             continue
         genres[g] += 1
-        if g == 'sef-sans-video':
+        if g in NON_MOTION:
             continue  # compte a part : pas une Motion Photo
         octets_fichiers += ent.get('t', 0)
         v = ent.get('v', 0)
@@ -345,18 +427,27 @@ def main(argv=None):
                             % (g, asc(Path(cle).name), ent.get('t', 0) / 1048576.0,
                                v / 1048576.0, ent.get('me') or 'taille inconnue'))
 
-    n_motion = sum(n for g, n in genres.items() if g != 'sef-sans-video')
+    n_motion = sum(n for g, n in genres.items()
+                   if g not in NON_MOTION)
     resume = {'candidats': len(cles), 'couverts': couverts,
               'motion': n_motion, 'genres': dict(genres),
               'octets_video': octets_video, 'octets_fichiers': octets_fichiers,
               'sans_taille': sans_taille, 'suspects': suspects,
               'termine': not interrompu}
+    # 16/09 : les entrees de fichiers SORTIS de l'index restaient au rapport,
+    # jamais re-verifiees (27 « les-deux » du 01/09, fichiers disparus depuis),
+    # et le bat 42 lit le rapport ENTIER. Le rapport ne garde que l'index.
+    sortis = [k for k in fichiers if k not in vus]
+    for k in sortis:
+        del fichiers[k]
     ecrire_cache(fichiers, resume)
 
     print('=' * 74, flush=True)
-    print('sondes cette passe : %d  (absents %d, erreurs %d)' % (faits, absents, erreurs))
+    print('sondes cette passe : %d  (absents %d, erreurs %d) dont MOTION %d'
+          % (faits, absents, erreurs, motion_passe))
     print('couverture : %d / %d candidats (dont %d en erreur, cachees)'
           % (couverts, len(cles), en_erreur))
+    print('retirees du rapport (hors index) : %d' % len(sortis))
     print('MOTION PHOTOS : %d' % n_motion)
     for g in sorted(genres):
         print('  %-9s %d' % (g, genres[g]))
