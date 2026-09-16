@@ -502,8 +502,11 @@ dit, et ce qu'il ne dit pas :
 **B5. Les Motion Photos depuis le 03/09 — MESURÉ le 16/09.** **26 vraies
 Motion Photos, 0,09 Go de vidéo**, toutes chez Mike (2021 : 4 — les
 `Sandra (5x).jpeg` rapatriées par le bat 32 ; 2024 : 12 ; 2025 : 1 ; 2026 : 9,
-dont les arrivées du 12/08). Le bat 42 peut les ramasser quand Mike le veut ;
-le vrai correctif reste le réglage « Photo animée » du téléphone.
+dont les arrivées du 12/08). **Mike a passé le bat 42 le 16/09** : 24 strippées,
+0 ratée ; le banc relancé en voit 24 CHANGÉES et **il en reste 2** (deux
+`google` de plus de 8 Mo que le bat 42 a sautées). Le vrai correctif reste
+le réglage « Photo animée » du téléphone ; le bat 43 (purge des `_original`)
+attend que Mike ait regardé les stills.
 **Le premier chiffre était FAUX, deux fois** : la relance a d'abord rendu
 2 420, le compte du 01/09 recopié de son cache. (1) Le cache ne regardait
 jamais si le fichier avait changé → `--frais` (re-stat, compteur d'étendue :
@@ -529,9 +532,15 @@ de la matrice 0,24 s — sous 1 % d'un encodage. Rien à faire.
 il ouvrait `photos.db`, règle 4) : le bat 51 a DÉJÀ tourné le 10/09 (deux
 journaux `docs/undo_vignettes_20260910_*`). Il reste **106,7 Mo
 d'orphelins** sur 1 552 Mo (3 194 vignettes de photos renommées ou
-dédoublonnées). Pas urgent ; le bat 51 quand Mike veut. **Autre porte
-connue** : `appliquer_purge_vignettes.py` ouvre encore `photos.db` par
-`open_store` — à traiter comme le banc le jour où on y touche.
+dédoublonnées). Pas urgent ; le bat 51 quand Mike veut. **Corrigé le 16/09 avant qu'il
+le lance** : `appliquer_purge_vignettes.py` ouvrait `photos.db` ; il exige
+maintenant `--base` et une copie de moins de 30 min (le bat 51 la fabrique
+en étape 1). Deux autres portes trouvées au passage : le défaut écartait
+encore `photo_thumbs` (le bat n'aurait rendu que 0,3 Mo sur 107 — règle 9),
+et l'âge d'une vignette de photo était le mtime RECOPIÉ de la photo, donc le
+plancher de 7 jours ne protégeait rien : l'âge est maintenant la date de
+création du fichier. Aperçu réel (VM, copie de 1 min) : 3 126 fichiers,
+102,6 Mo.
 
 **B7. L'ordre inverse maintenance / scan — FERMÉ, et je l'ai vu tourner.**
 Cette ligne disait « non mesuré, non corrigé » ; **c'était faux**, et je

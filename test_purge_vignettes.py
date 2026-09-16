@@ -43,6 +43,17 @@ class DepotFactice(unittest.TestCase):
             (self.r / d).mkdir()
         self.racine_vraie = P.RACINE
         P.RACINE = self.r
+        # Ces bancs vieillissent les fichiers par le MTIME. Sous Windows la
+        # date de CREATION (maintenant) gagnerait : l'age se juge a part,
+        # dans `AgeDeNaissance`.
+        vrai_age = P._age_jours
+        P._age_jours = lambda st, maintenant: (maintenant - st.st_mtime) / 86400
+        self.addCleanup(lambda: setattr(P, '_age_jours', vrai_age))
+        self.copie = self.r / 'copie.db'
+        self.copie.write_bytes(b'')
+        vrai_index = P._index
+        self.addCleanup(lambda: setattr(P, '_index', vrai_index))
+        self.addCleanup(lambda: setattr(P, 'BASE', None))
 
     def tearDown(self):
         P.RACINE = self.racine_vraie
@@ -124,9 +135,10 @@ class CeQuOnSaitLireEtCeQuOnAttend(DepotFactice):
     les XMP en continu : ce cache se perime plus vite qu'il ne se remplit, et
     **on ne sait plus lire son age**. On purge ce qu'on sait lire."""
 
-    def test_par_defaut_photo_thumbs_est_ECARTE(self):
-        self.assertNotIn('photo_thumbs', P.SANS_MTIME)
-        self.assertEqual(set(P.SANS_MTIME), {'face_thumbs', 'animal_thumbs'})
+    def test_par_defaut_les_TROIS_depuis_la_fin_de_la_campagne(self):
+        """16/09 : la campagne est finie et le nom ne porte plus le mtime. Un
+        defaut qui ecartait photo_thumbs rendait 0,3 Mo sur 106,7."""
+        self.assertEqual(set(P.DEFAUT), set(P.DOSSIERS))
 
     def test_trier_ne_regarde_que_les_dossiers_demandes(self):
         vivants = ['v%d' % i for i in range(20)]
@@ -135,7 +147,7 @@ class CeQuOnSaitLireEtCeQuOnAttend(DepotFactice):
             _fichier(self.r / d, 'mort', 500, jours=30)
             for nom in vivants:
                 _fichier(self.r / d, nom, 10, jours=30)
-        a_effacer, _r, vus = P.trier(7, 5.0, list(P.SANS_MTIME))
+        a_effacer, _r, vus = P.trier(7, 5.0, ['face_thumbs', 'animal_thumbs'])
         self.assertNotIn('photo_thumbs', a_effacer)
         self.assertNotIn('photo_thumbs', vus)
         self.assertIn('face_thumbs', a_effacer)
@@ -221,8 +233,90 @@ class LEffacementEtSonJournal(DepotFactice):
         a_effacer, refus, _v = P.trier(jours=7, plancher=5.0)
         self.assertEqual(refus, [])                    # le plancher est passe
         self.assertEqual(len(a_effacer['photo_thumbs']), 1)   # il EST candidat
-        P.main([])                                     # sans --appliquer
+        P.main(['--base', str(self.copie)])            # sans --appliquer
         self.assertTrue(mort.exists())
+
+
+class LaBaseEstUneCopieFraiche(DepotFactice):
+    """16/09 : le script ouvrait photos.db (regle 4). Il exige une COPIE, et
+    FRAICHE : une photo entree apres la copie aurait sa vignette jugee morte."""
+
+    def _un_mort(self):
+        vivants = ['x%d' % i for i in range(20)]
+        self._vivants(face_thumbs=vivants)
+        for nom in vivants:
+            _fichier(self.r / 'face_thumbs', nom, 10, jours=30)
+        return _fichier(self.r / 'face_thumbs', 'mort', 500, jours=30)
+
+    def test_photos_db_refusee(self):
+        self.assertIn('jamais photos.db', P.verifier_copie(self.r / 'photos.db'))
+
+    def test_copie_absente_refusee(self):
+        self.assertIn('introuvable', P.verifier_copie(self.r / 'rien.db'))
+
+    def test_copie_perimee_refusee(self):
+        m = self.copie.stat().st_mtime
+        self.assertIn('31 minutes', P.verifier_copie(self.copie, 30, m + 31 * 60))
+        self.assertIsNone(P.verifier_copie(self.copie, 30, m + 29 * 60))
+
+    def test_sans_base_argparse_refuse(self):
+        with self.assertRaises(SystemExit):
+            P.main(['--appliquer'])
+
+    def test_copie_perimee_n_efface_RIEN(self):
+        mort = self._un_mort()
+        vieux = time.time() - 3 * 3600
+        os.utime(self.copie, (vieux, vieux))
+        self.assertEqual(P.main(['--base', str(self.copie), '--appliquer']), 2)
+        self.assertTrue(mort.exists())
+
+    def test_copie_fraiche_efface(self):
+        mort = self._un_mort()
+        self.assertEqual(P.main(['--base', str(self.copie), '--appliquer']), 0)
+        self.assertFalse(mort.exists())
+        self.assertEqual(P.BASE, str(self.copie))
+
+    def test_l_index_lu_est_celui_de_la_copie(self):
+        import sqlite3
+        db = self.r / 'vraie.db'
+        cx = sqlite3.connect(db)
+        for t in ('tags', 'faces', 'animals'):
+            cx.execute('CREATE TABLE "%s" (k TEXT PRIMARY KEY, v TEXT)' % t)
+        cx.execute("INSERT INTO tags VALUES ('N:\\a.jpg', '{}')")
+        cx.commit()
+        cx.close()
+        P.BASE = str(db)
+        tags, _f, _a = P._index()
+        self.assertEqual(list(tags), ['N:\\a.jpg'])
+
+
+class AgeDeNaissance(unittest.TestCase):
+    """Le mtime d'une vignette de photo est RECOPIE de la photo (10/09) : une
+    vignette nee ce matin pour une photo de 2004 avait 8 000 jours."""
+
+    class St:
+        def __init__(self, **kw):
+            self.__dict__.update(kw)
+
+    def test_la_naissance_recente_gagne(self):
+        now = 1_000_000_000
+        st = self.St(st_mtime=now - 8000 * 86400, st_ctime=now - 3600,
+                     st_birthtime=now - 3600)
+        self.assertLess(P._age_jours(st, now), 1)
+
+    def test_sans_naissance_le_mtime(self):
+        now = 1_000_000_000
+        st = self.St(st_mtime=now - 30 * 86400, st_ctime=now)
+        if os.name == 'nt':
+            self.assertLess(P._age_jours(st, now), 1)   # ctime = creation
+        else:
+            self.assertAlmostEqual(P._age_jours(st, now), 30)
+
+    def test_une_naissance_ANCIENNE_ne_rajeunit_pas(self):
+        now = 1_000_000_000
+        st = self.St(st_mtime=now - 2 * 86400, st_birthtime=now - 90 * 86400,
+                     st_ctime=now - 90 * 86400)
+        self.assertAlmostEqual(P._age_jours(st, now), 2)
 
 
 if __name__ == '__main__':

@@ -32,9 +32,23 @@ et proposera de tout effacer. Deux verrous contre ca :
      c'est-a-dire celles qui servent maintenant : les epargner rend l'erreur
      visible avant qu'elle soit totale.
 
-  python appliquer_purge_vignettes.py                 # APERCU, n'efface rien
-  python appliquer_purge_vignettes.py --appliquer
-  python appliquer_purge_vignettes.py --jours 30 --appliquer
+**16/09 — L'INDEX SE LIT DANS UNE COPIE, JAMAIS DANS `photos.db`.** Ce script
+ouvrait la base du serveur par `open_store`, qui y pose ses PRAGMA et ses
+`CREATE TABLE IF NOT EXISTS` pendant que le serveur ecrit : la regle 4
+l'interdit. `--base copie.db` est desormais OBLIGATOIRE, et la copie doit etre
+FRAICHE (`--copie-max-min`, 30 par defaut) : une vignette dont la photo est
+entree dans l'index APRES la copie serait jugee orpheline. Le bat 51 fabrique
+la copie juste avant (`mesure_copie_base.py`).
+
+**16/09 — L'AGE D'UNE VIGNETTE DE PHOTO EST CELUI DE SA NAISSANCE.** Depuis le
+10/09 son mtime est RECOPIE de la photo (le tampon) : une vignette creee ce
+matin pour une photo de 2004 avait « 8 000 jours », et le plancher `--jours`
+ne la protegeait pas. L'age se lit sur la date de CREATION du fichier quand le
+systeme la donne (Windows), le plus recent des deux.
+
+  python mesure_copie_base.py
+  python appliquer_purge_vignettes.py --base copie.db               # APERCU
+  python appliquer_purge_vignettes.py --base copie.db --appliquer
 """
 
 import argparse
@@ -49,27 +63,61 @@ sys.path.insert(0, str(RACINE))
 
 DOSSIERS = ('photo_thumbs', 'face_thumbs', 'animal_thumbs')
 
-# Les caches dont la cle ne porte PAS le mtime — donc les seuls dont l'age
-# reste lisible pendant une campagne de retag. Voir `trier`.
-SANS_MTIME = ('face_thumbs', 'animal_thumbs')
+# 16/09 : les TROIS par defaut. `photo_thumbs` etait ecarte tant que la
+# campagne de retag reecrivait les mtime (voir `trier`) ; la campagne est
+# finie (15/09) et le nom ne porte plus le mtime depuis le 10/09. Le laisser
+# ecarte faisait du bat 51 une promesse vide : 0,3 Mo sur 106,7 (regle 9).
+DEFAUT = DOSSIERS
 PLANCHER_RECONNU = 5.0      # % de fichiers vivants en dessous duquel on refuse
 JOURS_PAR_DEFAUT = 7
+COPIE_MAX_MIN = 30          # age maximal de la copie de la base, en minutes
+
+BASE = None                 # la COPIE lue par `_index`, posee par `main`
+
+
+def verifier_copie(base, max_min=COPIE_MAX_MIN, maintenant=None):
+    """Le message de refus, ou None. Le refus nomme sa cause (regle 10)."""
+    p = Path(base)
+    if p.name.lower() == 'photos.db':
+        return ('REFUS : ce script lit une COPIE (mesure_copie_base.py), '
+                'jamais photos.db -- la base du serveur (regle 4).')
+    if not p.is_file():
+        return ('REFUS : copie introuvable (%s). Lancer d abord : '
+                'python mesure_copie_base.py' % p)
+    age = ((maintenant or time.time()) - p.stat().st_mtime) / 60.0
+    if age > max_min:
+        return ('REFUS : la copie %s a %.0f minutes (plafond %d). Une photo '
+                'entree dans l index depuis verrait sa vignette jugee '
+                'orpheline. Refaire la copie : python mesure_copie_base.py'
+                % (p, age, max_min))
+    return None
 
 
 def _index():
-    from store_sqlite import open_store
-    if not (RACINE / 'photos.db').exists():
-        raise SystemExit('  photos.db absente.')
-    return (open_store(RACINE / 'tags_index.json', RACINE, None).data,
-            open_store(RACINE / 'faces_index.json', RACINE, None).data,
-            open_store(RACINE / 'animals_index.json', RACINE, None).data)
+    import mesure_caches_vignettes as M
+    if BASE is None:
+        raise SystemExit('  REFUS : aucune copie de la base (--base).')
+    return M.lire_copie(BASE)
+
+
+def _age_jours(st, maintenant):
+    """Age d'une vignette : sa NAISSANCE, pas le mtime recopie de la photo.
+    `st_birthtime` (Python 3.12+), sinon `st_ctime` sous Windows (creation) ;
+    ailleurs, le mtime seul. Le plus RECENT des deux gagne."""
+    t = st.st_mtime
+    b = getattr(st, 'st_birthtime', None)
+    if b is None and os.name == 'nt':
+        b = st.st_ctime
+    if b:
+        t = max(t, b)
+    return (maintenant - t) / 86400
 
 
 def trier(jours, plancher, dossiers=None):
     """(a_effacer, refus) — a_effacer : {dossier: [(chemin, octets, jours)]}.
 
-    `dossiers` restreint le travail. Un seul appelant s'en sert et sa raison
-    vaut d'etre lue : `photo_thumbs` est nomme `md5(cle|taille|MTIME)`, et la
+    `dossiers` restreint le travail. HISTOIRE (le defaut est revenu aux trois
+    le 16/09, campagne finie) — sa raison d'alors vaut d'etre lue : `photo_thumbs` est nomme `md5(cle|taille|MTIME)`, et la
     campagne de retag reecrit les XMP donc le mtime. Tant qu'elle tourne, ce
     cache se perime plus vite qu'il ne se remplit et **on ne sait plus lire son
     age** — 16 % seulement de ses vignettes les plus JEUNES sont reconnues
@@ -99,7 +147,7 @@ def trier(jours, plancher, dossiers=None):
                     reconnus += 1
                     continue
                 st = x.stat()
-                age = (maintenant - st.st_mtime) / 86400
+                age = _age_jours(st, maintenant)
                 if age < jours:
                     continue
                 morts.append((x.path, st.st_size, age))
@@ -155,10 +203,20 @@ def main(argv=None):
                     help="lever le plancher de reconnaissance, en NOMMANT la "
                          "raison — pour une migration de format voulue, jamais "
                          "pour passer outre un doute")
-    ap.add_argument('--dossiers', default=','.join(SANS_MTIME),
-                    help='les caches a traiter (defaut : ceux qu on sait lire '
-                         'pendant la campagne)')
+    ap.add_argument('--dossiers', default=','.join(DEFAUT),
+                    help='les caches a traiter (defaut : les trois)')
+    ap.add_argument('--base', required=True,
+                    help='COPIE fraiche de la base (mesure_copie_base.py)')
+    ap.add_argument('--copie-max-min', type=int, default=COPIE_MAX_MIN,
+                    dest='copie_max_min')
     a = ap.parse_args(argv)
+
+    global BASE
+    refus_copie = verifier_copie(a.base, a.copie_max_min)
+    if refus_copie:
+        print('  ' + refus_copie)
+        return 2
+    BASE = a.base
 
     choisis = [d.strip() for d in a.dossiers.split(',') if d.strip()]
     inconnus = [d for d in choisis if d not in DOSSIERS]
@@ -184,11 +242,10 @@ def main(argv=None):
     print('-' * 74)
     total_n = total_o = 0
     ecartes = [d for d in DOSSIERS if d not in choisis]
+    print('  index lu dans la COPIE %s (%.0f min)'
+          % (a.base, (time.time() - Path(a.base).stat().st_mtime) / 60.0))
     if ecartes:
-        print('  ECARTES de cette purge : %s' % ', '.join(ecartes))
-        print('     leur nom porte le MTIME, que la campagne de retag reecrit :')
-        print('     tant qu elle tourne, leur age ne dit plus rien. On purge')
-        print('     ce qu on sait lire, et on attend pour le reste.')
+        print('  ECARTES de cette purge (--dossiers) : %s' % ', '.join(ecartes))
         print('-' * 74)
     for d in choisis:
         if d in dict(refus):

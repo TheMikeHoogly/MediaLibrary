@@ -13,7 +13,10 @@
 **16/09 au matin** : B5/B6 MESURÉS. **26 vraies Motion Photos** (0,09 Go) —
 le banc en voyait 2 420 : cache jamais revérifié (`--frais`) et XMP laissé
 par le strip (`xmp-residuel`, 2 404). O8/O9 clos par la mesure (3,5 s par
-passe de curateur). O15 : 106,7 Mo d'orphelins, bat 51 quand Mike veut.
+passe de curateur). Bat 42 passé par Mike : 24 strippées, il en reste 2.
+O15 : le bat 51 lit désormais une COPIE fraîche (plus jamais `photos.db`),
+traite les trois caches et juge l'âge sur la création — ~103 Mo à rendre,
+Mike le lance.
 Prochain pas : **la veille en plein écran (P1)**.
 
 **15/09 au soir** : producteurs de fiches unifiés, puis fiches légères sur
