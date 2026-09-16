@@ -1,6 +1,21 @@
 # Questions en attente de Mike
 
-**Aucune question ouverte.** (15/09 au soir)
+## 1. La veille (P1) — trois réglages à confirmer (16/09)
+
+Livrée et vue tourner. J'ai tranché ce que la feuille de route laissait
+ouvert ; chacun est une constante d'une ligne dans `ui/global.js`.
+
+- **Attente : 5 min** sans geste (ta demande). **Pas : 8 s** par photo.
+- **Arrêt : écran noir après 30 min**, plus aucune requête — pour ne pas
+  garder le NAS réveillé toute la nuit. *Recommandation* : garder 30 min ;
+  si tu veux un cadre photo permanent au salon, dis-le, je mets 0 (= jamais)
+  et on accepte le NAS éveillé.
+- **Pas de reprise** : chaque veille refait un tirage au hasard.
+  *Recommandation* : garder, une veille est une ambiance, pas une lecture.
+
+Et une question de goût : la légende montre « mois année ». Le lieu
+(« Lausanne ») serait possible, mais c'est une requête de plus par photo.
+
 
 ---
 

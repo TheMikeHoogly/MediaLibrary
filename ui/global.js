@@ -15,7 +15,9 @@
      5. MON COMPTE (Mike, 31/08) : qui regarde, et le peu qui se règle.
         Un seul appel à /api/moi par page, et le menu se construit à
         l'ouverture — pas au chargement : la plupart des visites ne
-        l'ouvrent jamais. */
+        l'ouvrent jamais.
+     6. la VEILLE (P1, Mike 14/09) : un compte connecté, cinq minutes sans
+        un geste, et la page cède la place à ses photos, au hasard. */
 (function () {
   'use strict';
   var p = location.pathname;
@@ -274,6 +276,8 @@
       h += '<a href="/reglages" role="menuitem"><span aria-hidden="true">\u2699\uFE0F</span> R\u00e9glages</a>' +
         '<a href="/sante" role="menuitem"><span aria-hidden="true">\uD83E\uDE7A</span> Sant\u00e9 du serveur</a>';
     }
+    h += '<button type="button" class="item" data-veille role="menuitem">' +
+      '<span aria-hidden="true">\uD83C\uDF19</span> Lancer la veille</button>';
     if (MOI.porte) {
       h += '<div class="sep"></div><button type="button" class="item" data-sortir role="menuitem">' +
         '<span aria-hidden="true">\u21AA</span> Se d\u00e9connecter</button>';
@@ -290,6 +294,10 @@
     });
     var aide = m.querySelector('[data-aide]');
     if (aide) aide.addEventListener('click', function () { fermerMenu(); ouvrirPanneau(); });
+    var veille = m.querySelector('[data-veille]');
+    if (veille) veille.addEventListener('click', function () {
+      fermerMenu(); Veille.lancer(true);   // un GESTE : le plein ecran est permis
+    });
     var sortir = m.querySelector('[data-sortir]');
     if (sortir) sortir.addEventListener('click', function () {
       fetch('/api/deconnexion', { method: 'POST' })
@@ -321,6 +329,7 @@
         'aria-label', 'Mon compte : ' + d.nom);
       z.hidden = false;
       allumerLampe(d);
+      Veille.armer();                     // un compte connecte, et seulement lui
       z.querySelector('.moi-bouton').addEventListener('click', function () {
         if (MENU_OUVERT) fermerMenu(); else ouvrirMenu();
       });
@@ -378,6 +387,204 @@
       })
       .catch(function () { /* silencieux : pas d'alerte sur une panne reseau */ });
   }
+
+  /* ── 6. LA VEILLE ─────────────────────────────────────────────────────
+     Ce qu'elle promet, et ce qu'elle se refuse.
+
+     - Elle ne montre que ce que la VUE rend au compte (`/api/veille`) :
+       jamais le PRIVE d'un autre, jamais une photo masquee. Elle ne s'arme
+       qu'une fois `/api/moi` revenu avec un nom.
+     - Elle ne part PAS si la page est cachee, si une video joue, si le
+       diaporama de la galerie tourne, ou si un element est deja en plein
+       ecran : quelqu'un regarde deja quelque chose.
+     - Le vrai plein ecran exige un GESTE (`requestFullscreen`). Au bout de
+       cinq minutes d'inaction il n'y en a pas : la veille couvre alors la
+       FENETRE. Lancee depuis le menu, elle passe en plein ecran.
+     - Elle ne tient pas le NAS eveille indefiniment : ses vignettes portent
+       `veille=1` (le serveur ne suspend pas son travail de fond pour elle),
+       et apres DUREE elle s'eteint en ecran noir, sans plus rien demander.
+     - Le geste qui la reveille est AVALE : un « X » qui rejette une carte
+       sur /tri ne doit pas partir parce qu'on voulait juste retrouver
+       la page. */
+  var Veille = (function () {
+    var ATTENTE = 5 * 60 * 1000;      // inaction avant la veille
+    var PAS = 8000;                    // une photo toutes les 8 s
+    var DUREE = 30 * 60 * 1000;        // puis ecran noir, plus aucune requete
+    var TIRAGE = 120;
+    var MOIS = ['janvier', 'f\u00e9vrier', 'mars', 'avril', 'mai', 'juin', 'juillet',
+                'ao\u00fbt', 'septembre', 'octobre', 'novembre', 'd\u00e9cembre'];
+    var arme = false, minuteur = null, pas = null, fin = null;
+    var ouverte = false, depuis = 0, liste = [], rang = 0, lock = null;
+    var retour = null, calque = null, bouge = 0, pleinEcran = false;
+
+    function occupee() {
+      if (document.hidden || document.fullscreenElement) return true;
+      if (document.querySelector('#ss.open')) return true;       // diaporama galerie
+      var ms = document.querySelectorAll('video, audio');
+      for (var i = 0; i < ms.length; i++) if (!ms[i].paused) return true;
+      return false;
+    }
+    function rearmer() {
+      clearTimeout(minuteur);
+      if (arme && !ouverte) minuteur = setTimeout(declencher, ATTENTE);
+    }
+    function declencher() {
+      if (occupee()) { rearmer(); return; }
+      lancer(false);
+    }
+    function construire() {
+      calque = document.createElement('div');
+      calque.className = 'veille';
+      calque.setAttribute('role', 'dialog');
+      calque.setAttribute('aria-modal', 'true');
+      calque.setAttribute('aria-label', 'Veille : vos photos au hasard');
+      calque.tabIndex = -1;
+      calque.hidden = true;
+      calque.innerHTML =
+        '<img class="veille__img" alt=""><img class="veille__img" alt="">' +
+        '<p class="veille__date donnee" hidden></p>' +
+        '<p class="veille__aide">Bouger la souris ou appuyer sur une touche pour reprendre</p>';
+      document.body.appendChild(calque);
+    }
+    function dateDe(t) {
+      if (!t) return '';
+      var d = new Date(t * 1000);
+      return MOIS[d.getMonth()] + ' ' + d.getFullYear();
+    }
+    function tirer(suite) {
+      fetch('/api/veille?n=' + TIRAGE).then(function (r) { return r.json(); })
+        .then(function (d) {
+          liste = (d && d.items) || []; rang = 0;
+          suite(liste.length > 0);
+        }).catch(function () { suite(false); });
+    }
+    function suivante() {
+      if (!ouverte) return;
+      if (Date.now() - depuis > DUREE) { eteindre(); return; }
+      if (rang >= liste.length) { tirer(function (ok) { if (ok) suivante(); else eteindre(); }); return; }
+      var it = liste[rang++];
+      var img = new Image();
+      img.onload = function () {
+        if (!ouverte) return;
+        var imgs = calque.querySelectorAll('.veille__img');
+        var avant = imgs[0].classList.contains('on') ? imgs[0] : imgs[1];
+        var apres = avant === imgs[0] ? imgs[1] : imgs[0];
+        apres.src = img.src;
+        apres.classList.add('on'); avant.classList.remove('on');
+        var dt = calque.querySelector('.veille__date');
+        dt.textContent = dateDe(it.t);
+        dt.hidden = !dt.textContent;
+        pas = setTimeout(suivante, PAS);
+      };
+      img.onerror = function () { pas = setTimeout(suivante, 500); };   // une de moins, pas un arret
+      img.src = '/api/thumb?s=1600&veille=1&key=' + encodeURIComponent(it.k);
+    }
+    function eteindre() {
+      // Ecran noir : la veille reste la (on ne rend pas la page a un salon
+      // vide), mais elle ne demande plus rien a personne.
+      clearTimeout(pas);
+      if (!calque) return;
+      calque.classList.add('veille--eteinte');
+      calque.querySelectorAll('.veille__img').forEach(function (i) {
+        i.classList.remove('on'); i.removeAttribute('src');
+      });
+      calque.querySelector('.veille__date').hidden = true;
+      if (lock) { try { lock.release(); } catch (e) {} lock = null; }
+    }
+    function lancer(geste) {
+      if (ouverte) return;
+      clearTimeout(minuteur);
+      if (!calque) construire();
+      // Le plein ecran se demande PENDANT le geste, avant tout aller-retour
+      // reseau : apres un `fetch`, l'activation du clic peut etre perdue.
+      if (geste && calque.requestFullscreen) {
+        calque.hidden = false;            // un element cache ne passe pas en plein ecran
+        calque.requestFullscreen().catch(function () {});
+      }
+      tirer(function (ok) {
+        if (!ok) {                        // aucun compte, ou aucune photo : rien a montrer
+          if (document.fullscreenElement === calque) document.exitFullscreen().catch(function () {});
+          calque.hidden = true;
+          rearmer(); return;
+        }
+        retour = document.activeElement;
+        ouverte = true; depuis = Date.now(); bouge = 0;
+        calque.classList.remove('veille--eteinte');
+        calque.hidden = false;
+        document.documentElement.classList.add('veille-ouverte');
+        calque.focus();
+        if (navigator.wakeLock) {
+          navigator.wakeLock.request('screen').then(function (l) { lock = l; })
+            .catch(function () {});
+        }
+        suivante();
+      });
+    }
+    function fermer() {
+      ouverte = false;
+      clearTimeout(pas);
+      if (lock) { try { lock.release(); } catch (e) {} lock = null; }
+      if (document.fullscreenElement === calque && document.exitFullscreen) {
+        document.exitFullscreen().catch(function () {});
+      }
+      calque.hidden = true;
+      document.documentElement.classList.remove('veille-ouverte');
+      // Le focus revient d'ou il venait -- sauf si c'etait l'entree d'un
+      // menu referme depuis : alors au bouton qui ouvre ce menu.
+      if (retour && (!retour.isConnected || retour.offsetParent === null)) {
+        retour = document.querySelector('.moi-bouton');
+      }
+      if (retour && retour.focus) { try { retour.focus(); } catch (e) {} }
+      rearmer();
+    }
+    // Un geste : pendant la veille il la ferme ET il est avale ; sinon il
+    // relance le compte a rebours.
+    function geste(ev) {
+      if (!ouverte) { rearmer(); return; }
+      if (ev.type === 'pointermove') {
+        // Le passage en plein ecran deplace la fenetre sous la souris et le
+        // navigateur en fait un mouvement : 1,5 s de grace, puis la reference.
+        if (Date.now() - depuis < 1500) { bouge = 0; return; }
+        // On compte ce que la SOURIS a parcouru (`movement`), pas l'ecart de
+        // position : quand la fenetre change de taille (plein ecran), le
+        // navigateur emet un mouvement sans deplacement -- observe le 16/09,
+        // il refermait la veille a 2,3 s. Et une souris posee tremble : 8 px.
+        bouge += Math.abs(ev.movementX || 0) + Math.abs(ev.movementY || 0);
+        if (bouge < 8) return;
+      }
+      ev.preventDefault(); ev.stopPropagation();
+      if (ev.type === 'pointerdown') avalerClic = true;
+      fermer();
+    }
+    var avalerClic = false;
+    function clic(ev) {
+      if (!avalerClic) return;
+      avalerClic = false;
+      ev.preventDefault(); ev.stopPropagation();
+    }
+    function armer() {
+      if (arme || /^\/connexion/.test(location.pathname)) return;
+      arme = true;
+      ['pointermove', 'pointerdown', 'keydown', 'wheel', 'touchstart'].forEach(function (t) {
+        document.addEventListener(t, geste, { capture: true, passive: false });
+      });
+      document.addEventListener('click', clic, true);
+      // Echap en plein ecran est pris par le NAVIGATEUR, la page ne voit pas
+      // la touche : quitter le plein ecran que la veille avait pris, c'est la
+      // quitter aussi.
+      document.addEventListener('fullscreenchange', function () {
+        if (ouverte && calque && pleinEcran && document.fullscreenElement !== calque) fermer();
+        pleinEcran = !!calque && document.fullscreenElement === calque;
+      });
+      document.addEventListener('visibilitychange', function () {
+        if (document.hidden && ouverte) fermer(); else rearmer();
+      });
+      rearmer();
+    }
+    return { armer: armer, lancer: lancer, fermer: function () { if (ouverte) fermer(); },
+             ouverte: function () { return ouverte; } };
+  })();
+  window.Veille = Veille;
 
   function demarrer() {
     marquerOngletActif(); poserRecherche(); poserAide(); poserMoi();

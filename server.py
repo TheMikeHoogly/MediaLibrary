@@ -203,6 +203,7 @@ REEMBED_IDLE_SLEEP = 120        # s d'attente quand plus rien à faire
 REEMBED_BUSY_SLEEP = 60         # s d'attente quand la machine est occupée
 REEMBED_PACE = 2                # s entre deux lots
 REEMBED_UI_QUIET = 12           # s : le ré-embedding cède le NAS après une requête image
+VEILLE_TIRAGE_MAX = 400         # P1 : photos au plus par tirage de /api/veille
 FACE_THUMB_DIR = SCRIPT_DIR / "face_thumbs"   # cache disque local des vignettes de visages
 LAST_HEAVY_AT = 0.0             # dernier accès NAS via l'UI (crop/média/upload)
 
@@ -13447,6 +13448,9 @@ class Handler(BaseHTTPRequestHandler):
         elif path == '/api/playlist':
             self._serve_playlist()
 
+        elif path == '/api/veille':
+            self._serve_veille()
+
         elif path == '/api/assoc':
             self._serve_assoc()
 
@@ -15621,9 +15625,15 @@ class Handler(BaseHTTPRequestHandler):
         seule fois — ≈ −98 % d'octets NAS en navigation. Même motif que
         `_serve_facecrop`. Si la vignette est impossible (vidéo, HEIC non
         décodé, PIL absent), REDIRIGE vers l'original : le client ne gère
-        aucun cas particulier."""
-        note_heavy_activity()
+        aucun cas particulier.
+
+        `?veille=1` (P1, 16/09) : la veille n'est PAS une personne qui
+        attend. Une image toutes les 8 s pendant 30 min tiendrait
+        `ui_recent()` vrai en permanence (fenêtre de 12 s) et suspendrait
+        tout le travail de fond pour un écran que personne ne regarde."""
         q = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
+        if (q.get('veille') or [''])[0] != '1':
+            note_heavy_activity()
         key = (q.get('key') or [''])[0]
         s = (q.get('s') or ['512'])[0]
         s = 1600 if s == '1600' else 512      # deux tailles, pas d'arbitraire
@@ -16620,6 +16630,42 @@ class Handler(BaseHTTPRequestHandler):
                           ensure_ascii=False).encode()
         self._send(200, body, 'application/json')
 
+    def _serve_veille(self):
+        """P1 (Mike, 14/09) — le tirage de la VEILLE : `?n=` photos au hasard
+        parmi celles que le compte connecté a le droit de voir.
+
+        « SES photos », c'est ce que la VUE lui rend (`STORE.data` est filtré
+        par `visibilite.brancher` : jamais le `PRIVE` d'un autre, jamais une
+        photo masquée en attente de verdict). C'est la seule règle qui rende
+        la veille montrable dans un salon, et ce n'est pas une règle de plus.
+
+        Sans compte connecté : rien. La veille est une affaire de compte, et
+        une porte ouverte n'a personne à qui montrer « ses » photos.
+
+        AUCUN accès au NAS : la liste vient de l'index en mémoire, le tirage
+        se fait AVANT la date (`_best_time` sur n clés, pas sur 44 000).
+        Les vidéos et les fichiers en échec sont écartés — une veille montre
+        des images."""
+        q = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
+        try:
+            n = max(1, min(VEILLE_TIRAGE_MAX, int((q.get('n') or ['120'])[0])))
+        except ValueError:
+            n = 120
+        if utilisateur_vu() is None:
+            self._send(200, json.dumps({'items': [], 'raison': 'aucun compte'}).encode(),
+                       'application/json')
+            return
+        cles = [k for k, e in list(STORE.data.items())
+                if isinstance(e, dict) and not e.get('failed') and not e.get('video')
+                and os.path.splitext(k)[1].lower() in IMAGE_EXT]
+        tirees = random.sample(cles, min(n, len(cles)))
+        items = []
+        for k in tirees:
+            e = STORE.data.get(k) or {}
+            items.append({'k': k, 't': _best_time(k, e) or 0})
+        self._send(200, json.dumps({'items': items, 'total': len(cles)},
+                                   ensure_ascii=False).encode(), 'application/json')
+
     def _serve_random(self):
         """Une photo au hasard sous ?dir=… — pioche instantanée pour le
         diaporama aléatoire en flux."""
@@ -16665,6 +16711,12 @@ class Handler(BaseHTTPRequestHandler):
             cand = _random_photo(folder)
             if cand is None:
                 break
+            # 16/09 : la marche part du DISQUE, que la vue des magasins ne
+            # couvre pas. Sans ce garde, le diaporama d'un compte citait le
+            # nom, la clé et l'URL d'une photo du PRIVE d'un autre (les octets,
+            # eux, restaient refusés par /media) — la même fuite que 17b.
+            if not chemin_visible(cand):
+                continue
             ck = _index_key_for_path(cand)
             ce = (STORE.get(ck) if ck else None) or {}
             if not ce.get('failed'):

@@ -192,7 +192,7 @@ Dans l'ordre où je le ferais, **reclassé le 14/09 au soir** :
 | — | ~~Unifier les producteurs de fiches (§ C3)~~ | **LIVRÉ 15/09** — 4 sur 5, voir ci-dessous | fait |
 | — | ~~Le chargement à la demande (§ C3)~~ | **LIVRÉ 15/09** — fiches légères, 6,6 s → 3,7 s | fait |
 | — | ~~B5, B6~~ | **MESURÉS 16/09** — 26 Motion Photos ; O8/O9 clos | fait |
-| **5** | **La veille en plein écran** (P1, demandé le 14/09) | Mike a demandé, reste à instruire | moyen |
+| — | ~~La veille en plein écran (P1)~~ | **LIVRÉE 16/09** — trois réglages à confirmer (`QUESTIONS_MIKE.md`) | fait |
 | **6** | **La copie hors site** (§ D1) | **Mike** | à lui seul |
 | **7** | **La démo de bienvenue et son e-mail** (P2) | Mike a demandé — **en DERNIER** | moyen |
 
@@ -866,18 +866,27 @@ réapparaît pas.
 
 ## Pistes ouvertes par Mike (22/08) — à instruire, pas encore priorisées
 
-**P1 (14/09). Une VEILLE qui montre les photos.** Quand un compte est connecté
-et que rien ne bouge pendant **5 minutes**, la page passe en plein écran et
-déroule une galerie ALÉATOIRE de SES photos. Deux choses à instruire avant
-d'écrire une ligne : (a) « ses photos » = ce que la VUE lui rend
-(`visibilite.filtre`), donc jamais le `PRIVE` d'un autre — c'est la même règle
-que partout, et c'est la seule qui rende la veille montrable dans un salon ;
-(b) le fond travaille (tagging, scan, vignettes) et l'UI a la priorité
-(`LAST_HEAVY_AT`) : une veille qui charge une photo toutes les 6 secondes ne
-doit pas réveiller le NAS en continu — `/api/random` et `/api/playlist`
-existent déjà, et `window.Vignettes` aussi. Reste à trancher : la veille
-reprend-elle où elle en était, et que fait-elle sur un compte qui n'a aucune
-photo à lui.
+**P1 (14/09). Une VEILLE qui montre les photos — LIVRÉE le 16/09.** Un
+compte connecté, 5 min sans geste, et la page cède la place à un calque
+`--salle` qui déroule SES photos au hasard (une toutes les 8 s, fondu,
+« mois année » en légende). Aussi : **« Lancer la veille »** dans le menu du
+compte, qui passe en vrai plein écran. Les deux questions à instruire sont
+tranchées, et c'est à confirmer : (a) « ses photos » = la VUE
+(`/api/veille`, tirage dans `STORE.data` : jamais le `PRIVE` d'un autre ni une
+photo masquée) ; (b) le NAS n'est pas réveillé sans fin — vignettes 1600
+avec `veille=1` (le fond ne cède PAS pour elle, sinon `ui_recent()` restait
+vrai en permanence), et **écran noir après 30 min**, plus aucune requête.
+Elle ne part pas si l'onglet est caché, si une vidéo joue, si le diaporama
+de la galerie tourne ou si quelque chose est déjà en plein écran ; le geste
+qui la réveille est AVALÉ (un « X » sur /tri ne rejette rien). Pas de reprise
+(nouveau tirage à chaque fois) ; un compte sans photo n'a pas de veille.
+**Trois pièges vus à l'écran, pas par les bancs** : le plein écran exige
+d'être demandé AVANT le `fetch` ; le passage en plein écran émet un
+`pointermove` qui refermait la veille à 2,3 s (on compte `movementX/Y`) ;
+Échap en plein écran est pris par le navigateur (on écoute
+`fullscreenchange`). **Au passage** : `/api/random` citait le nom et la clé
+d'une photo du `PRIVE` d'un autre compte (la marche part du disque) — il
+passe maintenant par `chemin_visible`.
 
 **P2 (14/09). Une DÉMO de bienvenue, et l'e-mail qui va avec.** Objectif de
 Mike : partager la photothèque avec sa famille quand elle sera finie. Il faut

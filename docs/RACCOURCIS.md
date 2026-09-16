@@ -16,6 +16,7 @@
 | `/` | Met le focus dans « Décris la photo… » (recherche IA sur tout le fonds) — sauf quand on tape déjà dans un champ |
 | `Entrée` (dans le champ) | Ouvre la galerie des résultats (`/files?q=`) |
 | `?` | Ouvre ou ferme ce pense-bête (aussi le bouton `?` de la barre) ; `Échap` le ferme |
+| n'importe quelle touche, la souris | Quitte la **veille** (vos photos au hasard après 5 min sans geste, ou « Lancer la veille » dans le menu du compte) — la touche n'agit pas sur la page |
 
 ## Juger les propositions de noms — `/sujets`, onglet Classification
 

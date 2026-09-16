@@ -1,121 +1,56 @@
-# Reprise — MediaLibrary, après le matin du 16 septembre 2026
+# Reprise — MediaLibrary, après le 16 septembre 2026 (matin)
 
 > **Ce fichier est ÉPHÉMÈRE.** Il décrit un état, pas des règles. Les règles
 > vivent dans `CLAUDE.md`, le plan dans `ROADMAP.md`, les verdicts dans
-> `eval/DECISIONS.md` et `docs/DECISIONS_OUTILLAGE.md`, les chiffres de
-> performance dans `PERFORMANCE.md`, les choix de Mike en attente dans
-> `QUESTIONS_MIKE.md`.
+> `eval/DECISIONS.md`, `eval/DECISIONS_UI.md` et `docs/DECISIONS_OUTILLAGE.md`,
+> les chiffres dans `PERFORMANCE.md`, les choix de Mike dans `QUESTIONS_MIKE.md`.
 
 ---
 
 ## 0. L'état, en dix lignes
 
-**16/09 au matin** : B5/B6 MESURÉS. **26 vraies Motion Photos** (0,09 Go) —
-le banc en voyait 2 420 : cache jamais revérifié (`--frais`) et XMP laissé
-par le strip (`xmp-residuel`, 2 404). O8/O9 clos par la mesure (3,5 s par
-passe de curateur). Bat 42 passé par Mike : 24 strippées, il en reste 2.
-O15 : le bat 51 lit désormais une COPIE fraîche (plus jamais `photos.db`),
-traite les trois caches et juge l'âge sur la création — ~103 Mo à rendre,
-Mike le lance.
-Prochain pas : **la veille en plein écran (P1)**.
+**16/09, trois livraisons.**
+1. **B5/B6 mesurés.** 26 vraies Motion Photos (le banc en voyait 2 420 : cache
+   jamais revérifié → `--frais` ; XMP laissé par le strip → `xmp-residuel`).
+   Mike a passé le **bat 42** : 24 strippées, **il en reste 2** (> 8 Mo,
+   sautées). Le **bat 43** (purge des `_original`) attend son coup d'œil.
+   O8/O9 **clos par la mesure** (curateur : 3,5 s par passe).
+2. **Bat 51 réparé avant usage** : lit une COPIE fraîche (< 30 min, jamais
+   `photos.db`), traite les trois caches, juge l'âge sur la CRÉATION du
+   fichier. ~103 Mo à rendre — **Mike le lance**.
+3. **P1, la veille : livrée, vue tourner** (calque après 5 min, « Lancer la
+   veille » dans le menu du compte → vrai plein écran). Trois réglages à
+   confirmer dans `QUESTIONS_MIKE.md`. Au passage, **`/api/random` ne cite
+   plus le `PRIVE` d'un autre**.
 
-**15/09 au soir** : producteurs de fiches unifiés, puis fiches légères sur
-la grille du fonds entier (6,6 s → 3,7 s).
-
-**Trois livraisons le 14/09.** La marche du NAS coupée sur la grille récursive
-(`/files?dir=1&rec=1` : **23,4 s → 6,5 s**, `parcours` 16,8 s → **48 ms**) ;
-**`_A TRIER` par propriétaire** avec la salle d'arbitrage protégée et le
-bat 36 qui sait enfin comparer une vidéo ; la page **`/arbitrage`**.
-
-**Un compte par propriétaire** : Mike (admin), Flo, **Papa** (créé le 14/09).
-
-**La salle d'arbitrage est close et vide** — Mike a tranché : les retouches,
-rotations comme coupes, étaient les siennes. Pour les images comme pour les
-vidéos, **c'est le NAS qui porte la bonne version**. Une copie plus grosse
-n'est pas une copie meilleure.
-
-**La prochaine campagne de retag est ABANDONNÉE** (Mike, 15/09 au soir). Les
-« 8 heures de GPU » qu'il avait acceptées étaient **8 JOURS** — une erreur
-d'unité de ma part, corrigée par la mesure. Remis devant le vrai prix, il a
-tranché : *« soit tu trouves un superbe candidat qui vaudrait la peine, soit on
-oublie »*. **Il n'y en a pas** sous 4 Go de VRAM. Voir § 1.
-
-Index : **44 471 clés**, 0 file d'attente, vignettes à jour, 0 cycle
-inexpliqué. `main` à jour, arbre de travail propre, **87 Mo de corbeilles
-locales vidées** — les journaux d'annulation, eux, sont intacts.
+Acquis des jours d'avant, qui ne se refont pas : campagne de retag
+ABANDONNÉE (pas de candidat sous 4 Go, tirage de 60 photos gelé) ; grille
+du fonds entier en fiches légères (6,6 s → 3,7 s) ; salle d'arbitrage close ;
+un compte par propriétaire (Mike admin, Flo, Papa).
 
 ---
 
 ## 1. Par où commencer
 
-**Il n'y a plus de chantier « modèle ».** La campagne est abandonnée, le bloc
-B1·B2·B3·B4 est dissous, et la première tâche est celle-ci :
+1. **Lire `QUESTIONS_MIKE.md`** : la réponse de Mike sur la veille (30 min /
+   pas de reprise / légende) — une constante par réglage dans `ui/global.js`.
+2. **Si Mike a lancé le bat 51** : relancer
+   `mesure_caches_vignettes.py --base copie.db` (après
+   `mesure_copie_base.py`) et consigner le reste d'orphelins.
+3. **P2, la démo de bienvenue et son e-mail** — c'est le dernier item
+   « produit » de la feuille de route, et il devait venir EN DERNIER : la
+   veille est la dernière brique d'interface demandée. Commencer par relire
+   `/aide` à l'écran (Chrome) et lister ce qu'un nouveau venu ne trouve pas.
+4. **D1, la copie hors site** : à Mike seul.
 
-> **Ce qui reste acquis, et ne se refait pas** : le tirage de 60 photos est
-> GELÉ (`eval/tirage_aveugle.json`, graine 20260915) et ses 240 réponses sont
-> dans `docs/tirage_aveugle.jsonl`. Tout modèle futur se branche sur les MÊMES
-> photos — un `ollama pull` et dix minutes, 60 photos, pas 40 525. **Le seul
-> vrai levier serait matériel** : 8 Go de VRAM ouvriraient Qwen3-VL 8B. Ne pas
-> rouvrir le sujet sans cette carte.
-
-### 1. ~~Unifier les producteurs de fiches~~ — LIVRÉ 15/09 au soir
-
-Les quatre producteurs lus dans l'index passent par `_fiche_depuis_cle`
-(écarts : tags → `kw` trié ; même jour → `taken` du jour + `annee`). Reste un
-seul littéral, la navigation d'un dossier, qui part du disque. Avant/après
-réel identique champ à champ, sauf `name` en mode tags, qui sort enfin dans
-sa casse d'origine. Banc : `UnSeulProducteurDeFichesPourLIndex`.
-
-**Piège connu** : `test_deux_racines_dont_l_une_prefixe_l_autre` échoue sous
-Linux (chemin Windows), avant comme après — il ne vaut que sous Windows.
-
-### 2. ~~Le chargement à la demande~~ — LIVRÉ 15/09 au soir
-
-Mike a choisi les **fiches légères** (pas la pagination, parquée) : la
-grille du fonds entier passe de **6,6 s à 3,7 s** et de 33,6 à 20,0 Mo.
-`_fiche_legere` + `POST /api/fiches` (`CHAMPS_DIFFERES`) + `completer()`
-dans `gallery.html`. Union vérifiée identique sur 44 450 fiches. Visionneuse
-sur une photo jamais chargée : « (…) » puis la bonne fiche.
-
-**Maintenant** : ~~B5/B6~~ (FAIT 16/09), la **veille en plein écran** (P1), la
-copie hors site (D1, à Mike), et **en dernier** la démo de bienvenue et son
-e-mail (P2) — un mode d'emploi écrit avant que l'interface soit figée décrit
-une interface qui n'existera plus.
-
-**Ce qui n'attend que Mike** : le bat 26 pour les 19 fichiers d'`_A TRIER`
-(14 doublons, 4 voisins, 1 différent — voir § 3), les deux détachements git
-(A6), la fenêtre de réversibilité des 68 copies qui se ferme **vers le 13/10**,
-et le KB Windows à masquer **vers le 16/10**.
-
-## 2. Ce que les trois livraisons du 14/09 ont mis dans le code
-
-- `_nom_relatif(k, prefixe)` — le chemin relatif d'une clé **dans sa casse
-  d'origine**. `Path.relative_to` ne peut pas servir : la clé garde la casse du
-  NAS, `folder` sort d'un `resolve()` qui minuscule l'hôte SMB.
-- `_fiche_depuis_cle(...)` — la fiche de galerie d'une entrée, **sans toucher
-  au disque**. Le cinquième producteur de `file_data` (voir § 1).
-- `grille_indexee = rec and not remplace_la_grille` ;
-  `_lister_dossier_frais(folder, False)` TOUJOURS.
-- `auteurs.dossier_de(nom)` — l'inverse **contrôlé par aller-retour** de
-  `proprietaire_de`. Un nom de compte portant un séparateur ne fabrique pas de
-  chemin.
-- `server.dossier_a_trier_de(utilisateur)` / `cible_a_trier(utilisateur)` — la
-  boîte du compte connecté si son dossier existe, sinon la racine (celle de
-  l'admin). La boîte d'un propriétaire se CRÉE au premier dépôt ; **l'ancre,
-  jamais**.
-- `rangement_annee.SALLES_ARBITRAGE` / `est_arbitrage(chemin)` — la règle vit
-  là, et le bat 36 la LIT. Ancrée sur la PLACE (après un `_A TRIER`), pas sur
-  le nom. Le plan compte ce qu'il laisse (`arbitrage`).
-- `verifier_doublons_atrier` — compare aussi les VIDÉOS (empreinte tête+milieu
-  + durée), deux verdicts séparés : `videos_confirmes` retirables,
-  `videos_tronquees` derrière `--videos-tronquees`.
-- `exiftool_json(...)` — **fichier d'arguments UTF-8** ; plus aucun chemin sur
-  la ligne de commande (voir § 3).
-- Route `/arbitrage` + `_serve_arbitrage_list()` — lecture seule, aucun bouton.
+**Ce qui n'attend que Mike** : bat 51, bat 43 (après les stills), bat 26
+pour les 19 fichiers d'`_A TRIER`, les deux détachements git (A6), la
+fenêtre de réversibilité des 68 copies (**vers le 13/10**), le KB Windows à
+masquer (**vers le 16/10**), et couper « Photo animée » sur le téléphone.
 
 ---
 
-## 3. Les pièges
+## 2. Les pièges
 
 - **Un rapport de sonde est un CACHE** : `docs/motion_photos.json` ne se
   croit qu'avec `--frais`, et le bat 42 le lit tel quel. Relancer le banc
@@ -173,7 +108,18 @@ et le KB Windows à masquer **vers le 16/10**.
 
 ---
 
-## 4. Protocole (inchangé)
+- **La veille et le NAS** : ses vignettes portent `veille=1`, qui DISPENSE
+  la requête de `note_heavy_activity()`. Tout nouveau client ambiant (cadre,
+  écran d'accueil) doit faire pareil, sinon le fond ne tourne plus jamais.
+- **Chrome piloté** : le premier clic après un chargement de page est
+  parfois perdu (le menu du compte ne s'ouvre pas) — recliquer, ce n'est pas
+  un défaut de la page. Un clic par `ref` peut aussi manquer : préférer les
+  coordonnées d'une capture fraîche.
+- **Suppression dans le dépôt** : elle demande une permission par session.
+  Ne JAMAIS écrire de fichier d'essai (mutations de banc) à la racine du
+  dépôt : `$HOME` de la VM, hors `mnt/`.
+
+## 3. Protocole (inchangé)
 
 Éditer → redémarrer (`uptime_s` > 60 d'abord) → **observer en réel** →
 `SESSION_COMMIT.txt` → `livrer` → **vérifier dans `.git/logs/refs/heads/main`**.
