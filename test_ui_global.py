@@ -53,7 +53,7 @@ def _charger(*noms):
     return ns
 
 
-NS = _charger('APP_NAV_HTML', 'UI_DIR', '_UI_JS_FILES', '_UI_JS_CACHE',
+NS = _charger('APP_NAV_HTML', 'APP_NAV_CSS', 'UI_DIR', '_UI_JS_FILES', '_UI_JS_CACHE',
               '_js_signature', 'ui_shared_js', 'injecter_js_commun')
 injecter = NS['injecter_js_commun']
 NAV = NS['APP_NAV_HTML']
@@ -257,6 +257,36 @@ class ServerEtBundleAccordent(unittest.TestCase):
     def test_le_marqueur_du_bundle_existe_dans_server(self):
         import bundle
         self.assertIn(bundle.MARQUEUR_JS, SOURCE)
+
+
+class HiddenCacheVraiment(unittest.TestCase):
+    """`hidden` perd contre toute regle qui pose un `display` : la barre l'a
+    paye TROIS fois -- `.moi-menu`, l'onglet Sensibles (08/09), puis la lampe
+    des depots, allumee et vide sur toutes les pages jusqu'au 16/09. Chaque
+    element de la barre qui nait `hidden` et dont une classe recoit un
+    `display` doit avoir sa regle `[hidden]`."""
+
+    def test_chaque_element_cache_de_la_barre_a_sa_regle(self):
+        import re
+        css = NS['APP_NAV_CSS']
+        vus, manquent = 0, []
+        for m in re.finditer(r'<(\w+)\s([^>]*(?<![-\w])hidden(?![-=\w])[^>]*)>', NAV):
+            cl = re.search(r'class="([^"]+)"', m.group(2))
+            if not cl:
+                continue
+            vus += 1
+            classes = cl.group(1).split()
+            affiche = any(re.search(r'\.%s\b[^{]*\{[^}]*display:(?!none)' % re.escape(c), css)
+                          for c in classes)
+            cache = any(re.search(r'\.%s\[hidden\][^{]*\{[^}]*display:none' % re.escape(c), css)
+                        for c in classes)
+            if affiche and not cache:
+                manquent.append(cl.group(1))
+        # `.appnav-moi` ne tenait que par l'ORDRE des feuilles (base.css,
+        # meme specificite) : il a sa regle lui aussi.
+        # Etendue : si le motif ne voit plus rien, le banc ne juge plus rien.
+        self.assertGreaterEqual(vus, 3, 'elements hidden lus : %d' % vus)
+        self.assertEqual(manquent, [])
 
 
 if __name__ == '__main__':

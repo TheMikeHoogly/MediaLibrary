@@ -40,7 +40,8 @@ FONCTIONS = ('charger_depots', 'sauver_depots', 'depot_noter',
              '_arrivee_de_stat', '_date_arrivee_du_fichier',
              'depot_le', 'depots_a_trier',
              'depots_vue', 'depots_vue_invalider', 'depots_vue_retirer',
-             'dossier_a_trier_de', 'cible_a_trier')
+             'dossier_a_trier_de', 'cible_a_trier',
+             'depot_de', 'depots_de')
 CONSTANTES = ('DEPOT_MUR_S', '_DEPOTS', '_DEPOTS_LOCK', '_DEPOTS_VUE',
               'DEPOTS_VUE_TTL_S', 'DOSSIER_A_TRIER')
 
@@ -411,6 +412,72 @@ class LaChaineEstBRANCHEE(unittest.TestCase):
         self.assertIn('/api/tri/decider', page)
         # Cibles et semantique : des <button>, pas des <div> cliquables.
         self.assertNotIn('onclick=', page)
+
+
+class ChacunTrieLesSiens(Socle):
+    """16/09, choix de Mike. Avant : la lampe comptait les depots de TOUS, et
+    chaque geste de Flo dans `/tri` aurait ete refuse (Uploads est a l'admin).
+    Le deposant a maintenant la main sur SON depot, et sur rien d'autre."""
+
+    def test_le_deposant_est_lu_dans_le_carnet(self):
+        p = self.poser('Camera/a.jpg')
+        self.m._DEPOTS['Camera/a.jpg'] = {'le': time.time(), 'par': 'Flo'}
+        self.assertEqual(self.m.depot_de(p), 'Flo')
+        self.assertEqual(self.m.depot_de(str(p)), 'Flo')
+
+    def test_un_depot_sans_auteur_n_ouvre_rien(self):
+        p = self.poser('b.jpg')
+        self.m._DEPOTS['b.jpg'] = {'le': time.time(), 'par': None}
+        self.assertIsNone(self.m.depot_de(p))
+        self.assertIsNone(self.m.depot_de(self.poser('c.jpg')))
+
+    def test_la_PLACE_compte_pas_le_nom(self):
+        # Un homonyme HORS d'Uploads ne profite pas de la note (regle 7).
+        self.m._DEPOTS['a.jpg'] = {'le': time.time(), 'par': 'Flo'}
+        with tempfile.TemporaryDirectory() as ailleurs:
+            autre = Path(ailleurs) / 'a.jpg'
+            autre.write_bytes(b'x')
+            self.assertIsNone(self.m.depot_de(autre))
+        # Ni un voisin dont le nom COMMENCE comme Uploads.
+        # Le piege : tronque a la longueur d'Uploads, `Uploads_bis/a.jpg`
+        # donne `bis/a.jpg` -- on le met au carnet pour que seul le
+        # separateur exige puisse refuser.
+        self.m._DEPOTS['bis/a.jpg'] = {'le': time.time(), 'par': 'Flo'}
+        voisin = Path(str(self.d) + '_bis') / 'a.jpg'
+        self.assertIsNone(self.m.depot_de(voisin))
+        # Ni une remontee.
+        self.assertIsNone(self.m.depot_de(self.d / '..' / 'a.jpg'))
+
+    def test_un_dossier_d_album_n_ouvre_rien(self):
+        self.poser('Album/x.jpg')
+        self.m._DEPOTS['Album/x.jpg'] = {'le': time.time(), 'par': 'Flo'}
+        self.assertIsNone(self.m.depot_de(self.d / 'Album'))
+
+    def test_chacun_ne_voit_que_les_siens(self):
+        liste = [{'cle': 'a', 'par': 'Flo'}, {'cle': 'b', 'par': 'Papa'},
+                 {'cle': 'c', 'par': None}]
+        self.assertEqual([d['cle'] for d in self.m.depots_de(liste, 'Flo', False)], ['a'])
+        self.assertEqual([d['cle'] for d in self.m.depots_de(liste, 'Mike', True)],
+                         ['a', 'b', 'c'])
+        self.assertEqual(self.m.depots_de(liste, None, False), [])
+
+    def test_le_garde_du_serveur_passe_par_le_deposant(self):
+        # Le branchement, lu sur l'ARBRE (docstring retiree) : sans lui, la
+        # fonction existerait et `/tri` refuserait toujours.
+        n = next(x for x in ARBRE.body
+                 if isinstance(x, ast.FunctionDef) and x.name == 'refus_ecriture')
+        corps = n.body[1:] if isinstance(n.body[0], ast.Expr) else n.body
+        appels = {c.func.id for b in corps for c in ast.walk(b)
+                  if isinstance(c, ast.Call) and isinstance(c.func, ast.Name)}
+        self.assertIn('depot_de', appels)
+
+    def test_la_lampe_et_la_liste_filtrent(self):
+        for nom in ('_serve_moi', '_serve_tri'):
+            n = next(x for x in ast.walk(ARBRE)
+                     if isinstance(x, ast.FunctionDef) and x.name == nom)
+            appels = {c.func.id for c in ast.walk(n)
+                      if isinstance(c, ast.Call) and isinstance(c.func, ast.Name)}
+            self.assertIn('depots_de', appels, nom)
 
 
 if __name__ == '__main__':

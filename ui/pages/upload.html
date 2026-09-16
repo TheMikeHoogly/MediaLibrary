@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Envoyer des photos v10</title>
+<title>Envoyer des photos</title>
 <!--UI:components-->
 <style>
   /* Etape A tokenisation « chambre noire » : couleurs/police en dur -> tokens.
@@ -21,6 +21,7 @@
   body { min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: var(--e-6) var(--e-4) 40px; }
   h1 { font-size: var(--t-xl); margin-bottom: var(--e-2); text-align: center; }
   .subtitle { color: var(--graphite); font-size: var(--t-md); margin-bottom: var(--e-8); text-align: center; }
+  .subtitle a { color: var(--texte); text-decoration: underline; text-underline-offset: 3px; }
 
   .pick-btn {
     display: block;
@@ -113,14 +114,13 @@
 <!--APPNAV-->
 
 <h1>Envoyer des photos</h1>
-<p style="color:var(--graphite);font-size:var(--t-xs);margin-bottom:var(--e-1)">v10 &middot; tagging IA</p>
-<p class="subtitle">Meme reseau WiFi &middot; Aucune inscription requise</p>
+<p class="subtitle">Depuis la maison, sur le m&ecirc;me Wi-Fi. Tes envois arrivent dans <code>_Uploads</code>, et c&rsquo;est toi qui les ranges &mdash; <a href="/aide#deposer">comment</a>.</p>
 
 <input type="file" id="fileInput" multiple accept="image/*,video/*" class="hors-ecran">
 <label for="fileInput" class="pick-btn" id="pickBtn">
   <div class="pick-icon">&#128247;</div>
   <div class="pick-label">Choisir des photos</div>
-  <div class="pick-hint">Une ou plusieurs images &middot; videos</div>
+  <div class="pick-hint">Une ou plusieurs images &middot; vid&eacute;os</div>
 </label>
 
 <input type="file" id="dirInput" webkitdirectory multiple class="hors-ecran">

@@ -279,7 +279,11 @@
     h += '<button type="button" class="item" data-veille role="menuitem">' +
       '<span aria-hidden="true">\uD83C\uDF19</span> Lancer la veille</button>';
     if (MOI.porte) {
-      h += '<div class="sep"></div><button type="button" class="item" data-sortir role="menuitem">' +
+      // Chacun change SON mot de passe (16/09) : le bouton ne vivait que
+      // dans Reglages, que seul l'admin voit dans ce menu.
+      h += '<div class="sep"></div><button type="button" class="item" data-mdp role="menuitem">' +
+        '<span aria-hidden="true">\uD83D\uDD11</span> Changer mon mot de passe</button>';
+      h += '<button type="button" class="item" data-sortir role="menuitem">' +
         '<span aria-hidden="true">\u21AA</span> Se d\u00e9connecter</button>';
     }
     m.innerHTML = h;
@@ -298,6 +302,8 @@
     if (veille) veille.addEventListener('click', function () {
       fermerMenu(); Veille.lancer(true);   // un GESTE : le plein ecran est permis
     });
+    var mdp = m.querySelector('[data-mdp]');
+    if (mdp) mdp.addEventListener('click', function () { fermerMenu(); MotDePasse.ouvrir(); });
     var sortir = m.querySelector('[data-sortir]');
     if (sortir) sortir.addEventListener('click', function () {
       fetch('/api/deconnexion', { method: 'POST' })
@@ -305,6 +311,71 @@
         .catch(function () { location.href = '/connexion'; });
     });
   }
+  /* Le panneau MOT DE PASSE. Pas de `prompt()` : il affiche la saisie en
+     clair et bloque la page. Deux champs masques, la regle dite AVANT (8
+     caracteres), et une reponse ecrite dans le panneau. Meme coque que les
+     raccourcis : fond, Echap, retour du focus. */
+  var MotDePasse = (function () {
+    var el = null, avant = null;
+    function fermer() {
+      if (!el || !el.classList.contains('on')) return;
+      el.classList.remove('on');
+      if (avant && avant.focus) avant.focus();
+    }
+    function construire() {
+      el = document.createElement('div');
+      el.className = 'raccourcis';
+      el.innerHTML =
+        '<form class="raccourcis__p mdp" role="dialog" aria-modal="true" aria-labelledby="mdp-titre">' +
+        '<div class="raccourcis__t"><h2 id="mdp-titre">Changer mon mot de passe</h2>' +
+        '<button type="button" class="btn" data-fermer>Fermer</button></div>' +
+        '<p>8 caract\u00e8res au moins. Il remplace l\u2019ancien tout de suite.</p>' +
+        '<label for="mdp-1">Nouveau mot de passe</label>' +
+        '<input id="mdp-1" type="password" autocomplete="new-password" minlength="8" required>' +
+        '<label for="mdp-2">Le m\u00eame, une seconde fois</label>' +
+        '<input id="mdp-2" type="password" autocomplete="new-password" minlength="8" required>' +
+        '<p class="mdp__msg" role="status" aria-live="polite"></p>' +
+        '<div class="mdp__acts"><button type="submit" class="btn">Enregistrer</button></div>' +
+        '</form>';
+      document.body.appendChild(el);
+      el.addEventListener('click', function (ev) {
+        if (ev.target === el || ev.target.hasAttribute('data-fermer')) fermer();
+      });
+      el.addEventListener('keydown', function (ev) {
+        if (ev.key === 'Escape') { ev.preventDefault(); fermer(); }
+      });
+      var f = el.querySelector('form'), msg = el.querySelector('.mdp__msg');
+      f.addEventListener('submit', function (ev) {
+        ev.preventDefault();
+        var a = el.querySelector('#mdp-1').value, b = el.querySelector('#mdp-2').value;
+        if (a.length < 8) { msg.textContent = 'Trop court : 8 caract\u00e8res au moins.'; return; }
+        if (a !== b) { msg.textContent = 'Les deux saisies diff\u00e8rent. Retape-les.'; return; }
+        msg.textContent = 'Enregistrement\u2026';
+        fetch('/api/comptes/mdp', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ mdp: a }) })
+          .then(function (r) { return r.json().catch(function () { return { ok: false }; }); })
+          .then(function (r) {
+            if (r && r.ok) {
+              msg.textContent = 'Mot de passe chang\u00e9. Il servira \u00e0 la prochaine connexion.';
+              f.reset();
+            } else {
+              msg.textContent = 'Refus\u00e9 : ' + ((r && r.error) || 'le serveur n\u2019a pas accept\u00e9') + '.';
+            }
+          })
+          .catch(function () { msg.textContent = 'Le serveur n\u2019a pas r\u00e9pondu. R\u00e9essayer.'; });
+      });
+    }
+    function ouvrir() {
+      if (!el) construire();
+      // Le geste part du MENU, qui se ferme : rendre le focus a son bouton.
+      avant = document.querySelector('.moi-bouton') || document.activeElement;
+      el.querySelector('.mdp__msg').textContent = '';
+      el.classList.add('on');
+      el.querySelector('#mdp-1').focus();
+    }
+    return { ouvrir: ouvrir };
+  })();
+
   function ouvrirMenu() {
     var z = zoneMoi(); if (!z || !MOI) return;
     construireMenu();

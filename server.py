@@ -766,7 +766,12 @@ def refus_ecriture(chemin):
     courant a la main, sinon (code, message). Injecté dans `FileOps` — un
     seul goulot, consulté AVANT de toucher au disque. Les DÉCISIONS sur une
     photo ne passent pas ici (arbitrées par `auteurs`)."""
-    return _visibilite.refus_ecriture(str(chemin), utilisateur_vu())
+    nom = utilisateur_vu()
+    # Le déposant a la main sur SON dépôt tant qu'il est dans Uploads : c'est
+    # ce qui rend `/tri` utilisable par chacun (16/09, `depot_de`).
+    if nom and depot_de(chemin) == nom:
+        return None
+    return _visibilite.refus_ecriture(str(chemin), nom)
 
 
 # L'index RÉEL, capturé AVANT que la vue ne soit posée dessus. `STORE.data`
@@ -4804,6 +4809,51 @@ def depots_vue():
     return liste
 
 
+def depot_de(chemin):
+    """Qui a DÉPOSÉ ce fichier d'Uploads, selon le carnet — ou None.
+
+    Pourquoi (16/09, trouvé en vérifiant `/aide`) : `_Uploads` est hors de
+    tout dossier propriétaire, donc seul l'admin y avait la main. La lampe
+    s'allumait pourtant chez Flo et Papa, et dans `/tri` chacun de leurs
+    « Garder » ou « Effacer » aurait été refusé — une promesse que l'outil ne
+    pouvait pas tenir (CLAUDE.md n° 9). Choix de Mike : **chacun trie les
+    siens**. Le carnet dit qui a déposé ; c'est la seule source, et un dépôt
+    sans auteur (ceux d'avant le 12/09) reste à l'admin.
+
+    La PLACE, pas le nom (n° 7) : le chemin doit être SOUS `UPLOAD_DIR`, et
+    la clé est celle que `/upload` a notée — nom simple à la racine, relatif
+    posix dans un sous-dossier. Un dossier d'album n'est pas au carnet : il
+    n'ouvre rien."""
+    if UPLOAD_DIR is None:
+        return None
+    base = os.path.normpath(str(UPLOAD_DIR)).rstrip('\\/')
+    brut = os.path.normpath(str(chemin))
+    if not os.path.normcase(brut).startswith(os.path.normcase(base) + os.sep):
+        return None
+    cle = brut[len(base) + 1:].replace(os.sep, '/')
+    if not cle or cle.startswith('..'):
+        return None
+    with _DEPOTS_LOCK:
+        note = _DEPOTS.get(cle)
+    par = note.get('par') if isinstance(note, dict) else None
+    return par if isinstance(par, str) and par else None
+
+
+def depots_de(liste, nom, tous):
+    """Les dépôts qu'un utilisateur a à trier : tous pour l'admin (ou sans
+    compte), les SIENS sinon. Sans nom, rien — une lampe ne s'allume pas pour
+    quelqu'un qui ne pourrait rien décider."""
+    if tous:
+        return list(liste)
+    if not nom:
+        return []
+    return [d for d in liste if d.get('par') == nom]
+
+
+def voit_tous_les_depots(nom):
+    return not COMPTES.actifs() or bool(nom and COMPTES.est_admin(nom))
+
+
 # Le carnet se reprend au chargement du module, là où ses fonctions existent :
 # le bloc de démarrage des comptes tourne 3 000 lignes plus haut.
 if charger_depots():
@@ -8282,6 +8332,7 @@ APP_NAV_CSS = """<style id="appnav-css">
    lignes quand la fenetre est etroite, et la lampe demandee « a droite du nom »
    s'etait retrouvee seule sur la ligne du dessous (vu le 12/09 a 1023 px). */
 .appnav-moi{position:relative;display:flex;align-items:center;gap:var(--e-1);}
+.appnav-moi[hidden]{display:none;}
 .moi-bouton{display:inline-flex;align-items:center;gap:var(--e-2);
   min-height:var(--touch);padding:0 var(--e-2) 0 var(--e-1);border:var(--trait);
   border-radius:var(--r-pill);background:var(--salle-3);color:var(--texte);
@@ -8353,6 +8404,12 @@ APP_NAV_CSS = """<style id="appnav-css">
 .raccourcis__p .btn{min-height:var(--touch);padding:0 var(--e-4);border:var(--trait);
   border-radius:var(--r-md);background:var(--salle-3);color:var(--texte);cursor:pointer;
   font:500 var(--t-sm)/1 var(--f-texte);}
+.mdp label{display:block;margin:var(--e-3) 0 var(--e-1);font-size:var(--t-sm);color:var(--texte);}
+.mdp input{width:100%;min-height:var(--touch);padding:0 var(--e-2);font:inherit;color:var(--texte);
+  background:var(--salle-3);border:var(--trait);border-radius:var(--r-md);box-sizing:border-box;}
+.mdp input:focus-visible{outline:2px solid var(--veilleuse);outline-offset:2px;}
+.mdp .mdp__msg{min-height:1.4em;margin-top:var(--e-3);color:var(--texte);}
+.mdp__acts{display:flex;justify-content:flex-end;}
 @media(max-width:560px){
   .appnav{gap:2px;padding:8px 8px;}
   .raccourcis{padding:var(--e-2);}
@@ -8374,6 +8431,11 @@ APP_NAV_CSS = """<style id="appnav-css">
    plancher `prefers-reduced-motion` de base.css coupe l'animation ; ce qui
    reste alors est un point orange et un compte, c'est-a-dire tout le
    message. Cible : 44 px, comme tout ce qui se clique ici. */
+/* 16/09 : `display` ci-dessous battait `[hidden]` -- la lampe restait
+   allumee, vide, sur toutes les pages et pour tous les comptes. Meme panne
+   que l'onglet Sensibles (plus haut) : la regle nomme l'element, pas le seul
+   attribut, et elle est PLUS specifique que celle qui l'affiche. */
+.appnav .lampe[hidden]{display:none;}
 .appnav .lampe{display:inline-flex;align-items:center;gap:5px;
   min-height:var(--touch);padding:0 var(--e-2);border-radius:var(--r-pill);
   text-decoration:none;color:var(--veilleuse);flex-shrink:0;
@@ -13262,7 +13324,7 @@ class Handler(BaseHTTPRequestHandler):
         # l'entête allume. `/api/moi` est le seul appel que TOUTES les pages
         # font déjà — la lampe n'en ajoute aucun.
         try:
-            attente = depots_vue()
+            attente = depots_de(depots_vue(), nom, voit_tous_les_depots(nom))
         except Exception:                                     # noqa: BLE001
             attente = []
         self._send(200, json.dumps(
@@ -13714,7 +13776,8 @@ class Handler(BaseHTTPRequestHandler):
             "Le dossier « %s » n'existe pas à côté d'Uploads : un dépôt "
             "gardé n'aurait nulle part où aller." % DOSSIER_A_TRIER)
         items = []
-        for d in depots_vue():
+        u = utilisateur_vu()
+        for d in depots_de(depots_vue(), u, voit_tous_les_depots(u)):
             chemin = UPLOAD_DIR / d['cle']
             items.append({
                 'cle': d['cle'],

@@ -17,6 +17,12 @@
 .feuille strong { font-weight: 600; }
 .titre { font: 600 var(--t-xl)/1.15 var(--f-affichage); margin: var(--e-4) 0 var(--e-2); }
 .chapo { color: var(--graphite); margin-bottom: var(--e-3); line-height: 1.5; }
+/* Deux temps (16/09, P2) : les QUATRE GESTES d'abord -- ce qu'un nouveau
+   venu cherche en arrivant --, ce qu'il faut savoir ensuite. */
+.groupe { font: 600 var(--t-lg)/1.2 var(--f-affichage); color: var(--texte);
+          margin: var(--e-6) 0 var(--e-2); }
+.feuille ol { margin: var(--e-2) 0 0 var(--e-4); line-height: 1.55; }
+.feuille li + li { margin-top: var(--e-1); }
 .cle { font-family: var(--f-donnees); font-size: var(--t-sm);
        background: var(--papier-2); padding: 1px var(--e-1); border-radius: var(--r-sm); }
 /* Un lien vers un onglet : c'est un panneau indicateur, pas une alerte. Il
@@ -41,101 +47,145 @@
 <!--APPNAV-->
 <div class="enveloppe">
   <h1 class="titre">Comment ça marche</h1>
-  <p class="chapo">La photothèque de la maison, en sept points. Rien à installer,
-     rien à configurer : tout se passe dans cette page-ci et les quatre onglets
-     en haut — <a href="/files">Galerie</a>, <a href="/browse">Dossiers</a>,
-     <a href="/map">Carte</a>, <a href="/sujets">Sujets</a>.</p>
+  <p class="chapo">La photothèque de la maison. Rien à installer : un
+     navigateur suffit, sur l'ordinateur ou le téléphone. D'abord les quatre
+     gestes qui servent tout de suite, ensuite ce qu'il faut savoir.</p>
 
-  <section class="feuille">
-    <h3>1. Ce que tu vois</h3>
-    <p>Chaque personne a son dossier, <span class="cle">Photos Prénom</span> —
-       ils sont tous dans <a href="/browse">Dossiers</a>. Tu vois le tien, et tu
-       vois ce que les autres partagent : c'est une photothèque de famille, pas
-       un coffre-fort à cloisons.</p>
-    <p>La seule exception est le dossier <span class="cle">PRIVE</span> à
-       l'intérieur de chaque dossier personnel : celui-là n'est visible que par
-       son propriétaire. Ne pas voir, c'est ne pas toucher — une photo privée
-       n'existe pas du tout pour les autres.</p>
+  <h2 class="groupe">Les quatre gestes</h2>
+
+  <section class="feuille" id="connexion">
+    <h3>1. Se connecter</h3>
+    <p>À la maison, sur le Wi-Fi, ouvre
+       <span class="cle">http://192.168.0.13:8080</span>. Entre ton
+       <strong>prénom</strong> — celui de ton dossier — et le mot de passe
+       que Mike t'a donné.</p>
+    <p>Change-le ensuite : clique sur ton prénom, en haut à droite, puis
+       <strong>Changer mon mot de passe</strong>. Huit caractères au moins.
+       Le même menu permet de se déconnecter.</p>
   </section>
 
-  <section class="feuille">
-    <h3>2. Ce que tu peux changer</h3>
-    <p>Dans <strong>ton</strong> dossier — <a href="/browse">Dossiers</a> —
-       tu peux renommer, déplacer, mettre à la corbeille, créer un dossier.
-       C'est chez toi.</p>
-    <p>Ailleurs — la racine, <span class="cle">_A TRIER</span>,
-       <span class="cle">_Uploads</span> — seul Mike peut écrire. Si un bouton
-       refuse, ce n'est pas une panne : c'est cette règle.</p>
-    <p>En revanche, <strong>juger</strong> une photo est permis partout où tu la
-       vois : nommer un visage, confirmer, écarter une erreur. C'est l'onglet
-       <a href="/sujets">Sujets</a> qui rassemble ce travail. Corriger le nom
-       d'une photo partagée est utile à tout le monde ; la détruire ne l'est
-       pas.</p>
+  <section class="feuille" id="deposer">
+    <h3>2. Envoyer des photos</h3>
+    <ol>
+      <li>Clique sur <a href="/">Photos</a>, tout à gauche en haut.</li>
+      <li><strong>Choisir des photos</strong> pour quelques images ou
+          vidéos, ou <strong>Choisir un dossier</strong> pour un album
+          entier, sous-dossiers compris.</li>
+      <li><strong>Envoyer</strong>. Une photo déjà présente dans la
+          photothèque est reconnue et sautée : renvoyer un album ne crée
+          pas de doublon.</li>
+    </ol>
+    <p>Tes envois arrivent dans <span class="cle">_Uploads</span>, visible
+       dans <a href="/browse">Dossiers</a>, et apparaissent dans la galerie
+       quand la machine les a analysés. <strong>C'est toi qui les
+       ranges</strong> : dans Dossiers, sélectionne-les, <strong>Couper</strong>,
+       ouvre ton dossier <span class="cle">Photos Prénom</span>, puis
+       <strong>Coller ici</strong>.</p>
+    <p>Si tu n'y penses pas, un rond orange s'allume en haut à droite au bout
+       de sept jours. Il ouvre la liste de <strong>tes</strong> envois à
+       trier : <strong>Garder</strong> les range dans ton
+       <span class="cle">_A TRIER</span>, <strong>Effacer</strong> les met à
+       la corbeille. Tu ne vois et ne tries que les tiens.</p>
   </section>
 
-  <section class="feuille">
-    <h3>3. Rendre une photo privée</h3>
-    <p>Le bouton <strong>🔒 Rendre privée</strong>, sous la photo ouverte, la
-       <strong>déplace</strong> dans ton <span class="cle">PRIVE</span>. Ce n'est
-       pas une étiquette qu'on pourrait oublier de cocher : c'est un déplacement,
-       et il est annulable comme les autres.</p>
-    <p>Le bouton n'apparaît pas là où le geste ne pourrait qu'échouer — sur une
-       photo déjà privée, ou sur une photo qui n'est chez personne.</p>
+  <section class="feuille" id="nommer">
+    <h3>3. Nommer un visage ou un animal</h3>
+    <p>La machine reconnaît les visages et les animaux, mais elle ne connaît
+       pas leurs noms : c'est à toi de les lui apprendre, dans
+       <a href="/sujets?vue=classification">Sujets › Classification</a>.</p>
+    <p><strong>À vérifier</strong> : la machine propose un nom. Réponds
+       <strong>Oui</strong>, tape le bon nom à côté, ou dis
+       <strong>Aucun</strong>. Les chiffres qui accompagnent la question
+       disent seulement à quel point elle hésite.</p>
+    <p><strong>Groupes à nommer</strong> : des visages qu'elle a rassemblés
+       sans savoir qui c'est. Un nom donné au groupe vaut pour toutes ses
+       photos. Les animaux ont la même chose, un peu plus bas.</p>
   </section>
 
-  <section class="feuille">
-    <h3>4. Supprimer ne supprime pas tout de suite</h3>
-    <p>Une photo effacée part dans une corbeille et y reste <strong>six
-       mois</strong> avant d'être vraiment retirée. Tant qu'elle y est, elle se
-       restaure. « Annuler » défait le dernier geste ; la corbeille, elle, garde
-       les anciens.</p>
-  </section>
-
-  <section class="feuille">
-    <h3>5. Chercher</h3>
-    <p>Le champ en haut cherche par le <strong>sens</strong>, pas par le nom de
-       fichier : décris ce que tu veux voir, en français — « ours en peluche »,
-       « chat qui dort », « bord de mer ». La touche <span class="cle">/</span>
-       t'y amène depuis n'importe quel onglet.</p>
-    <p>Tout est en français : les mots-clés, les descriptions, la recherche.
-       Écris comme tu parles, sans deviner le mot exact — c'est le sens qui est
-       cherché, pas l'orthographe d'une étiquette.</p>
+  <section class="feuille" id="chercher">
+    <h3>4. Chercher</h3>
+    <p>Le champ en haut cherche par le <strong>sens</strong>, pas par le nom
+       de fichier : décris ce que tu veux voir, en français — « ours en
+       peluche », « chat qui dort », « bord de mer ». La touche
+       <span class="cle">/</span> t'y amène depuis n'importe quel onglet.
+       Écris comme tu parles, sans deviner le mot exact.</p>
     <p>Tu peux aussi viser précis : une personne
-       (<span class="cle">personne:Florine</span>), un animal, un lieu ou une
-       journée. Les personnes et les animaux ont leur onglet,
+       (<span class="cle">personne:Florine</span>), un animal, un lieu ou
+       une journée. Les personnes et les animaux ont leur onglet,
        <a href="/sujets">Sujets</a> ; les lieux, l'onglet
-       <a href="/map">Carte</a>.</p>
+       <a href="/map">Carte</a>. Tu ne trouves que ce que tu as le droit de
+       voir.</p>
+  </section>
+
+  <h2 class="groupe">Ce qu'il faut savoir</h2>
+
+  <section class="feuille">
+    <h3>5. Ce que tu vois</h3>
+    <p>Chaque personne a son dossier, <span class="cle">Photos Prénom</span>
+       — ils sont tous dans <a href="/browse">Dossiers</a>. Tu vois le tien,
+       et tu vois ce que les autres partagent : c'est une photothèque de
+       famille, pas un coffre-fort à cloisons.</p>
+    <p>La seule exception est le dossier <span class="cle">PRIVE</span> à
+       l'intérieur de chaque dossier personnel : celui-là n'est visible que
+       par son propriétaire. Une photo privée n'existe pas du tout pour les
+       autres.</p>
   </section>
 
   <section class="feuille">
-    <h3>6. Les noms sont écrits dans les photos</h3>
-    <p>Quand tu nommes un visage, le nom n'est pas seulement rangé dans une base :
-       il est écrit <strong>dans le fichier lui-même</strong>. Si la base était
-       perdue et reconstruite demain, les noms seraient toujours là. C'est la
-       règle la plus protégée du projet — aucune opération n'a le droit d'en
-       perdre un.</p>
+    <h3>6. Ce que tu peux changer</h3>
+    <p>Dans ton dossier, tu peux renommer, déplacer, mettre à la corbeille,
+       créer un dossier. C'est chez toi. Dans
+       <span class="cle">_Uploads</span>, tu as la main sur
+       <strong>tes</strong> envois, et sur rien d'autre.</p>
+    <p>Ailleurs — la racine, les dossiers des autres — seul leur
+       propriétaire ou Mike peut ranger. Si un bouton refuse, ce n'est pas
+       une panne : c'est cette règle, et le message dit laquelle.</p>
+    <p>En revanche, <strong>nommer</strong> est permis partout où tu vois la
+       photo. Corriger le nom sur une photo partagée est utile à tout le
+       monde ; la détruire ne l'est pas.</p>
   </section>
 
   <section class="feuille">
-    <h3>7. L'IA travaille ici, dans la maison</h3>
-    <p>Les mots-clés et les descriptions sont produits par des modèles qui
-       tournent <strong>sur la machine de Mike</strong>. Aucune photo n'est
-       envoyée à un service en ligne — ni pour être décrite, ni pour être
-       reconnue, ni pour être située.</p>
+    <h3>7. Rendre une photo privée</h3>
+    <p>Le bouton 🔒 <strong>Rendre privée</strong>, sous la photo ouverte,
+       la <strong>déplace</strong> dans ton <span class="cle">PRIVE</span>.
+       Ce n'est pas une étiquette qu'on pourrait oublier de cocher : c'est un
+       déplacement, et il s'annule comme les autres.</p>
+    <p>Le bouton n'apparaît pas là où le geste ne pourrait qu'échouer — sur
+       une photo déjà privée, ou sur une photo qui n'est chez personne.</p>
+  </section>
+
+  <section class="feuille">
+    <h3>8. Effacer n'efface pas tout de suite</h3>
+    <p>Une photo effacée part dans une corbeille et y reste
+       <strong>six mois</strong>. Juste après le geste,
+       <strong>Annuler</strong> la remet en place. Plus tard, demande à
+       Mike : c'est lui qui ouvre la corbeille.</p>
+  </section>
+
+  <section class="feuille">
+    <h3>9. Les noms sont écrits dans les photos</h3>
+    <p>Quand tu nommes un visage, le nom est écrit <strong>dans le fichier
+       lui-même</strong>, pas seulement dans une base. Si la base était
+       perdue demain, les noms seraient toujours là.</p>
+  </section>
+
+  <section class="feuille">
+    <h3>10. L'IA travaille ici, dans la maison</h3>
+    <p>Les mots-clés, les descriptions et la reconnaissance des visages sont
+       produits sur la machine de Mike. <strong>Aucune photo n'est
+       envoyée</strong> à un service en ligne.</p>
     <p>Une photo qui vient d'arriver n'a donc pas encore ses mots-clés : ils
-       apparaissent quand la machine y arrive, parfois quelques minutes plus
-       tard. Ce n'est pas perdu, c'est en attente — <a href="/reglages">Réglages</a>
-       dit en une ligne où en est le travail.</p>
+       apparaissent quand la machine y arrive — quelques minutes, davantage
+       après un gros envoi. Ce n'est pas perdu, c'est en attente.</p>
   </section>
 
   <section class="feuille">
     <h3>Si quelque chose cloche</h3>
-    <p>Dis-le à Mike, avec le nom du fichier ou l'endroit où tu étais. Le serveur
-       tient un journal de ce qu'il fait : la plupart des « ça n'a pas marché »
-       s'y retrouvent, à condition de savoir quoi chercher. L'état de la machine
-       se lit dans <a href="/reglages">Réglages</a>, et la touche
-       <span class="cle">?</span> rappelle les raccourcis depuis n'importe quel
-       onglet.</p>
+    <p>Dis-le à Mike, avec le nom du fichier ou l'endroit où tu étais : le
+       serveur tient un journal de ce qu'il fait. La touche
+       <span class="cle">?</span> rappelle les raccourcis clavier depuis
+       n'importe quel onglet.</p>
   </section>
 </div>
 </body>

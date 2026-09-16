@@ -200,7 +200,7 @@ Dans l'ordre où je le ferais, **reclassé le 14/09 au soir** :
 | — | ~~B5, B6~~ | **MESURÉS 16/09** — 26 Motion Photos ; O8/O9 clos | fait |
 | — | ~~La veille en plein écran (P1)~~ | **LIVRÉE 16/09** — réglages confirmés par Mike, lieu ajouté | fait |
 | **6** | **La copie hors site** (§ D1) | **Mike** | à lui seul |
-| **7** | **La démo de bienvenue et son e-mail** (P2) | Mike a demandé — **en DERNIER** | moyen |
+| **7** | **La démo de bienvenue et son e-mail** (P2) | `/aide` **LIVRÉE 16/09** ; reste l'**e-mail** | petit |
 
 **Le 1 est livré (15/09).** Les QUATRE producteurs qui lisent l'INDEX —
 grille indexée, tags, recherche/semblables, même jour — passent par
@@ -353,157 +353,6 @@ L'instrument (`mesure_tirage_aveugle.py`) et le jeu
 (`eval/tirage_aveugle.json`) sont là, et tout modèle futur s'y branche sur
 les mêmes photos. **Et le seul vrai levier serait matériel** : 8 Go de VRAM
 ouvriraient une classe entière. C'est une décision de Mike, pas un chantier.
-
-**B1. Le bilan de la campagne — et ce qu'on ne pourra PAS mesurer.** Première
-passe officielle du fonds entier : 40 525 photos, 1 abandon, 100 % de
-vignettes. Reste la vraie question : **ce que `v3fr|kb1` a changé**.
-
-**Mauvaise nouvelle, vérifiée le 13/09** : il n'existe plus d'instantané
-d'AVANT. La copie de 283 Mo était la dernière (A4) et elle a été effacée ;
-`photos.db.bak` est un roulement rafraîchi toutes les heures. `mesure_retag_
-gain.py`, lui, compare deux GÉNÉRATIONS de pipeline dans le même index — or
-les 40 525 photos portent désormais la même. **Le lancer maintenant ne
-mesurerait plus que le bruit du modèle.**
-
-**Le bilan DESCRIPTIF, lui, est fait** (13/09, sur la copie) — ce que le fonds
-porte aujourd'hui :
-
-| | |
-|---|---:|
-| photos taguées | **40 525** (+ 4 133 vidéos, 8 illisibles) |
-| sans aucun mot-clé | **0** |
-| sans description | **0** |
-| mots-clés par photo | médiane **6**, moyenne 6,9, de 3 à 23 |
-| au moins un fait | **99,7 %** — date 99,2, personne 44,1, lieu 28,2, espèce 10,3 |
-| vocabulaire | **44 744 mots-clés distincts** pour 280 315 occurrences |
-| vus UNE seule fois | **28 774 — 64,3 % du vocabulaire** |
-
-Couverture parfaite : pas une photo sans mots-clés ni description. **Le chiffre
-qui interroge est le dernier** : deux tiers du vocabulaire n'apparaissent
-qu'une fois (« carrelage beige », « campagne andine »).
-
-**J'ai d'abord cru y voir un chantier — c'est faux, vérifié.** Les facettes de
-la galerie sont DÉJÀ bâties sur la fréquence : `_serve_gallery` trie les
-mots-clés du dossier par nombre et n'en garde que les **60 premiers**. Les
-28 774 mots vus une fois n'atteignent donc jamais la barre de filtres. La
-recherche par le SENS passe par les vecteurs, pas par les mots. Et le
-dictionnaire FR→EN est gelé. **Conséquence mécanique : aucune.**
-
-Ce que ce chiffre est vraiment : **la signature de `v3fr`**. Ce prompt demande
-de la description, pas des étiquettes — et il la produit. C'est donc le
-**point de comparaison** du jour où un autre prompt sera envisagé (B2), pas un
-problème à corriger. Mesuré au passage, si la question revient : un seuil à
-**3 occurrences** garderait 9 857 mots (22 % du vocabulaire) tout en couvrant
-**83 % des occurrences**, et seulement **315 photos** sur 40 525 se
-retrouveraient sans aucun mot au-dessus du seuil.
-
-**Leçon pour la prochaine campagne : copier la base AVANT de la lancer** —
-quatre secondes (`mesure_copie_base.py`), et c'est la seule fenêtre.
-
-**B2. Le modèle de vision — la question redevient un CHOIX.** La décision du
-12/09 (« on vit avec les 13,5 Go d'Ollama ») est **périmée par la fin de la
-campagne** : le moteur a rendu la mémoire, il ne reste rien de lui dans le
-relevé du 13/09, et la RAM libre est passée de 0,5 à 5,2 Go. Le sujet n'est
-donc plus « la machine pagine », c'est « **quel modèle pour la PROCHAINE
-passe** » — un qui tient entièrement dans les 4 Go de VRAM ne reprendra pas
-7,8 Go en RAM. Protocole `vision-eval` ; changer de modèle est un changement
-de pipeline, donc une campagne de plus.
-
-**B3. La question au tagueur sur les documents sensibles.** Elle était
-**empêchée**, pas reportée : la toucher pendant la campagne aurait rendu
-candidates les 12 000 photos déjà refaites. Le prompt est de nouveau
-touchable — et toute modification relance une passe complète. À instruire
-AVANT d'écrire une ligne : est-ce que ça vaut une campagne ?
-
-**B4. L'abandon, et ce qu'il cache.** `Photos Mike\2018\08 Août\
-20180805_095733.jpg` porte `retag_fail` avec le message **« another row
-available »**. Trois choses, dans l'ordre où elles comptent :
-1. **La photo va bien.** Elle est taguée — 7 mots-clés, description, faits —
-   et son `pipe` est à jour. Le drapeau est une cicatrice, pas un trou.
-2. **Le message n'est pas du modèle, c'est de SQLite.** Un `step()` qui rend
-   une ligne là où l'appelant attendait la fin. C'est un défaut de LECTURE
-   concurrente sous charge, pas une photo difficile.
-3. **Donc ça peut recommencer, et plus fort.** Une passe de 40 000 photos l'a
-   déclenché une fois. Le chercher maintenant, à froid, coûte moins cher que
-   de le revoir sur une campagne de nuit.
-
-**B1·B2·B3·B4 → LA décision, et ce qu'il faut poser sur la table avant.**
-Ces quatre-là ne se tranchent qu'ensemble. Ce que je dois produire pour que
-Mike puisse décider en une fois — et rien de plus :
-
-1. **Ce que coûte une campagne — le chiffre était FAUX d'un facteur 25, et
-   il a été corrigé le 15/09.** Cette ligne disait « 40 525 photos × ~17,6 s
-   = **~8 h de GPU** ». La multiplication ne tient pas : 40 525 × 17,6 s =
-   **713 240 s = 198 h = 8,3 JOURS**. Ce n'étaient pas huit heures, c'étaient
-   huit **jours** — une erreur d'unité, recopiée telle quelle à chaque
-   relecture. **Et la réalité le confirme** : la campagne a été lancée le
-   05/09 et finie dans la nuit du 12 au 13/09, soit **7,5 jours = 180 h**,
-   c'est-à-dire **16,0 s/photo** — à 10 % du chiffre écrit. Les deux se
-   recoupent ; seule l'unité était fausse.
-   **Le plancher mesuré le 15/09** (tirage en aveugle, modèle chaud, sans
-   vignettes ni XMP ni scan concurrent) : `qwen3.5:4b` à **9,6 s/photo**, soit
-   **4,5 jours** au mieux ; `qwen3-vl:2b` à **3,2 s/photo**, soit **1,5 jour**.
-   Une campagne n'est donc jamais une nuit : c'est une SEMAINE pendant
-   laquelle le prompt est figé et le GPU pris.
-2. **Ce qu'un autre modèle donnerait**, mesuré en aveugle sur un tirage A/B —
-   pas sur 8 photos choisies, la faute nommée dans « Pistes ouvertes ». Sans
-   cette mesure, changer de modèle est un pari à plusieurs JOURS.
-3. **Ce que la question « documents sensibles » ajouterait au prompt**, et sur
-   combien de photos elle changerait quelque chose. Une phrase de prompt qui
-   touche 50 photos ne vaut pas une campagne ; une qui en touche 5 000, oui.
-4. **Le verrou à poser AVANT de lancer quoi que ce soit** : copier la base
-   (`mesure_copie_base.py`, quatre secondes). C'est la seule fenêtre, et on
-   l'a manquée la fois précédente (B1).
-
-**MIKE A DIT OUI AUX « 8 HEURES » — le 14/09 au soir. Mais les 8 heures
-n'existent pas : ce sont 8 JOURS** (point 1 ci-dessous, corrigé le 15/09).
-Son « oui » porte donc sur un coût qui n'est pas le vrai, et **c'est à lui de
-le reprendre en connaissance de cause**. Le CONTENU, lui, restait de toute
-façon à produire, et c'est mon travail. Ce que ça change : le
-point 1 ci-dessus tombe (il était connu, il est validé), le point 4 est
-trivial, et **il reste les points 2 et 3, tous deux à MESURER**. Tant qu'ils
-ne sont pas sur la table, il n'y a rien à lui proposer — « oui aux 8 heures »
-n'est pas « oui à ce modèle-là avec ce prompt-là ».
-
-**Le point 3 est à moitié mesuré, le 14/09 au soir.** Sur les 44 459 entrées,
-**23 photos** (0,05 %) portent aujourd'hui un mot-clé qui les rendrait
-candidates à la question « document sensible » — 13 « carte bancaire », 4
-« facture », 3 « certificat medical », et une poignée d'autres. Toutes sont
-déjà passées par `qwen3.5:4b|v3fr|kb1`. **Mais 23 est un PLANCHER, pas la
-réponse** : `candidat_sensible` lit le vocabulaire que le prompt ACTUEL a
-produit, alors que la question ajoutée servirait précisément à trouver ce
-qu'il ne nomme pas. Ce qui manque est donc l'écart : sur un tirage neutre,
-combien de photos le prompt AVEC la question signale-t-il que celui d'AUJOURD'HUI
-laisse passer ?
-
-**LE TIRAGE A TOURNÉ — 15/09 au matin, 240 lignes, 60 photos × 2 modèles ×
-2 prompts** (`mesure_tirage_aveugle.py`, jeu gelé dans
-`eval/tirage_aveugle.json`, graine 20260915, tiré sur 40 320 images). Ce qu'il
-dit, et ce qu'il ne dit pas :
-
-| | `qwen3.5:4b` (prod) | `qwen3-vl:2b` (l'ancien) |
-|---|---:|---:|
-| médiane par photo | **9,6 s** | **3,2 s** |
-| sorties malformées | **0 / 120** | **0 / 120** |
-| mots-clés (médiane) | 6 | 7 |
-| description (médiane) | 98 car. | 130 car. |
-
-- **Le modèle de prod est TROIS FOIS plus lent que celui qu'il a remplacé.**
-  C'est le prix payé le 05/09, et il n'avait jamais été chiffré côté campagne.
-- **Aucune sortie malformée, ni d'un côté ni de l'autre** : le taux de JSON
-  cassé, que la skill `vision-eval` propose comme discriminant, ne discrimine
-  rien ici. `_salvage_tags` n'a servi à personne sur ces 240 appels.
-- **Le signal « document personnel » n'est PAS mesurable sur ce tirage** :
-  filet 0, question explicite 0 (`qwen3.5:4b`) et 1 (`qwen3-vl:2b`), accord
-  entre modèles 0. C'est attendu — 23 candidates sur 44 459, soit 0,05 %,
-  donnent 0,03 photo espérée sur 60. **Un tirage UNIFORME ne peut pas répondre
-  à cette question** : il faut tirer dans la population CANDIDATE et dans son
-  voisinage, pas dans le fonds entier. C'est le prochain geste, et il est
-  petit.
-- **Ce que le tirage ne dit pas** : lequel tague MIEUX. Sans étiquettes
-  humaines, « mieux » n'est pas une mesure. Les 240 lignes sont là pour
-  alimenter une **page de préférence en aveugle** — deux listes de mots-clés
-  pour la même photo, sans dire laquelle vient de qui.
 
 **B5. Les Motion Photos depuis le 03/09 — MESURÉ le 16/09.** **26 vraies
 Motion Photos, 0,09 Go de vidéo**, toutes chez Mike (2021 : 4 — les
@@ -901,7 +750,21 @@ d'être demandé AVANT le `fetch` ; le passage en plein écran émet un
 d'une photo du `PRIVE` d'un autre compte (la marche part du disque) — il
 passe maintenant par `chemin_visible`.
 
-**P2 (14/09). Une DÉMO de bienvenue, et l'e-mail qui va avec.** Objectif de
+**P2 (14/09). Une DÉMO de bienvenue, et l'e-mail qui va avec.**
+**16/09 — la démo est faite, l'e-mail reste.** Choix de Mike : **enrichir
+`/aide`** (pas de parcours guidé). La page s'ouvre sur les QUATRE GESTES
+(se connecter, envoyer, nommer, chercher), puis ce qu'il faut savoir. Relue
+dans Chrome, elle a fait tomber quatre défauts, tous corrigés et observés :
+`/tri` promettait à Flo et Papa des gestes que le garde refusait
+(**chacun trie désormais SES dépôts**, choix de Mike — `depot_de`) ; le
+mot de passe ne se changeait que dans Réglages, invisible pour eux (**menu
+du compte**) ; `/aide` les envoyait vers Réglages et leur promettait une
+corbeille qu'ils ne peuvent pas ouvrir ; et **la lampe des dépôts était
+allumée, vide, sur toutes les pages** (`display` battait `[hidden]`, troisième
+fois dans la barre — un banc le tient maintenant). **Reste : l'e-mail**,
+court : l'adresse, le prénom + mot de passe, et un renvoi vers `/aide`.
+Le mot de passe initial, c'est Mike qui le donne.
+ Objectif de
 Mike : partager la photothèque avec sa famille quand elle sera finie. Il faut
 donc, pour un nouveau venu qui n'a jamais rien installé : comment on se
 connecte, comment on **dépose** des photos ou un dossier entier, comment on

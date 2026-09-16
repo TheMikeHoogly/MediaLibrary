@@ -1,4 +1,4 @@
-# Reprise — MediaLibrary, après le 16 septembre 2026
+# Reprise — MediaLibrary, après le 16 septembre 2026 (soir)
 
 > **Ce fichier est ÉPHÉMÈRE.** Il décrit un état, pas des règles. Les règles
 > vivent dans `CLAUDE.md`, le plan dans `ROADMAP.md`, les verdicts dans
@@ -9,41 +9,49 @@
 
 ## 0. L'état, en dix lignes
 
-**16/09, quatre livraisons, et Mike a passé les bats 42, 43, 51 et 26.**
-1. **B5/B6 mesurés.** 26 vraies Motion Photos → bat 42 : 24 strippées, **il
-   en reste 2** (> 8 Mo, sautées) ; bat 43 : les 24 `_original` en
-   quarantaine. O8/O9 **clos par la mesure**.
-2. **Bat 51 réparé puis passé** : copie fraîche, trois caches, âge de
-   création. 2 778 vignettes / 90 Mo rendus ; plus rien de vieux à purger.
-3. **P1, la veille : livrée, confirmée par Mike, lieu ajouté** (« Paris ·
-   septembre 2025 »). `/api/random` ne cite plus le `PRIVE` d'un autre.
-4. **Bat 26** : 19 cibles prises sur 19 (14 doublons, 4 voisins,
-   1 différent). Il arrêtait le serveur pour rien : il s'arrête maintenant
-   AVANT (`verifier_plan_annee` rend 3).
+**16/09 au soir : P2, la moitié « démo » est livrée.** Choix de Mike :
+enrichir `/aide`, pas de parcours guidé.
+1. **`/aide` réécrite** : les quatre gestes (se connecter, envoyer, nommer,
+   chercher), puis ce qu'il faut savoir. Relue dans Chrome.
+2. **Chacun trie SES dépôts** (choix de Mike) : `depot_de` lit le carnet et
+   donne au déposant la main sur son fichier dans `_Uploads` ; la lampe et
+   `/tri` ne montrent que les siens. Avant, tout geste de Flo ou Papa dans
+   `/tri` aurait été refusé.
+3. **Mot de passe** : dans le menu du compte, pour tous (panneau, deux champs).
+4. **La lampe des dépôts était allumée, vide, partout** (`display` battait
+   `[hidden]`, 3ᵉ fois) : corrigée, et `HiddenCacheVraiment` la tient.
+5. Page d'envoi : plus de « Aucune inscription requise » ni « v10 ».
+6. `ROADMAP.md` portait B1–B4 EN DOUBLE (une version d'avant l'abandon) :
+   la copie périmée est retirée (−137 lignes).
 
-Acquis des jours d'avant, qui ne se refont pas : campagne de retag
-ABANDONNÉE (pas de candidat sous 4 Go, tirage de 60 photos gelé) ; grille
-du fonds entier en fiches légères (6,6 s → 3,7 s) ; salle d'arbitrage close ;
-un compte par propriétaire (Mike admin, Flo, Papa).
+Acquis d'avant : veille livrée (P1), B5/B6 mesurés, campagne de retag
+ABANDONNÉE, un compte par propriétaire (Mike admin, Flo, Papa).
 
 ---
 
 ## 1. Par où commencer
 
-1. **P2, la démo de bienvenue et son e-mail** — le dernier item « produit »,
-   et son heure est venue : la veille était la dernière brique d'interface
-   demandée. Relire `/aide` DANS CHROME, lister ce qu'un nouveau venu (Flo,
-   Papa) ne trouve pas : se connecter, déposer une photo ou un dossier,
-   nommer un visage ou un animal, chercher par le sens. Puis décider avec
-   Mike : `/aide` enrichie, ou parcours guidé au premier login. L'e-mail
-   s'écrit EN DERNIER, court, sans jargon : adresse, compte, trois gestes.
-2. **D1, la copie hors site** : à Mike seul — le lui rappeler une fois.
+1. **Vérifier la livraison** (`feat/p2-aide-quatre-gestes`) dans
+   `.git/logs/refs/heads/main` — le rapport de l'agent ne suffit pas.
+2. **P2, l'e-mail** — le dernier morceau. Court, sans jargon : l'adresse
+   `http://192.168.0.13:8080` (Wi-Fi de la maison), le prénom + le mot de
+   passe que Mike donne, « change-le dans le menu à ton prénom », et un
+   renvoi vers `/aide`. Le rédiger AVEC Mike (c'est lui qui l'envoie) ;
+   lui proposer un brouillon Gmail seulement s'il le demande.
+3. **Non vu en réel** : le tri par un NON-admin. Aucune connexion Flo/Papa
+   possible depuis ici (mot de passe = Mike). Le banc couvre la règle ; la
+   preuve réelle viendra au premier envoi de Flo — ou Mike peut tester avec
+   un compte d'essai.
+4. **La cible du 29/08 n'est pas construite** : `/upload` écrit toujours
+   dans `_Uploads`, pas dans `Photos <Nom>\_A TRIER` (`eval/DECISIONS.md`).
+   Le correctif du 16/09 suffit à l'usage ; à reposer à Mike seulement si
+   `_Uploads` gêne.
+5. **D1, la copie hors site** : à Mike seul — le lui rappeler une fois.
 
 **Ce qui n'attend que Mike** : le bat 36 pour les 14 doublons d'`_A TRIER`
 (+ regarder 4 voisins, renommer `20260731_232718.mp4`), le bat 24 (corbeille,
-dont les 24 `_original`), la fenêtre des
-68 copies (**vers le 13/10**), le KB Windows (**vers le 16/10**), et couper
-« Photo animée » sur le téléphone.
+dont les 24 `_original`), la fenêtre des 68 copies (**vers le 13/10**), le KB
+Windows (**vers le 16/10**), et couper « Photo animée » sur le téléphone.
 
 ---
 
@@ -102,6 +110,13 @@ dont les 24 `_original`), la fenêtre des
   faut comparer son `dernier.quand`, pas le mtime du fichier — ~6 min quand
   `server.py` est touché.
 - `server.py` : skill `monolith-surgery` ; UI : `photo-ui`.
+- **`hidden` perd contre tout `display`** d'une classe plus spécifique. Tout
+  nouvel élément de la barre qui naît caché : sa règle `[hidden]`, sinon
+  `test_ui_global.HiddenCacheVraiment` tombe. Dans une PAGE, aucun banc ne
+  le voit : regarder les pixels.
+- **Un onglet Chrome en arrière-plan ne charge pas les `loading="lazy"`** :
+  des vignettes vides sur une capture ne sont pas un défaut (vu le 16/09,
+  `fetch` direct : 200 en 5 ms).
 
 ---
 
