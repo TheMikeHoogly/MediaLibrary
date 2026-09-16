@@ -13237,6 +13237,20 @@ class Handler(BaseHTTPRequestHandler):
     def log_message(self, fmt, *args):
         print(f"  {self.client_address[0]}  {fmt % args}")
 
+    # Une connexion GARDEE OUVERTE qui reste muette 30 s (`timeout` ci-dessus)
+    # est fermee par `handle_one_request`, qui l'annonce par `log_error`
+    # « Request timed out » -- la fin NORMALE d'un keep-alive, pas une requete
+    # perdue. Mesure du 16/09 (Mike l'a pris pour une panne) : 17 sur 17
+    # tombent 28 a 30 s apres la derniere reponse servie, toutes en 200. On
+    # les COMPTE au lieu de les crier ; tout autre `log_error` passe tel quel.
+    KEEPALIVE_FERMES = 0
+
+    def log_error(self, fmt, *args):
+        if fmt.startswith('Request timed out'):
+            type(self).KEEPALIVE_FERMES += 1
+            return
+        self.log_message(fmt, *args)
+
     # ─── La porte (chantier 17, étape 4) ───────────────────────────────
     def _ouvrir(self):
         """Lit le cookie, pose l'utilisateur courant, applique la porte.

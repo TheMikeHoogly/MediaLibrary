@@ -21,6 +21,15 @@ enrichir `/aide`, pas de parcours guidé.
 4. **La lampe des dépôts était allumée, vide, partout** (`display` battait
    `[hidden]`, 3ᵉ fois) : corrigée, et `HiddenCacheVraiment` la tient.
 5. Page d'envoi : plus de « Aucune inscription requise » ni « v10 ».
+7. **« Request timed out » dans le journal : ce n'était PAS une panne** — la
+   fin normale d'un keep-alive muet 30 s (17 sur 17 à +28–30 s de la
+   dernière réponse, toutes en 200). Désormais compté, plus écrit
+   (`KEEPALIVE_FERMES`) ; observé : 602 requêtes, 0 ligne.
+8. **E-mail de bienvenue** : brouillon dans `docs/EMAIL_BIENVENUE.md`. Mike
+   veut des **brouillons Gmail** (Flo, Papa) — j'attends leurs adresses.
+9. **Preuve du tri non-admin** : Mike crée un compte `Essai` (non admin) et
+   s'y connecte dans Chrome ; ensuite j'envoie, je range, je tente sur un
+   dépôt d'autrui. **Le supprimer après.**
 6. `ROADMAP.md` portait B1–B4 EN DOUBLE (une version d'avant l'abandon) :
    la copie périmée est retirée (−137 lignes).
 
