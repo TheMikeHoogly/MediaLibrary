@@ -200,7 +200,7 @@ Dans l'ordre où je le ferais, **reclassé le 14/09 au soir** :
 | — | ~~B5, B6~~ | **MESURÉS 16/09** — 26 Motion Photos ; O8/O9 clos | fait |
 | — | ~~La veille en plein écran (P1)~~ | **LIVRÉE 16/09** — réglages confirmés par Mike, lieu ajouté | fait |
 | **6** | **La copie hors site** (§ D1) | **Mike** | à lui seul |
-| **7** | **La démo de bienvenue et son e-mail** (P2) | `/aide` **LIVRÉE 16/09** ; reste l'**e-mail** | petit |
+| **7** | **La démo de bienvenue et son e-mail** (P2) | `/aide` **LIVRÉE 16/09** ; e-mail en **brouillons Gmail** (17/09), envoi par Mike | Mike |
 
 **Le 1 est livré (15/09).** Les QUATRE producteurs qui lisent l'INDEX —
 grille indexée, tags, recherche/semblables, même jour — passent par

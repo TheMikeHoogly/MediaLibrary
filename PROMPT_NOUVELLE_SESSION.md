@@ -25,8 +25,9 @@ enrichir `/aide`, pas de parcours guidé.
    fin normale d'un keep-alive muet 30 s (17 sur 17 à +28–30 s de la
    dernière réponse, toutes en 200). Désormais compté, plus écrit
    (`KEEPALIVE_FERMES`) ; observé : 602 requêtes, 0 ligne.
-8. **E-mail de bienvenue** : brouillon dans `docs/EMAIL_BIENVENUE.md`. Mike
-   veut des **brouillons Gmail** (Flo, Papa) — j'attends leurs adresses.
+8. **E-mail de bienvenue** : deux **brouillons Gmail créés** (Flo, Papa),
+   NON envoyés, sans mot de passe. Mike les relit et les envoie ; il donne
+   les mots de passe à part. **P2 est alors fini.**
 9. **Tri non-admin PROUVÉ EN RÉEL (17/09, compte `Essai`)** : envoi → carnet
    `par: Essai` ; « Effacer » son dépôt OK, « Annuler » OK ; effacer
    `Thumbs.db` (sans auteur) REFUSÉ. Et un défaut de plus : sans dossier
@@ -49,15 +50,11 @@ ABANDONNÉE, un compte par propriétaire (Mike admin, Flo, Papa).
 
 1. **Vérifier la livraison** (`feat/p2-aide-quatre-gestes`) dans
    `.git/logs/refs/heads/main` — le rapport de l'agent ne suffit pas.
-2. **P2, l'e-mail** — le dernier morceau. Court, sans jargon : l'adresse
-   `http://192.168.0.13:8080` (Wi-Fi de la maison), le prénom + le mot de
-   passe que Mike donne, « change-le dans le menu à ton prénom », et un
-   renvoi vers `/aide`. Le rédiger AVEC Mike (c'est lui qui l'envoie) ;
-   lui proposer un brouillon Gmail seulement s'il le demande.
-3. **Non vu en réel** : le tri par un NON-admin. Aucune connexion Flo/Papa
-   possible depuis ici (mot de passe = Mike). Le banc couvre la règle ; la
-   preuve réelle viendra au premier envoi de Flo — ou Mike peut tester avec
-   un compte d'essai.
+2. **P2 : il ne reste que l'envoi**, par Mike (brouillons Gmail prêts).
+   Le jalon sort de `ROADMAP.md` quand il confirme.
+3. **Seul reste non vu à l'écran** : `/tri` AVEC un dépôt et le message
+   `garder_refus` (un dépôt n'y paraît qu'après 7 jours). La règle, elle, est
+   prouvée en réel (point 9 ci-dessus).
 4. **La cible du 29/08 n'est pas construite** : `/upload` écrit toujours
    dans `_Uploads`, pas dans `Photos <Nom>\_A TRIER` (`eval/DECISIONS.md`).
    Le correctif du 16/09 suffit à l'usage ; à reposer à Mike seulement si
