@@ -471,6 +471,15 @@ class ChacunTrieLesSiens(Socle):
                   if isinstance(c, ast.Call) and isinstance(c.func, ast.Name)}
         self.assertIn('depot_de', appels)
 
+    def test_garder_s_eteint_quand_le_garde_refuserait(self):
+        # 17/09, compte d'essai sans `Photos Essai` : la boite retombait sur la
+        # racine (a l'admin) et « Garder » echouait, bouton allume.
+        n = next(x for x in ast.walk(ARBRE)
+                 if isinstance(x, ast.FunctionDef) and x.name == '_serve_tri')
+        appels = {c.func.id for c in ast.walk(n)
+                  if isinstance(c, ast.Call) and isinstance(c.func, ast.Name)}
+        self.assertIn('refus_ecriture', appels)
+
     def test_la_lampe_et_la_liste_filtrent(self):
         for nom in ('_serve_moi', '_serve_tri'):
             n = next(x for x in ast.walk(ARBRE)

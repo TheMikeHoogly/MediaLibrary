@@ -3934,5 +3934,20 @@
   "ts": 1789204464.156199,
   "expire": 1804756464.156199,
   "par": "Mike"
+ },
+ {
+  "op": "delete",
+  "src": "\\\\NAS-Bremblens\\home\\Photos\\_Uploads\\essai_tri_20260917_074744_1583.jpg",
+  "dst": "\\\\NAS-Bremblens\\home\\Photos\\.corbeille-effacements\\20260917-074928-504\\essai_tri_20260917_074744_1583.jpg",
+  "idx": 0,
+  "keys": [
+   [
+    "essai_tri_20260917_074744_1583.jpg",
+    "\\\\NAS-Bremblens\\home\\Photos\\.corbeille-effacements\\20260917-074928-504\\essai_tri_20260917_074744_1583.jpg"
+   ]
+  ],
+  "ts": 1789624171.3419068,
+  "expire": 1805176171.3419068,
+  "par": "Essai"
  }
 ]

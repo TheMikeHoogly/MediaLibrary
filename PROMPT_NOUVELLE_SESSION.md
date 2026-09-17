@@ -27,9 +27,13 @@ enrichir `/aide`, pas de parcours guidé.
    (`KEEPALIVE_FERMES`) ; observé : 602 requêtes, 0 ligne.
 8. **E-mail de bienvenue** : brouillon dans `docs/EMAIL_BIENVENUE.md`. Mike
    veut des **brouillons Gmail** (Flo, Papa) — j'attends leurs adresses.
-9. **Preuve du tri non-admin** : Mike crée un compte `Essai` (non admin) et
-   s'y connecte dans Chrome ; ensuite j'envoie, je range, je tente sur un
-   dépôt d'autrui. **Le supprimer après.**
+9. **Tri non-admin PROUVÉ EN RÉEL (17/09, compte `Essai`)** : envoi → carnet
+   `par: Essai` ; « Effacer » son dépôt OK, « Annuler » OK ; effacer
+   `Thumbs.db` (sans auteur) REFUSÉ. Et un défaut de plus : sans dossier
+   `Photos <Nom>`, « Garder » retombait sur la racine (à l'admin) et
+   échouait bouton allumé → `garder_refus` le dit maintenant. Flo et Papa
+   ont leur dossier : non concernés. **Mike supprime `Essai`** ; la photo
+   d'essai est dans la corbeille (`essai_tri_…jpg`).
 6. `ROADMAP.md` portait B1–B4 EN DOUBLE (une version d'avant l'abandon) :
    la copie périmée est retirée (−137 lignes).
 

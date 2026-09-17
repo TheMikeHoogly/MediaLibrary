@@ -13791,6 +13791,18 @@ class Handler(BaseHTTPRequestHandler):
             "gardé n'aurait nulle part où aller." % DOSSIER_A_TRIER)
         items = []
         u = utilisateur_vu()
+        # La boîte existe, mais ce compte a-t-il le DROIT d'y ranger ? Un
+        # compte sans dossier `Photos <Nom>` retombe sur le `_A TRIER` de la
+        # racine, qui est à l'admin : « Garder » y échouait à chaque clic,
+        # bouton allumé (compte d'essai, 17/09 — CLAUDE.md n° 9). On le dit
+        # AVANT, avec la raison du garde lui-même.
+        if cible and not refus:
+            v = refus_ecriture(cible[2] / '_essai_garde_')
+            if v:
+                refus = ("Tu n'as pas de dossier « %s » : ce que tu gardes "
+                         "n'aurait nulle part où aller. Demande à l'admin "
+                         "de le créer. (%s)" % (
+                             _auteurs.dossier_de(u) or 'Photos …', v[1]))
         for d in depots_de(depots_vue(), u, voit_tous_les_depots(u)):
             chemin = UPLOAD_DIR / d['cle']
             items.append({
