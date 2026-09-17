@@ -1,4 +1,4 @@
-# Accès distant par Tailscale — Papa, en Bolivie (17/09)
+# Accès distant par Tailscale — Papa (Bolivie) et Flo (17/09)
 
 > La photothèque n'écoute que le réseau de la maison. Papa y entre par
 > **Tailscale** : on lui PARTAGE une seule machine, `msi-mike`
@@ -10,7 +10,9 @@
 
 1. **Partager `msi-mike`** : https://login.tailscale.com/admin/machines →
    `…` sur `msi-mike` → **Share** → onglet *Share by email* →
-   `markushuegli@gmail.com` → **Share**. Papa reçoit l'e-mail d'invitation.
+   `markushuegli@gmail.com` **et** `flolaeser@gmail.com` → **Share**. Chacun
+   reçoit son invitation. Flo en a besoin pour son TÉLÉPHONE hors du Wi-Fi ;
+   chez elle, l'adresse du réseau local suffit.
 2. **Désactiver l'expiration de clé de `msi-mike`** : même menu `…` →
    **Disable key expiry**. Sans ça, l'accès de Papa tombe au bout de ~6 mois
    sans prévenir.
@@ -30,8 +32,14 @@
    Python doit couvrir le profil du réseau Tailscale (souvent *Public*).
 5. **`msi-mike` doit rester allumé et ne pas se mettre en veille** : c'est
    lui le serveur. Bolivie = UTC−4, six heures de moins que la Suisse l'été.
-6. Envoyer le brouillon Gmail « Nos photos de famille, depuis la Bolivie »
-   (le mode d'emploi de Papa est dedans), et le mot de passe **à part**.
+6. Envoyer les brouillons Gmail, mots de passe donnés **à part** :
+   - Papa : « Nos photos de famille, depuis la Bolivie » (un seul e-mail,
+     Tailscale compris — il n'a pas d'accès local).
+   - Flo : « Nos photos de famille, sur le réseau de la maison » (à la
+     maison, `192.168.0.13:8080`) **puis** « Les photos aussi quand tu n'es
+     pas à la maison » (Tailscale, `100.75.59.40:8080`). Le second dit que
+     l'adresse Tailscale marche PARTOUT, y compris à la maison : si elle ne
+     retient qu'une adresse, c'est celle-là.
 
 ## Pourquoi un lien `google.com/url?q=…` dans Gmail
 

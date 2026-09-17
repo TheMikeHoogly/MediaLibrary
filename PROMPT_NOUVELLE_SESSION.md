@@ -25,14 +25,15 @@ enrichir `/aide`, pas de parcours guidé.
    fin normale d'un keep-alive muet 30 s (17 sur 17 à +28–30 s de la
    dernière réponse, toutes en 200). Désormais compté, plus écrit
    (`KEEPALIVE_FERMES`) ; observé : 602 requêtes, 0 ligne.
-8. **E-mails de bienvenue** : deux brouillons Gmail, NON envoyés. Papa vit
+8. **E-mails de bienvenue** : TROIS brouillons Gmail, NON envoyés — Papa (1),
+   Flo (2 : local, puis Tailscale pour son téléphone). Papa vit
    en **Bolivie** : le sien est le mode d'emploi **Tailscale** (installer,
    se connecter avec son Gmail, accepter l'invitation, taper
    `100.75.59.40:8080`). Gmail réécrivait les adresses en
    `google.com/url?q=…` : brouillons refaits en HTML, adresse coupée par des
    balises (`docs/ACCES_DISTANT_TAILSCALE.md`). **Côté Tailscale, en attente
    que Mike se connecte à la console dans Chrome** : partager `msi-mike` avec
-   markushuegli@gmail.com, puis limiter `autogroup:shared` au port 8080
+   markushuegli@gmail.com ET flolaeser@gmail.com, puis limiter `autogroup:shared` au port 8080
    (montrer la règle à Mike AVANT d'enregistrer). Mike a refusé de toucher à
    l'expiration de clé : le lui rappeler une fois (l'accès tombe à ~6 mois).
    Joignable vérifié : `http://100.75.59.40:8080` répond (même pid).
