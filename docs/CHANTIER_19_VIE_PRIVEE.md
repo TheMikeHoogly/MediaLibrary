@@ -101,10 +101,19 @@ et **ce qui ferme passe toujours avant ce qui ouvre**.
 
 ## Les questions à trancher AVANT le code
 
-- **Le défaut du partage.** Une liste vide veut-elle dire « personne » ou
-  « tout le monde » ? Recommandation : **tout le monde** pour les comptes
-  existants (c'est le comportement d'aujourd'hui, et l'inverse viderait la
-  photothèque familiale du jour au lendemain), et le dire en gros sur la page.
+- ~~**Le défaut du partage.**~~ **TRANCHÉ par Mike le 17/09 : une liste vide
+  vaut « tout le monde » — mais UNIQUEMENT pour les comptes qui existent
+  aujourd'hui** (Mike, Flo, Papa). Un compte créé ensuite part **fermé** :
+  liste vide = personne, à lui de cocher.
+  Ce que ça impose au code, et c'est le piège : « liste vide » ne peut pas
+  porter deux sens selon l'âge du compte sans qu'on l'écrive quelque part. Le
+  partage se stocke donc en TROIS états, jamais en deux —
+  `partage: null` (jamais réglé), `partage: []` (réglé, personne),
+  `partage: [noms]`. La MIGRATION pose `null` sur les trois comptes existants
+  (qui restent ouverts) et les créations futures posent `[]`. Une seule
+  fonction lit ce champ (`visibilite.partage_ouvert`), et son banc porte les
+  trois cas — un défaut implicite est exactement ce qui fait fuiter une
+  photothèque le jour d'une migration.
 - **Le partage est-il par DOSSIER ou par PERSONNE ?** Aujourd'hui `Photos Flo`
   est une seule chose. Recommandation : par propriétaire (donc par dossier),
   comme le chantier 17 — une exception par photo se fait avec le PRIVE.
@@ -129,3 +138,41 @@ et **ce qui ferme passe toujours avant ce qui ouvre**.
 4. **Reconnaissance** (brique 4), qui ne se pose que sur 3.
 5. **Filet intime** : file de revue d'abord (a), modèle dédié seulement si la
    mesure le justifie (b).
+
+
+## Brique 6 — les comptes, pour de bon (17/09, demande de Mike)
+
+« Pour faire pro » : un compte doit pouvoir changer son mot de passe, et
+porter une adresse e-mail.
+
+**Ce qui existe déjà (16/09)** : « Changer mon mot de passe » est dans le menu
+du compte, pour tout le monde, dans un panneau à deux champs masqués.
+
+**Ce qui manque, et c'est un vrai trou** : ce geste ne demande PAS le mot de
+passe actuel. N'importe qui devant une session ouverte — un téléphone déverrouillé,
+un ordinateur laissé sans surveillance — change le mot de passe et ferme la
+porte derrière lui. `comptes.changer_mdp` doit exiger l'actuel pour soi-même ;
+l'admin, lui, réinitialise sans le connaître (c'est le sens d'un admin), et ce
+cas se DIT à l'écran.
+
+**L'adresse e-mail** : un champ par compte dans `comptes.json` (déjà hors git),
+posé par la personne elle-même dans « Mon compte », visible d'elle et de
+l'admin — jamais des autres. Elle sert à trois choses, et il faut trancher
+laquelle on construit :
+
+- **(a) Le rappel** : l'admin sait à qui écrire quand un compte est bloqué.
+  Coût nul, aucun envoi, aucune dépendance.
+- **(b) La réinitialisation PAR L'ADMIN** : Mike pose un mot de passe
+  temporaire, à changer à la première connexion. Aucun envoi automatique.
+- **(c) Le vrai « mot de passe oublié »** : le serveur envoie un lien à durée
+  limitée. Il faut alors un compte SMTP (Gmail et son mot de passe
+  d'application), un secret de plus sur la machine, et un serveur maison qui
+  écrit à l'extérieur — ce que ce projet n'a jamais fait.
+
+**Recommandation** : (a) + (b) maintenant, (c) seulement si quelqu'un reste
+vraiment bloqué. La famille compte trois comptes et l'admin dort dans la même
+maison que deux d'entre eux.
+
+**Ce qui ne change pas** : l'e-mail est une donnée personnelle. Elle reste
+dans `comptes.json`, hors git, hors XMP, et ne sort jamais dans une page que
+les autres comptes peuvent lire.

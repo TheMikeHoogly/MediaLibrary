@@ -62,7 +62,8 @@ photothèque s'ouvre à la famille.
 | 2 | Quarantaine des dépôts (`_Uploads` au déposant seul) | **LIVRÉ 17/09** |
 | 3 | « Masquer cette photo » pour une personne reconnue | à faire (tranché : propriétaire + personne voient ; la personne seule lève) |
 | 4 | Les personnes reconnues voient leurs photos | à faire, après 5 |
-| 5 | Onglet **Partage** : chacun coche qui voit ses photos | à faire — c'est lui qui change le modèle de visibilité |
+| 5 | Onglet **Partage** : chacun coche qui voit ses photos | à faire — **défaut tranché le 17/09** : liste vide = tout le monde pour les comptes d'aujourd'hui, un compte créé ensuite part fermé (trois états en base, migration incluse) |
+| 6 | Les comptes « pour de bon » : mot de passe et e-mail | à faire — le changement de mot de passe existe (16/09) mais **n'exige pas l'actuel** : c'est le premier à corriger |
 
 **Brique 2, livrée.** Un dépôt d'`_Uploads` n'est plus visible que de son
 déposant et de l'admin : la règle est dans `visibilite.visible` (masque, donc

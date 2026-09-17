@@ -9,80 +9,58 @@
 
 ## 0. L'état, en dix lignes
 
-**16/09 au soir : P2, la moitié « démo » est livrée.** Choix de Mike :
-enrichir `/aide`, pas de parcours guidé.
-1. **`/aide` réécrite** : les quatre gestes (se connecter, envoyer, nommer,
-   chercher), puis ce qu'il faut savoir. Relue dans Chrome.
-2. **Chacun trie SES dépôts** (choix de Mike) : `depot_de` lit le carnet et
-   donne au déposant la main sur son fichier dans `_Uploads` ; la lampe et
-   `/tri` ne montrent que les siens. Avant, tout geste de Flo ou Papa dans
-   `/tri` aurait été refusé.
-3. **Mot de passe** : dans le menu du compte, pour tous (panneau, deux champs).
-4. **La lampe des dépôts était allumée, vide, partout** (`display` battait
-   `[hidden]`, 3ᵉ fois) : corrigée, et `HiddenCacheVraiment` la tient.
-5. Page d'envoi : plus de « Aucune inscription requise » ni « v10 ».
-7. **« Request timed out » dans le journal : ce n'était PAS une panne** — la
-   fin normale d'un keep-alive muet 30 s (17 sur 17 à +28–30 s de la
-   dernière réponse, toutes en 200). Désormais compté, plus écrit
-   (`KEEPALIVE_FERMES`) ; observé : 602 requêtes, 0 ligne.
-8. **E-mails de bienvenue** : TROIS brouillons Gmail, NON envoyés — Papa (1),
-   Flo (2 : local, puis Tailscale pour son téléphone). Papa vit
-   en **Bolivie** : le sien est le mode d'emploi **Tailscale** (installer,
-   se connecter avec son Gmail, accepter l'invitation, taper
-   `100.75.59.40:8080`). Gmail réécrivait les adresses en
-   `google.com/url?q=…` : brouillons refaits en HTML, adresse coupée par des
-   balises (`docs/ACCES_DISTANT_TAILSCALE.md`). **Côté Tailscale, en attente
-   que Mike se connecte à la console dans Chrome** : partager `msi-mike` avec
-   markushuegli@gmail.com ET flolaeser@gmail.com, puis limiter `autogroup:shared` au port 8080
-   (montrer la règle à Mike AVANT d'enregistrer). Mike a refusé de toucher à
-   l'expiration de clé : le lui rappeler une fois (l'accès tombe à ~6 mois).
-   Joignable vérifié : `http://100.75.59.40:8080` répond (même pid).
-9. **Tri non-admin PROUVÉ EN RÉEL (17/09, compte `Essai`)** : envoi → carnet
-   `par: Essai` ; « Effacer » son dépôt OK, « Annuler » OK ; effacer
-   `Thumbs.db` (sans auteur) REFUSÉ. Et un défaut de plus : sans dossier
-   `Photos <Nom>`, « Garder » retombait sur la racine (à l'admin) et
-   échouait bouton allumé → `garder_refus` le dit maintenant. Flo et Papa
-   ont leur dossier : non concernés. `Essai` SUPPRIMÉ (17/09) ; la photo d'essai
-   est dans la corbeille (`essai_tri_…jpg`).
-10. **Réglages sait supprimer un compte** : bouton « Supprimer » à côté de
-   chaque compte non admin, en deux clics (pas de `confirm()`). Premier clic
-   observé sur Papa (rien supprimé) ; le second = la route déjà prouvée.
-6. `ROADMAP.md` portait B1–B4 EN DOUBLE (une version d'avant l'abandon) :
-   la copie périmée est retirée (−137 lignes).
+**17/09, quatre livraisons ; Flo essaie la photothèque, et ce qu'elle a
+demandé est devenu le CHANTIER 19.**
+1. **`/aide` réécrite** (P2) en quatre gestes ; **chacun trie ses dépôts** ;
+   mot de passe dans le menu du compte ; lampe des dépôts réparée.
+2. **Fin de keep-alive** : « Request timed out » ne s'écrit plus au journal
+   (ce n'était pas une panne — 17 sur 17 à +28-30 s d'une réponse servie).
+3. **Réglages sait supprimer un compte** (deux clics, pas de `confirm()`).
+4. **Accès distant par Tailscale** préparé pour Papa (Bolivie) et Flo :
+   trois brouillons Gmail prêts, NON envoyés (`docs/ACCES_DISTANT_TAILSCALE.md`).
+5. **CHANTIER 19 — la vie privée à la demande** (`docs/CHANTIER_19_VIE_PRIVEE.md`) :
+   brique 2 **livrée** (un dépôt d'`_Uploads` n'est visible que de son
+   déposant, 44 445 clés en 27 ms) ; le filet « intime » est **mesuré et
+   refusé en automatique** ; les briques 3, 4, 5, 6 restent à construire.
 
-Acquis d'avant : veille livrée (P1), B5/B6 mesurés, campagne de retag
-ABANDONNÉE, un compte par propriétaire (Mike admin, Flo, Papa).
+Acquis d'avant : veille (P1), campagne de retag ABANDONNÉE, un compte par
+propriétaire (Mike admin, Flo, Papa).
 
 ---
 
 ## 1. Par où commencer
 
 1. **Vérifier la livraison** dans `.git/logs/refs/heads/main`.
-2. **CHANTIER 19 — la vie privée à la demande** (demande de Flo, 17/09) :
-   le plan est dans `docs/CHANTIER_19_VIE_PRIVEE.md`, l'état dans
-   `ROADMAP.md`. Brique 2 (quarantaine des dépôts) **LIVRÉE**. Suite dans
-   l'ordre : **brique 3** (« masquer cette photo », tranché par Mike :
-   propriétaire + personne voient, la personne seule lève), puis **brique 5**
-   (onglet Partage — c'est elle qui change le modèle de visibilité), puis
-   **brique 4** (les personnes reconnues voient leurs photos), enfin le filet
-   intime. **Les questions à trancher avant le code sont listées dans le
-   plan** — le défaut du partage (tout le monde / personne) d'abord.
-3. **Filet intime** : `mesure_filet_intime.py --base copie.db` (45 s, aucune
-   image ouverte). Le zéro-shot SigLIP ne sépare pas l'intime de la plage :
-   ne pas le câbler en masquage automatique sans un jeu de validation, que
-   **Flo et Mike** constituent — Claude ne regarde pas ces photos.
-4. **P2, l'e-mail** : trois brouillons Gmail prêts, non envoyés (Papa ;
-   Flo ×2, local et Tailscale). Mike envoie, mots de passe à part.
+2. **CHANTIER 19**, dans cet ordre — le plan et les pièges sont dans
+   `docs/CHANTIER_19_VIE_PRIVEE.md`, à relire AVANT d'écrire une ligne :
+   - **Brique 6 d'abord, parce qu'elle est un trou** : « Changer mon mot de
+     passe » n'exige pas le mot de passe ACTUEL — une session ouverte suffit
+     à fermer la porte derrière soi. Puis l'**e-mail par compte**
+     (`comptes.json`, hors git) : (a) rappel + (b) réinitialisation par
+     l'admin ; le vrai « mot de passe oublié » par SMTP seulement si
+     quelqu'un reste bloqué (choix de Mike à demander le moment venu).
+   - **Brique 3** : « masquer cette photo » pour une personne reconnue
+     (tranché : propriétaire + personne voient ; la personne seule lève ; la
+     photo ne bouge pas ; l'état en base, jamais dans le XMP).
+   - **Brique 5** : onglet Partage. **Défaut tranché** : liste vide = tout le
+     monde pour Mike, Flo et Papa ; un compte créé ensuite part fermé. Donc
+     TROIS états (`null` / `[]` / `[noms]`) et une migration qui pose `null`
+     sur les trois comptes existants. Un banc doit prouver qu'une photo non
+     partagée ne fuit ni par un compteur, ni par une fiche, ni par la
+     recherche — le filtre reste AU MAGASIN.
+   - **Brique 4** ensuite (les personnes reconnues voient leurs photos), qui
+     ne se pose que sur la 5. Elle exige un index clé → noms en mémoire :
+     mesurer avant/après, la grille du fonds est à 3,7 s.
+   - **Brique 1** (filet intime) en dernier : file de revue, pas masquage.
+3. **Ce qui n'est pas prouvé en réel** : la vue d'un NON-admin. Les bancs
+   tiennent la règle ; un compte d'essai le montrerait à l'écran (Mike le
+   crée, s'y connecte dans Chrome, le supprime après).
+4. **P2, l'e-mail** : trois brouillons Gmail prêts, non envoyés. Mike envoie,
+   mots de passe à part.
 5. **Tailscale** : partager `msi-mike` avec `markushuegli@gmail.com` et
    `flolaeser@gmail.com`, limiter `autogroup:shared` au port 8080, rappeler
-   l'expiration de clé (`docs/ACCES_DISTANT_TAILSCALE.md`). En attente que
-   Mike se connecte à la console dans Chrome.
+   l'expiration de clé. En attente que Mike se connecte à la console.
 6. **D1, la copie hors site** : à Mike seul.
-
-**Ce qui n'attend que Mike** : le bat 36 pour les 14 doublons d'`_A TRIER`
-(+ regarder 4 voisins, renommer `20260731_232718.mp4`), le bat 24 (corbeille,
-dont les 24 `_original`), la fenêtre des 68 copies (**vers le 13/10**), le KB
-Windows (**vers le 16/10**), et couper « Photo animée » sur le téléphone.
 
 ---
 
@@ -141,6 +119,13 @@ Windows (**vers le 16/10**), et couper « Photo animée » sur le téléphone.
   faut comparer son `dernier.quand`, pas le mtime du fichier — ~6 min quand
   `server.py` est touché.
 - `server.py` : skill `monolith-surgery` ; UI : `photo-ui`.
+- **Un banc qui cite un appel AU CARACTÈRE PRÈS interdit la ligne suivante.**
+  `test_sensibles` exigeait `brancher(_st, utilisateur_vu, sensible=…)` tel
+  quel et a refusé la livraison quand la brique 2 lui a ajouté `depot=`.
+  Juger un BLOC, pas une mise en page.
+- **`os.path` ne reconnaît pas `\\` hors Windows** : une règle de chemin
+  écrite avec lui répond autre chose au banc (Linux) qu'au serveur (Windows).
+  Normaliser soi-même (`_depot_normal`). Attrapé le 17/09 par son banc.
 - **`hidden` perd contre tout `display`** d'une classe plus spécifique. Tout
   nouvel élément de la barre qui naît caché : sa règle `[hidden]`, sinon
   `test_ui_global.HiddenCacheVraiment` tombe. Dans une PAGE, aucun banc ne
