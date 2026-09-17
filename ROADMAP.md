@@ -50,6 +50,36 @@ ouvert d'un coup ; la difficulté n'est plus d'attendre, c'est de CHOISIR.
 
 ---
 
+## Chantier 19 — LA VIE PRIVÉE À LA DEMANDE (17/09, demande de Flo)
+
+Le plan complet, l'ordre d'évaluation des règles et les questions ouvertes :
+**`docs/CHANTIER_19_VIE_PRIVEE.md`**. Cinq briques, un seul sujet — la
+photothèque s'ouvre à la famille.
+
+| # | Brique | État |
+|---|---|---|
+| 1 | Filet « intime » et captures de conversation | **MESURÉ 17/09 — le zéro-shot SigLIP ne sépare pas** (marge intime−témoin : p99 = 0,075 ; 18 photos au-dessus de 0,10 sur 40 330). Vaut comme FILE DE REVUE, pas comme verdict. Suite à trancher : file de revue, ou modèle dédié éprouvé sur un jeu que Flo et Mike constituent. |
+| 2 | Quarantaine des dépôts (`_Uploads` au déposant seul) | **LIVRÉ 17/09** |
+| 3 | « Masquer cette photo » pour une personne reconnue | à faire (tranché : propriétaire + personne voient ; la personne seule lève) |
+| 4 | Les personnes reconnues voient leurs photos | à faire, après 5 |
+| 5 | Onglet **Partage** : chacun coche qui voit ses photos | à faire — c'est lui qui change le modèle de visibilité |
+
+**Brique 2, livrée.** Un dépôt d'`_Uploads` n'est plus visible que de son
+déposant et de l'admin : la règle est dans `visibilite.visible` (masque, donc
+AVANT tout ce qui ouvre), le serveur dit qui a déposé (`depot_du_chemin`,
+carnet), et la vue des magasins l'applique par clé — 44 445 clés en **27 ms**,
+mesuré. Un dépôt sans auteur connu reste à l'admin. **Trouvé en écrivant le
+banc** : `depot_de` comparait les chemins avec `os.path`, qui ne reconnaît pas
+`\` hors Windows — la règle répondait autre chose au banc qu'à la production.
+Corrigé par une normalisation écrite dans le projet, et le banc l'interdit
+désormais (`test_depots_uploads.LeDepotSeReconnaitALaPLACE`).
+
+**Ce qui n'est pas prouvé en réel** : la vue d'un NON-admin. Aucun compte de
+Flo ou Papa n'est utilisable depuis ici ; les deux bancs tiennent la règle et
+la vue, un compte d'essai le montrerait à l'écran.
+
+---
+
 ## A. Ce qui appartient à Mike
 
 **A1. Les 248 dépôts d'`Uploads` — TRIÉS le 13/09.** `_Uploads` est vide

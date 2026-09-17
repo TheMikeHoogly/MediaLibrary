@@ -709,7 +709,55 @@ def chemin_visible(chemin):
     u = utilisateur_vu()
     if u is None:
         return True
-    return _visibilite.visible(str(chemin), u, sensible_du_chemin(chemin))
+    return _visibilite.visible(str(chemin), u, sensible_du_chemin(chemin),
+                               depot_du_chemin(chemin))
+
+
+_DEPOT_BASE = None          # préfixe d'Uploads, séparateurs et casse normalisés
+
+
+def _depot_normal(c):
+    """Un chemin comparable : séparateurs en `/`, casse basse. Écrit ICI et
+    pas avec `os.path` — le serveur tourne sous Windows, les bancs sous Linux,
+    et `os.sep` ferait répondre au banc autre chose qu'à la production. Ce
+    piège a déjà coûté une conclusion fausse le 14/09 (`os.path.basename` sur
+    un chemin Windows sous Linux)."""
+    return str(c or '').replace('\\', '/').lower()
+
+
+def _depot_base():
+    """Le préfixe d'Uploads, calculé une seule fois : `depot_du_chemin` est
+    appelée par CLÉ sur chaque lecture agrégée (44 445 clés), et refaire ce
+    calcul par clé se paierait à chaque `len(STORE.data)`."""
+    global _DEPOT_BASE
+    if _DEPOT_BASE is None and UPLOAD_DIR is not None:
+        _DEPOT_BASE = _depot_normal(UPLOAD_DIR).rstrip('/') + '/'
+    return _DEPOT_BASE
+
+
+def depot_du_chemin(chemin):
+    """Qui a déposé ce fichier, s'il est ENCORE dans `_Uploads` — sinon None.
+
+    Chantier 19, brique 2 (demande de Flo, 17/09). Rend `''` quand le dépôt
+    n'a pas d'auteur connu (les 248 d'avant le carnet) : la règle le réserve
+    alors à l'admin.
+
+    Deux formes de clé, une seule règle. Une clé d'index RELATIVE est, dans ce
+    projet, un fichier d'Uploads (« nom nu » à la racine, relatif posix dans un
+    sous-dossier) ; un chemin ABSOLU n'est un dépôt que s'il est SOUS
+    `UPLOAD_DIR` — la PLACE, pas le nom (règle 7). Le cas courant — une clé du
+    NAS, hors Uploads — sort sur une comparaison de préfixe."""
+    base = _depot_base()
+    if not base:
+        return None
+    c = str(chemin or '')
+    if not c:
+        return None
+    if c[0] in '\\/' or (len(c) > 1 and c[1] == ':'):
+        if not _depot_normal(c).startswith(base):
+            return None
+        return depot_de(c) or ''
+    return depot_de(UPLOAD_DIR / c) or ''
 
 
 def sensible_du_chemin(chemin):
@@ -792,10 +840,11 @@ def sensible_en_attente(cle):
 # citent des chemins (avatar, faces, confirmed) — un avatar pris sur une
 # photo masquée serait une vignette qui fuit, exactement le point 17b.
 for _st in (STORE, FACE_STORE, ANIMAL_STORE):
-    _visibilite.brancher(_st, utilisateur_vu, sensible=sensible_en_attente)
+    _visibilite.brancher(_st, utilisateur_vu, sensible=sensible_en_attente,
+                         depot=depot_du_chemin)
 for _st in (PEOPLE_STORE, PETS_STORE):
     _visibilite.brancher(_st, utilisateur_vu, par_nom=True,
-                         sensible=sensible_en_attente)
+                         sensible=sensible_en_attente, depot=depot_du_chemin)
 
 # ─── Les COMPTES (chantier 17, étape 4 — 29/08/2026, choix de Mike : un mot de
 # passe par compte). Règle dans `comptes.py` ; fichier `comptes.json` HORS git.
@@ -4820,17 +4869,22 @@ def depot_de(chemin):
     siens**. Le carnet dit qui a déposé ; c'est la seule source, et un dépôt
     sans auteur (ceux d'avant le 12/09) reste à l'admin.
 
-    La PLACE, pas le nom (n° 7) : le chemin doit être SOUS `UPLOAD_DIR`, et
-    la clé est celle que `/upload` a notée — nom simple à la racine, relatif
-    posix dans un sous-dossier. Un dossier d'album n'est pas au carnet : il
-    n'ouvre rien."""
-    if UPLOAD_DIR is None:
+    La PLACE, pas le nom (n° 7) : le chemin doit être SOUS `UPLOAD_DIR`,
+    séparateur compris, et la clé est celle que `/upload` a notée — nom simple
+    à la racine, relatif posix dans un sous-dossier. Un dossier d'album n'est
+    pas au carnet : il n'ouvre rien.
+
+    La comparaison passe par `_depot_normal` et NON par `os.path` (17/09) :
+    le serveur tourne sous Windows, les bancs sous Linux, et `os.path` ne
+    reconnaît pas `\\` comme un séparateur hors Windows — la règle aurait
+    répondu autre chose au banc qu'à la production, et le banc l'a montré."""
+    base = _depot_base()
+    if not base:
         return None
-    base = os.path.normpath(str(UPLOAD_DIR)).rstrip('\\/')
-    brut = os.path.normpath(str(chemin))
-    if not os.path.normcase(brut).startswith(os.path.normcase(base) + os.sep):
+    c = str(chemin or '')
+    if _depot_normal(c)[:len(base)] != base:
         return None
-    cle = brut[len(base) + 1:].replace(os.sep, '/')
+    cle = c[len(base):].replace('\\', '/')
     if not cle or cle.startswith('..'):
         return None
     with _DEPOTS_LOCK:

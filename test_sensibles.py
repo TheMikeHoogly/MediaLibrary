@@ -60,8 +60,15 @@ def _corps(nom):
 
 class LesCinqMagasinsRecoiventLEtat(unittest.TestCase):
     def test_les_trois_magasins_par_chemin(self):
-        self.assertIn("_visibilite.brancher(_st, utilisateur_vu, "
-                      "sensible=sensible_en_attente)", SOURCE)
+        # Le BLOC, pas la ligne exacte (17/09) : cette assertion citait l'appel
+        # au caractere pres et est tombee quand la brique 2 du chantier 19 lui
+        # a ajoute `depot=`. Un banc qui exige une mise en page interdit la
+        # ligne suivante au lieu de proteger la regle. Ce qui compte : les
+        # trois magasins par chemin recoivent l'axe sensible ET le depot.
+        bloc = SOURCE.split("for _st in (STORE, FACE_STORE, ANIMAL_STORE):")[1][:400]
+        self.assertIn("_visibilite.brancher(_st, utilisateur_vu", bloc)
+        self.assertIn("sensible=sensible_en_attente", bloc)
+        self.assertIn("depot=depot_du_chemin", bloc)
 
     def test_les_deux_magasins_par_nom(self):
         # Une fiche cite des chemins : l'avatar d'une photo masquee est une
@@ -69,6 +76,7 @@ class LesCinqMagasinsRecoiventLEtat(unittest.TestCase):
         bloc = SOURCE.split("for _st in (PEOPLE_STORE, PETS_STORE):")[1][:300]
         self.assertIn("par_nom=True", bloc)
         self.assertIn("sensible=sensible_en_attente", bloc)
+        self.assertIn("depot=depot_du_chemin", bloc)
 
     def test_aucun_branchement_sans_etat(self):
         # Un magasin oublie serait un magasin qui montre ce que les autres

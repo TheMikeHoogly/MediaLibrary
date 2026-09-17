@@ -146,7 +146,26 @@ def peut_juger(chemin, utilisateur):
     return utilisateur == ADMIN or chez_soi(chemin, utilisateur)
 
 
-def visible(chemin, utilisateur, sensible=False):
+def depot_reserve(depot_par, utilisateur):
+    """Un dépôt encore dans `_Uploads` est-il FERMÉ à cet utilisateur ?
+
+    Chantier 19, brique 2 (demande de Flo, 17/09). `_Uploads` n'est le dossier
+    de personne : jusqu'ici tout le monde y voyait tout, donc une photo
+    déposée était offerte à la famille AVANT que quiconque l'ait regardée —
+    y compris le filet. Désormais un dépôt n'est visible que de son
+    DÉPOSANT (le carnet le sait, `depot_de`) et de l'admin, jusqu'à ce qu'il
+    soit rangé chez son propriétaire.
+
+    Règle pure : l'appelant dit qui a déposé (`''` = inconnu, donc à l'admin
+    seul — les dépôts d'avant le carnet), la règle ne lit rien."""
+    if utilisateur is None:
+        return False
+    if utilisateur == ADMIN:
+        return False
+    return depot_par != utilisateur
+
+
+def visible(chemin, utilisateur, sensible=False, depot_par=None):
     """`utilisateur` peut-il voir cette photo ? None (fil de fond) voit tout.
 
     DEUX causes de masquage, une seule règle. Le CHEMIN : chacun voit tout ce
@@ -166,12 +185,17 @@ def visible(chemin, utilisateur, sensible=False):
         return True
     if est_prive(chemin) and not chez_soi(chemin, utilisateur):
         return False
+    # Le dépôt : un masque de plus, et les masques passent avant tout ce qui
+    # ouvre (`docs/CHANTIER_19_VIE_PRIVEE.md`). `None` = ce chemin n'est pas
+    # un dépôt ; l'appelant le dit, la règle ne cherche pas Uploads.
+    if depot_par is not None and depot_reserve(depot_par, utilisateur):
+        return False
     if sensible and not peut_juger(chemin, utilisateur):
         return False
     return True
 
 
-def filtre(utilisateur, sensible=None):
+def filtre(utilisateur, sensible=None, depot=None):
     """Le prédicat `clé -> bool` d'un utilisateur, ou None s'il voit tout.
     `sensible` : un appelable `clé -> bool` qui dit si l'entrée est masquée
     par son ÉTAT. Absent, seul le chemin décide (le comportement d'avant).
@@ -186,15 +210,19 @@ def filtre(utilisateur, sensible=None):
     écritures sur des milliers de clés tirées au hasard."""
     if utilisateur is None:
         return None
-    if sensible is None:
+    if sensible is None and depot is None:
         def ok(cle):
             return not est_prive(cle) or chez_soi(cle, utilisateur)
         return ok
 
     def ok(cle):
+        if depot is not None:
+            d = depot(cle)
+            if d is not None and depot_reserve(d, utilisateur):
+                return False
         if est_prive(cle):
-            return visible(cle, utilisateur, sensible(cle))
-        if sensible(cle):
+            return visible(cle, utilisateur, sensible(cle) if sensible else False)
+        if sensible is not None and sensible(cle):
             return peut_juger(cle, utilisateur)
         return True
     return ok
@@ -499,7 +527,7 @@ class VueFiches(VueFiltree):
         return self._d.pop(k, *defaut)
 
 
-def brancher(store, utilisateur, par_nom=False, sensible=None):
+def brancher(store, utilisateur, par_nom=False, sensible=None, depot=None):
     """Fait de `store.data` une VUE dès qu'il y a un utilisateur courant
     (l'admin compris : il ne voit pas le PRIVE des autres). `utilisateur` est
     un appelable (thread-local côté serveur) ; None = fil de fond, tout.
@@ -524,7 +552,7 @@ def brancher(store, utilisateur, par_nom=False, sensible=None):
         u = utilisateur()
         if u is None:
             return d
-        return Vue(d, filtre(u, sensible))
+        return Vue(d, filtre(u, sensible, depot))
 
     def ecrire(self, valeur):
         if isinstance(desc, property) and desc.fset:
@@ -554,7 +582,7 @@ def brancher(store, utilisateur, par_nom=False, sensible=None):
         def set_restaure(name, entry, *a, **kw):
             u = utilisateur()
             if u is not None and isinstance(entry, dict):
-                restaurer_fiche(entry, brut(store).get(name), filtre(u, sensible))
+                restaurer_fiche(entry, brut(store).get(name), filtre(u, sensible, depot))
             return set_avant(name, entry, *a, **kw)
         store.set = set_restaure
     return store

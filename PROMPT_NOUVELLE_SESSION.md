@@ -57,18 +57,27 @@ ABANDONNÉE, un compte par propriétaire (Mike admin, Flo, Papa).
 
 ## 1. Par où commencer
 
-1. **Vérifier la livraison** (`feat/p2-aide-quatre-gestes`) dans
-   `.git/logs/refs/heads/main` — le rapport de l'agent ne suffit pas.
-2. **P2 : il ne reste que l'envoi**, par Mike (brouillons Gmail prêts).
-   Le jalon sort de `ROADMAP.md` quand il confirme.
-3. **Seul reste non vu à l'écran** : `/tri` AVEC un dépôt et le message
-   `garder_refus` (un dépôt n'y paraît qu'après 7 jours). La règle, elle, est
-   prouvée en réel (point 9 ci-dessus).
-4. **La cible du 29/08 n'est pas construite** : `/upload` écrit toujours
-   dans `_Uploads`, pas dans `Photos <Nom>\_A TRIER` (`eval/DECISIONS.md`).
-   Le correctif du 16/09 suffit à l'usage ; à reposer à Mike seulement si
-   `_Uploads` gêne.
-5. **D1, la copie hors site** : à Mike seul — le lui rappeler une fois.
+1. **Vérifier la livraison** dans `.git/logs/refs/heads/main`.
+2. **CHANTIER 19 — la vie privée à la demande** (demande de Flo, 17/09) :
+   le plan est dans `docs/CHANTIER_19_VIE_PRIVEE.md`, l'état dans
+   `ROADMAP.md`. Brique 2 (quarantaine des dépôts) **LIVRÉE**. Suite dans
+   l'ordre : **brique 3** (« masquer cette photo », tranché par Mike :
+   propriétaire + personne voient, la personne seule lève), puis **brique 5**
+   (onglet Partage — c'est elle qui change le modèle de visibilité), puis
+   **brique 4** (les personnes reconnues voient leurs photos), enfin le filet
+   intime. **Les questions à trancher avant le code sont listées dans le
+   plan** — le défaut du partage (tout le monde / personne) d'abord.
+3. **Filet intime** : `mesure_filet_intime.py --base copie.db` (45 s, aucune
+   image ouverte). Le zéro-shot SigLIP ne sépare pas l'intime de la plage :
+   ne pas le câbler en masquage automatique sans un jeu de validation, que
+   **Flo et Mike** constituent — Claude ne regarde pas ces photos.
+4. **P2, l'e-mail** : trois brouillons Gmail prêts, non envoyés (Papa ;
+   Flo ×2, local et Tailscale). Mike envoie, mots de passe à part.
+5. **Tailscale** : partager `msi-mike` avec `markushuegli@gmail.com` et
+   `flolaeser@gmail.com`, limiter `autogroup:shared` au port 8080, rappeler
+   l'expiration de clé (`docs/ACCES_DISTANT_TAILSCALE.md`). En attente que
+   Mike se connecte à la console dans Chrome.
+6. **D1, la copie hors site** : à Mike seul.
 
 **Ce qui n'attend que Mike** : le bat 36 pour les 14 doublons d'`_A TRIER`
 (+ regarder 4 voisins, renommer `20260731_232718.mp4`), le bat 24 (corbeille,

@@ -41,9 +41,10 @@ FONCTIONS = ('charger_depots', 'sauver_depots', 'depot_noter',
              'depot_le', 'depots_a_trier',
              'depots_vue', 'depots_vue_invalider', 'depots_vue_retirer',
              'dossier_a_trier_de', 'cible_a_trier',
-             'depot_de', 'depots_de')
+             'depot_de', 'depots_de', '_depot_normal', '_depot_base',
+             'depot_du_chemin')
 CONSTANTES = ('DEPOT_MUR_S', '_DEPOTS', '_DEPOTS_LOCK', '_DEPOTS_VUE',
-              'DEPOTS_VUE_TTL_S', 'DOSSIER_A_TRIER')
+              'DEPOTS_VUE_TTL_S', 'DOSSIER_A_TRIER', '_DEPOT_BASE')
 
 
 def source_de(nom):
@@ -487,6 +488,59 @@ class ChacunTrieLesSiens(Socle):
             appels = {c.func.id for c in ast.walk(n)
                       if isinstance(c, ast.Call) and isinstance(c.func, ast.Name)}
             self.assertIn('depots_de', appels, nom)
+
+
+class LeDepotSeReconnaitALaPLACE(Socle):
+    """Chantier 19, brique 2 : un depot d'Uploads n'est visible que de son
+    deposant. Encore faut-il RECONNAITRE un depot -- sous Windows en
+    production, sous Linux au banc, avec des chemins UNC et des cles
+    relatives."""
+
+    def setUp(self):
+        super().setUp()
+        self.m._DEPOT_BASE = None
+        self.m.UPLOAD_DIR = Path(r'\\NAS\home\Photos\_Uploads')
+        self.m._DEPOTS.clear()
+        self.m._DEPOTS['x.jpg'] = {'le': time.time(), 'par': 'Flo'}
+        self.m._DEPOTS['Camera/y.jpg'] = {'le': time.time(), 'par': 'Papa'}
+
+    def test_une_cle_relative_est_un_depot(self):
+        self.assertEqual(self.m.depot_du_chemin('x.jpg'), 'Flo')
+        self.assertEqual(self.m.depot_du_chemin('Camera/y.jpg'), 'Papa')
+
+    def test_un_chemin_UNC_sous_Uploads_aussi_meme_en_autre_casse(self):
+        self.assertEqual(
+            self.m.depot_du_chemin(r'\\NAS\home\Photos\_Uploads\x.jpg'), 'Flo')
+        self.assertEqual(
+            self.m.depot_du_chemin(r'\\nas\HOME\photos\_uploads\x.jpg'), 'Flo')
+
+    def test_une_photo_du_fonds_n_est_PAS_un_depot(self):
+        self.assertIsNone(self.m.depot_du_chemin(
+            r'\\NAS\home\Photos\Photos Mike\2021\a.jpg'))
+
+    def test_un_VOISIN_qui_commence_pareil_n_est_pas_un_depot(self):
+        # `_Uploads_bis` commence comme `_Uploads` : la PLACE se nomme avec
+        # son separateur, sinon l'homonyme herite de la regle (regle 7).
+        self.assertIsNone(self.m.depot_du_chemin(
+            r'\\NAS\home\Photos\_Uploads_bis\x.jpg'))
+
+    def test_un_depot_sans_auteur_rend_la_chaine_vide_pas_None(self):
+        # '' = « depot, auteur inconnu » -> reserve a l'admin ; None = « pas un
+        # depot » -> regle d'avant. Les confondre ouvrirait Uploads a tous.
+        self.assertEqual(self.m.depot_du_chemin('inconnu.jpg'), '')
+        self.assertIsNone(self.m.depot_du_chemin(r'\\NAS\home\Photos\z.jpg'))
+
+    def test_le_banc_ne_depend_pas_du_separateur_de_SA_machine(self):
+        import os as _os
+        src = ''
+        for nom in ('_depot_normal', '_depot_base', 'depot_du_chemin', 'depot_de'):
+            n = next(x for x in ARBRE.body
+                     if isinstance(x, ast.FunctionDef) and x.name == nom)
+            corps = n.body[1:] if isinstance(n.body[0], ast.Expr) else n.body
+            src += '\n'.join(LIGNES[corps[0].lineno - 1:n.end_lineno])
+        self.assertNotIn('os.sep', src)
+        self.assertNotIn('os.path.normcase', src)
+        self.assertTrue(_os.sep in ('/', '\\'))
 
 
 if __name__ == '__main__':

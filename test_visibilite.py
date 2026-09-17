@@ -493,5 +493,48 @@ class LaCiblePrive(unittest.TestCase):
         self.assertTrue(V.visible(cible + '/x.jpg', 'Mike'))
 
 
+class LeDepotResteAuDeposant(unittest.TestCase):
+    """Chantier 19, brique 2 (17/09). `_Uploads` n'est le dossier de personne :
+    tout le monde y voyait tout, donc une photo deposee etait offerte a la
+    famille avant que quiconque l'ait regardee. Elle est desormais reservee a
+    son DEPOSANT et a l'admin, jusqu'a ce qu'elle soit rangee."""
+
+    def test_le_deposant_la_voit_les_autres_non(self):
+        self.assertTrue(V.visible(RACINE, 'Flo', False, 'Flo'))
+        self.assertFalse(V.visible(RACINE, 'Papa', False, 'Flo'))
+        self.assertTrue(V.visible(RACINE, V.ADMIN, False, 'Flo'))
+
+    def test_un_depot_sans_auteur_est_a_l_admin(self):
+        self.assertFalse(V.visible(RACINE, 'Flo', False, ''))
+        self.assertTrue(V.visible(RACINE, V.ADMIN, False, ''))
+
+    def test_hors_depot_rien_ne_change(self):
+        # `None` = ce chemin n'est pas un depot : la regle d'avant, a l'octet.
+        self.assertTrue(V.visible(FLO_PUB, 'Papa', False, None))
+        self.assertTrue(V.visible(RACINE, 'Papa', False, None))
+
+    def test_le_depot_ne_rouvre_pas_un_PRIVE(self):
+        # Les masques se cumulent : etre le deposant n'ouvre pas le prive
+        # d'un autre, et l'ordre ne change pas la reponse.
+        self.assertFalse(V.visible(MIKE_PRIV, 'Flo', False, 'Flo'))
+
+    def test_la_vue_du_magasin_applique_la_meme_regle(self):
+        d = {RACINE: {}, FLO_PUB: {}}
+        depot = lambda c: 'Flo' if c == RACINE else None       # noqa: E731
+        m = Magasin(dict(d))
+        V.brancher(m, lambda: 'Papa', depot=depot)
+        self.assertEqual(sorted(m.data), [FLO_PUB])
+        self.assertIsNone(m.get(RACINE))
+        self.assertFalse(m.has(RACINE))
+        m2 = Magasin(dict(d))
+        V.brancher(m2, lambda: 'Flo', depot=depot)
+        self.assertEqual(sorted(m2.data), sorted(d))
+
+    def test_la_vue_sans_depot_est_celle_d_avant(self):
+        m = Magasin({RACINE: {}, MIKE_PRIV: {}})
+        V.brancher(m, lambda: 'Papa')
+        self.assertEqual(sorted(m.data), [RACINE])
+
+
 if __name__ == '__main__':
     unittest.main()
