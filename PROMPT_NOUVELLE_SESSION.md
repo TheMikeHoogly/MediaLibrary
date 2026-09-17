@@ -32,8 +32,11 @@ enrichir `/aide`, pas de parcours guidé.
    `Thumbs.db` (sans auteur) REFUSÉ. Et un défaut de plus : sans dossier
    `Photos <Nom>`, « Garder » retombait sur la racine (à l'admin) et
    échouait bouton allumé → `garder_refus` le dit maintenant. Flo et Papa
-   ont leur dossier : non concernés. **Mike supprime `Essai`** ; la photo
-   d'essai est dans la corbeille (`essai_tri_…jpg`).
+   ont leur dossier : non concernés. `Essai` SUPPRIMÉ (17/09) ; la photo d'essai
+   est dans la corbeille (`essai_tri_…jpg`).
+10. **Réglages sait supprimer un compte** : bouton « Supprimer » à côté de
+   chaque compte non admin, en deux clics (pas de `confirm()`). Premier clic
+   observé sur Papa (rien supprimé) ; le second = la route déjà prouvée.
 6. `ROADMAP.md` portait B1–B4 EN DOUBLE (une version d'avant l'abandon) :
    la copie périmée est retirée (−137 lignes).
 

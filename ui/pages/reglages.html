@@ -460,8 +460,14 @@ load(); setInterval(load, 6000);
         adm.hidden=false;
         j('/api/comptes').then(function(d){
           if(d.error){ liste.textContent=''; return; }
+          // 17/09 : le serveur savait supprimer un compte, la page non. Le
+          // bouton n'existe pas pour l'admin (le serveur le refuse) ; le geste
+          // se fait en DEUX clics, sans confirm() -- une boite du navigateur
+          // bloque la page et le pilotage. Les fichiers ne sont pas touches.
+          var esc=function(t){ return t.replace(/[&<>"]/g,function(x){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[x];}); };
           liste.innerHTML=(d.comptes||[]).map(function(c){
-            return '<span class="badge">'+c.nom.replace(/[&<>]/g,function(x){return {'&':'&amp;','<':'&lt;','>':'&gt;'}[x];})+(c.admin?' · admin':'')+'</span> ';
+            return '<span class="badge">'+esc(c.nom)+(c.admin?' · admin':'')+'</span> '+
+              (c.admin?'':'<button type="button" class="btn btn--discret" data-suppr="'+esc(c.nom)+'">Supprimer</button> ');
           }).join('')||'<span class="mut">(aucun)</span>';
         });
       } else { adm.hidden=true; liste.textContent=''; }
@@ -473,6 +479,21 @@ load(); setInterval(load, 6000);
     j('/api/comptes',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({nom:nom,mdp:mdp})})
     .then(function(r){ if(r.ok){ dire('Compte cree : '+nom+'.'); document.getElementById('cpt-mdp').value=''; charger(); } else dire(r.error||'refus', true); });
   };
+  liste.addEventListener('click', function(ev){
+    var b=ev.target.closest('[data-suppr]'); if(!b) return;
+    var nom=b.getAttribute('data-suppr');
+    if(!b.classList.contains('btn--destructif')){
+      liste.querySelectorAll('.btn--destructif').forEach(function(x){ x.classList.remove('btn--destructif'); x.classList.add('btn--discret'); x.textContent='Supprimer'; });
+      b.classList.remove('btn--discret'); b.classList.add('btn--destructif');
+      b.textContent='Confirmer : supprimer '+nom;
+      dire('Supprimer le compte '+nom+' ? Ses photos et son dossier restent en place ; il ne pourra plus se connecter. Clique une seconde fois pour confirmer.');
+      return;
+    }
+    b.disabled=true;
+    j('/api/comptes/supprimer',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({nom:nom})})
+    .then(function(r){ if(r.ok){ dire('Compte '+nom+' supprim\u00e9.'); charger(); } else { dire('Refus\u00e9 : '+(r.error||'le serveur a refus\u00e9'), true); b.disabled=false; } })
+    .catch(function(){ dire('Le serveur n\u2019a pas r\u00e9pondu. R\u00e9essayer.', true); b.disabled=false; });
+  });
   document.getElementById('cpt-mdp-moi').onclick=function(){
     var m=prompt('Nouveau mot de passe (8 caracteres au moins) :'); if(!m) return;
     j('/api/comptes/mdp',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({mdp:m})})
