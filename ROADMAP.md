@@ -52,9 +52,10 @@ ouvert d'un coup ; la difficulté n'est plus d'attendre, c'est de CHOISIR.
 
 ## Chantier 19 — LA VIE PRIVÉE À LA DEMANDE (17/09, demande de Flo)
 
-Le plan complet, l'ordre d'évaluation des règles et les questions ouvertes :
-**`docs/CHANTIER_19_VIE_PRIVEE.md`**. Cinq briques, un seul sujet — la
-photothèque s'ouvre à la famille.
+**Cinq briques sur six livrées et fusionnées les 17 et 18/09.** Le plan,
+l'ordre d'évaluation des règles et le détail de chaque brique :
+**`docs/CHANTIER_19_VIE_PRIVEE.md`** ; les verdicts dans `eval/DECISIONS.md` ;
+le récit dans git. Ce qui suit n'est plus qu'une carte.
 
 | # | Brique | État |
 |---|---|---|
@@ -65,204 +66,46 @@ photothèque s'ouvre à la famille.
 | 5 | **Qui voit mes photos** : chacun coche | **LIVRÉE 18/09, vue à l'écran** — trois états, l'admin n'est pas un passe-partout, et la règle est gratuite tant que personne ne restreint |
 | 6 | Les comptes « pour de bon » : mot de passe et e-mail | **LIVRÉE 18/09, vue à l'écran** — l'actuel est exigé, l'admin réinitialise en provisoire, chaque compte porte une adresse facultative, et l'admin peut la poser pour quelqu'un. Le « mot de passe oublié » par SMTP est **refusé** (Mike, 18/09) |
 
-**Brique 2, livrée.** Un dépôt d'`_Uploads` n'est plus visible que de son
-déposant et de l'admin : la règle est dans `visibilite.visible` (masque, donc
-AVANT tout ce qui ouvre), le serveur dit qui a déposé (`depot_du_chemin`,
-carnet), et la vue des magasins l'applique par clé — 44 445 clés en **27 ms**,
-mesuré. Un dépôt sans auteur connu reste à l'admin. **Trouvé en écrivant le
-banc** : `depot_de` comparait les chemins avec `os.path`, qui ne reconnaît pas
-`\` hors Windows — la règle répondait autre chose au banc qu'à la production.
-Corrigé par une normalisation écrite dans le projet, et le banc l'interdit
-désormais (`test_depots_uploads.LeDepotSeReconnaitALaPLACE`).
+### Ce qui reste ouvert
 
-**Brique 1, mesurée le 19/09 — et c'est la mesure qui décide de ne rien
-câbler.** Le plan annonçait un « signal franc » pour les captures d'écran :
-pas d'appareil dans l'EXIF, PNG, dimensions d'écran.
-`mesure_captures_ecran.py` l'a cherché dans la base et en a trouvé **un tiers**
-— 443 `.png` sur 44 445 entrées ; **aucun** champ d'appareil, **aucune**
-dimension ; et le mot-clé `capture d ecran` du tagueur ne désigne **1 seule
-photo**, qui n'est même pas une PNG. Le filet documents ne voit donc pas les
-captures, et deux des trois signaux ne sont pas illisibles par faiblesse mais
-par ABSENCE. Câbler « PNG donc capture » trancherait au-delà de ce qui est
-mesuré. Les deux suites possibles sont dans `QUESTIONS_MIKE.md` — la file de
-revue humaine (443 fichiers, c'est regardable) et, si Mike le veut, trois
-champs posés au passage de la vignette pour rendre le signal lisible.
+- **Brique 1** : deux choix attendent Mike dans `QUESTIONS_MIKE.md` (la file
+  de revue, et faut-il rendre le signal des captures LISIBLE en posant
+  largeur/hauteur/appareil au passage de la vignette). **Rien n'est câblé**,
+  et c'est la mesure qui l'a décidé : deux des trois signaux annoncés par le
+  plan ne sont pas dans la base, le troisième (`.png`, 443 fichiers) ne
+  suffit pas à trancher.
+- **Ce qui n'est pas prouvé en RÉEL** : la vue d'un NON-admin, et la
+  non-fuite ROUTE PAR ROUTE (`verifier_non_fuite.py` veut deux comptes et
+  leurs mots de passe). Les bancs tiennent la règle AU MAGASIN — l'endroit
+  où ce projet a décidé de la tenir — mais un compte d'essai le montrerait à
+  l'écran. Geste de Mike.
 
-**Brique 4, livrée le 18/09 — être reconnu sur une photo la rouvre.**
-Si `personne:Flo` est sur une photo, Flo la voit, même si son propriétaire ne
-partage pas avec elle. C'est le SEUL contrepoids du chantier, et sa portée est
-exactement d'un cran : il rouvre ce que la **liste de partage** a fermé,
-jamais un PRIVE, jamais un masque personnel, jamais un masque machine, jamais
-un dépôt réservé. Un banc prend les quatre masques un par un.
+### Ce que ce chantier a appris, et qui vaut au-delà de lui
 
-**Ce que le plan prévoyait et qui n'a pas été construit** : « un index clé →
-noms en mémoire ». Il n'en faut pas. La question « suis-je sur cette photo ? »
-n'est posée **que pour les clés que le partage fermerait** — c'est l'ORDRE du
-prédicat qui fait le travail d'un index, et un banc compte les appels pour
-que personne ne l'inverse par mégarde.
-
-**Mesuré** sur 44 445 clés (caches chauds, meilleur de trois), avec des
-entrées portant leurs mots-clés :
-
-| | coût | ce que Papa voit |
-|---|---:|---:|
-| personne ne restreint | **6,9 ms** | 44 445 |
-| Flo restreint, sans la brique 4 | 24,0 ms | 29 630 |
-| Flo restreint, avec la brique 4 | 57,8 ms | 33 334 |
-
-Soit **+34 ms** quand quelqu'un restreint, et **0** sinon — pour 3 704 photos
-rendues à qui est dessus.
-
-**Brique 5, livrée le 18/09 — chacun choisit qui voit ses photos.**
-La visibilité cesse d'être une propriété du CHEMIN pour devenir une RELATION
-entre deux comptes. Le réglage vit dans « Mon compte » : *tout le monde*, ou
-*seulement les personnes cochées*.
-
-- **Trois états, et la migration du plan tombe.** Le champ ABSENT **est** le
-  troisième état — jamais réglé, donc tout le monde — et il est écrit dans
-  `comptes.py` au lieu d'être déduit de l'âge du compte. `[]` = personne,
-  `[noms]` = ceux-là. Un compte créé depuis aujourd'hui part fermé. Rien à
-  migrer, rien à rejouer. Un banc tient le cas « un compte d'avant n'a pas le
-  champ ».
-- **L'admin n'est PAS un passe-partout** (tranché par Mike le 18/09, verdict
-  dans `eval/DECISIONS.md`) : ce que quelqu'un ferme est fermé à Mike aussi.
-  Les fils de fond, eux, voient tout — rien ne cesse d'être traité.
-- **La règle est gratuite tant que personne ne restreint.** `fermes_pour(u)`
-  rend UNE fois par requête l'ensemble des propriétaires fermés à celui qui
-  regarde ; vide, le prédicat prend son chemin rapide. **Mesuré** sur 44 445
-  chemins de la forme du fonds, caches chauds, meilleur de trois : ensemble
-  vide **7,2 → 7,4 ms** (le bruit), ensemble plein **107 ms**… ramenés à
-  **20 ms** en mémoïsant `auteurs.proprietaire_de`, comme `est_prive` l'est
-  depuis le 11/09 et pour la même raison. Le gain profite à tout le projet,
-  pas seulement à cette brique.
-- **Vu à l'écran le 18/09 à 23 h 15** : les trois états font l'aller-retour
-  complet (`['Flo']` → `[]` → `null`), le serveur les renvoie tels quels, et
-  l'écran le dit en français juste — « Flo voit », « Flo, Papa voient ».
-- **Ce qui n'est pas prouvé en réel** : qu'un AUTRE compte perde effectivement
-  la vue. Les bancs le tiennent au magasin (clé, compteur, fiche, avatar) ;
-  la preuve route par route demande deux sessions, donc Mike.
-
-**Brique 3, livrée le 18/09 — le masque d'une personne reconnue.**
-Une personne reconnue sur la photo d'un autre peut la masquer, et **la photo
-ne bouge pas** : restent son propriétaire, elle, et l'admin. Le geste est dans
-la visionneuse, entre « Rendre privée » et « Supprimer » — poids neutre, ce
-n'est pas un geste destructif.
-
-- **La règle est PURE** (`visibilite.masque_personnel`, `peut_masquer`,
-  `peut_lever`) et le filtre reste AU MAGASIN : les cinq magasins reçoivent le
-  prédicat, donc les 166 lectures du serveur sont couvertes — compteurs,
-  fiches et avatars compris. L'état vit en BASE (`masque_par`), **jamais dans
-  le XMP** : un masque posé par un TIERS ne se grave pas dans le fichier de
-  quelqu'un d'autre — la règle 18c compte double ici, le fichier n'appartient
-  pas à qui masque.
-- **Qui lève** : elle, et l'admin en secours. **Pas le propriétaire** — il peut
-  effacer sa photo, jamais la redévoiler. C'est ce qui fait du masque une
-  garantie et non une politesse.
-- **Le bouton n'existe que là où le geste peut aboutir** (règle n° 9), et c'est
-  le SERVEUR qui le dit (`GET /api/masque`) : recopier « suis-je dans ses tags
-  `personne:` » côté écran ferait deux règles, et celle de l'écran finirait
-  par mentir. La réponse ne dit jamais qui d'autre a masqué, ni combien —
-  savoir qu'une photo porte un masque est déjà un renseignement sur quelqu'un.
-- **Deux bancs, et ils mordent** : `test_visibilite.LeMasqueDUnePersonneReconnue`
-  (la règle, la vue, le compteur, la fiche, l'écriture qui ne perd rien) et
-  `test_masque_personnel` (le câblage, découpé sur l'ARBRE du source,
-  docstrings retirées). Contre-épreuves faites : la règle retirée de `visible`
-  → 4 cas tombent ; retirée du filtre de la vue → 3 ; les fiches privées du
-  prédicat → 1 ; le refus exact placé avant la visibilité → 1.
-- **Vu à l'écran le 18/09 à 19 h 55** : sur une photo portant `personne:Mike`,
-  le bouton apparaît, le masque se pose (« Photo masquée. Elle ne bouge pas :
-  toi, son propriétaire et l'administrateur la voyez encore ») et **se lève**,
-  l'état revenant de l'index à chaque fois — aller-retour complet, rien laissé
-  derrière.
-- **Mesuré au passage** : dans la visionneuse, `[hidden]` gagne bien contre
-  `.btn` (`#lb-prive`, sans règle d'ID, rend `display: none`). Le piège de la
-  BARRE ne vaut pas ici ; la règle d'ID du nouveau bouton est une prudence, et
-  son commentaire le dit.
-
-**Ce qui reste de la brique 3** : la preuve de non-fuite ROUTE PAR ROUTE
-(`verifier_non_fuite.py`) demande deux comptes et leurs mots de passe — c'est
-un geste de Mike, jamais du mien.
-
-**Brique 6, premier pan livré le 18/09 — le trou du mot de passe.**
-« Changer mon mot de passe » n'exigeait pas l'ACTUEL : une session ouverte
-(téléphone déverrouillé, écran laissé seul) suffisait à changer le mot de
-passe et à fermer la porte derrière soi. Désormais :
-
-- `comptes.changer_mdp` exige l'actuel **pour soi**, et le **frein des
-  connexions s'y applique** — sinon ce panneau était le seul endroit du
-  serveur où deviner ne coûtait rien ;
-- l'**admin réinitialise** celui d'un AUTRE sans le connaître (jamais le sien,
-  qui repasse par la règle commune) ; le compte est alors marqué
-  `temporaire`, la page le dit dans la liste, et la première page que la
-  personne ouvre lui demande d'en choisir un — le drapeau tombe à ce
-  moment-là. Mike n'a donc jamais le mot de passe de personne ;
-- `creer_compte.py --mdp` (devant la machine) reste inchangé : qui tient le
-  disque tient le fichier, et le mot de passe qu'il tape n'est pas provisoire.
-
-**Le banc mord** : la règle retirée, 3 cas de `test_comptes.MotDePasseActuel`
-tombent (contre-épreuve faite avant de conclure). **Prouvé en réel le 18/09 à
-07 h 41** : redémarrage observé (`demarre_a` bougé, `code_a_jour` vrai) et la
-page que le navigateur reçoit porte bien le champ `mdp-0`
-(`current-password`) — lu par `mesure_etat_serveur.py --sert /connexion`.
-
-**Regardé à l'écran le 18/09 à 09 h 30**, Chrome revenu (`MSI-Mike`), et les
-deux refus se produisent pour de vrai :
-- panneau « Mon compte » : l'adresse en haut, le mot de passe en bas, chacun
-  son bouton et son message ; un mot de passe actuel FAUX rend
-  **« Refusé : mot de passe actuel incorrect. »** et rien ne bouge ;
-- une adresse invalide rend **« Refusé : adresse e-mail invalide. »** ;
-- Réglages : « Réinitialiser » ouvre son bloc sur le bon compte, « Proposer »
-  tire un mot de passe lisible (`jxmn-qros-oykk` — ni O/0 ni I/l/1), et le
-  bouton n'existe pas sur la ligne de Mike lui-même ;
-- `/api/moi` sert bien `mdp_temporaire` et `email`.
-
-**Ce que ça a appris** : le champ `type="email"` fait jouer la validation
-NATIVE du navigateur AVANT notre `fetch` — une saisie sans arobase n'atteint
-jamais le serveur et c'est Chrome qui parle. Notre message n'apparaît que pour
-ce que le navigateur laisse passer et que `email_valide` refuse (`a@b`). Deux
-étages, et c'est bien ainsi ; il fallait juste le savoir pour ne pas croire le
-panneau muet.
-
-**Ce qui n'est pas prouvé en réel** : la vue d'un NON-admin — aucun compte de
-Flo ou Papa n'est utilisable depuis ici ; un compte d'essai le montrerait.
-
-**Pas une régression, vérifié le 18/09** : `/files` sans paramètre affiche
-« 0 photo(s) ». C'est le dossier `_Uploads`, VIDE depuis le tri du 13/09, que
-la galerie montre par défaut. Le fonds répond normalement
-(`/files?jour=09-18` : 90 photos, 44 444 entrées dans les compteurs).
-
-**Brique 6, second pan livré le 18/09 — l'adresse e-mail.** Une par compte,
-facultative, **effaçable** (une donnée personnelle qu'on ne peut plus retirer
-est une donnée qu'on n'aurait pas dû demander), posée par la personne
-elle-même dans « Mon compte » — le panneau du menu porte désormais les deux
-gestes, chacun avec son bouton et son message. Elle est **visible d'elle et de
-l'admin seulement** : `/api/moi` ne répond que sur le compte qui demande, et
-la liste de `/api/comptes` est derrière le 403 des Réglages. Elle vit dans
-`comptes.json` (hors git), jamais dans un XMP. **Le serveur n'envoie rien** :
-il n'a ni compte SMTP, ni secret de plus — l'adresse sert à ce que Mike sache
-à qui écrire, et c'est tout ce qui a été construit (options (a) et (b) du
-plan). **L'option (c)**, le vrai « mot de passe oublié » par lien envoyé,
-reste non construite : elle demande un compte SMTP et un serveur maison qui
-écrit à l'extérieur — à ne faire que si quelqu'un reste vraiment bloqué.
-Prouvé en réel le 18/09 à 07 h 53 (redémarrage observé, page servie portant
-`mail-1` et `/api/comptes/email`).
-
-**Et, le 18/09 après le retour de Chrome, deux choix de Mike** (verdicts dans
-`eval/DECISIONS.md`) : **(c) est refusée** — pas de SMTP ; et **c'est lui qui
-pose les adresses pour l'instant**, donc les Réglages ont un bouton
-« Adresse » par ligne (Poser / Effacer), le serveur l'acceptait déjà sans
-avoir d'écran. Les adresses sont vérifiées dans son Gmail :
-`flolaeser@gmail.com`, `markushuegli@gmail.com`.
-
-**Un instrument de plus, né d'une panne** : le soir du 17/09 l'extension
-Chrome n'a pas répondu, et il ne restait AUCUN chemin pour savoir si le
-serveur exécutait le code du disque — la VM n'atteint pas le LAN.
-`mesure_etat_serveur.py` lit `/api/serveur` (route ouverte) depuis la machine
-de Mike, par l'agent de banc : `uptime_s`, `demarre_a`, `code_a_jour`, et avec
-`--sert/--motif` ce que le serveur SERT vraiment. Le protocole « redémarrer
-puis OBSERVER » ne dépend donc plus d'un seul outil.
-
----
+- **Ce qui ferme passe avant ce qui ouvre, et un seul cran s'ouvre.** Quatre
+  masques (PRIVE, masque personnel, masque machine, dépôt réservé) ; deux
+  ouvertures (partage, reconnaissance) ; la reconnaissance ne rouvre que le
+  partage. Un banc prend les quatre masques un par un.
+- **Le passe-partout de l'admin n'existe que pour les verdicts de MACHINE.**
+  Là, une erreur rendrait une photo invisible ET injugeable. Sur un choix
+  HUMAIN — le PRIVE, le partage — il n'a rien à faire (tranché le 18/09).
+- **Un troisième état ÉCRIT vaut mieux qu'une migration.** Le champ `partage`
+  ABSENT veut dire « jamais réglé, donc tout le monde » ; `[]` veut dire
+  « personne ». Rien à migrer, rien à rejouer, et le sens ne se déduit pas de
+  l'âge du compte.
+- **Un ORDRE bien posé remplace un index.** La brique 4 devait exiger un index
+  clé → noms en mémoire ; en ne posant la question que pour les clés que le
+  partage FERME, elle n'en a pas eu besoin — et un banc COMPTE les appels pour
+  que personne n'inverse l'ordre par mégarde.
+- **Le droit se DEMANDE au serveur, il ne se recopie pas dans l'écran.** Le
+  bouton « Masquer cette photo » n'existe que si `GET /api/masque` le dit :
+  deux règles pour un seul droit, et celle de l'écran finit par mentir.
+- **Ce que ça coûte, mesuré** (44 445 clés, caches chauds, meilleur de trois) :
+  le partage **0 ms** tant que personne ne restreint, **20 ms** sinon — 107 ms
+  avant de mémoïser `auteurs.proprietaire_de`, gain qui profite à tout le
+  projet ; la reconnaissance **+34 ms**, et 0 sinon. Trouvé en chemin et
+  seulement documenté : `list(vue)` et `sorted(vue)` paient DEUX passes du
+  filtre (`PERFORMANCE.md` § 3.-1).
 
 ## A. Ce qui appartient à Mike
 
