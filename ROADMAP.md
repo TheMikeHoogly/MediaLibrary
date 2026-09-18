@@ -97,10 +97,31 @@ tombent (contre-épreuve faite avant de conclure). **Prouvé en réel le 18/09 �
 page que le navigateur reçoit porte bien le champ `mdp-0`
 (`current-password`) — lu par `mesure_etat_serveur.py --sert /connexion`.
 
-**Ce qui n'est pas prouvé en réel** : la vue d'un NON-admin, et les deux
-gestes de la brique 6 À L'ÉCRAN (le refus « mot de passe actuel incorrect »,
-le bouton « Réinitialiser » des Réglages) — ils exigent une session ouverte,
-donc Mike. Les bancs tiennent la règle ; l'écran reste à regarder.
+**Regardé à l'écran le 18/09 à 09 h 30**, Chrome revenu (`MSI-Mike`), et les
+deux refus se produisent pour de vrai :
+- panneau « Mon compte » : l'adresse en haut, le mot de passe en bas, chacun
+  son bouton et son message ; un mot de passe actuel FAUX rend
+  **« Refusé : mot de passe actuel incorrect. »** et rien ne bouge ;
+- une adresse invalide rend **« Refusé : adresse e-mail invalide. »** ;
+- Réglages : « Réinitialiser » ouvre son bloc sur le bon compte, « Proposer »
+  tire un mot de passe lisible (`jxmn-qros-oykk` — ni O/0 ni I/l/1), et le
+  bouton n'existe pas sur la ligne de Mike lui-même ;
+- `/api/moi` sert bien `mdp_temporaire` et `email`.
+
+**Ce que ça a appris** : le champ `type="email"` fait jouer la validation
+NATIVE du navigateur AVANT notre `fetch` — une saisie sans arobase n'atteint
+jamais le serveur et c'est Chrome qui parle. Notre message n'apparaît que pour
+ce que le navigateur laisse passer et que `email_valide` refuse (`a@b`). Deux
+étages, et c'est bien ainsi ; il fallait juste le savoir pour ne pas croire le
+panneau muet.
+
+**Ce qui n'est pas prouvé en réel** : la vue d'un NON-admin — aucun compte de
+Flo ou Papa n'est utilisable depuis ici ; un compte d'essai le montrerait.
+
+**Pas une régression, vérifié le 18/09** : `/files` sans paramètre affiche
+« 0 photo(s) ». C'est le dossier `_Uploads`, VIDE depuis le tri du 13/09, que
+la galerie montre par défaut. Le fonds répond normalement
+(`/files?jour=09-18` : 90 photos, 44 444 entrées dans les compteurs).
 
 **Brique 6, second pan livré le 18/09 — l'adresse e-mail.** Une par compte,
 facultative, **effaçable** (une donnée personnelle qu'on ne peut plus retirer

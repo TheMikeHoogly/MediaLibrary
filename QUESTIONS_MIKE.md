@@ -1,15 +1,10 @@
 # Questions en attente de Mike
 
-**Trois questions ouvertes (18/09, traite autonome).**
+**Deux questions ouvertes (18/09).**
 
-**1. Les deux branches du 18/09 — je fusionne ?**
-`fix/le-mot-de-passe-exige-l-actuel` (4751949) puis
-`feat/une-adresse-par-compte` (a850a86, branchée sur la première).
-`main` est intacte, comme le veut une traite sans toi.
-*Recommandation* : regarde d'abord les deux écrans (le panneau « Mon compte »
-et le bouton « Réinitialiser » des Réglages), puis un « go » et je livre
-depuis la seconde branche, qui porte les deux. *En attendant* : rien ; le
-serveur tourne déjà ce code, seul `main` ne l'a pas.
+**1. ~~Les deux branches du 18/09~~ — RÉGLÉ.** Les deux écrans ont été
+regardés (Chrome revenu à 09 h 25), les deux refus se produisent pour de vrai,
+et tout est fusionné dans `main`.
 
 **2. L'adresse e-mail de Papa (et de Flo) : qui la pose ?**
 Aujourd'hui chacun pose la sienne dans « Mon compte ». Le SERVEUR accepte

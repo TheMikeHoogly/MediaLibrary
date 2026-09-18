@@ -9,9 +9,8 @@
 
 ## 0. L'état, en dix lignes
 
-**Traite autonome du 18/09 au petit matin (Mike absent) : la BRIQUE 6 du
-chantier 19 est faite, en deux livraisons — et elles sont sur des BRANCHES,
-`main` est intacte.**
+**Traite autonome du 18/09 au petit matin : la BRIQUE 6 du chantier 19 est
+faite, en deux livraisons, regardées à l'écran à 09 h 30 et fusionnées.**
 
 1. **Le trou du mot de passe est fermé** (`fix/le-mot-de-passe-exige-l-actuel`,
    commit `4751949`). « Changer mon mot de passe » exige l'ACTUEL ; le frein
@@ -30,6 +29,12 @@ chantier 19 est faite, en deux livraisons — et elles sont sur des BRANCHES,
    ne restait AUCUN moyen de savoir si le serveur exécutait le code du disque.
 4. Les deux redémarrages ont été **observés** (07 h 41 et 07 h 53, `demarre_a`
    bougé, `code_a_jour` vrai) et les 78 bancs visés sont **verts sous Windows**.
+5. **À l'écran** (Chrome `MSI-Mike`, 09 h 30) : « Refusé : mot de passe actuel
+   incorrect. » et « Refusé : adresse e-mail invalide. » s'affichent pour de
+   vrai ; « Proposer » tire `jxmn-qros-oykk`. Un `type="email"` fait jouer la
+   validation NATIVE du navigateur avant notre `fetch` : deux étages de refus,
+   et c'est voulu. `/files` sans paramètre montre « 0 photo(s) » parce qu'il
+   montre `_Uploads`, vide — **pas une régression**.
 
 Acquis d'avant : chantier 19 briques 2 (dépôts au déposant) ; filet « intime »
 mesuré et REFUSÉ en automatique ; veille (P1) ; campagne de retag ABANDONNÉE ;
@@ -41,17 +46,9 @@ brouillons NON envoyés.
 ## 1. Par où commencer
 
 1. **Vérifier l'état réel** (`.git/HEAD`, `.git/logs/HEAD`,
-   `.git/logs/refs/heads/main`) : `main` doit être à `ef4a5bd` et les deux
-   branches du 18/09 au-dessus, NON fusionnées.
-2. **Demander à Mike s'il fusionne** (`QUESTIONS_MIKE.md`, question 1) — ou,
-   s'il dit « go », `livrer` depuis `feat/une-adresse-par-compte`, qui porte
-   les deux.
-3. **Regarder les deux écrans que je n'ai pas pu voir** (Chrome était
-   injoignable) : le panneau « Mon compte » (trois champs de mot de passe +
-   l'adresse), et le bouton « Réinitialiser » des Réglages. Les bancs tiennent
-   la règle ; l'écran n'a pas été regardé — et ce projet a déjà payé pour
-   savoir que ça ne suffit pas (`/arbitrage`, 14/09).
-4. **CHANTIER 19, suite** — l'ordre du plan
+   `.git/logs/refs/heads/main`) : la brique 6 est FUSIONNÉE dans `main`,
+   écrans compris.
+2. **CHANTIER 19, suite** — l'ordre du plan
    (`docs/CHANTIER_19_VIE_PRIVEE.md`, à relire AVANT d'écrire une ligne) :
    - **Brique 3, « masquer cette photo » pour une personne reconnue.** Tranché :
      propriétaire + personne + admin voient ; SEULE la personne lève ; la photo
@@ -68,12 +65,12 @@ brouillons NON envoyés.
      exige un index clé → noms en mémoire — mesurer avant/après, la grille du
      fonds est à 3,7 s.
    - **Brique 1** (filet intime) en dernier : file de revue, pas masquage.
-5. **P2, l'e-mail** : trois brouillons Gmail prêts, non envoyés. Mike envoie,
+3. **P2, l'e-mail** : trois brouillons Gmail prêts, non envoyés. Mike envoie,
    mots de passe à part.
-6. **Tailscale** : partager `msi-mike` avec `markushuegli@gmail.com` et
+4. **Tailscale** : partager `msi-mike` avec `markushuegli@gmail.com` et
    `flolaeser@gmail.com`, limiter `autogroup:shared` au port 8080, rappeler
    l'expiration de clé. En attente que Mike se connecte à la console.
-7. **D1, la copie hors site** : à Mike seul.
+5. **D1, la copie hors site** : à Mike seul.
 
 ---
 
