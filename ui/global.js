@@ -312,9 +312,11 @@
     });
   }
   /* Le panneau MOT DE PASSE. Pas de `prompt()` : il affiche la saisie en
-     clair et bloque la page. Deux champs masques, la regle dite AVANT (8
-     caracteres), et une reponse ecrite dans le panneau. Meme coque que les
-     raccourcis : fond, Echap, retour du focus. */
+     clair et bloque la page. TROIS champs masques -- l'ACTUEL d'abord (17/09 :
+     sans lui, une session ouverte suffisait a fermer la porte derriere soi),
+     puis le nouveau deux fois -- la regle dite AVANT (8 caracteres), et une
+     reponse ecrite dans le panneau. Meme coque que les raccourcis : fond,
+     Echap, retour du focus. */
   var MotDePasse = (function () {
     var el = null, avant = null;
     function fermer() {
@@ -329,7 +331,9 @@
         '<form class="raccourcis__p mdp" role="dialog" aria-modal="true" aria-labelledby="mdp-titre">' +
         '<div class="raccourcis__t"><h2 id="mdp-titre">Changer mon mot de passe</h2>' +
         '<button type="button" class="btn" data-fermer>Fermer</button></div>' +
-        '<p>8 caract\u00e8res au moins. Il remplace l\u2019ancien tout de suite.</p>' +
+        '<p class="mdp__intro">8 caract\u00e8res au moins. Il remplace l\u2019ancien tout de suite.</p>' +
+        '<label for="mdp-0">Mot de passe actuel</label>' +
+        '<input id="mdp-0" type="password" autocomplete="current-password" required>' +
         '<label for="mdp-1">Nouveau mot de passe</label>' +
         '<input id="mdp-1" type="password" autocomplete="new-password" minlength="8" required>' +
         '<label for="mdp-2">Le m\u00eame, une seconde fois</label>' +
@@ -347,17 +351,20 @@
       var f = el.querySelector('form'), msg = el.querySelector('.mdp__msg');
       f.addEventListener('submit', function (ev) {
         ev.preventDefault();
+        var v = el.querySelector('#mdp-0').value;
         var a = el.querySelector('#mdp-1').value, b = el.querySelector('#mdp-2').value;
+        if (!v) { msg.textContent = 'Donne d\u2019abord ton mot de passe actuel.'; return; }
         if (a.length < 8) { msg.textContent = 'Trop court : 8 caract\u00e8res au moins.'; return; }
         if (a !== b) { msg.textContent = 'Les deux saisies diff\u00e8rent. Retape-les.'; return; }
         msg.textContent = 'Enregistrement\u2026';
         fetch('/api/comptes/mdp', { method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ mdp: a }) })
+          body: JSON.stringify({ mdp: a, actuel: v }) })
           .then(function (r) { return r.json().catch(function () { return { ok: false }; }); })
           .then(function (r) {
             if (r && r.ok) {
               msg.textContent = 'Mot de passe chang\u00e9. Il servira \u00e0 la prochaine connexion.';
               f.reset();
+              if (MOI) MOI.mdp_temporaire = false;   // le panneau ne revient plus
             } else {
               msg.textContent = 'Refus\u00e9 : ' + ((r && r.error) || 'le serveur n\u2019a pas accept\u00e9') + '.';
             }
@@ -365,13 +372,19 @@
           .catch(function () { msg.textContent = 'Le serveur n\u2019a pas r\u00e9pondu. R\u00e9essayer.'; });
       });
     }
-    function ouvrir() {
+    function ouvrir(motif) {
       if (!el) construire();
       // Le geste part du MENU, qui se ferme : rendre le focus a son bouton.
       avant = document.querySelector('.moi-bouton') || document.activeElement;
       el.querySelector('.mdp__msg').textContent = '';
+      // Un mot de passe pose par l'admin est PROVISOIRE, et on le dit ici :
+      // un panneau qui s'ouvre seul sans dire pourquoi passe pour une panne.
+      el.querySelector('.mdp__intro').textContent = motif === 'temporaire'
+        ? 'Ton mot de passe actuel a \u00e9t\u00e9 pos\u00e9 par l\u2019administrateur. '
+          + 'Choisis-en un que lui seul ne conna\u00eet pas. 8 caract\u00e8res au moins.'
+        : '8 caract\u00e8res au moins. Il remplace l\u2019ancien tout de suite.';
       el.classList.add('on');
-      el.querySelector('#mdp-1').focus();
+      el.querySelector('#mdp-0').focus();
     }
     return { ouvrir: ouvrir };
   })();
@@ -401,6 +414,10 @@
       z.hidden = false;
       allumerLampe(d);
       Veille.armer();                     // un compte connecte, et seulement lui
+      // Mot de passe pose par l'admin : le panneau s'ouvre tout de suite, a
+      // chaque page, tant qu'il n'a pas ete remplace. Il reste FERMABLE -- on
+      // ne met pas quelqu'un dehors de sa propre photoheque.
+      if (d.mdp_temporaire) setTimeout(function () { MotDePasse.ouvrir('temporaire'); }, 400);
       z.querySelector('.moi-bouton').addEventListener('click', function () {
         if (MENU_OUVERT) fermerMenu(); else ouvrirMenu();
       });

@@ -13398,6 +13398,7 @@ class Handler(BaseHTTPRequestHandler):
         self._send(200, json.dumps(
             {"nom": nom, "admin": bool(nom and COMPTES.est_admin(nom)),
              "porte": COMPTES.actifs(), "prive": _prive_url(nom),
+             "mdp_temporaire": bool(nom and COMPTES.temporaire(nom)),
              "depots": {"a_trier": len(attente),
                         "jours": attente[0]['jours'] if attente else 0}},
             ensure_ascii=False).encode(), 'application/json')
@@ -13410,13 +13411,18 @@ class Handler(BaseHTTPRequestHandler):
         d = self._read_json_body() if self.command == 'POST' else {}
         cible = (d.get('nom') or nom or '').strip()
         # Chacun peut changer SON mot de passe ; tout le reste est à l'admin.
+        # Et « son » mot de passe se change en donnant l'ACTUEL (17/09) : sans
+        # lui, une session ouverte suffisait à fermer la porte derrière soi.
+        # L'admin RÉINITIALISE celui d'un AUTRE sans le connaître — jamais le
+        # sien, qui repasse par la règle commune.
         soi = (path == '/api/comptes/mdp' and nom and cible == nom)
         if COMPTES.actifs() and not soi and not (nom and COMPTES.est_admin(nom)):
             self._send(403, json.dumps({"error": "admin seulement"}).encode(), 'application/json')
             return
         if self.command == 'GET':
             self._send(200, json.dumps({"comptes": [
-                {"nom": n, "admin": COMPTES.est_admin(n)} for n in COMPTES.noms()],
+                {"nom": n, "admin": COMPTES.est_admin(n),
+                 "temporaire": COMPTES.temporaire(n)} for n in COMPTES.noms()],
                 "moi": nom}, ensure_ascii=False).encode(), 'application/json')
             return
         try:
@@ -13424,7 +13430,10 @@ class Handler(BaseHTTPRequestHandler):
                 c = COMPTES.creer(d.get('nom'), d.get('mdp'), admin=bool(d.get('admin')))
                 print(f"  🔐 compte créé par {nom or 'la porte ouverte'} : {c}")
             elif path == '/api/comptes/mdp':
-                COMPTES.changer_mdp(cible, d.get('mdp'))
+                COMPTES.changer_mdp(cible, d.get('mdp'), actuel=d.get('actuel'),
+                                    par_admin=bool(cible != nom))
+                if cible != nom:
+                    print(f"  🔐 mot de passe réinitialisé par {nom} : {cible}")
             elif path == '/api/comptes/supprimer':
                 COMPTES.supprimer((d.get('nom') or '').strip())
                 print(f"  🔐 compte supprimé par {nom} : {d.get('nom')}")

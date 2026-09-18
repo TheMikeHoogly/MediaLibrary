@@ -55,7 +55,10 @@ def main(argv=None):
         print('les deux saisies different, rien fait'); return 1
     try:
         if a.mdp:
-            cs.changer_mdp(nom, m1)
+            # Devant la machine : pas d'ACTUEL a exiger (qui tient le disque
+            # tient le fichier), et le mot de passe n'est pas provisoire --
+            # celui qui le tape ici l'a choisi.
+            cs.changer_mdp(nom, m1, par_admin=True, temporaire=False)
             print('mot de passe change pour %s' % nom)
         else:
             cs.creer(nom, m1, admin=a.admin)

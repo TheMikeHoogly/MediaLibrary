@@ -63,7 +63,7 @@ photothèque s'ouvre à la famille.
 | 3 | « Masquer cette photo » pour une personne reconnue | à faire (tranché : propriétaire + personne voient ; la personne seule lève) |
 | 4 | Les personnes reconnues voient leurs photos | à faire, après 5 |
 | 5 | Onglet **Partage** : chacun coche qui voit ses photos | à faire — **défaut tranché le 17/09** : liste vide = tout le monde pour les comptes d'aujourd'hui, un compte créé ensuite part fermé (trois états en base, migration incluse) |
-| 6 | Les comptes « pour de bon » : mot de passe et e-mail | à faire — le changement de mot de passe existe (16/09) mais **n'exige pas l'actuel** : c'est le premier à corriger |
+| 6 | Les comptes « pour de bon » : mot de passe et e-mail | **mot de passe LIVRÉ 18/09** (l'actuel est exigé, l'admin réinitialise en provisoire) ; l'**e-mail par compte** reste à faire |
 
 **Brique 2, livrée.** Un dépôt d'`_Uploads` n'est plus visible que de son
 déposant et de l'admin : la règle est dans `visibilite.visible` (masque, donc
@@ -75,9 +75,40 @@ banc** : `depot_de` comparait les chemins avec `os.path`, qui ne reconnaît pas
 Corrigé par une normalisation écrite dans le projet, et le banc l'interdit
 désormais (`test_depots_uploads.LeDepotSeReconnaitALaPLACE`).
 
-**Ce qui n'est pas prouvé en réel** : la vue d'un NON-admin. Aucun compte de
-Flo ou Papa n'est utilisable depuis ici ; les deux bancs tiennent la règle et
-la vue, un compte d'essai le montrerait à l'écran.
+**Brique 6, premier pan livré le 18/09 — le trou du mot de passe.**
+« Changer mon mot de passe » n'exigeait pas l'ACTUEL : une session ouverte
+(téléphone déverrouillé, écran laissé seul) suffisait à changer le mot de
+passe et à fermer la porte derrière soi. Désormais :
+
+- `comptes.changer_mdp` exige l'actuel **pour soi**, et le **frein des
+  connexions s'y applique** — sinon ce panneau était le seul endroit du
+  serveur où deviner ne coûtait rien ;
+- l'**admin réinitialise** celui d'un AUTRE sans le connaître (jamais le sien,
+  qui repasse par la règle commune) ; le compte est alors marqué
+  `temporaire`, la page le dit dans la liste, et la première page que la
+  personne ouvre lui demande d'en choisir un — le drapeau tombe à ce
+  moment-là. Mike n'a donc jamais le mot de passe de personne ;
+- `creer_compte.py --mdp` (devant la machine) reste inchangé : qui tient le
+  disque tient le fichier, et le mot de passe qu'il tape n'est pas provisoire.
+
+**Le banc mord** : la règle retirée, 3 cas de `test_comptes.MotDePasseActuel`
+tombent (contre-épreuve faite avant de conclure). **Prouvé en réel le 18/09 à
+07 h 41** : redémarrage observé (`demarre_a` bougé, `code_a_jour` vrai) et la
+page que le navigateur reçoit porte bien le champ `mdp-0`
+(`current-password`) — lu par `mesure_etat_serveur.py --sert /connexion`.
+
+**Ce qui n'est pas prouvé en réel** : la vue d'un NON-admin, et les deux
+gestes de la brique 6 À L'ÉCRAN (le refus « mot de passe actuel incorrect »,
+le bouton « Réinitialiser » des Réglages) — ils exigent une session ouverte,
+donc Mike. Les bancs tiennent la règle ; l'écran reste à regarder.
+
+**Un instrument de plus, né d'une panne** : le soir du 17/09 l'extension
+Chrome n'a pas répondu, et il ne restait AUCUN chemin pour savoir si le
+serveur exécutait le code du disque — la VM n'atteint pas le LAN.
+`mesure_etat_serveur.py` lit `/api/serveur` (route ouverte) depuis la machine
+de Mike, par l'agent de banc : `uptime_s`, `demarre_a`, `code_a_jour`, et avec
+`--sert/--motif` ce que le serveur SERT vraiment. Le protocole « redémarrer
+puis OBSERVER » ne dépend donc plus d'un seul outil.
 
 ---
 

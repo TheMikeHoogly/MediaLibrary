@@ -26,6 +26,11 @@ Jamais en clair, jamais réversible : PBKDF2-HMAC-SHA256, 300 000 tours, sel
 de 16 octets par compte (bibliothèque standard, rien à installer). La
 comparaison est à temps constant (`hmac.compare_digest`).
 
+Le CHANGER pour soi exige l'ACTUEL (17/09) : une session ouverte ne doit pas
+suffire à fermer la porte derrière soi. L'admin, lui, réinitialise sans le
+connaître — le compte porte alors `temporaire`, levé quand son propriétaire
+choisit le sien.
+
 LA SESSION
 
 Un jeton signé, pas une table de sessions : `<nom>|<expire>|<hmac>`, HMAC
@@ -160,16 +165,50 @@ class Comptes:
             self._sauver()
         return nom
 
-    def changer_mdp(self, nom, mdp):
+    def changer_mdp(self, nom, mdp, actuel=None, par_admin=False, temporaire=None):
+        """Change le mot de passe de `nom`.
+
+        POUR SOI, l'ACTUEL est exigé — c'était le trou du 17/09 : sans lui, une
+        session ouverte (un téléphone déverrouillé, un écran laissé seul) suffit
+        à changer le mot de passe et à fermer la porte derrière soi. Le frein
+        des connexions vaut ici aussi : cinq essais et l'on attend, sinon ce
+        panneau serait le seul endroit du serveur où deviner coûte zéro.
+
+        `par_admin=True` : l'admin RÉINITIALISE sans connaître l'actuel — c'est
+        le sens d'un admin, et l'écran le dit. Le compte est alors marqué
+        `temporaire` : sa prochaine connexion lui demande de le changer, et ce
+        drapeau tombe dès qu'il l'a fait lui-même. `temporaire=False` lève ce
+        marquage — c'est le cas de `creer_compte.py`, où quelqu'un est DEVANT
+        la machine et choisit un mot de passe pour de bon.
+        """
         if len(mdp or '') < 8:
             raise ValueError('mot de passe trop court (8 caractères au moins)')
+        if nom not in self._d['comptes']:
+            raise ValueError('compte inconnu')
+        if not par_admin:
+            attente = self.freine(nom)
+            if attente:
+                raise ValueError(f'trop d\'essais : réessaie dans {attente} s')
+            if self.verifier(nom, actuel) != nom:
+                raise ValueError('mot de passe actuel incorrect')
         with self.lock:
             c = self._d['comptes'].get(nom)
             if not c:
                 raise ValueError('compte inconnu')
             c['sel'] = secrets.token_hex(16)
             c['hache'] = _hacher(mdp, c['sel'])
+            marquer = par_admin if temporaire is None else bool(temporaire)
+            if marquer:
+                c['temporaire'] = True
+            else:
+                c.pop('temporaire', None)
             self._sauver()
+
+    def temporaire(self, nom):
+        """Vrai si ce mot de passe a été posé par l'admin et n'a pas encore été
+        remplacé par son propriétaire."""
+        c = self._d['comptes'].get(nom)
+        return bool(c and c.get('temporaire'))
 
     def supprimer(self, nom):
         with self.lock:

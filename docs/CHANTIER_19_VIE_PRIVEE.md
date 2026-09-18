@@ -148,12 +148,26 @@ porter une adresse e-mail.
 **Ce qui existe déjà (16/09)** : « Changer mon mot de passe » est dans le menu
 du compte, pour tout le monde, dans un panneau à deux champs masqués.
 
-**Ce qui manque, et c'est un vrai trou** : ce geste ne demande PAS le mot de
-passe actuel. N'importe qui devant une session ouverte — un téléphone déverrouillé,
+**LIVRÉ le 18/09.** Ce qui suit décrit ce qui a été construit ; l'e-mail, plus
+bas, reste à faire.
+
+**Ce qui manquait, et c'était un vrai trou** : ce geste ne demandait PAS le mot
+de passe actuel. N'importe qui devant une session ouverte — un téléphone déverrouillé,
 un ordinateur laissé sans surveillance — change le mot de passe et ferme la
-porte derrière lui. `comptes.changer_mdp` doit exiger l'actuel pour soi-même ;
+porte derrière lui. `comptes.changer_mdp` exige désormais l'actuel pour soi-même
+(et le frein des connexions s'y applique : cinq essais, une minute d'attente) ;
 l'admin, lui, réinitialise sans le connaître (c'est le sens d'un admin), et ce
 cas se DIT à l'écran.
+
+Ce que la livraison a ajouté au plan, parce que « réinitialiser » sans suite
+ne vaut rien : le compte dont l'admin a posé le mot de passe porte
+`temporaire` en base. La liste des Réglages l'affiche (« mdp provisoire » —
+sinon on réinitialise deux fois un compte qui n'a pas encore ouvert sa page),
+et la première page que la personne ouvre lui présente le panneau, en disant
+POURQUOI ; le drapeau tombe quand elle choisit le sien. **Le panneau reste
+fermable** : on ne met pas quelqu'un dehors de sa propre photothèque.
+`creer_compte.py --mdp` passe outre les deux règles (`par_admin=True,
+temporaire=False`) — devant la machine, qui tient le disque tient le fichier.
 
 **L'adresse e-mail** : un champ par compte dans `comptes.json` (déjà hors git),
 posé par la personne elle-même dans « Mon compte », visible d'elle et de

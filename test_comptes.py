@@ -81,7 +81,7 @@ class MotDePasse(Base):
 
     def test_changer_et_supprimer(self):
         self.c.creer('Flo', 'motdepasse')
-        self.c.changer_mdp('Flo', 'nouveaumdp')
+        self.c.changer_mdp('Flo', 'nouveaumdp', actuel='motdepasse')
         self.assertIsNone(self.c.verifier('Flo', 'motdepasse'))
         self.assertEqual(self.c.verifier('Flo', 'nouveaumdp'), 'Flo')
         self.c.creer('Mike', 'motdepasse')
@@ -107,6 +107,68 @@ class MotDePasse(Base):
         for i in range(C.ECHECS_MAX):
             self.c.verifier('Zzz', 'faux', maintenant=t + i)
         self.assertGreater(self.c.freine('Zzz', t + 5), 0)
+
+
+class MotDePasseActuel(Base):
+    """Le trou du 17/09 : « Changer mon mot de passe » n'exigeait pas l'ACTUEL.
+    Une session ouverte suffisait a fermer la porte derriere soi. Ces cas
+    TOMBENT si la regle disparait -- ils ne la confirment pas, ils la testent."""
+
+    def test_sans_actuel_le_changement_est_refuse(self):
+        self.c.creer('Flo', 'motdepasse')
+        for faux in (None, '', 'autrechose', 'motdepassE'):
+            with self.assertRaises(ValueError, msg=repr(faux)):
+                self.c.changer_mdp('Flo', 'nouveaumdp', actuel=faux)
+        # et le mot de passe n'a pas bouge d'un iota
+        self.assertEqual(self.c.verifier('Flo', 'motdepasse'), 'Flo')
+
+    def test_un_compte_inconnu_ne_dit_pas_qu_il_est_inconnu_par_hasard(self):
+        with self.assertRaises(ValueError):
+            self.c.changer_mdp('Zzz', 'nouveaumdp', actuel='motdepasse')
+
+    def test_deviner_l_actuel_se_freine_comme_une_connexion(self):
+        """Sinon ce panneau serait le seul endroit ou essayer coute zero."""
+        self.c.creer('Flo', 'motdepasse')
+        for _ in range(C.ECHECS_MAX):
+            with self.assertRaises(ValueError):
+                self.c.changer_mdp('Flo', 'nouveaumdp', actuel='faux')
+        self.assertGreater(self.c.freine('Flo'), 0)
+        # freine : meme le BON actuel attend
+        with self.assertRaises(ValueError):
+            self.c.changer_mdp('Flo', 'nouveaumdp', actuel='motdepasse')
+        self.assertEqual(self.c.verifier('Flo', 'motdepasse', maintenant=1e12), 'Flo')
+
+    def test_l_admin_reinitialise_sans_connaitre_et_marque_provisoire(self):
+        self.c.creer('Flo', 'motdepasse')
+        self.assertFalse(self.c.temporaire('Flo'))
+        self.c.changer_mdp('Flo', 'provisoire1', par_admin=True)
+        self.assertEqual(self.c.verifier('Flo', 'provisoire1'), 'Flo')
+        self.assertTrue(self.c.temporaire('Flo'))
+        # Flo choisit le sien : le drapeau tombe, et il faut l'actuel
+        with self.assertRaises(ValueError):
+            self.c.changer_mdp('Flo', 'lesienamoi', actuel='pas-le-bon')
+        self.c.changer_mdp('Flo', 'lesienamoi', actuel='provisoire1')
+        self.assertFalse(self.c.temporaire('Flo'))
+        self.assertEqual(self.c.verifier('Flo', 'lesienamoi'), 'Flo')
+
+    def test_devant_la_machine_le_mot_de_passe_n_est_pas_provisoire(self):
+        """`creer_compte.py --mdp` : celui qui tape l'a choisi."""
+        self.c.creer('Flo', 'motdepasse')
+        self.c.changer_mdp('Flo', 'choisiici', par_admin=True, temporaire=False)
+        self.assertFalse(self.c.temporaire('Flo'))
+        self.assertEqual(self.c.verifier('Flo', 'choisiici'), 'Flo')
+
+    def test_le_drapeau_ne_survit_pas_a_la_suppression_du_compte(self):
+        self.c.creer('Flo', 'motdepasse')
+        self.c.changer_mdp('Flo', 'provisoire1', par_admin=True)
+        self.c.supprimer('Flo')
+        self.assertFalse(self.c.temporaire('Flo'))
+
+    def test_trop_court_refuse_avant_meme_l_actuel(self):
+        self.c.creer('Flo', 'motdepasse')
+        with self.assertRaises(ValueError):
+            self.c.changer_mdp('Flo', 'court', actuel='motdepasse')
+        self.assertEqual(self.c.verifier('Flo', 'motdepasse'), 'Flo')
 
 
 class Jeton(Base):

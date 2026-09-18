@@ -172,9 +172,20 @@ td.n, th.n { text-align: right; font-family: var(--f-donnees); }
       <input id="cpt-mdp" type="password" placeholder="Mot de passe" autocomplete="new-password" style="min-height:var(--touch);padding:0 var(--e-2);font:inherit;color:var(--texte);background:var(--salle-2);border:var(--trait);border-radius:var(--r-md)">
       <button class="btn btn--principal" id="cpt-creer">Cr&eacute;er</button>
     </li></div>
+    <div class="subh">R&eacute;initialiser un mot de passe</div>
+    <div class="mut">Quand quelqu'un est bloqu&eacute; dehors : pose-lui un mot de passe
+      <b>provisoire</b> et transmets-le de vive voix. Sa prochaine page lui demandera
+      d'en choisir un que tu ne connais pas. Ton propre mot de passe, lui, se change
+      dans le menu de ton compte, en haut &agrave; droite &mdash; et il demande l'actuel.</div>
+    <div class="stepren" style="margin-top:var(--e-2)" id="cpt-reinit" hidden><li>
+      <span class="badge" id="cpt-reinit-qui"></span>
+      <input id="cpt-reinit-mdp" type="text" placeholder="Mot de passe provisoire" autocomplete="off" spellcheck="false" style="min-height:var(--touch);padding:0 var(--e-2);font:var(--t-md) var(--f-donnees);color:var(--texte);background:var(--salle-2);border:var(--trait);border-radius:var(--r-md)">
+      <button class="btn" id="cpt-reinit-tirer">Proposer</button>
+      <button class="btn btn--principal" id="cpt-reinit-poser">Poser</button>
+      <button class="btn btn--discret" id="cpt-reinit-annuler">Annuler</button>
+    </li></div>
   </div>
   <div class="stepren" style="margin-top:var(--e-2)"><li>
-    <button class="btn" id="cpt-mdp-moi" hidden>Changer mon mot de passe</button>
     <button class="btn" id="cpt-sortir" hidden>Se d&eacute;connecter</button>
   </li></div>
   <div class="renmsg" id="cpt-msg" hidden></div>
@@ -453,7 +464,6 @@ load(); setInterval(load, 6000);
   function charger(){
     j('/api/moi').then(function(m){
       document.getElementById('cpt-sortir').hidden=!m.nom;
-      document.getElementById('cpt-mdp-moi').hidden=!m.nom;
       if(!m.porte){ etat.textContent='Aucun compte : la porte est OUVERTE (tout le monde voit tout, comme avant). Creer le premier compte la ferme — commence par le tien.'; }
       else { etat.textContent='Porte fermee : connexion requise. Tu es '+(m.nom||'?')+(m.admin?' (admin)':'')+'.'; }
       if(!m.porte || m.admin){
@@ -465,8 +475,13 @@ load(); setInterval(load, 6000);
           // se fait en DEUX clics, sans confirm() -- une boite du navigateur
           // bloque la page et le pilotage. Les fichiers ne sont pas touches.
           var esc=function(t){ return t.replace(/[&<>"]/g,function(x){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[x];}); };
+          // 17/09 : « temporaire » = mot de passe pose par l'admin, pas encore
+          // remplace par son proprietaire. Le dire ici evite de reinitialiser
+          // deux fois un compte qui n'a simplement pas encore ouvert sa page.
           liste.innerHTML=(d.comptes||[]).map(function(c){
-            return '<span class="badge">'+esc(c.nom)+(c.admin?' · admin':'')+'</span> '+
+            return '<span class="badge">'+esc(c.nom)+(c.admin?' · admin':'')+
+              (c.temporaire?' · mdp provisoire':'')+'</span> '+
+              (c.nom===d.moi?'':'<button type="button" class="btn btn--discret" data-reinit="'+esc(c.nom)+'">R\u00e9initialiser</button> ')+
               (c.admin?'':'<button type="button" class="btn btn--discret" data-suppr="'+esc(c.nom)+'">Supprimer</button> ');
           }).join('')||'<span class="mut">(aucun)</span>';
         });
@@ -480,6 +495,13 @@ load(); setInterval(load, 6000);
     .then(function(r){ if(r.ok){ dire('Compte cree : '+nom+'.'); document.getElementById('cpt-mdp').value=''; charger(); } else dire(r.error||'refus', true); });
   };
   liste.addEventListener('click', function(ev){
+    var re=ev.target.closest('[data-reinit]');
+    if(re){
+      reQui.textContent=re.getAttribute('data-reinit');
+      reinit.hidden=false; reMdp.value=''; reMdp.focus();
+      dire('Choisis un mot de passe provisoire pour '+reQui.textContent+', ou fais-en tirer un.');
+      return;
+    }
     var b=ev.target.closest('[data-suppr]'); if(!b) return;
     var nom=b.getAttribute('data-suppr');
     if(!b.classList.contains('btn--destructif')){
@@ -494,10 +516,33 @@ load(); setInterval(load, 6000);
     .then(function(r){ if(r.ok){ dire('Compte '+nom+' supprim\u00e9.'); charger(); } else { dire('Refus\u00e9 : '+(r.error||'le serveur a refus\u00e9'), true); b.disabled=false; } })
     .catch(function(){ dire('Le serveur n\u2019a pas r\u00e9pondu. R\u00e9essayer.', true); b.disabled=false; });
   });
-  document.getElementById('cpt-mdp-moi').onclick=function(){
-    var m=prompt('Nouveau mot de passe (8 caracteres au moins) :'); if(!m) return;
-    j('/api/comptes/mdp',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({mdp:m})})
-    .then(function(r){ dire(r.ok?'Mot de passe change.':(r.error||'refus'), !r.ok); });
+  // ── Reinitialiser le mot de passe d'un AUTRE compte (admin) ──────────
+  // Le mot de passe se TAPE ici (ou se tire au sort), il ne s'affiche jamais
+  // tout seul : la page ne revele pas un secret qu'on ne lui a pas demande.
+  // Il est PROVISOIRE -- le serveur marque le compte, et sa prochaine page lui
+  // demande d'en choisir un. Mike n'a donc jamais le mot de passe de personne.
+  var reinit=document.getElementById('cpt-reinit'), reQui=document.getElementById('cpt-reinit-qui'),
+      reMdp=document.getElementById('cpt-reinit-mdp');
+  function tirerMdp(){
+    // Sans ambiguite a l'oral ni a la lecture : ni O/0, ni I/l/1.
+    var abc='abcdefghijkmnopqrstuvwxyz23456789', n=12, out='';
+    var t=new Uint32Array(n);
+    if(window.crypto&&crypto.getRandomValues) crypto.getRandomValues(t);
+    else for(var k=0;k<n;k++) t[k]=Math.floor(Math.random()*4294967296);
+    for(var i=0;i<n;i++) out+=abc[t[i]%abc.length];
+    return out.slice(0,4)+'-'+out.slice(4,8)+'-'+out.slice(8);
+  }
+  document.getElementById('cpt-reinit-tirer').onclick=function(){ reMdp.value=tirerMdp(); reMdp.focus(); };
+  document.getElementById('cpt-reinit-annuler').onclick=function(){ reinit.hidden=true; reMdp.value=''; };
+  document.getElementById('cpt-reinit-poser').onclick=function(){
+    var nom=reQui.textContent, m=reMdp.value.trim();
+    if(!nom){ dire('Choisis d\u2019abord un compte dans la liste.', true); return; }
+    if(m.length<8){ dire('Mot de passe provisoire trop court : 8 caracteres au moins.', true); return; }
+    j('/api/comptes/mdp',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({nom:nom,mdp:m})})
+    .then(function(r){
+      if(r.ok){ dire('Mot de passe provisoire pos\u00e9 pour '+nom+' : '+m+' \u2014 transmets-le de vive voix. Sa prochaine page lui demandera d\u2019en choisir un.'); reinit.hidden=true; reMdp.value=''; charger(); }
+      else dire('Refus\u00e9 : '+(r.error||'le serveur a refus\u00e9'), true);
+    }).catch(function(){ dire('Le serveur n\u2019a pas r\u00e9pondu. R\u00e9essayer.', true); });
   };
   document.getElementById('cpt-sortir').onclick=function(){
     j('/api/deconnexion',{method:'POST'}).then(function(){ location.href='/connexion'; });
