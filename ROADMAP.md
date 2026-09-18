@@ -60,7 +60,7 @@ photothèque s'ouvre à la famille.
 |---|---|---|
 | 1 | Filet « intime » et captures de conversation | **MESURÉ 17/09 — le zéro-shot SigLIP ne sépare pas** (marge intime−témoin : p99 = 0,075 ; 18 photos au-dessus de 0,10 sur 40 330). Vaut comme FILE DE REVUE, pas comme verdict. Suite à trancher : file de revue, ou modèle dédié éprouvé sur un jeu que Flo et Mike constituent. |
 | 2 | Quarantaine des dépôts (`_Uploads` au déposant seul) | **LIVRÉ 17/09** |
-| 3 | « Masquer cette photo » pour une personne reconnue | à faire (tranché : propriétaire + personne voient ; la personne seule lève) |
+| 3 | « Masquer cette photo » pour une personne reconnue | **LIVRÉE 18/09, vue à l'écran** — le geste est dans la visionneuse, la photo ne bouge pas, seule la personne lève |
 | 4 | Les personnes reconnues voient leurs photos | à faire, après 5 |
 | 5 | Onglet **Partage** : chacun coche qui voit ses photos | à faire — **défaut tranché le 17/09** : liste vide = tout le monde pour les comptes d'aujourd'hui, un compte créé ensuite part fermé (trois états en base, migration incluse) |
 | 6 | Les comptes « pour de bon » : mot de passe et e-mail | **LIVRÉE 18/09, vue à l'écran** — l'actuel est exigé, l'admin réinitialise en provisoire, chaque compte porte une adresse facultative, et l'admin peut la poser pour quelqu'un. Le « mot de passe oublié » par SMTP est **refusé** (Mike, 18/09) |
@@ -74,6 +74,47 @@ banc** : `depot_de` comparait les chemins avec `os.path`, qui ne reconnaît pas
 `\` hors Windows — la règle répondait autre chose au banc qu'à la production.
 Corrigé par une normalisation écrite dans le projet, et le banc l'interdit
 désormais (`test_depots_uploads.LeDepotSeReconnaitALaPLACE`).
+
+**Brique 3, livrée le 18/09 — le masque d'une personne reconnue.**
+Une personne reconnue sur la photo d'un autre peut la masquer, et **la photo
+ne bouge pas** : restent son propriétaire, elle, et l'admin. Le geste est dans
+la visionneuse, entre « Rendre privée » et « Supprimer » — poids neutre, ce
+n'est pas un geste destructif.
+
+- **La règle est PURE** (`visibilite.masque_personnel`, `peut_masquer`,
+  `peut_lever`) et le filtre reste AU MAGASIN : les cinq magasins reçoivent le
+  prédicat, donc les 166 lectures du serveur sont couvertes — compteurs,
+  fiches et avatars compris. L'état vit en BASE (`masque_par`), **jamais dans
+  le XMP** : un masque posé par un TIERS ne se grave pas dans le fichier de
+  quelqu'un d'autre — la règle 18c compte double ici, le fichier n'appartient
+  pas à qui masque.
+- **Qui lève** : elle, et l'admin en secours. **Pas le propriétaire** — il peut
+  effacer sa photo, jamais la redévoiler. C'est ce qui fait du masque une
+  garantie et non une politesse.
+- **Le bouton n'existe que là où le geste peut aboutir** (règle n° 9), et c'est
+  le SERVEUR qui le dit (`GET /api/masque`) : recopier « suis-je dans ses tags
+  `personne:` » côté écran ferait deux règles, et celle de l'écran finirait
+  par mentir. La réponse ne dit jamais qui d'autre a masqué, ni combien —
+  savoir qu'une photo porte un masque est déjà un renseignement sur quelqu'un.
+- **Deux bancs, et ils mordent** : `test_visibilite.LeMasqueDUnePersonneReconnue`
+  (la règle, la vue, le compteur, la fiche, l'écriture qui ne perd rien) et
+  `test_masque_personnel` (le câblage, découpé sur l'ARBRE du source,
+  docstrings retirées). Contre-épreuves faites : la règle retirée de `visible`
+  → 4 cas tombent ; retirée du filtre de la vue → 3 ; les fiches privées du
+  prédicat → 1 ; le refus exact placé avant la visibilité → 1.
+- **Vu à l'écran le 18/09 à 19 h 55** : sur une photo portant `personne:Mike`,
+  le bouton apparaît, le masque se pose (« Photo masquée. Elle ne bouge pas :
+  toi, son propriétaire et l'administrateur la voyez encore ») et **se lève**,
+  l'état revenant de l'index à chaque fois — aller-retour complet, rien laissé
+  derrière.
+- **Mesuré au passage** : dans la visionneuse, `[hidden]` gagne bien contre
+  `.btn` (`#lb-prive`, sans règle d'ID, rend `display: none`). Le piège de la
+  BARRE ne vaut pas ici ; la règle d'ID du nouveau bouton est une prudence, et
+  son commentaire le dit.
+
+**Ce qui reste de la brique 3** : la preuve de non-fuite ROUTE PAR ROUTE
+(`verifier_non_fuite.py`) demande deux comptes et leurs mots de passe — c'est
+un geste de Mike, jamais du mien.
 
 **Brique 6, premier pan livré le 18/09 — le trou du mot de passe.**
 « Changer mon mot de passe » n'exigeait pas l'ACTUEL : une session ouverte

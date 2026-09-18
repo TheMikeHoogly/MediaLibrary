@@ -16,6 +16,11 @@ d'autre n'est caché — pas de marquage photo par photo.
 
     visible(chemin, utilisateur) -> bool
 
+Depuis le 18/09 (chantier 19, brique 3), une PERSONNE reconnue sur une photo
+peut la masquer sans qu'elle bouge : restent le propriétaire, elle, et
+l'admin. C'est le premier masque que quelqu'un pose sur le fichier d'un
+AUTRE — d'où `peut_lever`, qui ne rend la clé qu'à elle.
+
 LE PRIVÉ NE SE TRAHIT PAS, Y COMPRIS PAR UN COMPTEUR (17b)
 
 Si Florine est sur une photo du `PRIVE` de Mike, sa fiche ne la compte pas
@@ -165,7 +170,72 @@ def depot_reserve(depot_par, utilisateur):
     return depot_par != utilisateur
 
 
-def visible(chemin, utilisateur, sensible=False, depot_par=None):
+def masques_de(entree):
+    """Les comptes qui ont masqué cette photo (chantier 19, brique 3), ou ().
+
+    Règle PURE : l'appelant donne l'entrée d'index BRUTE. Le champ vit en
+    BASE et jamais dans le XMP — un masque posé par un TIERS ne se grave pas
+    dans le fichier de quelqu'un d'autre (règle 18c, et ici elle compte
+    double : le fichier n'appartient pas à qui masque)."""
+    if not isinstance(entree, dict):
+        return ()
+    v = entree.get('masque_par')
+    return tuple(v) if isinstance(v, (list, tuple)) else ()
+
+
+def masque_personnel(masques, chemin, utilisateur):
+    """Cette photo est-elle FERMÉE à cet utilisateur par le masque d'une
+    personne reconnue dessus ? Chantier 19, brique 3 (demande de Flo).
+
+    Tranché par Mike le 17/09 : une personne reconnue sur la photo d'un AUTRE
+    peut la masquer, et **la photo ne bouge pas** — elle reste chez son
+    propriétaire, qui continue de la voir. Restent donc trois regards :
+    le PROPRIÉTAIRE (c'est sa photo, et il peut toujours l'effacer), la
+    PERSONNE qui a masqué (sinon elle ne pourrait jamais lever son propre
+    masque), et l'ADMIN (le même secours que pour le masque machine :
+    `peut_juger` explique pourquoi un masque sans passe-partout se change en
+    photo perdue). Tous les AUTRES ne la voient plus.
+
+    Ce n'est pas `peut_juger` : là, l'admin et le propriétaire jugent un
+    verdict de MACHINE. Ici le masque est le geste d'une PERSONNE sur son
+    image, et c'est elle qui le lève — le propriétaire, lui, ne peut pas la
+    redévoiler (il peut l'effacer, jamais la remontrer)."""
+    if not masques or utilisateur is None:
+        return False
+    if utilisateur == ADMIN or utilisateur in masques:
+        return False
+    return not chez_soi(chemin, utilisateur)
+
+
+def peut_masquer(masques, noms, utilisateur):
+    """`utilisateur` peut-il POSER un masque sur cette photo ?
+
+    Seulement s'il est parmi les personnes RECONNUES dessus (`noms`, les
+    `personne:` de l'entrée, comparés sans la casse). C'est la règle n° 9 du
+    projet : un geste qui ne peut jamais aboutir ne doit pas s'offrir — et
+    c'est aussi ce qui empêche un compte de fermer la photo d'un autre sur
+    laquelle il n'est pas."""
+    if not utilisateur:
+        return False
+    if utilisateur in masques:
+        return False                      # déjà masquée par lui
+    bas = {str(n).strip().lower() for n in (noms or ())}
+    return str(utilisateur).strip().lower() in bas
+
+
+def peut_lever(masques, chemin, utilisateur):
+    """`utilisateur` peut-il LEVER le masque qu'il a posé ?
+
+    Lui seul, et l'ADMIN en secours. Pas le propriétaire : il peut effacer sa
+    photo, jamais la redévoiler — c'est ce qui fait du masque une garantie et
+    non une politesse. (`chemin` n'entre pas dans la règle aujourd'hui ; il
+    est là pour que l'appelant n'ait pas à deviner quelle question poser.)"""
+    if not utilisateur or not masques:
+        return False
+    return utilisateur == ADMIN or utilisateur in masques
+
+
+def visible(chemin, utilisateur, sensible=False, depot_par=None, masques=()):
     """`utilisateur` peut-il voir cette photo ? None (fil de fond) voit tout.
 
     DEUX causes de masquage, une seule règle. Le CHEMIN : chacun voit tout ce
@@ -185,6 +255,13 @@ def visible(chemin, utilisateur, sensible=False, depot_par=None):
         return True
     if est_prive(chemin) and not chez_soi(chemin, utilisateur):
         return False
+    # Le masque d'une PERSONNE reconnue (brique 3) : après le PRIVE, avant
+    # tout le reste. L'ordre des masques entre eux ne change pas le verdict —
+    # ils ferment tous — mais il fixe lequel on NOMME quand il faudra dire
+    # pourquoi, et l'ordre écrit dans `docs/CHANTIER_19_VIE_PRIVEE.md` est
+    # celui-là.
+    if masques and masque_personnel(masques, chemin, utilisateur):
+        return False
     # Le dépôt : un masque de plus, et les masques passent avant tout ce qui
     # ouvre (`docs/CHANTIER_19_VIE_PRIVEE.md`). `None` = ce chemin n'est pas
     # un dépôt ; l'appelant le dit, la règle ne cherche pas Uploads.
@@ -195,7 +272,7 @@ def visible(chemin, utilisateur, sensible=False, depot_par=None):
     return True
 
 
-def filtre(utilisateur, sensible=None, depot=None):
+def filtre(utilisateur, sensible=None, depot=None, masques=None):
     """Le prédicat `clé -> bool` d'un utilisateur, ou None s'il voit tout.
     `sensible` : un appelable `clé -> bool` qui dit si l'entrée est masquée
     par son ÉTAT. Absent, seul le chemin décide (le comportement d'avant).
@@ -210,12 +287,19 @@ def filtre(utilisateur, sensible=None, depot=None):
     écritures sur des milliers de clés tirées au hasard."""
     if utilisateur is None:
         return None
-    if sensible is None and depot is None:
+    if sensible is None and depot is None and masques is None:
         def ok(cle):
             return not est_prive(cle) or chez_soi(cle, utilisateur)
         return ok
 
     def ok(cle):
+        # Le masque personnel d'abord : c'est le seul qui puisse fermer une
+        # photo à quelqu'un QUI EST DESSUS, et il ne coûte qu'une lecture de
+        # champ sur une entrée que `sensible` lit de toute façon.
+        if masques is not None:
+            m = masques(cle)
+            if m and masque_personnel(m, cle, utilisateur):
+                return False
         if depot is not None:
             d = depot(cle)
             if d is not None and depot_reserve(d, utilisateur):
@@ -527,7 +611,8 @@ class VueFiches(VueFiltree):
         return self._d.pop(k, *defaut)
 
 
-def brancher(store, utilisateur, par_nom=False, sensible=None, depot=None):
+def brancher(store, utilisateur, par_nom=False, sensible=None, depot=None,
+             masques=None):
     """Fait de `store.data` une VUE dès qu'il y a un utilisateur courant
     (l'admin compris : il ne voit pas le PRIVE des autres). `utilisateur` est
     un appelable (thread-local côté serveur) ; None = fil de fond, tout.
@@ -552,7 +637,7 @@ def brancher(store, utilisateur, par_nom=False, sensible=None, depot=None):
         u = utilisateur()
         if u is None:
             return d
-        return Vue(d, filtre(u, sensible, depot))
+        return Vue(d, filtre(u, sensible, depot, masques))
 
     def ecrire(self, valeur):
         if isinstance(desc, property) and desc.fset:
@@ -582,7 +667,8 @@ def brancher(store, utilisateur, par_nom=False, sensible=None, depot=None):
         def set_restaure(name, entry, *a, **kw):
             u = utilisateur()
             if u is not None and isinstance(entry, dict):
-                restaurer_fiche(entry, brut(store).get(name), filtre(u, sensible, depot))
+                restaurer_fiche(entry, brut(store).get(name),
+                                filtre(u, sensible, depot, masques))
             return set_avant(name, entry, *a, **kw)
         store.set = set_restaure
     return store

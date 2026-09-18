@@ -9,8 +9,15 @@
 
 ## 0. L'état, en dix lignes
 
-**Traite autonome du 18/09 au petit matin : la BRIQUE 6 du chantier 19 est
-faite, en deux livraisons, regardées à l'écran à 09 h 30 et fusionnées.**
+**18/09 : les briques 6 ET 3 du chantier 19 sont faites, regardées à l'écran
+et fusionnées dans `main`.**
+
+0. **Brique 3 — le masque d'une personne reconnue** (soir du 18/09). Le geste
+   est dans la visionneuse ; la photo ne bouge pas ; restent son propriétaire,
+   elle, l'admin. Seule elle lève (l'admin en secours) — **pas le
+   propriétaire**. Règle pure dans `visibilite`, filtre AU MAGASIN (les cinq),
+   état en base (`masque_par`), jamais dans le XMP. Le bouton n'existe que si
+   le SERVEUR le dit (`GET /api/masque`). Posé et levé en réel à 19 h 55.
 
 1. **Le trou du mot de passe est fermé** (`fix/le-mot-de-passe-exige-l-actuel`,
    commit `4751949`). « Changer mon mot de passe » exige l'ACTUEL ; le frein
@@ -55,17 +62,8 @@ brouillons NON envoyés.
 1. **Vérifier l'état réel** (`.git/HEAD`, `.git/logs/HEAD`,
    `.git/logs/refs/heads/main`) : la brique 6 est FUSIONNÉE dans `main`,
    écrans compris.
-2. **CHANTIER 19, suite** — l'ordre du plan
+2. **CHANTIER 19, suite** — la brique 3 est faite ; **la prochaine est la 5** — l'ordre du plan
    (`docs/CHANTIER_19_VIE_PRIVEE.md`, à relire AVANT d'écrire une ligne) :
-   - **Brique 3, « masquer cette photo » pour une personne reconnue.** Tranché :
-     propriétaire + personne + admin voient ; SEULE la personne lève ; la photo
-     ne bouge pas ; l'état en base, jamais dans le XMP. Où ça se pose :
-     `visibilite.visible` et `visibilite.filtre` (un masque de plus, et **les
-     masques passent avant tout ce qui ouvre**), sur le modèle exact de
-     `depot_reserve` du 17/09 — une règle PURE, l'appelant fournit la donnée.
-     Le geste n'apparaît que si le compte connecté est parmi les `personne:`
-     de la photo (CLAUDE.md n° 9). **Le banc doit prouver qu'une photo masquée
-     ne fuit ni par un compteur, ni par une fiche, ni par la recherche.**
    - **Brique 5, onglet Partage** : trois états (`null` / `[]` / `[noms]`) et
      la migration qui pose `null` sur les trois comptes existants.
    - **Brique 4** (les personnes reconnues voient leurs photos) ensuite : elle
@@ -83,6 +81,14 @@ brouillons NON envoyés.
 
 ## 2. Les pièges
 
+- **Le modèle à copier pour les briques 4 et 5 est la brique 3** (18/09) :
+  une règle PURE dans `visibilite` (l'appelant fournit la donnée, la règle ne
+  lit rien), un appelable de plus passé à `brancher` pour les CINQ magasins,
+  un banc de RÈGLE (`test_visibilite`) et un banc de CÂBLAGE
+  (`test_masque_personnel`, découpé sur l'ARBRE du source, docstrings
+  retirées), et un droit que l'écran DEMANDE au serveur au lieu de le recopier.
+- **La preuve de non-fuite route par route reste à Mike** :
+  `verifier_non_fuite.py` veut deux comptes et leurs mots de passe.
 - **L'agent de banc rend l'ordre à la FIN, pas au début.** Écrire trois ordres
   à la suite n'en fait tourner qu'un : les suivants sont écrasés, et le canal
   revenu à `rien` ne veut pas dire « fini ». Un ordre, puis attendre que

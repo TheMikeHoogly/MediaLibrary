@@ -61,7 +61,7 @@ rien n'apparaît dans la galerie familiale avant d'avoir été regardé par la
 machine. Mécanique : même axe que le chantier 18, posé À L'ARRIVÉE par
 `/upload`, levé par le tagueur quand le filet n'a rien dit.
 
-### 3. « Masquer cette photo » pour une personne reconnue (tranché)
+### 3. « Masquer cette photo » pour une personne reconnue — **LIVRÉE le 18/09**
 
 Une personne reconnue sur la photo d'un autre peut la masquer. **La photo ne
 bouge pas** : elle reste chez son propriétaire.
@@ -72,6 +72,19 @@ bouge pas** : elle reste chez son propriétaire.
   se grave pas dans le fichier de quelqu'un (règle 18c).
 - Le geste n'apparaît que là où il peut aboutir : la personne connectée doit
   être parmi les `personne:` de la photo (CLAUDE.md n° 9).
+
+**Ce qui a été construit** : `visibilite.masque_personnel` / `peut_masquer` /
+`peut_lever` (règles pures), le champ `masque_par` dans l'entrée d'index, les
+cinq magasins branchés avec le prédicat, `GET /api/masque` (ce que CE compte
+peut faire, et rien sur les autres) et `POST /api/masque` (`pose` / `leve`),
+le bouton de la visionneuse. Deux bancs, contre-éprouvés. Vu à l'écran, posé
+et levé en réel le 18/09.
+
+**Ce que la livraison a appris** : c'est le SERVEUR qui dit si le bouton
+existe. La tentation était de lire les tags `personne:` déjà présents côté
+client — gratuit, immédiat, et ça aurait fait deux règles pour un seul droit.
+Celle de l'écran aurait fini par mentir, et un bouton qui ment sur un droit de
+vie privée est pire qu'un bouton absent.
 
 ### 4. Les personnes reconnues VOIENT leurs photos (nouveau, 17/09)
 
@@ -129,9 +142,9 @@ et **ce qui ferme passe toujours avant ce qui ouvre**.
 
 ## L'ordre de construction proposé
 
-1. **Quarantaine à l'arrivée** (brique 2) — petite, indépendante, protège tout
-   de suite ce que Flo dépose pendant qu'elle essaie.
-2. **Masque personnel** (brique 3) + le geste dans la page photo.
+1. ~~**Quarantaine à l'arrivée** (brique 2)~~ — **livrée le 17/09**.
+2. ~~**Masque personnel** (brique 3) + le geste dans la page photo~~ —
+   **livrée le 18/09**.
 3. **Onglet Partage** (brique 5) et l'ordre d'évaluation ci-dessus, avec le
    banc qui prouve qu'une photo non partagée ne fuit ni par un compteur, ni
    par une fiche, ni par la recherche.

@@ -229,6 +229,13 @@ body { min-height: 100vh; }
    survol pour un meme registre de bouton, c est le genre de divergence que
    cette conversion existe pour supprimer. */
 #lb-jour[hidden] { display: none; }
+/* `[hidden]` et `.btn` pesent le MEME poids (0,1,0), d'ou la prudence de la
+   ligne au-dessus. MESURE le 18/09 dans CETTE page : `[hidden]` gagne bien —
+   `#lb-prive`, qui n'a aucune regle d'ID, rend `display: none`. La ligne
+   ci-dessous ne repare donc rien ; elle met le bouton du masque a l'abri d'un
+   futur changement d'ordre des feuilles, et le dit plutot que de laisser
+   croire a un defaut repare. */
+#lb-masque[hidden] { display: none; }
 /* Millesime d'une annee dans le bandeau « meme jour » : une MESURE, donc
    --f-donnees (plancher photo-ui : les nombres s'alignent et se comparent). */
 .fetiquette.jour-an { font-family: var(--f-donnees); color: var(--graphite); }
@@ -401,6 +408,7 @@ __FOLDERS__
     <button class="btn" id="lb-sim" aria-label="Voir les photos semblables">&#128269; Semblables</button>
     <button class="btn" id="lb-jour" aria-label="Voir les photos du m&ecirc;me jour, toutes ann&eacute;es">&#128197; M&ecirc;me jour</button>
     <button class="btn" id="lb-prive" aria-label="Rendre cette photo priv&eacute;e">&#128274; Rendre priv&eacute;e</button>
+    <button class="btn" id="lb-masque" hidden>&#128584; Masquer cette photo</button>
     <button class="btn btn--destructif" id="lb-del" aria-label="Supprimer cette photo">&#128465;&#65039; Supprimer</button>
     <button class="btn" id="lb-close">Fermer</button>
   </div>
@@ -1270,6 +1278,35 @@ __FOLDERS__
     var jb = document.getElementById('lb-jour');
     jb.hidden = !f.jour;
     if (f.jour) jb.textContent = '📅 Même jour (' + jourLisible(f.jour) + ')';
+    majMasque(f);
+  }
+  // « Masquer cette photo » (chantier 19, brique 3). Le bouton n'existe que
+  // pour une personne RECONNUE sur la photo — et c'est le SERVEUR qui le dit :
+  // recopier ici « suis-je dans ses tags personne: » ferait deux règles au
+  // lieu d'une, et celle de l'écran finirait par mentir (règle n° 9 : une
+  // option qui ne peut jamais aboutir est une promesse que l'outil ne
+  // tiendra pas). Un appel par photo OUVERTE, jamais par vignette.
+  function majMasque(f) {
+    var b = document.getElementById('lb-masque');
+    b.hidden = true;
+    if (!f || !f.key) return;
+    fetch('/api/masque?key=' + encodeURIComponent(f.key))
+      .then(function(r) { return r.ok ? r.json() : null; })
+      .then(function(r) {
+        if (!r || !r.ok || visible[lbIdx] !== f) return;   // la photo a change
+        if (r.peut_lever) {
+          b.setAttribute('data-etat', 'leve');
+          b.textContent = '\uD83D\uDE48 Ne plus masquer';
+          b.setAttribute('aria-label', 'Rendre cette photo visible des autres');
+          b.hidden = false;
+        } else if (r.peut_poser) {
+          b.setAttribute('data-etat', 'pose');
+          b.textContent = '\uD83D\uDE48 Masquer cette photo';
+          b.setAttribute('aria-label', 'Masquer cette photo des autres comptes');
+          b.hidden = false;
+        }
+      })
+      .catch(function() { /* sans reponse, pas de bouton : jamais un geste qui echoue */ });
   }
   // « 08-14 » -> « 14 aout ». Sans locale : toLocaleDateString depend du poste.
   // Les MOIS viennent du serveur (meme_jour.MOIS_FR, accentue) : la page
@@ -1842,6 +1879,33 @@ __FOLDERS__
       .catch(function() {
         btn.disabled = false;
         gToast('Le serveur n a pas répondu.', false);
+      });
+  };
+
+  // Le geste lui-meme. La photo NE BOUGE PAS : elle reste chez son
+  // proprietaire, qui continue de la voir — et c'est ce que dit le message,
+  // sinon « masquee » alors qu'on la voit encore passe pour une panne.
+  document.getElementById('lb-masque').onclick = function() {
+    var f = visible[lbIdx];
+    if (!f) return;
+    var btn = this, etat = btn.getAttribute('data-etat') || 'pose';
+    btn.disabled = true;
+    fetch('/api/masque', {method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({key: f.key, etat: etat})})
+      .then(function(r) { return r.json(); })
+      .then(function(r) {
+        btn.disabled = false;
+        if (!r.ok) { gToast(r.error || 'Echec.', false); return; }
+        majMasque(f);
+        gToast(etat === 'pose'
+          ? 'Photo masqu\u00e9e. Elle ne bouge pas : toi, son propri\u00e9taire et '
+            + 'l\u2019administrateur la voyez encore ; personne d\u2019autre.'
+          : 'Masque lev\u00e9 : la photo redevient visible de tous.', false);
+      })
+      .catch(function() {
+        btn.disabled = false;
+        gToast('Le serveur n a pas r\u00e9pondu.', false);
       });
   };
 

@@ -536,5 +536,146 @@ class LeDepotResteAuDeposant(unittest.TestCase):
         self.assertEqual(sorted(m.data), [RACINE])
 
 
+class MagasinEcrivain(Magasin):
+    """Comme les VRAIS magasins : `set` ecrit dans le dictionnaire reel, pas a
+    travers la vue (qui est en lecture seule, et c'est le point)."""
+
+    def __init__(self, d):
+        Magasin.__init__(self, d)
+        self._brut = d
+
+    def set(self, k, e):
+        with self.lock:
+            self._brut[k] = e
+
+
+class LeMasqueDUnePersonneReconnue(unittest.TestCase):
+    """Chantier 19, brique 3 (demande de Flo, tranchee par Mike le 17/09).
+
+    Une personne reconnue sur la photo d'un AUTRE peut la masquer, et la photo
+    NE BOUGE PAS. Restent trois regards : le proprietaire, elle, l'admin.
+    C'est le premier masque que quelqu'un pose sur le fichier d'un autre ; ce
+    qui doit tomber si la regle se relache est ecrit ici, pas ailleurs.
+    Rappel : `V.ADMIN` est Mike, `MIKE_PUB` est une photo de Mike."""
+
+    def test_qui_voit_encore_une_photo_masquee_par_Flo(self):
+        m = ('Flo',)
+        self.assertTrue(V.visible(MIKE_PUB, 'Mike', False, None, m))   # proprietaire (et admin)
+        self.assertTrue(V.visible(MIKE_PUB, 'Flo', False, None, m))    # celle qui a masque
+        self.assertFalse(V.visible(MIKE_PUB, 'Papa', False, None, m))  # tous les autres
+        self.assertTrue(V.visible(MIKE_PUB, None, False, None, m))     # fil de fond
+
+    def test_le_proprietaire_qui_n_est_pas_l_admin_voit_toujours_la_sienne(self):
+        """Le vrai cas de la brique : Flo masque sur la photo de Papa."""
+        PAPA_PUB = r'\\NAS\home\Photos\Photos Papa\2021\x.jpg'
+        m = ('Flo',)
+        self.assertTrue(V.visible(PAPA_PUB, 'Papa', False, None, m))
+        self.assertTrue(V.visible(PAPA_PUB, 'Flo', False, None, m))
+        self.assertTrue(V.visible(PAPA_PUB, V.ADMIN, False, None, m))
+        self.assertFalse(V.visible(PAPA_PUB, 'Devi', False, None, m))
+
+    def test_sans_masque_rien_ne_change(self):
+        for m in ((), None, []):
+            self.assertTrue(V.visible(MIKE_PUB, 'Papa', False, None, m), repr(m))
+
+    def test_le_masque_ne_rouvre_aucun_PRIVE(self):
+        """Les masques se CUMULENT : en avoir pose un n'ouvre rien."""
+        self.assertFalse(V.visible(FLO_PRIV, 'Papa', False, None, ('Papa',)))
+        self.assertFalse(V.visible(MIKE_PRIV, 'Flo', False, None, ('Flo',)))
+
+    def test_masques_de_lit_l_entree_et_rien_d_autre(self):
+        self.assertEqual(V.masques_de({'masque_par': ['Flo', 'Papa']}), ('Flo', 'Papa'))
+        for rien in ({}, {'masque_par': None}, {'masque_par': 'Flo'}, None, 'x', 42):
+            self.assertEqual(V.masques_de(rien), (), repr(rien))
+
+    def test_qui_peut_POSER_un_masque(self):
+        """Regle n. 9 : le geste ne s'offre que la ou il peut aboutir."""
+        noms = ('Flo', 'Cedric Baudin')
+        self.assertTrue(V.peut_masquer((), noms, 'Flo'))
+        self.assertTrue(V.peut_masquer((), noms, 'flo'))          # la casse ne decide pas
+        self.assertFalse(V.peut_masquer((), noms, 'Papa'))        # pas sur la photo
+        self.assertFalse(V.peut_masquer((), noms, V.ADMIN))       # meme l'admin, s'il n'y est pas
+        self.assertFalse(V.peut_masquer((), (), 'Flo'))           # personne n'est reconnu
+        self.assertFalse(V.peut_masquer(('Flo',), noms, 'Flo'))   # deja masquee par elle
+        self.assertFalse(V.peut_masquer((), noms, None))
+
+    def test_qui_peut_LEVER_le_masque(self):
+        """Le proprietaire peut effacer sa photo, jamais la redevoiler --
+        c'est ce qui fait du masque une garantie et non une politesse."""
+        m = ('Flo',)
+        self.assertTrue(V.peut_lever(m, MIKE_PUB, 'Flo'))
+        self.assertTrue(V.peut_lever(m, MIKE_PUB, V.ADMIN))       # secours
+        self.assertFalse(V.peut_lever(m, MIKE_PUB, 'Papa'))
+        PAPA_PUB = r'\\NAS\home\Photos\Photos Papa\2021\x.jpg'
+        self.assertFalse(V.peut_lever(m, PAPA_PUB, 'Papa'))       # le PROPRIETAIRE non plus
+        self.assertFalse(V.peut_lever((), MIKE_PUB, 'Flo'))       # rien a lever
+
+    def test_deux_personnes_masquent_la_meme_photo(self):
+        m = ('Flo', 'Devi')
+        self.assertTrue(V.visible(MIKE_PUB, 'Devi', False, None, m))
+        self.assertFalse(V.visible(MIKE_PUB, 'Papa', False, None, m))
+        # Flo leve le sien : celui de Devi tient toujours.
+        self.assertFalse(V.visible(MIKE_PUB, 'Papa', False, None, ('Devi',)))
+
+    def test_LA_VUE_ne_fuit_ni_par_une_cle_ni_par_un_COMPTEUR(self):
+        """Le point 17b, sur ce masque-ci : le filtre est AU MAGASIN, donc
+        `len()` compte ce qui est visible et rien d'autre."""
+        d = {MIKE_PUB: {'masque_par': ['Flo']}, FLO_PUB: {}}
+        masques = lambda c: V.masques_de(d.get(c))            # noqa: E731
+        for qui, attendu in (('Papa', [FLO_PUB]),
+                             ('Flo', sorted(d)),
+                             ('Devi', [FLO_PUB]),
+                             (V.ADMIN, sorted(d))):
+            m = Magasin(dict(d))
+            V.brancher(m, lambda q=qui: q, masques=masques)
+            self.assertEqual(sorted(m.data), attendu, qui)
+            self.assertEqual(len(m.data), len(attendu), qui)
+            if MIKE_PUB not in attendu:
+                self.assertIsNone(m.get(MIKE_PUB), qui)
+                self.assertFalse(m.has(MIKE_PUB), qui)
+                self.assertNotIn(MIKE_PUB, m.data, qui)
+                self.assertEqual([k for k, _ in m.data.items()], attendu, qui)
+                self.assertEqual(list(m.data.keys()), attendu, qui)
+
+    def test_LA_VUE_ne_fuit_pas_par_une_FICHE_de_personne(self):
+        """Une fiche cite des chemins (`faces`, `avatar`, `confirmed`) : une
+        vignette d'avatar prise sur une photo masquee serait la fuite."""
+        d = {MIKE_PUB: {'masque_par': ['Flo']}}
+        masques = lambda c: V.masques_de(d.get(c))            # noqa: E731
+        fiche = {'name': 'Devi', 'avatar': [MIKE_PUB, 0],
+                 'faces': [[MIKE_PUB, 0], [FLO_PUB, 1]],
+                 'confirmed': [MIKE_PUB, FLO_PUB]}
+        st = V.brancher(Magasin({'devi': dict(fiche)}), lambda: 'Papa',
+                        par_nom=True, masques=masques)
+        vue = st.data['devi']
+        self.assertIsNone(vue['avatar'])
+        self.assertEqual(vue['faces'], [[FLO_PUB, 1]])
+        self.assertEqual(vue['confirmed'], [FLO_PUB])
+        # ... et la fiche EXISTE toujours : cacher son nom serait une autre fuite
+        self.assertIn('devi', st.data)
+        st2 = V.brancher(Magasin({'devi': dict(fiche)}), lambda: 'Flo',
+                         par_nom=True, masques=masques)
+        self.assertEqual(st2.data['devi']['avatar'], [MIKE_PUB, 0])
+
+    def test_l_ECRITURE_d_une_fiche_ne_perd_pas_ce_qu_on_ne_voyait_pas(self):
+        """Regle 2 : un nom humain ne se perd jamais -- pas meme par une
+        LECTURE filtree suivie d'une reecriture (le sinistre du 11/09)."""
+        d = {MIKE_PUB: {'masque_par': ['Flo']}}
+        masques = lambda c: V.masques_de(d.get(c))            # noqa: E731
+        brut = {'devi': {'name': 'Devi', 'faces': [[MIKE_PUB, 0], [FLO_PUB, 1]],
+                         'confirmed': [MIKE_PUB]}}
+        st = V.brancher(MagasinEcrivain(brut), lambda: 'Papa', par_nom=True, masques=masques)
+        vue = dict(st.data['devi'])
+        vue['faces'] = list(vue['faces']) + [[FLO_PUB, 2]]
+        st.set('devi', vue)
+        self.assertIn([MIKE_PUB, 0], brut['devi']['faces'])
+        self.assertEqual(brut['devi']['confirmed'], [MIKE_PUB])
+
+    def test_la_vue_sans_masques_est_celle_d_avant(self):
+        m = Magasin({MIKE_PUB: {'masque_par': ['Flo']}, MIKE_PRIV: {}})
+        V.brancher(m, lambda: 'Papa')
+        self.assertEqual(sorted(m.data), [MIKE_PUB])     # le champ seul ne masque rien
+
+
 if __name__ == '__main__':
     unittest.main()

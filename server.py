@@ -835,16 +835,45 @@ def sensible_en_attente(cle):
     return _visibilite.en_attente(INDEX_BRUT.get(cle))
 
 
+def masques_du_chemin(cle):
+    """Les comptes qui ont masqué cette photo (chantier 19, brique 3), sur
+    l'index BRUT — la vue l'appelle pour décider, la relire à travers elle
+    tournerait en rond (même raison que `sensible_en_attente`)."""
+    return _visibilite.masques_de(INDEX_BRUT.get(cle))
+
+
+def personnes_de(entree):
+    """Les NOMS reconnus sur cette photo, tirés de ses tags `personne:`.
+
+    C'est ce qui décide si le geste « masquer » s'offre (règle n° 9 : une
+    option qui ne peut jamais aboutir est une promesse que l'outil ne tiendra
+    pas). Les tags nommés PRÉSERVENT leur casse (voir `normaliser_tags`) ;
+    la comparaison, elle, se fait sans elle — c'est `visibilite.peut_masquer`
+    qui s'en charge."""
+    if not isinstance(entree, dict):
+        return []
+    noms, vus = [], set()
+    for t in (entree.get('kw_fr') or []) + (entree.get('kw_en') or []):
+        ts = str(t)
+        if ts.lower().startswith('personne:'):
+            nom = ts.split(':', 1)[1].strip()
+            if nom and nom.lower() not in vus:
+                vus.add(nom.lower())
+                noms.append(nom)
+    return noms
+
+
 # Les cinq magasins reçoivent le MÊME prédicat d'état : les visages et les
 # animaux sont keyés par le chemin de la photo, et les fiches PEOPLE/PETS
 # citent des chemins (avatar, faces, confirmed) — un avatar pris sur une
 # photo masquée serait une vignette qui fuit, exactement le point 17b.
 for _st in (STORE, FACE_STORE, ANIMAL_STORE):
     _visibilite.brancher(_st, utilisateur_vu, sensible=sensible_en_attente,
-                         depot=depot_du_chemin)
+                         depot=depot_du_chemin, masques=masques_du_chemin)
 for _st in (PEOPLE_STORE, PETS_STORE):
     _visibilite.brancher(_st, utilisateur_vu, par_nom=True,
-                         sensible=sensible_en_attente, depot=depot_du_chemin)
+                         sensible=sensible_en_attente, depot=depot_du_chemin,
+                         masques=masques_du_chemin)
 
 # ─── Les COMPTES (chantier 17, étape 4 — 29/08/2026, choix de Mike : un mot de
 # passe par compte). Règle dans `comptes.py` ; fichier `comptes.json` HORS git.
@@ -13629,6 +13658,9 @@ class Handler(BaseHTTPRequestHandler):
         elif path == '/api/maint/status':
             self._serve_maint_status()
 
+        elif path == '/api/masque':
+            self._serve_masque()
+
         elif path == '/api/sensibles':
             self._serve_sensibles()
 
@@ -14251,6 +14283,109 @@ class Handler(BaseHTTPRequestHandler):
                                    ensure_ascii=False).encode(),
                    'application/json')
 
+    def _etat_masque(self, cle):
+        """(entrée, masques, vue_par_moi) pour cette clé — ou (None, (), False).
+
+        UNE lecture de l'index BRUT, partagée par les deux routes du masque :
+        la GET qui allume le bouton et la POST qui agit. Elles doivent voir la
+        même chose, sinon l'écran propose un geste que le serveur refuse."""
+        e = INDEX_BRUT.get(cle)
+        if e is None:
+            return None, (), False
+        m = _visibilite.masques_de(e)
+        u = utilisateur_vu()
+        vu = (u is None) or _visibilite.visible(
+            cle, u, _visibilite.en_attente(e), depot_du_chemin(cle), m)
+        return e, m, vu
+
+    def _serve_masque(self):
+        """GET /api/masque?key=… — ce que CE compte peut faire sur CETTE photo.
+
+        Chantier 19, brique 3. La réponse ne dit JAMAIS qui d'autre a masqué,
+        ni combien : savoir qu'une photo porte un masque de quelqu'un est déjà
+        un renseignement sur quelqu'un. Elle ne parle que du compte qui
+        demande — `mien`, `peut_poser`, `peut_lever`.
+
+        Et la VISIBILITÉ se teste EN PREMIER (règle n° 10, corollaire d'ordre
+        attrapé par le banc du 10/09) : à qui ne voit pas la photo, on répond
+        « introuvable », jamais un refus exact qui confirmerait qu'elle
+        existe."""
+        q = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
+        cle = (q.get('key') or [''])[0]
+        e, m, vu = self._etat_masque(cle)
+        if e is None or not vu:
+            self._send(404, json.dumps({'ok': False, 'error': 'Fichier introuvable.'},
+                                       ensure_ascii=False).encode(), 'application/json')
+            return
+        u = utilisateur_vu()
+        self._send(200, json.dumps({
+            'ok': True,
+            'mien': bool(u and u in m),
+            'peut_poser': bool(u and _visibilite.peut_masquer(m, personnes_de(e), u)),
+            'peut_lever': bool(u and _visibilite.peut_lever(m, cle, u)),
+        }, ensure_ascii=False).encode(), 'application/json')
+
+    def _do_masque_post(self):
+        """POST /api/masque {key, etat: 'pose'|'leve'} — le geste de la brique 3.
+
+        La photo NE BOUGE PAS : seul un champ de l'index change
+        (`masque_par`), jamais le XMP — un masque posé par un TIERS ne se
+        grave pas dans le fichier de quelqu'un d'autre (règle 18c, et ici elle
+        compte double).
+
+        Qui peut quoi vit dans `visibilite` (`peut_masquer`, `peut_lever`) :
+        poser demande d'être RECONNU sur la photo, lever n'appartient qu'à
+        celui qui a posé — et à l'admin en secours. Le propriétaire, lui, peut
+        effacer sa photo, jamais la redévoiler : c'est ce qui fait du masque
+        une garantie et non une politesse."""
+        d = self._read_json_body() or {}
+        cle = (d.get('key') or '').strip()
+        etat = (d.get('etat') or '').strip()
+        if etat not in ('pose', 'leve'):
+            self._send(400, json.dumps({'ok': False, 'error': "etat attendu : 'pose' ou 'leve'"},
+                                       ensure_ascii=False).encode(), 'application/json')
+            return
+        e, m, vu = self._etat_masque(cle)
+        if e is None or not vu:
+            self._send(404, json.dumps({'ok': False, 'error': 'Fichier introuvable.'},
+                                       ensure_ascii=False).encode(), 'application/json')
+            return
+        u = utilisateur_vu()
+        if u is None:
+            self._send(403, json.dumps({'ok': False, 'error': "aucun compte connecte"},
+                                       ensure_ascii=False).encode(), 'application/json')
+            return
+        if etat == 'pose':
+            if not _visibilite.peut_masquer(m, personnes_de(e), u):
+                self._send(403, json.dumps({'ok': False, 'error':
+                    "Seule une personne reconnue sur cette photo peut la masquer."},
+                    ensure_ascii=False).encode(), 'application/json')
+                return
+            neuf = dict(e)
+            neuf['masque_par'] = list(m) + [u]
+            neuf['masque_le'] = time.strftime('%Y-%m-%d %H:%M:%S')
+        else:
+            if not _visibilite.peut_lever(m, cle, u):
+                self._send(403, json.dumps({'ok': False, 'error':
+                    "Ce masque n est pas le votre : celui qui l a pose peut le lever."},
+                    ensure_ascii=False).encode(), 'application/json')
+                return
+            reste = [n for n in m if n != u] if u in m else []
+            neuf = dict(e)
+            if reste:
+                neuf['masque_par'] = reste
+            else:
+                neuf.pop('masque_par', None)
+                neuf.pop('masque_le', None)
+        STORE.set(cle, neuf)
+        print(f"  🙈 masque personnel « {etat} » par {u} : {cle}")
+        m2 = _visibilite.masques_de(neuf)
+        self._send(200, json.dumps({
+            'ok': True, 'mien': u in m2,
+            'peut_poser': _visibilite.peut_masquer(m2, personnes_de(neuf), u),
+            'peut_lever': _visibilite.peut_lever(m2, cle, u),
+        }, ensure_ascii=False).encode(), 'application/json')
+
     def _do_post(self):
         path = urllib.parse.urlparse(self.path).path
         if path == '/api/connexion':
@@ -14262,6 +14397,9 @@ class Handler(BaseHTTPRequestHandler):
         if path in ('/api/comptes', '/api/comptes/mdp', '/api/comptes/email',
                     '/api/comptes/supprimer'):
             self._serve_comptes()
+            return
+        if path == '/api/masque':
+            self._do_masque_post()
             return
         if path == '/api/assign':
             self._do_assign()
