@@ -1,4 +1,4 @@
-# Reprise — MediaLibrary, après le 18 septembre 2026 (matin)
+# Reprise — MediaLibrary, après la nuit du 18 au 19 septembre 2026
 
 > **Ce fichier est ÉPHÉMÈRE.** Il décrit un état, pas des règles. Les règles
 > vivent dans `CLAUDE.md`, le plan dans `ROADMAP.md`, les verdicts dans
@@ -9,113 +9,96 @@
 
 ## 0. L'état, en dix lignes
 
-**Le CHANTIER 19 est fini côté code : briques 2, 3, 4, 5 et 6 livrées et
-fusionnées. La brique 1 est MESURÉE et volontairement NON câblée — deux
-choix attendent Mike dans `QUESTIONS_MIKE.md`.**
+**Le CHANTIER 19 est FINI côté code — briques 2, 3, 4, 5 et 6 livrées, vues à
+l'écran et fusionnées dans `main`.** La brique 1 est mesurée et
+volontairement NON câblée : **deux choix attendent Mike** dans
+`QUESTIONS_MIKE.md`. Le détail de chaque brique vit dans git et dans
+`docs/CHANTIER_19_VIE_PRIVEE.md` ; ce qui suit est la carte.
 
--5. **Les axes de vie privée survivent au tagging** (19/09) :
-   `visibilite.preserver_axes` — le tagueur remplace l'entrée au PREMIER
-   tagging, la branche `retag` fusionnait déjà. Défense en profondeur : le
-   cas ne se produit pas aujourd'hui, mais un masque effacé ne se voit pas.
-
--4. **« Ce que j'ai masqué »** (19/09) : `/files?masque=moi`, cinquième mode
-   de grille-résultat, entrée dans le menu du compte, état vide rédigé.
-   Aller-retour complet vu à l'écran. Deux bancs qui citaient « les QUATRE
-   modes » ont été mis à jour — ils jugent désormais ce que la ligne DIT.
-
--3. **Brique 1 — mesurée le 19/09, rien câblé** (`mesure_captures_ecran.py`).
-   Le « signal franc » des captures d'écran est aux trois quarts illisible :
+1. **Brique 6 — les comptes pour de bon.** « Changer mon mot de passe » exige
+   l'ACTUEL (le frein des connexions s'y applique) ; l'admin réinitialise
+   celui d'un AUTRE en **provisoire**, et la première page de la personne lui
+   demande d'en choisir un. Chaque compte porte une **adresse e-mail**
+   facultative et effaçable ; l'admin peut la poser pour quelqu'un
+   (Réglages → « Adresse »). **Le serveur n'envoie jamais rien** — le
+   « mot de passe oublié » par SMTP est refusé (Mike, 18/09).
+2. **Brique 3 — masquer une photo où l'on est reconnu.** La photo NE BOUGE
+   PAS : restent son propriétaire, la personne, l'admin. **Seule elle lève**
+   (l'admin en secours), jamais le propriétaire. État en base (`masque_par`),
+   jamais dans le XMP. Le bouton n'existe que si le SERVEUR le dit
+   (`GET /api/masque`). Et **« Ce que j'ai masqué »** (`/files?masque=moi`,
+   entrée du menu du compte) permet de les retrouver — sans quoi un masque ne
+   se lève jamais.
+3. **Brique 5 — qui voit mes photos.** Trois états : champ ABSENT = tout le
+   monde, `[]` = personne, `[noms]` = ceux-là ; la migration prévue tombe, le
+   troisième état est ÉCRIT. **L'admin n'est pas un passe-partout** (choix de
+   Mike). Gratuit tant que personne ne restreint ; 20 ms sur 44 445 clés
+   sinon — 107 ms avant d'avoir mémoïsé `auteurs.proprietaire_de`, gain qui
+   profite à tout le projet.
+4. **Brique 4 — être reconnu sur une photo la rouvre.** D'un cran, et d'un
+   seul : elle rouvre ce que le PARTAGE a fermé, jamais un masque. **Pas
+   d'index clé → noms** (le plan en annonçait un) : la question n'est posée
+   que pour les clés que le partage ferme, et un banc COMPTE les appels.
+   +34 ms quand quelqu'un restreint, zéro sinon.
+5. **Brique 1 — mesurée, rien câblé** (`mesure_captures_ecran.py`). Le
+   « signal franc » des captures d'écran est aux trois quarts illisible :
    443 `.png` sur 44 445, **aucun** champ d'appareil, **aucune** dimension
    dans la base, et le mot-clé `capture d ecran` du tagueur ne désigne
    **1 photo** — un `.jpg`. Câbler « PNG donc capture » trancherait au-delà
-   de la mesure. Deux questions pour Mike : la file de revue (a) ou un modèle
-   dédié (b) ; et faut-il poser largeur/hauteur/appareil au passage de la
-   vignette pour rendre le signal lisible.
+   de la mesure. → `QUESTIONS_MIKE.md`.
+6. **Un masque ne se perd pas au tagging** : le tagueur REMPLACE l'entrée au
+   premier tagging (il ne fusionnait que sur un re-tag).
+   `visibilite.preserver_axes` reporte les six axes de vie privée. Le cas ne
+   se produit pas aujourd'hui — « aujourd'hui » n'est pas une garantie.
+7. **Un instrument neuf** : `mesure_etat_serveur.py` — lire `/api/serveur`
+   (route ouverte) depuis la machine de Mike par l'agent de banc, donc **sans
+   Chrome** : `uptime_s`, `demarre_a`, `code_a_jour`, et `--sert /connexion
+   --motif …` pour prouver ce que le serveur SERT vraiment. Né d'une panne :
+   le 17/09 au soir l'extension Chrome n'a pas répondu et il ne restait aucun
+   moyen de savoir si le serveur exécutait le code du disque.
+8. **Trouvé en chemin, documenté, pas corrigé** : `list(vue)` et
+   `sorted(vue)` paient DEUX passes du filtre de visibilité
+   (`PERFORMANCE.md` § 3.-1) ; `__length_hint__` n'y change rien et un cache
+   rendrait `len()` faux. 47 appels de cette forme dans `server.py`.
+9. **Tout est vu à l'écran** (Chrome `MSI-Mike`) : les deux refus du mot de
+   passe, le bouton « Réinitialiser » et son tirage, le masque posé puis levé,
+   les trois états du partage, la liste « Ce que j'ai masqué » et son état
+   vide. **`/aide` a rattrapé le chantier** : « Mon compte », « Choisir qui
+   voit tes photos », « Masquer une photo où tu es ».
+10. **Ce qui n'est PAS prouvé en réel** : la vue d'un NON-admin, et la
+    non-fuite ROUTE PAR ROUTE (`verifier_non_fuite.py` veut deux comptes et
+    leurs mots de passe). Geste de Mike.
 
--2. **Brique 4 — être reconnu sur une photo la rouvre** (nuit du 18 au 19/09).
-   D'un cran, et d'un seul : elle rouvre ce que la LISTE DE PARTAGE a fermé,
-   jamais un masque (un banc prend les quatre masques un par un). **Pas
-   d'index clé → noms** : la question n'est posée que pour les clés que le
-   partage fermerait, et un banc COMPTE les appels pour que personne
-   n'inverse l'ordre. +34 ms sur 44 445 clés quand quelqu'un restreint, zéro
-   sinon.
-
--1. **Brique 5 — qui voit mes photos** (nuit du 18 au 19/09). Trois états
-   (champ absent = tout le monde, `[]` = personne, `[noms]` = ceux-là) ; la
-   migration prévue tombe, le troisième état est ÉCRIT. **L'admin n'est pas
-   un passe-partout** (choix de Mike). Gratuit tant que personne ne restreint
-   (`fermes_pour` rend un ensemble vide, chemin rapide) ; quand quelqu'un
-   restreint, 20 ms sur 44 445 clés — 107 ms avant d'avoir mémoïsé
-   `auteurs.proprietaire_de`, ce qui profite à tout le projet.
-
-0. **Brique 3 — le masque d'une personne reconnue** (soir du 18/09). Le geste
-   est dans la visionneuse ; la photo ne bouge pas ; restent son propriétaire,
-   elle, l'admin. Seule elle lève (l'admin en secours) — **pas le
-   propriétaire**. Règle pure dans `visibilite`, filtre AU MAGASIN (les cinq),
-   état en base (`masque_par`), jamais dans le XMP. Le bouton n'existe que si
-   le SERVEUR le dit (`GET /api/masque`). Posé et levé en réel à 19 h 55.
-
-1. **Le trou du mot de passe est fermé** (`fix/le-mot-de-passe-exige-l-actuel`,
-   commit `4751949`). « Changer mon mot de passe » exige l'ACTUEL ; le frein
-   des connexions s'y applique ; l'admin réinitialise celui d'un AUTRE sans le
-   connaître, le compte est marqué **provisoire**, et la première page que la
-   personne ouvre lui demande d'en choisir un.
-2. **Une adresse e-mail par compte** (`feat/une-adresse-par-compte`, commit
-   `a850a86`, branchée sur la précédente). Facultative, effaçable, posée dans
-   « Mon compte » (le panneau du menu porte désormais les deux gestes) ;
-   visible d'elle et de l'admin seulement. **Le serveur n'envoie rien.**
-3. **Un instrument neuf** : `mesure_etat_serveur.py` — lire `/api/serveur`
-   (route ouverte) depuis la machine de Mike par l'agent de banc, donc
-   **sans Chrome** : `uptime_s`, `demarre_a`, `code_a_jour`, et `--sert
-   /connexion --motif …` pour prouver ce que le serveur SERT vraiment.
-   Né d'une panne : le 17/09 au soir l'extension Chrome n'a pas répondu et il
-   ne restait AUCUN moyen de savoir si le serveur exécutait le code du disque.
-4. Les deux redémarrages ont été **observés** (07 h 41 et 07 h 53, `demarre_a`
-   bougé, `code_a_jour` vrai) et les 78 bancs visés sont **verts sous Windows**.
-5. **À l'écran** (Chrome `MSI-Mike`, 09 h 30) : « Refusé : mot de passe actuel
-   incorrect. » et « Refusé : adresse e-mail invalide. » s'affichent pour de
-   vrai ; « Proposer » tire `jxmn-qros-oykk`. Un `type="email"` fait jouer la
-   validation NATIVE du navigateur avant notre `fetch` : deux étages de refus,
-   et c'est voulu. `/files` sans paramètre montre « 0 photo(s) » parce qu'il
-   montre `_Uploads`, vide — **pas une régression**.
-
-6. **Deux choix de Mike, le 18/09** : pas de SMTP (le « mot de passe oublié »
-   par lien est REFUSÉ, `eval/DECISIONS.md`), et **c'est lui qui pose les
-   adresses e-mail pour l'instant** — les Réglages ont donc un bouton
-   « Adresse » par ligne (Poser / Effacer). Les adresses de Flo et de Papa
-   sont vérifiées dans son Gmail ; **elles ne sont pas encore posées**, c'est
-   son geste.
-
-Acquis d'avant : chantier 19 briques 2 (dépôts au déposant) ; filet « intime »
-mesuré et REFUSÉ en automatique ; veille (P1) ; campagne de retag ABANDONNÉE ;
-trois comptes (Mike admin, Flo, Papa) ; Tailscale préparé, e-mails en
-brouillons NON envoyés.
+Acquis d'avant : veille (P1), campagne de retag ABANDONNÉE, trois comptes
+(Mike admin, Flo, Papa), Tailscale préparé, e-mails en brouillons NON envoyés.
 
 ---
 
 ## 1. Par où commencer
 
-1. **Vérifier l'état réel** (`.git/HEAD`, `.git/logs/HEAD`,
-   `.git/logs/refs/heads/main`) : la brique 6 est FUSIONNÉE dans `main`,
-   écrans compris.
-2. **CHANTIER 19, suite** — la brique 3 est faite ; **la prochaine est la 5** — l'ordre du plan
-   (`docs/CHANTIER_19_VIE_PRIVEE.md`, à relire AVANT d'écrire une ligne) :
-   - **Brique 1 : plus rien à coder tant que Mike n'a pas répondu** (les deux
-     questions sont écrites). Pour mémoire — **file de revue, pas masquage** — la mesure du 17/09 a montré que le zéro-shot SigLIP ne
-     sépare pas (le max des témoins dépasse le p99 des intimes). Les N plus
-     fortes marges vont dans l'onglet Sensibles du PROPRIÉTAIRE, qui tranche.
-     Un modèle dédié ne se pose que si un jeu de validation constitué par Flo
-     et Mike le justifie — et ce jeu-là, je ne le regarde pas.
-     **Les captures d'écran**, elles, se détectent sans modèle (pas
-     d'appareil dans l'EXIF, PNG, dimensions d'écran) : signal franc, à
-     MESURER avant d'être câblé.
-   - **Brique 1** (filet intime) en dernier : file de revue, pas masquage.
-3. **P2, l'e-mail** : trois brouillons Gmail prêts, non envoyés. Mike envoie,
+1. **Vérifier l'état réel** — `.git/HEAD`, `.git/logs/HEAD`,
+   `.git/logs/refs/heads/main` : tout ce qui est décrit au § 0 est FUSIONNÉ.
+   Une doc dit l'intention de la fin de session ; git dit ce qui s'est passé.
+2. **Lire `QUESTIONS_MIKE.md`** : deux questions ouvertes sur la brique 1, et
+   rien ne se code là-dessus tant qu'il n'a pas répondu. La suite du chantier
+   19 est **terminée** — ne pas rouvrir une brique livrée sans chiffre neuf.
+3. **Prochaines cibles, si Mike ne dit rien d'autre** (par ordre de valeur, pas
+   de facilité) :
+   - **la vue d'un NON-admin, prouvée à l'écran** : un compte d'essai créé et
+     supprimé par Mike, et `verifier_non_fuite.py` lancé par lui — c'est le
+     seul trou de preuve du chantier 19, et il ne se bouche que par lui ;
+   - **`B3` — la question au tagueur sur les documents sensibles** : à
+     instruire AVANT d'écrire une ligne (toute modification du prompt relance
+     une passe complète : est-ce que ça vaut une campagne ?) ;
+   - **`C3` étape 2 — la vraie pagination**, parquée : la page du fonds est
+     bornée par le CPU (3,7 s), et borner le nombre de fiches bâties est le
+     seul geste qui attaque encore le vrai poste.
+4. **P2, l'e-mail** : trois brouillons Gmail prêts, non envoyés. Mike envoie,
    mots de passe à part.
-4. **Tailscale** : partager `msi-mike` avec `markushuegli@gmail.com` et
+5. **Tailscale** : partager `msi-mike` avec `markushuegli@gmail.com` et
    `flolaeser@gmail.com`, limiter `autogroup:shared` au port 8080, rappeler
    l'expiration de clé. En attente que Mike se connecte à la console.
-5. **D1, la copie hors site** : à Mike seul.
+6. **D1, la copie hors site** : à Mike seul.
 
 ---
 
