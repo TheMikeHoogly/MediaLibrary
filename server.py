@@ -14713,11 +14713,21 @@ class Handler(BaseHTTPRequestHandler):
         jourparam = (q.get('jour') or [''])[0].strip()
         jour_mode = (bool(jourparam) and not search_mode and not sim_mode
                      and not dirparam and not sel and not motif)
+        # « Ce que J'AI masqué » : /files?masque=moi. Cinquième mode où la
+        # grille est un RÉSULTAT (chantier 19, brique 3). Il existe parce
+        # qu'un masque qu'on ne peut pas retrouver ne se lève jamais : la
+        # photo reste visible de celle qui l'a masquée, mais perdue dans
+        # 44 000 autres. Pas de page neuve — la planche, la visionneuse et
+        # son bouton « Ne plus masquer » font déjà tout le travail.
+        masqueparam = (q.get('masque') or [''])[0].strip()
+        masque_mode = (masqueparam == 'moi' and not search_mode and not sim_mode
+                       and not jour_mode and not dirparam and not sel and not motif)
         # Les quatre modes où la grille est un RÉSULTAT : plus bas, chacun
         # REMPLACE `file_data` par ce qu'il tire de l'index. Tout ce que le
         # parcours du NAS et la boucle d'enrichissement fabriquent d'ici là
         # est alors jeté — il ne reste que les sous-dossiers, pour la barre.
-        remplace_la_grille = bool(sel or search_mode or sim_mode or jour_mode)
+        remplace_la_grille = bool(sel or search_mode or sim_mode or jour_mode
+                                  or masque_mode)
 
         if dirparam:
             roots = media_roots()
@@ -14866,6 +14876,37 @@ class Handler(BaseHTTPRequestHandler):
                 jour_libelle = meme_jour.libelle_jour(jour_cle)
                 jour_items = meme_jour.photos_du_jour(
                     _jour_index(), jour_cle, exclure=jour_ref)
+        masque_cles = []
+        if masque_mode:
+            u_masque = utilisateur_vu()
+            for _k, _e in list(INDEX_BRUT.items()):
+                _m = _visibilite.masques_de(_e)
+                if not u_masque or u_masque not in _m:
+                    continue
+                # ET elle doit encore m'être VISIBLE : entre-temps, son
+                # propriétaire a pu la ranger dans son PRIVE. Un masque que
+                # j'ai posé ne me donne pas un droit de regard permanent.
+                if not _visibilite.visible(_k, u_masque, _visibilite.en_attente(_e),
+                                           depot_du_chemin(_k), _m,
+                                           fermes_du_compte(u_masque),
+                                           reconnu_sur(_k, u_masque)):
+                    continue
+                masque_cles.append(_k)
+            masque_cles.sort(
+                key=lambda k: ((INDEX_BRUT.get(k) or {}).get('masque_le') or '', k),
+                reverse=True)
+            folders_html = (
+                '<div class="folders"><span class="fetiquette">'
+                + ('&#128584; Les photos que tu as masqu&eacute;es &mdash; elles '
+                   'restent chez leur propri&eacute;taire, qui les voit, et '
+                   'personne d&rsquo;autre. Ouvre-en une pour lever son masque.'
+                   if masque_cles else
+                   # État vide RÉDIGÉ : dire ce que c'est, pas « 0 photo ».
+                   '&#128584; Tu n&rsquo;as masqu&eacute; aucune photo. Le geste '
+                   's&rsquo;offre dans la visionneuse, sur une photo de '
+                   'quelqu&rsquo;un d&rsquo;autre o&ugrave; ton nom a &eacute;t&eacute; '
+                   'reconnu.')
+                + '</span></div>')
         ph.top('barre')         # barre de dossiers + index du meme jour
         is_uploads = folder in (UPLOAD_DIR, UPLOAD_DIR.resolve())
         roots_g = media_roots()
@@ -15147,6 +15188,16 @@ class Handler(BaseHTTPRequestHandler):
             folders_html = '<div class="folders">' + chips + '</div>'
             ph.top('mode_jour')
 
+        if masque_mode:
+            roots_cache = media_roots()
+            file_data, _liens = [], {}
+            for k in masque_cles[:1500]:
+                fiche = _fiche_depuis_cle(k, STORE.data.get(k) or {}, fctx,
+                                          roots_cache, _liens)
+                if fiche is not None:
+                    file_data.append(fiche)
+            ph.top('mode_masque')
+
         # Comptes par motif sur la vue courante, puis filtre eventuel. Import
         # PARESSEUX : interet est pur (re/pathlib), aucun modele ni deps ML au
         # chargement — le serveur demarre sans torch/cv2 (invariant zero-dep).
@@ -15203,7 +15254,7 @@ class Handler(BaseHTTPRequestHandler):
         # « 60 tags » (personne:Florine 8, extérieur 7…) sur « Indonésie »
         # 1 002 photos et sur une requête à 0 photo. Une puce qui ne compte
         # pas ce qu'on regarde est un filtre qui ment.
-        grille_resultat = bool(search_mode or sim_mode or jour_mode)
+        grille_resultat = bool(search_mode or sim_mode or jour_mode or masque_mode)
         if grille_resultat:
             tag_counts = {}
             for _fd in file_data:
@@ -15245,8 +15296,8 @@ class Handler(BaseHTTPRequestHandler):
         self._send_html(page)
         ph.top('envoi')         # CSS partage + gzip + ecriture sur la socket
         ph.note(mode=('recherche' if search_mode else 'semblables' if sim_mode
-                      else 'jour' if jour_mode else 'tags' if sel
-                      else 'dossier'),
+                      else 'jour' if jour_mode else 'masque' if masque_mode
+                      else 'tags' if sel else 'dossier'),
                 rec=bool(rec), rendues=len(file_data),
                 legeres=fiches_legeres,
                 car_json=len(_file_json), car_page=len(page))

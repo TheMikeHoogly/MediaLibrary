@@ -61,7 +61,7 @@ le récit dans git. Ce qui suit n'est plus qu'une carte.
 |---|---|---|
 | 1 | Filet « intime » et captures de conversation | **MESURÉ deux fois, RIEN CÂBLÉ.** 17/09 : le zéro-shot SigLIP ne sépare pas l'intime du témoin. 19/09 : sur les captures, le mot-clé du tagueur ne désigne **1 photo sur 44 445**, et ni l'appareil ni les dimensions ne sont dans la base — il ne reste que `.png` (443 fichiers). **Deux choix pour Mike** (`QUESTIONS_MIKE.md`) |
 | 2 | Quarantaine des dépôts (`_Uploads` au déposant seul) | **LIVRÉ 17/09** |
-| 3 | « Masquer cette photo » pour une personne reconnue | **LIVRÉE 18/09, vue à l'écran** — le geste est dans la visionneuse, la photo ne bouge pas, seule la personne lève |
+| 3 | « Masquer cette photo » pour une personne reconnue | **LIVRÉE 18/09, vue à l'écran** — le geste est dans la visionneuse, la photo ne bouge pas, seule la personne lève ; **19/09** : « Ce que j'ai masqué » (`/files?masque=moi`) pour les retrouver |
 | 4 | Les personnes reconnues voient leurs photos | **LIVRÉE 18/09** — et sans l'index clé → noms que le plan croyait nécessaire : c'est l'ORDRE qui le remplace |
 | 5 | **Qui voit mes photos** : chacun coche | **LIVRÉE 18/09, vue à l'écran** — trois états, l'admin n'est pas un passe-partout, et la règle est gratuite tant que personne ne restreint |
 | 6 | Les comptes « pour de bon » : mot de passe et e-mail | **LIVRÉE 18/09, vue à l'écran** — l'actuel est exigé, l'admin réinitialise en provisoire, chaque compte porte une adresse facultative, et l'admin peut la poser pour quelqu'un. Le « mot de passe oublié » par SMTP est **refusé** (Mike, 18/09) |
@@ -97,6 +97,15 @@ le récit dans git. Ce qui suit n'est plus qu'une carte.
   clé → noms en mémoire ; en ne posant la question que pour les clés que le
   partage FERME, elle n'en a pas eu besoin — et un banc COMPTE les appels pour
   que personne n'inverse l'ordre par mégarde.
+- **Un geste qu'on ne peut pas RETROUVER ne se défait jamais.** Le masque de
+  la brique 3 laisse la photo visible de celle qui l'a posé — mais perdue
+  dans 44 000 autres. D'où **« Ce que j'ai masqué »** (19/09), cinquième mode
+  où la grille est un résultat (`/files?masque=moi`) : pas de page neuve, la
+  planche et la visionneuse font tout, et l'entrée vit dans le menu du compte
+  — un menu qu'on ouvre exprès peut porter une entrée parfois vide, un ONGLET
+  non (demande de Mike, 06/09). La liste exige que la photo me soit ENCORE
+  visible : un masque posé hier ne donne pas un droit de regard permanent si
+  son propriétaire l'a rangée dans son PRIVE depuis.
 - **Le droit se DEMANDE au serveur, il ne se recopie pas dans l'écran.** Le
   bouton « Masquer cette photo » n'existe que si `GET /api/masque` le dit :
   deux règles pour un seul droit, et celle de l'écran finit par mentir.

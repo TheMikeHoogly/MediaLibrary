@@ -119,14 +119,16 @@ class LesQuatreBranchesPassentParLaMemePorte(unittest.TestCase):
         self.assertEqual(self.src.count('_folder_link_for_key('), 0,
                          'une branche appelle encore le lien sans memo')
         # Depuis le 15/09 : la navigation (disque) appelle le memo
-        # elle-meme ; les QUATRE producteurs lus dans l'index (grille
-        # indexee, tags, recherche, meme jour) passent par
-        # `_fiche_depuis_cle`, qui l'appelle une fois pour tous.
+        # elle-meme ; les producteurs lus dans l'index (grille indexee,
+        # tags, recherche, meme jour, et « ce que j'ai masque » depuis le
+        # 19/09) passent par `_fiche_depuis_cle`, qui l'appelle une fois
+        # pour tous.
         self.assertEqual(self.src.count('_lien_dossier_memo('), 1,
                          'une branche recopie encore la fiche')
         # La grille du fonds entier bat des fiches LEGERES (15/09) ; les
-        # trois autres modes de l'index batissent la fiche entiere.
-        self.assertEqual(self.src.count('_fiche_depuis_cle('), 3,
+        # QUATRE autres modes de l'index batissent la fiche entiere --
+        # tags, recherche/semblables, meme jour, masque (19/09).
+        self.assertEqual(self.src.count('_fiche_depuis_cle('), 4,
                          'les modes de l index passent par la fiche')
         self.assertEqual(self.src.count('_fiche_legere('), 1)
         self.assertIn('_lien_dossier_memo(', _src('_fiche_depuis_cle'))
@@ -171,10 +173,16 @@ class LaPageNeFabriquePasCEQuElleVaJETER(unittest.TestCase):
     def setUp(self):
         self.src = _source_de('_serve_gallery')
 
-    def test_le_drapeau_couvre_les_QUATRE_modes(self):
-        self.assertIn(
-            'remplace_la_grille = bool(sel or search_mode or sim_mode'
-            ' or jour_mode)', self.src)
+    def test_le_drapeau_couvre_TOUS_les_modes(self):
+        """Un banc qui citait la ligne AU CARACTERE PRES est tombe le 19/09
+        quand un cinquieme mode est arrive -- alors que le drapeau, lui,
+        etait juste. On juge desormais ce que la ligne DIT : que chaque mode
+        y figure. (Meme lecon que `test_sensibles` le 17/09 : juger un BLOC,
+        pas une mise en page.)"""
+        i = self.src.index('remplace_la_grille = bool(')
+        ligne = self.src[i:self.src.index(')', self.src.index('(', i))]
+        for mode in ('sel', 'search_mode', 'sim_mode', 'jour_mode', 'masque_mode'):
+            self.assertIn(mode, ligne, mode)
 
     def test_la_premisse_est_vraie_chaque_mode_remplace_bien(self):
         """Le drapeau ne vaut que si CHAQUE mode remplace vraiment la

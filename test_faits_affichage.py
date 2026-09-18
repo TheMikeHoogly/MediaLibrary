@@ -224,8 +224,8 @@ class TestCablage(unittest.TestCase):
             if 'faits' in cles and 'jour' in cles:
                 les_deux += 1
         # Depuis le 15/09 : un litteral dans la page (la navigation, qui
-        # part du disque) et un dans `_fiche_depuis_cle`, que les QUATRE
-        # modes lus dans l'index appellent. Les deux sont comptes.
+        # part du disque) et un dans `_fiche_depuis_cle`, que les modes lus
+        # dans l'index appellent. Les deux sont comptes.
         fiche = next((x for x in ast.walk(arbre)
                       if isinstance(x, ast.FunctionDef)
                       and x.name == '_fiche_depuis_cle'), None)
@@ -233,10 +233,15 @@ class TestCablage(unittest.TestCase):
         appels = sum(1 for x in ast.walk(gal) if isinstance(x, ast.Call)
                      and isinstance(x.func, ast.Name)
                      and x.func.id == '_fiche_depuis_cle')
-        # Trois modes batissent la fiche entiere ; la grille du fonds entier
-        # la recoit en deux temps (fiche legere, puis `/api/fiches`, qui
-        # appelle le meme producteur -- `_serve_fiches`).
-        self.assertEqual(appels, 3,
+        # QUATRE modes batissent la fiche entiere -- tags, recherche et
+        # semblables, meme jour, et « ce que j'ai masque » (19/09) ; la
+        # grille du fonds entier la recoit en deux temps (fiche legere, puis
+        # `/api/fiches`, qui appelle le meme producteur -- `_serve_fiches`).
+        # Ce nombre a ete releve d'un cran le 19/09 : c'est le TROISIEME banc
+        # a compter les modes, et le compte ne dit rien de ce qu'il protege.
+        # Ce qu'il protege vraiment : qu'aucun mode ne batisse sa fiche a la
+        # main, donc sans `faits`. La verification est deux lignes plus bas.
+        self.assertEqual(appels, 4,
                          "les modes de l'index passent par la fiche")
         fiches = next((x for x in ast.walk(arbre)
                        if isinstance(x, ast.FunctionDef)

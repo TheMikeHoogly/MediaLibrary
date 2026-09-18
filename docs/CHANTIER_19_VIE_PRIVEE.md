@@ -110,6 +110,15 @@ peut faire, et rien sur les autres) et `POST /api/masque` (`pose` / `leve`),
 le bouton de la visionneuse. Deux bancs, contre-éprouvés. Vu à l'écran, posé
 et levé en réel le 18/09.
 
+**Complété le 19/09 — retrouver ce qu'on a masqué.** `/files?masque=moi`,
+cinquième mode où la grille est un RÉSULTAT, et une entrée « Ce que j'ai
+masqué » dans le menu du compte. Sans elle, le masque était un geste sans
+retour : la photo reste visible de celle qui l'a posé, mais introuvable parmi
+44 000. La liste refait le test de visibilité complet — un masque posé hier ne
+donne pas un droit de regard si la photo est passée dans un PRIVE depuis. Pas
+de pastille et pas d'onglet : compter les masques demanderait un balayage de
+l'index à chaque page.
+
 **Ce que la livraison a appris** : c'est le SERVEUR qui dit si le bouton
 existe. La tentation était de lire les tags `personne:` déjà présents côté
 client — gratuit, immédiat, et ça aurait fait deux règles pour un seul droit.

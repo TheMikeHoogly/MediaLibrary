@@ -13,6 +13,11 @@
 fusionnées. La brique 1 est MESURÉE et volontairement NON câblée — deux
 choix attendent Mike dans `QUESTIONS_MIKE.md`.**
 
+-4. **« Ce que j'ai masqué »** (19/09) : `/files?masque=moi`, cinquième mode
+   de grille-résultat, entrée dans le menu du compte, état vide rédigé.
+   Aller-retour complet vu à l'écran. Deux bancs qui citaient « les QUATRE
+   modes » ont été mis à jour — ils jugent désormais ce que la ligne DIT.
+
 -3. **Brique 1 — mesurée le 19/09, rien câblé** (`mesure_captures_ecran.py`).
    Le « signal franc » des captures d'écran est aux trois quarts illisible :
    443 `.png` sur 44 445, **aucun** champ d'appareil, **aucune** dimension

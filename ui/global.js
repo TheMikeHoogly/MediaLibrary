@@ -260,6 +260,15 @@
       h += '<a href="' + esc(MOI.prive) + '" role="menuitem">' +
         '<span aria-hidden="true">\uD83D\uDD12</span> Mon dossier priv\u00e9</a>';
     }
+    // « Ce que j'ai masque » (chantier 19, brique 3, 19/09) : un masque
+    // qu'on ne peut pas retrouver ne se leve jamais. Pas de pastille et pas
+    // d'onglet : le compter couterait un balayage des 44 000 cles a CHAQUE
+    // page, et un onglet vide en permanence apprend a ne plus le regarder
+    // (demande de Mike, 06/09). Ici, dans un menu qu'on ouvre expres, une
+    // entree qui mene parfois a une page vide ne coute rien -- et la page
+    // le DIT en francais.
+    h += '<a href="/files?masque=moi" role="menuitem">' +
+      '<span aria-hidden="true">\uD83D\uDE48</span> Ce que j\u2019ai masqu\u00e9</a>';
     h += '<div class="sep"></div><div class="titre">Taille des vignettes</div>' +
       '<div class="crans">';
     ['serre', 'normal', 'large'].forEach(function (c) {
