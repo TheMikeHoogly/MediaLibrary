@@ -9,8 +9,18 @@
 
 ## 0. L'état, en dix lignes
 
-**18/09 : les briques 6, 3, 5 ET 4 du chantier 19 sont faites, regardées à
-l'écran et fusionnées dans `main`. Il ne reste que la 1, le filet intime.**
+**Le CHANTIER 19 est fini côté code : briques 2, 3, 4, 5 et 6 livrées et
+fusionnées. La brique 1 est MESURÉE et volontairement NON câblée — deux
+choix attendent Mike dans `QUESTIONS_MIKE.md`.**
+
+-3. **Brique 1 — mesurée le 19/09, rien câblé** (`mesure_captures_ecran.py`).
+   Le « signal franc » des captures d'écran est aux trois quarts illisible :
+   443 `.png` sur 44 445, **aucun** champ d'appareil, **aucune** dimension
+   dans la base, et le mot-clé `capture d ecran` du tagueur ne désigne
+   **1 photo** — un `.jpg`. Câbler « PNG donc capture » trancherait au-delà
+   de la mesure. Deux questions pour Mike : la file de revue (a) ou un modèle
+   dédié (b) ; et faut-il poser largeur/hauteur/appareil au passage de la
+   vignette pour rendre le signal lisible.
 
 -2. **Brique 4 — être reconnu sur une photo la rouvre** (nuit du 18 au 19/09).
    D'un cran, et d'un seul : elle rouvre ce que la LISTE DE PARTAGE a fermé,
@@ -80,8 +90,8 @@ brouillons NON envoyés.
    écrans compris.
 2. **CHANTIER 19, suite** — la brique 3 est faite ; **la prochaine est la 5** — l'ordre du plan
    (`docs/CHANTIER_19_VIE_PRIVEE.md`, à relire AVANT d'écrire une ligne) :
-   - **Brique 1, la DERNIÈRE** (le filet « intime ») : **file de revue, pas
-     masquage** — la mesure du 17/09 a montré que le zéro-shot SigLIP ne
+   - **Brique 1 : plus rien à coder tant que Mike n'a pas répondu** (les deux
+     questions sont écrites). Pour mémoire — **file de revue, pas masquage** — la mesure du 17/09 a montré que le zéro-shot SigLIP ne
      sépare pas (le max des témoins dépasse le p99 des intimes). Les N plus
      fortes marges vont dans l'onglet Sensibles du PROPRIÉTAIRE, qui tranche.
      Un modèle dédié ne se pose que si un jeu de validation constitué par Flo

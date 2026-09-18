@@ -58,7 +58,7 @@ photothèque s'ouvre à la famille.
 
 | # | Brique | État |
 |---|---|---|
-| 1 | Filet « intime » et captures de conversation | **MESURÉ 17/09 — le zéro-shot SigLIP ne sépare pas** (marge intime−témoin : p99 = 0,075 ; 18 photos au-dessus de 0,10 sur 40 330). Vaut comme FILE DE REVUE, pas comme verdict. Suite à trancher : file de revue, ou modèle dédié éprouvé sur un jeu que Flo et Mike constituent. |
+| 1 | Filet « intime » et captures de conversation | **MESURÉ deux fois, RIEN CÂBLÉ.** 17/09 : le zéro-shot SigLIP ne sépare pas l'intime du témoin. 19/09 : sur les captures, le mot-clé du tagueur ne désigne **1 photo sur 44 445**, et ni l'appareil ni les dimensions ne sont dans la base — il ne reste que `.png` (443 fichiers). **Deux choix pour Mike** (`QUESTIONS_MIKE.md`) |
 | 2 | Quarantaine des dépôts (`_Uploads` au déposant seul) | **LIVRÉ 17/09** |
 | 3 | « Masquer cette photo » pour une personne reconnue | **LIVRÉE 18/09, vue à l'écran** — le geste est dans la visionneuse, la photo ne bouge pas, seule la personne lève |
 | 4 | Les personnes reconnues voient leurs photos | **LIVRÉE 18/09** — et sans l'index clé → noms que le plan croyait nécessaire : c'est l'ORDRE qui le remplace |
@@ -74,6 +74,19 @@ banc** : `depot_de` comparait les chemins avec `os.path`, qui ne reconnaît pas
 `\` hors Windows — la règle répondait autre chose au banc qu'à la production.
 Corrigé par une normalisation écrite dans le projet, et le banc l'interdit
 désormais (`test_depots_uploads.LeDepotSeReconnaitALaPLACE`).
+
+**Brique 1, mesurée le 19/09 — et c'est la mesure qui décide de ne rien
+câbler.** Le plan annonçait un « signal franc » pour les captures d'écran :
+pas d'appareil dans l'EXIF, PNG, dimensions d'écran.
+`mesure_captures_ecran.py` l'a cherché dans la base et en a trouvé **un tiers**
+— 443 `.png` sur 44 445 entrées ; **aucun** champ d'appareil, **aucune**
+dimension ; et le mot-clé `capture d ecran` du tagueur ne désigne **1 seule
+photo**, qui n'est même pas une PNG. Le filet documents ne voit donc pas les
+captures, et deux des trois signaux ne sont pas illisibles par faiblesse mais
+par ABSENCE. Câbler « PNG donc capture » trancherait au-delà de ce qui est
+mesuré. Les deux suites possibles sont dans `QUESTIONS_MIKE.md` — la file de
+revue humaine (443 fichiers, c'est regardable) et, si Mike le veut, trois
+champs posés au passage de la vignette pour rendre le signal lisible.
 
 **Brique 4, livrée le 18/09 — être reconnu sur une photo la rouvre.**
 Si `personne:Flo` est sur une photo, Flo la voit, même si son propriétaire ne

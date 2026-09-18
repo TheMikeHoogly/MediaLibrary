@@ -1,5 +1,34 @@
 # Questions en attente de Mike
 
+**Deux questions ouvertes (19/09) — la brique 1, le filet « intime ».**
+Les briques 2, 3, 4, 5 et 6 du chantier 19 sont livrées et fusionnées. Il ne
+reste que celle-ci, et elle a été MESURÉE deux fois sans rien câbler.
+
+**1. La file de revue (a), ou un modèle dédié (b) ?**
+Le zéro-shot SigLIP ne sépare pas l'intime du témoin (mesuré le 17/09) ; sur
+les captures d'écran, il ne reste que l'extension `.png` — 443 fichiers
+(mesuré le 19/09).
+*Recommandation* : **(a), la file de revue**. 443 fichiers, c'est un nombre
+qu'on regarde ; ils vont dans l'onglet Sensibles de leur PROPRIÉTAIRE, classés,
+et c'est lui qui tranche. Aucune règle ne prétend savoir, aucun faux masquage.
+**(b) un modèle dédié** demande un jeu de validation que **Flo et toi** devez
+constituer — je ne regarde pas ces photos, et un banc qui les afficherait
+serait exactement ce qu'on veut empêcher.
+*En attendant* : rien n'est câblé, rien n'est masqué.
+
+**2. Rendre le signal LISIBLE : trois champs au passage de la vignette ?**
+Ni l'appareil (EXIF `Make`/`Model`), ni la largeur, ni la hauteur ne sont dans
+la base — c'est pour ça que le « signal franc » du plan n'est aux trois quarts
+pas lisible. Le serveur ouvre déjà chaque image pour fabriquer sa vignette :
+les poser au passage coûte trois champs, pas une campagne.
+*Recommandation* : **oui, mais seulement si tu veux la suite (b)** — pour la
+file de revue (a), `.png` suffit à constituer la liste. Si tu dis oui, c'est
+un petit chantier propre : trois champs, une passe de rattrapage optionnelle,
+et le filet captures devient mesurable pour de bon.
+*En attendant* : rien n'est ajouté au pipeline.
+
+---
+
 **Aucune question ouverte.** (18/09)
 
 ---

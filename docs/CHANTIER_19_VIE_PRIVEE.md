@@ -53,6 +53,36 @@ Les **captures d'écran**, elles, se détectent sans modèle : pas d'appareil
 dans l'EXIF, format PNG, dimensions d'écran. Signal franc, à mesurer avant
 d'être câblé. Le mot-clé `capture d ecran` existe déjà dans le filet documents.
 
+**MESURÉ le 19/09** (`mesure_captures_ecran.py`, sur `copie.db`, aucune image
+ouverte) — et le « signal franc » est aux trois quarts ILLISIBLE :
+
+| | |
+|---|---:|
+| entrées lues | 44 445 |
+| fichiers `.png` | **443** (1,0 %) |
+| que le mot-clé `capture d ecran` désigne | **1** — et c'est un `.jpg` |
+| recoupement des deux | **0** |
+| champ d'appareil (EXIF `Make`/`Model`) dans la base | **aucun** |
+| dimensions (largeur/hauteur) dans la base | **aucune** |
+
+Trois choses tombent d'un coup. (1) **Le mot-clé du tagueur est mort** : une
+photo sur 44 445, et pas une des PNG — le filet documents ne voit pas les
+captures, il ne faut pas compter dessus. (2) **Deux des trois signaux du plan
+ne sont pas dans la base** : ni l'appareil, ni les dimensions. Ce n'est pas un
+signal faible, c'est un signal qu'on ne peut pas encore lire — et les deux ne
+se décident pas pareil. (3) Il reste `.png` SEUL, et câbler « PNG donc
+capture » serait exactement l'erreur que ce projet s'interdit : *un instrument
+qui tranche au-delà de ce qu'il mesure est pire qu'un instrument muet*.
+
+**Ce que la mesure rend possible tout de suite** : 443 fichiers, c'est un
+nombre qu'un humain regarde. Une file de revue (option (a)) les porte à leur
+propriétaire, qui tranche — sans qu'aucune règle ne prétende savoir.
+
+**Ce qu'il faudrait pour faire mieux** : que la base porte la largeur, la
+hauteur et l'absence d'appareil. Le serveur ouvre déjà chaque image pour
+fabriquer sa vignette — c'est trois champs à poser au passage, pas une
+campagne. Tant qu'ils n'y sont pas, le « signal franc » reste une intention.
+
 ### 2. Quarantaine à l'arrivée (tranché par Mike, 17/09)
 
 Toute photo déposée reste **invisible aux autres** (visible de son déposant et
