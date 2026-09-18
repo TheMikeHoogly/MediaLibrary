@@ -180,6 +180,36 @@ def depot_reserve(depot_par, utilisateur):
     return depot_par != utilisateur
 
 
+AXES_VIE_PRIVEE = ('sensible', 'sensible_le', 'sensible_par', 'sensible_motif',
+                   'masque_par', 'masque_le')
+
+
+def preserver_axes(neuve, ancienne):
+    """Reporte dans `neuve` les axes de VIE PRIVÉE que `ancienne` portait.
+
+    POURQUOI (19/09). Le tagueur REMPLACE l'entrée d'index quand il tague une
+    photo pour la première fois — il ne fusionne que sur un RE-tag, et le
+    commentaire de cette branche-là explique bien pourquoi (« un hoquet
+    d'ExifTool coûterait sa date à la photo »). Les axes de vie privée ont le
+    même besoin, en plus grave : un masque effacé ne se voit pas, il se
+    constate le jour où quelqu'un retrouve une photo qu'il croyait fermée.
+
+    Aujourd'hui aucune photo masquée n'arrive vierge chez le tagueur — le
+    geste exige un `personne:`, donc un tagging déjà fait. **« Aujourd'hui »
+    n'est pas une garantie**, et la règle 2 du projet dit ce qu'on fait des
+    décisions humaines : elles ne se perdent jamais. Celle-ci en est une.
+
+    Ne touche QUE ce que la nouvelle entrée ne dit pas déjà : un tagueur qui
+    poserait lui-même un axe garde le sien. Modifie `neuve` en place et la
+    rend (même contrat que `auteurs.garnir`)."""
+    if not isinstance(neuve, dict) or not isinstance(ancienne, dict):
+        return neuve
+    for axe in AXES_VIE_PRIVEE:
+        if axe in ancienne and axe not in neuve:
+            neuve[axe] = ancienne[axe]
+    return neuve
+
+
 def masques_de(entree):
     """Les comptes qui ont masqué cette photo (chantier 19, brique 3), ou ().
 

@@ -758,6 +758,44 @@ class LePartageEstUneRelationEntreComptes(unittest.TestCase):
         self.assertEqual(sorted(m.data), [FLO_PUB])
 
 
+class UnMasqueNeSePerdPasAuTAGGING(unittest.TestCase):
+    """Regle 2, etendue aux axes de vie privee (19/09) : le tagueur REMPLACE
+    l'entree au premier tagging. Un masque efface ne se voit pas -- il se
+    constate le jour ou quelqu'un retrouve une photo qu'il croyait fermee."""
+
+    def test_les_axes_survivent_a_une_entree_neuve(self):
+        ancienne = {'kw_fr': ['vieux'], 'masque_par': ['Flo'],
+                    'masque_le': '2026-09-18 19:55:00',
+                    'sensible': 'en_attente', 'sensible_par': 'Mike'}
+        neuve = {'kw_fr': ['neuf'], 'desc': 'x'}
+        V.preserver_axes(neuve, ancienne)
+        self.assertEqual(neuve['masque_par'], ['Flo'])
+        self.assertEqual(neuve['masque_le'], '2026-09-18 19:55:00')
+        self.assertEqual(neuve['sensible'], 'en_attente')
+        self.assertEqual(neuve['sensible_par'], 'Mike')
+        self.assertEqual(neuve['kw_fr'], ['neuf'])      # le tagging fait son travail
+
+    def test_ce_que_la_NOUVELLE_dit_deja_gagne(self):
+        neuve = {'sensible': 'non'}
+        V.preserver_axes(neuve, {'sensible': 'en_attente'})
+        self.assertEqual(neuve['sensible'], 'non')
+
+    def test_sans_ancienne_entree_rien_ne_se_passe(self):
+        for rien in (None, {}, 'x', 42):
+            neuve = {'kw_fr': []}
+            self.assertEqual(V.preserver_axes(neuve, rien), {'kw_fr': []}, repr(rien))
+
+    def test_les_SIX_axes_sont_couverts(self):
+        """Un axe ajoute demain et oublie ici serait perdu en silence."""
+        self.assertEqual(set(V.AXES_VIE_PRIVEE),
+                         {'sensible', 'sensible_le', 'sensible_par',
+                          'sensible_motif', 'masque_par', 'masque_le'})
+        ancienne = {a: 'v' for a in V.AXES_VIE_PRIVEE}
+        neuve = {}
+        V.preserver_axes(neuve, ancienne)
+        self.assertEqual(set(neuve), set(V.AXES_VIE_PRIVEE))
+
+
 class CeQueListeEtSortedCoutentVraiment(unittest.TestCase):
     """Trouve le 18/09 en ecrivant le banc de la brique 4, et EPINGLE ici
     parce que c'est contre-intuitif : `list(vue)` et `sorted(vue)` appellent

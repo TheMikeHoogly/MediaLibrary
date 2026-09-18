@@ -13,6 +13,11 @@
 fusionnées. La brique 1 est MESURÉE et volontairement NON câblée — deux
 choix attendent Mike dans `QUESTIONS_MIKE.md`.**
 
+-5. **Les axes de vie privée survivent au tagging** (19/09) :
+   `visibilite.preserver_axes` — le tagueur remplace l'entrée au PREMIER
+   tagging, la branche `retag` fusionnait déjà. Défense en profondeur : le
+   cas ne se produit pas aujourd'hui, mais un masque effacé ne se voit pas.
+
 -4. **« Ce que j'ai masqué »** (19/09) : `/files?masque=moi`, cinquième mode
    de grille-résultat, entrée dans le menu du compte, état vide rédigé.
    Aller-retour complet vu à l'écran. Deux bancs qui citaient « les QUATRE

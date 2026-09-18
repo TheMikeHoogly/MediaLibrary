@@ -3169,6 +3169,13 @@ def tagger_worker():
                     base.pop(_k, None)
                 base.update(entry)
                 entry = base
+            # Les axes de VIE PRIVÉE ne se recalculent pas : un tagging qui
+            # REMPLACE l'entrée ne doit pas lever un masque. La branche
+            # `retag` les gardait déjà par sa fusion ; le PREMIER tagging,
+            # non — et l'écart ne se voyait pas, parce qu'aucune photo
+            # masquée n'arrive vierge ici. « Aujourd'hui » n'est pas une
+            # garantie (règle 2 : une décision humaine ne se perd jamais).
+            _visibilite.preserver_axes(entry, STORE.data.get(name))
             STORE.set(name, entry)
             pending_done(name)
             fails.pop(name, None)

@@ -90,6 +90,20 @@ class LeChampNePartJamaisDansLeFichier(unittest.TestCase):
             self.assertNotIn("masque", _corps(nom))
 
 
+class LeTaggingNeLevePasUnMasque(unittest.TestCase):
+    """Le tagueur remplace l'entree au PREMIER tagging (il ne fusionne que
+    sur un re-tag). La regle pure est dans `visibilite.preserver_axes` ; ici
+    on prouve qu'elle est APPELEE, et juste avant l'ecriture."""
+
+    def test_l_appel_existe_et_precede_l_ecriture(self):
+        src = SOURCE[SOURCE.index('def tagger_worker'):] if 'def tagger_worker' in SOURCE else SOURCE
+        i = src.find('_visibilite.preserver_axes(entry')
+        self.assertGreater(i, -1, 'le tagueur ne preserve pas les axes')
+        j = src.find('STORE.set(name, entry)', i)
+        self.assertGreater(j, i, "l'appel doit preceder l'ecriture")
+        self.assertLess(j - i, 400, "l'appel doit etre COLLE a l'ecriture")
+
+
 class LOrdreDesRefus(unittest.TestCase):
     """Regle n. 10 : un refus exact confirme une existence. La visibilite
     d'abord, toujours -- corollaire attrape par un banc le 10/09."""

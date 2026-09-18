@@ -97,6 +97,13 @@ le récit dans git. Ce qui suit n'est plus qu'une carte.
   clé → noms en mémoire ; en ne posant la question que pour les clés que le
   partage FERME, elle n'en a pas eu besoin — et un banc COMPTE les appels pour
   que personne n'inverse l'ordre par mégarde.
+- **Une décision humaine ne se perd jamais — le tagueur compris.** Il
+  REMPLACE l'entrée d'index au premier tagging (il ne fusionne que sur un
+  re-tag). Aucune photo masquée n'arrive vierge chez lui aujourd'hui, puisque
+  le geste exige un `personne:` ; « aujourd'hui » n'est pas une garantie, et
+  un masque effacé ne se voit pas — il se constate le jour où quelqu'un
+  retrouve une photo qu'il croyait fermée. `visibilite.preserver_axes` reporte
+  les six axes (`sensible*`, `masque_*`) ; deux bancs, et ils mordent.
 - **Un geste qu'on ne peut pas RETROUVER ne se défait jamais.** Le masque de
   la brique 3 laisse la photo visible de celle qui l'a posé — mais perdue
   dans 44 000 autres. D'où **« Ce que j'ai masqué »** (19/09), cinquième mode
