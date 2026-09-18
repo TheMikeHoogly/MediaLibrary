@@ -63,7 +63,7 @@ photothèque s'ouvre à la famille.
 | 3 | « Masquer cette photo » pour une personne reconnue | à faire (tranché : propriétaire + personne voient ; la personne seule lève) |
 | 4 | Les personnes reconnues voient leurs photos | à faire, après 5 |
 | 5 | Onglet **Partage** : chacun coche qui voit ses photos | à faire — **défaut tranché le 17/09** : liste vide = tout le monde pour les comptes d'aujourd'hui, un compte créé ensuite part fermé (trois états en base, migration incluse) |
-| 6 | Les comptes « pour de bon » : mot de passe et e-mail | **LIVRÉE 18/09** — l'actuel est exigé, l'admin réinitialise en provisoire, et chaque compte porte une adresse e-mail facultative. Reste ouvert : le vrai « mot de passe oublié » par SMTP, à ne construire que si quelqu'un reste bloqué |
+| 6 | Les comptes « pour de bon » : mot de passe et e-mail | **LIVRÉE 18/09, vue à l'écran** — l'actuel est exigé, l'admin réinitialise en provisoire, chaque compte porte une adresse facultative, et l'admin peut la poser pour quelqu'un. Le « mot de passe oublié » par SMTP est **refusé** (Mike, 18/09) |
 
 **Brique 2, livrée.** Un dépôt d'`_Uploads` n'est plus visible que de son
 déposant et de l'admin : la règle est dans `visibilite.visible` (masque, donc
@@ -138,6 +138,13 @@ reste non construite : elle demande un compte SMTP et un serveur maison qui
 écrit à l'extérieur — à ne faire que si quelqu'un reste vraiment bloqué.
 Prouvé en réel le 18/09 à 07 h 53 (redémarrage observé, page servie portant
 `mail-1` et `/api/comptes/email`).
+
+**Et, le 18/09 après le retour de Chrome, deux choix de Mike** (verdicts dans
+`eval/DECISIONS.md`) : **(c) est refusée** — pas de SMTP ; et **c'est lui qui
+pose les adresses pour l'instant**, donc les Réglages ont un bouton
+« Adresse » par ligne (Poser / Effacer), le serveur l'acceptait déjà sans
+avoir d'écran. Les adresses sont vérifiées dans son Gmail :
+`flolaeser@gmail.com`, `markushuegli@gmail.com`.
 
 **Un instrument de plus, né d'une panne** : le soir du 17/09 l'extension
 Chrome n'a pas répondu, et il ne restait AUCUN chemin pour savoir si le

@@ -192,8 +192,17 @@ maison que deux d'entre eux.
 un point, pas d'espace : décider qu'une adresse EXISTE demanderait de lui
 écrire, et ce serveur n'écrit pas). Il se pose et **s'efface** dans « Mon
 compte » ; il s'affiche à côté du nom dans les Réglages, pour l'admin seul.
-(b) est la réinitialisation provisoire décrite plus haut. **(c) n'est pas
-construite** et ne le sera que sur demande.
+(b) est la réinitialisation provisoire décrite plus haut.
+
+**(c) est REFUSÉE — tranché par Mike le 18/09** : pas de SMTP, pas de secret
+de plus, pas de serveur maison qui écrit à l'extérieur. Ne pas la reproposer
+sans quelqu'un de vraiment bloqué.
+
+**Qui pose les adresses — tranché par Mike le 18/09** : lui, pour l'instant.
+Un compte qui n'ouvre jamais « Mon compte » n'a jamais d'adresse, et c'est
+justement celui pour qui elle servirait. Les Réglages ont donc un bouton
+« Adresse » par ligne (Poser / Effacer) ; le serveur l'acceptait déjà, il n'y
+avait pas d'écran. Chacun garde la main sur la sienne dans « Mon compte ».
 
 **Ce qui ne change pas** : l'e-mail est une donnée personnelle. Elle reste
 dans `comptes.json`, hors git, hors XMP, et ne sort jamais dans une page que

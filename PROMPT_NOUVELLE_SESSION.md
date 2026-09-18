@@ -36,6 +36,13 @@ faite, en deux livraisons, regardées à l'écran à 09 h 30 et fusionnées.**
    et c'est voulu. `/files` sans paramètre montre « 0 photo(s) » parce qu'il
    montre `_Uploads`, vide — **pas une régression**.
 
+6. **Deux choix de Mike, le 18/09** : pas de SMTP (le « mot de passe oublié »
+   par lien est REFUSÉ, `eval/DECISIONS.md`), et **c'est lui qui pose les
+   adresses e-mail pour l'instant** — les Réglages ont donc un bouton
+   « Adresse » par ligne (Poser / Effacer). Les adresses de Flo et de Papa
+   sont vérifiées dans son Gmail ; **elles ne sont pas encore posées**, c'est
+   son geste.
+
 Acquis d'avant : chantier 19 briques 2 (dépôts au déposant) ; filet « intime »
 mesuré et REFUSÉ en automatique ; veille (P1) ; campagne de retag ABANDONNÉE ;
 trois comptes (Mike admin, Flo, Papa) ; Tailscale préparé, e-mails en

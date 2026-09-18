@@ -1,31 +1,10 @@
 # Questions en attente de Mike
 
-**Deux questions ouvertes (18/09).**
-
-**1. ~~Les deux branches du 18/09~~ — RÉGLÉ.** Les deux écrans ont été
-regardés (Chrome revenu à 09 h 25), les deux refus se produisent pour de vrai,
-et tout est fusionné dans `main`.
-
-**2. L'adresse e-mail de Papa (et de Flo) : qui la pose ?**
-Aujourd'hui chacun pose la sienne dans « Mon compte ». Le SERVEUR accepte
-déjà que l'admin pose celle d'un autre (même porte que la réinitialisation),
-mais l'ÉCRAN ne l'offre pas. Si Papa, en Bolivie, n'ouvre jamais ce panneau,
-son adresse restera vide — et c'est justement le cas où elle servirait.
-*Recommandation* : laisser ainsi une semaine ; si la case reste vide, ajouter
-un champ dans les Réglages (une demi-heure, aucune règle nouvelle).
-*En attendant* : rien.
-
-**3. Le vrai « mot de passe oublié » (option (c) du plan) — jamais, ou pas
-encore ?** Il demande un compte SMTP, un mot de passe d'application Gmail, un
-secret de plus sur la machine, et un serveur maison qui écrit à l'extérieur —
-ce que ce projet n'a jamais fait.
-*Recommandation* : **ne pas le construire**. Vous êtes trois, tu dors dans la
-même maison que deux d'entre eux, et l'admin réinitialise en deux clics.
-*En attendant* : rien n'est commencé.
+**Aucune question ouverte.** (18/09)
 
 ---
 
-**Aucune question ouverte.** (16/09)
+
 
 ---
 
@@ -35,6 +14,15 @@ même maison que deux d'entre eux, et l'admin réinitialise en deux clics.
 > `eval/DECISIONS.md` si elle tranche, dans `docs/DECISIONS_OUTILLAGE.md` si
 > elle touche l'outillage, dans `ROADMAP.md` si elle priorise.
 > Protocole : `CLAUDE.md`, « Traite autonome ».
+>
+> **Vidée le 18/09** : les trois entrées de la traite de la nuit. (1) « Je
+> fusionne les deux branches ? » — les écrans regardés, tout est dans `main`.
+> (2) « Qui pose les adresses e-mail ? » Mike : **« c'est moi qui vais poser
+> les adresses pour l'instant »** — d'où le bouton « Adresse » des Réglages,
+> et les deux adresses vérifiées dans son Gmail (`flolaeser@gmail.com`,
+> `markushuegli@gmail.com`). (3) « Le SMTP ? » Mike : **« je suis ta
+> recommandation »** — donc NON. Les deux verdicts sont dans
+> `eval/DECISIONS.md`.
 >
 > **Vidée le 16/09** : « la veille — 30 min puis écran noir, pas de
 > reprise, légende ? ». Mike : **« ok pour tes recommandations. ajoute le
