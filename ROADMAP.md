@@ -62,7 +62,7 @@ photothèque s'ouvre à la famille.
 | 2 | Quarantaine des dépôts (`_Uploads` au déposant seul) | **LIVRÉ 17/09** |
 | 3 | « Masquer cette photo » pour une personne reconnue | **LIVRÉE 18/09, vue à l'écran** — le geste est dans la visionneuse, la photo ne bouge pas, seule la personne lève |
 | 4 | Les personnes reconnues voient leurs photos | à faire, après 5 |
-| 5 | Onglet **Partage** : chacun coche qui voit ses photos | à faire — **défaut tranché le 17/09** : liste vide = tout le monde pour les comptes d'aujourd'hui, un compte créé ensuite part fermé (trois états en base, migration incluse) |
+| 5 | **Qui voit mes photos** : chacun coche | **LIVRÉE 18/09, vue à l'écran** — trois états, l'admin n'est pas un passe-partout, et la règle est gratuite tant que personne ne restreint |
 | 6 | Les comptes « pour de bon » : mot de passe et e-mail | **LIVRÉE 18/09, vue à l'écran** — l'actuel est exigé, l'admin réinitialise en provisoire, chaque compte porte une adresse facultative, et l'admin peut la poser pour quelqu'un. Le « mot de passe oublié » par SMTP est **refusé** (Mike, 18/09) |
 
 **Brique 2, livrée.** Un dépôt d'`_Uploads` n'est plus visible que de son
@@ -74,6 +74,35 @@ banc** : `depot_de` comparait les chemins avec `os.path`, qui ne reconnaît pas
 `\` hors Windows — la règle répondait autre chose au banc qu'à la production.
 Corrigé par une normalisation écrite dans le projet, et le banc l'interdit
 désormais (`test_depots_uploads.LeDepotSeReconnaitALaPLACE`).
+
+**Brique 5, livrée le 18/09 — chacun choisit qui voit ses photos.**
+La visibilité cesse d'être une propriété du CHEMIN pour devenir une RELATION
+entre deux comptes. Le réglage vit dans « Mon compte » : *tout le monde*, ou
+*seulement les personnes cochées*.
+
+- **Trois états, et la migration du plan tombe.** Le champ ABSENT **est** le
+  troisième état — jamais réglé, donc tout le monde — et il est écrit dans
+  `comptes.py` au lieu d'être déduit de l'âge du compte. `[]` = personne,
+  `[noms]` = ceux-là. Un compte créé depuis aujourd'hui part fermé. Rien à
+  migrer, rien à rejouer. Un banc tient le cas « un compte d'avant n'a pas le
+  champ ».
+- **L'admin n'est PAS un passe-partout** (tranché par Mike le 18/09, verdict
+  dans `eval/DECISIONS.md`) : ce que quelqu'un ferme est fermé à Mike aussi.
+  Les fils de fond, eux, voient tout — rien ne cesse d'être traité.
+- **La règle est gratuite tant que personne ne restreint.** `fermes_pour(u)`
+  rend UNE fois par requête l'ensemble des propriétaires fermés à celui qui
+  regarde ; vide, le prédicat prend son chemin rapide. **Mesuré** sur 44 445
+  chemins de la forme du fonds, caches chauds, meilleur de trois : ensemble
+  vide **7,2 → 7,4 ms** (le bruit), ensemble plein **107 ms**… ramenés à
+  **20 ms** en mémoïsant `auteurs.proprietaire_de`, comme `est_prive` l'est
+  depuis le 11/09 et pour la même raison. Le gain profite à tout le projet,
+  pas seulement à cette brique.
+- **Vu à l'écran le 18/09 à 23 h 15** : les trois états font l'aller-retour
+  complet (`['Flo']` → `[]` → `null`), le serveur les renvoie tels quels, et
+  l'écran le dit en français juste — « Flo voit », « Flo, Papa voient ».
+- **Ce qui n'est pas prouvé en réel** : qu'un AUTRE compte perde effectivement
+  la vue. Les bancs le tiennent au magasin (clé, compteur, fiche, avatar) ;
+  la preuve route par route demande deux sessions, donc Mike.
 
 **Brique 3, livrée le 18/09 — le masque d'une personne reconnue.**
 Une personne reconnue sur la photo d'un autre peut la masquer, et **la photo

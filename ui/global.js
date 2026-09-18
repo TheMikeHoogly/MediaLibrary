@@ -325,7 +325,7 @@
           soi), puis le nouveau deux fois -- la regle dite AVANT.
      Meme coque que les raccourcis : fond, Echap, retour du focus. */
   var MotDePasse = (function () {
-    var el = null, avant = null;
+    var el = null, avant = null, partCharger = null;
     function fermer() {
       if (!el || !el.classList.contains('on')) return;
       el.classList.remove('on');
@@ -360,6 +360,20 @@
         '<p class="mdp__msg" id="mdp-msg" role="status" aria-live="polite"></p>' +
         '<div class="mdp__acts"><button type="submit" class="btn">Enregistrer</button></div>' +
         '</form>' +
+        '<form id="part-form">' +
+        '<h3>Qui voit mes photos</h3>' +
+        '<p>Tes photos, c\u2019est le dossier <b>Photos ' + esc((MOI && MOI.nom) || '') + '</b>. ' +
+        'Ce r\u00e9glage ne touche ni ton dossier <b>PRIV\u00c9</b>, qui reste \u00e0 toi seul, ' +
+        'ni les photos que d\u2019autres ont d\u00e9pos\u00e9es. ' +
+        'L\u2019administrateur ne fait pas exception : ce que tu fermes lui est ferm\u00e9 aussi.</p>' +
+        '<label class="choix"><input type="radio" name="part-mode" value="tous"> ' +
+        'Tout le monde</label>' +
+        '<label class="choix"><input type="radio" name="part-mode" value="liste"> ' +
+        'Seulement les personnes coch\u00e9es</label>' +
+        '<div class="qui" id="part-qui" hidden></div>' +
+        '<p class="mdp__msg" id="part-msg" role="status" aria-live="polite"></p>' +
+        '<div class="mdp__acts"><button type="submit" class="btn">Enregistrer</button></div>' +
+        '</form>' +
         '</div>';
       document.body.appendChild(el);
       el.addEventListener('click', function (ev) {
@@ -385,6 +399,60 @@
             }
           })
           .catch(function () { mailMsg.textContent = 'Le serveur n\u2019a pas r\u00e9pondu. R\u00e9essayer.'; });
+      });
+      // ── Qui voit mes photos (chantier 19, brique 5) ──────────────────
+      // TROIS etats, et l'ecran les porte tels quels : « tout le monde »
+      // (jamais regle) n'est pas « la liste de tout le monde ». Aplatir les
+      // deux ici recreerait l'ambiguite que le champ existe pour eviter.
+      var partQui = el.querySelector('#part-qui'), partMsg = el.querySelector('#part-msg');
+      function partModes() { return el.querySelectorAll('[name=part-mode]'); }
+      function partMode() {
+        var r = el.querySelector('[name=part-mode]:checked');
+        return r ? r.value : 'tous';
+      }
+      function partAfficheQui() { partQui.hidden = (partMode() !== 'liste'); }
+      partModes().forEach(function (r) { r.addEventListener('change', partAfficheQui); });
+      partCharger = function () {
+        partMsg.textContent = '';
+        fetch('/api/partage').then(function (r) { return r.json(); }).then(function (d) {
+          if (!d || !d.ok) return;
+          var choisis = d.partage;                       // null = tout le monde
+          partQui.innerHTML = (d.comptes || []).map(function (n) {
+            var coche = (choisis && choisis.indexOf(n) >= 0) ? ' checked' : '';
+            return '<label class="choix"><input type="checkbox" value="' + esc(n) + '"' +
+                   coche + '> ' + esc(n) + '</label>';
+          }).join('') || '<span>Aucun autre compte.</span>';
+          var v = (choisis === null || choisis === undefined) ? 'tous' : 'liste';
+          partModes().forEach(function (r) { r.checked = (r.value === v); });
+          partAfficheQui();
+        }).catch(function () { partMsg.textContent = 'Le serveur n\u2019a pas r\u00e9pondu.'; });
+      };
+      el.querySelector('#part-form').addEventListener('submit', function (ev) {
+        ev.preventDefault();
+        var liste = null;
+        if (partMode() === 'liste') {
+          liste = [];
+          partQui.querySelectorAll('input[type=checkbox]').forEach(function (c) {
+            if (c.checked) liste.push(c.value);
+          });
+        }
+        partMsg.textContent = 'Enregistrement\u2026';
+        fetch('/api/partage', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ partage: liste }) })
+          .then(function (r) { return r.json().catch(function () { return { ok: false }; }); })
+          .then(function (r) {
+            if (!r || !r.ok) {
+              partMsg.textContent = 'Refus\u00e9 : ' + ((r && r.error) || 'le serveur n\u2019a pas accept\u00e9') + '.';
+              return;
+            }
+            partMsg.textContent = (r.partage === null || r.partage === undefined)
+              ? 'Enregistr\u00e9 : tout le monde voit tes photos.'
+              : (r.partage.length
+                 ? 'Enregistr\u00e9 : ' + r.partage.join(', ') +
+                   (r.partage.length > 1 ? ' voient' : ' voit') + ' tes photos.'
+                 : 'Enregistr\u00e9 : personne d\u2019autre ne voit tes photos.');
+          })
+          .catch(function () { partMsg.textContent = 'Le serveur n\u2019a pas r\u00e9pondu. R\u00e9essayer.'; });
       });
       var f = el.querySelector('#mdp-form');
       f.addEventListener('submit', function (ev) {
@@ -417,6 +485,7 @@
       el.querySelector('#mdp-msg').textContent = '';
       el.querySelector('#mail-msg').textContent = '';
       el.querySelector('#mail-1').value = (MOI && MOI.email) || '';
+      if (partCharger) partCharger();    // l'etat vient du SERVEUR, pas du dernier clic
       // Un mot de passe pose par l'admin est PROVISOIRE, et on le dit ici :
       // un panneau qui s'ouvre seul sans dire pourquoi passe pour une panne.
       el.querySelector('.mdp__intro').textContent = motif === 'temporaire'

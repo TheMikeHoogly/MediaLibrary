@@ -92,11 +92,24 @@ Si `personne:Flo` est sur une photo, Flo la voit — même si son propriétaire 
 partage pas avec elle. **Sauf** si la photo est dans un `PRIVE`, masquée
 (chantier 18), ou masquée par quelqu'un d'autre (brique 3).
 
-### 5. Onglet « Partage » : chacun choisit qui voit ses photos (nouveau, 17/09)
+### 5. « Qui voit mes photos » : chacun choisit — **LIVRÉE le 18/09**
 
 Une page qui liste les comptes avec une coche par personne : « qui peut voir
 mes photos ». Ce que ça change de nature : **la visibilité cesse d'être une
 propriété du CHEMIN pour devenir une relation entre deux comptes.**
+
+**Construit le 18/09**, dans le panneau « Mon compte » plutôt que dans un
+onglet à part : c'est un réglage de SON compte, et il tient en deux boutons
+radio plus une case par personne. Trois états portés jusqu'à l'écran,
+`visibilite.partage_ferme` comme règle pure, `comptes.fermes_pour` comme
+ensemble calculé une fois par requête, deux routes (`GET`/`POST /api/partage`)
+où chacun ne règle que la sienne.
+
+**Deux questions ont été tranchées en chemin.** (1) *L'admin voit-il ce qu'on
+lui ferme ?* **Non** (Mike, 18/09) — le partage est un choix humain, comme le
+PRIVE ; le passe-partout n'existe que pour les verdicts de machine.
+(2) *Faut-il migrer les trois comptes ?* **Non** : le champ ABSENT est le
+troisième état, écrit dans le code plutôt que déduit de l'âge du compte.
 
 ## L'ordre d'évaluation — et c'est lui qui fait la sécurité
 
@@ -145,9 +158,9 @@ et **ce qui ferme passe toujours avant ce qui ouvre**.
 1. ~~**Quarantaine à l'arrivée** (brique 2)~~ — **livrée le 17/09**.
 2. ~~**Masque personnel** (brique 3) + le geste dans la page photo~~ —
    **livrée le 18/09**.
-3. **Onglet Partage** (brique 5) et l'ordre d'évaluation ci-dessus, avec le
-   banc qui prouve qu'une photo non partagée ne fuit ni par un compteur, ni
-   par une fiche, ni par la recherche.
+3. ~~**Onglet Partage** (brique 5)~~ — **livrée le 18/09**, avec le banc qui
+   prouve qu'une photo non partagée ne fuit ni par une clé, ni par un
+   compteur, ni par une fiche, ni par un avatar.
 4. **Reconnaissance** (brique 4), qui ne se pose que sur 3.
 5. **Filet intime** : file de revue d'abord (a), modèle dédié seulement si la
    mesure le justifie (b).

@@ -64,7 +64,8 @@ class MotDePasse(Base):
         brut = self.chemin.read_text(encoding='utf-8')
         self.assertNotIn('motdepasse', brut)
         d = json.loads(brut)
-        self.assertEqual(set(d['comptes']['Mike']), {'sel', 'hache', 'admin', 'cree_le'})
+        self.assertEqual(set(d['comptes']['Mike']),
+                         {'sel', 'hache', 'admin', 'cree_le', 'partage'})
         self.assertTrue(d['comptes']['Mike']['admin'])       # Mike = auteurs.ADMIN
 
     def test_regles_de_creation(self):
@@ -214,6 +215,81 @@ class Email(Base):
         self.assertEqual(self.c.email_de('Flo'), '')
         brut = self.chemin.read_text(encoding='utf-8')
         self.assertNotIn('flo@exemple.ch', brut)
+
+
+class Partage(Base):
+    """Chantier 19, brique 5 : qui voit MES photos. TROIS etats, jamais deux.
+
+    Le piege que ce champ existe pour eviter : « liste vide » ne peut pas
+    vouloir dire « tout le monde » pour les comptes d'hier et « personne »
+    pour ceux de demain sans que ce soit ECRIT. D'ou le champ ABSENT comme
+    troisieme etat -- et c'est ce que ces cas verifient."""
+
+    def test_les_trois_etats(self):
+        self.c.creer('Mike', 'motdepasse')
+        self.c.creer('Flo', 'motdepasse')
+        self.assertEqual(self.c.partage_de('Flo'), [])        # neuf = ferme
+        self.c.definir_partage('Flo', ['Mike'])
+        self.assertEqual(self.c.partage_de('Flo'), ['Mike'])
+        self.c.definir_partage('Flo', None)                   # tout le monde
+        self.assertIsNone(self.c.partage_de('Flo'))
+        d = json.loads(self.chemin.read_text(encoding='utf-8'))
+        self.assertNotIn('partage', d['comptes']['Flo'])
+
+    def test_un_compte_d_avant_n_a_pas_le_champ_et_reste_ouvert(self):
+        """La MIGRATION du plan est remplacee par ceci : absent = ouvert."""
+        self.c.creer('Mike', 'motdepasse')
+        d = json.loads(self.chemin.read_text(encoding='utf-8'))
+        del d['comptes']['Mike']['partage']                   # l'etat du 17/09
+        self.chemin.write_text(json.dumps(d), encoding='utf-8')
+        c2 = C.Comptes(self.chemin)
+        self.assertIsNone(c2.partage_de('Mike'))
+        self.assertEqual(c2.fermes_pour('Flo'), frozenset())
+
+    def test_un_compte_inconnu_ne_ferme_rien(self):
+        self.assertIsNone(self.c.partage_de('Zzz'))
+        with self.assertRaises(ValueError):
+            self.c.definir_partage('Zzz', [])
+
+    def test_la_liste_est_nettoyee(self):
+        self.c.creer('Mike', 'motdepasse')
+        self.c.creer('Flo', 'motdepasse')
+        self.c.definir_partage('Flo', ['Mike', 'Inconnu', 'Flo', 'Mike', '  Mike  '])
+        self.assertEqual(self.c.partage_de('Flo'), ['Mike'])
+        with self.assertRaises(ValueError):
+            self.c.definir_partage('Flo', 'Mike')
+
+    def test_fermes_pour_est_l_ensemble_qui_rend_la_regle_gratuite(self):
+        self.c.creer('Mike', 'motdepasse')
+        self.c.creer('Flo', 'motdepasse')
+        self.c.creer('Papa', 'motdepasse')
+        self.c.definir_partage('Flo', [])
+        self.assertIn('Flo', self.c.fermes_pour('Mike'))
+        self.assertIn('Flo', self.c.fermes_pour('Papa'))
+        self.assertNotIn('Flo', self.c.fermes_pour('Flo'))    # jamais soi-meme
+        self.c.definir_partage('Flo', ['Mike'])
+        self.assertNotIn('Flo', self.c.fermes_pour('Mike'))
+        self.assertIn('Flo', self.c.fermes_pour('Papa'))
+        self.assertEqual(self.c.fermes_pour(None), frozenset())
+        self.assertEqual(self.c.fermes_pour(''), frozenset())
+
+    def test_l_admin_n_est_PAS_une_exception(self):
+        """Choix de Mike, 18/09 : le partage est un choix humain, comme le
+        PRIVE. Si ce cas tombe, l'admin est redevenu un passe-partout."""
+        self.c.creer('Mike', 'motdepasse')
+        self.c.creer('Flo', 'motdepasse')
+        self.c.definir_partage('Flo', [])
+        self.assertIn('Flo', self.c.fermes_pour('Mike'))
+        self.assertTrue(self.c.est_admin('Mike'))
+
+    def test_un_compte_supprime_sort_des_listes_des_autres(self):
+        self.c.creer('Mike', 'motdepasse')
+        self.c.creer('Flo', 'motdepasse')
+        self.c.creer('Papa', 'motdepasse')
+        self.c.definir_partage('Flo', ['Papa', 'Mike'])
+        self.c.supprimer('Papa')
+        self.assertEqual(self.c.partage_de('Flo'), ['Mike'])
+        self.assertNotIn('Papa', self.chemin.read_text(encoding='utf-8'))
 
 
 class Jeton(Base):

@@ -31,6 +31,26 @@ suffire à fermer la porte derrière soi. L'admin, lui, réinitialise sans le
 connaître — le compte porte alors `temporaire`, levé quand son propriétaire
 choisit le sien.
 
+LE PARTAGE (chantier 19, brique 5 — tranché par Mike les 17 et 18/09)
+
+Qui voit MES photos. Le partage se fait par PROPRIÉTAIRE, donc par dossier
+`Photos <Nom>` — une exception photo par photo se fait avec le PRIVE.
+**TROIS états, jamais deux**, et c'est le piège que ce champ existe pour
+éviter : « liste vide » ne peut pas vouloir dire « tout le monde » pour les
+comptes d'aujourd'hui et « personne » pour ceux de demain sans que ce soit
+ÉCRIT quelque part.
+
+    champ ABSENT    -> jamais réglé : tout le monde (Mike, Flo, Papa)
+    []              -> réglé : personne
+    ['Flo', 'Papa'] -> réglé : ceux-là
+
+Un compte créé à partir du 18/09 part FERMÉ (`partage: []`) : à lui de cocher.
+L'ADMIN N'EST PAS UN PASSE-PARTOUT ICI (choix de Mike, 18/09) : le partage est
+un choix HUMAIN, comme le PRIVE — le passe-partout n'existe que pour les
+verdicts de MACHINE, où une erreur rendrait une photo injugeable. Les fils de
+fond (scan, tagging, sauvegarde) n'ont pas d'utilisateur et voient tout : rien
+ne cesse d'être traité ni sauvegardé.
+
 L'ADRESSE E-MAIL
 
 Facultative, une par compte, posée par la personne elle-même dans « Mon
@@ -189,6 +209,11 @@ class Comptes:
             self._d['comptes'][nom] = {
                 'sel': sel, 'hache': _hacher(mdp, sel),
                 'admin': bool(admin or nom == ADMIN),
+                # Un compte NEUF part fermé : liste vide = personne. Les trois
+                # comptes d'avant le 18/09 n'ont pas ce champ du tout, et
+                # « absent » vaut « tout le monde » — c'est le troisième état,
+                # et il est écrit ici plutôt que deviné à l'âge du compte.
+                'partage': [],
                 'cree_le': time.strftime('%Y-%m-%d %H:%M:%S')}
             self._sauver()
         return nom
@@ -262,12 +287,74 @@ class Comptes:
         c = self._d['comptes'].get(nom)
         return (c or {}).get('email') or ''
 
+    def partage_de(self, nom):
+        """La liste de partage d'un compte : `None` (jamais réglé, donc tout
+        le monde) ou une liste de noms (éventuellement vide : personne).
+
+        Rend `None` aussi pour un compte inconnu — un dossier `Photos <X>`
+        sans compte `X` n'a personne pour le restreindre, et le fermer à tous
+        sur un compte supprimé cacherait le fonds par accident."""
+        c = self._d['comptes'].get(nom)
+        if not c or 'partage' not in c:
+            return None
+        v = c.get('partage')
+        return list(v) if isinstance(v, (list, tuple)) else None
+
+    def definir_partage(self, nom, liste):
+        """Pose la liste (ou `None` pour revenir à « tout le monde »).
+
+        Les noms inconnus sont ÉCARTÉS : une liste qui cite un compte
+        supprimé donnerait l'illusion d'un partage qui n'existe pas. Se
+        partager à soi-même ne veut rien dire et sort aussi."""
+        with self.lock:
+            c = self._d['comptes'].get(nom)
+            if not c:
+                raise ValueError('compte inconnu')
+            if liste is None:
+                c.pop('partage', None)
+            else:
+                if not isinstance(liste, (list, tuple)):
+                    raise ValueError('liste attendue')
+                connus = set(self._d['comptes'])
+                c['partage'] = [n for n in dict.fromkeys(str(x).strip() for x in liste)
+                                if n in connus and n != nom]
+            self._sauver()
+
+    def fermes_pour(self, utilisateur):
+        """Les PROPRIÉTAIRES dont les photos sont fermées à `utilisateur`.
+
+        UN ensemble, calculé une fois par requête au lieu d'une question par
+        clé : la vue appelle son prédicat 44 445 fois pour un seul `len()`, et
+        tant que personne ne restreint rien cet ensemble est VIDE — le
+        prédicat retrouve alors, à l'octet, celui d'avant la brique 5. C'est
+        ce qui rend la règle gratuite dans le cas courant.
+
+        `None` (fil de fond) ne ferme rien : le scan, le tagueur et la
+        sauvegarde voient tout, comme avant."""
+        if not utilisateur:
+            return frozenset()
+        out = set()
+        for nom, c in self._d['comptes'].items():
+            if nom == utilisateur or 'partage' not in c:
+                continue
+            v = c.get('partage')
+            if not isinstance(v, (list, tuple)) or utilisateur not in v:
+                out.add(nom)
+        return frozenset(out)
+
     def supprimer(self, nom):
         with self.lock:
             if nom == ADMIN:
                 raise ValueError("l'admin ne se supprime pas")
             if self._d['comptes'].pop(nom, None) is None:
                 raise ValueError('compte inconnu')
+            # Le nom sort aussi des listes de partage des AUTRES : sinon un
+            # compte recree plus tard avec le meme prenom heriterait en
+            # silence de ce que l'ancien avait recu.
+            for c in self._d['comptes'].values():
+                v = c.get('partage')
+                if isinstance(v, list) and nom in v:
+                    c['partage'] = [x for x in v if x != nom]
             self._sauver()
 
     # ─── mot de passe ───────────────────────────────────────────────────

@@ -45,6 +45,7 @@ le partage par `recle_decisions`.
 """
 
 import re
+from functools import lru_cache
 
 ADMIN = 'Mike'
 CONTESTE = '#contesté'
@@ -52,15 +53,30 @@ CONTRAIRE = {'exclude': 'confirmed', 'confirmed': 'exclude'}
 PROPRIETAIRE_RE = re.compile(r'^photos\s+(\S.*)$', re.I)
 
 
-def proprietaire_de(chemin):
-    """Le propriétaire d'une photo, lu dans son chemin : le premier segment
-    `Photos <Nom>` → `<Nom>`. None hors d'un dossier propriétaire (racine,
-    `_Uploads`, `_A TRIER` de la racine…). Robuste aux deux séparateurs."""
-    for seg in str(chemin or '').replace('\\', '/').split('/'):
+@lru_cache(maxsize=262144)
+def _proprietaire_du_texte(chemin):
+    for seg in chemin.replace('\\', '/').split('/'):
         m = PROPRIETAIRE_RE.match(seg.strip())
         if m:
             return m.group(1).strip()
     return None
+
+
+def proprietaire_de(chemin):
+    """Le propriétaire d'une photo, lu dans son chemin : le premier segment
+    `Photos <Nom>` → `<Nom>`. None hors d'un dossier propriétaire (racine,
+    `_Uploads`, `_A TRIER` de la racine…). Robuste aux deux séparateurs.
+
+    MÉMOÏSÉE depuis le 18/09, comme `visibilite.est_prive` et pour la même
+    raison : la brique 5 (le partage) la fait appeler pour CHAQUE clé de
+    chaque lecture agrégée — 44 445 fois pour un seul `len()`. MESURÉ sur
+    44 445 chemins de la forme du fonds, caches chauds, meilleur de trois :
+    la règle du partage coûte **107 ms sans cette mémoire, 20 ms avec**.
+    (Et **zéro** quand personne ne restreint : le prédicat prend alors son
+    chemin rapide — 7,2 ms contre 7,4 ms, soit le bruit de la mesure.)
+    La conversion en texte est faite ICI pour que `Path` et `str` partagent
+    la même entrée de cache au lieu d'en occuper deux."""
+    return _proprietaire_du_texte(str(chemin or ''))
 
 
 def dossier_de(nom):

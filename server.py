@@ -863,17 +863,35 @@ def personnes_de(entree):
     return noms
 
 
+def fermes_du_compte(u):
+    """Les PROPRIÉTAIRES qui ne partagent pas avec `u` (chantier 19, brique 5).
+
+    UN ensemble par requête, pas une question par clé : le prédicat de la vue
+    tourne 44 445 fois pour un seul `len()`. Tant que personne n'a rien
+    restreint, l'ensemble est VIDE et le prédicat retrouve celui d'avant la
+    brique — la règle est alors gratuite.
+
+    `COMPTES` n'existe pas encore quand la vue est POSÉE, quelques lignes plus
+    bas : c'est voulu, cette fonction n'est appelée qu'à la LECTURE, et le nom
+    se résout à ce moment-là. Un fil de fond (`u` vide) ne ferme rien."""
+    if not u:
+        return frozenset()
+    COMPTES.recharger_si_change()
+    return COMPTES.fermes_pour(u)
+
+
 # Les cinq magasins reçoivent le MÊME prédicat d'état : les visages et les
 # animaux sont keyés par le chemin de la photo, et les fiches PEOPLE/PETS
 # citent des chemins (avatar, faces, confirmed) — un avatar pris sur une
 # photo masquée serait une vignette qui fuit, exactement le point 17b.
 for _st in (STORE, FACE_STORE, ANIMAL_STORE):
     _visibilite.brancher(_st, utilisateur_vu, sensible=sensible_en_attente,
-                         depot=depot_du_chemin, masques=masques_du_chemin)
+                         depot=depot_du_chemin, masques=masques_du_chemin,
+                         fermes=fermes_du_compte)
 for _st in (PEOPLE_STORE, PETS_STORE):
     _visibilite.brancher(_st, utilisateur_vu, par_nom=True,
                          sensible=sensible_en_attente, depot=depot_du_chemin,
-                         masques=masques_du_chemin)
+                         masques=masques_du_chemin, fermes=fermes_du_compte)
 
 # ─── Les COMPTES (chantier 17, étape 4 — 29/08/2026, choix de Mike : un mot de
 # passe par compte). Règle dans `comptes.py` ; fichier `comptes.json` HORS git.
@@ -8497,6 +8515,15 @@ APP_NAV_CSS = """<style id="appnav-css">
    s'enregistrent pas ensemble -- un trait les separe, et chacun a son
    bouton et son message. */
 .mdp form + form{margin-top:var(--e-4);padding-top:var(--e-2);border-top:var(--trait);}
+/* `.mdp input` est ecrit pour des champs de saisie (pleine largeur, 44 px de
+   haut) : applique tel quel a une case ou a un bouton radio, il en fait une
+   barre. Les choix du partage (18/09) reprennent donc la ligne a leur
+   compte -- cible tactile tenue par le LABEL, qui fait 44 px. */
+.mdp .choix{display:flex;align-items:center;gap:var(--e-2);min-height:var(--touch);
+  margin:0;font-size:var(--t-sm);color:var(--texte);cursor:pointer;}
+.mdp .choix input{width:auto;min-height:auto;flex:none;accent-color:var(--veilleuse);}
+.mdp .qui{margin:var(--e-1) 0 0 var(--e-6);}
+.mdp .qui[hidden]{display:none;}
 @media(max-width:560px){
   .appnav{gap:2px;padding:8px 8px;}
   .raccourcis{padding:var(--e-2);}
@@ -13658,6 +13685,9 @@ class Handler(BaseHTTPRequestHandler):
         elif path == '/api/maint/status':
             self._serve_maint_status()
 
+        elif path == '/api/partage':
+            self._serve_partage()
+
         elif path == '/api/masque':
             self._serve_masque()
 
@@ -14283,6 +14313,59 @@ class Handler(BaseHTTPRequestHandler):
                                    ensure_ascii=False).encode(),
                    'application/json')
 
+    def _serve_partage(self):
+        """GET /api/partage — qui voit MES photos, et avec qui je peux partager.
+
+        Chantier 19, brique 5. La réponse ne parle que du compte qui demande :
+        la liste des AUTRES comptes est nécessaire pour dessiner les cases à
+        cocher (leurs noms sont déjà publics — ce sont les dossiers
+        `Photos <Nom>`), mais LEURS listes de partage à eux ne sortent jamais
+        d'ici. Savoir qui Flo a exclu ne regarde que Flo."""
+        u = utilisateur_vu()
+        if not u:
+            self._send(403, json.dumps({'ok': False, 'error': 'aucun compte connecte'},
+                                       ensure_ascii=False).encode(), 'application/json')
+            return
+        COMPTES.recharger_si_change()
+        self._send(200, json.dumps({
+            'ok': True, 'moi': u,
+            # `null` = jamais réglé = tout le monde. Les TROIS états montent
+            # jusqu'à l'écran : les aplatir ici recréerait l'ambiguïté que le
+            # champ existe pour éviter.
+            'partage': COMPTES.partage_de(u),
+            'comptes': [n for n in COMPTES.noms() if n != u],
+        }, ensure_ascii=False).encode(), 'application/json')
+
+    def _do_partage_post(self):
+        """POST /api/partage {partage: null | [noms]} — je règle MA liste.
+
+        Chacun règle la SIENNE, et personne d'autre : pas d'exception admin,
+        ni pour lire ni pour écrire. C'est le pendant du choix du 18/09 —
+        l'admin n'est pas un passe-partout sur le partage, il n'a donc pas
+        plus de raison d'y toucher que de le contourner."""
+        u = utilisateur_vu()
+        if not u:
+            self._send(403, json.dumps({'ok': False, 'error': 'aucun compte connecte'},
+                                       ensure_ascii=False).encode(), 'application/json')
+            return
+        d = self._read_json_body() or {}
+        liste = d.get('partage', [])
+        if liste is not None and not isinstance(liste, list):
+            self._send(400, json.dumps({'ok': False, 'error': 'liste attendue'},
+                                       ensure_ascii=False).encode(), 'application/json')
+            return
+        try:
+            COMPTES.definir_partage(u, liste)
+        except ValueError as e:
+            self._send(200, json.dumps({'ok': False, 'error': str(e)},
+                                       ensure_ascii=False).encode(), 'application/json')
+            return
+        pose = COMPTES.partage_de(u)
+        print(f"  👥 partage de {u} : "
+              + ('tout le monde' if pose is None else (', '.join(pose) or 'personne')))
+        self._send(200, json.dumps({'ok': True, 'partage': pose},
+                                   ensure_ascii=False).encode(), 'application/json')
+
     def _etat_masque(self, cle):
         """(entrée, masques, vue_par_moi) pour cette clé — ou (None, (), False).
 
@@ -14397,6 +14480,9 @@ class Handler(BaseHTTPRequestHandler):
         if path in ('/api/comptes', '/api/comptes/mdp', '/api/comptes/email',
                     '/api/comptes/supprimer'):
             self._serve_comptes()
+            return
+        if path == '/api/partage':
+            self._do_partage_post()
             return
         if path == '/api/masque':
             self._do_masque_post()

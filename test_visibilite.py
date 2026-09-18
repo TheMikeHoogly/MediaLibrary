@@ -677,5 +677,86 @@ class LeMasqueDUnePersonneReconnue(unittest.TestCase):
         self.assertEqual(sorted(m.data), [MIKE_PUB])     # le champ seul ne masque rien
 
 
+class LePartageEstUneRelationEntreComptes(unittest.TestCase):
+    """Chantier 19, brique 5. Jusqu'ici la visibilite etait une propriete du
+    CHEMIN : tout ce qui n'est pas un PRIVE est a tout le monde. Elle devient
+    une RELATION -- Flo decide qui voit `Photos Flo`.
+
+    L'appelant fournit l'ensemble des PROPRIETAIRES fermes a cet utilisateur
+    (`comptes.fermes_pour`), calcule une fois par requete. Vide, la regle ne
+    coute rien : c'est ce qui la rend gratuite tant que personne ne restreint."""
+
+    FERME_FLO = frozenset({'Flo'})
+
+    def test_ce_que_Flo_ferme_ne_se_voit_plus(self):
+        self.assertFalse(V.visible(FLO_PUB, 'Papa', False, None, (), self.FERME_FLO))
+        self.assertTrue(V.visible(FLO_PUB, 'Flo', False, None, (), self.FERME_FLO))
+        self.assertTrue(V.visible(MIKE_PUB, 'Papa', False, None, (), self.FERME_FLO))
+
+    def test_L_ADMIN_N_EST_PAS_UN_PASSE_PARTOUT(self):
+        """Tranche par Mike le 18/09, et c'est LA decision de cette brique :
+        le partage est un choix HUMAIN, comme le PRIVE. Le passe-partout
+        n'existe que pour les verdicts de MACHINE, ou une erreur rendrait une
+        photo injugeable. Si ce cas tombe, la brique a change de sens."""
+        self.assertFalse(V.visible(FLO_PUB, V.ADMIN, False, None, (), self.FERME_FLO))
+
+    def test_les_fils_de_fond_voient_tout(self):
+        self.assertTrue(V.visible(FLO_PUB, None, False, None, (), self.FERME_FLO))
+        self.assertFalse(V.partage_ferme(self.FERME_FLO, FLO_PUB, None))
+
+    def test_un_chemin_sans_proprietaire_n_est_ferme_par_personne(self):
+        for c in (RACINE, RACINE_PRIV):
+            self.assertFalse(V.partage_ferme(self.FERME_FLO, c, 'Papa'), c)
+
+    def test_ensemble_VIDE_la_regle_ne_dit_rien(self):
+        for c in (MIKE_PUB, FLO_PUB, RACINE):
+            for u in ('Mike', 'Flo', 'Papa'):
+                self.assertFalse(V.partage_ferme(frozenset(), c, u), (c, u))
+                self.assertTrue(V.visible(c, u, False, None, (), frozenset()), (c, u))
+
+    def test_le_partage_ne_ROUVRE_jamais_un_masque(self):
+        self.assertFalse(V.visible(FLO_PRIV, 'Papa', False, None, (), frozenset()))
+        self.assertFalse(V.visible(MIKE_PUB, 'Papa', False, None, ('Flo',), frozenset()))
+        self.assertFalse(V.visible(RACINE, 'Papa', False, 'Flo', (), frozenset()))
+
+    def test_LA_VUE_ne_fuit_ni_par_une_cle_ni_par_un_COMPTEUR(self):
+        d = {FLO_PUB: {}, MIKE_PUB: {}}
+        m = Magasin(dict(d))
+        V.brancher(m, lambda: 'Papa', fermes=lambda u: self.FERME_FLO)
+        self.assertEqual(sorted(m.data), [MIKE_PUB])
+        self.assertEqual(len(m.data), 1)
+        self.assertIsNone(m.get(FLO_PUB))
+        self.assertFalse(m.has(FLO_PUB))
+        self.assertNotIn(FLO_PUB, m.data)
+        m2 = Magasin(dict(d))
+        V.brancher(m2, lambda: 'Flo', fermes=lambda u: self.FERME_FLO)
+        self.assertEqual(sorted(m2.data), sorted(d))
+
+    def test_LA_VUE_ne_fuit_pas_par_une_FICHE(self):
+        fiche = {'name': 'Devi', 'avatar': [FLO_PUB, 0],
+                 'faces': [[FLO_PUB, 0], [MIKE_PUB, 1]], 'confirmed': [FLO_PUB]}
+        st = V.brancher(Magasin({'devi': dict(fiche)}), lambda: 'Papa',
+                        par_nom=True, fermes=lambda u: self.FERME_FLO)
+        vue = st.data['devi']
+        self.assertIsNone(vue['avatar'])
+        self.assertEqual(vue['faces'], [[MIKE_PUB, 1]])
+        self.assertEqual(vue['confirmed'], [])
+
+    def test_l_ensemble_est_relu_A_CHAQUE_lecture(self):
+        """Une vue qui garderait l'ensemble d'hier montrerait ce que
+        quelqu'un vient de fermer."""
+        etat = {'fermes': frozenset()}
+        m = Magasin({FLO_PUB: {}, MIKE_PUB: {}})
+        V.brancher(m, lambda: 'Papa', fermes=lambda u: etat['fermes'])
+        self.assertEqual(len(m.data), 2)
+        etat['fermes'] = self.FERME_FLO
+        self.assertEqual(sorted(m.data), [MIKE_PUB])
+
+    def test_sans_fermes_la_vue_est_celle_d_avant(self):
+        m = Magasin({FLO_PUB: {}, MIKE_PRIV: {}})
+        V.brancher(m, lambda: 'Papa')
+        self.assertEqual(sorted(m.data), [FLO_PUB])
+
+
 if __name__ == '__main__':
     unittest.main()

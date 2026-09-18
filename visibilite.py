@@ -16,6 +16,11 @@ d'autre n'est caché — pas de marquage photo par photo.
 
     visible(chemin, utilisateur) -> bool
 
+Depuis le 18/09 (chantier 19, brique 5), la visibilité n'est plus seulement
+une propriété du CHEMIN : chacun choisit qui voit ses photos
+(`partage_ferme`). L'admin n'y est PAS un passe-partout — c'est un choix
+humain, comme le PRIVE.
+
 Depuis le 18/09 (chantier 19, brique 3), une PERSONNE reconnue sur une photo
 peut la masquer sans qu'elle bouge : restent le propriétaire, elle, et
 l'admin. C'est le premier masque que quelqu'un pose sur le fichier d'un
@@ -235,7 +240,37 @@ def peut_lever(masques, chemin, utilisateur):
     return utilisateur == ADMIN or utilisateur in masques
 
 
-def visible(chemin, utilisateur, sensible=False, depot_par=None, masques=()):
+def partage_ferme(fermes, chemin, utilisateur):
+    """Cette photo est-elle fermée par la LISTE DE PARTAGE de son propriétaire ?
+    Chantier 19, brique 5 (tranché par Mike les 17 et 18/09).
+
+    Jusqu'ici la visibilité était une propriété du CHEMIN : tout ce qui n'est
+    pas un PRIVE est à tout le monde. Elle devient une RELATION entre deux
+    comptes — Flo décide qui voit `Photos Flo`.
+
+    L'appelant fournit `fermes` : l'ensemble des PROPRIÉTAIRES qui ne
+    partagent pas avec cet utilisateur, calculé UNE fois par requête
+    (`comptes.fermes_pour`). La règle ne lit ni `comptes.json` ni rien
+    d'autre — et quand cet ensemble est vide, ce qui est le cas tant que
+    personne n'a rien restreint, elle ne coûte pas une comparaison.
+
+    **L'ADMIN N'EST PAS UN PASSE-PARTOUT ICI** (choix de Mike, 18/09), et
+    c'est délibéré : le partage est un choix HUMAIN, comme le PRIVE. Le
+    passe-partout de `peut_juger` n'existe que pour les verdicts de MACHINE,
+    où une erreur rendrait une photo invisible ET injugeable. Ici, personne ne
+    s'est trompé : quelqu'un a décidé.
+
+    Un chemin SANS propriétaire (racine, `_A TRIER`, `_Uploads`) n'a personne
+    pour le restreindre : il garde ses règles d'avant."""
+    if not fermes or utilisateur is None:
+        return False
+    proprietaire = proprietaire_de(chemin)
+    return (proprietaire is not None and proprietaire != utilisateur
+            and proprietaire in fermes)
+
+
+def visible(chemin, utilisateur, sensible=False, depot_par=None, masques=(),
+            fermes=()):
     """`utilisateur` peut-il voir cette photo ? None (fil de fond) voit tout.
 
     DEUX causes de masquage, une seule règle. Le CHEMIN : chacun voit tout ce
@@ -269,10 +304,15 @@ def visible(chemin, utilisateur, sensible=False, depot_par=None, masques=()):
         return False
     if sensible and not peut_juger(chemin, utilisateur):
         return False
+    # Le PARTAGE en dernier : les masques ferment d'abord (ordre écrit dans
+    # `docs/CHANTIER_19_VIE_PRIVEE.md`), et ce qui ouvre ne rouvre jamais ce
+    # qu'un masque a fermé — ici le partage ne fait que fermer DAVANTAGE.
+    if fermes and partage_ferme(fermes, chemin, utilisateur):
+        return False
     return True
 
 
-def filtre(utilisateur, sensible=None, depot=None, masques=None):
+def filtre(utilisateur, sensible=None, depot=None, masques=None, fermes=()):
     """Le prédicat `clé -> bool` d'un utilisateur, ou None s'il voit tout.
     `sensible` : un appelable `clé -> bool` qui dit si l'entrée est masquée
     par son ÉTAT. Absent, seul le chemin décide (le comportement d'avant).
@@ -287,7 +327,7 @@ def filtre(utilisateur, sensible=None, depot=None, masques=None):
     écritures sur des milliers de clés tirées au hasard."""
     if utilisateur is None:
         return None
-    if sensible is None and depot is None and masques is None:
+    if sensible is None and depot is None and masques is None and not fermes:
         def ok(cle):
             return not est_prive(cle) or chez_soi(cle, utilisateur)
         return ok
@@ -308,6 +348,11 @@ def filtre(utilisateur, sensible=None, depot=None, masques=None):
             return visible(cle, utilisateur, sensible(cle) if sensible else False)
         if sensible is not None and sensible(cle):
             return peut_juger(cle, utilisateur)
+        # `fermes` VIDE (personne n'a rien restreint) : pas une comparaison de
+        # plus. C'est ce qui rend la brique 5 gratuite dans le cas courant --
+        # le predicat tourne 44 445 fois pour un seul `len()`.
+        if fermes and partage_ferme(fermes, cle, utilisateur):
+            return False
         return True
     return ok
 
@@ -612,7 +657,7 @@ class VueFiches(VueFiltree):
 
 
 def brancher(store, utilisateur, par_nom=False, sensible=None, depot=None,
-             masques=None):
+             masques=None, fermes=None):
     """Fait de `store.data` une VUE dès qu'il y a un utilisateur courant
     (l'admin compris : il ne voit pas le PRIVE des autres). `utilisateur` est
     un appelable (thread-local côté serveur) ; None = fil de fond, tout.
@@ -637,7 +682,11 @@ def brancher(store, utilisateur, par_nom=False, sensible=None, depot=None,
         u = utilisateur()
         if u is None:
             return d
-        return Vue(d, filtre(u, sensible, depot, masques))
+        # `fermes` est un APPELABLE : la liste de partage peut changer entre
+        # deux requetes, et une vue qui garderait l'ensemble d'hier montrerait
+        # ce que quelqu'un vient de fermer.
+        return Vue(d, filtre(u, sensible, depot, masques,
+                             fermes(u) if fermes else ()))
 
     def ecrire(self, valeur):
         if isinstance(desc, property) and desc.fset:
@@ -668,7 +717,8 @@ def brancher(store, utilisateur, par_nom=False, sensible=None, depot=None,
             u = utilisateur()
             if u is not None and isinstance(entry, dict):
                 restaurer_fiche(entry, brut(store).get(name),
-                                filtre(u, sensible, depot, masques))
+                                filtre(u, sensible, depot, masques,
+                                       fermes(u) if fermes else ()))
             return set_avant(name, entry, *a, **kw)
         store.set = set_restaure
     return store
