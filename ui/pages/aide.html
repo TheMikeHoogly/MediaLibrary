@@ -62,8 +62,15 @@
     <p>Loin de la maison : allume <strong>Tailscale</strong> (Mike t'aura
        invité), puis tape <span class="cle">100.75.59.40:8080</span>.</p>
     <p>Change-le ensuite : clique sur ton prénom, en haut à droite, puis
-       <strong>Changer mon mot de passe</strong>. Huit caractères au moins.
-       Le même menu permet de se déconnecter.</p>
+       <strong>Mon compte</strong>. Huit caractères au moins, et il te
+       demande l'ancien — sans quoi n'importe qui, devant ton écran resté
+       ouvert, pourrait fermer la porte derrière lui.</p>
+    <p>Le même panneau te propose de laisser ton <strong>adresse
+       e-mail</strong>. Elle est facultative et s'efface quand tu veux ; elle
+       sert seulement à ce que Mike sache à qui écrire si tu restes bloqué
+       dehors. <strong>Le serveur n'envoie jamais rien tout seul.</strong>
+       Toi et lui la voyez ; personne d'autre. Et c'est encore ce menu qui
+       permet de se déconnecter.</p>
   </section>
 
   <section class="feuille" id="deposer">
@@ -127,10 +134,15 @@
        — ils sont tous dans <a href="/browse">Dossiers</a>. Tu vois le tien,
        et tu vois ce que les autres partagent : c'est une photothèque de
        famille, pas un coffre-fort à cloisons.</p>
-    <p>La seule exception est le dossier <span class="cle">PRIVE</span> à
-       l'intérieur de chaque dossier personnel : celui-là n'est visible que
-       par son propriétaire. Une photo privée n'existe pas du tout pour les
-       autres.</p>
+    <p>Le dossier <span class="cle">PRIVE</span>, à l'intérieur de chaque
+       dossier personnel, n'est visible que par son propriétaire. Une photo
+       privée n'existe pas du tout pour les autres — pas même pour Mike.</p>
+    <p>Trois autres choses peuvent te cacher une photo, et elles se lisent
+       dans l'ordre : ce que quelqu'un a <strong>masqué</strong> (§&nbsp;9),
+       ce qu'il ne <strong>partage</strong> pas avec toi (§&nbsp;8), et un
+       envoi encore dans <span class="cle">_Uploads</span>, qui n'appartient
+       qu'à celui qui l'a déposé tant qu'il n'est pas rangé. <strong>Ce qui
+       ferme passe toujours avant ce qui ouvre.</strong></p>
   </section>
 
   <section class="feuille">
@@ -157,8 +169,38 @@
        une photo déjà privée, ou sur une photo qui n'est chez personne.</p>
   </section>
 
+  <section class="feuille" id="partage">
+    <h3>8. Choisir qui voit tes photos</h3>
+    <p>Dans <strong>Mon compte</strong>, tout en bas :
+       <strong>Qui voit mes photos</strong>. Deux réponses possibles —
+       <em>tout le monde</em>, ou <em>seulement les personnes cochées</em>.
+       Ça vaut pour ton dossier <span class="cle">Photos Prénom</span> tout
+       entier.</p>
+    <p><strong>Mike ne fait pas exception :</strong> ce que tu fermes lui est
+       fermé aussi. Il reste l'administrateur — il peut effacer, ranger,
+       réparer — mais il ne regarde pas ce que tu as refermé.</p>
+    <p>Ça ne change rien à ton <span class="cle">PRIVE</span>, qui reste à toi
+       seul de toute façon, ni aux photos que d'autres ont déposées.</p>
+  </section>
+
+  <section class="feuille" id="masquer">
+    <h3>9. Masquer une photo où tu es</h3>
+    <p>Sur une photo de quelqu'un d'autre où ton nom a été reconnu, la
+       visionneuse t'offre 🙈 <strong>Masquer cette photo</strong>. Elle
+       disparaît alors pour tout le monde, <strong>sauf</strong> son
+       propriétaire, toi, et Mike.</p>
+    <p><strong>La photo ne bouge pas</strong> : elle reste chez son
+       propriétaire, qui continue de la voir — c'est sa photo. Il peut
+       l'effacer ; il ne peut pas la remontrer. <strong>Toi seule peux lever
+       ton masque</strong> (Mike en dernier recours), avec le même bouton.</p>
+    <p>L'inverse est vrai aussi : si ton nom est sur une photo, tu la vois,
+       même si son propriétaire ne partage pas avec toi. Être sur une photo
+       donne le droit de la regarder — jamais celui d'ouvrir ce qui est
+       privé ou masqué.</p>
+  </section>
+
   <section class="feuille">
-    <h3>8. Effacer n'efface pas tout de suite</h3>
+    <h3>10. Effacer n'efface pas tout de suite</h3>
     <p>Une photo effacée part dans une corbeille et y reste
        <strong>six mois</strong>. Juste après le geste,
        <strong>Annuler</strong> la remet en place. Plus tard, demande à
@@ -166,14 +208,14 @@
   </section>
 
   <section class="feuille">
-    <h3>9. Les noms sont écrits dans les photos</h3>
+    <h3>11. Les noms sont écrits dans les photos</h3>
     <p>Quand tu nommes un visage, le nom est écrit <strong>dans le fichier
        lui-même</strong>, pas seulement dans une base. Si la base était
        perdue demain, les noms seraient toujours là.</p>
   </section>
 
   <section class="feuille">
-    <h3>10. L'IA travaille ici, dans la maison</h3>
+    <h3>12. L'IA travaille ici, dans la maison</h3>
     <p>Les mots-clés, les descriptions et la reconnaissance des visages sont
        produits sur la machine de Mike. <strong>Aucune photo n'est
        envoyée</strong> à un service en ligne.</p>

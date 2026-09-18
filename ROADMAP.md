@@ -821,6 +821,13 @@ allumée, vide, sur toutes les pages** (`display` battait `[hidden]`, troisième
 fois dans la barre — un banc le tient maintenant). **Reste : l'e-mail**,
 court : l'adresse, le prénom + mot de passe, et un renvoi vers `/aide`.
 Le mot de passe initial, c'est Mike qui le donne.
+**19/09 — `/aide` rattrape le chantier 19** : « Mon compte » (le mot de passe
+demande l'ancien, l'adresse e-mail est facultative et n'envoie rien), deux
+sections neuves — **Choisir qui voit tes photos** (§ 8, « Mike ne fait pas
+exception ») et **Masquer une photo où tu es** (§ 9, la photo ne bouge pas,
+toi seule lèves) — et « Ce que tu vois » dit désormais les trois autres
+raisons qu'une photo a de ne pas s'afficher, dans l'ordre où elles jouent.
+Relue dans Chrome.
  Objectif de
 Mike : partager la photothèque avec sa famille quand elle sera finie. Il faut
 donc, pour un nouveau venu qui n'a jamais rien installé : comment on se
