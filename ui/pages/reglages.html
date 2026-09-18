@@ -173,6 +173,9 @@ td.n, th.n { text-align: right; font-family: var(--f-donnees); }
       <button class="btn btn--principal" id="cpt-creer">Cr&eacute;er</button>
     </li></div>
     <div class="subh">R&eacute;initialiser un mot de passe</div>
+    <div class="mut">L'adresse e-mail affich&eacute;e &agrave; c&ocirc;t&eacute; d'un nom est celle que la personne
+      a pos&eacute;e elle-m&ecirc;me dans &laquo;&nbsp;Mon compte&nbsp;&raquo; : c'est &agrave; elle que tu &eacute;cris.
+      Le serveur, lui, n'envoie jamais rien.</div>
     <div class="mut">Quand quelqu'un est bloqu&eacute; dehors : pose-lui un mot de passe
       <b>provisoire</b> et transmets-le de vive voix. Sa prochaine page lui demandera
       d'en choisir un que tu ne connais pas. Ton propre mot de passe, lui, se change
@@ -480,7 +483,8 @@ load(); setInterval(load, 6000);
           // deux fois un compte qui n'a simplement pas encore ouvert sa page.
           liste.innerHTML=(d.comptes||[]).map(function(c){
             return '<span class="badge">'+esc(c.nom)+(c.admin?' · admin':'')+
-              (c.temporaire?' · mdp provisoire':'')+'</span> '+
+              (c.temporaire?' · mdp provisoire':'')+
+              (c.email?' · '+esc(c.email):'')+'</span> '+
               (c.nom===d.moi?'':'<button type="button" class="btn btn--discret" data-reinit="'+esc(c.nom)+'">R\u00e9initialiser</button> ')+
               (c.admin?'':'<button type="button" class="btn btn--discret" data-suppr="'+esc(c.nom)+'">Supprimer</button> ');
           }).join('')||'<span class="mut">(aucun)</span>';

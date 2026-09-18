@@ -187,6 +187,14 @@ laquelle on construit :
 vraiment bloqué. La famille compte trois comptes et l'admin dort dans la même
 maison que deux d'entre eux.
 
+**FAIT le 18/09 : (a) et (b).** Le champ existe (`comptes.definir_email` /
+`email_de`, validation volontairement modeste — une arobase, un domaine avec
+un point, pas d'espace : décider qu'une adresse EXISTE demanderait de lui
+écrire, et ce serveur n'écrit pas). Il se pose et **s'efface** dans « Mon
+compte » ; il s'affiche à côté du nom dans les Réglages, pour l'admin seul.
+(b) est la réinitialisation provisoire décrite plus haut. **(c) n'est pas
+construite** et ne le sera que sur demande.
+
 **Ce qui ne change pas** : l'e-mail est une donnée personnelle. Elle reste
 dans `comptes.json`, hors git, hors XMP, et ne sort jamais dans une page que
 les autres comptes peuvent lire.

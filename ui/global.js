@@ -280,9 +280,10 @@
       '<span aria-hidden="true">\uD83C\uDF19</span> Lancer la veille</button>';
     if (MOI.porte) {
       // Chacun change SON mot de passe (16/09) : le bouton ne vivait que
-      // dans Reglages, que seul l'admin voit dans ce menu.
+      // dans Reglages, que seul l'admin voit dans ce menu. Depuis le 18/09 il
+      // porte aussi l'adresse e-mail -- d'ou son nom, « Mon compte ».
       h += '<div class="sep"></div><button type="button" class="item" data-mdp role="menuitem">' +
-        '<span aria-hidden="true">\uD83D\uDD11</span> Changer mon mot de passe</button>';
+        '<span aria-hidden="true">\uD83D\uDD11</span> Mon compte</button>';
       h += '<button type="button" class="item" data-sortir role="menuitem">' +
         '<span aria-hidden="true">\u21AA</span> Se d\u00e9connecter</button>';
     }
@@ -311,12 +312,18 @@
         .catch(function () { location.href = '/connexion'; });
     });
   }
-  /* Le panneau MOT DE PASSE. Pas de `prompt()` : il affiche la saisie en
-     clair et bloque la page. TROIS champs masques -- l'ACTUEL d'abord (17/09 :
-     sans lui, une session ouverte suffisait a fermer la porte derriere soi),
-     puis le nouveau deux fois -- la regle dite AVANT (8 caracteres), et une
-     reponse ecrite dans le panneau. Meme coque que les raccourcis : fond,
-     Echap, retour du focus. */
+  /* Le panneau MON COMPTE. Pas de `prompt()` : il affiche la saisie en clair
+     et bloque la page. DEUX gestes, deux formulaires, deux boutons, deux
+     messages -- une adresse et un mot de passe ne s'enregistrent pas
+     ensemble, et un seul bouton pour deux champs ferait douter de ce qui
+     vient d'etre fait.
+       1. L'ADRESSE : facultative, effacable (une donnee personnelle qu'on ne
+          peut plus retirer est une donnee qu'on n'aurait pas du demander),
+          et la page dit QUI la voit et a quoi elle sert.
+       2. LE MOT DE PASSE : trois champs masques -- l'ACTUEL d'abord (17/09 :
+          sans lui, une session ouverte suffisait a fermer la porte derriere
+          soi), puis le nouveau deux fois -- la regle dite AVANT.
+     Meme coque que les raccourcis : fond, Echap, retour du focus. */
   var MotDePasse = (function () {
     var el = null, avant = null;
     function fermer() {
@@ -328,9 +335,21 @@
       el = document.createElement('div');
       el.className = 'raccourcis';
       el.innerHTML =
-        '<form class="raccourcis__p mdp" role="dialog" aria-modal="true" aria-labelledby="mdp-titre">' +
-        '<div class="raccourcis__t"><h2 id="mdp-titre">Changer mon mot de passe</h2>' +
+        '<div class="raccourcis__p mdp" role="dialog" aria-modal="true" aria-labelledby="mdp-titre">' +
+        '<div class="raccourcis__t"><h2 id="mdp-titre">Mon compte</h2>' +
         '<button type="button" class="btn" data-fermer>Fermer</button></div>' +
+        '<form id="mail-form">' +
+        '<h3>Mon adresse e-mail</h3>' +
+        '<p>Facultative, et effa\u00e7able \u00e0 tout moment (vide le champ, puis Enregistrer). ' +
+        'Elle sert \u00e0 ce que l\u2019administrateur sache \u00e0 qui \u00e9crire si tu restes bloqu\u00e9 dehors. ' +
+        'Le serveur n\u2019envoie jamais rien tout seul. Toi et lui la voyez ; personne d\u2019autre.</p>' +
+        '<label for="mail-1">Adresse e-mail</label>' +
+        '<input id="mail-1" type="email" autocomplete="email" spellcheck="false">' +
+        '<p class="mdp__msg" id="mail-msg" role="status" aria-live="polite"></p>' +
+        '<div class="mdp__acts"><button type="submit" class="btn">Enregistrer</button></div>' +
+        '</form>' +
+        '<form id="mdp-form">' +
+        '<h3>Changer mon mot de passe</h3>' +
         '<p class="mdp__intro">8 caract\u00e8res au moins. Il remplace l\u2019ancien tout de suite.</p>' +
         '<label for="mdp-0">Mot de passe actuel</label>' +
         '<input id="mdp-0" type="password" autocomplete="current-password" required>' +
@@ -338,9 +357,10 @@
         '<input id="mdp-1" type="password" autocomplete="new-password" minlength="8" required>' +
         '<label for="mdp-2">Le m\u00eame, une seconde fois</label>' +
         '<input id="mdp-2" type="password" autocomplete="new-password" minlength="8" required>' +
-        '<p class="mdp__msg" role="status" aria-live="polite"></p>' +
+        '<p class="mdp__msg" id="mdp-msg" role="status" aria-live="polite"></p>' +
         '<div class="mdp__acts"><button type="submit" class="btn">Enregistrer</button></div>' +
-        '</form>';
+        '</form>' +
+        '</div>';
       document.body.appendChild(el);
       el.addEventListener('click', function (ev) {
         if (ev.target === el || ev.target.hasAttribute('data-fermer')) fermer();
@@ -348,7 +368,25 @@
       el.addEventListener('keydown', function (ev) {
         if (ev.key === 'Escape') { ev.preventDefault(); fermer(); }
       });
-      var f = el.querySelector('form'), msg = el.querySelector('.mdp__msg');
+      var msg = el.querySelector('#mdp-msg'), mailMsg = el.querySelector('#mail-msg');
+      el.querySelector('#mail-form').addEventListener('submit', function (ev) {
+        ev.preventDefault();
+        var v = el.querySelector('#mail-1').value.trim();
+        mailMsg.textContent = 'Enregistrement\u2026';
+        fetch('/api/comptes/email', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: v }) })
+          .then(function (r) { return r.json().catch(function () { return { ok: false }; }); })
+          .then(function (r) {
+            if (r && r.ok) {
+              mailMsg.textContent = v ? 'Adresse enregistr\u00e9e.' : 'Adresse effac\u00e9e.';
+              if (MOI) MOI.email = v;
+            } else {
+              mailMsg.textContent = 'Refus\u00e9 : ' + ((r && r.error) || 'le serveur n\u2019a pas accept\u00e9') + '.';
+            }
+          })
+          .catch(function () { mailMsg.textContent = 'Le serveur n\u2019a pas r\u00e9pondu. R\u00e9essayer.'; });
+      });
+      var f = el.querySelector('#mdp-form');
       f.addEventListener('submit', function (ev) {
         ev.preventDefault();
         var v = el.querySelector('#mdp-0').value;
@@ -376,7 +414,9 @@
       if (!el) construire();
       // Le geste part du MENU, qui se ferme : rendre le focus a son bouton.
       avant = document.querySelector('.moi-bouton') || document.activeElement;
-      el.querySelector('.mdp__msg').textContent = '';
+      el.querySelector('#mdp-msg').textContent = '';
+      el.querySelector('#mail-msg').textContent = '';
+      el.querySelector('#mail-1').value = (MOI && MOI.email) || '';
       // Un mot de passe pose par l'admin est PROVISOIRE, et on le dit ici :
       // un panneau qui s'ouvre seul sans dire pourquoi passe pour une panne.
       el.querySelector('.mdp__intro').textContent = motif === 'temporaire'

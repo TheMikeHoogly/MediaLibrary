@@ -8464,6 +8464,10 @@ APP_NAV_CSS = """<style id="appnav-css">
 .mdp input:focus-visible{outline:2px solid var(--veilleuse);outline-offset:2px;}
 .mdp .mdp__msg{min-height:1.4em;margin-top:var(--e-3);color:var(--texte);}
 .mdp__acts{display:flex;justify-content:flex-end;}
+/* Deux gestes dans un panneau (18/09) : l'adresse et le mot de passe ne
+   s'enregistrent pas ensemble -- un trait les separe, et chacun a son
+   bouton et son message. */
+.mdp form + form{margin-top:var(--e-4);padding-top:var(--e-2);border-top:var(--trait);}
 @media(max-width:560px){
   .appnav{gap:2px;padding:8px 8px;}
   .raccourcis{padding:var(--e-2);}
@@ -13399,6 +13403,9 @@ class Handler(BaseHTTPRequestHandler):
             {"nom": nom, "admin": bool(nom and COMPTES.est_admin(nom)),
              "porte": COMPTES.actifs(), "prive": _prive_url(nom),
              "mdp_temporaire": bool(nom and COMPTES.temporaire(nom)),
+             # Mon adresse, et celle de personne d'autre : cette route ne
+             # répond que sur le compte qui la demande.
+             "email": COMPTES.email_de(nom) if nom else "",
              "depots": {"a_trier": len(attente),
                         "jours": attente[0]['jours'] if attente else 0}},
             ensure_ascii=False).encode(), 'application/json')
@@ -13415,14 +13422,18 @@ class Handler(BaseHTTPRequestHandler):
         # lui, une session ouverte suffisait à fermer la porte derrière soi.
         # L'admin RÉINITIALISE celui d'un AUTRE sans le connaître — jamais le
         # sien, qui repasse par la règle commune.
-        soi = (path == '/api/comptes/mdp' and nom and cible == nom)
+        soi = (path in ('/api/comptes/mdp', '/api/comptes/email')
+               and nom and cible == nom)
         if COMPTES.actifs() and not soi and not (nom and COMPTES.est_admin(nom)):
             self._send(403, json.dumps({"error": "admin seulement"}).encode(), 'application/json')
             return
         if self.command == 'GET':
             self._send(200, json.dumps({"comptes": [
                 {"nom": n, "admin": COMPTES.est_admin(n),
-                 "temporaire": COMPTES.temporaire(n)} for n in COMPTES.noms()],
+                 "temporaire": COMPTES.temporaire(n),
+                 # Seul l'admin arrive ici (403 sinon) : l'adresse ne sort
+                 # jamais dans une page qu'un autre compte peut lire.
+                 "email": COMPTES.email_de(n)} for n in COMPTES.noms()],
                 "moi": nom}, ensure_ascii=False).encode(), 'application/json')
             return
         try:
@@ -13434,6 +13445,8 @@ class Handler(BaseHTTPRequestHandler):
                                     par_admin=bool(cible != nom))
                 if cible != nom:
                     print(f"  🔐 mot de passe réinitialisé par {nom} : {cible}")
+            elif path == '/api/comptes/email':
+                COMPTES.definir_email(cible, d.get('email'))
             elif path == '/api/comptes/supprimer':
                 COMPTES.supprimer((d.get('nom') or '').strip())
                 print(f"  🔐 compte supprimé par {nom} : {d.get('nom')}")
@@ -14246,7 +14259,8 @@ class Handler(BaseHTTPRequestHandler):
         if path == '/api/deconnexion':
             self._serve_deconnexion()
             return
-        if path in ('/api/comptes', '/api/comptes/mdp', '/api/comptes/supprimer'):
+        if path in ('/api/comptes', '/api/comptes/mdp', '/api/comptes/email',
+                    '/api/comptes/supprimer'):
             self._serve_comptes()
             return
         if path == '/api/assign':

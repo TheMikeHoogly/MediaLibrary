@@ -63,7 +63,7 @@ photothèque s'ouvre à la famille.
 | 3 | « Masquer cette photo » pour une personne reconnue | à faire (tranché : propriétaire + personne voient ; la personne seule lève) |
 | 4 | Les personnes reconnues voient leurs photos | à faire, après 5 |
 | 5 | Onglet **Partage** : chacun coche qui voit ses photos | à faire — **défaut tranché le 17/09** : liste vide = tout le monde pour les comptes d'aujourd'hui, un compte créé ensuite part fermé (trois états en base, migration incluse) |
-| 6 | Les comptes « pour de bon » : mot de passe et e-mail | **mot de passe LIVRÉ 18/09** (l'actuel est exigé, l'admin réinitialise en provisoire) ; l'**e-mail par compte** reste à faire |
+| 6 | Les comptes « pour de bon » : mot de passe et e-mail | **LIVRÉE 18/09** — l'actuel est exigé, l'admin réinitialise en provisoire, et chaque compte porte une adresse e-mail facultative. Reste ouvert : le vrai « mot de passe oublié » par SMTP, à ne construire que si quelqu'un reste bloqué |
 
 **Brique 2, livrée.** Un dépôt d'`_Uploads` n'est plus visible que de son
 déposant et de l'admin : la règle est dans `visibilite.visible` (masque, donc
@@ -101,6 +101,22 @@ page que le navigateur reçoit porte bien le champ `mdp-0`
 gestes de la brique 6 À L'ÉCRAN (le refus « mot de passe actuel incorrect »,
 le bouton « Réinitialiser » des Réglages) — ils exigent une session ouverte,
 donc Mike. Les bancs tiennent la règle ; l'écran reste à regarder.
+
+**Brique 6, second pan livré le 18/09 — l'adresse e-mail.** Une par compte,
+facultative, **effaçable** (une donnée personnelle qu'on ne peut plus retirer
+est une donnée qu'on n'aurait pas dû demander), posée par la personne
+elle-même dans « Mon compte » — le panneau du menu porte désormais les deux
+gestes, chacun avec son bouton et son message. Elle est **visible d'elle et de
+l'admin seulement** : `/api/moi` ne répond que sur le compte qui demande, et
+la liste de `/api/comptes` est derrière le 403 des Réglages. Elle vit dans
+`comptes.json` (hors git), jamais dans un XMP. **Le serveur n'envoie rien** :
+il n'a ni compte SMTP, ni secret de plus — l'adresse sert à ce que Mike sache
+à qui écrire, et c'est tout ce qui a été construit (options (a) et (b) du
+plan). **L'option (c)**, le vrai « mot de passe oublié » par lien envoyé,
+reste non construite : elle demande un compte SMTP et un serveur maison qui
+écrit à l'extérieur — à ne faire que si quelqu'un reste vraiment bloqué.
+Prouvé en réel le 18/09 à 07 h 53 (redémarrage observé, page servie portant
+`mail-1` et `/api/comptes/email`).
 
 **Un instrument de plus, né d'une panne** : le soir du 17/09 l'extension
 Chrome n'a pas répondu, et il ne restait AUCUN chemin pour savoir si le

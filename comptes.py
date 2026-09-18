@@ -31,6 +31,16 @@ suffire à fermer la porte derrière soi. L'admin, lui, réinitialise sans le
 connaître — le compte porte alors `temporaire`, levé quand son propriétaire
 choisit le sien.
 
+L'ADRESSE E-MAIL
+
+Facultative, une par compte, posée par la personne elle-même dans « Mon
+compte » (l'admin peut la poser aussi — il crée, supprime et réinitialise
+déjà). Elle sert à SAVOIR À QUI ÉCRIRE quand quelqu'un est bloqué dehors : le
+serveur n'envoie rien, et n'a ni compte SMTP ni secret de plus. Elle est
+visible de son propriétaire et de l'admin, de personne d'autre — donc jamais
+dans une page qu'un autre compte peut lire. Elle vit dans `comptes.json`,
+hors git, hors XMP.
+
 LA SESSION
 
 Un jeton signé, pas une table de sessions : `<nom>|<expire>|<hmac>`, HMAC
@@ -73,6 +83,7 @@ TOURS = 300_000
 DUREE_SESSION = 30 * 24 * 3600
 COOKIE = 'session'
 ECHECS_MAX, FENETRE_ECHECS, ATTENTE = 5, 300, 60
+EMAIL_MAX = 120
 
 OUVERTS = ('/connexion', '/api/connexion', '/api/serveur', '/favicon.ico')
 PREFIXES_OUVERTS = ('/ui/', '/static/')
@@ -80,6 +91,23 @@ PREFIXES_OUVERTS = ('/ui/', '/static/')
 
 def _hacher(mdp, sel_hex):
     return hashlib.pbkdf2_hmac('sha256', mdp.encode('utf-8'), bytes.fromhex(sel_hex), TOURS).hex()
+
+
+def email_valide(email):
+    """Assez pour écrire à quelqu'un, pas assez pour se croire un validateur.
+
+    Une seule arobase, quelque chose des deux côtés, un point dans le domaine,
+    aucun espace. On ne cherche pas à décider si l'adresse EXISTE — seule une
+    lettre envoyée le dirait, et ce serveur n'en envoie pas. Le champ est
+    facultatif : un refus ici n'enferme personne dehors.
+    """
+    e = (email or '').strip()
+    if not e or len(e) > EMAIL_MAX or e.count('@') != 1:
+        return False
+    if any(c.isspace() for c in e):
+        return False
+    loc, _, dom = e.partition('@')
+    return bool(loc) and '.' in dom and not dom.startswith('.') and not dom.endswith('.')
 
 
 def nom_valide(nom):
@@ -209,6 +237,30 @@ class Comptes:
         remplacé par son propriétaire."""
         c = self._d['comptes'].get(nom)
         return bool(c and c.get('temporaire'))
+
+    def definir_email(self, nom, email):
+        """Pose l'adresse d'un compte — une chaîne vide l'EFFACE.
+
+        Effacer doit rester possible : une donnée personnelle qu'on ne peut
+        plus retirer est une donnée qu'on n'aurait pas dû demander.
+        """
+        e = (email or '').strip()
+        if e and not email_valide(e):
+            raise ValueError('adresse e-mail invalide')
+        with self.lock:
+            c = self._d['comptes'].get(nom)
+            if not c:
+                raise ValueError('compte inconnu')
+            if e:
+                c['email'] = e
+            else:
+                c.pop('email', None)
+            self._sauver()
+
+    def email_de(self, nom):
+        """L'adresse, ou '' — jamais None : ce qui sort d'ici va dans une page."""
+        c = self._d['comptes'].get(nom)
+        return (c or {}).get('email') or ''
 
     def supprimer(self, nom):
         with self.lock:

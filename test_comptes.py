@@ -171,6 +171,51 @@ class MotDePasseActuel(Base):
         self.assertEqual(self.c.verifier('Flo', 'motdepasse'), 'Flo')
 
 
+class Email(Base):
+    """L'adresse d'un compte : facultative, effacable, et jamais celle d'un autre."""
+
+    def test_pose_lit_et_efface(self):
+        self.c.creer('Flo', 'motdepasse')
+        self.assertEqual(self.c.email_de('Flo'), '')       # jamais None
+        self.c.definir_email('Flo', '  flo@exemple.ch ')   # espaces rognes
+        self.assertEqual(self.c.email_de('Flo'), 'flo@exemple.ch')
+        self.c.definir_email('Flo', '')                    # effacer reste possible
+        self.assertEqual(self.c.email_de('Flo'), '')
+        d = json.loads(self.chemin.read_text(encoding='utf-8'))
+        self.assertNotIn('email', d['comptes']['Flo'])      # efface, pas vide
+
+    def test_ce_qui_est_refuse(self):
+        self.c.creer('Flo', 'motdepasse')
+        for ko in ('flo', 'flo@', '@exemple.ch', 'flo@exemple', 'a@b.c d',
+                   'a@b@c.ch', 'x' * 130 + '@exemple.ch'):
+            with self.assertRaises(ValueError, msg=repr(ko)):
+                self.c.definir_email('Flo', ko)
+        self.assertEqual(self.c.email_de('Flo'), '')
+
+    def test_un_compte_inconnu_n_a_pas_d_adresse(self):
+        self.assertEqual(self.c.email_de('Zzz'), '')
+        with self.assertRaises(ValueError):
+            self.c.definir_email('Zzz', 'zzz@exemple.ch')
+
+    def test_l_adresse_survit_au_changement_de_mot_de_passe(self):
+        """Les deux gestes du panneau sont independants : l'un ne defait pas l'autre."""
+        self.c.creer('Flo', 'motdepasse')
+        self.c.definir_email('Flo', 'flo@exemple.ch')
+        self.c.changer_mdp('Flo', 'nouveaumdp', actuel='motdepasse')
+        self.assertEqual(self.c.email_de('Flo'), 'flo@exemple.ch')
+        self.c.changer_mdp('Flo', 'provisoire1', par_admin=True)
+        self.assertEqual(self.c.email_de('Flo'), 'flo@exemple.ch')
+
+    def test_elle_part_avec_le_compte(self):
+        self.c.creer('Mike', 'motdepasse')
+        self.c.creer('Flo', 'motdepasse')
+        self.c.definir_email('Flo', 'flo@exemple.ch')
+        self.c.supprimer('Flo')
+        self.assertEqual(self.c.email_de('Flo'), '')
+        brut = self.chemin.read_text(encoding='utf-8')
+        self.assertNotIn('flo@exemple.ch', brut)
+
+
 class Jeton(Base):
     def test_aller_retour_et_expiration(self):
         self.c.creer('Mike', 'motdepasse')
