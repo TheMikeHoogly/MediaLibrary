@@ -1,5 +1,35 @@
 # Questions en attente de Mike
 
+**Trois questions ouvertes (18/09, traite autonome).**
+
+**1. Les deux branches du 18/09 — je fusionne ?**
+`fix/le-mot-de-passe-exige-l-actuel` (4751949) puis
+`feat/une-adresse-par-compte` (a850a86, branchée sur la première).
+`main` est intacte, comme le veut une traite sans toi.
+*Recommandation* : regarde d'abord les deux écrans (le panneau « Mon compte »
+et le bouton « Réinitialiser » des Réglages), puis un « go » et je livre
+depuis la seconde branche, qui porte les deux. *En attendant* : rien ; le
+serveur tourne déjà ce code, seul `main` ne l'a pas.
+
+**2. L'adresse e-mail de Papa (et de Flo) : qui la pose ?**
+Aujourd'hui chacun pose la sienne dans « Mon compte ». Le SERVEUR accepte
+déjà que l'admin pose celle d'un autre (même porte que la réinitialisation),
+mais l'ÉCRAN ne l'offre pas. Si Papa, en Bolivie, n'ouvre jamais ce panneau,
+son adresse restera vide — et c'est justement le cas où elle servirait.
+*Recommandation* : laisser ainsi une semaine ; si la case reste vide, ajouter
+un champ dans les Réglages (une demi-heure, aucune règle nouvelle).
+*En attendant* : rien.
+
+**3. Le vrai « mot de passe oublié » (option (c) du plan) — jamais, ou pas
+encore ?** Il demande un compte SMTP, un mot de passe d'application Gmail, un
+secret de plus sur la machine, et un serveur maison qui écrit à l'extérieur —
+ce que ce projet n'a jamais fait.
+*Recommandation* : **ne pas le construire**. Vous êtes trois, tu dors dans la
+même maison que deux d'entre eux, et l'admin réinitialise en deux clics.
+*En attendant* : rien n'est commencé.
+
+---
+
 **Aucune question ouverte.** (16/09)
 
 ---

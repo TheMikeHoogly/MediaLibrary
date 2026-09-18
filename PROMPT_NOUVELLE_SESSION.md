@@ -1,4 +1,4 @@
-# Reprise — MediaLibrary, après le 16 septembre 2026 (soir)
+# Reprise — MediaLibrary, après le 18 septembre 2026 (matin)
 
 > **Ce fichier est ÉPHÉMÈRE.** Il décrit un état, pas des règles. Les règles
 > vivent dans `CLAUDE.md`, le plan dans `ROADMAP.md`, les verdicts dans
@@ -9,154 +9,155 @@
 
 ## 0. L'état, en dix lignes
 
-**17/09, quatre livraisons ; Flo essaie la photothèque, et ce qu'elle a
-demandé est devenu le CHANTIER 19.**
-1. **`/aide` réécrite** (P2) en quatre gestes ; **chacun trie ses dépôts** ;
-   mot de passe dans le menu du compte ; lampe des dépôts réparée.
-2. **Fin de keep-alive** : « Request timed out » ne s'écrit plus au journal
-   (ce n'était pas une panne — 17 sur 17 à +28-30 s d'une réponse servie).
-3. **Réglages sait supprimer un compte** (deux clics, pas de `confirm()`).
-4. **Accès distant par Tailscale** préparé pour Papa (Bolivie) et Flo :
-   trois brouillons Gmail prêts, NON envoyés (`docs/ACCES_DISTANT_TAILSCALE.md`).
-5. **CHANTIER 19 — la vie privée à la demande** (`docs/CHANTIER_19_VIE_PRIVEE.md`) :
-   brique 2 **livrée** (un dépôt d'`_Uploads` n'est visible que de son
-   déposant, 44 445 clés en 27 ms) ; le filet « intime » est **mesuré et
-   refusé en automatique** ; les briques 3, 4, 5, 6 restent à construire.
+**Traite autonome du 18/09 au petit matin (Mike absent) : la BRIQUE 6 du
+chantier 19 est faite, en deux livraisons — et elles sont sur des BRANCHES,
+`main` est intacte.**
 
-Acquis d'avant : veille (P1), campagne de retag ABANDONNÉE, un compte par
-propriétaire (Mike admin, Flo, Papa).
+1. **Le trou du mot de passe est fermé** (`fix/le-mot-de-passe-exige-l-actuel`,
+   commit `4751949`). « Changer mon mot de passe » exige l'ACTUEL ; le frein
+   des connexions s'y applique ; l'admin réinitialise celui d'un AUTRE sans le
+   connaître, le compte est marqué **provisoire**, et la première page que la
+   personne ouvre lui demande d'en choisir un.
+2. **Une adresse e-mail par compte** (`feat/une-adresse-par-compte`, commit
+   `a850a86`, branchée sur la précédente). Facultative, effaçable, posée dans
+   « Mon compte » (le panneau du menu porte désormais les deux gestes) ;
+   visible d'elle et de l'admin seulement. **Le serveur n'envoie rien.**
+3. **Un instrument neuf** : `mesure_etat_serveur.py` — lire `/api/serveur`
+   (route ouverte) depuis la machine de Mike par l'agent de banc, donc
+   **sans Chrome** : `uptime_s`, `demarre_a`, `code_a_jour`, et `--sert
+   /connexion --motif …` pour prouver ce que le serveur SERT vraiment.
+   Né d'une panne : le 17/09 au soir l'extension Chrome n'a pas répondu et il
+   ne restait AUCUN moyen de savoir si le serveur exécutait le code du disque.
+4. Les deux redémarrages ont été **observés** (07 h 41 et 07 h 53, `demarre_a`
+   bougé, `code_a_jour` vrai) et les 78 bancs visés sont **verts sous Windows**.
+
+Acquis d'avant : chantier 19 briques 2 (dépôts au déposant) ; filet « intime »
+mesuré et REFUSÉ en automatique ; veille (P1) ; campagne de retag ABANDONNÉE ;
+trois comptes (Mike admin, Flo, Papa) ; Tailscale préparé, e-mails en
+brouillons NON envoyés.
 
 ---
 
 ## 1. Par où commencer
 
-1. **Vérifier la livraison** dans `.git/logs/refs/heads/main`.
-2. **CHANTIER 19**, dans cet ordre — le plan et les pièges sont dans
-   `docs/CHANTIER_19_VIE_PRIVEE.md`, à relire AVANT d'écrire une ligne :
-   - **Brique 6 d'abord, parce qu'elle est un trou** : « Changer mon mot de
-     passe » n'exige pas le mot de passe ACTUEL — une session ouverte suffit
-     à fermer la porte derrière soi. Puis l'**e-mail par compte**
-     (`comptes.json`, hors git) : (a) rappel + (b) réinitialisation par
-     l'admin ; le vrai « mot de passe oublié » par SMTP seulement si
-     quelqu'un reste bloqué (choix de Mike à demander le moment venu).
-   - **Brique 3** : « masquer cette photo » pour une personne reconnue
-     (tranché : propriétaire + personne voient ; la personne seule lève ; la
-     photo ne bouge pas ; l'état en base, jamais dans le XMP).
-   - **Brique 5** : onglet Partage. **Défaut tranché** : liste vide = tout le
-     monde pour Mike, Flo et Papa ; un compte créé ensuite part fermé. Donc
-     TROIS états (`null` / `[]` / `[noms]`) et une migration qui pose `null`
-     sur les trois comptes existants. Un banc doit prouver qu'une photo non
-     partagée ne fuit ni par un compteur, ni par une fiche, ni par la
-     recherche — le filtre reste AU MAGASIN.
-   - **Brique 4** ensuite (les personnes reconnues voient leurs photos), qui
-     ne se pose que sur la 5. Elle exige un index clé → noms en mémoire :
-     mesurer avant/après, la grille du fonds est à 3,7 s.
+1. **Vérifier l'état réel** (`.git/HEAD`, `.git/logs/HEAD`,
+   `.git/logs/refs/heads/main`) : `main` doit être à `ef4a5bd` et les deux
+   branches du 18/09 au-dessus, NON fusionnées.
+2. **Demander à Mike s'il fusionne** (`QUESTIONS_MIKE.md`, question 1) — ou,
+   s'il dit « go », `livrer` depuis `feat/une-adresse-par-compte`, qui porte
+   les deux.
+3. **Regarder les deux écrans que je n'ai pas pu voir** (Chrome était
+   injoignable) : le panneau « Mon compte » (trois champs de mot de passe +
+   l'adresse), et le bouton « Réinitialiser » des Réglages. Les bancs tiennent
+   la règle ; l'écran n'a pas été regardé — et ce projet a déjà payé pour
+   savoir que ça ne suffit pas (`/arbitrage`, 14/09).
+4. **CHANTIER 19, suite** — l'ordre du plan
+   (`docs/CHANTIER_19_VIE_PRIVEE.md`, à relire AVANT d'écrire une ligne) :
+   - **Brique 3, « masquer cette photo » pour une personne reconnue.** Tranché :
+     propriétaire + personne + admin voient ; SEULE la personne lève ; la photo
+     ne bouge pas ; l'état en base, jamais dans le XMP. Où ça se pose :
+     `visibilite.visible` et `visibilite.filtre` (un masque de plus, et **les
+     masques passent avant tout ce qui ouvre**), sur le modèle exact de
+     `depot_reserve` du 17/09 — une règle PURE, l'appelant fournit la donnée.
+     Le geste n'apparaît que si le compte connecté est parmi les `personne:`
+     de la photo (CLAUDE.md n° 9). **Le banc doit prouver qu'une photo masquée
+     ne fuit ni par un compteur, ni par une fiche, ni par la recherche.**
+   - **Brique 5, onglet Partage** : trois états (`null` / `[]` / `[noms]`) et
+     la migration qui pose `null` sur les trois comptes existants.
+   - **Brique 4** (les personnes reconnues voient leurs photos) ensuite : elle
+     exige un index clé → noms en mémoire — mesurer avant/après, la grille du
+     fonds est à 3,7 s.
    - **Brique 1** (filet intime) en dernier : file de revue, pas masquage.
-3. **Ce qui n'est pas prouvé en réel** : la vue d'un NON-admin. Les bancs
-   tiennent la règle ; un compte d'essai le montrerait à l'écran (Mike le
-   crée, s'y connecte dans Chrome, le supprime après).
-4. **P2, l'e-mail** : trois brouillons Gmail prêts, non envoyés. Mike envoie,
+5. **P2, l'e-mail** : trois brouillons Gmail prêts, non envoyés. Mike envoie,
    mots de passe à part.
-5. **Tailscale** : partager `msi-mike` avec `markushuegli@gmail.com` et
+6. **Tailscale** : partager `msi-mike` avec `markushuegli@gmail.com` et
    `flolaeser@gmail.com`, limiter `autogroup:shared` au port 8080, rappeler
    l'expiration de clé. En attente que Mike se connecte à la console.
-6. **D1, la copie hors site** : à Mike seul.
+7. **D1, la copie hors site** : à Mike seul.
 
 ---
 
 ## 2. Les pièges
 
-- **Un rapport de sonde est un CACHE** : `docs/motion_photos.json` ne se
-  croit qu'avec `--frais`, et le bat 42 le lit tel quel. Relancer le banc
-  (5 passes de 480 s, `--fils 4`) avant tout bat 42.
+- **L'agent de banc rend l'ordre à la FIN, pas au début.** Écrire trois ordres
+  à la suite n'en fait tourner qu'un : les suivants sont écrasés, et le canal
+  revenu à `rien` ne veut pas dire « fini ». Un ordre, puis attendre que
+  `_etat_banc.json` porte CET ordre (`dernier.ordre`), puis le suivant.
+  Attrapé le 18/09 en croyant avoir lancé trois bancs.
+- **Les bancs ne tournent pas dans la VM.** Sur les 78 visés par la livraison,
+  trois sont rouges sous Linux et VERTS sous Windows : `test_exiftool_preserve`
+  (exiftool n'existe pas dans la VM), `test_cache_vignettes` (il lit l'index
+  réel, 86 s), `test_galerie_enrichissement` (règles de chemin Windows).
+  La VM sert à ÉCRIRE et à faire tourner les bancs PURS ; le juge est l'agent.
+- **`/api/maint/status` est derrière la porte** : depuis la machine, sans
+  cookie, il rend 401 — donc `maint.lourde` n'est PAS lisible par l'agent de
+  banc. Pour savoir si un travail lourd tourne avant de redémarrer : le
+  journal (`_journal_serveur.log`), où l'énumération NAS (~275 s toutes les
+  ~30 min) et la sauvegarde horaire se lisent en clair.
+- **La dernière bannière du journal** : `sed -n '/===== DEMARRAGE/,$p'` attrape
+  la PREMIÈRE. Utiliser `tail -n +$(awk '/===== DEMARRAGE/{n=NR} END{print n}'
+  fichier)`.
+- **Un rapport de sonde est un CACHE** : `docs/motion_photos.json` ne se croit
+  qu'avec `--frais`, et le bat 42 le lit tel quel.
 - **Le XMP d'une Motion Photo survit au strip** : ne jamais compter sur lui.
-
 - **exiftool et les chemins accentués** : passés sur la ligne de commande, ils
-  arrivent mutilés (« File not found », une entrée de moins dans le lot,
-  aucune erreur). **8,4 % du fonds** est concerné (3 714 clés sur 44 477).
-  Tout appel passe désormais par `exiftool_json` et son fichier d'arguments ;
-  un nouvel appel écrit ailleurs doit faire pareil.
-- **Un banc qui INJECTE une lecture ne tient que la règle.** Les durées vidéo
-  étaient injectées ; c'est en allant les chercher pour de vrai que le défaut
-  ci-dessus est apparu. Quand une règle dépend d'un outil externe, une mesure
-  doit lire cet outil au moins une fois sur de vraies données.
+  arrivent mutilés (« File not found », une entrée de moins dans le lot, aucune
+  erreur). **8,4 % du fonds** (3 714 clés sur 44 477). Tout appel passe par
+  `exiftool_json` et son fichier d'arguments.
+- **Un banc qui INJECTE une lecture ne tient que la règle.** Quand une règle
+  dépend d'un outil externe, une mesure doit lire cet outil au moins une fois
+  sur de vraies données.
 - **Un banc qui découpe le source sur le TEXTE mesure ses VOISINS** — et sa
-  propre prose. Deux bancs sont tombés là-dessus le 14/09 : l'un découpait
-  vingt méthodes du routeur, l'autre lisait la docstring qui NOMME les mots
-  qu'il interdit. Découper sur l'ARBRE, docstring retirée.
+  propre prose. Découper sur l'ARBRE, docstring retirée.
 - **Un composant canonique se réutilise TEL QUEL ou se laisse tranquille.**
-  `.vue` est la cellule CARRÉE de la planche contact (`aspect-ratio: 1` dans
-  `components.css`) : la page `/arbitrage` l'avait reprise, une photo en
-  portrait tenait sur un cinquième de la largeur. Vu à l'écran, pas à la
+  `.vue` est la cellule CARRÉE de la planche contact. Vu à l'écran, pas à la
   lecture — **regarder la page, pas seulement ses bancs.**
-- **La grille récursive vient de l'INDEX** : une photo déposée à l'instant
-  dans un SOUS-dossier n'y paraît qu'au prochain scan (~30 min,
-  `NAS_SCAN_CYCLES`) — et, symétriquement, une photo effacée y reste visible
-  jusque-là. Son propre dossier, lui, est à jour tout de suite.
+- **La grille récursive vient de l'INDEX** : une photo déposée à l'instant dans
+  un SOUS-dossier n'y paraît qu'au prochain scan (~30 min) — et une photo
+  effacée y reste visible jusque-là. Son propre dossier est à jour tout de suite.
 - **Le rangement par année ne s'applique JAMAIS tout seul** : la maintenance
-  bâtit le plan, le bat 26 l'applique. C'est voulu. Et le bat 26 commence
-  désormais par `verifier_plan_annee.py`, qui JUGE les collisions au lieu de
-  les compter : **une collision n'est pas une permission d'effacer**.
-- **Un instrument qui tranche au-delà de ce qu'il mesure est pire qu'un
-  instrument muet.** `verifier_plan_annee` classait « deux vidéos distinctes »
-  quatre fichiers de MÊME durée à la centième et 0,5 % d'écart de taille. D'où
-  le verdict `VOISIN` et ses deux garde-fous : une borne de 5 % sur la taille,
-  et le refus de voisiner deux durées INCONNUES — deux zéros sont égaux.
-- **Le recensement dure 1 h 09** et **chaque redémarrage le tue**. Avant de
-  livrer en rafale : `maint.lourde` dans `/api/maint/status`.
+  bâtit le plan, le bat 26 l'applique, précédé de `verifier_plan_annee.py` —
+  **une collision n'est pas une permission d'effacer**.
+- **Le recensement dure 1 h 09** et **chaque redémarrage le tue**.
 - **Deux balayages SMB simultanés** : l'énumération passe de 305 s à 2 100 s.
 - **Windows : KB5124008 casse Plan9**, donc `device_bash`. UBR **9278**,
   Windows Update en pause jusqu'au 17.10. `Get-HotFix` MENT ; la vérité est
   `(Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion').UBR`.
   **Vers le 16.10** : masquer le KB s'il est reproposé.
 - **La VM n'atteint pas le LAN** : tout ce qui interroge le serveur passe par
-  l'agent de banc ou par **Chrome** (`http://192.168.0.13:8080`).
-- **Chrome, jamais le navigateur intégré** (demande de Mike, 13/09).
+  l'agent de banc (`mesure_etat_serveur.py` pour l'état) ou par **Chrome**.
+- **Chrome, jamais le navigateur intégré** (demande de Mike, 13/09) — et
+  Chrome peut être injoignable : deux navigateurs sont enregistrés sur le
+  compte, il faut choisir celui de `MSI-Mike`, et si l'extension ne répond
+  pas, `mesure_etat_serveur.py` remplace l'œil sur l'ÉTAT, jamais sur la PAGE.
 - **Git : jamais depuis la VM**, même en lecture apparente. Préfixes de branche
-  admis : `feat|fix|chore|docs|test` — `perf/` a été refusé.
-- **L'agent git consomme l'ordre AVANT de travailler** : le canal revenu à
-  `rien` ne veut pas dire « fini ». C'est `_etat_git.json` qui le dit, et il
-  faut comparer son `dernier.quand`, pas le mtime du fichier — ~6 min quand
-  `server.py` est touché.
+  admis : `feat|fix|chore|docs|test`.
+- **L'agent git consomme l'ordre AVANT de travailler**, et met ~3 min quand
+  `server.py` est touché (il fait tourner 78 bancs). C'est `_etat_git.json` et
+  son `dernier.quand` qui disent si c'est fini, jamais le canal.
 - `server.py` : skill `monolith-surgery` ; UI : `photo-ui`.
 - **Un banc qui cite un appel AU CARACTÈRE PRÈS interdit la ligne suivante.**
-  `test_sensibles` exigeait `brancher(_st, utilisateur_vu, sensible=…)` tel
-  quel et a refusé la livraison quand la brique 2 lui a ajouté `depot=`.
   Juger un BLOC, pas une mise en page.
-- **`os.path` ne reconnaît pas `\\` hors Windows** : une règle de chemin
-  écrite avec lui répond autre chose au banc (Linux) qu'au serveur (Windows).
-  Normaliser soi-même (`_depot_normal`). Attrapé le 17/09 par son banc.
+- **`os.path` ne reconnaît pas `\\` hors Windows** : normaliser soi-même.
 - **`hidden` perd contre tout `display`** d'une classe plus spécifique. Tout
-  nouvel élément de la barre qui naît caché : sa règle `[hidden]`, sinon
-  `test_ui_global.HiddenCacheVraiment` tombe. Dans une PAGE, aucun banc ne
-  le voit : regarder les pixels.
-- **Un onglet Chrome en arrière-plan ne charge pas les `loading="lazy"`** :
-  des vignettes vides sur une capture ne sont pas un défaut (vu le 16/09,
-  `fetch` direct : 200 en 5 ms).
-
----
-
-- **La veille et le NAS** : ses vignettes portent `veille=1`, qui DISPENSE
-  la requête de `note_heavy_activity()`. Tout nouveau client ambiant (cadre,
-  écran d'accueil) doit faire pareil, sinon le fond ne tourne plus jamais.
-- **Chrome piloté** : le premier clic après un chargement de page est
-  parfois perdu (le menu du compte ne s'ouvre pas) — recliquer, ce n'est pas
-  un défaut de la page. Un clic par `ref` peut aussi manquer : préférer les
-  coordonnées d'une capture fraîche.
-- **Suppression dans le dépôt** : elle demande une permission par session.
-  Ne JAMAIS écrire de fichier d'essai (mutations de banc) à la racine du
-  dépôt : `$HOME` de la VM, hors `mnt/`.
+  nouvel élément de la barre qui naît caché : sa règle `[hidden]`.
+- **Un onglet Chrome en arrière-plan ne charge pas les `loading="lazy"`.**
+- **La veille et le NAS** : ses vignettes portent `veille=1`, qui DISPENSE la
+  requête de `note_heavy_activity()`. Tout nouveau client ambiant doit faire
+  pareil, sinon le fond ne tourne plus jamais.
+- **Chrome piloté** : le premier clic après un chargement est parfois perdu.
+- **Suppression dans le dépôt** : elle demande une permission par session. Ne
+  JAMAIS écrire de fichier d'essai à la racine du dépôt : `$HOME` de la VM,
+  hors `mnt/`.
 
 ## 3. Protocole (inchangé)
 
 Éditer → redémarrer (`uptime_s` > 60 d'abord) → **observer en réel** →
-`SESSION_COMMIT.txt` → `livrer` → **vérifier dans `.git/logs/refs/heads/main`**.
+`SESSION_COMMIT.txt` → `livrer` (ou `commit` si Mike est absent) →
+**vérifier dans `.git/logs/refs/heads/main`**.
 
-Et, après toute analyse : **la contre-vérifier** (règle 11). Elle a travaillé
-cinq fois le 14/09, et chaque fois elle a rapporté quelque chose : la prémisse
-du chantier de la marche est tombée avant le code ; un compteur qui mélangeait
-deux causes a été scindé avant d'être lu ; un banc qui injectait une lecture
-masquait un défaut touchant 8,4 % du fonds ; une conclusion « aucun de ces 18
-fichiers n'a de jumeau » était fausse parce que `os.path.basename` rend le
-chemin ENTIER sur un chemin Windows sous Linux ; et la page `/arbitrage`,
-regardée à l'écran, a montré une rotation que trois mesures n'avaient pas vue.
+Et, après toute analyse : **la contre-vérifier** (règle 11) — la falsifier,
+pas la confirmer. Le 18/09 elle a servi deux fois : la règle du mot de passe
+retirée d'une copie du module, trois cas du banc tombent (donc le banc mord) ;
+et trois bancs rouges dans la VM, relancés sous Windows, se sont révélés verts
+— conclure « ma modification a cassé trois bancs » aurait coûté la matinée.
