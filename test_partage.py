@@ -79,6 +79,26 @@ class LesCinqMagasinsRecoiventLEnsemble(unittest.TestCase):
         self.assertIn("frozenset()", c)
 
 
+class LaRECONNAISSANCEEstBrancheeEtBornee(unittest.TestCase):
+    """Chantier 19, brique 4 : etre sur une photo la rouvre -- d'un cran, et
+    d'un seul."""
+
+    def test_les_cinq_magasins_recoivent_le_predicat(self):
+        bloc = _bloc_branchement()
+        self.assertEqual(bloc.count("reconnu=reconnu_sur"), 2)
+
+    def test_il_lit_l_index_BRUT(self):
+        c = _corps("reconnu_sur")
+        self.assertIn("INDEX_BRUT", c)
+        self.assertNotIn("STORE.data", c)
+
+    def test_il_passe_par_personnes_de_et_ne_recopie_pas_la_lecture(self):
+        c = _corps("reconnu_sur")
+        self.assertIn("personnes_de(", c)
+        self.assertNotIn("kw_fr", c)          # la lecture des tags vit AILLEURS
+        self.assertIn("lower()", c)           # la casse ne decide pas d'un droit
+
+
 class ChacunNeRegleQueSaListe(unittest.TestCase):
     def test_la_route_ne_lit_aucun_nom_de_compte_dans_le_corps(self):
         c = _corps("_do_partage_post")

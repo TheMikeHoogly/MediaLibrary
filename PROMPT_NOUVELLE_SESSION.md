@@ -9,8 +9,16 @@
 
 ## 0. L'état, en dix lignes
 
-**18/09 : les briques 6, 3 ET 5 du chantier 19 sont faites, regardées à
-l'écran et fusionnées dans `main`. Il reste la 4 et la 1.**
+**18/09 : les briques 6, 3, 5 ET 4 du chantier 19 sont faites, regardées à
+l'écran et fusionnées dans `main`. Il ne reste que la 1, le filet intime.**
+
+-2. **Brique 4 — être reconnu sur une photo la rouvre** (nuit du 18 au 19/09).
+   D'un cran, et d'un seul : elle rouvre ce que la LISTE DE PARTAGE a fermé,
+   jamais un masque (un banc prend les quatre masques un par un). **Pas
+   d'index clé → noms** : la question n'est posée que pour les clés que le
+   partage fermerait, et un banc COMPTE les appels pour que personne
+   n'inverse l'ordre. +34 ms sur 44 445 clés quand quelqu'un restreint, zéro
+   sinon.
 
 -1. **Brique 5 — qui voit mes photos** (nuit du 18 au 19/09). Trois états
    (champ absent = tout le monde, `[]` = personne, `[noms]` = ceux-là) ; la
@@ -72,14 +80,15 @@ brouillons NON envoyés.
    écrans compris.
 2. **CHANTIER 19, suite** — la brique 3 est faite ; **la prochaine est la 5** — l'ordre du plan
    (`docs/CHANTIER_19_VIE_PRIVEE.md`, à relire AVANT d'écrire une ligne) :
-   - **Brique 4, la PROCHAINE** (les personnes reconnues voient leurs
-     photos) : elle ne s'ouvre que sur ce que les masques n'ont pas fermé
-     (ordre du plan). Elle exige un index clé → noms en mémoire — et
-     l'expérience de la brique 5 dit quoi faire : **mesurer d'abord**, et
-     mémoïser ce qui se lit par clé (c'est ce qui a ramené le partage de
-     107 à 20 ms). `personnes_de(entree)` existe déjà dans `server.py`
-     (brique 3) : elle lit les `personne:` d'une entrée, c'est la moitié du
-     chemin.
+   - **Brique 1, la DERNIÈRE** (le filet « intime ») : **file de revue, pas
+     masquage** — la mesure du 17/09 a montré que le zéro-shot SigLIP ne
+     sépare pas (le max des témoins dépasse le p99 des intimes). Les N plus
+     fortes marges vont dans l'onglet Sensibles du PROPRIÉTAIRE, qui tranche.
+     Un modèle dédié ne se pose que si un jeu de validation constitué par Flo
+     et Mike le justifie — et ce jeu-là, je ne le regarde pas.
+     **Les captures d'écran**, elles, se détectent sans modèle (pas
+     d'appareil dans l'EXIF, PNG, dimensions d'écran) : signal franc, à
+     MESURER avant d'être câblé.
    - **Brique 1** (filet intime) en dernier : file de revue, pas masquage.
 3. **P2, l'e-mail** : trois brouillons Gmail prêts, non envoyés. Mike envoie,
    mots de passe à part.

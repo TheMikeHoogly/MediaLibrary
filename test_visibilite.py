@@ -758,5 +758,106 @@ class LePartageEstUneRelationEntreComptes(unittest.TestCase):
         self.assertEqual(sorted(m.data), [FLO_PUB])
 
 
+class CeQueListeEtSortedCoutentVraiment(unittest.TestCase):
+    """Trouve le 18/09 en ecrivant le banc de la brique 4, et EPINGLE ici
+    parce que c'est contre-intuitif : `list(vue)` et `sorted(vue)` appellent
+    le predicat DEUX fois par cle -- `list()` demande une taille, tombe sur
+    `__len__` qui filtre tout, puis `__iter__` refiltre tout.
+
+    Ce cas ne demande pas de corriger : il demande qu'on le SACHE, et qu'un
+    jour ou quelqu'un croira l'avoir corrige, il le prouve."""
+
+    def _compte(self, geste):
+        appels = []
+        d = {'a': {}, 'b': {}, 'c': {}}
+        vue = V.VueFiltree(d, lambda k: (appels.append(k), True)[1])
+        geste(vue)
+        return len(appels), len(d)
+
+    def test_list_et_sorted_paient_deux_passes(self):
+        for geste in (list, sorted):
+            n, cles = self._compte(geste)
+            self.assertEqual(n, 2 * cles, geste.__name__)
+
+    def test_for_keys_et_len_n_en_paient_qu_une(self):
+        for geste in (lambda v: [k for k in v], lambda v: v.keys(), len):
+            n, cles = self._compte(geste)
+            self.assertEqual(n, cles)
+
+    def test_len_reste_EXACT(self):
+        """Le point 17b : le compteur ne trahit pas ce qu'il cache."""
+        self.assertEqual(len(V.VueFiltree({'a': 1, 'b': 2, 'c': 3},
+                                          lambda k: k != 'b')), 2)
+
+
+class EtreRECONNUSurUnePhotoLaRouvre(unittest.TestCase):
+    """Chantier 19, brique 4 (17/09). Si `personne:Flo` est sur une photo, Flo
+    la voit -- meme si son proprietaire ne partage pas avec elle.
+
+    C'est le SEUL contrepoids du chantier, et sa portee est exactement d'un
+    cran : il rouvre ce que la LISTE DE PARTAGE a ferme, jamais ce qu'un
+    masque ferme. « Ce qui ferme passe toujours avant ce qui ouvre. »"""
+
+    FERME_FLO = frozenset({'Flo'})
+
+    def test_reconnue_sur_la_photo_elle_la_voit(self):
+        self.assertFalse(V.visible(FLO_PUB, 'Papa', False, None, (), self.FERME_FLO))
+        self.assertTrue(V.visible(FLO_PUB, 'Papa', False, None, (), self.FERME_FLO,
+                                  reconnu=True))
+
+    def test_elle_ne_rouvre_AUCUN_masque(self):
+        """Les quatre masques, un par un. Si l'un d'eux cede, la brique 4 est
+        devenue un passe-partout -- ce qu'elle n'est pas."""
+        # 1. le PRIVE
+        self.assertFalse(V.visible(FLO_PRIV, 'Papa', False, None, (), frozenset(),
+                                   reconnu=True))
+        # 2. le masque personnel d'un autre (brique 3)
+        self.assertFalse(V.visible(MIKE_PUB, 'Papa', False, None, ('Flo',), frozenset(),
+                                   reconnu=True))
+        # 3. le masque machine (chantier 18)
+        self.assertFalse(V.visible(FLO_PUB, 'Papa', True, None, (), frozenset(),
+                                   reconnu=True))
+        # 4. le depot reserve a son deposant (brique 2)
+        self.assertFalse(V.visible(RACINE, 'Papa', False, 'Flo', (), frozenset(),
+                                   reconnu=True))
+
+    def test_sans_partage_ferme_elle_ne_change_rien(self):
+        for r in (True, False):
+            self.assertTrue(V.visible(FLO_PUB, 'Papa', False, None, (), frozenset(),
+                                      reconnu=r), r)
+
+    def test_LA_VUE_rend_la_cle_a_celle_qui_est_dessus(self):
+        d = {FLO_PUB: {}, MIKE_PUB: {}}
+        # Papa est reconnu sur la photo de Flo, et sur elle seule
+        reconnu = lambda cle, u: cle == FLO_PUB and u == 'Papa'    # noqa: E731
+        m = Magasin(dict(d))
+        V.brancher(m, lambda: 'Papa', fermes=lambda u: self.FERME_FLO, reconnu=reconnu)
+        self.assertEqual(sorted(m.data), sorted(d))
+        self.assertIsNotNone(m.get(FLO_PUB))
+        # ... et Devi, qui n'y est pas, ne la voit toujours pas
+        m2 = Magasin(dict(d))
+        V.brancher(m2, lambda: 'Devi', fermes=lambda u: self.FERME_FLO, reconnu=reconnu)
+        self.assertEqual(sorted(m2.data), [MIKE_PUB])
+
+    def test_la_QUESTION_n_est_posee_que_pour_ce_que_le_partage_FERME(self):
+        """Le plan prevoyait un index cle -> noms en memoire. L'ORDRE le rend
+        inutile : lire les noms d'une photo coute une liste de mots-cles, et
+        on ne le demande que pour les cles d'un proprietaire qui restreint.
+        Ce compteur est la preuve -- s'il monte au nombre TOTAL de cles, la
+        brique 4 vient de rendre chaque lecture agregee plus chere."""
+        vues = []
+        reconnu = lambda cle, u: (vues.append(cle), False)[1]      # noqa: E731
+        d = {FLO_PUB: {}, MIKE_PUB: {}, RACINE: {}, MIKE_PRIV: {}}
+        m = Magasin(dict(d))
+        V.brancher(m, lambda: 'Papa', fermes=lambda u: self.FERME_FLO, reconnu=reconnu)
+        m.data.keys()                 # UNE passe (voir VueFiltree.__len__)
+        self.assertEqual(vues, [FLO_PUB])          # une seule question posee
+
+    def test_sans_appelable_le_partage_ferme_comme_avant(self):
+        m = Magasin({FLO_PUB: {}, MIKE_PUB: {}})
+        V.brancher(m, lambda: 'Papa', fermes=lambda u: self.FERME_FLO)
+        self.assertEqual(sorted(m.data), [MIKE_PUB])
+
+
 if __name__ == '__main__':
     unittest.main()

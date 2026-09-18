@@ -309,6 +309,34 @@ vérifie sa visibilité par `_key_index` attendait.
 
 Par ordre de gain mesuré, pas par ordre de facilité.
 
+### 3.-1 `list(vue)` et `sorted(vue)` paient DEUX passes du filtre (18/09)
+
+Trouvé en écrivant le banc de la brique 4 du chantier 19, par un compteur qui
+attendait une question et en a vu deux. **`list(vue)` et `sorted(vue)`
+appellent le prédicat de visibilité deux fois par clé** : `list()` demande
+d'abord une taille pour dimensionner son tableau, `operator.length_hint`
+tombe sur `VueFiltree.__len__` — qui filtre tout — puis `__iter__` refiltre
+tout. `for k in vue`, `vue.keys()` et `len(vue)` n'en paient qu'une.
+
+| | appels du prédicat |
+|---|---:|
+| `list(vue)` / `sorted(vue)` | **2 × n** |
+| `for`, `.keys()`, `len()` | n |
+
+Sur le fonds : **88 890 appels au lieu de 44 445**, soit ~8 ms par
+`list(STORE.data)` aujourd'hui (le prédicat est à ~0,17 µs quand personne ne
+restreint). `server.py` compte **47** appels de cette forme.
+
+**Deux fausses pistes, écartées par la mesure, pas par le raisonnement :**
+`__length_hint__` ne sert à rien (`length_hint` essaie `__len__` d'ABORD et
+ne se rabat sur le hint que s'il lève — posé puis retiré le 18/09, le
+compteur n'avait pas bougé) ; et mettre les clés filtrées en cache dans la
+vue rendrait `len()` FAUX dès qu'une écriture passe derrière — le point 17b
+se paierait 8 ms. **Donc : connu, mesuré, épinglé par un banc
+(`test_visibilite.CeQueListeEtSortedCoutentVraiment`), pas corrigé.** Le jour
+où ces 8 ms comptent, le geste sûr est de remplacer les `list(...data)` des
+chemins chauds par `.keys()`, un appel à la fois.
+
 ### 3.0 `GET /api/thumb` — 1,80 s de moyenne, et c'est le nouveau premier
 
 Il n'apparaissait pas dans le relevé du 10/09 : cette fenêtre-là n'a servi que

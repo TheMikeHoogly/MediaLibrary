@@ -61,7 +61,7 @@ photothèque s'ouvre à la famille.
 | 1 | Filet « intime » et captures de conversation | **MESURÉ 17/09 — le zéro-shot SigLIP ne sépare pas** (marge intime−témoin : p99 = 0,075 ; 18 photos au-dessus de 0,10 sur 40 330). Vaut comme FILE DE REVUE, pas comme verdict. Suite à trancher : file de revue, ou modèle dédié éprouvé sur un jeu que Flo et Mike constituent. |
 | 2 | Quarantaine des dépôts (`_Uploads` au déposant seul) | **LIVRÉ 17/09** |
 | 3 | « Masquer cette photo » pour une personne reconnue | **LIVRÉE 18/09, vue à l'écran** — le geste est dans la visionneuse, la photo ne bouge pas, seule la personne lève |
-| 4 | Les personnes reconnues voient leurs photos | à faire, après 5 |
+| 4 | Les personnes reconnues voient leurs photos | **LIVRÉE 18/09** — et sans l'index clé → noms que le plan croyait nécessaire : c'est l'ORDRE qui le remplace |
 | 5 | **Qui voit mes photos** : chacun coche | **LIVRÉE 18/09, vue à l'écran** — trois états, l'admin n'est pas un passe-partout, et la règle est gratuite tant que personne ne restreint |
 | 6 | Les comptes « pour de bon » : mot de passe et e-mail | **LIVRÉE 18/09, vue à l'écran** — l'actuel est exigé, l'admin réinitialise en provisoire, chaque compte porte une adresse facultative, et l'admin peut la poser pour quelqu'un. Le « mot de passe oublié » par SMTP est **refusé** (Mike, 18/09) |
 
@@ -74,6 +74,31 @@ banc** : `depot_de` comparait les chemins avec `os.path`, qui ne reconnaît pas
 `\` hors Windows — la règle répondait autre chose au banc qu'à la production.
 Corrigé par une normalisation écrite dans le projet, et le banc l'interdit
 désormais (`test_depots_uploads.LeDepotSeReconnaitALaPLACE`).
+
+**Brique 4, livrée le 18/09 — être reconnu sur une photo la rouvre.**
+Si `personne:Flo` est sur une photo, Flo la voit, même si son propriétaire ne
+partage pas avec elle. C'est le SEUL contrepoids du chantier, et sa portée est
+exactement d'un cran : il rouvre ce que la **liste de partage** a fermé,
+jamais un PRIVE, jamais un masque personnel, jamais un masque machine, jamais
+un dépôt réservé. Un banc prend les quatre masques un par un.
+
+**Ce que le plan prévoyait et qui n'a pas été construit** : « un index clé →
+noms en mémoire ». Il n'en faut pas. La question « suis-je sur cette photo ? »
+n'est posée **que pour les clés que le partage fermerait** — c'est l'ORDRE du
+prédicat qui fait le travail d'un index, et un banc compte les appels pour
+que personne ne l'inverse par mégarde.
+
+**Mesuré** sur 44 445 clés (caches chauds, meilleur de trois), avec des
+entrées portant leurs mots-clés :
+
+| | coût | ce que Papa voit |
+|---|---:|---:|
+| personne ne restreint | **6,9 ms** | 44 445 |
+| Flo restreint, sans la brique 4 | 24,0 ms | 29 630 |
+| Flo restreint, avec la brique 4 | 57,8 ms | 33 334 |
+
+Soit **+34 ms** quand quelqu'un restreint, et **0** sinon — pour 3 704 photos
+rendues à qui est dessus.
 
 **Brique 5, livrée le 18/09 — chacun choisit qui voit ses photos.**
 La visibilité cesse d'être une propriété du CHEMIN pour devenir une RELATION

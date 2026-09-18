@@ -842,6 +842,29 @@ def masques_du_chemin(cle):
     return _visibilite.masques_de(INDEX_BRUT.get(cle))
 
 
+def reconnu_sur(cle, utilisateur):
+    """Ce compte est-il RECONNU sur cette photo ? (chantier 19, brique 4)
+
+    Si `personne:Flo` est sur la photo, Flo la voit — même si son
+    propriétaire ne partage pas avec elle. C'est le seul contrepoids du
+    chantier, et il n'agit que sur la LISTE DE PARTAGE : jamais sur un PRIVE,
+    ni sur un masque personnel, ni sur un masque machine, ni sur un dépôt
+    réservé. `visibilite.filtre` ne l'appelle d'ailleurs QUE pour les clés
+    que le partage fermerait — lire les noms d'une photo coûte une liste de
+    mots-clés, et le faire 44 445 fois serait payer cher un cas rare.
+
+    Sur l'index BRUT, pour la même raison que `sensible_en_attente` : la vue
+    appelle ce prédicat pour décider, et le lire à travers elle tournerait en
+    rond."""
+    if not utilisateur:
+        return False
+    bas = str(utilisateur).strip().lower()
+    for n in personnes_de(INDEX_BRUT.get(cle)):
+        if str(n).strip().lower() == bas:
+            return True
+    return False
+
+
 def personnes_de(entree):
     """Les NOMS reconnus sur cette photo, tirés de ses tags `personne:`.
 
@@ -887,11 +910,12 @@ def fermes_du_compte(u):
 for _st in (STORE, FACE_STORE, ANIMAL_STORE):
     _visibilite.brancher(_st, utilisateur_vu, sensible=sensible_en_attente,
                          depot=depot_du_chemin, masques=masques_du_chemin,
-                         fermes=fermes_du_compte)
+                         fermes=fermes_du_compte, reconnu=reconnu_sur)
 for _st in (PEOPLE_STORE, PETS_STORE):
     _visibilite.brancher(_st, utilisateur_vu, par_nom=True,
                          sensible=sensible_en_attente, depot=depot_du_chemin,
-                         masques=masques_du_chemin, fermes=fermes_du_compte)
+                         masques=masques_du_chemin, fermes=fermes_du_compte,
+                         reconnu=reconnu_sur)
 
 # ─── Les COMPTES (chantier 17, étape 4 — 29/08/2026, choix de Mike : un mot de
 # passe par compte). Règle dans `comptes.py` ; fichier `comptes.json` HORS git.

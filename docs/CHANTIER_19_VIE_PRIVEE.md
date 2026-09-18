@@ -86,11 +86,19 @@ client — gratuit, immédiat, et ça aurait fait deux règles pour un seul droi
 Celle de l'écran aurait fini par mentir, et un bouton qui ment sur un droit de
 vie privée est pire qu'un bouton absent.
 
-### 4. Les personnes reconnues VOIENT leurs photos (nouveau, 17/09)
+### 4. Les personnes reconnues VOIENT leurs photos — **LIVRÉE le 18/09**
 
 Si `personne:Flo` est sur une photo, Flo la voit — même si son propriétaire ne
 partage pas avec elle. **Sauf** si la photo est dans un `PRIVE`, masquée
 (chantier 18), ou masquée par quelqu'un d'autre (brique 3).
+
+**Construite le 18/09**, et sans l'index clé → noms que ce plan annonçait :
+la question n'est posée que pour les clés que le PARTAGE fermerait, donc
+l'ordre du prédicat fait le travail de l'index. Un banc compte les appels
+(`test_la_QUESTION_n_est_posee_que_pour_ce_que_le_partage_FERME`) — si
+quelqu'un déplace la ligne, le compteur monte au nombre total de clés et le
+banc tombe. Coût mesuré : +34 ms sur 44 445 clés quand quelqu'un restreint,
+zéro sinon.
 
 ### 5. « Qui voit mes photos » : chacun choisit — **LIVRÉE le 18/09**
 
@@ -161,7 +169,7 @@ et **ce qui ferme passe toujours avant ce qui ouvre**.
 3. ~~**Onglet Partage** (brique 5)~~ — **livrée le 18/09**, avec le banc qui
    prouve qu'une photo non partagée ne fuit ni par une clé, ni par un
    compteur, ni par une fiche, ni par un avatar.
-4. **Reconnaissance** (brique 4), qui ne se pose que sur 3.
+4. ~~**Reconnaissance** (brique 4)~~ — **livrée le 18/09**.
 5. **Filet intime** : file de revue d'abord (a), modèle dédié seulement si la
    mesure le justifie (b).
 

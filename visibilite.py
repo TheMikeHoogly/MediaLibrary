@@ -16,6 +16,11 @@ d'autre n'est caché — pas de marquage photo par photo.
 
     visible(chemin, utilisateur) -> bool
 
+Depuis le 18/09 (chantier 19, brique 4), être RECONNU sur une photo la
+rouvre : si `personne:Flo` y est, Flo la voit même quand son propriétaire ne
+partage pas avec elle. C'est le seul contrepoids du chantier, et il n'agit
+que sur le PARTAGE — jamais sur un masque.
+
 Depuis le 18/09 (chantier 19, brique 5), la visibilité n'est plus seulement
 une propriété du CHEMIN : chacun choisit qui voit ses photos
 (`partage_ferme`). L'admin n'y est PAS un passe-partout — c'est un choix
@@ -270,7 +275,7 @@ def partage_ferme(fermes, chemin, utilisateur):
 
 
 def visible(chemin, utilisateur, sensible=False, depot_par=None, masques=(),
-            fermes=()):
+            fermes=(), reconnu=False):
     """`utilisateur` peut-il voir cette photo ? None (fil de fond) voit tout.
 
     DEUX causes de masquage, une seule règle. Le CHEMIN : chacun voit tout ce
@@ -307,12 +312,18 @@ def visible(chemin, utilisateur, sensible=False, depot_par=None, masques=(),
     # Le PARTAGE en dernier : les masques ferment d'abord (ordre écrit dans
     # `docs/CHANTIER_19_VIE_PRIVEE.md`), et ce qui ouvre ne rouvre jamais ce
     # qu'un masque a fermé — ici le partage ne fait que fermer DAVANTAGE.
-    if fermes and partage_ferme(fermes, chemin, utilisateur):
+    #
+    # LA RECONNAISSANCE (brique 4) est le SEUL contrepoids, et elle n'agit
+    # qu'ici : être sur une photo rouvre ce que la liste de partage avait
+    # fermé, JAMAIS ce qu'un masque ferme. On est au-dessous des quatre
+    # masques dans le code parce qu'on est au-dessous d'eux dans la règle.
+    if fermes and partage_ferme(fermes, chemin, utilisateur) and not reconnu:
         return False
     return True
 
 
-def filtre(utilisateur, sensible=None, depot=None, masques=None, fermes=()):
+def filtre(utilisateur, sensible=None, depot=None, masques=None, fermes=(),
+           reconnu=None):
     """Le prédicat `clé -> bool` d'un utilisateur, ou None s'il voit tout.
     `sensible` : un appelable `clé -> bool` qui dit si l'entrée est masquée
     par son ÉTAT. Absent, seul le chemin décide (le comportement d'avant).
@@ -351,8 +362,14 @@ def filtre(utilisateur, sensible=None, depot=None, masques=None, fermes=()):
         # `fermes` VIDE (personne n'a rien restreint) : pas une comparaison de
         # plus. C'est ce qui rend la brique 5 gratuite dans le cas courant --
         # le predicat tourne 44 445 fois pour un seul `len()`.
+        #
+        # Et `reconnu` n'est demande QUE pour les cles que le partage
+        # fermerait (brique 4) : lire les noms d'une photo coute une liste de
+        # mots-cles, on ne le fait donc pas 44 445 fois mais seulement pour ce
+        # qui appartient a quelqu'un qui restreint. Le plan prevoyait un index
+        # cle -> noms en memoire ; cet ORDRE-la le rend inutile.
         if fermes and partage_ferme(fermes, cle, utilisateur):
-            return False
+            return bool(reconnu and reconnu(cle, utilisateur))
         return True
     return ok
 
@@ -477,8 +494,24 @@ class VueFiltree(Mapping):
         return filter(self._ok, list(self._d))
 
     def __len__(self):
-        return len(list(filter(self._ok, list(self._d))))
+        """EXACT, et il le reste : `len()` compte ce qui est visible — c'est
+        le point 17b, un compteur ne doit pas trahir ce qu'il cache.
 
+        CE QU'IL COÛTE, mesuré le 18/09 par un banc de la brique 4 :
+        `list(vue)` et `sorted(vue)` appellent le prédicat **deux fois par
+        clé** — `list()` demande d'abord une taille pour dimensionner son
+        tableau, `operator.length_hint` tombe sur ce `__len__` qui filtre
+        tout, puis `__iter__` refiltre tout. 44 445 clés coûtent donc 88 890
+        appels. `for k in vue`, `vue.keys()` et `len(vue)` n'en font qu'un.
+
+        Deux fausses pistes, écartées par la mesure : `__length_hint__` ne
+        sert à rien (`length_hint` essaie `__len__` d'ABORD et ne se rabat
+        sur le hint que s'il lève), et mettre les clés filtrées en cache dans
+        la vue rendrait `len()` faux dès qu'une écriture passe derrière —
+        cher payé pour 8 ms. Le fait est donc CONNU et MESURÉ, pas corrigé ;
+        il y a 47 `list(...data)` / `sorted(...data)` dans `server.py`
+        (`PERFORMANCE.md`)."""
+        return len(list(filter(self._ok, list(self._d))))
     def get(self, k, default=None):
         if not self._ok(k):
             return default
@@ -657,7 +690,7 @@ class VueFiches(VueFiltree):
 
 
 def brancher(store, utilisateur, par_nom=False, sensible=None, depot=None,
-             masques=None, fermes=None):
+             masques=None, fermes=None, reconnu=None):
     """Fait de `store.data` une VUE dès qu'il y a un utilisateur courant
     (l'admin compris : il ne voit pas le PRIVE des autres). `utilisateur` est
     un appelable (thread-local côté serveur) ; None = fil de fond, tout.
@@ -686,7 +719,7 @@ def brancher(store, utilisateur, par_nom=False, sensible=None, depot=None,
         # deux requetes, et une vue qui garderait l'ensemble d'hier montrerait
         # ce que quelqu'un vient de fermer.
         return Vue(d, filtre(u, sensible, depot, masques,
-                             fermes(u) if fermes else ()))
+                             fermes(u) if fermes else (), reconnu))
 
     def ecrire(self, valeur):
         if isinstance(desc, property) and desc.fset:
@@ -718,7 +751,7 @@ def brancher(store, utilisateur, par_nom=False, sensible=None, depot=None,
             if u is not None and isinstance(entry, dict):
                 restaurer_fiche(entry, brut(store).get(name),
                                 filtre(u, sensible, depot, masques,
-                                       fermes(u) if fermes else ()))
+                                       fermes(u) if fermes else (), reconnu))
             return set_avant(name, entry, *a, **kw)
         store.set = set_restaure
     return store
