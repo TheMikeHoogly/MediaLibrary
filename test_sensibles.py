@@ -58,6 +58,15 @@ def _corps(nom):
     return "\n".join(ast.get_source_segment(SOURCE, x) or "" for x in corps)
 
 
+def _noeud_nom(nom):
+    """La ligne d'affectation d'une CONSTANTE de `server.py`."""
+    for n in ast.walk(ast.parse(SOURCE)):
+        if isinstance(n, ast.Assign) and any(
+                getattr(c, 'id', '') == nom for c in n.targets):
+            return ast.get_source_segment(SOURCE, n) or ''
+    raise AssertionError(nom + ' introuvable dans server.py')
+
+
 class LesCinqMagasinsRecoiventLEtat(unittest.TestCase):
     def test_les_trois_magasins_par_chemin(self):
         # Le BLOC, pas la ligne exacte (17/09) : cette assertion citait l'appel
@@ -602,6 +611,67 @@ class QuaranteQuatrePixelsPartout(unittest.TestCase):
             if 'class="btn' in t and "<!--UI:components-->" not in t:
                 muettes.append(f.name)
         self.assertEqual(muettes, [], "pages qui ecrivent .btn sans la feuille")
+
+
+class LaFileDeRevue(unittest.TestCase):
+    """Chantier 19, brique 1 — choix de Mike du 22/09 : **(a) la file de
+    revue**, pas un modele dedie, et RIEN de masque automatiquement.
+
+    Ce banc tient ce que le cablage peut perdre en silence : les trois
+    familles, le fait qu'aucune ne POSE un axe, et que la file « intime » est
+    lue dans un fichier HORS git -- une liste de chemins qui « ressemblent a »
+    vaut accusation, et le modele, lui, ne sait pas trancher (mesure du
+    17/09 : une photo de plage et une photo intime ne se separent pas)."""
+
+    def test_les_trois_familles_sont_rendues(self):
+        s = _corps('_serve_sensibles_candidats')
+        for cle in ("'documents'", "'captures'", "'intimes'"):
+            self.assertIn(cle, s)
+        self.assertIn("'familles'", s)
+
+    def test_la_route_des_candidats_n_ECRIT_rien(self):
+        # Une requete GET qui masquerait des centaines de photos serait le
+        # contraire de ce que la brique promet.
+        s = _corps('_serve_sensibles_candidats')
+        for interdit in ('STORE.set', 'INDEX_BRUT[', "['sensible']",
+                         'nouvelle_generation', 'save('):
+            self.assertNotIn(interdit, s)
+
+    def test_ce_qui_est_deja_juge_n_est_plus_propose(self):
+        """CHAQUE boucle doit poser les deux gardes, pas la fonction « quelque
+        part ». Ecrit d'abord en cherchant le nom dans le texte, ce banc
+        laissait passer le mutant qui retirait le garde d'UNE des deux
+        boucles : l'autre occurrence suffisait a le satisfaire."""
+        import ast
+        n = _noeud('_serve_sensibles_candidats')
+        boucles = [b for b in ast.walk(n) if isinstance(b, ast.For)]
+        self.assertGreaterEqual(len(boucles), 2, 'deux familles au moins')
+        for b in boucles:
+            src = ast.get_source_segment(SOURCE, b) or ''
+            if 'fiche(' not in src:          # boucle utilitaire, pas une famille
+                continue
+            self.assertIn('_verdict_deja_rendu', src)
+            self.assertIn('peut_juger', src)
+        # `sensible_de` : une photo qui porte deja un etat (masquee, ou jugee
+        # « pas sensible ») ne revient pas dans les familles PNG et intime.
+        self.assertIn('sensible_de', _corps('_serve_sensibles_candidats'))
+
+    def test_la_file_intime_est_un_CACHE_qui_se_date(self):
+        s = _corps('_file_intime')
+        self.assertIn('mtime', s)          # relue quand le fichier bouge
+        self.assertIn("'quand'", s)        # et elle DIT de quand elle date
+        self.assertIn("'modele'", s)
+
+    def test_la_file_intime_reste_HORS_git(self):
+        chemin = (HERE / '.gitignore').read_text(encoding='utf-8')
+        self.assertIn('_filet_intime.json', chemin)
+        n = _noeud_nom('FILET_INTIME_FICHIER')
+        self.assertIn('_filet_intime.json', n)
+
+    def test_un_fichier_absent_ou_casse_ne_casse_pas_la_page(self):
+        s = _corps('_file_intime')
+        self.assertIn('except OSError', s)
+        self.assertIn('ValueError', s)
 
 
 if __name__ == "__main__":

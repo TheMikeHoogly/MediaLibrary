@@ -35,6 +35,13 @@ copie.db-shm
 # propre. Le banc ecrit maintenant dans le dossier temporaire du systeme ; ce
 # motif n'est qu'un filet pour ce qui traine encore, pas une permission de
 # recommencer.
+# La FILE DE REVUE du filet « intime » (22/09) : une liste de chemins que la
+# machine trouve RESSEMBLANTS a une photo intime. Elle ne prouve rien — le
+# modele ne sait pas separer l'intime de la plage — mais ecrite dans un depot,
+# meme prive, elle vaut accusation. Elle se refait en 45 s :
+#   python mesure_copie_base.py && python mesure_filet_intime.py --base copie.db --top 400 --liste _filet_intime.json
+_filet_intime.json
+
 _mesure_*.db
 _mesure_*.db-wal
 _mesure_*.db-shm

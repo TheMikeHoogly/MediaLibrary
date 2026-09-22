@@ -4776,6 +4776,10 @@ def remplir_file_retag(label='campagne'):
 # elle tombe juste — 12/08 ×19, 20/08 ×1, 01/09 ×193, ce que confirment les
 # horodatages dans les noms de fichiers.
 DEPOTS_FILE = SCRIPT_DIR / "_depots_uploads.json"
+# La file de revue du filet « intime » (chantier 19, brique 1) : produite
+# par `mesure_filet_intime.py`, HORS git, relue quand elle bouge.
+FILET_INTIME_FICHIER = SCRIPT_DIR / "_filet_intime.json"
+_FILET_INTIME = {"photos": {}}
 # Sept jours : le délai demandé par Mike. Au-delà, un dépôt n'est plus un
 # transfert en cours, c'est une chose oubliée.
 DEPOT_MUR_S = 7 * 86400
@@ -14235,19 +14239,60 @@ class Handler(BaseHTTPRequestHandler):
                                    ensure_ascii=False, default=str).encode(),
                    'application/json')
 
+    def _file_intime(self):
+        """La FILE DE REVUE du filet « intime », ou `{}` — relue si le fichier
+        a bougé (chantier 19, brique 1, choix de Mike du 22/09 : **(a) la file
+        de revue**, jamais un masquage).
+
+        C'est un CACHE, et il le dit : la réponse porte `quand` et `modele`.
+        Le fichier est produit par `mesure_filet_intime.py`, hors git
+        (`.gitignore`) — une liste de chemins « qui ressemblent à » vaut
+        accusation, et le modèle, lui, ne sait pas : mesuré le 17/09, une
+        photo de plage et une photo intime ne se séparent pas. Ce que la file
+        apporte n'est pas un verdict, c'est un ORDRE de lecture."""
+        global _FILET_INTIME
+        try:
+            st = FILET_INTIME_FICHIER.stat()
+        except OSError:
+            _FILET_INTIME = {'quand': '', 'modele': '', 'photos': {}}
+            return _FILET_INTIME
+        if _FILET_INTIME.get('mtime') == st.st_mtime:
+            return _FILET_INTIME
+        try:
+            d = json.loads(FILET_INTIME_FICHIER.read_text(encoding='utf-8'))
+            _FILET_INTIME = {
+                'mtime': st.st_mtime, 'quand': d.get('quand') or '',
+                'modele': d.get('modele') or '', 'seuil': d.get('seuil'),
+                'photos': {p['cle']: p.get('marge')
+                           for p in (d.get('photos') or [])
+                           if isinstance(p, dict) and p.get('cle')}}
+        except (OSError, ValueError, TypeError):
+            _FILET_INTIME = {'quand': '', 'modele': '', 'photos': {}}
+        return _FILET_INTIME
+
     def _serve_sensibles_candidats(self):
-        """Ce que l'index CONTIENT déjà et qui mériterait un regard.
+        """Ce que l'index CONTIENT déjà et qui mériterait un regard — **trois
+        familles**, et aucune d'elles n'est un verdict.
 
         LECTURE SEULE : elle compte, elle échantillonne, elle ne pose aucun
         axe. Poser un masque sur des milliers de photos d'un coup est un geste
         de Mike, pas une conséquence d'une requête GET.
 
-        Aucun appel au modèle, aucun accès NAS : le prompt de production exige
-        déjà des mots-clés génériques pour un document (`REGLES_JSON`), donc
-        le signal est dans l'index. C'est ce qui rend cette passe utilisable
-        PENDANT la campagne — la question posée au tagueur, elle, changerait
-        le prompt, donc la version du pipeline, donc rendrait candidates les
-        12 000 photos déjà refaites.
+        1. **Documents** (06/09) : les mots-clés génériques que `REGLES_JSON`
+           impose au tagueur pour une pièce (`document`, `recu`, `capture`…).
+           Aucun appel au modèle, aucun accès NAS : le signal est dans l'index.
+        2. **Captures d'écran** (22/09) : l'EXTENSION `.png`. Mesuré le 19/09,
+           c'est le seul signal LISIBLE — ni l'appareil ni les dimensions ne
+           sont en base, et le mot-clé `capture d ecran` du tagueur ne désigne
+           qu'UNE photo. 443 fichiers : un nombre qu'on regarde.
+        3. **Intimes** (22/09) : la file de revue de `mesure_filet_intime.py`,
+           classée par ressemblance. **Le modèle ne sait pas** — mesuré le
+           17/09, une photo de plage et une photo intime ne se séparent pas —
+           et c'est pour ça que rien n'est masqué : la file donne un ORDRE de
+           lecture, l'humain tranche.
+
+        Chacun ne voit que ce qu'il peut juger (`peut_juger`), et ce qui a
+        déjà un verdict ou a déjà été rangé n'est plus proposé.
 
         `?n=` borne l'échantillon rendu ; `total` est le compte COMPLET —
         confondre les deux ferait lire un plafond comme un résultat, la panne
@@ -14259,35 +14304,74 @@ class Handler(BaseHTTPRequestHandler):
         except ValueError:
             n = 24
         u = utilisateur_vu()
+        intime = self._file_intime()
+        marges = intime.get('photos') or {}
+
+        def fiche(cle, motif):
+            return {'key': cle, 'nom': Path(cle).name,
+                    'url': _url_for_key(cle) or '',
+                    'vignette': '/api/thumb?key=' + urllib.parse.quote(
+                        cle, safe=''),
+                    'motif': motif}
+
         total, par_motif, echantillon, retagues = 0, {}, [], 0
+        captures, captures_n = [], 0
         for cle, e in list(INDEX_BRUT.items()):
             if u is not None and not _visibilite.peut_juger(cle, u):
                 continue
-            # Même règle que la liste : une photo déjà à la corbeille ou déjà
-            # rangée en PRIVE n'est pas une candidate, c'est un dossier clos.
+            # Même règle pour les trois familles : une photo déjà à la
+            # corbeille, déjà rangée en PRIVE ou déjà jugée est un dossier
+            # clos, pas une candidate.
             if _verdict_deja_rendu(cle):
                 continue
             oui, motif = _tm.candidat_sensible(e)
-            if not oui:
+            if oui:
+                total += 1
+                if (e.get('pipe') or '') == TAGGING_PIPELINE_VERSION:
+                    retagues += 1
+                for m in motif.split(', '):
+                    par_motif[m] = par_motif.get(m, 0) + 1
+                if len(echantillon) < n:
+                    ech = fiche(cle, motif)
+                    ech['pipe'] = e.get('pipe') or ''
+                    echantillon.append(ech)
+            if cle.lower().endswith('.png') and not _visibilite.sensible_de(e):
+                captures_n += 1
+                if len(captures) < n:
+                    captures.append(fiche(cle, 'fichier PNG'))
+
+        intimes, intimes_n = [], 0
+        for cle, marge in sorted(marges.items(), key=lambda kv: -(kv[1] or 0)):
+            e = INDEX_BRUT.get(cle)
+            if e is None or _verdict_deja_rendu(cle) or _visibilite.sensible_de(e):
                 continue
-            total += 1
-            if (e.get('pipe') or '') == TAGGING_PIPELINE_VERSION:
-                retagues += 1
-            for m in motif.split(', '):
-                par_motif[m] = par_motif.get(m, 0) + 1
-            if len(echantillon) < n:
-                echantillon.append({'key': cle, 'nom': Path(cle).name,
-                                    'url': _url_for_key(cle) or '',
-                                    'motif': motif,
-                                    'pipe': e.get('pipe') or ''})
+            if u is not None and not _visibilite.peut_juger(cle, u):
+                continue
+            intimes_n += 1
+            if len(intimes) < n:
+                intimes.append(fiche(cle, 'ressemblance %.3f' % (marge or 0)))
+
+        familles = [
+            {'cle': 'documents', 'titre': 'Documents',
+             'dit': "le tagueur a écrit un mot que le prompt réserve aux pièces",
+             'total': total, 'photos': echantillon},
+            {'cle': 'captures', 'titre': "Captures d'écran",
+             'dit': "fichier PNG — le seul signal lisible aujourd'hui",
+             'total': captures_n, 'photos': captures},
+            {'cle': 'intimes', 'titre': 'Ressemblances à regarder',
+             'dit': ("classées par ressemblance, la machine ne sait pas "
+                     "trancher — file du %s" % (intime.get('quand') or '?')),
+             'total': intimes_n, 'photos': intimes,
+             'quand': intime.get('quand') or '', 'modele': intime.get('modele') or ''},
+        ]
         self._send(200, json.dumps(
             {'ok': True, 'total': total, 'montres': len(echantillon),
              # `deja_retaguees` dit sur COMBIEN le filet est a jour : les
-             # autres portent encore les mots-cles de l'ancien modele, et le
-             # compte montera tout seul a mesure que la campagne avance.
+             # autres portent encore les mots-cles de l'ancien modele.
              'deja_retaguees': retagues,
              'par_motif': dict(sorted(par_motif.items(), key=lambda x: -x[1])),
-             'photos': echantillon}, ensure_ascii=False, default=str).encode(),
+             'photos': echantillon,
+             'familles': familles}, ensure_ascii=False, default=str).encode(),
             'application/json')
 
     def _do_sensibles_post(self, path):

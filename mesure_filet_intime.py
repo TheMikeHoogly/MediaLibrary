@@ -111,7 +111,13 @@ def main():
     ap.add_argument('--seuil', type=float, default=0.10,
                     help="marge intime - temoin au-dela de laquelle on liste")
     ap.add_argument('--liste', default='',
-                    help='fichier JSON ou ecrire les cles au-dessus du seuil')
+                    help='fichier JSON ou ecrire la file de revue '
+                         '(recommande : _filet_intime.json, hors git)')
+    ap.add_argument('--top', type=int, default=0,
+                    help='ne garder que les N plus fortes marges (0 = toutes '
+                         'celles au-dessus du seuil). La file de revue est '
+                         'faite pour etre REGARDEE : une liste sans plafond '
+                         'n est pas une file, c est un tas.')
     ap.add_argument('--exemples', type=int, default=12,
                     help='nombre de cles montrees a l ecran (chemins seuls)')
     a = ap.parse_args()
@@ -149,6 +155,8 @@ def main():
 
     if a.liste:
         sel = [i for i in np.argsort(-marge) if marge[i] >= a.seuil]
+        if a.top:
+            sel = sel[:a.top]
         out = {'quand': __import__('time').strftime('%Y-%m-%d %H:%M:%S'),
                'base': str(a.base), 'seuil': a.seuil,
                'modele': semantic.VERSION,
@@ -156,6 +164,11 @@ def main():
                'phrases_temoins': PHRASES_TEMOINS,
                'phrases_captures': PHRASES_CAPTURES,
                'n_vecteurs': len(cles), 'n_retenues': len(sel),
+               'top': a.top,
+               # Ce fichier est une FILE DE REVUE, pas un verdict : le modele
+               # ne sait pas separer l'intime de la plage (mesure du 17/09).
+               # Il classe, un humain tranche.
+               'verdict': False,
                'photos': [{'cle': cles[i], 'marge': round(float(marge[i]), 4),
                            'intime': round(float(intime[i]), 4),
                            'temoin': round(float(temoin[i]), 4),

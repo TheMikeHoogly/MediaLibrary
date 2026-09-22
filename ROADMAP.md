@@ -59,7 +59,7 @@ le récit dans git. Ce qui suit n'est plus qu'une carte.
 
 | # | Brique | État |
 |---|---|---|
-| 1 | Filet « intime » et captures de conversation | **MESURÉ deux fois, RIEN CÂBLÉ.** 17/09 : le zéro-shot SigLIP ne sépare pas l'intime du témoin. 19/09 : sur les captures, le mot-clé du tagueur ne désigne **1 photo sur 44 445**, et ni l'appareil ni les dimensions ne sont dans la base — il ne reste que `.png` (443 fichiers). **Deux choix pour Mike** (`QUESTIONS_MIKE.md`) |
+| 1 | Filet « intime » et captures de conversation | **LIVRÉ 22/09 — file de REVUE, rien de masqué** (choix de Mike). Trois familles dans `/sensibles` : documents 22, captures `.png` 443, ressemblances 400 (classées, file `_filet_intime.json` hors git). Les trois champs au passage de la vignette sont écartés avec l'option (b). |
 | 2 | Quarantaine des dépôts (`_Uploads` au déposant seul) | **LIVRÉ 17/09** |
 | 3 | « Masquer cette photo » pour une personne reconnue | **LIVRÉE 18/09, vue à l'écran** — le geste est dans la visionneuse, la photo ne bouge pas, seule la personne lève ; **19/09** : « Ce que j'ai masqué » (`/files?masque=moi`) pour les retrouver |
 | 4 | Les personnes reconnues voient leurs photos | **LIVRÉE 18/09** — et sans l'index clé → noms que le plan croyait nécessaire : c'est l'ORDRE qui le remplace |

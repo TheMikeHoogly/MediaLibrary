@@ -280,3 +280,27 @@ avait pas d'écran. Chacun garde la main sur la sienne dans « Mon compte ».
 **Ce qui ne change pas** : l'e-mail est une donnée personnelle. Elle reste
 dans `comptes.json`, hors git, hors XMP, et ne sort jamais dans une page que
 les autres comptes peuvent lire.
+
+
+## Brique 1 — LIVRÉE le 22/09 : une file de revue, et rien d'autre
+
+Mike : **« je suis tes recommandations »** → **(a)**. Ce qui existe désormais
+dans l'onglet Sensibles, sous les photos masquées :
+
+| famille | compte (22/09) | ce qui la désigne |
+|---|---:|---|
+| Documents | 22 | les mots-clés que `REGLES_JSON` réserve aux pièces |
+| Captures d'écran | 443 | l'extension `.png` — le seul signal lisible |
+| Ressemblances à regarder | 400 | `mesure_filet_intime.py`, classées par marge |
+
+**Aucune de ces photos n'est masquée, aucune n'a bougé.** Chaque fiche porte
+les trois gestes déjà en place (corbeille, rendre privée, pas sensible), et
+« pas sensible » mémorise : la photo ne sera plus proposée.
+
+**Ce qui est ÉCARTÉ avec l'option (b)** : les trois champs (appareil, largeur,
+hauteur) au passage de la vignette. Ils n'avaient de sens que pour un modèle
+dédié ; sans lui, `.png` suffit à constituer la file.
+
+**La file « intime » est hors git** (`_filet_intime.json`, `.gitignore`) : une
+liste de chemins qui « ressemblent à » vaut accusation, et le modèle ne sait
+pas trancher. Elle se refait en 45 s, et la page DIT de quand elle date.

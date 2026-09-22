@@ -22,6 +22,9 @@
            border-radius: var(--r-md); padding: var(--e-4);
            margin: var(--e-3) var(--e-4) var(--e-6); max-width: 900px;
            box-shadow: 0 1px 0 var(--papier-2), 0 8px 24px #0008; }
+.titre-file { font: 600 var(--t-xl)/1.2 var(--f-affichage); color: var(--texte);
+             margin: var(--e-6) 0 var(--e-1); }
+#candidats > .aide { color: var(--graphite); margin: 0 0 var(--e-3); }
 .feuille h2 { font: 600 var(--t-xl)/1.2 var(--f-affichage);
               letter-spacing: -0.01em; margin-bottom: var(--e-2); }
 .aide { color: var(--graphite-p); font-size: var(--t-sm); line-height: 1.5; }
@@ -125,6 +128,7 @@
 
 <div id="liste"></div>
 
+
 <section class="vide" id="vide" hidden>
   <h2>Rien &agrave; juger</h2>
   <p>Aucune photo n&rsquo;est en attente. Quand l&rsquo;analyse soup&ccedil;onnera
@@ -133,6 +137,17 @@
   trois gestes.</p>
   <p class="aide">Rien n&rsquo;est d&eacute;plac&eacute; ni effac&eacute; sans
   votre verdict.</p>
+</section>
+
+<!-- La FILE DE REVUE (chantier 19, brique 1, 22/09). Elle ne dit pas « ceci
+     est sensible » : elle dit « regarde celle-la ». Rien n'est masque, rien
+     n'a bouge, et les trois gestes sont les memes que plus haut. -->
+<section id="candidats" hidden>
+  <h2 class="titre-file">&Agrave; regarder</h2>
+  <p class="aide" id="file-dit">La machine ne tranche pas&nbsp;: elle propose
+  un ordre de lecture. Aucune de ces photos n&rsquo;est masqu&eacute;e, aucune
+  n&rsquo;a boug&eacute;.</p>
+  <div id="familles"></div>
 </section>
 
 <div class="toast" id="toast" role="status" aria-live="polite" hidden>
@@ -404,7 +419,26 @@
     majPlus();
   }
 
+  /* La file de revue a son propre registre : ses fiches ne sont pas dans
+     `ETAT`, qui ne contient que les photos MASQUEES. Sans lui, un verdict
+     rendu sur une candidate tombait dans le repli de `retirer` et rechargeait
+     la liste des masquees -- c'est-a-dire ne retirait rien a l'ecran. */
+  var CANDIDATS = {};
+
+  function retirerCandidate(cle) {
+    var c = CANDIDATS[cle];
+    if (!c) { return false; }
+    if (c.noeud && c.noeud.parentNode) { c.noeud.parentNode.removeChild(c.noeud); }
+    delete CANDIDATS[cle];
+    if (c.compteur) {
+      c.reste = Math.max(0, (c.reste || 1) - 1);
+      c.compteur.textContent = c.libelle(c.reste);
+    }
+    return true;
+  }
+
   function retirer(cle) {
+    if (retirerCandidate(cle)) { return; }
     var i = -1, k;
     for (k = 0; k < ETAT.photos.length; k++) {
       if (ETAT.photos[k].key === cle) { i = k; break; }
@@ -491,7 +525,70 @@
       });
   }
 
+  /* ── La file de revue ─────────────────────────────────────────────── */
+  function familleSection(f) {
+    var sec = document.createElement('section');
+    sec.className = 'feuille';
+    var h3 = document.createElement('h3');
+    h3.textContent = f.titre;
+    sec.appendChild(h3);
+    var etat = { reste: f.total || 0 };
+    etat.libelle = function (n) {
+      return n + (n > 1 ? ' photos' : ' photo') + ' — ' + (f.dit || '');
+    };
+    var compte = document.createElement('p');
+    compte.className = 'meta';
+    compte.textContent = etat.libelle(etat.reste);
+    sec.appendChild(compte);
+    etat.compteur = compte;
+
+    var dedans = document.createElement('div');
+    sec.appendChild(dedans);
+
+    var b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'btn';
+    var montres = (f.photos || []).length;
+    b.textContent = 'Regarder ' + montres
+      + (f.total > montres ? ' (sur ' + f.total + ')' : '');
+    b.addEventListener('click', function () {
+      b.remove();
+      (f.photos || []).forEach(function (p) {
+        var n = feuille(p);
+        dedans.appendChild(n);
+        CANDIDATS[p.key] = { noeud: n, compteur: compte,
+                             reste: etat.reste, libelle: etat.libelle };
+      });
+      if (f.total > montres) {
+        var reste = document.createElement('p');
+        reste.className = 'aide';
+        reste.textContent = 'Les ' + (f.total - montres) + ' autres viendront '
+          + 'quand celles-ci seront jugées : la file se refait à chaque '
+          + 'chargement de cette page.';
+        sec.appendChild(reste);
+      }
+    });
+    if (montres) { sec.appendChild(b); }
+    return sec;
+  }
+
+  function chargerCandidats() {
+    fetch('/api/sensibles/candidats?n=24')
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        var fam = (d && d.familles) || [];
+        var utiles = fam.filter(function (f) { return (f.total || 0) > 0; });
+        if (!utiles.length) { return; }
+        var hote = document.getElementById('familles');
+        hote.textContent = '';
+        utiles.forEach(function (f) { hote.appendChild(familleSection(f)); });
+        document.getElementById('candidats').hidden = false;
+      })
+      .catch(function () { /* la file est un PLUS : son absence ne casse rien */ });
+  }
+
   charger();
+  chargerCandidats();
 })();
 </script>
 </body>
