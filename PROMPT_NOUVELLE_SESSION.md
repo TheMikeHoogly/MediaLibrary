@@ -1,4 +1,4 @@
-# Reprise — MediaLibrary, après le 22 septembre 2026
+# Reprise — MediaLibrary, après le 22 septembre 2026 (soir)
 
 > **Ce fichier est ÉPHÉMÈRE.** Il décrit un état, pas des règles. Les règles
 > vivent dans `CLAUDE.md`, le plan dans `ROADMAP.md`, les verdicts dans
@@ -8,6 +8,30 @@
 ---
 
 ## 0. Ce qui vient de se passer — 22/09
+
+**Le CHANTIER 19 EST FINI, brique 1 comprise.** Mike a répondu aux deux
+questions : « je suis tes recommandations » → **(a) la file de revue**, et
+donc **pas** les trois champs au passage de la vignette (ils n'avaient de sens
+que pour un modèle dédié).
+
+**Livré** (`6d1475f`) : l'onglet Sensibles porte une section « À regarder »,
+sous les photos masquées, en **trois familles** — documents **22**, captures
+`.png` **443**, ressemblances **400** (classées par marge). **Aucune photo
+n'est masquée, aucune n'a bougé** : chaque fiche porte les trois gestes, et
+« pas sensible » mémorise. Vu à l'écran : les 24 fiches d'une famille, un
+verdict posé puis ANNULÉ (443 → 442 → 443), vignettes servies.
+
+- La file « intime » vit dans **`_filet_intime.json`, hors git** — une liste
+  de chemins qui « ressemblent à » vaut accusation, et le modèle ne sait pas
+  trancher. Elle se refait en 45 s (`mesure_filet_intime.py --top 400`), et la
+  page DIT de quand elle date.
+- Bancs : `test_sensibles.LaFileDeRevue` (six), dont un qui exige le garde
+  `_verdict_deja_rendu` dans CHAQUE boucle de famille — écrit d'abord en
+  cherchant le nom dans le texte, il laissait passer le mutant.
+
+---
+
+## 0 bis. Le matin du 22/09 — la vue posée par lecture
 
 **La page du fonds entier était DEUX FOIS plus lente qu'au 15/09, et personne
 ne le savait.** Remesurée avant de toucher quoi que ce soit : 7,3 s, dont
@@ -111,6 +135,10 @@ Acquis d'avant : veille (P1), campagne de retag ABANDONNÉE, trois comptes
    19 est **terminée** — ne pas rouvrir une brique livrée sans chiffre neuf.
 3. **Prochaines cibles, si Mike ne dit rien d'autre** (par ordre de valeur, pas
    de facilité) :
+   - **la file de revue à l'usage** : 443 + 400 fiches, c'est beaucoup pour
+     une page qui en montre 24 par famille. Si Mike ou Flo s'en servent
+     vraiment, il faudra un « voir la suite » qui reprenne où on s'est arrêté
+     — aujourd'hui la file se refait à chaque chargement ;
    - **`/api/sujets/list` : 2,2 s** (mesuré le 22/09) — trois listes qui
      balaient le fonds ; le même réflexe que § 3.26 n'a PAS été appliqué là,
      faute de mesure par phase. Poser l'horloge d'abord ;
