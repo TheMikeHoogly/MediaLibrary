@@ -1,4 +1,4 @@
-# Reprise — MediaLibrary, après la nuit du 18 au 19 septembre 2026
+# Reprise — MediaLibrary, après le 22 septembre 2026
 
 > **Ce fichier est ÉPHÉMÈRE.** Il décrit un état, pas des règles. Les règles
 > vivent dans `CLAUDE.md`, le plan dans `ROADMAP.md`, les verdicts dans
@@ -7,7 +7,34 @@
 
 ---
 
-## 0. L'état, en dix lignes
+## 0. Ce qui vient de se passer — 22/09
+
+**La page du fonds entier était DEUX FOIS plus lente qu'au 15/09, et personne
+ne le savait.** Remesurée avant de toucher quoi que ce soit : 7,3 s, dont
+**4,0 s dans la seule passe `marques`** — 406 ms une semaine plus tôt. Le
+chantier 19 avait alourdi le prédicat de visibilité, et cette boucle posait une
+VUE PAR CLÉ (`STORE.data` écrit dans son corps : 44 436 fois).
+
+**Livré** (`7ec7767`) : vue hissée dans les trois boucles de la galerie, puis
+**mémorisée par fil et par génération** — une génération par requête, et une de
+plus à chaque écriture qui change une règle (partage, masque, magasin
+remplacé). Couvre les **128 endroits** du projet qui écrivent `*_STORE.data`
+dans une boucle, et ceux qu'on écrira demain.
+
+| | avant | après |
+|---|---:|---:|
+| page du fonds (chaud) | 7 277 ms | **3 550 ms** |
+| CPU | 7 156 ms | **3 469 ms** |
+| `marques` | 4 028 ms | **417 ms** |
+| vues posées pour la page | ~44 436 | **3** |
+
+**Un compteur d'étendue** le tient : `vues_posees` dans `/api/perf`. Trois
+mutants tués ; le banc qui exigeait « la liste de partage relue à CHAQUE
+lecture » a été réécrit pour exiger les deux bouts (`PERFORMANCE.md` § 3.26).
+
+---
+
+## 0 bis. L'état d'avant, en dix lignes
 
 **Le CHANTIER 19 est FINI côté code — briques 2, 3, 4, 5 et 6 livrées, vues à
 l'écran et fusionnées dans `main`.** La brique 1 est mesurée et
@@ -84,6 +111,12 @@ Acquis d'avant : veille (P1), campagne de retag ABANDONNÉE, trois comptes
    19 est **terminée** — ne pas rouvrir une brique livrée sans chiffre neuf.
 3. **Prochaines cibles, si Mike ne dit rien d'autre** (par ordre de valeur, pas
    de facilité) :
+   - **`/api/sujets/list` : 2,2 s** (mesuré le 22/09) — trois listes qui
+     balaient le fonds ; le même réflexe que § 3.26 n'a PAS été appliqué là,
+     faute de mesure par phase. Poser l'horloge d'abord ;
+   - **`C3` étape 2 — la vraie pagination**, avec les chiffres du 22/09 :
+     `mode_index` 835 ms, `envoi` 796, `gabarit` 406, `json` 275, et
+     **19,3 Mo** envoyés. C'est le nombre de fiches BÂTIES qu'il faut borner ;
    - **la vue d'un NON-admin, prouvée à l'écran** : un compte d'essai créé et
      supprimé par Mike, et `verifier_non_fuite.py` lancé par lui — c'est le
      seul trou de preuve du chantier 19, et il ne se bouche que par lui ;
