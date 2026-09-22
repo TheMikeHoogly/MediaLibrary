@@ -767,6 +767,19 @@ vraiment : le délai du scan de fond (~30 min) et le `stat()` des dates (43 ms
 sur 23 s). C'est ce délai qu'on a échangé contre 16 secondes, et le bandeau de
 la page le dit.
 
+**C3 bis — LA VUE POSÉE PAR LECTURE : 7,3 s → 3,5 s, livré le 22/09.** Avant
+de borner quoi que ce soit, la page a été remesurée : elle était **deux fois
+plus lente** que le 15/09, et le poste neuf (`marques`, 4,0 s) n'existait pas
+la semaine d'avant — le chantier 19 avait alourdi le prédicat de visibilité, et
+une boucle posait une vue PAR CLÉ. Hissée dans les trois boucles de la galerie,
+puis **mémorisée par fil et par génération** pour les 125 autres endroits, avec
+un compteur d'étendue (`vues_posees` : 3 pour la page du fonds). Détail et
+mutants : `PERFORMANCE.md` § 3.26.
+
+**Ce que la pagination doit encore attaquer, chiffres du 22/09** : `mode_index`
+835 ms, `envoi` 796, `gabarit` 406, `marques` 417, `index` 389, `json` 275 —
+et **19,3 Mo** envoyés. Tout cela croît avec le nombre de fiches BÂTIES.
+
 **C4. Le premier chargement reste cher** : ~2,5 s après un redémarrage,
 partage et caches froids. Aucun mémo ne fabrique quoi que ce soit, ils évitent
 de refaire. Ce n'est pas un défaut, c'est la nature d'un cache — mais c'est ce

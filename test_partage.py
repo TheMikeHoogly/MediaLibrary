@@ -140,5 +140,46 @@ class LesTroisEtatsMontentJusquALEcran(unittest.TestCase):
         self.assertIn("liste is not None", _corps("_do_partage_post"))
 
 
+class UneGenerationParRequETE(unittest.TestCase):
+    """22/09. La vue est desormais MEMORISEE par fil et par generation. La
+    liberte gagnee (une vue au lieu de 44 436 dans une boucle) est bornee par
+    une obligation : **tout ce qui change la regle ouvre une generation**.
+    Ce banc tient les deux endroits qui le doivent."""
+
+    def test_chaque_requete_en_ouvre_une(self):
+        s = _corps('_ouvrir')
+        self.assertIn('nouvelle_generation()', s)
+        # AVANT la lecture du compte : une generation ouverte apres coup
+        # laisserait la premiere lecture de la requete sur le memo d'avant.
+        self.assertLess(s.index('nouvelle_generation()'),
+                        s.index('COMPTES.lire_jeton'))
+
+    def test_regler_son_partage_en_ouvre_une(self):
+        s = _corps('_do_partage_post')
+        self.assertIn('definir_partage', s)
+        self.assertIn('nouvelle_generation()', s)
+        self.assertLess(s.index('definir_partage'), s.index('nouvelle_generation()'))
+
+    def test_poser_un_masque_en_ouvre_une(self):
+        s = _corps('_do_masque_post')
+        self.assertIn('nouvelle_generation()', s)
+
+    def test_la_page_du_fonds_ne_pose_pas_une_vue_par_CLE(self):
+        """Le defaut que tout ceci repare : `STORE.data` ecrit DANS une
+        boucle. Le compteur d'etendue (`vues_posees`) le dit en production ;
+        ce banc l'interdit a la source, dans la fonction qui l'avait paye."""
+        import ast
+        n = _noeud('_serve_gallery')
+        dedans = []
+        for b in ast.walk(n):
+            if isinstance(b, (ast.For, ast.ListComp, ast.GeneratorExp, ast.While)):
+                for x in ast.walk(b):
+                    if (isinstance(x, ast.Attribute) and x.attr == 'data'
+                            and isinstance(x.value, ast.Name)
+                            and x.value.id.endswith('STORE')):
+                        dedans.append((x.lineno, x.value.id))
+        self.assertEqual(dedans, [], 'vue posee dans une boucle : %r' % dedans)
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

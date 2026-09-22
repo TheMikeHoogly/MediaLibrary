@@ -742,15 +742,40 @@ class LePartageEstUneRelationEntreComptes(unittest.TestCase):
         self.assertEqual(vue['faces'], [[MIKE_PUB, 1]])
         self.assertEqual(vue['confirmed'], [])
 
-    def test_l_ensemble_est_relu_A_CHAQUE_lecture(self):
+    def test_l_ensemble_est_relu_DES_QUE_LA_REGLE_BOUGE(self):
         """Une vue qui garderait l'ensemble d'hier montrerait ce que
-        quelqu'un vient de fermer."""
+        quelqu'un vient de fermer.
+
+        Ce banc disait « a chaque LECTURE » jusqu'au 22/09, et la vue etait
+        alors reposee a chaque acces -- 44 436 fois dans une boucle de la page
+        du fonds, 4,0 s. Le contrat est desormais : la vue vaut pour une
+        GENERATION, le serveur en ouvre une par requete, et **tout ce qui
+        change la regle en ouvre une** (`definir_partage`, une ecriture de
+        magasin, un `comptes.json` recharge). La liberte gagnee est bornee par
+        cette obligation : ce banc tient les DEUX bouts -- la vue ne se refait
+        pas pour rien, et un changement de regle la referme."""
         etat = {'fermes': frozenset()}
         m = Magasin({FLO_PUB: {}, MIKE_PUB: {}})
         V.brancher(m, lambda: 'Papa', fermes=lambda u: etat['fermes'])
+        V.nouvelle_generation()
         self.assertEqual(len(m.data), 2)
         etat['fermes'] = self.FERME_FLO
+        V.nouvelle_generation()          # ce que fait tout ecrivain de la regle
         self.assertEqual(sorted(m.data), [MIKE_PUB])
+
+    def test_une_fermeture_SANS_generation_ne_doit_pas_pouvoir_arriver(self):
+        """Le corollaire, ecrit noir sur blanc : si un jour quelqu'un change
+        une liste de partage sans ouvrir de generation, la vue en cours ne le
+        verra pas. Ce banc NOMME le seul endroit qui a le droit de le faire --
+        et le serveur, lui, appelle `nouvelle_generation` dans `_ouvrir` et
+        juste apres `definir_partage` (banc dans `test_partage.py`)."""
+        etat = {'fermes': frozenset()}
+        m = Magasin({FLO_PUB: {}, MIKE_PUB: {}})
+        V.brancher(m, lambda: 'Papa', fermes=lambda u: etat['fermes'])
+        V.nouvelle_generation()
+        self.assertEqual(len(m.data), 2)
+        etat['fermes'] = self.FERME_FLO
+        self.assertEqual(len(m.data), 2)     # memo : la generation n'a pas bouge
 
     def test_sans_fermes_la_vue_est_celle_d_avant(self):
         m = Magasin({FLO_PUB: {}, MIKE_PRIV: {}})
@@ -895,6 +920,68 @@ class EtreRECONNUSurUnePhotoLaRouvre(unittest.TestCase):
         m = Magasin({FLO_PUB: {}, MIKE_PUB: {}})
         V.brancher(m, lambda: 'Papa', fermes=lambda u: self.FERME_FLO)
         self.assertEqual(sorted(m.data), [MIKE_PUB])
+
+
+class UneVueParRequete(unittest.TestCase):
+    """22/09. `store.data` est une propriete : chaque acces rebatit le
+    predicat. Le projet ecrit `STORE.data` dans le corps de ses boucles a 128
+    endroits, et l'un d'eux coutait 4,0 s sur les 7,3 s de la page du fonds.
+    La vue est desormais memorisee par FIL et par GENERATION."""
+
+    def setUp(self):
+        V.nouvelle_generation()
+        self.d = {MIKE_PUB: {}, FLO_PUB: {}}
+        self.m = Magasin(dict(self.d))
+        V.brancher(self.m, lambda: self.qui, sensible=lambda c: False)
+        self.qui = 'Flo'
+
+    def test_deux_lectures_de_suite_rendent_LA_MEME_vue(self):
+        avant = V.VUES_POSEES
+        a, b = self.m.data, self.m.data
+        self.assertIs(a, b)
+        self.assertEqual(V.VUES_POSEES - avant, 1)
+
+    def test_une_generation_neuve_repose_la_vue(self):
+        a = self.m.data
+        V.nouvelle_generation()
+        self.assertIsNot(a, self.m.data)
+
+    def test_un_AUTRE_compte_ne_recoit_pas_la_vue_du_premier(self):
+        a = self.m.data
+        self.qui = 'Papa'
+        b = self.m.data
+        self.assertIsNot(a, b)
+        # Le memo garde UNE vue par magasin : revenir a Flo en repose une
+        # neuve. Ce qui compte n'est pas de la retrouver, c'est que Papa
+        # n'ait jamais recu celle de Flo.
+        self.qui = 'Flo'
+        self.assertIsNot(self.m.data, b)
+
+    def test_remplacer_le_dictionnaire_perime_le_memo(self):
+        a = self.m.data
+        self.m.data = {MIKE_PUB: {}}
+        b = self.m.data
+        self.assertIsNot(a, b)
+        self.assertEqual(sorted(b), [MIKE_PUB])
+
+    def test_un_fil_de_fond_ne_pose_aucune_vue(self):
+        avant = V.VUES_POSEES
+        self.qui = None
+        self.assertEqual(sorted(self.m.data), sorted(self.d))
+        self.assertEqual(V.VUES_POSEES, avant)
+
+    def test_la_vue_memorisee_lit_l_etat_VIVANT(self):
+        # Le memo garde le PREDICAT, pas une copie : un masque pose apres la
+        # lecture doit se voir sans nouvelle generation -- sinon un memo
+        # rendrait visible ce qu'on vient de cacher.
+        etat = {'masquee': False}
+        m = Magasin({MIKE_PUB: {}, FLO_PUB: {}})
+        V.brancher(m, lambda: 'Papa',
+                   sensible=lambda c: etat['masquee'] and c == FLO_PUB)
+        V.nouvelle_generation()
+        self.assertIn(FLO_PUB, m.data)
+        etat['masquee'] = True
+        self.assertNotIn(FLO_PUB, m.data)
 
 
 if __name__ == '__main__':

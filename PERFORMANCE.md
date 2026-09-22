@@ -1518,6 +1518,59 @@ huit racines manquantes qui n'existent pas.
 
 ---
 
+### 3.26 Une VUE par lecture au lieu d'une par requête : **7,3 s → 3,5 s**
+— mesuré et livré le 22/09
+
+**Ce que la mesure a montré avant qu'on touche à quoi que ce soit.** Page du
+fonds entier (`/files?dir=1&rec=1`, 44 436 photos), serveur debout depuis
+trois jours, deux chargements :
+
+| phase | 22/09 AVANT | 15/09 (fiches légères) | 22/09 APRÈS |
+|---|---:|---:|---:|
+| `marques` | **4 028 / 4 730 ms** | 406 ms | **417 ms** |
+| `mode_index` | 844 / 1 192 | 915 | 835 |
+| `motifs` | 251 / 735 | 405 | 252 |
+| `index` | 513 | 400 | 389 |
+| `envoi` | 796 / 821 | 800 | 796 |
+| **total** | **7 277 / 8 872 ms** | 3 700 | **3 550 ms (chaud)** |
+| CPU | 7 156 / 8 281 ms | — | **3 469 ms** |
+
+`marques` avait été mesurée à 406 ms le 15/09 : **le chantier 19 l'a
+multipliée par dix sans que personne ne le voie**, parce que rien ne mesurait
+ce qu'elle faisait vraiment.
+
+**La cause.** `STORE.data` est une PROPRIÉTÉ : chaque accès relit le compte
+courant, recharge `comptes.json` s'il a bougé, rebâtit le prédicat de
+visibilité — six règles depuis le chantier 19 — et enveloppe le dictionnaire.
+La passe des marques l'écrivait **dans le corps de sa boucle** : 44 436 vues
+posées pour une page. Le projet fait pareil à **128 endroits**, comptés à
+l'arbre syntaxique.
+
+**Ce qui a été fait, dans cet ordre.**
+
+1. **Hisser la vue** dans les trois boucles de `_serve_gallery` (marques,
+   mode jour, mode masque) : `marques` 4 028 → **417 ms**.
+2. **Mémoriser la vue par FIL et par GÉNÉRATION** (`visibilite`), ce qui
+   couvre les 125 autres endroits et ceux qu'on écrira demain. Le serveur
+   ouvre une génération dans `_ouvrir` — donc une par requête — et **tout ce
+   qui change une règle en ouvre une** : régler son partage, remplacer le
+   dictionnaire d'un magasin, poser un masque.
+3. **Un compteur d'ÉTENDUE** (règle n° 8) : `visibilite.VUES_POSEES`, rendu
+   par `/files` dans `/api/perf` sous `vues_posees`. La page du fonds en pose
+   **3**. Le jour où ce chiffre repasse à 44 000, il se voit.
+
+**Ce que la liberté coûte, écrit noir sur blanc.** Une vue mémorisée ne relit
+plus la liste de partage à CHAQUE lecture ; elle la relit à chaque génération.
+Le banc qui exigeait « à chaque lecture » a été réécrit pour exiger les deux
+bouts : la vue ne se refait pas pour rien, **et** un changement de règle la
+referme (`test_visibilite.UneVueParRequete`,
+`test_partage.UneGenerationParRequETE`). Trois mutants tués : mémo sans
+génération, mémo sans le nom du compte, `_ouvrir` sans génération.
+
+**Ce que ça ne règle pas** : `/api/sujets/list` reste à **2,2 s** (trois
+listes qui balaient le fonds), et la page envoie toujours **19,3 Mo** — la
+vraie pagination (§ C3 étape 2) garde tout son sens, avec des chiffres frais.
+
 ## 4. Ce qui a été vérifié et qui va bien
 
 À ne pas rouvrir sans raison neuve :

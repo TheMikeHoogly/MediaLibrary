@@ -13402,6 +13402,9 @@ class Handler(BaseHTTPRequestHandler):
         Rend True si la requête peut continuer ; sinon la réponse est déjà
         partie (302 vers /connexion pour une page, 401 pour une API)."""
         path = urllib.parse.urlparse(self.path).path
+        # Une REQUÊTE, une génération : les vues mémorisées de la requête
+        # précédente cessent de valoir ici, et jamais plus tard (22/09).
+        _visibilite.nouvelle_generation()
         COMPTES.recharger_si_change()
         nom = None
         if COMPTES.actifs():
@@ -14387,6 +14390,9 @@ class Handler(BaseHTTPRequestHandler):
             return
         try:
             COMPTES.definir_partage(u, liste)
+            # La règle vient de changer : une vue mémorisée plus tôt DANS
+            # CETTE REQUÊTE montrerait ce qu'on vient de fermer.
+            _visibilite.nouvelle_generation()
         except ValueError as e:
             self._send(200, json.dumps({'ok': False, 'error': str(e)},
                                        ensure_ascii=False).encode(), 'application/json')
@@ -14492,6 +14498,10 @@ class Handler(BaseHTTPRequestHandler):
                 neuf.pop('masque_par', None)
                 neuf.pop('masque_le', None)
         STORE.set(cle, neuf)
+        # Le masque est lu par le prédicat sur l'index BRUT, donc une vue
+        # mémorisée le verrait déjà. On ouvre quand même une génération : la
+        # justesse ne doit pas dépendre du CHEMIN par lequel une règle lit.
+        _visibilite.nouvelle_generation()
         print(f"  🙈 masque personnel « {etat} » par {u} : {cle}")
         m2 = _visibilite.masques_de(neuf)
         self._send(200, json.dumps({
@@ -14688,6 +14698,7 @@ class Handler(BaseHTTPRequestHandler):
         # range le temps depuis le precedent ; rien ne change de ce que la
         # page calcule ni de l'ordre dans lequel elle le calcule.
         ph = _Phases('GET /files')
+        _vues0 = _visibilite.VUES_POSEES   # compteur d'étendue (22/09)
         q = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
         dirparam = (q.get('dir') or [''])[0]
         rec = (q.get('rec') or [''])[0] == '1'
@@ -15165,8 +15176,9 @@ class Handler(BaseHTTPRequestHandler):
             roots_cache = media_roots()
             file_data = []
             _liens = {}
+            _vue_jour = STORE.data          # hissée (22/09), comme `marques`
             for _ep, k in jour_items[:1500]:
-                e = STORE.data.get(k) or {}
+                e = _vue_jour.get(k) or {}
                 fiche = _fiche_depuis_cle(k, e, fctx, roots_cache, _liens)
                 if fiche is None:
                     continue
@@ -15198,8 +15210,9 @@ class Handler(BaseHTTPRequestHandler):
         if masque_mode:
             roots_cache = media_roots()
             file_data, _liens = [], {}
+            _vue_masque = STORE.data        # hissée (22/09), comme `marques`
             for k in masque_cles[:1500]:
-                fiche = _fiche_depuis_cle(k, STORE.data.get(k) or {}, fctx,
+                fiche = _fiche_depuis_cle(k, _vue_masque.get(k) or {}, fctx,
                                           roots_cache, _liens)
                 if fiche is not None:
                     file_data.append(fiche)
@@ -15235,9 +15248,19 @@ class Handler(BaseHTTPRequestHandler):
         # recherche) partagent ainsi la même règle. La clé n'est écrite que pour
         # les concernées — 258 sur 43 064 : écrire « 0 » 43 064 fois coûterait
         # 300 ko de JSON pour ne rien dire.
+        # LA VUE EST HISSÉE (22/09). `STORE.data` est une PROPRIÉTÉ : chaque
+        # accès relit le compte courant, recharge `comptes.json` s'il a bougé,
+        # rebâtit le prédicat de visibilité et enveloppe le dictionnaire. Payé
+        # une fois, c'est le prix d'une lecture ; payé 44 436 fois dans cette
+        # boucle, c'était **4,0 s sur les 7,3 s** de la page du fonds entier
+        # (mesuré le 22/09, phase `marques`) — et ce poste n'existait pas avant
+        # que le chantier 19 alourdisse le prédicat. La vue ne change pas
+        # pendant une requête : une seule lecture, et la boucle interroge le
+        # même objet.
+        _vue = STORE.data
         for _fd in file_data:
             _k = _fd.get('key') or _fd.get('name') or ''
-            _e = STORE.data.get(_k)
+            _e = _vue.get(_k)
             # La date précise a déjà été calculée par la branche qui a rempli
             # cette entrée ; `_annee_fiable` la redemandait — TROISIÈME lecture
             # de l'EXIF gardé et du nom de fichier pour la même photo. La clé
@@ -15264,8 +15287,9 @@ class Handler(BaseHTTPRequestHandler):
         grille_resultat = bool(search_mode or sim_mode or jour_mode or masque_mode)
         if grille_resultat:
             tag_counts = {}
+            _vue_tags = STORE.data          # hissée, même raison que `marques`
             for _fd in file_data:
-                _e = STORE.data.get(_fd.get('key') or _fd.get('name') or '') or {}
+                _e = _vue_tags.get(_fd.get('key') or _fd.get('name') or '') or {}
                 if _e.get('failed'):
                     continue
                 for t in set((_e.get('kw_fr') or []) + (_e.get('kw_en') or [])):
@@ -15302,7 +15326,8 @@ class Handler(BaseHTTPRequestHandler):
         ph.top('gabarit')
         self._send_html(page)
         ph.top('envoi')         # CSS partage + gzip + ecriture sur la socket
-        ph.note(mode=('recherche' if search_mode else 'semblables' if sim_mode
+        ph.note(vues_posees=_visibilite.VUES_POSEES - _vues0,
+                mode=('recherche' if search_mode else 'semblables' if sim_mode
                       else 'jour' if jour_mode else 'masque' if masque_mode
                       else 'tags' if sel else 'dossier'),
                 rec=bool(rec), rendues=len(file_data),

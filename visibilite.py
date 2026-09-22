@@ -61,6 +61,8 @@ la preuve sur les ROUTES (vignette, fichier, recherche) demande un serveur
 avec deux comptes — étape 4.
 """
 
+import threading
+
 from collections.abc import Mapping
 from functools import lru_cache
 
@@ -719,6 +721,38 @@ class VueFiches(VueFiltree):
         return self._d.pop(k, *defaut)
 
 
+VUES_POSEES = 0          # combien de VUES ce processus a posées (compteur d'étendue)
+
+# UNE VUE PAR REQUÊTE, PAS UNE PAR LECTURE (22/09).
+#
+# `store.data` est une PROPRIÉTÉ : chaque accès relit le compte courant,
+# recharge `comptes.json` s'il a bougé, rebâtit le prédicat (six règles depuis
+# le chantier 19) et enveloppe le dictionnaire. Le projet écrit `STORE.data`
+# dans le corps de ses boucles à **128 endroits** — mesuré à l'arbre — et une
+# de ces boucles coûtait **4,0 s sur les 7,3 s** de la page du fonds entier.
+# Hisser la vue corrige UN endroit ; ce mémo les corrige tous, et protège ceux
+# qu'on écrira demain.
+#
+# La vue est mémorisée PAR FIL et PAR GÉNÉRATION. Le serveur ouvre une
+# génération à chaque requête (`nouvelle_generation`, appelée par `_ouvrir`),
+# et toute écriture qui change ce que la règle répondrait en ouvre une aussi.
+# Deux requêtes ne partagent donc jamais une vue, et une liste de partage qui
+# change pendant une requête la referme.
+_GEN = 0
+_LOCAL = threading.local()
+
+
+def nouvelle_generation():
+    """Tout ce qui est mémorisé cesse de valoir. Appelé à chaque requête et à
+    chaque écriture qui touche une règle (partage, masque, compte)."""
+    global _GEN
+    _GEN += 1
+
+
+def generation():
+    return _GEN
+
+
 def brancher(store, utilisateur, par_nom=False, sensible=None, depot=None,
              masques=None, fermes=None, reconnu=None):
     """Fait de `store.data` une VUE dès qu'il y a un utilisateur courant
@@ -741,17 +775,37 @@ def brancher(store, utilisateur, par_nom=False, sensible=None, depot=None,
         return self.__dict__['data']
 
     def lire(self):
+        global VUES_POSEES
         d = brut(self)
         u = utilisateur()
         if u is None:
             return d
+        memo = getattr(_LOCAL, 'vues', None)
+        if memo is None:
+            memo = _LOCAL.vues = {}
+        garde = memo.get(id(store))
+        if garde is not None and garde[0] == _GEN and garde[1] == u and garde[2] is d:
+            return garde[3]
+        # UN COMPTEUR D'ÉTENDUE (22/09, règle n° 8). Poser une vue n'est pas
+        # gratuit : on relit le compte, on recharge `comptes.json` s'il a
+        # bougé, on rebâtit le prédicat. Une boucle qui écrit `STORE.data`
+        # dans son corps le paie par CLÉ, et rien ne le disait — la page du
+        # fonds entier y laissait 4,0 s. Ce compteur est lu par `/files` et
+        # rendu dans `/api/perf` : le jour où il repasse à 44 000, ça se voit.
+        VUES_POSEES += 1
         # `fermes` est un APPELABLE : la liste de partage peut changer entre
         # deux requetes, et une vue qui garderait l'ensemble d'hier montrerait
         # ce que quelqu'un vient de fermer.
-        return Vue(d, filtre(u, sensible, depot, masques,
-                             fermes(u) if fermes else (), reconnu))
+        vue = Vue(d, filtre(u, sensible, depot, masques,
+                            fermes(u) if fermes else (), reconnu))
+        memo[id(store)] = (_GEN, u, d, vue)
+        return vue
 
     def ecrire(self, valeur):
+        # Le dictionnaire RÉEL change d'objet : tout mémo qui le citait est
+        # périmé. (Le mémo compare déjà `d` par identité ; la génération le
+        # dit plus tôt et pour tous les fils.)
+        nouvelle_generation()
         if isinstance(desc, property) and desc.fset:
             desc.fset(self, valeur)
         else:
