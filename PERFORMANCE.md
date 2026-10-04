@@ -1601,6 +1601,40 @@ par identité, élagage à chaque appel, élagage mesuré au petit compte).
 **Reste** : `comptage` ~220 ms (une passe sur la vue) et `animaux` ~250 ms
 (la passe des vignettes sur `ANIMAL_STORE`). À ne rouvrir qu'avec un besoin.
 
+### 3.28 La planche du fonds : **7,5 s → 4,1–4,4 s** (rendu par tranches) — livré le 04/10
+
+**Le poste qu'aucune horloge serveur ne voyait.** Navigation Timing sur
+`/files?dir=1&rec=1` (44 430 photos) : réponse finie à **4,7 s**, page
+utilisable à **7,5 s** — **2,8 s dans le navigateur**, à bâtir 44 430 cases
+d'un coup. Le serveur, lui, annonçait 3,9–5,4 s et on le croyait complet.
+
+**Écartée par la mesure avant d'écrire une ligne** : la fiche « compacte »
+(sans clé, sans champs vides, en tableaux). Sur un corps équivalent bâti
+depuis la base : 19,8 → 13,1 Mo bruts, mais **3,20 → 2,79 Mo gzippés** et
+~150 ms de `json` gagnés. gzip faisait déjà le travail. (J'avais annoncé ~2×
+moins de Mo et ~1,5 s à Mike ; la contre-vérification l'a démenti.)
+
+**Livré** : `renderGrid` pose des tranches de 600 cases ; une borne de fin
+observée (`rootMargin` 2 000 px) pose la suivante. Tri, filtres, compteur et
+visionneuse lisent `visible`, jamais le DOM — rien n'est caché ni tronqué.
+`?vers=` bâtit jusqu'à sa case avant de la chercher (vu : 17 704 cases bâties,
+la photo visée encadrée et focalisée).
+
+| | avant | après |
+|---|---:|---:|
+| page utilisable | 7 514 ms | **4 130 · 4 387 ms** |
+| dont navigateur | 2 796 ms | **172 · 555 ms** |
+| cases bâties au chargement | 44 430 | **600** |
+
+**Piège de mesure** : un onglet Chrome en ARRIÈRE-PLAN ne déclenche aucun
+`IntersectionObserver` — ni vignette, ni tranche. Il faut une capture d'écran
+(ou l'onglet au premier plan) pour voir la suite se poser.
+
+**Reste, côté serveur** (~3,9 s) : `mode_index` ~1 s, `envoi` ~1 s (dont
+gzip niveau 6 ≈ 0,5 s — le niveau 1 rendrait ~270 ms contre +0,9 Mo, à
+juger pour les comptes distants), `gabarit`, `marques`, `index`, `motifs`.
+Tout croît avec le nombre de fiches : c'est la vraie pagination qui reste.
+
 ## 4. Ce qui a été vérifié et qui va bien
 
 À ne pas rouvrir sans raison neuve :

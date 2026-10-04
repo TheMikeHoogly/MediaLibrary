@@ -182,6 +182,8 @@ body { min-height: 100vh; }
    focus, pose par une classe parce que Chrome n'allume pas :focus-visible
    sur un focus programme apres un clic. */
 .cell.vers { outline: 2px solid var(--veilleuse); outline-offset: 2px; }
+/* Borne du rendu par tranches : une ligne entiere de la grille, invisible. */
+.borne-rendu { grid-column: 1 / -1; height: 1px; }
 #lb-desc { font-size: var(--t-md); color: var(--texte); line-height: 1.45; }
 #lb-desc.none { color: var(--graphite); font-style: italic; }
 #lb-prov { display: flex; align-items: center; gap: var(--e-3); flex-wrap: wrap;
@@ -1060,6 +1062,10 @@ __FOLDERS__
     return p.join(' · ');
   }
 
+  // Etat du rendu par tranches : combien de cases sont BATIES, l'observateur
+  // de la borne de fin, et la porte qui garantit qu'une case existe.
+  var rendus = 0, sentinelle = null;
+  var assurerRendu = function() {};
   function renderGrid() {
     var grid = document.getElementById('grid');
     grid.innerHTML = '';
@@ -1113,7 +1119,29 @@ __FOLDERS__
       });
     }, { rootMargin: '200px' });
 
-    visible.forEach(function(f, i) {
+    // RENDU PAR TRANCHES (04/10). Bâtir les 44 430 cases du fonds d'un coup
+    // coûtait ~2,8 s au navigateur APRÈS la fin de la réponse (mesuré :
+    // réponse finie à 4,7 s, page utilisable à 7,5 s). Le tri, les filtres,
+    // le compteur et la visionneuse lisent `visible`, jamais le DOM : on ne
+    // pose donc que ce qui approche de l'écran, et la suite à mesure qu'on
+    // défile. Rien n'est caché ni tronqué — seulement pas encore bâti.
+    var TRANCHE = 600;
+    rendus = 0;
+    if (sentinelle) { sentinelle.disconnect(); sentinelle = null; }
+    var borne = document.createElement('div');
+    borne.className = 'borne-rendu';
+    borne.setAttribute('aria-hidden', 'true');
+    function poserJusqua(n) {
+      var fin = Math.min(n, visible.length);
+      if (fin <= rendus) return;
+      var lot = document.createDocumentFragment();
+      for (var i = rendus; i < fin; i++) lot.appendChild(cellule(visible[i], i));
+      grid.insertBefore(lot, borne.parentNode === grid ? borne : null);
+      rendus = fin;
+      if (rendus >= visible.length && borne.parentNode) borne.remove();
+    }
+    assurerRendu = function(i) { poserJusqua(i + 1); };
+    function cellule(f, i) {
       var cell = document.createElement('div');
       cell.className = 'cell';
       var cap = f.desc || '';
@@ -1156,9 +1184,19 @@ __FOLDERS__
         if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openLb(i); }
       };
       cell._fiche = f;
-      grid.appendChild(cell);
       observer.observe(cell);
-    });
+      return cell;
+    }
+    grid.appendChild(borne);
+    poserJusqua(TRANCHE);
+    if (rendus < visible.length) {
+      sentinelle = new IntersectionObserver(function(entries) {
+        if (entries.some(function(e) { return e.isIntersecting; })) {
+          poserJusqua(rendus + TRANCHE);
+        }
+      }, { rootMargin: '2000px' });
+      sentinelle.observe(borne);
+    }
 
     var txt = visible.length + ' photo(s)';
     if (selTags.length) txt += ' / ' + FILES.length;
@@ -2062,6 +2100,7 @@ __FOLDERS__
     for (var k = 0; k < visible.length; k++) {
       if (visible[k].name === vers || visible[k].key === vers) { vi = k; break; }
     }
+    if (vi >= 0) assurerRendu(vi);      // la case peut ne pas etre encore batie
     var vcell = vi >= 0 ? document.getElementById('grid').children[vi] : null;
     if (vcell) {
       // Le focus programme n'allume pas toujours `:focus-visible` (Chrome le

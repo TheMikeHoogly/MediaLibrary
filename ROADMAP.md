@@ -777,6 +777,13 @@ puis **mémorisée par fil et par génération** pour les 125 autres endroits, a
 un compteur d'étendue (`vues_posees` : 3 pour la page du fonds). Détail et
 mutants : `PERFORMANCE.md` § 3.26.
 
+**04/10 — rendu par tranches côté page : 7,5 s → 4,1–4,4 s** (le navigateur
+bâtissait les 44 430 cases d'un coup : 2,8 s que l'horloge serveur ne voyait
+pas). La fiche « compacte » a été écartée par la mesure : gzip faisait déjà
+le travail (3,2 → 2,8 Mo). Détail : `PERFORMANCE.md` § 3.28. Mike a choisi
+l'allègement d'abord ; la vraie pagination reste la suite, sur plusieurs
+sessions.
+
 **Ce que la pagination doit encore attaquer, chiffres du 22/09** : `mode_index`
 835 ms, `envoi` 796, `gabarit` 406, `marques` 417, `index` 389, `json` 275 —
 et **19,3 Mo** envoyés. Tout cela croît avec le nombre de fiches BÂTIES.
