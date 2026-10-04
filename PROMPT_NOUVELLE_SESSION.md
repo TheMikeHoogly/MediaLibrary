@@ -259,4 +259,4 @@ et trois bancs rouges dans la VM, relancés sous Windows, se sont révélés ver
 ## 04/10/2026 - Faux « CHAUD / BRIDAGE THERMIQUE » au repos (corrige)
 - `thermique_loop` : « CHAUD » ne vient plus que de la temperature (>= 85 C) ; le drapeau de bridage n est retenu que si util >= `THERMIQUE_CHARGE_PCT` (10 %).
 - Preuve (journaux) : 1852 releves BRIDAGE, tous a 0-1 % et 31-60 C ; 0 sur 95 releves sous charge. Max jamais vu : 66 C.
-- Tests : `test_thermique.py` 11/11 verts, 2 nouveaux vus rouges sur l ancien code. Serveur redemarre et observe (lignes normales au repos). LIVRAISON EN ATTENTE : l agent git a consomme `livrer` puis s est tu (vu 10:15:25 UTC), aucune branche creee. SESSION_COMMIT.txt pret (fix/thermique-faux-chaud-au-repos).
+- Tests : `test_thermique.py` 11/11 verts, 2 nouveaux vus rouges sur l ancien code. Serveur redemarre et observe (lignes normales au repos). LIVRE et fusionne dans main (`668b8bb`, 04/10 10:22 UTC) : l agent a mis ~7 min (78 bancs), il n etait PAS bloque.

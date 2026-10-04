@@ -430,9 +430,14 @@
     if (!c) { return false; }
     if (c.noeud && c.noeud.parentNode) { c.noeud.parentNode.removeChild(c.noeud); }
     delete CANDIDATS[cle];
-    if (c.compteur) {
-      c.reste = Math.max(0, (c.reste || 1) - 1);
-      c.compteur.textContent = c.libelle(c.reste);
+    // L'etat est PARTAGE par la famille (04/10) : chaque fiche en gardait une
+    // copie, et deux verdicts affichaient tous deux « total - 1 ».
+    var f = c.etat;
+    if (f) {
+      f.reste = Math.max(0, f.reste - 1);
+      f.juges += 1;
+      f.compteur.textContent = f.libelle(f.reste);
+      f.majSuite();
     }
     return true;
   }
@@ -526,13 +531,14 @@
   }
 
   /* ── La file de revue ─────────────────────────────────────────────── */
+  var PAR_FAMILLE = 24;
   function familleSection(f) {
     var sec = document.createElement('section');
     sec.className = 'feuille';
     var h3 = document.createElement('h3');
     h3.textContent = f.titre;
     sec.appendChild(h3);
-    var etat = { reste: f.total || 0 };
+    var etat = { reste: f.total || 0, vues: 0, juges: 0 };
     etat.libelle = function (n) {
       return n + (n > 1 ? ' photos' : ' photo') + ' — ' + (f.dit || '');
     };
@@ -545,6 +551,49 @@
     var dedans = document.createElement('div');
     sec.appendChild(dedans);
 
+    function poser(photos) {
+      photos.forEach(function (p) {
+        if (CANDIDATS[p.key]) { return; }      // deja a l'ecran
+        var n = feuille(p);
+        dedans.appendChild(n);
+        CANDIDATS[p.key] = { noeud: n, etat: etat };
+      });
+      etat.vues += photos.length;
+      etat.majSuite();
+    }
+
+    /* La SUITE (04/10). Une photo jugee sort de la file cote serveur : la
+       suivante non vue est donc a la position « vues - jugees ». Le bouton se
+       REFAIT depuis l'etat, comme `majPlus` plus haut. */
+    var suite = document.createElement('button');
+    suite.type = 'button';
+    suite.className = 'btn';
+    suite.hidden = true;
+    etat.majSuite = function () {
+      var restantes = etat.reste - (etat.vues - etat.juges);
+      if (etat.vues === 0 || restantes <= 0) { suite.hidden = true; return; }
+      suite.hidden = false;
+      suite.disabled = false;
+      suite.textContent = 'Voir les ' + Math.min(PAR_FAMILLE, restantes)
+        + ' suivantes  (' + restantes + ' pas encore vues)';
+    };
+    suite.addEventListener('click', function () {
+      suite.disabled = true;
+      fetch('/api/sensibles/candidats?n=' + PAR_FAMILLE + '&depuis='
+            + Math.max(0, etat.vues - etat.juges))
+        .then(function (r) { return r.json(); })
+        .then(function (d) {
+          var g = ((d && d.familles) || []).filter(function (x) {
+            return x.cle === f.cle; })[0];
+          if (g) { etat.reste = g.total || 0; compte.textContent = etat.libelle(etat.reste); }
+          poser((g && g.photos) || []);
+        })
+        .catch(function () {
+          suite.disabled = false;
+          toast('La suite n’a pas pu être chargée : le serveur n’a pas répondu.', false);
+        });
+    });
+
     var b = document.createElement('button');
     b.type = 'button';
     b.className = 'btn';
@@ -553,27 +602,15 @@
       + (f.total > montres ? ' (sur ' + f.total + ')' : '');
     b.addEventListener('click', function () {
       b.remove();
-      (f.photos || []).forEach(function (p) {
-        var n = feuille(p);
-        dedans.appendChild(n);
-        CANDIDATS[p.key] = { noeud: n, compteur: compte,
-                             reste: etat.reste, libelle: etat.libelle };
-      });
-      if (f.total > montres) {
-        var reste = document.createElement('p');
-        reste.className = 'aide';
-        reste.textContent = 'Les ' + (f.total - montres) + ' autres viendront '
-          + 'quand celles-ci seront jugées : la file se refait à chaque '
-          + 'chargement de cette page.';
-        sec.appendChild(reste);
-      }
+      poser(f.photos || []);
     });
     if (montres) { sec.appendChild(b); }
+    sec.appendChild(suite);
     return sec;
   }
 
   function chargerCandidats() {
-    fetch('/api/sensibles/candidats?n=24')
+    fetch('/api/sensibles/candidats?n=' + PAR_FAMILLE)
       .then(function (r) { return r.json(); })
       .then(function (d) {
         var fam = (d && d.familles) || [];

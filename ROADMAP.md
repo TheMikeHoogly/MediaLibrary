@@ -59,7 +59,7 @@ le récit dans git. Ce qui suit n'est plus qu'une carte.
 
 | # | Brique | État |
 |---|---|---|
-| 1 | Filet « intime » et captures de conversation | **LIVRÉ 22/09 — file de REVUE, rien de masqué** (choix de Mike). Trois familles dans `/sensibles` : documents 22, captures `.png` 443, ressemblances 400 (classées, file `_filet_intime.json` hors git). Les trois champs au passage de la vignette sont écartés avec l'option (b). |
+| 1 | Filet « intime » et captures de conversation | **LIVRÉ 22/09 — file de REVUE, rien de masqué** (choix de Mike). Trois familles dans `/sensibles` : documents 22, captures `.png` 443, ressemblances 400 (classées, file `_filet_intime.json` hors git). Les trois champs au passage de la vignette sont écartés avec l'option (b). **04/10** : « Voir les 24 suivantes » par famille (`?depuis=`), et le compteur d'une famille baisse enfin à chaque verdict. |
 | 2 | Quarantaine des dépôts (`_Uploads` au déposant seul) | **LIVRÉ 17/09** |
 | 3 | « Masquer cette photo » pour une personne reconnue | **LIVRÉE 18/09, vue à l'écran** — le geste est dans la visionneuse, la photo ne bouge pas, seule la personne lève ; **19/09** : « Ce que j'ai masqué » (`/files?masque=moi`) pour les retrouver |
 | 4 | Les personnes reconnues voient leurs photos | **LIVRÉE 18/09** — et sans l'index clé → noms que le plan croyait nécessaire : c'est l'ORDRE qui le remplace |
@@ -68,12 +68,8 @@ le récit dans git. Ce qui suit n'est plus qu'une carte.
 
 ### Ce qui reste ouvert
 
-- **Brique 1** : deux choix attendent Mike dans `QUESTIONS_MIKE.md` (la file
-  de revue, et faut-il rendre le signal des captures LISIBLE en posant
-  largeur/hauteur/appareil au passage de la vignette). **Rien n'est câblé**,
-  et c'est la mesure qui l'a décidé : deux des trois signaux annoncés par le
-  plan ne sont pas dans la base, le troisième (`.png`, 443 fichiers) ne
-  suffit pas à trancher.
+- **Brique 1** : tranchée et livrée (22/09, suite le 04/10). Plus rien
+  d'ouvert ici.
 - **Ce qui n'est pas prouvé en RÉEL** : la vue d'un NON-admin, et la
   non-fuite ROUTE PAR ROUTE (`verifier_non_fuite.py` veut deux comptes et
   leurs mots de passe). Les bancs tiennent la règle AU MAGASIN — l'endroit
@@ -650,6 +646,11 @@ hérité ? Ne rien changer avant que Mike s'en soit servi une fois (A1).
 ---
 
 ## C. La performance — le chantier des redites est CLOS
+
+**04/10 — `/api/sujets/list` 2,2 s → 0,6 s** (premier appel après
+démarrage : 3,5 s → 0,63 s). Mémoire des lieux par chemin, préchauffée au
+démarrage, partagée avec la recherche par lieu ; un seul balayage pour les
+trois listes. Détail : `PERFORMANCE.md` § 3.27.
 
 Le détail vit dans `PERFORMANCE.md` § 3.13 à 3.23 et § 5, pas ici. Ce qui
 compte pour ordonner :

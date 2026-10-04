@@ -94,7 +94,7 @@ def _monde(store, animaux, chats, visages, personnes):
          'PEOPLE_STORE': Magasin(personnes)}
     for nom in ('_kw_has', '_nommable', '_animal_crop_url', '_crop_url',
                 'pets_list', 'people_list', '_premiere_nommable',
-                '_premieres_vignettes'):
+                '_premieres_vignettes', '_compter_sujets'):
         exec(_src(nom), g)                                             # noqa: S102
     exec(AVANT, g)                                                     # noqa: S102
     return g

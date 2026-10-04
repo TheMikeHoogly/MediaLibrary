@@ -6687,6 +6687,56 @@ def gps_places_connus():
     return index
 
 
+# ── Les lieux que désigne un CHEMIN, mémorisés (04/10) ──────────────────────
+# `faits_vue.lieux_du_chemin(k, index, roots, tous=True, avec_fichier=True)` ne
+# dépend QUE de la clé, de l'index des lieux et des racines. `/sujets` et la
+# recherche par lieu le recalculaient pourtant pour les 44 000 clés à CHAQUE
+# appel : ~1,5 s (chronométré le 04/10 sur une copie de la base), soit
+# l'essentiel des 2,2 s de `/api/sujets/list`.
+#
+# La mémoire est INVALIDÉE en bloc dès que l'index ou les racines changent :
+# c'est leur CONTENU qui est comparé (`lieux_connus` rebâtit son dict toutes
+# les 5 min même quand rien n'a bougé — une identité d'objet invaliderait
+# pour rien). Elle n'est pas élaguée à chaque appel : un compte qui ne voit
+# qu'une partie du fonds ne doit pas faire oublier le reste à celui qui voit
+# tout. Elle ne grossit donc que des clés vues, et repart de zéro au-delà de
+# deux fois la taille demandée (les clés renommées ou oubliées).
+_LIEUX_MEMO = {'sig': None, 'par_cle': {}, 'plus_grand': 0}
+
+
+def _lieux_des_cles(cles, index, roots):
+    """{clé: tuple(libellés)} pour `cles` — la règle de `faits_vue`, payée une
+    fois par clé tant que l'index et les racines ne changent pas."""
+    import faits_vue
+    sig = (tuple(sorted((index or {}).items())),
+           tuple(str(r) for _, r in roots))
+    memo = _LIEUX_MEMO['par_cle']
+    # L'élagage se mesure au PLUS GRAND appel vu, pas à celui-ci : un compte
+    # qui voit 5 000 photos ne doit pas vider la mémoire de celui qui en voit
+    # 44 000 (sinon elle se viderait à chaque alternance des deux).
+    plus_grand = max(len(cles), _LIEUX_MEMO.get('plus_grand', 0))
+    if _LIEUX_MEMO['sig'] != sig or len(memo) > 2 * plus_grand + 1000:
+        memo, plus_grand = {}, len(cles)
+    out = {}
+    for k in cles:
+        v = memo.get(k)
+        if v is None:
+            v = memo[k] = tuple(faits_vue.lieux_du_chemin(
+                k, index, roots, tous=True, avec_fichier=True))
+        out[k] = v
+    # Un dict neuf ou complété, posé d'un geste : un autre fil lit soit
+    # l'ancien, soit le nouveau, jamais un état à moitié écrit.
+    _LIEUX_MEMO.update(sig=sig, par_cle=memo, plus_grand=plus_grand)
+    return out
+
+
+def _prechauffer_lieux():
+    """Remplit `_LIEUX_MEMO` pour tout l'index brut, une fois au démarrage."""
+    index = lieux_connus()
+    if index:
+        _lieux_des_cles(list(INDEX_BRUT), index, media_roots())
+
+
 # ── gps_places.json suit les re-clés et les oublis (audit I2) ────────────────
 # C'était le 7ᵉ magasin keyé par chemin, IGNORÉ de rekey_everywhere et
 # forget_everywhere : activer gps_place puis renommer 2114 fichiers aurait
@@ -6824,12 +6874,14 @@ def _cles_du_lieu(lieux):
     except Exception:                                         # noqa: BLE001
         index = {}
     out = set()
-    for k in list(STORE.data):
-        # `avec_fichier` : 52 photos ne nomment leur lieu que dans leur nom de
-        # fichier (« 060_Lavando Trinidad.jpg ») contre 9 qui s'y trompent
-        # (« Grupo en la Laguna » — la lagune, pas La Laguna). Mesuré le 19/08.
-        du_chemin = {_sans_accents(l) for l in faits_vue.lieux_du_chemin(
-            k, index, roots, tous=True, avec_fichier=True)}
+    cles = list(STORE.data)
+    # `avec_fichier` (dans `_lieux_des_cles`) : 52 photos ne nomment leur lieu
+    # que dans leur nom de fichier (« 060_Lavando Trinidad.jpg ») contre 9 qui
+    # s'y trompent (« Grupo en la Laguna » — la lagune, pas La Laguna).
+    # Mesuré le 19/08.
+    par_cle = _lieux_des_cles(cles, index, roots) if index else {}
+    for k in cles:
+        du_chemin = {_sans_accents(l) for l in par_cle.get(k, ())}
         libelle = _sans_accents(gps.get(k) or '') if gps else ''
         if all(b in du_chemin or (libelle and b in libelle) for b in besoin):
             out.add(k)
@@ -10211,16 +10263,11 @@ def confirm_cat(name, keys):
     return PETS.confirm(name, keys)
 
 
-def pets_list():
-    """Chats nommés avec nombre de photos et une vignette."""
-    tagcount = {}
-    for e in STORE.data.values():
-        if not isinstance(e, dict):
-            continue
-        for kw in (e.get('kw_fr') or []):
-            if str(kw).lower().startswith('animal:'):
-                key = str(kw)[7:].strip().lower()
-                tagcount[key] = tagcount.get(key, 0) + 1
+def pets_list(tagcount=None):
+    """Chats nommés avec nombre de photos et une vignette.
+    `tagcount` : le comptage déjà fait par `_compter_sujets` (sinon refait)."""
+    if tagcount is None:
+        tagcount = _compter_sujets(STORE.data.items())[2]
     fiches = [(pk, pe) for pk, pe in PETS_STORE.data.items()
               if isinstance(pe, dict)]
     # La vignette de chaque chat : la PREMIERE détection nommable d'une photo
@@ -11714,18 +11761,34 @@ def confirm_person(name, keys):
     return PEOPLE.confirm(name, keys)
 
 
-def people_list():
-    """Personnes nommées avec nombre de photos et une vignette."""
-    # Comptage insensible à la casse : on regroupe par nom en minuscules, car
-    # l'index peut contenir « personne:Nom » (app) ou « personne:nom » (importé).
-    tagcount = {}
-    for e in STORE.data.values():
+def _compter_sujets(entrees):
+    """UNE passe sur `entrees` (couples clé, entrée de l'index vu) :
+    (clés, {personne: n}, {animal: n}). La règle de comptage est celle que
+    `people_list` et `pets_list` appliquaient chacune de leur côté — insensible
+    à la casse, car l'index peut porter « personne:Nom » (app) comme
+    « personne:nom » (importé). `/api/sujets/list` balayait le fonds TROIS fois
+    (deux comptages + les clés des lieux), ~200 ms par balayage (04/10)."""
+    cles, personnes, animaux = [], {}, {}
+    for k, e in entrees:
+        cles.append(k)
         if not isinstance(e, dict):
             continue
         for kw in (e.get('kw_fr') or []):
-            if str(kw).lower().startswith('personne:'):
-                key = str(kw)[9:].strip().lower()
-                tagcount[key] = tagcount.get(key, 0) + 1
+            t = str(kw).lower()
+            if t.startswith('personne:'):
+                n = t[9:].strip()
+                personnes[n] = personnes.get(n, 0) + 1
+            elif t.startswith('animal:'):
+                n = t[7:].strip()
+                animaux[n] = animaux.get(n, 0) + 1
+    return cles, personnes, animaux
+
+
+def people_list(tagcount=None):
+    """Personnes nommées avec nombre de photos et une vignette.
+    `tagcount` : le comptage déjà fait par `_compter_sujets` (sinon refait)."""
+    if tagcount is None:
+        tagcount = _compter_sujets(STORE.data.items())[1]
     fiches = []
     for pk, pe in PEOPLE_STORE.data.items():
         if not isinstance(pe, dict):
@@ -11768,7 +11831,7 @@ def people_list():
     return out
 
 
-def places_list():
+def places_list(ph=None, cles_vues=None):
     """Lieux nommes (3e type de sujet) avec nombre de photos et une vignette.
 
     Deux sources, fusionnees :
@@ -11793,6 +11856,7 @@ def places_list():
     decoupe /api/facecrop : deja legere, rien a changer. /api/thumb redirige
     vers l'original s'il ne sait pas vignetter (video, HEIC, PIL absent), donc
     le client n'a aucun cas particulier a gerer."""
+    t0 = time.perf_counter()
     roots = media_roots()
     gps = gps_places_connus()               # {cle: libelle} ; {} si non active
     agg = {}                                # normalise -> {"name", "keys"(set)}
@@ -11804,19 +11868,21 @@ def places_list():
             continue
         agg.setdefault(nk, {"name": label, "keys": set()})["keys"].add(k)
     gps_keys = set(gps)                      # photos deja attribuees par GPS
+    t1 = time.perf_counter()
     index = lieux_connus()                  # {normalise: libelle}
     if index:
-        import faits_vue
-        for k in list(STORE.data):
-            if k in gps_keys:               # le GPS prime : pas de double compte
-                continue
-            # tous=True : une photo compte dans CHAQUE lieu qu'elle designe
-            # (« France & Belgique » est les deux) ; avec_fichier=True : 52
-            # photos ne nomment leur lieu que la (mesure du 19/08).
-            for lbl in faits_vue.lieux_du_chemin(k, index, roots, tous=True,
-                                                 avec_fichier=True):
+        # tous=True : une photo compte dans CHAQUE lieu qu'elle designe
+        # (« France & Belgique » est les deux) ; avec_fichier=True : 52
+        # photos ne nomment leur lieu que la (mesure du 19/08). La regle est
+        # celle de faits_vue, memorisee par cle (`_lieux_des_cles`, 04/10).
+        cles = [k for k in (list(STORE.data) if cles_vues is None
+                            else cles_vues) if k not in gps_keys]
+        par_cle = _lieux_des_cles(cles, index, roots)
+        for k in cles:                      # le GPS prime : pas de double compte
+            for lbl in par_cle[k]:
                 agg.setdefault(_sans_accents(lbl),
                                {"name": lbl, "keys": set()})["keys"].add(k)
+    t2 = time.perf_counter()
     out = []
     for a in agg.values():
         keys = a["keys"]
@@ -11834,6 +11900,12 @@ def places_list():
                 break
         out.append({"name": a["name"], "photos": len(keys), "crop": crop})
     out.sort(key=lambda x: -x["photos"])
+    if ph is not None:                      # sous-phases (nom a point)
+        t3 = time.perf_counter()
+        ph.ajoute('lieux.gps', t1 - t0)
+        ph.ajoute('lieux.chemins', t2 - t1)
+        ph.ajoute('lieux.vignettes', t3 - t2)
+        ph.note(gps=len(gps), lieux_index=len(index or {}))
     return out
 
 
@@ -14298,11 +14370,19 @@ class Handler(BaseHTTPRequestHandler):
         confondre les deux ferait lire un plafond comme un résultat, la panne
         que ce projet a déjà payée deux fois."""
         import tagging_meta as _tm
+        q = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
         try:
-            n = max(0, min(200, int(urllib.parse.parse_qs(
-                urllib.parse.urlparse(self.path).query).get('n', ['24'])[0])))
+            n = max(0, min(200, int(q.get('n', ['24'])[0])))
         except ValueError:
             n = 24
+        # `?depuis=` (04/10) : la SUITE d'une famille, pour les photos qu'on
+        # passe sans les juger. Une photo jugee sort de la liste ; la page
+        # envoie donc « vues moins jugees » et retombe pile sur la suivante,
+        # parce que l'ordre de chaque famille est stable d'un appel a l'autre.
+        try:
+            depuis = max(0, int(q.get('depuis', ['0'])[0]))
+        except ValueError:
+            depuis = 0
         u = utilisateur_vu()
         intime = self._file_intime()
         marges = intime.get('photos') or {}
@@ -14331,13 +14411,13 @@ class Handler(BaseHTTPRequestHandler):
                     retagues += 1
                 for m in motif.split(', '):
                     par_motif[m] = par_motif.get(m, 0) + 1
-                if len(echantillon) < n:
+                if depuis < total <= depuis + n:
                     ech = fiche(cle, motif)
                     ech['pipe'] = e.get('pipe') or ''
                     echantillon.append(ech)
             if cle.lower().endswith('.png') and not _visibilite.sensible_de(e):
                 captures_n += 1
-                if len(captures) < n:
+                if depuis < captures_n <= depuis + n:
                     captures.append(fiche(cle, 'fichier PNG'))
 
         intimes, intimes_n = [], 0
@@ -14348,7 +14428,7 @@ class Handler(BaseHTTPRequestHandler):
             if u is not None and not _visibilite.peut_juger(cle, u):
                 continue
             intimes_n += 1
-            if len(intimes) < n:
+            if depuis < intimes_n <= depuis + n:
                 intimes.append(fiche(cle, 'ressemblance %.3f' % (marge or 0)))
 
         familles = [
@@ -14366,6 +14446,7 @@ class Handler(BaseHTTPRequestHandler):
         ]
         self._send(200, json.dumps(
             {'ok': True, 'total': total, 'montres': len(echantillon),
+             'depuis': depuis,
              # `deja_retaguees` dit sur COMBIEN le filet est a jour : les
              # autres portent encore les mots-cles de l'ancien modele.
              'deja_retaguees': retagues,
@@ -16395,10 +16476,26 @@ class Handler(BaseHTTPRequestHandler):
         # Réutilise les listes existantes (mêmes formes {name, photos, crop}) ;
         # la page les fusionne et les trie. Lecture seule, données en mémoire
         # (aucun accès NAS → pas de note_heavy_activity).
-        body = json.dumps({"personnes": people_list(), "animaux": pets_list(),
-                           "lieux": places_list()},
+        # Horloge de phases (04/10) : 2,2 s mesures le 22/09 sans savoir
+        # laquelle des trois listes les paie. On mesure avant de toucher.
+        ph = _Phases('GET /api/sujets/list')
+        cles, n_personnes, n_animaux = _compter_sujets(STORE.data.items())
+        ph.top('comptage')
+        personnes = people_list(n_personnes)
+        ph.top('personnes')
+        animaux = pets_list(n_animaux)
+        ph.top('animaux')
+        lieux = places_list(ph, cles)
+        ph.top('lieux')
+        body = json.dumps({"personnes": personnes, "animaux": animaux,
+                           "lieux": lieux},
                           ensure_ascii=False).encode()
+        ph.top('json')
         self._send(200, body, 'application/json')
+        ph.top('envoi')
+        ph.note(personnes=len(personnes), animaux=len(animaux),
+                lieux=len(lieux), octets=len(body))
+        _phases_note(ph)
 
     def _serve_person_photos(self):
         note_heavy_activity()   # ouverture d'un détail → le backfill cède le NAS
@@ -18243,6 +18340,10 @@ if __name__ == '__main__':
     # un plan plus vieux que la bannière DEMARRAGE — ce recalcul est ce qui le
     # rend applicable. Lecture seule de l'index, pas de NAS. Un coup, pas une boucle.
     fil_surveille(_run_plan_annee, nom='plan:annee', boucle=False)
+    # La mémoire des lieux par chemin (04/10) : sans elle, la PREMIÈRE
+    # ouverture de /sujets après un démarrage paie ~2,2 s. Sur l'index BRUT :
+    # un sur-ensemble de ce que chaque compte voit. Lecture seule, pas de NAS.
+    fil_surveille(_prechauffer_lieux, nom='prechauffe:lieux', boucle=False)
     # Chantier 17 : les décisions existantes appartiennent à Mike (une passe,
     # idempotente, journalisée dans docs/migration_auteurs.json).
     fil_surveille(migrer_auteurs, nom='migration:auteurs', boucle=False)

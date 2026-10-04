@@ -1571,6 +1571,36 @@ génération, mémo sans le nom du compte, `_ouvrir` sans génération.
 listes qui balaient le fonds), et la page envoie toujours **19,3 Mo** — la
 vraie pagination (§ C3 étape 2) garde tout son sens, avec des chiffres frais.
 
+### 3.27 `/api/sujets/list` : **2,2 s → 0,6 s** — livré le 04/10
+
+**Mesuré d'abord** (horloge de phases posée sur la route, Chrome, 5 appels) :
+à chaud 900 ms dont **lieux.chemins 236 ms**, animaux 420, personnes 205 ;
+au PREMIER appel après démarrage, **lieux.chemins 2 180 ms** (total 3,5 s).
+Chronométré sur une copie de la base : `faits_vue.lieux_du_chemin` pour les
+44 459 clés coûte ~1,5 s, et ne dépend que de la clé, de l'index des lieux et
+des racines.
+
+**Livré** : (1) `_lieux_des_cles` mémorise la règle par clé, invalidée par le
+CONTENU de l'index et des racines — sert aussi `_cles_du_lieu` (la recherche
+par lieu payait le même 1,5 s) ; (2) `_prechauffer_lieux` la remplit au
+démarrage sur l'index brut ; (3) `_compter_sujets` : UNE passe pour les
+comptages personnes + animaux + les clés des lieux, au lieu de trois.
+
+| | avant | après |
+|---|---:|---:|
+| route, à chaud | 2 200 ms (22/09) · 900 ms (mémoire seule) | **570–640 ms** |
+| route, 1er appel après démarrage | ~3 500 ms | **631 ms** |
+| lieux.chemins | 2 180 froid · 236 chaud | **35 ms** |
+
+Oracle : identique à la règle sur les 44 459 clés de la copie ; les boucles
+de comptage d'avant recopiées verbatim dans `test_lieux_memo.py` (300 index
+tirés) ; `test_sujets_une_passe` compare toujours `people_list`/`pets_list`
+à leur écriture d'avant. Quatre mutants tués (pas de mémoire, invalidation
+par identité, élagage à chaque appel, élagage mesuré au petit compte).
+
+**Reste** : `comptage` ~220 ms (une passe sur la vue) et `animaux` ~250 ms
+(la passe des vignettes sur `ANIMAL_STORE`). À ne rouvrir qu'avec un besoin.
+
 ## 4. Ce qui a été vérifié et qui va bien
 
 À ne pas rouvrir sans raison neuve :

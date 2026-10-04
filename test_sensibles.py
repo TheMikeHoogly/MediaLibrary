@@ -461,7 +461,10 @@ class LaRouteDesCandidatsNeMasqueRIEN(unittest.TestCase):
         # champs portent des noms differents.
         self.assertIn("'total': total", self.s)
         self.assertIn("'montres': len(echantillon)", self.s)
-        self.assertIn("if len(echantillon) < n:", self.s)
+        # Bornee par TRANCHE depuis le 04/10 (`?depuis=`, la suite d'une
+        # famille) : chacune des trois familles a sa borne, aucune n'y echappe.
+        self.assertEqual(self.s.count("<= depuis + n:"), 3)
+        self.assertIn("depuis = max(0, int(q.get('depuis'", self.s)
 
     def test_chacun_ne_voit_que_ce_qu_il_peut_juger(self):
         self.assertIn("_visibilite.peut_juger(cle, u)", self.s)
