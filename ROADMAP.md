@@ -349,6 +349,10 @@ passe** » — un qui tient entièrement dans les 4 Go de VRAM ne reprendra pas
 7,8 Go en RAM. Protocole `vision-eval` ; changer de modèle est un changement
 de pipeline, donc une campagne de plus.
 
+**B3 — TRANCHÉ le 04/10 : pas de campagne.** Le tagueur nomme déjà la pièce
+dans sa DESCRIPTION ; le filet la lit désormais (Documents 22 → 87, rien de
+masqué). Verdict : `eval/DECISIONS.md`. L'historique suit.
+
 **B3. La question au tagueur sur les documents sensibles.** Elle était
 **empêchée**, pas reportée : la toucher pendant la campagne aurait rendu
 candidates les 12 000 photos déjà refaites. Le prompt est de nouveau

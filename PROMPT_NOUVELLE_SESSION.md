@@ -1,4 +1,4 @@
-# Reprise — MediaLibrary, après le 22 septembre 2026 (soir)
+# Reprise — MediaLibrary, après le 4 octobre 2026
 
 > **Ce fichier est ÉPHÉMÈRE.** Il décrit un état, pas des règles. Les règles
 > vivent dans `CLAUDE.md`, le plan dans `ROADMAP.md`, les verdicts dans
@@ -7,159 +7,56 @@
 
 ---
 
-## 0. Ce qui vient de se passer — 22/09
+## 0. Ce qui vient de se passer — 04/10 (Mike présent, ordre « 2, 1, 3, 4 »)
 
-**Le CHANTIER 19 EST FINI, brique 1 comprise.** Mike a répondu aux deux
-questions : « je suis tes recommandations » → **(a) la file de revue**, et
-donc **pas** les trois champs au passage de la vignette (ils n'avaient de sens
-que pour un modèle dédié).
+Cinq livraisons, toutes fusionnées dans `main` par l'agent, chacune vue en réel :
 
-**Livré** (`6d1475f`) : l'onglet Sensibles porte une section « À regarder »,
-sous les photos masquées, en **trois familles** — documents **22**, captures
-`.png` **443**, ressemblances **400** (classées par marge). **Aucune photo
-n'est masquée, aucune n'a bougé** : chaque fiche porte les trois gestes, et
-« pas sensible » mémorise. Vu à l'écran : les 24 fiches d'une famille, un
-verdict posé puis ANNULÉ (443 → 442 → 443), vignettes servies.
+1. **`668b8bb` — thermique.** « 🔥 CHAUD … BRIDAGE THERMIQUE » à 36 °C : le
+   drapeau de bridage était levé au REPOS (1 852 relevés, tous à 0–1 %, 0 sur
+   95 sous charge). « CHAUD » ne vient plus que de la température (≥ 85 °C) ;
+   le drapeau ne compte que si `util` ≥ `THERMIQUE_CHARGE_PCT` (10 %).
+2. **`ec0004a` — `/api/sujets/list` 2,2 s → 0,6 s** (1er appel après
+   démarrage 3,5 → 0,63 s). `_lieux_des_cles` mémorise la règle des lieux par
+   chemin (sert aussi la recherche par lieu), `_prechauffer_lieux` au
+   démarrage, `_compter_sujets` en une passe. `PERFORMANCE.md` § 3.27.
+   **Et la file de revue** : « Voir les 24 suivantes » (`?depuis=`), compteur
+   de famille qui baisse enfin à chaque verdict.
+3. **`f105663` — planche du fonds 7,5 → 4,1–4,4 s** : rendu par tranches de
+   600 cases (le navigateur bâtissait 44 430 cases : 2,8 s invisibles du
+   serveur). Fiche « compacte » ÉCARTÉE par la mesure (gzip faisait déjà le
+   travail). Choix de Mike : « l'allègement d'abord ». § 3.28.
+4. **B3 tranché par Mike — pas de campagne** : le filet des pièces lit aussi
+   les DESCRIPTIONS (`tagging_meta.DESC_PIECES`). Documents **22 → 87** en
+   réel. Vérifier que cette 5ᵉ livraison est bien dans `main` (branche
+   `feat/b3-le-filet-lit-les-descriptions`).
 
-- La file « intime » vit dans **`_filet_intime.json`, hors git** — une liste
-  de chemins qui « ressemblent à » vaut accusation, et le modèle ne sait pas
-  trancher. Elle se refait en 45 s (`mesure_filet_intime.py --top 400`), et la
-  page DIT de quand elle date.
-- Bancs : `test_sensibles.LaFileDeRevue` (six), dont un qui exige le garde
-  `_verdict_deja_rendu` dans CHAQUE boucle de famille — écrit d'abord en
-  cherchant le nom dans le texte, il laissait passer le mutant.
-
----
-
-## 0 bis. Le matin du 22/09 — la vue posée par lecture
-
-**La page du fonds entier était DEUX FOIS plus lente qu'au 15/09, et personne
-ne le savait.** Remesurée avant de toucher quoi que ce soit : 7,3 s, dont
-**4,0 s dans la seule passe `marques`** — 406 ms une semaine plus tôt. Le
-chantier 19 avait alourdi le prédicat de visibilité, et cette boucle posait une
-VUE PAR CLÉ (`STORE.data` écrit dans son corps : 44 436 fois).
-
-**Livré** (`7ec7767`) : vue hissée dans les trois boucles de la galerie, puis
-**mémorisée par fil et par génération** — une génération par requête, et une de
-plus à chaque écriture qui change une règle (partage, masque, magasin
-remplacé). Couvre les **128 endroits** du projet qui écrivent `*_STORE.data`
-dans une boucle, et ceux qu'on écrira demain.
-
-| | avant | après |
-|---|---:|---:|
-| page du fonds (chaud) | 7 277 ms | **3 550 ms** |
-| CPU | 7 156 ms | **3 469 ms** |
-| `marques` | 4 028 ms | **417 ms** |
-| vues posées pour la page | ~44 436 | **3** |
-
-**Un compteur d'étendue** le tient : `vues_posees` dans `/api/perf`. Trois
-mutants tués ; le banc qui exigeait « la liste de partage relue à CHAQUE
-lecture » a été réécrit pour exiger les deux bouts (`PERFORMANCE.md` § 3.26).
-
----
-
-## 0 bis. L'état d'avant, en dix lignes
-
-**Le CHANTIER 19 est FINI côté code — briques 2, 3, 4, 5 et 6 livrées, vues à
-l'écran et fusionnées dans `main`.** La brique 1 est mesurée et
-volontairement NON câblée : **deux choix attendent Mike** dans
-`QUESTIONS_MIKE.md`. Le détail de chaque brique vit dans git et dans
-`docs/CHANTIER_19_VIE_PRIVEE.md` ; ce qui suit est la carte.
-
-1. **Brique 6 — les comptes pour de bon.** « Changer mon mot de passe » exige
-   l'ACTUEL (le frein des connexions s'y applique) ; l'admin réinitialise
-   celui d'un AUTRE en **provisoire**, et la première page de la personne lui
-   demande d'en choisir un. Chaque compte porte une **adresse e-mail**
-   facultative et effaçable ; l'admin peut la poser pour quelqu'un
-   (Réglages → « Adresse »). **Le serveur n'envoie jamais rien** — le
-   « mot de passe oublié » par SMTP est refusé (Mike, 18/09).
-2. **Brique 3 — masquer une photo où l'on est reconnu.** La photo NE BOUGE
-   PAS : restent son propriétaire, la personne, l'admin. **Seule elle lève**
-   (l'admin en secours), jamais le propriétaire. État en base (`masque_par`),
-   jamais dans le XMP. Le bouton n'existe que si le SERVEUR le dit
-   (`GET /api/masque`). Et **« Ce que j'ai masqué »** (`/files?masque=moi`,
-   entrée du menu du compte) permet de les retrouver — sans quoi un masque ne
-   se lève jamais.
-3. **Brique 5 — qui voit mes photos.** Trois états : champ ABSENT = tout le
-   monde, `[]` = personne, `[noms]` = ceux-là ; la migration prévue tombe, le
-   troisième état est ÉCRIT. **L'admin n'est pas un passe-partout** (choix de
-   Mike). Gratuit tant que personne ne restreint ; 20 ms sur 44 445 clés
-   sinon — 107 ms avant d'avoir mémoïsé `auteurs.proprietaire_de`, gain qui
-   profite à tout le projet.
-4. **Brique 4 — être reconnu sur une photo la rouvre.** D'un cran, et d'un
-   seul : elle rouvre ce que le PARTAGE a fermé, jamais un masque. **Pas
-   d'index clé → noms** (le plan en annonçait un) : la question n'est posée
-   que pour les clés que le partage ferme, et un banc COMPTE les appels.
-   +34 ms quand quelqu'un restreint, zéro sinon.
-5. **Brique 1 — mesurée, rien câblé** (`mesure_captures_ecran.py`). Le
-   « signal franc » des captures d'écran est aux trois quarts illisible :
-   443 `.png` sur 44 445, **aucun** champ d'appareil, **aucune** dimension
-   dans la base, et le mot-clé `capture d ecran` du tagueur ne désigne
-   **1 photo** — un `.jpg`. Câbler « PNG donc capture » trancherait au-delà
-   de la mesure. → `QUESTIONS_MIKE.md`.
-6. **Un masque ne se perd pas au tagging** : le tagueur REMPLACE l'entrée au
-   premier tagging (il ne fusionnait que sur un re-tag).
-   `visibilite.preserver_axes` reporte les six axes de vie privée. Le cas ne
-   se produit pas aujourd'hui — « aujourd'hui » n'est pas une garantie.
-7. **Un instrument neuf** : `mesure_etat_serveur.py` — lire `/api/serveur`
-   (route ouverte) depuis la machine de Mike par l'agent de banc, donc **sans
-   Chrome** : `uptime_s`, `demarre_a`, `code_a_jour`, et `--sert /connexion
-   --motif …` pour prouver ce que le serveur SERT vraiment. Né d'une panne :
-   le 17/09 au soir l'extension Chrome n'a pas répondu et il ne restait aucun
-   moyen de savoir si le serveur exécutait le code du disque.
-8. **Trouvé en chemin, documenté, pas corrigé** : `list(vue)` et
-   `sorted(vue)` paient DEUX passes du filtre de visibilité
-   (`PERFORMANCE.md` § 3.-1) ; `__length_hint__` n'y change rien et un cache
-   rendrait `len()` faux. 47 appels de cette forme dans `server.py`.
-9. **Tout est vu à l'écran** (Chrome `MSI-Mike`) : les deux refus du mot de
-   passe, le bouton « Réinitialiser » et son tirage, le masque posé puis levé,
-   les trois états du partage, la liste « Ce que j'ai masqué » et son état
-   vide. **`/aide` a rattrapé le chantier** : « Mon compte », « Choisir qui
-   voit tes photos », « Masquer une photo où tu es ».
-10. **Ce qui n'est PAS prouvé en réel** : la vue d'un NON-admin, et la
-    non-fuite ROUTE PAR ROUTE (`verifier_non_fuite.py` veut deux comptes et
-    leurs mots de passe). Geste de Mike.
-
-Acquis d'avant : veille (P1), campagne de retag ABANDONNÉE, trois comptes
-(Mike admin, Flo, Papa), Tailscale préparé, e-mails en brouillons NON envoyés.
+Contre-vérifications qui ont servi : la fiche compacte (annoncée ~2× moins de
+Mo, mesurée 3,2 → 2,8 Mo gzippés) ; la règle d'élagage de la mémoire des lieux
+(un petit compte l'aurait vidée à chaque appel — corrigée avant livraison).
 
 ---
 
 ## 1. Par où commencer
 
 1. **Vérifier l'état réel** — `.git/HEAD`, `.git/logs/HEAD`,
-   `.git/logs/refs/heads/main` : tout ce qui est décrit au § 0 est FUSIONNÉ.
-   Une doc dit l'intention de la fin de session ; git dit ce qui s'est passé.
-2. **Lire `QUESTIONS_MIKE.md`** : deux questions ouvertes sur la brique 1, et
-   rien ne se code là-dessus tant qu'il n'a pas répondu. La suite du chantier
-   19 est **terminée** — ne pas rouvrir une brique livrée sans chiffre neuf.
-3. **Prochaines cibles, si Mike ne dit rien d'autre** (par ordre de valeur, pas
-   de facilité) :
-   - **la file de revue à l'usage** : 443 + 400 fiches, c'est beaucoup pour
-     une page qui en montre 24 par famille. Si Mike ou Flo s'en servent
-     vraiment, il faudra un « voir la suite » qui reprenne où on s'est arrêté
-     — aujourd'hui la file se refait à chaque chargement ;
-   - **`/api/sujets/list` : 2,2 s** (mesuré le 22/09) — trois listes qui
-     balaient le fonds ; le même réflexe que § 3.26 n'a PAS été appliqué là,
-     faute de mesure par phase. Poser l'horloge d'abord ;
-   - **`C3` étape 2 — la vraie pagination**, avec les chiffres du 22/09 :
-     `mode_index` 835 ms, `envoi` 796, `gabarit` 406, `json` 275, et
-     **19,3 Mo** envoyés. C'est le nombre de fiches BÂTIES qu'il faut borner ;
-   - **la vue d'un NON-admin, prouvée à l'écran** : un compte d'essai créé et
-     supprimé par Mike, et `verifier_non_fuite.py` lancé par lui — c'est le
-     seul trou de preuve du chantier 19, et il ne se bouche que par lui ;
-   - **`B3` — la question au tagueur sur les documents sensibles** : à
-     instruire AVANT d'écrire une ligne (toute modification du prompt relance
-     une passe complète : est-ce que ça vaut une campagne ?) ;
-   - **`C3` étape 2 — la vraie pagination**, parquée : la page du fonds est
-     bornée par le CPU (3,7 s), et borner le nombre de fiches bâties est le
-     seul geste qui attaque encore le vrai poste.
-4. **P2, l'e-mail** : trois brouillons Gmail prêts, non envoyés. Mike envoie,
-   mots de passe à part.
-5. **Tailscale** : partager `msi-mike` avec `markushuegli@gmail.com` et
-   `flolaeser@gmail.com`, limiter `autogroup:shared` au port 8080, rappeler
-   l'expiration de clé. En attente que Mike se connecte à la console.
-6. **D1, la copie hors site** : à Mike seul.
+   `.git/logs/refs/heads/main`, et le dernier rapport de `_etat_git.json`.
+2. **`QUESTIONS_MIKE.md`** : aucune question ouverte.
+3. **Cibles, par ordre de valeur** :
+   - **la vraie pagination de la planche** (§ C3) : reste ~3,9 s SERVEUR sur
+     le fonds — `mode_index` ~1 s, `envoi` ~1 s (gzip niveau 6 ≈ 0,5 s ; le
+     niveau 1 rendrait ~270 ms contre +0,9 Mo — à juger pour les comptes
+     distants), `gabarit`, `marques`, `index`, `motifs`. Plusieurs sessions :
+     tri/filtres côté serveur, visionneuse, diaporama ;
+   - **`/api/sujets/list`** : il reste `comptage` ~220 ms et `animaux` ~250 ms
+     (passe des vignettes sur `ANIMAL_STORE`) — sans urgence ;
+   - **la vue d'un NON-admin, prouvée à l'écran** (`verifier_non_fuite.py`,
+     deux comptes) — geste de Mike.
+4. **Gestes de Mike** : masquer **KB5124008** s'il revient (pause Windows
+   Update jusqu'au 17.10) ; e-mails d'invitation (3 brouillons) ; Tailscale
+   (Papa, Flo, port 8080) ; D1 copie hors site.
+5. **Sauvegardes** : 16 échecs / 167 réussites dans le journal, chacun
+   rattrapé au cycle suivant (NAS absent, ou `VACUUM` pendant une requête).
+   À surveiller, pas à corriger sans un échec qui dure.
 
 ---
 
@@ -224,10 +121,14 @@ Acquis d'avant : veille (P1), campagne de retag ABANDONNÉE, trois comptes
   Chrome peut être injoignable : deux navigateurs sont enregistrés sur le
   compte, il faut choisir celui de `MSI-Mike`, et si l'extension ne répond
   pas, `mesure_etat_serveur.py` remplace l'œil sur l'ÉTAT, jamais sur la PAGE.
-- **Git : jamais depuis la VM**, même en lecture apparente. Préfixes de branche
+- **Git : jamais depuis la VM**, même en lecture apparente — un `git status`
+  y laisse un `.git/index.lock` vide que la VM ne peut pas effacer sans
+  permission, et qui bloquerait l'agent (arrivé le 04/10). Lire `.git/HEAD`
+  et `.git/logs/*` en texte, rien d'autre. Préfixes de branche
   admis : `feat|fix|chore|docs|test`.
-- **L'agent git consomme l'ordre AVANT de travailler**, et met ~3 min quand
-  `server.py` est touché (il fait tourner 78 bancs). C'est `_etat_git.json` et
+- **L'agent git consomme l'ordre AVANT de travailler**, et met **~7 min**
+  quand `server.py` est touché (il fait tourner ~80 bancs). Le 04/10 je l'ai
+  cru « bloqué » au bout de 5 min : il ne l'était pas. C'est `_etat_git.json` et
   son `dernier.quand` qui disent si c'est fini, jamais le canal.
 - `server.py` : skill `monolith-surgery` ; UI : `photo-ui`.
 - **Un banc qui cite un appel AU CARACTÈRE PRÈS interdit la ligne suivante.**
@@ -235,7 +136,9 @@ Acquis d'avant : veille (P1), campagne de retag ABANDONNÉE, trois comptes
 - **`os.path` ne reconnaît pas `\\` hors Windows** : normaliser soi-même.
 - **`hidden` perd contre tout `display`** d'une classe plus spécifique. Tout
   nouvel élément de la barre qui naît caché : sa règle `[hidden]`.
-- **Un onglet Chrome en arrière-plan ne charge pas les `loading="lazy"`.**
+- **Un onglet Chrome en arrière-plan ne déclenche AUCUN `IntersectionObserver`**
+  (ni `loading="lazy"`, ni vignettes, ni tranches de la planche). Une capture
+  d'écran force un rendu : c'est elle qui fait avancer un essai de défilement.
 - **La veille et le NAS** : ses vignettes portent `veille=1`, qui DISPENSE la
   requête de `note_heavy_activity()`. Tout nouveau client ambiant doit faire
   pareil, sinon le fond ne tourne plus jamais.
@@ -255,8 +158,3 @@ pas la confirmer. Le 18/09 elle a servi deux fois : la règle du mot de passe
 retirée d'une copie du module, trois cas du banc tombent (donc le banc mord) ;
 et trois bancs rouges dans la VM, relancés sous Windows, se sont révélés verts
 — conclure « ma modification a cassé trois bancs » aurait coûté la matinée.
-
-## 04/10/2026 - Faux « CHAUD / BRIDAGE THERMIQUE » au repos (corrige)
-- `thermique_loop` : « CHAUD » ne vient plus que de la temperature (>= 85 C) ; le drapeau de bridage n est retenu que si util >= `THERMIQUE_CHARGE_PCT` (10 %).
-- Preuve (journaux) : 1852 releves BRIDAGE, tous a 0-1 % et 31-60 C ; 0 sur 95 releves sous charge. Max jamais vu : 66 C.
-- Tests : `test_thermique.py` 11/11 verts, 2 nouveaux vus rouges sur l ancien code. Serveur redemarre et observe (lignes normales au repos). LIVRE et fusionne dans main (`668b8bb`, 04/10 10:22 UTC) : l agent a mis ~7 min (78 bancs), il n etait PAS bloque.

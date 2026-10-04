@@ -297,6 +297,41 @@ KW_EXPRESSIONS = (
 # qu'il n'existe pas dans une scene.
 
 
+# LES DESCRIPTIONS (04/10, B3, choix de Mike). Le tagueur ECRIT deja la piece
+# dans sa phrase -- « Une carte d'identite suisse montrant un portrait… » --
+# sans poser le mot-cle generique que le filet lisait seul. Mesure sur la base
+# du 16/09 : 64 photos que le filet ratait, relues une par une, ~60 vraies
+# pieces (cartes d'identite, passeports, certificats de salaire, attestations
+# fiscales, formulaires medicaux). Zero campagne : la matiere etait la.
+# Ce sont des EXPRESSIONS de piece ; `capture d ecran` n'y est PAS (elle a sa
+# famille, par l'extension). `passeport` y est, alors qu'il a ete retire des
+# MOTS-CLES le 08/09 : en mot-cle il venait de l'ALLURE d'une photo ancienne ;
+# en description, les 7 occurrences relues etaient 7 passeports.
+DESC_PIECES = (
+    'carte d identite', 'passeport', 'certificat', 'attestation', 'formulaire',
+    'carte de credit', 'contrat de', 'releve de', 'fiche de paie',
+    'declaration d impot', 'bulletin de',
+)
+
+
+def _norme_phrase(t):
+    """Minuscules, sans accents, apostrophes et traits d'union en espaces."""
+    import unicodedata
+    t = unicodedata.normalize('NFKD', str(t or '').lower())
+    t = ''.join(ch for ch in t if not unicodedata.combining(ch))
+    for sep in ("'", '\u2019', '-', ',', '.', ';', ':', '(', ')'):
+        t = t.replace(sep, ' ')
+    return ' ' + ' '.join(t.split()) + ' '
+
+
+def pieces_de_la_description(desc):
+    """Les expressions de `DESC_PIECES` que la description contient, en MOTS
+    entiers (« certificats » ne compte pas pour « certificat » : la liste a ete
+    mesuree telle quelle)."""
+    d = _norme_phrase(desc)
+    return [x for x in DESC_PIECES if ' ' + x + ' ' in d]
+
+
 def candidat_sensible(entree):
     """(candidat, motif) — cette entree merite-t-elle un REGARD humain ?
 
@@ -327,6 +362,10 @@ def candidat_sensible(entree):
         if k in KW_IMPOSES or k in KW_EXPRESSIONS:
             if k not in vus:
                 vus.append(k)
+    for x in pieces_de_la_description(entree.get('desc')):
+        m = 'description : ' + x
+        if m not in vus:
+            vus.append(m)
     if not vus:
         return False, ''
     return True, ', '.join(vus)

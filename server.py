@@ -14433,7 +14433,8 @@ class Handler(BaseHTTPRequestHandler):
 
         familles = [
             {'cle': 'documents', 'titre': 'Documents',
-             'dit': "le tagueur a écrit un mot que le prompt réserve aux pièces",
+             'dit': ("le tagueur a nommé une pièce — dans ses mots-clés "
+                     "ou dans sa description"),
              'total': total, 'photos': echantillon},
             {'cle': 'captures', 'titre': "Captures d'écran",
              'dit': "fichier PNG — le seul signal lisible aujourd'hui",

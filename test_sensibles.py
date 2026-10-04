@@ -422,6 +422,41 @@ class LeFiletDesCandidats(unittest.TestCase):
             T.candidat_sensible({'kw_fr': ['document', 'facture']})[1],
             'document, facture')
 
+    def test_la_DESCRIPTION_nomme_la_piece(self):
+        """B3, 04/10 : le tagueur ecrit la piece dans sa phrase sans poser le
+        mot-cle. Phrases REELLES de la base, accents et apostrophe courbe
+        compris."""
+        import tagging_meta as T
+        for d in ("Une carte d'identit\u00e9 suisse montrant un portrait.",
+                  "Une carte d\u2019identit\u00e9 avec une photo.",
+                  "Un passeport suisse ancien avec une photo d'un homme.",
+                  "un certificat de salaire multilingue avec un code QR",
+                  "Une attestation de don pour l'autorit\u00e9 fiscale.",
+                  "Un formulaire m\u00e9dical rempli \u00e0 la main.",
+                  "Une carte de cr\u00e9dit Mastercard business."):
+            ok, motif = T.candidat_sensible({'desc': d})
+            self.assertTrue(ok, d)
+            self.assertTrue(motif.startswith('description : '), motif)
+
+    def test_la_description_veut_des_MOTS_ENTIERS(self):
+        import tagging_meta as T
+        for d in ('Des certificats partout sur le mur.',
+                  'Un passeporteur imaginaire.', 'Une plage au soleil.',
+                  "Une capture d'\u00e9cran d'un jeu."):
+            self.assertFalse(T.candidat_sensible({'desc': d})[0], d)
+
+    def test_une_photo_jugee_ne_revient_pas_par_sa_description(self):
+        import tagging_meta as T
+        for etat in ('non', 'en_attente'):
+            self.assertFalse(T.candidat_sensible(
+                {'desc': 'Un passeport suisse.', 'sensible': etat})[0])
+
+    def test_le_motif_dit_les_deux_sources(self):
+        import tagging_meta as T
+        self.assertEqual(T.candidat_sensible(
+            {'kw_fr': ['facture'], 'desc': 'Un passeport ouvert.'})[1],
+            'facture, description : passeport')
+
     def test_la_casse_les_tirets_et_les_espaces_ne_comptent_pas(self):
         import tagging_meta as T
         for ecrit in ('Document', ' DOCUMENT ', 'capture-d-ecran',
