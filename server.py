@@ -17895,6 +17895,13 @@ def pilotage_loop():
 THERMIQUE_PERIODE_S = 60.0    # un releve par minute
 THERMIQUE_TRACE_S = 600.0     # une ligne toutes les 10 min en regime normal
 THERMIQUE_CHAUD_C = 85        # au-dela : on trace CHAQUE releve
+# Le drapeau de bridage ne compte que si la carte TRAVAILLE. Mesure sur les
+# journaux du 04/10 : 1852 releves « BRIDAGE » , TOUS a 0-1 % d'utilisation et
+# entre 31 et 60 °C ; sur les 95 releves sous charge (>= 20 %), AUCUN drapeau.
+# Ce drapeau leve au repos est un etat d'economie (portable : EC/pilote), pas
+# une surchauffe -- l'horloge a 210 MHz est celle du repos. Le crier « CHAUD »
+# chaque minute noyait le journal et faisait mentir son unique raison d'etre.
+THERMIQUE_CHARGE_PCT = 10     # en dessous : carte au repos, drapeau sans effet
 
 
 def thermique_loop():
@@ -17911,7 +17918,9 @@ def thermique_loop():
         t = g.get('temp_c')
         if t is None:
             continue                  # pas de sonde : rien a dire, jamais
-        bride = bool(g.get('bride_thermique'))
+        drapeau = bool(g.get('bride_thermique'))
+        # Un bridage ne ralentit que ce qui tourne : au repos, on l'ignore.
+        bride = drapeau and (g.get('util') or 0) >= THERMIQUE_CHARGE_PCT
         chaud = t >= THERMIQUE_CHAUD_C
         maintenant = time.time()
         # On ecrit sur un EVENEMENT (ca chauffe, ou le bridage vient de
@@ -17922,7 +17931,9 @@ def thermique_loop():
             continue
         dernier = maintenant
         etait_bride = bride
-        marque = "  🌡" if not (chaud or bride) else "  🔥 CHAUD"
+        # « CHAUD » ne vient QUE de la temperature ; le bridage a sa propre
+        # marque. Les confondre affichait « CHAUD » a 36 °C.
+        marque = "  🔥 CHAUD" if chaud else ("  ⚠" if bride else "  🌡")
         print("%s GPU %s°C — %s%% — %s/%s MHz — %s W%s"
               % (marque, t, g.get('util'), g.get('clocks_mhz'),
                  g.get('clocks_max_mhz'), g.get('watts'),

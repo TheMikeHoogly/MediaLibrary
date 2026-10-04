@@ -255,3 +255,8 @@ pas la confirmer. Le 18/09 elle a servi deux fois : la règle du mot de passe
 retirée d'une copie du module, trois cas du banc tombent (donc le banc mord) ;
 et trois bancs rouges dans la VM, relancés sous Windows, se sont révélés verts
 — conclure « ma modification a cassé trois bancs » aurait coûté la matinée.
+
+## 04/10/2026 - Faux « CHAUD / BRIDAGE THERMIQUE » au repos (corrige)
+- `thermique_loop` : « CHAUD » ne vient plus que de la temperature (>= 85 C) ; le drapeau de bridage n est retenu que si util >= `THERMIQUE_CHARGE_PCT` (10 %).
+- Preuve (journaux) : 1852 releves BRIDAGE, tous a 0-1 % et 31-60 C ; 0 sur 95 releves sous charge. Max jamais vu : 66 C.
+- Tests : `test_thermique.py` 11/11 verts, 2 nouveaux vus rouges sur l ancien code. Serveur redemarre et observe (lignes normales au repos). LIVRAISON EN ATTENTE : l agent git a consomme `livrer` puis s est tu (vu 10:15:25 UTC), aucune branche creee. SESSION_COMMIT.txt pret (fix/thermique-faux-chaud-au-repos).

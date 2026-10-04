@@ -104,6 +104,7 @@ def banc(releves):
         'THERMIQUE_PERIODE_S': _constante('THERMIQUE_PERIODE_S'),
         'THERMIQUE_TRACE_S': _constante('THERMIQUE_TRACE_S'),
         'THERMIQUE_CHAUD_C': _constante('THERMIQUE_CHAUD_C'),
+        'THERMIQUE_CHARGE_PCT': _constante('THERMIQUE_CHARGE_PCT'),
     }
     mod = ast.Module(body=[_noeud('thermique_loop')], type_ignores=[])
     ast.fix_missing_locations(mod)
@@ -196,6 +197,23 @@ class LeJournalParleQuandIlFaut(unittest.TestCase):
         self.assertEqual(len(lignes), 2, "la sortie de bridage n'a pas ete tracee")
         self.assertIn('BRIDAGE THERMIQUE', lignes[0])
         self.assertNotIn('BRIDAGE THERMIQUE', lignes[1])
+
+    def test_CHAUD_ne_vient_que_de_la_temperature(self):
+        """Regression du 04/10 : « CHAUD » s'affichait a 36 C des que le
+        drapeau de bridage etait leve."""
+        lignes = banc([froid(t=65, bride_thermique=True)])
+        self.assertIn('BRIDAGE THERMIQUE', lignes[0])
+        self.assertNotIn('CHAUD', lignes[0])
+
+    def test_le_drapeau_AU_REPOS_est_ignore(self):
+        """Releve reel du 04/10 : 36 C, 0 %, 210 MHz, 6.7 W, drapeau leve.
+        Rien ne tourne, rien n'est ralenti : seule la ligne de reference."""
+        repos = froid(t=36, util=0, clocks_mhz=210, watts=6.7,
+                      bride_thermique=True)
+        lignes = banc([repos] * 5)
+        self.assertEqual(len(lignes), 1, lignes)
+        self.assertNotIn('CHAUD', lignes[0])
+        self.assertNotIn('BRIDAGE', lignes[0])
 
     def test_sans_sonde_il_n_ecrit_JAMAIS(self):
         """Sur une machine sans GPU nvidia, le journal ne doit pas se remplir
